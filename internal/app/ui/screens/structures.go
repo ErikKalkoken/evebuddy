@@ -74,9 +74,10 @@ type Structures struct {
 
 	OnUpdate func(count int)
 
-	footer            *widget.Label
 	columnSorter      *xwidget.ColumnSorter[structureRow]
 	corporation       atomic.Pointer[app.Corporation]
+	footer            *widget.Label
+	forCorporation    bool
 	main              fyne.CanvasObject
 	rows              []structureRow
 	rowsFiltered      []structureRow
@@ -86,12 +87,21 @@ type Structures struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectState       *kxwidget.FilterChipSelect
 	selectType        *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	selectOwner       *kxwidget.FilterChipSelect
+	sortChip          *kxwidget.SortChip
 	u                 baseUI
 }
 
-func NewStructures(u baseUI) *Structures {
-	columns := xwidget.NewDataColumns([]xwidget.DataColumn[structureRow]{{
+func NewUnifiedStructures(u baseUI) *Structures {
+	return newStructuresForCorporation(u, false)
+}
+
+func NewStructuresForCorporation(u baseUI) *Structures {
+	return newStructuresForCorporation(u, true)
+}
+
+func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
+	cols := []xwidget.DataColumn[structureRow]{{
 		Label: "Name",
 		Width: 250,
 		Sort: func(a, b structureRow) int {
@@ -133,11 +143,26 @@ func NewStructures(u baseUI) *Structures {
 		Update: func(r structureRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.servicesText)
 		},
-	}})
+	}}
+	if !forCorporation {
+		cols = slices.Insert(cols, 4, ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[structureRow]{
+			EIS:   u.EVEImage(),
+			Label: "Owner",
+			GetEntity: func(r structureRow) *app.EveEntity {
+				return &app.EveEntity{
+					Category: app.EveEntityCorporation,
+					ID:       r.corporationID,
+					Name:     r.corporationName,
+				}
+			},
+		}))
+	}
+	columns := xwidget.NewDataColumns(cols)
 	a := &Structures{
-		columnSorter: xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
-		footer:       ui.NewLabelWithWrapping(""),
-		u:            u,
+		columnSorter:   xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
+		footer:         ui.NewLabelWithWrapping(""),
+		forCorporation: forCorporation,
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 	if !a.u.IsMobile() {
@@ -166,6 +191,8 @@ func NewStructures(u baseUI) *Structures {
 					return xwidget.RichTextSegmentsFromText(r.structureName)
 				case "Fuel Expires":
 					return r.fuelExpiresDisplay()
+				case "Owner":
+					return xwidget.RichTextSegmentsFromText(r.corporationName)
 				case "State":
 					return xwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
 						ColorName: r.stateColor,
@@ -182,19 +209,22 @@ func NewStructures(u baseUI) *Structures {
 	}
 
 	// filter
+	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+		a.filterRowsAsync("")
+	})
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
+		a.filterRowsAsync("")
+	})
+	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
 	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
-	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
 	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
-	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
+	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -208,32 +238,53 @@ func NewStructures(u baseUI) *Structures {
 	})
 
 	// Signals
-	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
-		a.corporation.Store(c)
-		a.update(ctx)
-	})
-	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDOrZero() != arg.CorporationID {
-			return
-		}
-		if arg.Section != app.SectionCorporationStructures {
-			return
-		}
-		a.update(ctx)
-	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		fyne.Do(func() {
+	if forCorporation {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
+			a.corporation.Store(c)
 			a.update(ctx)
 		})
-	})
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if a.corporation.Load().IDOrZero() != arg.CorporationID {
+				return
+			}
+			if arg.Section != app.SectionCorporationStructures {
+				return
+			}
+			a.update(ctx)
+		})
+		a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+			fyne.Do(func() {
+				a.update(ctx)
+			})
+		})
+	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if arg.Section == app.SectionCorporationStructures {
+				a.update(ctx)
+			}
+		})
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
+	}
 	return a
 }
 
 func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower)
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+	objs := []fyne.CanvasObject{a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower}
+	if !a.forCorporation {
+		objs = slices.Insert(objs, 4, fyne.CanvasObject(a.selectOwner))
 	}
+	if a.u.IsMobile() {
+		objs = append(objs, a.sortChip)
+	}
+	filter := container.NewHBox(objs...)
 	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)
 }
@@ -241,6 +292,7 @@ func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 func (a *Structures) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
+	owner := a.selectOwner.Selected
 	region := a.selectRegion.Selected
 	solarSystem := a.selectSolarSystem.Selected
 	state := a.selectState.Selected
@@ -251,6 +303,11 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 
 	go func() {
 		// filter
+		if owner != "" {
+			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
+				return r.corporationName != owner
+			})
+		}
 		if region != "" {
 			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
 				return r.regionName != region
@@ -289,7 +346,10 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
-		selectOptions := xslices.Map(rows, func(r structureRow) string {
+		ownerOptions := xslices.Map(rows, func(r structureRow) string {
+			return r.corporationName
+		})
+		regionOptions := xslices.Map(rows, func(r structureRow) string {
 			return r.regionName
 		})
 		solarSystemOptions := xslices.Map(rows, func(r structureRow) string {
@@ -311,7 +371,8 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectRegion.SetOptions(selectOptions)
+			a.selectOwner.SetOptions(ownerOptions)
+			a.selectRegion.SetOptions(regionOptions)
 			a.selectSolarSystem.SetOptions(solarSystemOptions)
 			a.selectState.SetOptions(stateOptions)
 			a.selectService.SetOptions(servicesOptions)
@@ -329,12 +390,7 @@ func (a *Structures) update(ctx context.Context) {
 			a.filterRowsAsync("")
 		})
 	}
-	corporationID := a.corporation.Load().IDOrZero()
-	if corporationID == 0 {
-		reset()
-		return
-	}
-	rows, err := a.fetchData(ctx, corporationID)
+	rows, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		reset()
@@ -360,20 +416,31 @@ func (a *Structures) update(ctx context.Context) {
 	})
 }
 
-func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]structureRow, error) {
-	if corporationID == 0 {
-		return []structureRow{}, nil
-	}
-	structures, err := a.u.Corporation().ListStructures(ctx, corporationID)
-	if err != nil {
-		return nil, err
+func (a *Structures) fetchData(ctx context.Context) ([]structureRow, error) {
+	var structures []*app.CorporationStructure
+	if a.forCorporation {
+		corporationID := a.corporation.Load().IDOrZero()
+		if corporationID == 0 {
+			return nil, nil
+		}
+		x, err := a.u.Corporation().ListStructures(ctx, corporationID)
+		if err != nil {
+			return nil, err
+		}
+		structures = x
+	} else {
+		x, err := a.u.Corporation().ListAllStructures(ctx)
+		if err != nil {
+			return nil, err
+		}
+		structures = x
 	}
 	corporationNames, err := a.u.Corporation().CorporationNames(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var rows []structureRow
-	for _, s := range structures {
+	rows := make([]structureRow, len(structures))
+	for i, s := range structures {
 		stateText := s.State.DisplayShort()
 		if v, ok := s.StateTimerEnd.Value(); ok {
 			var x string
@@ -393,9 +460,9 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 		servicesText := xstrings.JoinsOrEmpty(slices.Sorted(services.All()), ", ", "-")
 		region := s.System.Constellation.Region
 
-		rows = append(rows, structureRow{
-			corporationID:      corporationID,
-			corporationName:    corporationNames[corporationID],
+		rows[i] = structureRow{
+			corporationID:      s.CorporationID,
+			corporationName:    corporationNames[s.CorporationID],
 			fuelExpires:        s.FuelExpires,
 			fuelSort:           s.FuelExpires.ValueOrZero(),
 			isFullPower:        !s.FuelExpires.IsEmpty(),
@@ -414,7 +481,7 @@ func (a *Structures) fetchData(ctx context.Context, corporationID int64) ([]stru
 			structureName:      s.DisplayName(),
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
-		})
+		}
 	}
 	return rows, nil
 }

@@ -21,6 +21,10 @@ func (s *CorporationService) GetStructure(ctx context.Context, corporationID int
 	return s.st.GetCorporationStructure(ctx, corporationID, structureID)
 }
 
+func (s *CorporationService) ListAllStructures(ctx context.Context) ([]*app.CorporationStructure, error) {
+	return s.st.ListAllCorporationStructures(ctx)
+}
+
 func (s *CorporationService) ListStructures(ctx context.Context, corporationID int64) ([]*app.CorporationStructure, error) {
 	return s.st.ListCorporationStructures(ctx, corporationID)
 }

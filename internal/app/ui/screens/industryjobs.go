@@ -341,7 +341,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 			a.update(ctx)
 		})
-
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterIndustryJobs {
 				a.update(ctx)

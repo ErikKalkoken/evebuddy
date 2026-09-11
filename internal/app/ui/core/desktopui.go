@@ -124,6 +124,19 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		homeNav.SetItemBadge(unifiedCommunications, s)
 	}
 
+	unifiedStructures := xwidget.NewNavPage(
+		"Structures",
+		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		newContentPage("Structures", u.unifiedStructures),
+	)
+	u.unifiedStructures.OnUpdate = func(count int) {
+		var badge string
+		if count > 0 {
+			badge = ihumanize.Comma(count)
+		}
+		homeNav.SetItemBadge(unifiedStructures, badge)
+	}
+
 	contracts := xwidget.NewNavPage(
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
@@ -227,6 +240,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			newContentPage("Loyalty Points", u.loyaltyPoints),
 		),
 		marketOrders,
+		unifiedStructures,
 		skills,
 		wealth,
 	)

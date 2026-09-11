@@ -130,6 +130,105 @@ func (q *Queries) GetCorporationStructure(ctx context.Context, arg GetCorporatio
 	return i, err
 }
 
+const listAllCorporationStructures = `-- name: ListAllCorporationStructures :many
+SELECT
+    cs.id, cs.corporation_id, cs.fuel_expires, cs.name, cs.next_reinforce_apply, cs.next_reinforce_hour, cs.profile_id, cs.reinforce_hour, cs.state, cs.state_timer_end, cs.state_timer_start, cs.structure_id, cs.system_id, cs.type_id, cs.unanchors_at,
+    ess.id, ess.eve_constellation_id, ess.name, ess.security_status,
+    ecn.id, ecn.eve_region_id, ecn.name,
+    er.id, er.description, er.name,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ect.id, ect.name, ect.is_published
+FROM
+    corporation_structures cs
+    JOIN eve_solar_systems ess ON ess.ID = cs.system_id
+    JOIN eve_constellations ecn ON ecn.ID = ess.eve_constellation_id
+    JOIN eve_regions er ON er.ID = ecn.eve_region_id
+    JOIN eve_types et ON et.ID = cs.type_id
+    JOIN eve_groups eg on eg.id = et.eve_group_id
+    JOIN eve_categories ect on ect.id = eg.eve_category_id
+`
+
+type ListAllCorporationStructuresRow struct {
+	CorporationStructure CorporationStructure
+	EveSolarSystem       EveSolarSystem
+	EveConstellation     EveConstellation
+	EveRegion            EveRegion
+	EveType              EveType
+	EveGroup             EveGroup
+	EveCategory          EveCategory
+}
+
+func (q *Queries) ListAllCorporationStructures(ctx context.Context) ([]ListAllCorporationStructuresRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCorporationStructures)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCorporationStructuresRow
+	for rows.Next() {
+		var i ListAllCorporationStructuresRow
+		if err := rows.Scan(
+			&i.CorporationStructure.ID,
+			&i.CorporationStructure.CorporationID,
+			&i.CorporationStructure.FuelExpires,
+			&i.CorporationStructure.Name,
+			&i.CorporationStructure.NextReinforceApply,
+			&i.CorporationStructure.NextReinforceHour,
+			&i.CorporationStructure.ProfileID,
+			&i.CorporationStructure.ReinforceHour,
+			&i.CorporationStructure.State,
+			&i.CorporationStructure.StateTimerEnd,
+			&i.CorporationStructure.StateTimerStart,
+			&i.CorporationStructure.StructureID,
+			&i.CorporationStructure.SystemID,
+			&i.CorporationStructure.TypeID,
+			&i.CorporationStructure.UnanchorsAt,
+			&i.EveSolarSystem.ID,
+			&i.EveSolarSystem.EveConstellationID,
+			&i.EveSolarSystem.Name,
+			&i.EveSolarSystem.SecurityStatus,
+			&i.EveConstellation.ID,
+			&i.EveConstellation.EveRegionID,
+			&i.EveConstellation.Name,
+			&i.EveRegion.ID,
+			&i.EveRegion.Description,
+			&i.EveRegion.Name,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCorporationStructureIDs = `-- name: ListCorporationStructureIDs :many
 SELECT
     structure_id

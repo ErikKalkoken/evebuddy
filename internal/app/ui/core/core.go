@@ -121,8 +121,8 @@ type baseUI struct {
 	clones                     *screens.JumpClones
 	colonies                   *screens.Colonies
 	contractList               *screens.Contracts
-	contractSlotsPersonal      *screens.ContractSlots
 	contractSlotsCorporation   *screens.ContractSlots
+	contractSlotsPersonal      *screens.ContractSlots
 	corporationAssetBrowser    *screens.AssetBrowser
 	corporationAssetSearch     *screens.AssetSearch
 	corporationContracts       *screens.Contracts
@@ -133,18 +133,19 @@ type baseUI struct {
 	corporationWallets         map[app.Division]*screens.CorporationWallet
 	gameSearch                 *gamesearch.GameSearch
 	industryJobs               *screens.IndustryJobs
+	industrySlotsManufacturing *screens.IndustrySlots
+	industrySlotsReactions     *screens.IndustrySlots
+	industrySlotsResearch      *screens.IndustrySlots
 	iw                         *infoviewer.InfoViewer
 	loyaltyPoints              *screens.LoyaltyPoints
 	marketOrdersBuy            *screens.MarketOrders
 	marketOrdersSell           *screens.MarketOrders
 	skillSearch                *screens.SkillSearch
-	industrySlotsManufacturing *screens.IndustrySlots
-	industrySlotsReactions     *screens.IndustrySlots
-	industrySlotsResearch      *screens.IndustrySlots
 	snackbar                   *xwidget.Snackbar
 	statusText                 *statusText
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
+	unifiedStructures          *screens.Structures
 	wealth                     *screens.Wealth
 
 	// Services
@@ -405,6 +406,7 @@ func newBaseUI(arg UIParams) *baseUI {
 
 	u.assetSearchAll = screens.NewAssetSearchForAll(u)
 	u.unifiedCommunications = screens.NewUnifiedCommunications(u)
+	u.unifiedStructures = screens.NewUnifiedStructures(u)
 	u.augmentations = screens.NewAugmentations(u)
 	u.characterAssetBrowser = screens.NewCharacterBrowser(u)
 	u.characterAttributes = screens.NewCharacterAttributes(u)
@@ -432,7 +434,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.corporationIndyJobs = screens.NewJobsForCorporation(u)
 
 	u.corporationMember = screens.NewMembers(u)
-	u.corporationStructures = screens.NewStructures(u)
+	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationSheet = screens.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = screens.NewCorporationWallet(u, d)

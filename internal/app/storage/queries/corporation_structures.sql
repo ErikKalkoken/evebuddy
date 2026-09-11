@@ -25,6 +25,24 @@ WHERE
     corporation_id = ?
     AND structure_id = ?;
 
+-- name: ListAllCorporationStructures :many
+SELECT
+    sqlc.embed(cs),
+    sqlc.embed(ess),
+    sqlc.embed(ecn),
+    sqlc.embed(er),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ect)
+FROM
+    corporation_structures cs
+    JOIN eve_solar_systems ess ON ess.ID = cs.system_id
+    JOIN eve_constellations ecn ON ecn.ID = ess.eve_constellation_id
+    JOIN eve_regions er ON er.ID = ecn.eve_region_id
+    JOIN eve_types et ON et.ID = cs.type_id
+    JOIN eve_groups eg on eg.id = et.eve_group_id
+    JOIN eve_categories ect on ect.id = eg.eve_category_id;
+
 -- name: ListCorporationStructures :many
 SELECT
     sqlc.embed(cs),
