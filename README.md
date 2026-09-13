@@ -88,6 +88,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Industry: Browse industry jobs for all characters and related corporations
   - Location: Browse the location of all characters and their current ships
   - Skills: Keep track of the training status for all characters, search for skills across all characters and export training status to clipboard or file
+  - Structures: Unified view of all corporation structures across all your corporations, with filtering by owner, system, region, type, state and services
   - Wealth: Charts showing wealth distribution across all characters
 
 - **Character monitor**: Check current information about each of your characters:
