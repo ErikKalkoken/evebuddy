@@ -80,6 +80,33 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should delete structures when permission does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: corporation.ID,
+		})
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationStructures,
+		})
+		// when
+		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
+		// then
+		if assert.NoError(t, err) {
+			_, err := st.GetCorporationStructure(ctx, o.CorporationID, o.StructureID)
+			assert.ErrorIs(t, err, app.ErrNotFound)
+			status, err := st.GetCorporationSectionStatus(
+				ctx,
+				corporation.ID,
+				app.SectionCorporationStructures,
+			)
+			if assert.NoError(t, err) {
+				assert.False(t, status.HasContent())
+			}
+		}
+	})
 }
 
 func TestCorporationService_PermittedSections(t *testing.T) {
