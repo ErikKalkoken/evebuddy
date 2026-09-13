@@ -69,6 +69,25 @@ func (s *Settings) setInt(key string, v int) {
 	s.set(key, strconv.Itoa(v))
 }
 
+// getInt64 and setInt64 are used instead of getInt/setInt for values that can
+// exceed the platform's native int range on 32-bit platforms (e.g. Android),
+// such as EVE Online IDs.
+func (s *Settings) getInt64(key string, fallback int64) int64 {
+	v, ok := s.get(key)
+	if !ok {
+		return fallback
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return n
+}
+
+func (s *Settings) setInt64(key string, v int64) {
+	s.set(key, strconv.FormatInt(v, 10))
+}
+
 func (s *Settings) getFloat(key string, fallback float64) float64 {
 	v, ok := s.get(key)
 	if !ok {

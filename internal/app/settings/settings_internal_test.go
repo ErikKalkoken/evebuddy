@@ -13,25 +13,26 @@ import (
 )
 
 func TestCalcEarliest(t *testing.T) {
-	now := time.Now().UTC()
 	f := func(v time.Time) string {
 		return v.Format(time.RFC3339)
 	}
-	earliestFallback := now.Add(-notifyEarliestFallback)
-	timeoutDefault := now.Add(-settingNotifyTimeoutHoursDefault * time.Hour)
+	// earliest and want are computed from "now" at subtest execution time (not once
+	// up front) since each subtest sets up a fresh in-memory DB with its own
+	// migrations, whose duration can vary enough under load to drift a
+	// pre-computed timestamp past the assertion's tolerance below.
 	cases := []struct {
 		name         string
-		earliest     string
+		earliest     func(now time.Time) string
 		timeoutHours int
 		shouldSet    bool
-		want         time.Time
+		want         func(now time.Time) time.Time
 	}{
-		{"earliest after timeout", f(now.Add(-1 * time.Hour)), 15 * 24, false, now.Add(-1 * time.Hour)},
-		{"earliest before timeout", f(now.Add(-60 * 24 * time.Hour)), 15 * 24, false, now.Add(-15 * 24 * time.Hour)},
-		{"earliest before timeout fallback", f(now.Add(-60 * 24 * time.Hour)), 0, false, timeoutDefault},
-		{"timeout not set", f(now.Add(-60 * 24 * time.Hour)), 0, false, timeoutDefault},
-		{"earliest not set", "", 15 * 2, true, earliestFallback},
-		{"nothing set", "", 0, true, earliestFallback},
+		{"earliest after timeout", func(now time.Time) string { return f(now.Add(-1 * time.Hour)) }, 15 * 24, false, func(now time.Time) time.Time { return now.Add(-1 * time.Hour) }},
+		{"earliest before timeout", func(now time.Time) string { return f(now.Add(-60 * 24 * time.Hour)) }, 15 * 24, false, func(now time.Time) time.Time { return now.Add(-15 * 24 * time.Hour) }},
+		{"earliest before timeout fallback", func(now time.Time) string { return f(now.Add(-60 * 24 * time.Hour)) }, 0, false, func(now time.Time) time.Time { return now.Add(-settingNotifyTimeoutHoursDefault * time.Hour) }},
+		{"timeout not set", func(now time.Time) string { return f(now.Add(-60 * 24 * time.Hour)) }, 0, false, func(now time.Time) time.Time { return now.Add(-settingNotifyTimeoutHoursDefault * time.Hour) }},
+		{"earliest not set", func(now time.Time) string { return "" }, 15 * 2, true, func(now time.Time) time.Time { return now.Add(-notifyEarliestFallback) }},
+		{"nothing set", func(now time.Time) string { return "" }, 0, true, func(now time.Time) time.Time { return now.Add(-notifyEarliestFallback) }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -39,8 +40,9 @@ func TestCalcEarliest(t *testing.T) {
 			_, st, _ := testutil.NewDBInMemory()
 			s, err := New(context.Background(), st)
 			require.NoError(t, err)
-			if tc.earliest != "" {
-				s.values["earliest"] = tc.earliest
+			now := time.Now().UTC()
+			if earliest := tc.earliest(now); earliest != "" {
+				s.values["earliest"] = earliest
 			}
 			if tc.timeoutHours != 0 {
 				s.values[settingNotifyTimeoutHours] = strconv.Itoa(tc.timeoutHours)
@@ -48,9 +50,10 @@ func TestCalcEarliest(t *testing.T) {
 			// when
 			v := s.calcNotifyEarliest("earliest")
 			// then
-			assert.WithinDuration(t, tc.want, v, 5*time.Second)
+			want := tc.want(now)
+			assert.WithinDuration(t, want, v, 5*time.Second)
 			if tc.shouldSet {
-				assert.Equal(t, earliestFallback.Format(time.RFC3339), s.values["earliest"])
+				assert.Equal(t, want.Format(time.RFC3339), s.values["earliest"])
 			}
 		})
 	}

@@ -322,14 +322,7 @@ func (s *Settings) LastCharacterID() int64 {
 	if s == nil {
 		return 0
 	}
-	// Stored as a string rather than via a native int API: the platform's int type is
-	// 32-bit on some platforms (e.g. Android) and would truncate EVE character IDs
-	// above math.MaxInt32.
-	v, err := strconv.ParseInt(s.getString(settingLastCharacterID, ""), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return v
+	return s.getInt64(settingLastCharacterID, 0)
 }
 
 func (s *Settings) ResetLastCharacterID() {
@@ -343,22 +336,14 @@ func (s *Settings) SetLastCharacterID(id int64) {
 	if s == nil {
 		return
 	}
-	// Stored as a string; see LastCharacterID for why.
-	s.setString(settingLastCharacterID, strconv.FormatInt(id, 10))
+	s.setInt64(settingLastCharacterID, id)
 }
 
 func (s *Settings) LastCorporationID() int64 {
 	if s == nil {
 		return 0
 	}
-	// Stored as a string rather than via a native int API: the platform's int type is
-	// 32-bit on some platforms (e.g. Android) and would truncate EVE corporation IDs
-	// above math.MaxInt32.
-	v, err := strconv.ParseInt(s.getString(settingLastCorporationID, ""), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return v
+	return s.getInt64(settingLastCorporationID, 0)
 }
 
 func (s *Settings) ResetLastCorporationID() {
@@ -372,8 +357,7 @@ func (s *Settings) SetLastCorporationID(id int64) {
 	if s == nil {
 		return
 	}
-	// Stored as a string; see LastCorporationID for why.
-	s.setString(settingLastCorporationID, strconv.FormatInt(id, 10))
+	s.setInt64(settingLastCorporationID, id)
 }
 
 func (s *Settings) MaxWalletTransactions() int {

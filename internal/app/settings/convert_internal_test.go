@@ -109,6 +109,31 @@ func TestGetSetInt(t *testing.T) {
 	})
 }
 
+func TestGetSetInt64(t *testing.T) {
+	t.Run("returns fallback when absent", func(t *testing.T) {
+		s := newTestSettings(t)
+		assert.Equal(t, int64(42), s.getInt64("x", 42))
+	})
+	t.Run("round trip positive and negative", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.setInt64("x", 123)
+		assert.Equal(t, int64(123), s.getInt64("x", 0))
+		s.setInt64("x", -5)
+		assert.Equal(t, int64(-5), s.getInt64("x", 0))
+	})
+	t.Run("round trip a value beyond int32 range", func(t *testing.T) {
+		s := newTestSettings(t)
+		x := int64(2_200_000_000) // beyond int32 range, e.g. a valid EVE ID
+		s.setInt64("x", x)
+		assert.Equal(t, x, s.getInt64("x", 0))
+	})
+	t.Run("returns fallback when stored value is not a valid int64", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.set("x", "not-an-int")
+		assert.Equal(t, int64(42), s.getInt64("x", 42))
+	})
+}
+
 func TestGetSetFloat(t *testing.T) {
 	t.Run("returns fallback when absent", func(t *testing.T) {
 		s := newTestSettings(t)
