@@ -181,7 +181,10 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	if err != nil {
 		panic(err)
 	}
-	settings := settings.New(fyneApp.Preferences())
+	settings, err := settings.New(context.Background(), st)
+	if err != nil {
+		panic(err)
+	}
 	cs := characterservice.New(characterservice.Params{
 		AuthClient:             ac,
 		Cache:                  testutil.NewCacheFake2(),

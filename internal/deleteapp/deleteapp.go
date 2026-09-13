@@ -14,9 +14,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/go-set"
-
-	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 )
 
 var errCancel = errors.New("user aborted")
@@ -70,7 +67,6 @@ func (u *ui) makePage() *fyne.Container {
 		)
 		u.window.SetContent(c)
 		go func() {
-			RemoveSettings(u.app)
 			if err := RemoveFolders(ctx, u.DataDir, func(p float64) {
 				fyne.Do(func() {
 					pb.SetValue(p)
@@ -134,12 +130,4 @@ func RemoveFolders(ctx context.Context, dir string, update func(p float64)) erro
 		}
 	}
 	return nil
-}
-
-func RemoveSettings(app fyne.App) {
-	keys := set.Of(settings.Keys()...)
-	for k := range keys.All() {
-		app.Preferences().RemoveValue(k)
-	}
-	slog.Info("Deleted setting keys", "count", keys.Size())
 }

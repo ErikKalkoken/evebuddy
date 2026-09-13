@@ -788,3 +788,8 @@ type Scope struct {
 	ID   int64
 	Name string
 }
+
+type Setting struct {
+	Key   string
+	Value string
+}
