@@ -3,14 +3,18 @@ package settings
 
 import (
 	"cmp"
+	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/go-set"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -82,28 +86,46 @@ const (
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
+//
+// Values are cached in memory and persisted to storage on every write. The whole
+// table is preloaded once at construction time, so reads never touch storage.
 type Settings struct {
-	p fyne.Preferences
+	st  *storage.Storage
+	ctx context.Context // held deliberately: keeps every public method free of a ctx param
+
+	mu     sync.RWMutex
+	values map[string]string
 }
 
-// New returns a new Settings object.
-func New(p fyne.Preferences) *Settings {
-	x := &Settings{p: p}
-	return x
+// New returns a new Settings object, preloading all currently stored values.
+func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
+	s := &Settings{
+		st:     st,
+		ctx:    ctx,
+		values: make(map[string]string),
+	}
+	rows, err := st.ListSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("settings: load: %w", err)
+	}
+	for _, r := range rows {
+		s.values[r.Key] = r.Value
+	}
+	return s, nil
 }
 
 func (s *Settings) DeveloperMode() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.Bool(settingDeveloperMode)
+	return s.getBool(settingDeveloperMode, false)
 }
 
 func (s *Settings) SetDeveloperMode(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingDeveloperMode, v)
+	s.setBool(settingDeveloperMode, v)
 }
 
 // LogLevelNames returns the names of all log levels in ascending order of severity.
@@ -152,7 +174,7 @@ func (s *Settings) LogLevel() string {
 	if s == nil {
 		return ""
 	}
-	return s.p.StringWithFallback(settingLogLevel, settingLogLevelDefault)
+	return s.getString(settingLogLevel, settingLogLevelDefault)
 }
 
 func (s *Settings) LogLevelDefault() string {
@@ -173,14 +195,14 @@ func (s *Settings) SetLogLevel(l string) {
 	if s == nil {
 		return
 	}
-	s.p.SetString(settingLogLevel, l)
+	s.setString(settingLogLevel, l)
 }
 
 func (s *Settings) ApprovedContactCost() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingApprovedContactCost, 0)
+	return s.getInt(settingApprovedContactCost, 0)
 }
 
 func (s *Settings) ApprovedContactCostPresets() (minimum int, maximum int, def int) {
@@ -194,14 +216,14 @@ func (s *Settings) SetApprovedContactCost(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingApprovedContactCost, v)
+	s.setInt(settingApprovedContactCost, v)
 }
 
 func (s *Settings) MaxMails() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
+	return s.getInt(settingMaxMails, settingMaxMailsDefault)
 }
 
 func (s *Settings) MaxMailsPresets() (minimum int, maximum int, def int) {
@@ -215,14 +237,14 @@ func (s *Settings) SetMaxMails(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingMaxMails, v)
+	s.setInt(settingMaxMails, v)
 }
 
 func (s *Settings) MarketOrderRetentionDays() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingMarketOrdersRetentionDays, settingMarketOrderRetentionDaysDefault)
+	return s.getInt(settingMarketOrdersRetentionDays, settingMarketOrderRetentionDaysDefault)
 }
 
 func (s *Settings) MarketOrderRetentionDaysPresets() (minimum int, maximum int, def int) {
@@ -236,14 +258,14 @@ func (s *Settings) SetMarketOrdersRetentionDay(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingMarketOrdersRetentionDays, v)
+	s.setInt(settingMarketOrdersRetentionDays, v)
 }
 
 func (s *Settings) SysTrayEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
+	return s.getBool(settingSysTrayEnabled, settingSysTrayEnabledDefault)
 }
 
 func (s *Settings) SysTrayEnabledDefault() bool {
@@ -254,14 +276,14 @@ func (s *Settings) SetSysTrayEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingSysTrayEnabled, v)
+	s.setBool(settingSysTrayEnabled, v)
 }
 
 func (s *Settings) WindowSize() fyne.Size {
 	if s == nil {
 		return fyne.Size{}
 	}
-	x := s.p.FloatList(settingWindowsSize)
+	x := s.getFloatList(settingWindowsSize, nil)
 	if len(x) < 2 {
 		return fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault)
 	}
@@ -279,7 +301,7 @@ func (s *Settings) SetWindowSize(v fyne.Size) {
 	if s == nil {
 		return
 	}
-	s.p.SetFloatList(settingWindowsSize, []float64{float64(v.Width), float64(v.Height)})
+	s.setFloatList(settingWindowsSize, []float64{float64(v.Width), float64(v.Height)})
 }
 
 func (s *Settings) ResetTabsMainID() {
@@ -293,21 +315,14 @@ func (s *Settings) SetTabsMainID(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingTabsMainID, v)
+	s.setInt(settingTabsMainID, v)
 }
 
 func (s *Settings) LastCharacterID() int64 {
 	if s == nil {
 		return 0
 	}
-	// Stored as a string rather than via Preferences' int API: that API is backed by the
-	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
-	// truncate EVE character IDs above math.MaxInt32.
-	v, err := strconv.ParseInt(s.p.String(settingLastCharacterID), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return v
+	return s.getInt64(settingLastCharacterID, 0)
 }
 
 func (s *Settings) ResetLastCharacterID() {
@@ -321,22 +336,14 @@ func (s *Settings) SetLastCharacterID(id int64) {
 	if s == nil {
 		return
 	}
-	// Stored as a string; see LastCharacterID for why.
-	s.p.SetString(settingLastCharacterID, strconv.FormatInt(id, 10))
+	s.setInt64(settingLastCharacterID, id)
 }
 
 func (s *Settings) LastCorporationID() int64 {
 	if s == nil {
 		return 0
 	}
-	// Stored as a string rather than via Preferences' int API: that API is backed by the
-	// platform's int type, which is 32-bit on some platforms (e.g. Android) and would
-	// truncate EVE corporation IDs above math.MaxInt32.
-	v, err := strconv.ParseInt(s.p.String(settingLastCorporationID), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return v
+	return s.getInt64(settingLastCorporationID, 0)
 }
 
 func (s *Settings) ResetLastCorporationID() {
@@ -350,15 +357,14 @@ func (s *Settings) SetLastCorporationID(id int64) {
 	if s == nil {
 		return
 	}
-	// Stored as a string; see LastCorporationID for why.
-	s.p.SetString(settingLastCorporationID, strconv.FormatInt(id, 10))
+	s.setInt64(settingLastCorporationID, id)
 }
 
 func (s *Settings) MaxWalletTransactions() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
+	return s.getInt(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 }
 
 func (s *Settings) MaxWalletTransactionsPresets() (minimum int, maximum int, def int) {
@@ -379,14 +385,14 @@ func (s *Settings) SetMaxWalletTransactions(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingMaxWalletTransactions, v)
+	s.setInt(settingMaxWalletTransactions, v)
 }
 
 func (s *Settings) NotifyTimeoutHours() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	return s.getInt(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 }
 
 func (s *Settings) NotifyTimeoutHoursPresets() (minimum int, maximum int, def int) {
@@ -407,14 +413,14 @@ func (s *Settings) SetNotifyTimeoutHours(v int) {
 	if s == nil {
 		return
 	}
-	s.p.SetInt(settingNotifyTimeoutHours, v)
+	s.setInt(settingNotifyTimeoutHours, v)
 }
 
 func (s *Settings) NotificationTypesEnabled() set.Set[string] {
 	if s == nil {
 		return set.Set[string]{}
 	}
-	return set.Of(s.p.StringList(settingNotificationTypesEnabled)...)
+	return set.Of(s.getStringList(settingNotificationTypesEnabled, nil)...)
 }
 
 func (s *Settings) ResetNotificationTypesEnabled() {
@@ -428,7 +434,7 @@ func (s *Settings) SetNotificationTypesEnabled(v set.Set[string]) {
 	if s == nil {
 		return
 	}
-	s.p.SetStringList(settingNotificationTypesEnabled, slices.Collect(v.All()))
+	s.setStringList(settingNotificationTypesEnabled, slices.Collect(v.All()))
 }
 
 func (s *Settings) NotifyCommunicationsEarliest() time.Time {
@@ -442,7 +448,7 @@ func (s *Settings) SetNotifyCommunicationsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyCommunicationsEarliest, t)
+	s.setTime(settingNotifyCommunicationsEarliest, t)
 }
 
 func (s *Settings) NotifyContractsEarliest() time.Time {
@@ -456,7 +462,7 @@ func (s *Settings) SetNotifyContractsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyContractsEarliest, t)
+	s.setTime(settingNotifyContractsEarliest, t)
 }
 
 func (s *Settings) NotifyMailsEarliest() time.Time {
@@ -470,7 +476,7 @@ func (s *Settings) SetNotifyMailsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyMailsEarliest, t)
+	s.setTime(settingNotifyMailsEarliest, t)
 }
 
 func (s *Settings) NotifyPIEarliest() time.Time {
@@ -484,7 +490,7 @@ func (s *Settings) SetNotifyPIEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyPIEarliest, t)
+	s.setTime(settingNotifyPIEarliest, t)
 }
 
 func (s *Settings) NotifyTrainingEarliest() time.Time {
@@ -498,22 +504,18 @@ func (s *Settings) SetNotifyTrainingEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyTrainingEarliest, t)
-}
-
-func (s *Settings) setEarliest(key string, t time.Time) {
-	s.p.SetString(key, timeToString(t))
+	s.setTime(settingNotifyTrainingEarliest, t)
 }
 
 // calcNotifyEarliest returns the earliest time for a class of notifications.
 // Might return a zero time in some circumstances.
 func (s *Settings) calcNotifyEarliest(key string) time.Time {
-	earliest, ok := string2time(s.p.String(key))
-	if !ok {
+	earliest := s.getTime(key, time.Time{})
+	if earliest.IsZero() {
 		// Recording the earliest when enabling a switch was added later for mails and communications
 		// This workaround avoids a potential notification spam from older items.
 		earliest = time.Now().UTC().Add(-notifyEarliestFallback)
-		s.setEarliest(key, earliest)
+		s.setTime(key, earliest)
 	}
 	timeoutHours := s.NotifyTimeoutHours()
 	var timeout time.Time
@@ -526,24 +528,11 @@ func (s *Settings) calcNotifyEarliest(key string) time.Time {
 	return timeout
 }
 
-func timeToString(t time.Time) string {
-	return t.Format(time.RFC3339)
-}
-
-func string2time(s string) (time.Time, bool) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		slog.Error("string2time", "string", s, "error", err)
-		return time.Time{}, false
-	}
-	return t, true
-}
-
 func (s *Settings) NotifyCommunicationsEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
+	return s.getBool(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 }
 
 func (s *Settings) NotifyCommunicationsEnabledDefault() bool {
@@ -557,14 +546,14 @@ func (s *Settings) SetNotifyCommunicationsEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingNotifyCommunicationsEnabled, v)
+	s.setBool(settingNotifyCommunicationsEnabled, v)
 }
 
 func (s *Settings) NotifyContractsEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault)
+	return s.getBool(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault)
 }
 
 func (s *Settings) NotifyContractsEnabledDefault() bool {
@@ -578,14 +567,14 @@ func (s *Settings) SetNotifyContractsEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingNotifyContractsEnabled, v)
+	s.setBool(settingNotifyContractsEnabled, v)
 }
 
 func (s *Settings) NotifyMailsEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
+	return s.getBool(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 }
 
 func (s *Settings) NotifyMailsEnabledDefault() bool {
@@ -599,14 +588,14 @@ func (s *Settings) SetNotifyMailsEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingNotifyMailsEnabled, v)
+	s.setBool(settingNotifyMailsEnabled, v)
 }
 
 func (s *Settings) NotifyPIEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault)
+	return s.getBool(settingNotifyPIEnabled, settingNotifyPIEnabledDefault)
 }
 
 func (s *Settings) NotifyPIEnabledDefault() bool {
@@ -620,14 +609,14 @@ func (s *Settings) SetNotifyPIEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingNotifyPIEnabled, v)
+	s.setBool(settingNotifyPIEnabled, v)
 }
 
 func (s *Settings) NotifyTrainingEnabled() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
+	return s.getBool(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault)
 }
 
 func (s *Settings) NotifyTrainingEnabledDefault() bool {
@@ -641,24 +630,24 @@ func (s *Settings) SetNotifyTrainingEnabled(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingNotifyTrainingEnabled, v)
+	s.setBool(settingNotifyTrainingEnabled, v)
 }
 
 func (s *Settings) TabsMainID() int {
 	if s == nil {
 		return 0
 	}
-	return s.p.IntWithFallback(settingTabsMainID, settingTabsMainIDDefault)
+	return s.getInt(settingTabsMainID, settingTabsMainIDDefault)
 }
 
 func (s *Settings) RecentSearches() []int64 {
 	if s == nil {
 		return nil
 	}
-	// Stored as strings rather than via Preferences' IntList API: that API is backed by
-	// the platform's int type, which is 32-bit on some platforms (e.g. Android) and would
-	// truncate EVE IDs above math.MaxInt32.
-	raw := s.p.StringList(settingRecentSearches)
+	// Stored as strings rather than via a native int-list API: the platform's int type
+	// is 32-bit on some platforms (e.g. Android) and would truncate EVE IDs above
+	// math.MaxInt32.
+	raw := s.getStringList(settingRecentSearches, nil)
 	out := make([]int64, 0, len(raw))
 	for _, x := range raw {
 		v, err := strconv.ParseInt(x, 10, 64)
@@ -675,7 +664,7 @@ func (s *Settings) SetRecentSearches(v []int64) {
 		return
 	}
 	// Stored as strings; see RecentSearches for why.
-	s.p.SetStringList(settingRecentSearches, xslices.Map(v, func(x int64) string {
+	s.setStringList(settingRecentSearches, xslices.Map(v, func(x int64) string {
 		return strconv.FormatInt(x, 10)
 	}))
 }
@@ -684,7 +673,7 @@ func (s *Settings) PreferMarketTab() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.Bool(settingPreferMarketTab)
+	return s.getBool(settingPreferMarketTab, false)
 }
 
 func (s *Settings) ResetPreferMarketTab() {
@@ -698,14 +687,14 @@ func (s *Settings) SetPreferMarketTab(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingPreferMarketTab, v)
+	s.setBool(settingPreferMarketTab, v)
 }
 
 func (s *Settings) HideLimitedCorporations() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.Bool(settingHideLimitedCorporations)
+	return s.getBool(settingHideLimitedCorporations, false)
 }
 
 func (s *Settings) HideLimitedCorporationsDefault() bool {
@@ -719,14 +708,14 @@ func (s *Settings) SetHideLimitedCorporations(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingHideLimitedCorporations, v)
+	s.setBool(settingHideLimitedCorporations, v)
 }
 
 func (s *Settings) ColorTheme() ColorTheme {
 	if s == nil {
 		return ColorTheme("")
 	}
-	x := s.p.StringWithFallback(settingColorTheme, string(settingColorThemeDefault))
+	x := s.getString(settingColorTheme, string(settingColorThemeDefault))
 	return ColorTheme(x)
 }
 
@@ -748,14 +737,14 @@ func (s *Settings) SetColorTheme(v ColorTheme) {
 	if s == nil {
 		return
 	}
-	s.p.SetString(settingColorTheme, string(v))
+	s.setString(settingColorTheme, string(v))
 }
 
 func (s *Settings) FyneScale() float64 {
 	if s == nil {
 		return 0
 	}
-	return s.p.FloatWithFallback(settingFyneScale, settingFyneScaleDefault)
+	return s.getFloat(settingFyneScale, settingFyneScaleDefault)
 }
 
 func (s *Settings) FyneScaleDefault() float64 {
@@ -776,14 +765,14 @@ func (s *Settings) SetFyneScale(v float64) {
 	if s == nil {
 		return
 	}
-	s.p.SetFloat(settingFyneScale, v)
+	s.setFloat(settingFyneScale, v)
 }
 
 func (s *Settings) DisableDPIDetection() bool {
 	if s == nil {
 		return false
 	}
-	return s.p.Bool(settingDisableDPIDetection)
+	return s.getBool(settingDisableDPIDetection, false)
 }
 
 func (s *Settings) ResetDisableDPIDetection() {
@@ -797,7 +786,7 @@ func (s *Settings) SetDisableDPIDetection(v bool) {
 	if s == nil {
 		return
 	}
-	s.p.SetBool(settingDisableDPIDetection, v)
+	s.setBool(settingDisableDPIDetection, v)
 }
 
 // ResetUI resets all UI related settings to default.
@@ -810,39 +799,4 @@ func (s *Settings) ResetUI() {
 	s.ResetColorTheme()
 	s.ResetFyneScale()
 	s.ResetDisableDPIDetection()
-}
-
-// Keys returns all setting keys. Mostly to know what to delete.
-func Keys() []string {
-	return []string{
-		settingApprovedContactCost,
-		settingColorTheme,
-		settingDeveloperMode,
-		settingDisableDPIDetection,
-		settingFyneScale,
-		settingHideLimitedCorporations,
-		settingLastCharacterID,
-		settingLastCorporationID,
-		settingLogLevel,
-		settingMarketOrdersRetentionDays,
-		settingMaxMails,
-		settingMaxWalletTransactions,
-		settingNotificationTypesEnabled,
-		settingNotifyCommunicationsEarliest,
-		settingNotifyCommunicationsEnabled,
-		settingNotifyContractsEarliest,
-		settingNotifyContractsEnabled,
-		settingNotifyMailsEarliest,
-		settingNotifyMailsEnabled,
-		settingNotifyPIEarliest,
-		settingNotifyPIEnabled,
-		settingNotifyTimeoutHours,
-		settingNotifyTrainingEarliest,
-		settingNotifyTrainingEnabled,
-		settingPreferMarketTab,
-		settingRecentSearches,
-		settingSysTrayEnabled,
-		settingTabsMainID,
-		settingWindowsSize,
-	}
 }

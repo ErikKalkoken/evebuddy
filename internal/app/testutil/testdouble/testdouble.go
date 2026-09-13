@@ -251,7 +251,11 @@ func NewUIFake(args ...UIParams) *UIFake {
 		arg.Signals = app.NewSignals()
 	}
 	if arg.Settings == nil {
-		arg.Settings = settings.New(fyne.CurrentApp().Preferences())
+		s, err := settings.New(context.Background(), arg.Storage)
+		if err != nil {
+			panic(err)
+		}
+		arg.Settings = s
 	}
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "MyApp/1.0 (contact@example.com)",

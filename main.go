@@ -15,7 +15,6 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -150,10 +149,9 @@ func main() {
 	logFilePath := filepath.Join(logDir, logFileName)
 	crashFilePath := filepath.Join(logDir, crashFileName)
 	dataPaths := xmaps.OrderedMap[string, string]{
-		"db":        dbPath,
+		"db":        dbPath, // also holds settings, see internal/app/settings
 		"log":       logFilePath,
 		"crashfile": crashFilePath,
-		"settings":  path.Join(fyneApp.Storage().RootURI().Path(), "preferences.json"),
 	}
 
 	if *filesFlag {
@@ -161,19 +159,6 @@ func main() {
 			fmt.Printf("%s: %s\n", k, v)
 		}
 		return
-	}
-
-	appSettings := settings.New(fyneApp.Preferences())
-	if *resetUIFlag {
-		appSettings.ResetUI()
-	}
-
-	// set log level from settings
-	if *logLevelFlag == "" {
-		if l := appSettings.LogLevelSlog(); l != logLevelDefault {
-			slog.Info("Setting log level", "level", l)
-			slog.SetLogLoggerLevel(l)
-		}
 	}
 
 	// setup logfile for desktop
@@ -234,7 +219,6 @@ func main() {
 	}
 
 	if *deleteDataNoConfirmFlag {
-		deleteapp.RemoveSettings(fyneApp)
 		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
 		if err != nil {
 			log.Fatal(err)
@@ -267,6 +251,22 @@ func main() {
 	defer dbRW.Close()
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
+
+	settings, err := settings.New(context.Background(), st)
+	if err != nil {
+		log.Fatalf("Failed to initialize settings: %s", err)
+	}
+	if *resetUIFlag {
+		settings.ResetUI()
+	}
+
+	// set log level from settings
+	if *logLevelFlag == "" {
+		if l := settings.LogLevelSlog(); l != logLevelDefault {
+			slog.Info("Setting log level", "level", l)
+			slog.SetLogLoggerLevel(l)
+		}
+	}
 
 	// Initialize persistent cache
 	pc := pcache.New(st, cacheCleanUpTimeout)
@@ -312,7 +312,6 @@ func main() {
 
 	// init shared objects
 	signals := app.NewSignals()
-	settings := settings.New(fyneApp.Preferences())
 
 	// Init StatusCache service
 	scs := new(statuscache.StatusCache)
@@ -398,8 +397,8 @@ func main() {
 	}
 
 	// Init UI
-	os.Setenv("FYNE_SCALE", fmt.Sprint(appSettings.FyneScale()))
-	os.Setenv("FYNE_DISABLE_DPI_DETECTION", fmt.Sprint(appSettings.DisableDPIDetection()))
+	os.Setenv("FYNE_SCALE", fmt.Sprint(settings.FyneScale()))
+	os.Setenv("FYNE_DISABLE_DPI_DETECTION", fmt.Sprint(settings.DisableDPIDetection()))
 	key := os.Getenv("JANICE_API_KEY")
 	if key == "" {
 		key = fyneApp.Metadata().Custom["janiceAPIKey"]

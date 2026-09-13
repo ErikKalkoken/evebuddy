@@ -1,6 +1,7 @@
 package settings_test
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -8,97 +9,101 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func newTestSettings(t *testing.T) *settings.Settings {
+	t.Helper()
+	_, st, _ := testutil.NewDBInMemory()
+	s, err := settings.New(context.Background(), st)
+	require.NoError(t, err)
+	return s
+}
+
 func TestSettings(t *testing.T) {
 	t.Run("Window size", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		x := fyne.NewSize(123, 456)
 		s.SetWindowSize(x)
-	xassert.Equal(t, x, s.WindowSize())
+		xassert.Equal(t, x, s.WindowSize())
 	})
 	t.Run("Log level", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		x := "debug"
 		s.SetLogLevel(x)
-	xassert.Equal(t, x, s.LogLevel())
-	xassert.Equal(t, slog.LevelDebug, s.LogLevelSlog())
+		xassert.Equal(t, x, s.LogLevel())
+		xassert.Equal(t, slog.LevelDebug, s.LogLevelSlog())
 	})
 	t.Run("RecentSearches", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		x := []int64{1, 2, 3, 2_200_000_000} // last one beyond int32 range, e.g. a valid EVE ID
 		s.SetRecentSearches(x)
-	xassert.Equal(t, x, s.RecentSearches())
+		xassert.Equal(t, x, s.RecentSearches())
 	})
 	t.Run("NotificationTypesEnabled", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		got := set.Of([]string{"alpha", "bravo"}...)
 		s.SetNotificationTypesEnabled(got)
 		want := s.NotificationTypesEnabled()
 		xassert.Equal(t, want, got)
 	})
 	t.Run("LastCharacterID", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		x := int64(2_200_000_000) // beyond int32 range, e.g. a valid EVE character ID
 		s.SetLastCharacterID(x)
-	xassert.Equal(t, x, s.LastCharacterID())
+		xassert.Equal(t, x, s.LastCharacterID())
 	})
 	t.Run("LastCorporationID", func(t *testing.T) {
-		p := settings.NewMyPref()
-		s := settings.New(p)
+		s := newTestSettings(t)
 		x := int64(2_200_000_000) // beyond int32 range, e.g. a valid EVE corporation ID
 		s.SetLastCorporationID(x)
-	xassert.Equal(t, x, s.LastCorporationID())
+		xassert.Equal(t, x, s.LastCorporationID())
 	})
 }
 
 func TestColorTheme(t *testing.T) {
 	t.Run("Default theme", func(t *testing.T) {
-		s := settings.New(settings.NewMyPref())
+		s := newTestSettings(t)
 		x1 := s.ColorTheme()
-	xassert.Equal(t, settings.Auto, x1)
+		xassert.Equal(t, settings.Auto, x1)
 	})
 	t.Run("Can set and get theme", func(t *testing.T) {
-		s := settings.New(settings.NewMyPref())
+		s := newTestSettings(t)
 		s.SetColorTheme(settings.Dark)
 		x1 := s.ColorTheme()
-	xassert.Equal(t, settings.Dark, x1)
+		xassert.Equal(t, settings.Dark, x1)
 	})
 	t.Run("Can reset theme", func(t *testing.T) {
-		s := settings.New(settings.NewMyPref())
+		s := newTestSettings(t)
 		s.SetColorTheme(settings.Dark)
 		s.ResetColorTheme()
 		assert.Equal(t, settings.Auto, s.ColorTheme())
 	})
 	t.Run("ColorThemeDefault reports the default theme", func(t *testing.T) {
-		s := settings.New(settings.NewMyPref())
+		s := newTestSettings(t)
 		assert.Equal(t, settings.Auto, s.ColorThemeDefault())
 	})
 }
 
 func TestDeveloperMode(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.False(t, s.DeveloperMode())
 	s.SetDeveloperMode(true)
 	assert.True(t, s.DeveloperMode())
 }
 
 func TestLogLevelNames(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	want := []string{"debug", "info", "warning", "error"}
 	assert.Equal(t, want, s.LogLevelNames())
 }
 
 func TestLogLevelDefaultAndReset(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.Equal(t, "info", s.LogLevelDefault())
 	assert.Equal(t, s.LogLevelDefault(), s.LogLevel())
 	s.SetLogLevel("debug")
@@ -108,7 +113,7 @@ func TestLogLevelDefaultAndReset(t *testing.T) {
 }
 
 func TestApprovedContactCost(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	minimum, maximum, def := s.ApprovedContactCostPresets()
 	assert.Equal(t, 0, minimum)
 	assert.Equal(t, 1_000_000, maximum)
@@ -119,7 +124,7 @@ func TestApprovedContactCost(t *testing.T) {
 }
 
 func TestMaxMails(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	minimum, maximum, def := s.MaxMailsPresets()
 	assert.Equal(t, 0, minimum)
 	assert.Equal(t, 10_000, maximum)
@@ -130,7 +135,7 @@ func TestMaxMails(t *testing.T) {
 }
 
 func TestMarketOrderRetentionDays(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	minimum, maximum, def := s.MarketOrderRetentionDaysPresets()
 	assert.Equal(t, 30, minimum)
 	assert.Equal(t, 360, maximum)
@@ -141,7 +146,7 @@ func TestMarketOrderRetentionDays(t *testing.T) {
 }
 
 func TestSysTrayEnabled(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.True(t, s.SysTrayEnabledDefault())
 	assert.Equal(t, s.SysTrayEnabledDefault(), s.SysTrayEnabled())
 	s.SetSysTrayEnabled(false)
@@ -149,7 +154,7 @@ func TestSysTrayEnabled(t *testing.T) {
 }
 
 func TestWindowSizeDefaultAndReset(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	want := fyne.NewSize(1000, 600)
 	xassert.Equal(t, want, s.WindowSize())
 	s.SetWindowSize(fyne.NewSize(200, 300))
@@ -159,7 +164,7 @@ func TestWindowSizeDefaultAndReset(t *testing.T) {
 }
 
 func TestTabsMainID(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.Equal(t, -1, s.TabsMainID())
 	s.SetTabsMainID(3)
 	assert.Equal(t, 3, s.TabsMainID())
@@ -168,7 +173,7 @@ func TestTabsMainID(t *testing.T) {
 }
 
 func TestLastCharacterIDReset(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	s.SetLastCharacterID(123)
 	assert.Equal(t, int64(123), s.LastCharacterID())
 	s.ResetLastCharacterID()
@@ -176,7 +181,7 @@ func TestLastCharacterIDReset(t *testing.T) {
 }
 
 func TestLastCorporationIDReset(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	s.SetLastCorporationID(123)
 	assert.Equal(t, int64(123), s.LastCorporationID())
 	s.ResetLastCorporationID()
@@ -184,7 +189,7 @@ func TestLastCorporationIDReset(t *testing.T) {
 }
 
 func TestMaxWalletTransactions(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	minimum, maximum, def := s.MaxWalletTransactionsPresets()
 	assert.Equal(t, 0, minimum)
 	assert.Equal(t, 10_000, maximum)
@@ -197,7 +202,7 @@ func TestMaxWalletTransactions(t *testing.T) {
 }
 
 func TestNotifyTimeoutHours(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	minimum, maximum, def := s.NotifyTimeoutHoursPresets()
 	assert.Equal(t, 1, minimum)
 	assert.Equal(t, 90*24, maximum)
@@ -210,7 +215,7 @@ func TestNotifyTimeoutHours(t *testing.T) {
 }
 
 func TestNotificationTypesEnabledReset(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	s.SetNotificationTypesEnabled(set.Of("alpha", "bravo"))
 	assert.Equal(t, 2, s.NotificationTypesEnabled().Size())
 	s.ResetNotificationTypesEnabled()
@@ -231,7 +236,7 @@ func TestNotifyEarliestGettersAndSetters(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := settings.New(settings.NewMyPref())
+			s := newTestSettings(t)
 			want := time.Now().UTC().Add(-time.Hour)
 			tc.set(s, want)
 			got := tc.get(s)
@@ -255,7 +260,7 @@ func TestNotifyEnabledFlags(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := settings.New(settings.NewMyPref())
+			s := newTestSettings(t)
 			assert.False(t, tc.getDefault(s))
 			assert.Equal(t, tc.getDefault(s), tc.get(s))
 			tc.set(s, true)
@@ -265,7 +270,7 @@ func TestNotifyEnabledFlags(t *testing.T) {
 }
 
 func TestPreferMarketTab(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.False(t, s.PreferMarketTab())
 	s.SetPreferMarketTab(true)
 	assert.True(t, s.PreferMarketTab())
@@ -274,7 +279,7 @@ func TestPreferMarketTab(t *testing.T) {
 }
 
 func TestHideLimitedCorporations(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.False(t, s.HideLimitedCorporationsDefault())
 	assert.Equal(t, s.HideLimitedCorporationsDefault(), s.HideLimitedCorporations())
 	s.SetHideLimitedCorporations(true)
@@ -282,7 +287,7 @@ func TestHideLimitedCorporations(t *testing.T) {
 }
 
 func TestFyneScale(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.Equal(t, 1.0, s.FyneScaleDefault())
 	assert.Equal(t, s.FyneScaleDefault(), s.FyneScale())
 	s.SetFyneScale(1.5)
@@ -292,7 +297,7 @@ func TestFyneScale(t *testing.T) {
 }
 
 func TestDisableDPIDetection(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	assert.False(t, s.DisableDPIDetection())
 	s.SetDisableDPIDetection(true)
 	assert.True(t, s.DisableDPIDetection())
@@ -301,7 +306,7 @@ func TestDisableDPIDetection(t *testing.T) {
 }
 
 func TestResetUI(t *testing.T) {
-	s := settings.New(settings.NewMyPref())
+	s := newTestSettings(t)
 	s.SetTabsMainID(5)
 	s.SetWindowSize(fyne.NewSize(200, 300))
 	s.SetColorTheme(settings.Dark)
@@ -315,13 +320,6 @@ func TestResetUI(t *testing.T) {
 	assert.Equal(t, settings.Auto, s.ColorTheme())
 	assert.Equal(t, 1.0, s.FyneScale())
 	assert.False(t, s.DisableDPIDetection())
-}
-
-func TestKeys(t *testing.T) {
-	got := settings.Keys()
-	assert.NotEmpty(t, got)
-	seen := set.Of(got...)
-	assert.Equal(t, len(got), seen.Size(), "Keys() should not contain duplicate entries")
 }
 
 func TestSettingsNilReceiverIsSafe(t *testing.T) {
