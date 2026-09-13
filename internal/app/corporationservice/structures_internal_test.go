@@ -3,6 +3,7 @@ package corporationservice
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -141,5 +142,59 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		assert.WithinDuration(t, unanchorsAt, x.UnanchorsAt.ValueOrZero(), 1*time.Second)
 		xassert.Equal(t, "service1", x.Services[0].Name)
 		xassert.Equal(t, app.StructureServiceStateOnline, x.Services[0].State)
+	})
+	t.Run("should fetch and combine all pages from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		es := factory.CreateEveSolarSystem()
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+			func(req *http.Request) (*http.Response, error) {
+				var structureID int64
+				switch req.URL.Query().Get("page") {
+				case "", "1":
+					structureID = 1
+				case "2":
+					structureID = 2
+				default:
+					t.Fatalf("unexpected page requested: %q", req.URL.Query().Get("page"))
+				}
+				resp, err := httpmock.NewJsonResponse(200, []map[string]any{{
+					"corporation_id": c.ID,
+					"name":           fmt.Sprintf("Structure %d", structureID),
+					"profile_id":     1,
+					"state":          "shield_vulnerable",
+					"structure_id":   structureID,
+					"system_id":      es.ID,
+					"type_id":        et.ID,
+				}})
+				if err != nil {
+					return nil, err
+				}
+				resp.Header.Set("X-Pages", "2")
+				return resp, nil
+			},
+		)
+		// when
+		changed, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
+		})
+		// then
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		assert.True(t, changed)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
+		if !assert.NoError(t, err) {
+			t.Fatal()
+		}
+		want := set.Of[int64](1, 2)
+		xassert.Equal(t, want, got)
 	})
 }

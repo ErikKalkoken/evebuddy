@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
@@ -37,7 +38,10 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 		ctx, arg, false,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdStructures")
-			structures, _, err := s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.corporationID).Execute()
+			structures, err := xgoesi.FetchPages(
+				func(page int32) ([]esi.CorporationsCorporationIdStructuresGetInner, *http.Response, error) {
+					return s.esiClient.CorporationAPI.GetCorporationsCorporationIdStructures(ctx, arg.corporationID).Page(page).Execute()
+				})
 			if err != nil {
 				return false, err
 			}
