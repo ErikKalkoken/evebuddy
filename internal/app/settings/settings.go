@@ -448,7 +448,7 @@ func (s *Settings) SetNotifyCommunicationsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyCommunicationsEarliest, t)
+	s.setTime(settingNotifyCommunicationsEarliest, t)
 }
 
 func (s *Settings) NotifyContractsEarliest() time.Time {
@@ -462,7 +462,7 @@ func (s *Settings) SetNotifyContractsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyContractsEarliest, t)
+	s.setTime(settingNotifyContractsEarliest, t)
 }
 
 func (s *Settings) NotifyMailsEarliest() time.Time {
@@ -476,7 +476,7 @@ func (s *Settings) SetNotifyMailsEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyMailsEarliest, t)
+	s.setTime(settingNotifyMailsEarliest, t)
 }
 
 func (s *Settings) NotifyPIEarliest() time.Time {
@@ -490,7 +490,7 @@ func (s *Settings) SetNotifyPIEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyPIEarliest, t)
+	s.setTime(settingNotifyPIEarliest, t)
 }
 
 func (s *Settings) NotifyTrainingEarliest() time.Time {
@@ -504,22 +504,18 @@ func (s *Settings) SetNotifyTrainingEarliest(t time.Time) {
 	if s == nil {
 		return
 	}
-	s.setEarliest(settingNotifyTrainingEarliest, t)
-}
-
-func (s *Settings) setEarliest(key string, t time.Time) {
-	s.setString(key, timeToString(t))
+	s.setTime(settingNotifyTrainingEarliest, t)
 }
 
 // calcNotifyEarliest returns the earliest time for a class of notifications.
 // Might return a zero time in some circumstances.
 func (s *Settings) calcNotifyEarliest(key string) time.Time {
-	earliest, ok := string2time(s.getString(key, ""))
-	if !ok {
+	earliest := s.getTime(key, time.Time{})
+	if earliest.IsZero() {
 		// Recording the earliest when enabling a switch was added later for mails and communications
 		// This workaround avoids a potential notification spam from older items.
 		earliest = time.Now().UTC().Add(-notifyEarliestFallback)
-		s.setEarliest(key, earliest)
+		s.setTime(key, earliest)
 	}
 	timeoutHours := s.NotifyTimeoutHours()
 	var timeout time.Time
@@ -530,19 +526,6 @@ func (s *Settings) calcNotifyEarliest(key string) time.Time {
 		return earliest
 	}
 	return timeout
-}
-
-func timeToString(t time.Time) string {
-	return t.Format(time.RFC3339)
-}
-
-func string2time(s string) (time.Time, bool) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		slog.Error("string2time", "string", s, "error", err)
-		return time.Time{}, false
-	}
-	return t, true
 }
 
 func (s *Settings) NotifyCommunicationsEnabled() bool {

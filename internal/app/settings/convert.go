@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strconv"
+	"time"
 )
 
 // get returns the raw string value for key, and whether it was present.
@@ -102,6 +103,24 @@ func (s *Settings) getFloat(key string, fallback float64) float64 {
 
 func (s *Settings) setFloat(key string, v float64) {
 	s.set(key, strconv.FormatFloat(v, 'g', -1, 64))
+}
+
+// getTime and setTime store a time.Time as an RFC3339 string. fallback is
+// returned both when key is absent and when the stored value fails to parse.
+func (s *Settings) getTime(key string, fallback time.Time) time.Time {
+	v, ok := s.get(key)
+	if !ok {
+		return fallback
+	}
+	t, err := time.Parse(time.RFC3339, v)
+	if err != nil {
+		return fallback
+	}
+	return t
+}
+
+func (s *Settings) setTime(key string, v time.Time) {
+	s.set(key, v.Format(time.RFC3339))
 }
 
 func (s *Settings) getStringList(key string, fallback []string) []string {

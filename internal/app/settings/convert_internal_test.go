@@ -3,6 +3,7 @@ package settings
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -148,6 +149,30 @@ func TestGetSetFloat(t *testing.T) {
 		s := newTestSettings(t)
 		s.set("x", "not-a-float")
 		assert.Equal(t, 1.5, s.getFloat("x", 1.5))
+	})
+}
+
+func TestGetSetTime(t *testing.T) {
+	t.Run("returns fallback when absent", func(t *testing.T) {
+		s := newTestSettings(t)
+		fallback := time.Now().UTC().Truncate(time.Second)
+		assert.True(t, fallback.Equal(s.getTime("x", fallback)))
+	})
+	t.Run("returns zero fallback when absent", func(t *testing.T) {
+		s := newTestSettings(t)
+		assert.True(t, s.getTime("x", time.Time{}).IsZero())
+	})
+	t.Run("round trip", func(t *testing.T) {
+		s := newTestSettings(t)
+		want := time.Now().UTC().Truncate(time.Second)
+		s.setTime("x", want)
+		assert.True(t, want.Equal(s.getTime("x", time.Time{})))
+	})
+	t.Run("returns fallback when stored value is not a valid time", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.set("x", "not-a-time")
+		fallback := time.Now().UTC().Truncate(time.Second)
+		assert.True(t, fallback.Equal(s.getTime("x", fallback)))
 	})
 }
 
