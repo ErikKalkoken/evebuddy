@@ -12,9 +12,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // ShowInformation shows a custom information dialog.
@@ -49,7 +50,7 @@ func ShowProgressConfirm(
 	dismiss := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		d.Hide()
 	})
-	confirm := xwidget.NewProgressButton(confirmLabel, theme.ConfirmIcon(), func() {
+	confirm := kxwidget.NewProgressButton(confirmLabel, theme.ConfirmIcon(), func() {
 		callback()
 		fyne.Do(func() {
 			d.Hide()
