@@ -25,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 //go:generate go tool stringer -type=Mode
@@ -85,7 +84,7 @@ type mailer struct {
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
 	from      *eveEntityEntry
-	send      *xwidget.ProgressButton
+	send      *kxwidget.ProgressButton
 	subject   *widget.Entry
 	to        *eveEntityEntry
 	u         baseUI
@@ -158,7 +157,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.spinner = widget.NewActivity()
 	a.spinner.Hide()
 
-	a.send = xwidget.NewProgressButton("Send", theme.MailSendIcon(), func() {
+	a.send = kxwidget.NewProgressButton("Send", theme.MailSendIcon(), func() {
 
 		// TODO: Convert to dynamic enable/disable of send button
 		var issue string
