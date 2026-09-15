@@ -157,37 +157,39 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.spinner = widget.NewActivity()
 	a.spinner.Hide()
 
-	a.send = kxwidget.NewProgressButton("Send", theme.MailSendIcon(), func() {
+	a.send = kxwidget.NewProgressButton("Send", theme.MailSendIcon(), func(done func()) {
+		go func() {
+			defer done()
 
-		// TODO: Convert to dynamic enable/disable of send button
-		var issue string
-		if a.to.IsEmpty() {
-			issue = "Needs to have at least one recipient."
-		}
-		if a.subject.Text == "" {
-			issue = "Subject can not be empty"
-		}
-		if a.body.Text == "" {
-			issue = "Message can not be empty"
-		}
-		if issue != "" {
+			// TODO: Convert to dynamic enable/disable of send button
+			var issue string
+			if a.to.IsEmpty() {
+				issue = "Needs to have at least one recipient."
+			}
+			if a.subject.Text == "" {
+				issue = "Subject can not be empty"
+			}
+			if a.body.Text == "" {
+				issue = "Message can not be empty"
+			}
+			if issue != "" {
+				fyne.Do(func() {
+					ui.ShowInformation("Incomplete mail", issue, w)
+				})
+				return
+			}
+			ctx := context.Background()
+			if err := a.Send(ctx); err != nil {
+				fyne.Do(func() {
+					ui.ShowErrorAndLog("Failed to send mail", err, a.u.IsDeveloperMode(), w)
+				})
+				return
+			}
 			fyne.Do(func() {
-				ui.ShowInformation("Incomplete mail", issue, w)
+				w.Close()
 			})
-			return
-		}
-		ctx := context.Background()
-		if err := a.Send(ctx); err != nil {
-			fyne.Do(func() {
-				ui.ShowErrorAndLog("Failed to send mail", err, a.u.IsDeveloperMode(), w)
-			})
-			return
-		}
-		fyne.Do(func() {
-			w.Close()
-		})
-		a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
-
+			a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
+		}()
 	})
 	a.send.SetImportance(widget.HighImportance)
 	return a
