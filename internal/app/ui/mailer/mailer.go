@@ -84,7 +84,7 @@ type mailer struct {
 	body      *widget.Entry
 	character atomic.Pointer[app.Character]
 	from      *eveEntityEntry
-	send      *kxwidget.ProgressButton
+	send      *kxwidget.LoadingButton
 	subject   *widget.Entry
 	to        *eveEntityEntry
 	u         baseUI
@@ -157,7 +157,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.spinner = widget.NewActivity()
 	a.spinner.Hide()
 
-	a.send = kxwidget.NewProgressButton("Send", theme.MailSendIcon(), func(done func()) {
+	a.send = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
 		go func() {
 			defer done()
 

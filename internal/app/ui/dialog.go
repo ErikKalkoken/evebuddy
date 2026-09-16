@@ -50,7 +50,7 @@ func ShowProgressConfirm(
 	dismiss := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		d.Hide()
 	})
-	confirm := kxwidget.NewProgressButton(confirmLabel, theme.ConfirmIcon(), func(done func()) {
+	confirm := kxwidget.NewLoadingButton(confirmLabel, theme.ConfirmIcon(), func(done func()) {
 		go func() {
 			defer done()
 			callback()
