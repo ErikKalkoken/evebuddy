@@ -3,111 +3,107 @@ package screens
 import (
 	"testing"
 
-	chartData "github.com/s-daehling/fyne-charts/pkg/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestReduceChartPoints(t *testing.T) {
-	t.Run("returns original slice if length <= m", func(t *testing.T) {
-		input := []chartData.ProportionalPoint{
-			{C: "A", Val: 10},
-			{C: "B", Val: 20},
+func TestReduceSliceValues(t *testing.T) {
+	t.Run("returns all entries unchanged if all shares are above minShare", func(t *testing.T) {
+		input := []namedValue{
+			{name: "A", value: 10},
+			{name: "B", value: 20},
 		}
-		result := reduceProportionalPoints(input, 5)
+		result := reduceSliceValues(input, 0.1)
 
 		assert.Len(t, result, 2)
 		xassert.Equal(t, input, result)
 	})
 
 	t.Run("reduces and aggregates 'Others' correctly", func(t *testing.T) {
-		// We provide 4 points, m = 2.
-		// Top 2 should stay, bottom 2 should sum to "Others" (15 + 5 = 20)
-		input := []chartData.ProportionalPoint{
-			{C: "Zebra", Val: 100}, // Top 1
-			{C: "Apple", Val: 50},  // Top 2
-			{C: "Banana", Val: 15}, // Should be reduced
-			{C: "Cherry", Val: 5},  // Should be reduced
+		// Total is 170. With minShare = 0.1 (10%), Banana (8.8%) and
+		// Cherry (2.9%) fall below the threshold and are aggregated.
+		input := []namedValue{
+			{name: "Zebra", value: 100}, // 58.8%, kept
+			{name: "Apple", value: 50},  // 29.4%, kept
+			{name: "Banana", value: 15}, // 8.8%, reduced
+			{name: "Cherry", value: 5},  // 2.9%, reduced
 		}
-		m := 2
 
-		result := reduceProportionalPoints(input, m)
+		result := reduceSliceValues(input, 0.1)
 
-		// Result should have m + 1 (Others) = 3 elements
+		// Result should have 2 kept entries + 1 "Others" entry
 		require.Len(t, result, 3)
 
 		// Check 'Others' aggregation
 		// 'Others' is appended last
 		others := result[2]
-		xassert.Equal(t, "Others", others.C)
-		xassert.Equal(t, float64(20), others.Val)
+		xassert.Equal(t, "Others", others.name)
+		xassert.Equal(t, float64(20), others.value)
 
-		// Check alphabetical sorting of the remaining top items
-		// "Apple" (50) and "Zebra" (100) are top 2.
-		// Alphabetically, Apple comes before Zebra.
-		xassert.Equal(t, "Apple", result[0].C)
-		xassert.Equal(t, "Zebra", result[1].C)
+		// Check alphabetical sorting of the remaining kept items
+		xassert.Equal(t, "Apple", result[0].name)
+		xassert.Equal(t, "Zebra", result[1].name)
 	})
 
-	t.Run("handles m=0", func(t *testing.T) {
-		input := []chartData.ProportionalPoint{
-			{C: "A", Val: 10},
-			{C: "B", Val: 20},
+	t.Run("aggregates everything into 'Others' if no share reaches minShare", func(t *testing.T) {
+		input := []namedValue{
+			{name: "A", value: 10},
+			{name: "B", value: 20},
 		}
-		// If m=0, all elements become 'Others'
-		result := reduceProportionalPoints(input, 0)
+		// Neither share (33%/67%) reaches 90%, so both become 'Others'
+		result := reduceSliceValues(input, 0.9)
 
 		assert.Len(t, result, 1)
-		xassert.Equal(t, "Others", result[0].C)
-		xassert.Equal(t, float64(30), result[0].Val)
+		xassert.Equal(t, "Others", result[0].name)
+		xassert.Equal(t, float64(30), result[0].value)
 	})
 }
 
-func TestReduceCategoricalPoints(t *testing.T) {
+func TestReduceAssetWalletValues(t *testing.T) {
 	tests := []struct {
 		name     string
-		data     []chartData.CategoricalPoint
+		data     []assetWalletValue
 		m        int
-		expected []chartData.CategoricalPoint
+		expected []assetWalletValue
 	}{
 		{
 			name: "No reduction needed",
-			data: []chartData.CategoricalPoint{
-				{C: "A", Val: 10},
-				{C: "B", Val: 20},
+			data: []assetWalletValue{
+				{name: "A", assets: 10, wallet: 1},
+				{name: "B", assets: 20, wallet: 2},
 			},
 			m: 5,
-			expected: []chartData.CategoricalPoint{
-				{C: "A", Val: 10},
-				{C: "B", Val: 20},
+			expected: []assetWalletValue{
+				{name: "A", assets: 10, wallet: 1},
+				{name: "B", assets: 20, wallet: 2},
 			},
 		},
 		{
-			name: "Reduces to top M and aggregates others",
-			data: []chartData.CategoricalPoint{
-				{C: "Banana", Val: 10}, // Top 2
-				{C: "Apple", Val: 50},  // Top 1
-				{C: "Cherry", Val: 5},  // Other
-				{C: "Date", Val: 2},    // Other
+			name: "Reduces to top M by combined assets+wallet and aggregates others",
+			data: []assetWalletValue{
+				{name: "Banana", assets: 8, wallet: 2},  // combined 10, Top 2
+				{name: "Apple", assets: 40, wallet: 10}, // combined 50, Top 1
+				{name: "Cherry", assets: 4, wallet: 1},  // combined 5, Other
+				{name: "Date", assets: 1, wallet: 1},    // combined 2, Other
 			},
 			m: 2,
-			expected: []chartData.CategoricalPoint{
-				{C: "Apple", Val: 50},  // Sorted alphabetically
-				{C: "Banana", Val: 10}, // Sorted alphabetically
-				{C: "Others", Val: 7},  // 5 + 2
+			expected: []assetWalletValue{
+				{name: "Apple", assets: 40, wallet: 10}, // Sorted alphabetically
+				{name: "Banana", assets: 8, wallet: 2},  // Sorted alphabetically
+				{name: "Others", assets: 5, wallet: 2},  // (4+1), (1+1)
 			},
 		},
 		{
 			name: "M is zero",
-			data: []chartData.CategoricalPoint{
-				{C: "A", Val: 10},
-				{C: "B", Val: 20},
+			data: []assetWalletValue{
+				{name: "A", assets: 10, wallet: 1},
+				{name: "B", assets: 20, wallet: 2},
 			},
 			m: 0,
-			expected: []chartData.CategoricalPoint{
-				{C: "Others", Val: 30},
+			expected: []assetWalletValue{
+				{name: "Others", assets: 30, wallet: 3},
 			},
 		},
 	}
@@ -115,12 +111,33 @@ func TestReduceCategoricalPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// We pass a copy to avoid mutating the test case slice if reused
-			input := make([]chartData.CategoricalPoint, len(tt.data))
+			input := make([]assetWalletValue, len(tt.data))
 			copy(input, tt.data)
 
-			actual := reduceCategoricalPoints(input, tt.m)
+			actual := reduceAssetWalletValues(input, tt.m)
 
 			xassert.Equal(t, tt.expected, actual)
 		})
+	}
+}
+
+func TestNiceCeil(t *testing.T) {
+	cases := []struct {
+		value    float64
+		expected float64
+	}{
+		{0, 1},
+		{-5, 1},
+		{1, 1},
+		{1.5, 2},
+		{4, 5},
+		{9, 10},
+		{12, 20},
+		{37.4, 50},
+		{100, 100},
+		{101, 200},
+	}
+	for _, tt := range cases {
+		xassert.Equal(t, tt.expected, niceCeil(tt.value))
 	}
 }
