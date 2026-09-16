@@ -23,7 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type wealthOverviewRow struct {
+type wealthDetailsRow struct {
 	characterID            int64
 	characterName          string
 	combinedAssetsDisplay  string
@@ -44,7 +44,7 @@ type wealthOverviewRow struct {
 	walletDisplay          string
 }
 
-func (r wealthOverviewRow) eveEntity() *app.EveEntity {
+func (r wealthDetailsRow) eveEntity() *app.EveEntity {
 	return &app.EveEntity{
 		Category: app.EveEntityCharacter,
 		ID:       r.characterID,
@@ -52,16 +52,16 @@ func (r wealthOverviewRow) eveEntity() *app.EveEntity {
 	}
 }
 
-type WealthOverview struct {
+type WealthDetails struct {
 	widget.BaseWidget
 
 	OnUpdate func(expired int)
 
 	footer       *widget.Label
-	columnSorter *xwidget.ColumnSorter[wealthOverviewRow]
+	columnSorter *xwidget.ColumnSorter[wealthDetailsRow]
 	main         fyne.CanvasObject
-	rows         []wealthOverviewRow
-	rowsFiltered []wealthOverviewRow
+	rows         []wealthDetailsRow
+	rowsFiltered []wealthDetailsRow
 	searchEntry  *xwidget.SearchEntry
 	selectTag    *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
@@ -85,11 +85,11 @@ Skill Points: Value of extracted skill points (trained + unallocated) calculated
 
 NOTE: Blueprints, PLEX in the account wallet are not included.`
 
-func NewWealthOverview(u baseUI) *WealthOverview {
-	columns := xwidget.NewDataColumns([]xwidget.DataColumn[wealthOverviewRow]{
-		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[wealthOverviewRow]{
+func newWealthDetails(u baseUI) *WealthDetails {
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[wealthDetailsRow]{
+		ui.MakeEveEntityColumn(ui.MakeEveEntityColumnParams[wealthDetailsRow]{
 			EIS: u.EVEImage(),
-			GetEntity: func(r wealthOverviewRow) *app.EveEntity {
+			GetEntity: func(r wealthDetailsRow) *app.EveEntity {
 				return &app.EveEntity{
 					ID:       r.characterID,
 					Name:     r.characterName,
@@ -101,86 +101,85 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		}), {
 			Label: "Tags",
 			Width: 150,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.tagsDisplay)
-			},
-		}, {
-			Label: "Wallet Balance",
-			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.walletDisplay, widget.RichTextStyle{
-					Alignment: fyne.TextAlignTrailing,
-					TextStyle: fyne.TextStyle{Bold: r.isTotal},
-				})
-			},
-			Sort: func(a, b wealthOverviewRow) int {
-				return optional.Compare(a.walletBalance, b.walletBalance)
 			},
 		}, {
 			Label: "Combined Assets",
 			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.combinedAssetsDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
-			Sort: func(a, b wealthOverviewRow) int {
+			Sort: func(a, b wealthDetailsRow) int {
 				return optional.Compare(a.combinedAssetsValue, b.combinedAssetsValue)
 			},
-		},
-		{
+		}, {
+			Label: "Wallet Balance",
+			Width: valueWidth,
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
+				co.(*xwidget.RichText).SetWithText(r.walletDisplay, widget.RichTextStyle{
+					Alignment: fyne.TextAlignTrailing,
+					TextStyle: fyne.TextStyle{Bold: r.isTotal},
+				})
+			},
+			Sort: func(a, b wealthDetailsRow) int {
+				return optional.Compare(a.walletBalance, b.walletBalance)
+			},
+		}, {
 			Label: "Contracts Escrow",
 			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.contractsEscrowDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
-			Sort: func(a, b wealthOverviewRow) int {
+			Sort: func(a, b wealthDetailsRow) int {
 				return optional.Compare(a.contractsEscrow, b.contractsEscrow)
 			},
 		},
 		{
 			Label: "Orders Escrow",
 			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.ordersEscrowDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
-			Sort: func(a, b wealthOverviewRow) int {
+			Sort: func(a, b wealthDetailsRow) int {
 				return optional.Compare(a.ordersEscrow, b.ordersEscrow)
 			},
 		}, {
 			Label: "Total Net Worth",
 			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.totalNetWorthDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
-			Sort: func(a, b wealthOverviewRow) int {
+			Sort: func(a, b wealthDetailsRow) int {
 				return optional.Compare(a.totalNetWorth, b.totalNetWorth)
 			},
 		}, {
 			Label: "Skill Points",
 			Width: valueWidth,
-			Update: func(r wealthOverviewRow, co fyne.CanvasObject) {
+			Update: func(r wealthDetailsRow, co fyne.CanvasObject) {
 				co.(*xwidget.RichText).SetWithText(r.skillPointsDisplay, widget.RichTextStyle{
 					Alignment: fyne.TextAlignTrailing,
 					TextStyle: fyne.TextStyle{Bold: r.isTotal},
 				})
 			},
-			Sort: func(a, b wealthOverviewRow) int {
+			Sort: func(a, b wealthDetailsRow) int {
 				return optional.Compare(a.skillPoints, b.skillPoints)
 			},
 		},
 	})
-	a := &WealthOverview{
+	a := &WealthDetails{
 		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		footer:       widget.NewLabel(""),
 		u:            u,
@@ -196,7 +195,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 	})
 	a.showHelp.SetToolTip("Show explanation for columns")
 
-	showRow := func(r wealthOverviewRow) {
+	showRow := func(r wealthDetailsRow) {
 		o := r.eveEntity()
 		if o.ID == 0 {
 			return
@@ -208,7 +207,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 		a.main = xwidget.MakeDataList(
 			columns,
 			&a.rowsFiltered,
-			func(col string, r wealthOverviewRow) []widget.RichTextSegment {
+			func(col string, r wealthDetailsRow) []widget.RichTextSegment {
 				var s []widget.RichTextSegment
 				switch col {
 				case "Character":
@@ -243,7 +242,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 			},
 			a.columnSorter,
 			a.filterRowsAsync,
-			func(_ int, r wealthOverviewRow) {
+			func(_ int, r wealthDetailsRow) {
 				showRow(r)
 			},
 		)
@@ -285,7 +284,7 @@ func NewWealthOverview(u baseUI) *WealthOverview {
 	return a
 }
 
-func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
+func (a *WealthDetails) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewHBox(a.selectTag)
 	if a.u.IsMobile() {
 		filter.Add(a.sortChip)
@@ -309,7 +308,7 @@ func (a *WealthOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *WealthOverview) filterRowsAsync(sortCol string) {
+func (a *WealthDetails) filterRowsAsync(sortCol string) {
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectTag := a.selectTag.Selected
@@ -318,17 +317,17 @@ func (a *WealthOverview) filterRowsAsync(sortCol string) {
 
 	go func() {
 		if selectTag != "" {
-			rows = slices.DeleteFunc(rows, func(r wealthOverviewRow) bool {
+			rows = slices.DeleteFunc(rows, func(r wealthDetailsRow) bool {
 				return !r.tags.Contains(selectTag)
 			})
 		}
 		if len(search) > 1 {
-			rows = slices.DeleteFunc(rows, func(r wealthOverviewRow) bool {
+			rows = slices.DeleteFunc(rows, func(r wealthDetailsRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r wealthOverviewRow) set.Set[string] {
+		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r wealthDetailsRow) set.Set[string] {
 			return r.tags
 		})...).All())
 
@@ -350,7 +349,7 @@ func (a *WealthOverview) filterRowsAsync(sortCol string) {
 		ordersTotal := optional.Sum(orders...)
 		walletsTotal := optional.Sum(wallets...)
 		skillpointsTotal := optional.Sum(skillpoints...)
-		rows = append(rows, wealthOverviewRow{
+		rows = append(rows, wealthDetailsRow{
 			characterID:            0,
 			characterName:          "TOTAL",
 			combinedAssetsDisplay:  formatISKValue(assetsTotal),
@@ -381,7 +380,7 @@ func (a *WealthOverview) filterRowsAsync(sortCol string) {
 	}()
 }
 
-func (a *WealthOverview) update(ctx context.Context) {
+func (a *WealthDetails) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh wealth overview UI", "err", err)
@@ -398,12 +397,12 @@ func (a *WealthOverview) update(ctx context.Context) {
 	})
 }
 
-func (a *WealthOverview) fetchRows(ctx context.Context) ([]wealthOverviewRow, error) {
+func (a *WealthDetails) fetchRows(ctx context.Context) ([]wealthDetailsRow, error) {
 	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var rows []wealthOverviewRow
+	var rows []wealthDetailsRow
 	for _, c := range cc {
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 		if err != nil {
@@ -412,7 +411,7 @@ func (a *WealthOverview) fetchRows(ctx context.Context) ([]wealthOverviewRow, er
 
 		combinedAssets := c.CombinedAssetsValue()
 		total := optional.Sum(combinedAssets, c.WalletBalance, c.ContractsEscrow, c.OrdersEscrow)
-		rows = append(rows, wealthOverviewRow{
+		rows = append(rows, wealthDetailsRow{
 			characterID:            c.ID,
 			characterName:          c.EveCharacter.Name,
 			combinedAssetsDisplay:  formatISKValue(combinedAssets),

@@ -4,18 +4,19 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
+	"math"
 	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/s-daehling/fyne-charts/pkg/coord"
-	"github.com/s-daehling/fyne-charts/pkg/data"
-	"github.com/s-daehling/fyne-charts/pkg/prop"
-	"github.com/s-daehling/fyne-charts/pkg/style"
+	"github.com/nathabonfim59/fyneline"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -24,10 +25,23 @@ import (
 )
 
 const (
+	wealthArcCornerRadius      = 4
+	wealthArcInnerRadius       = 0.6
+	wealthArcPadAngle          = 1.5
+	wealthMaxCharacters        = 10
+	wealthMinSliceCount        = 1 // not included others
+	wealthMinSliceShare        = 0.05
 	wealthMultiplier           = 1_000_000_000
-	wealthMaxCharacters        = 7
-	wealthNameTruncationLimit  = 16
-	wealthNameTruncationSuffix = 2
+	wealthNameTruncationLimit  = 20
+	wealthNameTruncationSuffix = 0
+)
+
+// wealthWalletSeriesColor, wealthContractsSeriesColor, and
+// wealthOrdersSeriesColor match fyneline's default series colors.
+var (
+	wealthWalletSeriesColor    = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
+	wealthContractsSeriesColor = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
+	wealthOrdersSeriesColor    = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
 )
 
 type wealthRow struct {
@@ -40,61 +54,94 @@ type wealthRow struct {
 	total           float64
 }
 
+// namedValue is a single category/value pair used by the charts.
+type namedValue struct {
+	name  string
+	value float64
+}
+
+// assetWalletValue holds one character's wealth breakdown.
+type assetWalletValue struct {
+	name      string
+	assets    float64
+	wallet    float64
+	contracts float64
+	orders    float64
+}
+
 type Wealth struct {
 	widget.BaseWidget
 
 	OnUpdate func(totalNetWorth optional.Optional[float64])
 
-	assetDetail          *coord.CartesianCategoricalChart
-	characterSplit       *prop.PieChart
-	top                  *widget.Label
-	totalSplit           *prop.PieChart
-	u                    baseUI
-	walletDetail         *coord.CartesianCategoricalChart
-	defaultPieLabelStyle style.ValueLabelStyle
-	defaultBarLabelStyle style.ValueLabelStyle
-	overview             *WealthOverview
+	characters             *fyneline.BarChart[assetWalletValue]
+	charactersCard         *chartCard
+	assetWalletDetailTitle *widget.Label
+	assetsSwatch           *legendSwatch
+	walletSwatch           *legendSwatch
+	contractsSwatch        *legendSwatch
+	ordersSwatch           *legendSwatch
+	characterSplit         *fyneline.ArcChart[namedValue]
+	characterSplitCard     *chartCard
+	characterSplitTitle    *widget.Label
+	top                    *widget.Label
+	totalSplit             *fyneline.ArcChart[namedValue]
+	totalSplitCard         *chartCard
+	totalSplitTitle        *widget.Label
+	u                      baseUI
+	details                *WealthDetails
 }
 
 func NewWealth(u baseUI) *Wealth {
+	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%s: %.1f", v.name, v.value) }
 	a := &Wealth{
-		assetDetail:    coord.NewCartesianCategoricalChart(""),
-		characterSplit: prop.NewPieChart(""),
-		top:            ui.NewLabelWithWrapping(""),
-		totalSplit:     prop.NewPieChart(""),
-		u:              u,
-		walletDetail:   coord.NewCartesianCategoricalChart(""),
-		overview:       NewWealthOverview(u),
+		characters: fyneline.NewBarChart([]assetWalletValue(nil),
+			func(v assetWalletValue) string { return v.name },
+			fyneline.NewBarSeries("Assets", func(v assetWalletValue) float64 { return v.assets }),
+			fyneline.NewBarSeries("Wallet", func(v assetWalletValue) float64 { return v.wallet }),
+			fyneline.NewBarSeries("Contracts", func(v assetWalletValue) float64 { return v.contracts }),
+			fyneline.NewBarSeries("Orders", func(v assetWalletValue) float64 { return v.orders }),
+		),
+		assetWalletDetailTitle: newChartTitleLabel(),
+		characterSplit: fyneline.NewArcChart([]namedValue(nil),
+			func(v namedValue) float64 { return v.value },
+			sliceLabel,
+		),
+		characterSplitTitle: newChartTitleLabel(),
+		top:                 ui.NewLabelWithWrapping(""),
+		totalSplit: fyneline.NewArcChart([]namedValue(nil),
+			func(v namedValue) float64 { return v.value },
+			sliceLabel,
+		),
+		totalSplitTitle: newChartTitleLabel(),
+		u:               u,
+		details:         newWealthDetails(u),
 	}
 	a.ExtendBaseWidget(a)
 	a.top.Hide()
 
-	ts := style.DefaultTitleStyle()
-	ts.SizeName = theme.SizeNameText
-	ts.TextStyle.Bold = true
-	yls := style.DefaultAxisLabelStyle()
-	yls.SizeName = theme.SizeNameText
+	a.characters.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
+	a.characters.SetOrientation(fyneline.BarHorizontal)
+	a.characters.SetSeriesLayout(fyneline.SeriesStack)
+	configureArcChart(a.characterSplit)
+	configureArcChart(a.totalSplit)
 
-	a.assetDetail.SetTitleStyle(ts)
-	a.assetDetail.HideLegend()
-	a.assetDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
-	a.assetDetail.SetYAxisLabel("B ISK")
-	a.walletDetail.SetTitleStyle(ts)
-	a.walletDetail.HideLegend()
-	a.walletDetail.SetYAxisStyle(yls, style.DefaultAxisStyle())
-	a.walletDetail.SetYAxisLabel("B ISK")
-	a.totalSplit.SetTitleStyle(ts)
-	a.characterSplit.SetTitleStyle(ts)
+	a.assetsSwatch = newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })
+	a.walletSwatch = newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })
+	a.contractsSwatch = newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })
+	a.ordersSwatch = newLegendSwatch(func() color.Color { return wealthOrdersSeriesColor })
+	legend := container.NewHBox(
+		layout.NewSpacer(),
+		newLegendEntry("Assets", a.assetsSwatch),
+		newLegendEntry("Wallet", a.walletSwatch),
+		newLegendEntry("Contracts", a.contractsSwatch),
+		newLegendEntry("Orders", a.ordersSwatch),
+		layout.NewSpacer(),
+	)
 
-	pls := style.DefaultValueLabelStyle()
-	if u.IsMobile() {
-		pls.ValueTextStyle.SizeName = ui.SizeNameSmallText
-	}
-	a.defaultPieLabelStyle = pls
-
-	ls := style.DefaultValueLabelStyle()
-	ls.StrokeWidth = 0
-	a.defaultBarLabelStyle = ls
+	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
+	a.characterSplitCard = newChartCard(a.characterSplitTitle, nil, a.characterSplit)
+	a.totalSplitCard = newChartCard(a.totalSplitTitle, nil, a.totalSplit)
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -124,13 +171,12 @@ func NewWealth(u baseUI) *Wealth {
 
 func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Characters", a.overview),
 		container.NewTabItem(
-			"Total",
-			container.NewAdaptiveGrid(2, a.totalSplit, a.characterSplit),
+			"Overview",
+			container.NewAdaptiveGrid(2, a.totalSplitCard, a.characterSplitCard),
 		),
-		container.NewTabItem("Assets", a.assetDetail),
-		container.NewTabItem("Wallets", a.walletDetail),
+		container.NewTabItem("Characters", a.charactersCard),
+		container.NewTabItem("Details", a.details),
 	)
 	var c fyne.CanvasObject
 	if !a.u.IsMobile() {
@@ -173,10 +219,9 @@ func (a *Wealth) update(ctx context.Context) {
 		a.top.Hide()
 	})
 
-	a.updateAssetDetail(ctx, rows)
+	a.updateAssetWalletDetail(ctx, rows)
 	a.updateCharacterSplit(ctx, rows)
 	a.updateTotalSplit(ctx, rows)
-	a.updateWalletDetail(ctx, rows)
 
 	fyne.Do(func() {
 		if a.OnUpdate != nil {
@@ -185,68 +230,53 @@ func (a *Wealth) update(ctx context.Context) {
 	})
 }
 
-func (a *Wealth) updateAssetDetail(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
+func (a *Wealth) updateAssetWalletDetail(_ context.Context, rows []wealthRow) {
 	var total float64
-	var d []data.CategoricalPoint
+	d := make([]assetWalletValue, 0, len(rows))
 	for _, r := range rows {
-		d = append(d, data.CategoricalPoint{
-			C:   r.characterName,
-			Val: r.combinedAssets,
+		d = append(d, assetWalletValue{
+			name:      r.characterName,
+			assets:    r.combinedAssets,
+			wallet:    r.walletBalance,
+			contracts: r.contractsEscrow,
+			orders:    r.ordersEscrow,
 		})
-		total += r.combinedAssets
+		total += r.total
 	}
-	d = reduceCategoricalPoints(d, wealthMaxCharacters)
+	d = reduceAssetWalletValues(d, wealthMaxCharacters)
+
+	var maxValue float64
+	for _, v := range d {
+		maxValue = max(maxValue, v.assets+v.wallet+v.contracts+v.orders)
+	}
+	axisMax, tickCount := niceAxisBounds(maxValue, 5)
 
 	fyne.Do(func() {
-		a.assetDetail.RemoveSeries("Characters")
-		s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
-		if err != nil {
-			slog.Error("wealth: asset details", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultBarLabelStyle)
-		err = a.assetDetail.AddBarSeries(s)
-		if err != nil {
-			slog.Error("wealth: asset details", "error", err)
-			return
-		}
-		a.assetDetail.SetTitle(fmt.Sprintf("Assets By Character - Total: %.1f B ISK", total))
+		a.characters.SetValueAxis(fyneline.NewNumericAxis().
+			WithFormatter(wealthAxisValueFormatter).
+			WithDomain(0, axisMax).
+			WithTickCount(tickCount))
+		a.characters.SetData(d)
+		a.assetWalletDetailTitle.SetText(fmt.Sprintf("Wealth Breakdown by Character - Total: %.1f B", total))
 	})
 }
 
 func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
 	var total float64
-	var d []data.ProportionalPoint
+	d := make([]namedValue, 0, len(rows))
 	for _, r := range rows {
-		d = append(d, data.ProportionalPoint{
-			C:       r.characterName,
-			Val:     r.total,
-			ColName: colors.next(),
-		})
+		d = append(d, namedValue{name: r.characterName, value: r.total})
 		total += r.total
 	}
-	d = reduceProportionalPoints(d, wealthMaxCharacters)
+	d = reduceSliceValues(d, wealthMinSliceShare, wealthMinSliceCount)
+
 	fyne.Do(func() {
-		a.characterSplit.RemoveSeries("Characters")
-		s, err := prop.NewSeries("Characters", d)
-		if err != nil {
-			slog.Error("wealth: character split", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
-		err = a.characterSplit.AddSeries(s)
-		if err != nil {
-			slog.Error("wealth: character split", "error", err)
-			return
-		}
-		a.characterSplit.SetTitle(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B ISK", total))
+		a.characterSplit.SetData(d)
+		a.characterSplitTitle.SetText(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B", total))
 	})
 }
 
 func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
 	var assets, wallets, contracts, orders, total float64
 	for _, r := range rows {
 		assets += r.combinedAssets
@@ -255,118 +285,18 @@ func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
 		total += r.total
 		wallets += r.walletBalance
 	}
+	d := []namedValue{
+		{name: "Wallet", value: wallets},
+		{name: "Assets", value: assets},
+		{name: "Contracts", value: contracts},
+		{name: "Orders", value: orders},
+	}
+
 	fyne.Do(func() {
-		a.totalSplit.RemoveSeries("")
-		s, err := prop.NewSeries("", []data.ProportionalPoint{{
-			C:       "Wallet Balances",
-			Val:     wallets,
-			ColName: colors.next(),
-		}, {
-			C:       "Combined Assets",
-			Val:     assets,
-			ColName: colors.next(),
-		}, {
-			C:       "Contracts Escrow",
-			Val:     contracts,
-			ColName: colors.next(),
-		}, {
-			C:       "Orders Escrow",
-			Val:     orders,
-			ColName: colors.next(),
-		}})
-		if err != nil {
-			slog.Error("wealth: total split", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultPieLabelStyle)
-		err = a.totalSplit.AddSeries(s)
-		if err != nil {
-			slog.Error("wealth: total split", "error", err)
-			return
-		}
-		title := fmt.Sprintf("Total Net Worth By Category - Total: %.1f B ISK", total)
-		a.totalSplit.SetTitle(title)
+		a.totalSplit.SetData(d)
+		title := fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total)
+		a.totalSplitTitle.SetText(title)
 	})
-}
-
-func (a *Wealth) updateWalletDetail(_ context.Context, rows []wealthRow) {
-	colors := newColorWheel()
-	var total float64
-	var d []data.CategoricalPoint
-	for _, r := range rows {
-		d = append(d, data.CategoricalPoint{
-			C:   r.characterName,
-			Val: r.walletBalance,
-		})
-		total += r.walletBalance
-	}
-	d = reduceCategoricalPoints(d, wealthMaxCharacters)
-	fyne.Do(func() {
-		a.walletDetail.RemoveSeries("Characters")
-		s, err := coord.NewCategoricalPointSeries("Characters", colors.next(), d)
-		if err != nil {
-			slog.Error("wealth: wallet details", "error", err)
-			return
-		}
-		s.SetValueLabelStyle(true, a.defaultBarLabelStyle)
-		err = a.walletDetail.AddBarSeries(s)
-		if err != nil {
-			slog.Error("wealth: wallet details", "error", err)
-			return
-		}
-		a.walletDetail.SetTitle(fmt.Sprintf("Wallets By Character - Total: %.1f B ISK", total))
-	})
-}
-
-func reduceProportionalPoints(rows []data.ProportionalPoint, m int) []data.ProportionalPoint {
-	if len(rows) <= m {
-		return rows
-	}
-	slices.SortFunc(rows, func(a, b data.ProportionalPoint) int {
-		return cmp.Compare(b.Val, a.Val)
-	})
-	others := rows[m].Val
-	if len(rows) > m {
-		for _, x := range rows[m+1:] {
-			others += x.Val
-		}
-	}
-	rows = rows[:m]
-	slices.SortFunc(rows, func(a, b data.ProportionalPoint) int {
-		return strings.Compare(a.C, b.C)
-	})
-	rows = append(rows,
-		data.ProportionalPoint{
-			C:       "Others",
-			Val:     others,
-			ColName: theme.ColorNameDisabled,
-		})
-	return rows
-}
-
-func reduceCategoricalPoints(rows []data.CategoricalPoint, m int) []data.CategoricalPoint {
-	if len(rows) <= m {
-		return rows
-	}
-	slices.SortFunc(rows, func(a, b data.CategoricalPoint) int {
-		return cmp.Compare(b.Val, a.Val)
-	})
-	others := rows[m].Val
-	if len(rows) > m {
-		for _, x := range rows[m+1:] {
-			others += x.Val
-		}
-	}
-	rows = rows[:m]
-	slices.SortFunc(rows, func(a, b data.CategoricalPoint) int {
-		return strings.Compare(a.C, b.C)
-	})
-	rows = append(rows,
-		data.CategoricalPoint{
-			C:   "Others",
-			Val: others,
-		})
-	return rows
 }
 
 func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[float64], error) {
@@ -402,34 +332,177 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 	return rows, grantTotal, nil
 }
 
-type colorWheel struct {
-	n      int
-	colors []fyne.ThemeColorName
+// newChartTitleLabel returns a bold label for a chart card's title.
+func newChartTitleLabel() *widget.Label {
+	return widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 }
 
-func newColorWheel() colorWheel {
-	w := colorWheel{
-		colors: []fyne.ThemeColorName{
-			theme.ColorNamePrimary,
-			theme.ColorNameWarning,
-			theme.ColorNameSuccess,
-			theme.ColorNameError,
-			ui.ColorNameInfo,
-			ui.ColorNameAttention,
-			ui.ColorNameCreative,
-			ui.ColorNameSystem,
-			theme.ColorNamePlaceHolder,
-		},
+// configureArcChart applies this screen's shared pie/doughnut styling.
+func configureArcChart(chart *fyneline.ArcChart[namedValue]) {
+	chart.SetLabels(true)
+	chart.SetInnerRadius(wealthArcInnerRadius)
+	chart.SetPadAngle(wealthArcPadAngle)
+	chart.SetCornerRadius(wealthArcCornerRadius)
+}
+
+// wealthAxisValueFormatter formats a value-axis tick to 1 decimal.
+func wealthAxisValueFormatter(v float64) string { return fmt.Sprintf("%.1f", v) }
+
+// niceAxisBounds picks an axis max and tick count so ticks fall on round
+// step boundaries and the last tick sits close to value, instead of value
+// possibly landing well short of a coarsely-rounded max (e.g. 74 -> 100).
+func niceAxisBounds(value float64, targetIntervals int) (axisMax float64, tickCount int) {
+	if value <= 0 {
+		return 1, 2
 	}
+	step := niceStep(value / float64(max(targetIntervals, 1)))
+	axisMax = step * math.Ceil(value/step)
+	return axisMax, int(math.Round(axisMax/step)) + 1
+}
+
+// niceStep rounds value up to the nearest "nice" 1-2-5-10 number at its
+// order of magnitude.
+func niceStep(value float64) float64 {
+	magnitude := math.Pow(10, math.Floor(math.Log10(value)))
+	normalized := value / magnitude
+	var niceFraction float64
+	switch {
+	case normalized <= 1:
+		niceFraction = 1
+	case normalized <= 2:
+		niceFraction = 2
+	case normalized <= 5:
+		niceFraction = 5
+	default:
+		niceFraction = 10
+	}
+	return niceFraction * magnitude
+}
+
+// reduceAssetWalletValues keeps the top m rows by combined value, bucketing the rest into "Others".
+func reduceAssetWalletValues(rows []assetWalletValue, m int) []assetWalletValue {
+	if len(rows) <= m {
+		return rows
+	}
+	combined := func(v assetWalletValue) float64 { return v.assets + v.wallet + v.contracts + v.orders }
+	slices.SortFunc(rows, func(a, b assetWalletValue) int {
+		return cmp.Compare(combined(b), combined(a))
+	})
+	others := rows[m]
+	others.name = "Others"
+	for _, x := range rows[m+1:] {
+		others.assets += x.assets
+		others.wallet += x.wallet
+		others.contracts += x.contracts
+		others.orders += x.orders
+	}
+	rows = rows[:m]
+	slices.SortFunc(rows, func(a, b assetWalletValue) int {
+		return strings.Compare(a.name, b.name)
+	})
+	rows = append(rows, others)
+	return rows
+}
+
+// reduceSliceValues buckets entries below minShare of the total into
+// "Others", always keeping the top minCount entries by value regardless of
+// share, so the result never collapses to a single 100% "Others" slice.
+func reduceSliceValues(rows []namedValue, minShare float64, minCount int) []namedValue {
+	var total float64
+	for _, r := range rows {
+		total += r.value
+	}
+	if total <= 0 {
+		return rows
+	}
+
+	sortedByValue := slices.Clone(rows)
+	slices.SortFunc(sortedByValue, func(a, b namedValue) int {
+		return cmp.Compare(b.value, a.value)
+	})
+	floor := min(minCount, len(sortedByValue))
+	guaranteed := make(map[string]bool, floor)
+	for _, r := range sortedByValue[:floor] {
+		guaranteed[r.name] = true
+	}
+
+	kept := make([]namedValue, 0, len(rows))
+	var others float64
+	for _, r := range rows {
+		if !guaranteed[r.name] && r.value/total < minShare {
+			others += r.value
+			continue
+		}
+		kept = append(kept, r)
+	}
+	if others <= 0 {
+		return kept
+	}
+	slices.SortFunc(kept, func(a, b namedValue) int {
+		return strings.Compare(a.name, b.name)
+	})
+	kept = append(kept, namedValue{name: "Others", value: others})
+	return kept
+}
+
+// chartCard wraps a chart with a title, an optional legend, and a themed
+// grey backdrop, and adds theming support.
+type chartCard struct {
+	widget.BaseWidget
+
+	title   *widget.Label
+	legend  fyne.CanvasObject
+	chart   fyne.CanvasObject
+	bg      *canvas.Rectangle
+	variant fyne.ThemeVariant
+}
+
+// newChartCard creates a chart card; applyTheme reapplies colors fyneline
+// itself won't re-derive, e.g. WithFill fills.
+func newChartCard(title *widget.Label, legend, chart fyne.CanvasObject) *chartCard {
+	w := &chartCard{
+		title:  title,
+		legend: legend,
+		chart:  chart,
+		bg:     canvas.NewRectangle(color.Transparent),
+	}
+	w.ExtendBaseWidget(w)
+	w.bg.CornerRadius = theme.Size(theme.SizeNameCardRadius)
+	w.bg.FillColor = theme.Color(theme.ColorNameInputBackground)
 	return w
 }
 
-func (w *colorWheel) next() fyne.ThemeColorName {
-	c := w.colors[w.n]
-	if w.n < len(w.colors)-1 {
-		w.n++
-	} else {
-		w.n = 0
-	}
-	return c
+func (w *chartCard) CreateRenderer() fyne.WidgetRenderer {
+	content := container.NewBorder(w.title, w.legend, nil, nil, w.chart)
+	return widget.NewSimpleRenderer(container.NewStack(w.bg, container.NewPadded(content)))
+}
+
+func (w *chartCard) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.bg.FillColor = th.Color(theme.ColorNameInputBackground, v)
+	w.bg.Refresh()
+	w.BaseWidget.Refresh()
+}
+
+// legendSwatch is a color swatch that tracks a theme-derived color.
+type legendSwatch struct {
+	rect    *canvas.Rectangle
+	colorFn func() color.Color
+}
+
+func newLegendSwatch(colorFn func() color.Color) *legendSwatch {
+	return &legendSwatch{rect: canvas.NewRectangle(colorFn()), colorFn: colorFn}
+}
+
+func (s *legendSwatch) object() fyne.CanvasObject {
+	const swatchSize = 12
+	return container.NewGridWrap(fyne.NewSize(swatchSize, swatchSize), s.rect)
+}
+
+func newLegendEntry(label string, swatch *legendSwatch) fyne.CanvasObject {
+	// Match the text size fyneline uses for its axis labels.
+	l := widget.NewLabel(label)
+	l.SizeName = theme.SizeNameCaptionText
+	return container.NewHBox(container.NewCenter(swatch.object()), container.NewCenter(l))
 }
