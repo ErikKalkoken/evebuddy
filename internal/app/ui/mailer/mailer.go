@@ -89,7 +89,6 @@ type mailer struct {
 	to        *eveEntityEntry
 	u         baseUI
 	w         fyne.Window
-	spinner   *widget.Activity
 }
 
 func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w fyne.Window) *mailer {
@@ -154,9 +153,6 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		panic(fmt.Errorf("unexpected mailer mode: %v", mode))
 	}
 
-	a.spinner = widget.NewActivity()
-	a.spinner.Hide()
-
 	a.send = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
 		go func() {
 			defer done()
@@ -207,7 +203,7 @@ func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		nil,
 		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0),
-			container.NewHBox(a.send, a.spinner),
+			a.send,
 		)),
 		nil,
 		nil,

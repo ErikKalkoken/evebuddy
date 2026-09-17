@@ -18,6 +18,7 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -1145,14 +1146,14 @@ type statusText struct {
 
 	label    *widget.Label
 	messages map[string]string
-	spinner  *widget.Activity
+	spinner  *kxwidget.Spinner
 }
 
 func newStatusText() *statusText {
 	w := &statusText{
 		messages: make(map[string]string),
 		label:    widget.NewLabel(""),
-		spinner:  widget.NewActivity(),
+		spinner:  kxwidget.NewSpinner(),
 	}
 	w.label.Hide()
 	w.spinner.Hide()
