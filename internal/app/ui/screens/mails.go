@@ -318,8 +318,8 @@ func (a *Mails) updateDownloaded(ctx context.Context) {
 		}
 
 		missingPercent = int(float64(missing) / float64(total) * 100)
-		downloaded = fmt.Sprintf("%d%% downloaded", 100-missingPercent)
-		hint = p.Sprintf("%d missing", missing)
+		downloaded = fmt.Sprintf("%d%%", 100-missingPercent)
+		hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
 	}()
 	a.missingPercent.Store(int64(missingPercent))
 	fyne.Do(func() {
