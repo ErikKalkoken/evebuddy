@@ -14,6 +14,8 @@ github.com/ErikKalkoken/fyne-kx v0.12.0 h1:J109uHqLsRjLHht89kpLYlpklLmVVJ5cr+RvS
 github.com/ErikKalkoken/fyne-kx v0.12.0/go.mod h1:Sjy+bWFSr2xOwyHP6O3d3XEZEqrhVCFL9ciNz4uZIyQ=
 github.com/ErikKalkoken/fyne-kx v0.13.0 h1:O5G3D1Lvza/w3qlAHm9zEf5BrunQjAbAIkslGZYfzEU=
 github.com/ErikKalkoken/fyne-kx v0.13.0/go.mod h1:Sjy+bWFSr2xOwyHP6O3d3XEZEqrhVCFL9ciNz4uZIyQ=
+github.com/ErikKalkoken/fyne-kx v0.14.0 h1:/3MtaI44bFsgEbVi4mrqxH13ItEnxEcyEasBieMSZJg=
+github.com/ErikKalkoken/fyne-kx v0.14.0/go.mod h1:Sjy+bWFSr2xOwyHP6O3d3XEZEqrhVCFL9ciNz4uZIyQ=
 github.com/ErikKalkoken/go-set v0.3.1 h1:Al5aD6FIHJOhyx+pIE7PE0xG+UaW+nYG5tBw/dPR9Sg=
 github.com/ErikKalkoken/go-set v0.3.1/go.mod h1:8hyYMuo2dqGaCGf32C/CILHMTVRJ9CV2vlcIPGOBe5I=
 github.com/FyshOS/fancyfs v0.0.1 h1:kgvm7VvwOMLkYTqSflplp62SlMVWQ2uAoHw9CXwXHYg=

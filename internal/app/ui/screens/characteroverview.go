@@ -606,11 +606,11 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	}
 	w.allianceLogo.SetFillMode(canvas.ImageFillContain)
 	w.allianceLogo.SetMinSize(fyne.NewSquareSize(logoSize))
-	w.allianceLogo.SetCornerRadius(theme.InputRadiusSize())
+	w.allianceLogo.CornerRadius = theme.InputRadiusSize()
 
 	w.corporationLogo.SetFillMode(canvas.ImageFillContain)
 	w.corporationLogo.SetMinSize(fyne.NewSquareSize(logoSize))
-	w.corporationLogo.SetCornerRadius(theme.InputRadiusSize())
+	w.corporationLogo.CornerRadius = theme.InputRadiusSize()
 
 	w.background.CornerRadius = theme.InputRadiusSize()
 

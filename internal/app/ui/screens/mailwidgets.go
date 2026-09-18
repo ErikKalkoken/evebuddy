@@ -109,7 +109,7 @@ func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEnti
 	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
-	w.icon.SetCornerRadius(ui.IconUnitSize / 2)
+	w.icon.CornerRadius = ui.IconUnitSize / 2
 	w.to.Hide()
 	return w
 }
