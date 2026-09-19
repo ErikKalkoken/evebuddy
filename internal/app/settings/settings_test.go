@@ -38,6 +38,11 @@ func TestSettings(t *testing.T) {
 		xassert.Equal(t, x, s.LogLevel())
 		xassert.Equal(t, slog.LevelDebug, s.LogLevelSlog())
 	})
+	t.Run("Log level falls back to default when unrecognized", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.SetLogLevel("bogus")
+		xassert.Equal(t, slog.LevelInfo, s.LogLevelSlog())
+	})
 	t.Run("RecentSearches", func(t *testing.T) {
 		s := newTestSettings(t)
 		x := []int64{1, 2, 3, 2_200_000_000} // last one beyond int32 range, e.g. a valid EVE ID
@@ -433,5 +438,44 @@ func TestSettingsNilReceiverIsSafe(t *testing.T) {
 		s.SetDisableDPIDetection(true)
 
 		s.ResetUI()
+	})
+}
+
+func TestNew(t *testing.T) {
+	t.Run("returns an error when storage fails to load", func(t *testing.T) {
+		db, st, _ := testutil.NewDBInMemory()
+		require.NoError(t, db.Close())
+		_, err := settings.New(context.Background(), st)
+		assert.Error(t, err)
+	})
+}
+
+func TestFlush(t *testing.T) {
+	t.Run("waits for pending writes to be persisted", func(t *testing.T) {
+		_, st, _ := testutil.NewDBInMemory()
+		s1, err := settings.New(context.Background(), st)
+		require.NoError(t, err)
+		s1.SetDeveloperMode(true)
+		s1.SetSysTrayEnabled(false)
+		s1.Flush()
+
+		s2, err := settings.New(context.Background(), st)
+		require.NoError(t, err)
+		assert.True(t, s2.DeveloperMode())
+		assert.False(t, s2.SysTrayEnabled())
+	})
+	t.Run("is a no-op on a nil receiver", func(t *testing.T) {
+		var s *settings.Settings
+		assert.NotPanics(t, func() { s.Flush() })
+	})
+	t.Run("keeps the cached value and does not hang when persisting fails", func(t *testing.T) {
+		db, st, _ := testutil.NewDBInMemory()
+		s, err := settings.New(context.Background(), st)
+		require.NoError(t, err)
+		require.NoError(t, db.Close())
+
+		s.SetDeveloperMode(true)
+		assert.NotPanics(t, func() { s.Flush() })
+		assert.True(t, s.DeveloperMode())
 	})
 }

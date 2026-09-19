@@ -58,3 +58,12 @@ func TestCalcEarliest(t *testing.T) {
 		})
 	}
 }
+
+func TestRecentSearches(t *testing.T) {
+	t.Run("skips malformed entries", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.values[settingRecentSearches] = `["123","not-a-number","456"]`
+		got := s.RecentSearches()
+		assert.Equal(t, []int64{123, 456}, got)
+	})
+}

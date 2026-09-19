@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -220,5 +221,11 @@ func TestGetSetFloatList(t *testing.T) {
 		s.set("x", "not-json")
 		fallback := []float64{1}
 		assert.Equal(t, fallback, s.getFloatList("x", fallback))
+	})
+	t.Run("does not update the cache when the value cannot be marshaled", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.setFloatList("x", []float64{1, 2})
+		s.setFloatList("x", []float64{math.NaN()})
+		assert.Equal(t, []float64{1, 2}, s.getFloatList("x", nil))
 	})
 }
