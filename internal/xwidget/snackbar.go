@@ -79,16 +79,16 @@ func NewSnackbar(c fyne.Canvas) *Snackbar {
 	return sb
 }
 
-// Show displays a SnackBar with a message and the default timeout.
-// Show can be used concurrently.
+// Display shows a SnackBar with a message and the default timeout.
+// Display can be used concurrently.
 // When a snackbar receives several texts at the same time,
 // it will queue them and display them one after the other.
-func (sb *Snackbar) Show(text string) {
+func (sb *Snackbar) Display(text string) {
 	sb.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
 }
 
-// ShowWithTimeout is similar to Show but uses a custom timeout.
-func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
+// DisplayWithTimeout is similar to Display but uses a custom timeout.
+func (sb *Snackbar) DisplayWithTimeout(text string, timeout time.Duration) {
 	sb.q.Put(snackbarMessage{text: text, timeout: timeout})
 }
 

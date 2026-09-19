@@ -26,11 +26,11 @@ func TestSnackbar_LifecycleAndTimeout(t *testing.T) {
 		}
 
 		// 2. Queue a message and wait for it to process
-		sb.Show("Hello, World!")
+		sb.Display("Hello, World!")
 		synctest.Wait() // Wait for goroutines to process queue & call fyne.Do
 
 		if !sb.popup.Visible() {
-			t.Fatal("expected snackbar popup to be visible after Show")
+			t.Fatal("expected snackbar popup to be visible after Display")
 		}
 
 		// 3. Advance virtual time to trigger default timeout auto-dismiss
@@ -55,7 +55,7 @@ func TestSnackbar_CustomTimeout(t *testing.T) {
 		defer sb.Stop()
 
 		customTimeout := 500 * time.Millisecond
-		sb.ShowWithTimeout("Custom Timeout Message", customTimeout)
+		sb.DisplayWithTimeout("Custom Timeout Message", customTimeout)
 		synctest.Wait()
 
 		if !sb.popup.Visible() {
@@ -90,7 +90,7 @@ func TestSnackbar_ManualDismissByTap(t *testing.T) {
 		sb.Start()
 		defer sb.Stop()
 
-		sb.Show("Tap me to dismiss")
+		sb.Display("Tap me to dismiss")
 		synctest.Wait()
 
 		if !sb.popup.Visible() {
@@ -119,8 +119,8 @@ func TestSnackbar_SequentialQueueing(t *testing.T) {
 		defer sb.Stop()
 
 		// Enqueue two messages
-		sb.ShowWithTimeout("Message 1", 200*time.Millisecond)
-		sb.ShowWithTimeout("Message 2", 200*time.Millisecond)
+		sb.DisplayWithTimeout("Message 1", 200*time.Millisecond)
+		sb.DisplayWithTimeout("Message 2", 200*time.Millisecond)
 
 		synctest.Wait()
 		if !sb.popup.Visible() {
@@ -155,7 +155,7 @@ func TestSnackbar_QueueingBeforeStart(t *testing.T) {
 		sb := NewSnackbar(window.Canvas())
 
 		// Messages queued while stopped should sit in the channel queue
-		sb.ShowWithTimeout("Queued Early", 100*time.Millisecond)
+		sb.DisplayWithTimeout("Queued Early", 100*time.Millisecond)
 		synctest.Wait()
 
 		if sb.popup.Visible() {
@@ -189,7 +189,7 @@ func TestSnackbar_StopAndRestart(t *testing.T) {
 		sb := NewSnackbar(window.Canvas())
 		sb.Start()
 
-		sb.ShowWithTimeout("Going to stop", 500*time.Millisecond)
+		sb.DisplayWithTimeout("Going to stop", 500*time.Millisecond)
 		synctest.Wait()
 
 		if !sb.popup.Visible() {
@@ -209,7 +209,7 @@ func TestSnackbar_StopAndRestart(t *testing.T) {
 		sb.Start()
 		defer sb.Stop()
 
-		sb.ShowWithTimeout("Restarted Message", 200*time.Millisecond)
+		sb.DisplayWithTimeout("Restarted Message", 200*time.Millisecond)
 		synctest.Wait()
 
 		if !sb.popup.Visible() {
@@ -230,7 +230,7 @@ func TestSnackbar_TextWrappingCalculation(t *testing.T) {
 		defer sb.Stop()
 
 		// Short text shouldn't trigger word wrap
-		sb.ShowWithTimeout("Hi", 100*time.Millisecond)
+		sb.DisplayWithTimeout("Hi", 100*time.Millisecond)
 		synctest.Wait()
 		if sb.text.Wrapping != fyne.TextWrapOff {
 			t.Errorf("expected TextWrapOff for short text, got %v", sb.text.Wrapping)
@@ -241,7 +241,7 @@ func TestSnackbar_TextWrappingCalculation(t *testing.T) {
 
 		// Very long text should trigger word wrap
 		longText := "This is an extremely long message that will exceed the width of the canvas and force word wrapping"
-		sb.ShowWithTimeout(longText, 100*time.Millisecond)
+		sb.DisplayWithTimeout(longText, 100*time.Millisecond)
 		synctest.Wait()
 
 		if sb.text.Wrapping != fyne.TextWrapWord {

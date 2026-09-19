@@ -110,7 +110,7 @@ func (a *manageTags) deleteTags() {
 			}
 			a.update(ctx)
 			go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-			a.cw.sb.Show("All tags deleted")
+			a.cw.sb.Display("All tags deleted")
 		},
 		a.cw.w,
 	)
@@ -119,7 +119,7 @@ func (a *manageTags) deleteTags() {
 func (a *manageTags) exportTags() {
 	filedialog.ShowSave(a.cw.u, filedialog.ShowFileSaveWindowParams{
 		CompletionText: "Tags exported",
-		ShowSnackbar:   a.cw.sb.Show,
+		ShowSnackbar:   a.cw.sb.Display,
 		Title:          "Export tags",
 		WindowID:       "tags-export",
 		WriteFunc: func(ctx context.Context, w io.Writer) error {
@@ -132,7 +132,7 @@ func (a *manageTags) exportTags() {
 func (a *manageTags) importTags() {
 	filedialog.ShowOpen(a.cw.u, filedialog.ShowFileOpenWindowParams{
 		CompletionText: "Tags imported",
-		ShowSnackbar:   a.cw.sb.Show,
+		ShowSnackbar:   a.cw.sb.Display,
 		Title:          "Import tags",
 		WindowID:       "tags-import",
 		ReadFunc: func(ctx context.Context, r io.Reader) error {

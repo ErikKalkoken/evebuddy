@@ -136,27 +136,27 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				err := a.u.Character().UpdateCharactersIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
+					a.sb.Display("Error: " + a.u.ErrorDisplay(err))
 					return
 				}
 			}()
-			a.sb.Show("Started reloading characters")
+			a.sb.Display("Started reloading characters")
 		}),
 		fyne.NewMenuItem("Reload all corporations", func() {
 			go func() {
 				err := a.u.Corporation().UpdateCorporationsIfNeeded(context.Background(), true)
 				if err != nil {
 					slog.Error("update status", "error", err)
-					a.sb.Show("Error: " + a.u.ErrorDisplay(err))
+					a.sb.Display("Error: " + a.u.ErrorDisplay(err))
 					return
 				}
 			}()
-			a.sb.Show("Started reloading corporations")
+			a.sb.Display("Started reloading corporations")
 
 		}),
 		fyne.NewMenuItem("Reload all general entities", func() {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
-			a.sb.Show("Started reloading all general entities")
+			a.sb.Display("Started reloading all general entities")
 		}),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Reload notifications for all characters", func() {
@@ -177,7 +177,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					)
 				}
 			}()
-			a.sb.Show("Started reloading notifications")
+			a.sb.Display("Started reloading notifications")
 		}),
 	}
 	if a.u.IsDeveloperMode() {
@@ -188,7 +188,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 					CompletionText: "Notification fixtures exported",
 					Extensions:     []string{".json"},
 					Filename:       "notification_fixtures.json",
-					ShowSnackbar:   a.sb.Show,
+					ShowSnackbar:   a.sb.Display,
 					Title:          "Export notification fixtures",
 					WriteFunc:      a.u.Character().WriteNotificationTypeFixtures,
 					Window:         w,
@@ -304,7 +304,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
-		a.sb.Show("Started reloading sections")
+		a.sb.Display("Started reloading sections")
 	}
 	item := fyne.NewMenuItem("Reload all sections", action)
 	return []*fyne.MenuItem{item}
@@ -444,7 +444,7 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)
 		}
-		a.sb.Show("Started reloading section")
+		a.sb.Display("Started reloading section")
 	}
 	item1 := fyne.NewMenuItem("Reload section", action)
 	if a.u.IsOffline() {
@@ -460,7 +460,7 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 			ss.ErrorMessage,
 		)
 		fyne.CurrentApp().Clipboard().SetContent(s)
-		a.sb.Show("Issue copied to clipboard")
+		a.sb.Display("Issue copied to clipboard")
 	})
 	items = append(items, item2)
 	return items

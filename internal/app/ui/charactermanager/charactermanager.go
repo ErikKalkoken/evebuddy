@@ -123,5 +123,5 @@ func (a *manageCharacters) update(ctx context.Context) {
 
 func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
-	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
 }

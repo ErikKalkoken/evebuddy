@@ -181,7 +181,7 @@ func (a *admin) showAddCharacterDialog() {
 						slog.Int64("characterID", character.ID),
 						slog.Any("error", err),
 					)
-					a.cw.sb.Show("Failed to load character")
+					a.cw.sb.Display("Failed to load character")
 				}
 			}
 			if a.cw.u.CurrentCorporation() == nil {
@@ -193,7 +193,7 @@ func (a *admin) showAddCharacterDialog() {
 							slog.Int64("corporationID", c.ID),
 							slog.Any("error", err),
 						)
-						a.cw.sb.Show("Failed to load corporation")
+						a.cw.sb.Display("Failed to load corporation")
 					}
 				}
 			}
@@ -228,7 +228,7 @@ func (a *admin) showDeleteDialog(r adminRow) {
 				return
 			}
 			a.update(ctx)
-			a.cw.sb.Show(fmt.Sprintf("Character %s deleted", r.characterName))
+			a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
 
 			if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
 				err := a.cw.u.SetAnyCharacter(ctx)
