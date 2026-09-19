@@ -20,14 +20,14 @@ type baseUI interface {
 }
 
 type ShowFileSaveWindowParams struct {
-	CompletionText string
-	Extensions     []string
-	Filename       string
-	ShowSnackbar   func(string)
-	Title          string
-	WindowID       string // optional
-	WriteFunc      func(ctx context.Context, w io.Writer) error
-	Window         fyne.Window // required when running on mobile; used as the native picker's parent
+	CompletionText  string
+	Extensions      []string
+	Filename        string
+	DisplaySnackbar func(string)
+	Title           string
+	WindowID        string // optional
+	WriteFunc       func(ctx context.Context, w io.Writer) error
+	Window          fyne.Window // required when running on mobile; used as the native picker's parent
 }
 
 func ShowSave(u baseUI, arg ShowFileSaveWindowParams) {
@@ -43,13 +43,13 @@ func ShowSave(u baseUI, arg ShowFileSaveWindowParams) {
 }
 
 type ShowFileOpenWindowParams struct {
-	CompletionText string
-	Extensions     []string
-	ShowSnackbar   func(string)
-	Title          string
-	WindowID       string // optional
-	ReadFunc       func(ctx context.Context, r io.Reader) error
-	Window         fyne.Window // required when running on mobile; used as the native picker's parent
+	CompletionText  string
+	Extensions      []string
+	DisplaySnackbar func(string)
+	Title           string
+	WindowID        string // optional
+	ReadFunc        func(ctx context.Context, r io.Reader) error
+	Window          fyne.Window // required when running on mobile; used as the native picker's parent
 }
 
 func ShowOpen(u baseUI, arg ShowFileOpenWindowParams) {
@@ -92,7 +92,7 @@ func createFileSaveDialog(u baseUI, arg ShowFileSaveWindowParams, w fyne.Window)
 
 func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWriteCloser, err error) {
 	if err != nil {
-		arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+		arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 		return
 	}
 	if writer == nil {
@@ -104,11 +104,11 @@ func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWri
 		if err != nil {
 			slog.Error(arg.Title, "error", err)
 			fyne.Do(func() {
-				arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+				arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 			})
 			return
 		}
-		fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
+		fyne.Do(func() { arg.DisplaySnackbar(arg.CompletionText) })
 	}()
 }
 
@@ -124,7 +124,7 @@ func createFileOpenDialog(u baseUI, arg ShowFileOpenWindowParams, w fyne.Window)
 
 func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIReadCloser, err error) {
 	if err != nil {
-		arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+		arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 		return
 	}
 	if reader == nil {
@@ -136,10 +136,10 @@ func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIRea
 		if err != nil {
 			slog.Error(arg.Title, "error", err)
 			fyne.Do(func() {
-				arg.ShowSnackbar("Error: " + u.ErrorDisplay(err))
+				arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 			})
 			return
 		}
-		fyne.Do(func() { arg.ShowSnackbar(arg.CompletionText) })
+		fyne.Do(func() { arg.DisplaySnackbar(arg.CompletionText) })
 	}()
 }

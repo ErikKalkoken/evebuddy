@@ -42,7 +42,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		container.NewHBox(widget.NewLabel("Main window size:"), layout.NewSpacer(), widget.NewLabel(x)),
 	)
 	showSnackbar := widget.NewButton("Show Snackbar (debug)", func() {
-		u.ShowSnackbar(fake.Paragraph())
+		u.DisplaySnackbar(fake.Paragraph())
 	})
 	if !u.IsDeveloperMode() {
 		techInfos.Hide()

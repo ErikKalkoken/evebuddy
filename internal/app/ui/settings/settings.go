@@ -444,11 +444,11 @@ func (a *settings) showExportFileDialog(topic, path string) {
 	}
 
 	filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
-		CompletionText: xstrings.Title(topic) + " exported",
-		Filename:       filename,
-		ShowSnackbar:   a.sb.Display,
-		Title:          "Export " + topic,
-		WindowID:       "export-log",
+		CompletionText:  xstrings.Title(topic) + " exported",
+		Filename:        filename,
+		DisplaySnackbar: a.sb.Display,
+		Title:           "Export " + topic,
+		WindowID:        "export-log",
 		WriteFunc: func(_ context.Context, w io.Writer) error {
 			_, err := w.Write(data)
 			return err

@@ -21,13 +21,13 @@ func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func
 		s, err := transform(rows2)
 		if err != nil {
 			slog.Error("Failed to copy to clipboard", "topic", topic, "error", err)
-			u.ShowSnackbar("ERROR: Failed to copy " + topic + " to clipboard")
+			u.DisplaySnackbar("ERROR: Failed to copy " + topic + " to clipboard")
 			return
 		}
 		fyne.DoAndWait(func() {
 			fyne.CurrentApp().Clipboard().SetContent(s)
 		})
-		u.ShowSnackbar("Copied " + topic + " to clipboard")
+		u.DisplaySnackbar("Copied " + topic + " to clipboard")
 	}()
 }
 
@@ -38,12 +38,12 @@ func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, w
 	w := u.MainWindow()
 	rows2 := slices.Clone(rows)
 	filedialog.ShowSave(u, filedialog.ShowFileSaveWindowParams{
-		CompletionText: "Exported " + topic + " to CSV",
-		Extensions:     []string{".csv"},
-		Filename:       filename,
-		ShowSnackbar:   u.ShowSnackbar,
-		Title:          "Export " + topic + " as CSV",
-		WindowID:       fmt.Sprintf("export-%s-%s", topic, filename),
+		CompletionText:  "Exported " + topic + " to CSV",
+		Extensions:      []string{".csv"},
+		Filename:        filename,
+		DisplaySnackbar: u.DisplaySnackbar,
+		Title:           "Export " + topic + " as CSV",
+		WindowID:        fmt.Sprintf("export-%s-%s", topic, filename),
 		WriteFunc: func(_ context.Context, w io.Writer) error {
 			return writeRows(w, rows2)
 		},

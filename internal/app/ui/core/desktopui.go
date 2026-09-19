@@ -744,12 +744,12 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.ShowSnackbar(fmt.Sprintf(
+				u.DisplaySnackbar(fmt.Sprintf(
 					"%s. This is a test snack bar at %s",
 					fake.Paragraph(),
 					time.Now().Format("15:04:05.999999999"),
 				))
-				u.ShowSnackbar(fmt.Sprintf(
+				u.DisplaySnackbar(fmt.Sprintf(
 					"This is a test snack bar at %s",
 					time.Now().Format("15:04:05.999999999"),
 				))
@@ -762,7 +762,7 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				c := u.character.Load()
 				if c == nil {
-					u.ShowSnackbar("ERROR: No character selected")
+					u.DisplaySnackbar("ERROR: No character selected")
 					return
 				}
 				u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
@@ -775,12 +775,12 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				c := u.character.Load()
 				if c == nil {
-					u.ShowSnackbar("ERROR: No character selected")
+					u.DisplaySnackbar("ERROR: No character selected")
 					return
 				}
 				id, ok := c.LocationID.Value()
 				if !ok {
-					u.ShowSnackbar("ERROR: Missing location for current character.")
+					u.DisplaySnackbar("ERROR: Missing location for current character.")
 					return
 				}
 				u.InfoViewer().ShowLocation(id)
@@ -793,12 +793,12 @@ func (u *DesktopUI) defineShortcuts() {
 			func(fyne.Shortcut) {
 				c := u.character.Load()
 				if c == nil {
-					u.ShowSnackbar("ERROR: No character selected")
+					u.DisplaySnackbar("ERROR: No character selected")
 					return
 				}
 				shipTypeID, ok := c.ShipTypeID.Value()
 				if !ok {
-					u.ShowSnackbar("ERROR: Missing ship for current character.")
+					u.DisplaySnackbar("ERROR: Missing ship for current character.")
 					return
 				}
 				u.InfoViewer().ShowType(shipTypeID, 0)

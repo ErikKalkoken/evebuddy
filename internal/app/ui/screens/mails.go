@@ -696,14 +696,14 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 						slog.Int64("mailID", a.mail.MailID),
 						slog.Any("err", err),
 					)
-					a.u.ShowSnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
+					a.u.DisplaySnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
 					return
 				}
 				a.headerUpdate(ctx, a.currentFolder.Load())
 				if onSuccess != nil {
 					onSuccess()
 				}
-				a.u.ShowSnackbar(fmt.Sprintf("Mail \"%s\" deleted", subject))
+				a.u.DisplaySnackbar(fmt.Sprintf("Mail \"%s\" deleted", subject))
 			}, a.u.MainWindow(),
 		)
 	}
@@ -803,7 +803,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 				err := a.u.Character().UpdateMailRead(ctx, characterID, mail.MailID, true)
 				if err != nil {
 					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
-					a.u.ShowSnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
+					a.u.DisplaySnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
 					return nil, nil
 				}
 				a.updateUnreadCounts(ctx)

@@ -671,17 +671,17 @@ func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
 		err := u.LoadCharacter(ctx, characterID)
 		if err != nil {
 			slog.Error("Failed to load character", "characterID", characterID, "error", err)
-			u.ShowSnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
+			u.DisplaySnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
 			return
 		}
 	}
 }
 
-func (u *baseUI) ShowSnackbar(text string) {
+func (u *baseUI) DisplaySnackbar(text string) {
 	u.snackbar.Display(text)
 }
 
-func (u *baseUI) ShowSnackbarWithTimeout(text string, timeout time.Duration) {
+func (u *baseUI) DisplaySnackbarWithTimeout(text string, timeout time.Duration) {
 	u.snackbar.DisplayWithTimeout(text, timeout)
 }
 

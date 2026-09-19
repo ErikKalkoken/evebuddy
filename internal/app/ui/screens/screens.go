@@ -33,7 +33,7 @@ type baseUI interface {
 	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
 	ShowCharacter(ctx context.Context, characterID int64)
-	ShowSnackbar(text string)
+	DisplaySnackbar(text string)
 	Signals() *app.Signals
 	UpdateMailIndicator(ctx context.Context)
 }

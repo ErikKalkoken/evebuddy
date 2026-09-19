@@ -185,14 +185,14 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Export notification fixtures...", func() {
 				filedialog.ShowSave(u, filedialog.ShowFileSaveWindowParams{
-					CompletionText: "Notification fixtures exported",
-					Extensions:     []string{".json"},
-					Filename:       "notification_fixtures.json",
-					ShowSnackbar:   a.sb.Display,
-					Title:          "Export notification fixtures",
-					WriteFunc:      a.u.Character().WriteNotificationTypeFixtures,
-					Window:         w,
-					WindowID:       "export-notification-fixtures",
+					CompletionText:  "Notification fixtures exported",
+					Extensions:      []string{".json"},
+					Filename:        "notification_fixtures.json",
+					DisplaySnackbar: a.sb.Display,
+					Title:           "Export notification fixtures",
+					WriteFunc:       a.u.Character().WriteNotificationTypeFixtures,
+					Window:          w,
+					WindowID:        "export-notification-fixtures",
 				})
 			}),
 		)

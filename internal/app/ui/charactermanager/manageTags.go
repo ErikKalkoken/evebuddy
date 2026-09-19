@@ -118,10 +118,10 @@ func (a *manageTags) deleteTags() {
 
 func (a *manageTags) exportTags() {
 	filedialog.ShowSave(a.cw.u, filedialog.ShowFileSaveWindowParams{
-		CompletionText: "Tags exported",
-		ShowSnackbar:   a.cw.sb.Display,
-		Title:          "Export tags",
-		WindowID:       "tags-export",
+		CompletionText:  "Tags exported",
+		DisplaySnackbar: a.cw.sb.Display,
+		Title:           "Export tags",
+		WindowID:        "tags-export",
 		WriteFunc: func(ctx context.Context, w io.Writer) error {
 			return a.cw.u.Character().WriteTags(ctx, w, fyne.CurrentApp().Metadata().Version)
 		},
@@ -131,10 +131,10 @@ func (a *manageTags) exportTags() {
 
 func (a *manageTags) importTags() {
 	filedialog.ShowOpen(a.cw.u, filedialog.ShowFileOpenWindowParams{
-		CompletionText: "Tags imported",
-		ShowSnackbar:   a.cw.sb.Display,
-		Title:          "Import tags",
-		WindowID:       "tags-import",
+		CompletionText:  "Tags imported",
+		DisplaySnackbar: a.cw.sb.Display,
+		Title:           "Import tags",
+		WindowID:        "tags-import",
 		ReadFunc: func(ctx context.Context, r io.Reader) error {
 			err := a.cw.u.Character().ReadAndReplaceTags(ctx, r, fyne.CurrentApp().Metadata().Version)
 			if err != nil {

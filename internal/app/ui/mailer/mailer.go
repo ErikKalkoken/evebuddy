@@ -54,7 +54,7 @@ type baseUI interface {
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
-	ShowSnackbar(text string)
+	DisplaySnackbar(text string)
 	Signals() *app.Signals
 }
 
@@ -184,7 +184,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 			fyne.Do(func() {
 				w.Close()
 			})
-			a.u.ShowSnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
+			a.u.DisplaySnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
 		}()
 	})
 	a.send.SetImportance(widget.HighImportance)

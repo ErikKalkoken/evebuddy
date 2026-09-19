@@ -28,7 +28,7 @@ type UIServiceFake struct {
 	getOrCreateWindowCalls int
 	lastWindowID           string
 	lastTitle              string
-	lastCreatedWindow       fyne.Window
+	lastCreatedWindow      fyne.Window
 }
 
 func newUIServiceFake(a fyne.App) *UIServiceFake {
@@ -57,7 +57,7 @@ func TestHandleSaveResult(t *testing.T) {
 		msgs := make(chan string, 1)
 		called := false
 		arg := ShowFileSaveWindowParams{
-			ShowSnackbar: func(s string) { msgs <- s },
+			DisplaySnackbar: func(s string) { msgs <- s },
 			WriteFunc: func(context.Context, io.Writer) error {
 				called = true
 				return nil
@@ -79,7 +79,7 @@ func TestHandleSaveResult(t *testing.T) {
 		u := newUIServiceFake(test.NewTempApp(t))
 		called := false
 		arg := ShowFileSaveWindowParams{
-			ShowSnackbar: func(s string) { t.Fatalf("unexpected snackbar: %s", s) },
+			DisplaySnackbar: func(s string) { t.Fatalf("unexpected snackbar: %s", s) },
 			WriteFunc: func(context.Context, io.Writer) error {
 				called = true
 				return nil
@@ -98,8 +98,8 @@ func TestHandleSaveResult(t *testing.T) {
 		require.NoError(t, err)
 		msgs := make(chan string, 1)
 		arg := ShowFileSaveWindowParams{
-			CompletionText: "done",
-			ShowSnackbar:   func(s string) { msgs <- s },
+			CompletionText:  "done",
+			DisplaySnackbar: func(s string) { msgs <- s },
 			WriteFunc: func(_ context.Context, w io.Writer) error {
 				_, err := w.Write([]byte("hello"))
 				return err
@@ -126,7 +126,7 @@ func TestHandleSaveResult(t *testing.T) {
 		require.NoError(t, err)
 		msgs := make(chan string, 1)
 		arg := ShowFileSaveWindowParams{
-			ShowSnackbar: func(s string) { msgs <- s },
+			DisplaySnackbar: func(s string) { msgs <- s },
 			WriteFunc: func(context.Context, io.Writer) error {
 				return errors.New("disk full")
 			},
@@ -149,7 +149,7 @@ func TestHandleOpenResult(t *testing.T) {
 		msgs := make(chan string, 1)
 		called := false
 		arg := ShowFileOpenWindowParams{
-			ShowSnackbar: func(s string) { msgs <- s },
+			DisplaySnackbar: func(s string) { msgs <- s },
 			ReadFunc: func(context.Context, io.Reader) error {
 				called = true
 				return nil
@@ -171,7 +171,7 @@ func TestHandleOpenResult(t *testing.T) {
 		u := newUIServiceFake(test.NewTempApp(t))
 		called := false
 		arg := ShowFileOpenWindowParams{
-			ShowSnackbar: func(s string) { t.Fatalf("unexpected snackbar: %s", s) },
+			DisplaySnackbar: func(s string) { t.Fatalf("unexpected snackbar: %s", s) },
 			ReadFunc: func(context.Context, io.Reader) error {
 				called = true
 				return nil
@@ -192,8 +192,8 @@ func TestHandleOpenResult(t *testing.T) {
 		msgs := make(chan string, 1)
 		var got []byte
 		arg := ShowFileOpenWindowParams{
-			CompletionText: "done",
-			ShowSnackbar:   func(s string) { msgs <- s },
+			CompletionText:  "done",
+			DisplaySnackbar: func(s string) { msgs <- s },
 			ReadFunc: func(_ context.Context, r io.Reader) error {
 				var err error
 				got, err = io.ReadAll(r)
@@ -220,7 +220,7 @@ func TestHandleOpenResult(t *testing.T) {
 		require.NoError(t, err)
 		msgs := make(chan string, 1)
 		arg := ShowFileOpenWindowParams{
-			ShowSnackbar: func(s string) { msgs <- s },
+			DisplaySnackbar: func(s string) { msgs <- s },
 			ReadFunc: func(context.Context, io.Reader) error {
 				return errors.New("corrupt")
 			},
@@ -242,9 +242,9 @@ func TestShowSave_Mobile_SkipsWindowCreation(t *testing.T) {
 	u := newUIServiceFake(a)
 	u.isMobile = true
 	arg := ShowFileSaveWindowParams{
-		ShowSnackbar: func(string) {},
-		WriteFunc:    func(context.Context, io.Writer) error { return nil },
-		Window:       a.NewWindow("parent"),
+		DisplaySnackbar: func(string) {},
+		WriteFunc:       func(context.Context, io.Writer) error { return nil },
+		Window:          a.NewWindow("parent"),
 	}
 
 	assert.NotPanics(t, func() { ShowSave(u, arg) })
@@ -256,9 +256,9 @@ func TestShowOpen_Mobile_SkipsWindowCreation(t *testing.T) {
 	u := newUIServiceFake(a)
 	u.isMobile = true
 	arg := ShowFileOpenWindowParams{
-		ShowSnackbar: func(string) {},
-		ReadFunc:     func(context.Context, io.Reader) error { return nil },
-		Window:       a.NewWindow("parent"),
+		DisplaySnackbar: func(string) {},
+		ReadFunc:        func(context.Context, io.Reader) error { return nil },
+		Window:          a.NewWindow("parent"),
 	}
 
 	assert.NotPanics(t, func() { ShowOpen(u, arg) })
@@ -269,10 +269,10 @@ func TestShowSave_Desktop_UsesWindowIDAndTitle(t *testing.T) {
 	a := test.NewTempApp(t)
 	u := newUIServiceFake(a)
 	arg := ShowFileSaveWindowParams{
-		WindowID:     "export",
-		Title:        "Export data",
-		ShowSnackbar: func(string) {},
-		WriteFunc:    func(context.Context, io.Writer) error { return nil },
+		WindowID:        "export",
+		Title:           "Export data",
+		DisplaySnackbar: func(string) {},
+		WriteFunc:       func(context.Context, io.Writer) error { return nil },
 	}
 
 	ShowSave(u, arg)
@@ -316,10 +316,10 @@ func TestCreateFileSaveDialog_AppliesFilenameAndExtensions(t *testing.T) {
 	u := newUIServiceFake(a)
 	w := a.NewWindow("host")
 	arg := ShowFileSaveWindowParams{
-		Filename:     "export.json",
-		Extensions:   []string{".json"},
-		ShowSnackbar: func(string) {},
-		WriteFunc:    func(context.Context, io.Writer) error { return nil },
+		Filename:        "export.json",
+		Extensions:      []string{".json"},
+		DisplaySnackbar: func(string) {},
+		WriteFunc:       func(context.Context, io.Writer) error { return nil },
 	}
 
 	var d *dialog.FileDialog
@@ -332,9 +332,9 @@ func TestCreateFileOpenDialog_AppliesExtensions(t *testing.T) {
 	u := newUIServiceFake(a)
 	w := a.NewWindow("host")
 	arg := ShowFileOpenWindowParams{
-		Extensions:   []string{".json"},
-		ShowSnackbar: func(string) {},
-		ReadFunc:     func(context.Context, io.Reader) error { return nil },
+		Extensions:      []string{".json"},
+		DisplaySnackbar: func(string) {},
+		ReadFunc:        func(context.Context, io.Reader) error { return nil },
 	}
 
 	var d *dialog.FileDialog
