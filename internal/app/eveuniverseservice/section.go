@@ -17,7 +17,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
+// Start starts periodically updating eveuniverse sections in the background,
+// until stopped with [EVEUniverseService.Stop].
+func (s *EVEUniverseService) Start(d time.Duration) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.updateMu.Lock()
 	s.updateCancel = cancel
@@ -43,9 +45,9 @@ func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
 	})
 }
 
-// StopUpdateTicker cancels the update ticker started with [EVEUniverseService.StartUpdateTicker]
-// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
-func (s *EVEUniverseService) StopUpdateTicker() {
+// Stop cancels the update loop started with [EVEUniverseService.Start] and waits
+// for it to finish. It is safe to call even when Start was never called.
+func (s *EVEUniverseService) Stop() {
 	s.updateMu.Lock()
 	cancel := s.updateCancel
 	s.updateMu.Unlock()
@@ -81,7 +83,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
 		if ctx.Err() != nil {
-			// aborted by StopUpdateTicker, not a real failure
+			// aborted by Stop, not a real failure
 			slog.Debug("General section update canceled", "section", section)
 			return
 		}
@@ -182,7 +184,7 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 	})
 	if err != nil {
 		if ctx.Err() != nil {
-			// aborted by StopUpdateTicker, not a real failure; skip persisting since
+			// aborted by Stop, not a real failure; skip persisting since
 			// the DB write below would itself fail with the same canceled ctx
 			slog.Debug("General section update canceled", "section", arg.section)
 			return zero, err

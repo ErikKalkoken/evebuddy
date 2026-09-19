@@ -21,9 +21,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
+// Start starts periodically updating characters in the background, plus any
+// longer-running background work a section update spawns (e.g. mail body
+// downloads), until stopped with [CharacterService.Stop].
+func (s *CharacterService) Start(d time.Duration) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.updateMu.Lock()
+	s.updateCtx = ctx
 	s.updateCancel = cancel
 	s.updateMu.Unlock()
 
@@ -32,7 +36,7 @@ func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
 			s.updateWG.Go(func() {
 				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
 					if ctx.Err() != nil {
-						// aborted by StopUpdateTicker, not a real failure
+						// aborted by Stop, not a real failure
 						slog.Debug("Notify characters canceled", "error", err)
 					} else {
 						slog.Error("Failed to notify characters", "error", err)
@@ -42,7 +46,7 @@ func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
 			s.updateWG.Go(func() {
 				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
 					if ctx.Err() != nil {
-						// aborted by StopUpdateTicker, not a real failure
+						// aborted by Stop, not a real failure
 						slog.Debug("Update characters canceled", "error", err)
 					} else {
 						slog.Error("Failed to update characters", "error", err)
@@ -64,9 +68,9 @@ func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
 	})
 }
 
-// StopUpdateTicker cancels the update ticker started with [CharacterService.StartUpdateTickerCharacters]
-// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
-func (s *CharacterService) StopUpdateTicker() {
+// Stop cancels the background work started with [CharacterService.Start] and waits
+// for it to finish. It is safe to call even when Start was never called.
+func (s *CharacterService) Stop() {
 	s.updateMu.Lock()
 	cancel := s.updateCancel
 	s.updateMu.Unlock()
@@ -75,6 +79,19 @@ func (s *CharacterService) StopUpdateTicker() {
 	}
 	cancel()
 	s.updateWG.Wait()
+}
+
+// backgroundCtx returns the long-lived ctx owned by Start, for background work that
+// must outlive a single update pass (e.g. downloading mail bodies across many ticks).
+// It falls back to context.Background() when Start was never called, e.g. offline
+// mode or updates disabled at startup.
+func (s *CharacterService) backgroundCtx() context.Context {
+	s.updateMu.Lock()
+	defer s.updateMu.Unlock()
+	if s.updateCtx != nil {
+		return s.updateCtx
+	}
+	return context.Background()
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -229,7 +246,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		if ctx.Err() != nil {
-			// aborted by StopUpdateTicker, not a real failure
+			// aborted by Stop, not a real failure
 			slog.Debug("Character section update canceled",
 				"characterID", characterID,
 				"section", section,
@@ -260,8 +277,8 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 
 	switch section {
 	case app.SectionCharacterMailHeaders:
-		go func() {
-			ctx, cancel := context.WithCancel(context.Background())
+		s.updateWG.Go(func() {
+			ctx, cancel := context.WithCancel(s.backgroundCtx())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d-%s", characterID, s.signals.PseudoUniqueID())
 			s.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
@@ -276,7 +293,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 			if err != nil {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
 			}
-		}()
+		})
 		if s.settings.NotifyMailsEnabled() {
 			earliest := s.settings.NotifyMailsEarliest()
 			if err := s.NotifyMails(ctx, characterID, earliest, s.sendDesktopNotification); err != nil {
@@ -523,7 +540,7 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
 	if ctx.Err() != nil {
-		// aborted by StopUpdateTicker, not a real failure; skip persisting since
+		// aborted by Stop, not a real failure; skip persisting since
 		// the DB write below would itself fail with the same canceled ctx
 		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section)
 		return

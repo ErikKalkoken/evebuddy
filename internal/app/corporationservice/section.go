@@ -21,7 +21,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
+// Start starts periodically updating corporations in the background, until
+// stopped with [CorporationService.Stop].
+func (s *CorporationService) Start(d time.Duration) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.updateMu.Lock()
 	s.updateCancel = cancel
@@ -32,7 +34,7 @@ func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
 			s.updateWG.Go(func() {
 				if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil {
 					if ctx.Err() != nil {
-						// aborted by StopUpdateTicker, not a real failure
+						// aborted by Stop, not a real failure
 						slog.Debug("Update corporations canceled", "error", err)
 					} else {
 						slog.Error("Failed to update corporations", "error", err)
@@ -54,9 +56,9 @@ func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
 	})
 }
 
-// StopUpdateTicker cancels the update ticker started with [CorporationService.StartUpdateTickerCorporations]
-// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
-func (s *CorporationService) StopUpdateTicker() {
+// Stop cancels the update loop started with [CorporationService.Start] and waits
+// for it to finish. It is safe to call even when Start was never called.
+func (s *CorporationService) Stop() {
 	s.updateMu.Lock()
 	cancel := s.updateCancel
 	s.updateMu.Unlock()
@@ -130,7 +132,7 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 	)
 	if err != nil {
 		if ctx.Err() != nil {
-			// aborted by StopUpdateTicker, not a real failure
+			// aborted by Stop, not a real failure
 			slog.Debug("Corporation section update canceled", "corporationID", corporationID, "section", section)
 			return
 		}
@@ -344,7 +346,7 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 	})
 	if err != nil {
 		if ctx.Err() != nil {
-			// aborted by StopUpdateTicker, not a real failure; skip persisting since
+			// aborted by Stop, not a real failure; skip persisting since
 			// the DB write below would itself fail with the same canceled ctx
 			slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section)
 			return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)

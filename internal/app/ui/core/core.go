@@ -486,6 +486,7 @@ func newBaseUI(arg UIParams) *baseUI {
 		u.isForeground.Store(false)
 	})
 	u.app.Lifecycle().SetOnStopped(func() {
+		slog.Info("Starting graceful shutdown")
 		u.shutdownUpdateTickers(shutdownTimeout)
 		slog.Info("App stopped")
 		if u.onAppStopped != nil {
@@ -501,9 +502,9 @@ func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
 	slog.Info("Stopping update tickers")
 	done := make(chan struct{})
 	go func() {
-		u.eus.StopUpdateTicker()
-		u.cs.StopUpdateTicker()
-		u.rs.StopUpdateTicker()
+		u.eus.Stop()
+		u.cs.Stop()
+		u.rs.Stop()
 		close(done)
 	}()
 	select {
@@ -577,9 +578,9 @@ func (u *baseUI) Start() bool {
 		if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 			time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
-			u.eus.StartUpdateTicker(eveUniverseUpdateTick)
-			u.cs.StartUpdateTickerCharacters(characterUpdateTick)
-			u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
+			u.eus.Start(eveUniverseUpdateTick)
+			u.cs.Start(characterUpdateTick)
+			u.rs.Start(corporationUpdateTick)
 		} else {
 			slog.Info("Update ticker disabled")
 		}

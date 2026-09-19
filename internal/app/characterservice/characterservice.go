@@ -82,6 +82,7 @@ type CharacterService struct {
 	signals                 *app.Signals
 	st                      *storage.Storage
 	updateMu                sync.Mutex
+	updateCtx               context.Context
 	updateCancel            context.CancelFunc
 	updateWG                sync.WaitGroup
 }

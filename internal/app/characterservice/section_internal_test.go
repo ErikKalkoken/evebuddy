@@ -3,6 +3,7 @@ package characterservice
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -666,14 +667,14 @@ func TestCharacterService_UpdateTicker_StopWithoutStart(t *testing.T) {
 	// when
 	done := make(chan struct{})
 	go func() {
-		s.StopUpdateTicker()
+		s.Stop()
 		close(done)
 	}()
 	// then
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("StopUpdateTicker did not return")
+		t.Fatal("Stop did not return")
 	}
 }
 
@@ -681,19 +682,19 @@ func TestCharacterService_UpdateTicker_StartThenStop(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	s.StartUpdateTickerCharacters(10 * time.Millisecond)
+	s.Start(10 * time.Millisecond)
 	time.Sleep(50 * time.Millisecond) // let at least one tick fire
 	// when
 	done := make(chan struct{})
 	go func() {
-		s.StopUpdateTicker()
+		s.Stop()
 		close(done)
 	}()
 	// then
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("StopUpdateTicker did not return within timeout")
+		t.Fatal("Stop did not return within timeout")
 	}
 }
 
@@ -701,11 +702,11 @@ func TestCharacterService_UpdateTicker_StopIsIdempotent(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	s.StartUpdateTickerCharacters(10 * time.Millisecond)
-	s.StopUpdateTicker()
+	s.Start(10 * time.Millisecond)
+	s.Stop()
 	// when/then
 	assert.NotPanics(t, func() {
-		s.StopUpdateTicker()
+		s.Stop()
 	})
 }
 
@@ -725,7 +726,7 @@ func TestCharacterService_UpdateTicker_StopWaitsForInFlightWork(t *testing.T) {
 		},
 	})
 	factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
-	s.StartUpdateTickerCharacters(10 * time.Millisecond)
+	s.Start(10 * time.Millisecond)
 	select {
 	case <-entered:
 		// the notification callback is now sleeping, i.e. an update is genuinely in flight
@@ -734,7 +735,56 @@ func TestCharacterService_UpdateTicker_StopWaitsForInFlightWork(t *testing.T) {
 	}
 	// when
 	start := time.Now()
-	s.StopUpdateTicker()
+	s.Stop()
+	// then
+	assert.GreaterOrEqual(t, time.Since(start), delay)
+}
+
+// The DownloadMissingMailBodies goroutine spawned from UpdateCharacterSectionAndRefreshIfNeeded
+// must be tracked by s.updateWG, so Stop waits for it instead of abandoning it.
+//
+// Note this test verifies tracking via a direct s.updateWG.Wait(), not via Stop itself:
+// real ESI/DB calls made with a canceled ctx abort almost immediately (correct, intended
+// behavior), so once Stop's cancel() fires, an elapsed-time assertion can no longer
+// distinguish "tracked and quickly aborted" from "never tracked at all".
+func TestCharacterService_DownloadMissingMailBodies_IsTrackedByUpdateWG(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	const delay = 200 * time.Millisecond
+	s := NewFake(Params{Storage: st})
+
+	c := factory.CreateCharacter()
+	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+	// mark mail headers as already up to date, so UpdateSectionIfNeeded
+	// short-circuits without hitting ESI and we reach the switch below directly.
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: c.ID,
+		Section:     app.SectionCharacterMailHeaders,
+	})
+	mail := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, mail.MailID),
+		func(req *http.Request) (*http.Response, error) {
+			time.Sleep(delay)
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"labels":     []int{},
+				"read":       true,
+				"recipients": []map[string]any{{"recipient_id": 90000001, "recipient_type": "character"}},
+				"subject":    "test",
+				"timestamp":  mail.Timestamp.Format(app.DateTimeFormatESI),
+				"body":       "body",
+			})
+		},
+	)
+
+	// when
+	start := time.Now()
+	s.UpdateCharacterSectionAndRefreshIfNeeded(context.Background(), c.ID, app.SectionCharacterMailHeaders, false)
+	s.updateWG.Wait()
 	// then
 	assert.GreaterOrEqual(t, time.Since(start), delay)
 }
