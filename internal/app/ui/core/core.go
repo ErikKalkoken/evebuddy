@@ -512,6 +512,7 @@ func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 		wg.Go(u.refreshTicker.Stop)
 		wg.Go(u.versionCheckTicker.Stop)
 		wg.Go(u.clockTicker.Stop)
+		wg.Go(func() { u.signals.AppShutdown.Emit(context.Background(), struct{}{}) })
 		wg.Wait()
 		close(done)
 	}()
