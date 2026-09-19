@@ -36,6 +36,7 @@ func TestGetSet(t *testing.T) {
 	t.Run("persists the value to storage", func(t *testing.T) {
 		s := newTestSettings(t)
 		s.set("x", "hello")
+		s.flush()
 		v, err := s.st.GetSetting(context.Background(), "x")
 		require.NoError(t, err)
 		assert.Equal(t, "hello", v)
@@ -45,6 +46,7 @@ func TestGetSet(t *testing.T) {
 		s1, err := New(context.Background(), st)
 		require.NoError(t, err)
 		s1.set("x", "hello")
+		s1.flush()
 
 		s2, err := New(context.Background(), st)
 		require.NoError(t, err)

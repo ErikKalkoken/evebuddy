@@ -590,23 +590,25 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButt
 				items2 = append(items2, it)
 			}
 			list2 := newSettingList(items2)
-			enableAll := settingAction{
-				Label: "Enable all",
-				Action: func() {
-					for _, it := range items2 {
-						it.Setter(true)
+			setGroupEnabled := func(enable bool) {
+				for _, nt := range groupsAndTypes[g] {
+					ntStr := nt.String()
+					if enable {
+						typesEnabled.Add(ntStr)
+					} else {
+						typesEnabled.Delete(ntStr)
 					}
-					list2.Refresh()
-				},
+				}
+				a.u.Settings().SetNotificationTypesEnabled(typesEnabled)
+				list2.Refresh()
+			}
+			enableAll := settingAction{
+				Label:  "Enable all",
+				Action: func() { setGroupEnabled(true) },
 			}
 			disableAll := settingAction{
-				Label: "Disable all",
-				Action: func() {
-					for _, it := range items2 {
-						it.Setter(false)
-					}
-					list2.Refresh()
-				},
+				Label:  "Disable all",
+				Action: func() { setGroupEnabled(false) },
 			}
 			return groupPage{
 				content: list2,

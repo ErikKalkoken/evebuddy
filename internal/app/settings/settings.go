@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -95,14 +96,17 @@ type Settings struct {
 
 	mu     sync.RWMutex
 	values map[string]string
+
+	writeQueue *syncqueue.SyncQueue[settingWrite]
 }
 
 // New returns a new Settings object, preloading all currently stored values.
 func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
 	s := &Settings{
-		st:     st,
-		ctx:    ctx,
-		values: make(map[string]string),
+		st:         st,
+		ctx:        ctx,
+		values:     make(map[string]string),
+		writeQueue: syncqueue.New[settingWrite](),
 	}
 	rows, err := st.ListSettings(ctx)
 	if err != nil {
@@ -111,7 +115,26 @@ func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
 	for _, r := range rows {
 		s.values[r.Key] = r.Value
 	}
+	go s.persistLoop()
 	return s, nil
+}
+
+// persistLoop writes queued setting values to storage one at a time, off the
+// caller's goroutine, so that Set* calls from a UI callback never block on disk I/O.
+func (s *Settings) persistLoop() {
+	for {
+		w, err := s.writeQueue.Get(s.ctx)
+		if err != nil {
+			return // s.ctx was canceled
+		}
+		if w.done != nil {
+			close(w.done)
+			continue
+		}
+		if err := s.st.SetSetting(s.ctx, w.key, w.value); err != nil {
+			slog.Error("settings: failed to persist value", "key", w.key, "error", err)
+		}
+	}
 }
 
 func (s *Settings) DeveloperMode() bool {
