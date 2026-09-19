@@ -33,14 +33,6 @@ func (s *Settings) set(key, value string) {
 	s.writeQueue.Put(settingWrite{key: key, value: value})
 }
 
-// flush blocks until every write enqueued before this call has been persisted.
-// For tests only.
-func (s *Settings) flush() {
-	done := make(chan struct{})
-	s.writeQueue.Put(settingWrite{done: done})
-	<-done
-}
-
 func (s *Settings) getString(key string, fallback string) string {
 	v, ok := s.get(key)
 	if !ok {

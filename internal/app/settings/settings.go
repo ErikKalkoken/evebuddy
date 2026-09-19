@@ -87,9 +87,10 @@ const (
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
-//
-// Values are cached in memory and persisted to storage on every write. The whole
-// table is preloaded once at construction time, so reads never touch storage.
+// Values are cached in memory and persisted to storage asynchronously by a background
+// goroutine, so getters and setters never block on I/O and are safe to call from any
+// goroutine, including Fyne's UI thread. Call Flush to wait for pending writes, e.g.
+// before shutdown.
 type Settings struct {
 	st  *storage.Storage
 	ctx context.Context // held deliberately: keeps every public method free of a ctx param
@@ -135,6 +136,18 @@ func (s *Settings) persistLoop() {
 			slog.Error("settings: failed to persist value", "key", w.key, "error", err)
 		}
 	}
+}
+
+// Flush blocks until every write enqueued before this call has been persisted
+// to storage. Callers should call this before closing the underlying database,
+// e.g. during app shutdown, to avoid losing writes still in the queue.
+func (s *Settings) Flush() {
+	if s == nil {
+		return
+	}
+	done := make(chan struct{})
+	s.writeQueue.Put(settingWrite{done: done})
+	<-done
 }
 
 func (s *Settings) DeveloperMode() bool {

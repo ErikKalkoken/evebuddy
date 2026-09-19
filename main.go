@@ -256,6 +256,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize settings: %s", err)
 	}
+	defer settings.Flush()
 	if *resetUIFlag {
 		settings.ResetUI()
 	}
