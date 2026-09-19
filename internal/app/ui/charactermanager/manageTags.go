@@ -377,17 +377,22 @@ func (a *manageTags) makeCharacterList() *widget.List {
 				if a.selectedTag == nil {
 					return
 				}
-				err := a.cw.u.Character().RemoveTagFromCharacter(
-					context.Background(),
-					r.ID,
-					a.selectedTag.ID,
-				)
-				if err != nil {
-					a.cw.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
-					return
-				}
-				a.setCharactersAsync(a.selectedTag)
-				go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				tag := a.selectedTag
+				go func() {
+					err := a.cw.u.Character().RemoveTagFromCharacter(
+						context.Background(),
+						r.ID,
+						tag.ID,
+					)
+					if err != nil {
+						a.cw.reportError("Failed to remove tag from character: "+tag.Name, err)
+						return
+					}
+					fyne.Do(func() {
+						a.setCharactersAsync(tag)
+					})
+					go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				}()
 			}
 		},
 	)
