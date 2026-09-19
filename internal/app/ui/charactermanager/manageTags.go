@@ -233,22 +233,26 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 						if !confirmed {
 							return
 						}
-						for characterID, v := range selected {
-							if !v {
-								return
+						go func() {
+							for characterID, v := range selected {
+								if !v {
+									continue
+								}
+								err := a.cw.u.Character().AddTagToCharacter(
+									context.Background(),
+									characterID,
+									tag.ID,
+								)
+								if err != nil {
+									a.cw.reportError("Failed to add tag to character", err)
+									return
+								}
 							}
-							err := a.cw.u.Character().AddTagToCharacter(
-								context.Background(),
-								characterID,
-								tag.ID,
-							)
-							if err != nil {
-								a.cw.reportError("Failed to add tag to character", err)
-								return
-							}
-						}
-						a.setCharactersAsync(tag)
-						go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+							fyne.Do(func() {
+								a.setCharactersAsync(tag)
+							})
+							go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+						}()
 					},
 					a.cw.w,
 				)
