@@ -249,3 +249,53 @@ func TestCorporationService_HasValidToken(t *testing.T) {
 		assert.False(t, got)
 	})
 }
+
+func TestCorporationService_UpdateTicker_StopWithoutStart(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	// when
+	done := make(chan struct{})
+	go func() {
+		s.Stop()
+		close(done)
+	}()
+	// then
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Stop did not return")
+	}
+}
+
+func TestCorporationService_UpdateTicker_StartThenStop(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	s.Start(10 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond) // let at least one tick fire
+	// when
+	done := make(chan struct{})
+	go func() {
+		s.Stop()
+		close(done)
+	}()
+	// then
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop did not return within timeout")
+	}
+}
+
+func TestCorporationService_UpdateTicker_StopIsIdempotent(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	s.Start(10 * time.Millisecond)
+	s.Stop()
+	// when/then
+	assert.NotPanics(t, func() {
+		s.Stop()
+	})
+}

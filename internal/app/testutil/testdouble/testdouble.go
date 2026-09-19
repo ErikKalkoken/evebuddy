@@ -227,13 +227,13 @@ type UIFake struct {
 }
 
 type UIParams struct {
-	App               fyne.App
-	IsMobile          bool
-	Signals           *app.Signals
-	Storage           *storage.Storage
-	ShowCharacterFunc func(ctx context.Context, characterID int64)
-	ShowSnackbarFunc  func(text string)
-	Settings          *settings.Settings
+	App                 fyne.App
+	IsMobile            bool
+	Signals             *app.Signals
+	Storage             *storage.Storage
+	ShowCharacterFunc   func(ctx context.Context, characterID int64)
+	DisplaySnackbarFunc func(text string)
+	Settings            *settings.Settings
 }
 
 func NewUIFake(args ...UIParams) *UIFake {
@@ -292,7 +292,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		isMobile:          arg.IsMobile,
 		rs:                rs,
 		showCharacterFunc: arg.ShowCharacterFunc,
-		showSnackbarFunc:  arg.ShowSnackbarFunc,
+		showSnackbarFunc:  arg.DisplaySnackbarFunc,
 		signals:           arg.Signals,
 		settings:          arg.Settings,
 		windows:           make(map[string]fyne.Window),
@@ -393,13 +393,13 @@ func (u *UIFake) ShowCharacter(ctx context.Context, characterID int64) {
 	}
 }
 
-func (u *UIFake) ShowSnackbar(text string) {
+func (u *UIFake) DisplaySnackbar(text string) {
 	if f := u.showSnackbarFunc; f != nil {
 		f(text)
 	}
 }
 
-func (u *UIFake) ShowSnackbarWithTimeout(text string, timeout time.Duration) {
+func (u *UIFake) DisplaySnackbarWithTimeout(text string, timeout time.Duration) {
 	if f := u.showSnackbarFunc; f != nil {
 		f(text)
 	}

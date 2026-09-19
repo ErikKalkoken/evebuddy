@@ -35,6 +35,10 @@ type Signals struct {
 	// The app is initialized
 	AppInit signals.Signal[struct{}]
 
+	// The app is shutting down. Listeners should cancel and wait for any
+	// background work they own before returning.
+	AppShutdown signals.Signal[struct{}]
+
 	// A character was added.
 	CharacterAdded signals.Signal[*Character]
 
@@ -92,6 +96,7 @@ type Signals struct {
 func NewSignals() *Signals {
 	s := &Signals{
 		AppInit:                     signals.New[struct{}](),
+		AppShutdown:                 signals.New[struct{}](),
 		CharacterAdded:              signals.New[*Character](),
 		CharacterChanged:            signals.New[int64](),
 		CharacterRemoved:            signals.New[*EntityShort](),

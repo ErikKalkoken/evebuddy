@@ -476,7 +476,7 @@ func skillCatalogueRowsToItems(rows []skillCatalogueRow) []skillExportItem {
 func (a *SkillCatalogue) exportAsCSV() {
 	character := a.character.Load()
 	if character == nil {
-		a.u.ShowSnackbar("No character")
+		a.u.DisplaySnackbar("No character")
 		return
 	}
 	fileName := xstrings.SanitizeFilename("skills_" + strings.ReplaceAll(character.NameOrZero(), " ", "") + ".csv")

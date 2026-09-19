@@ -21,17 +21,27 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
-	go func() {
-		for {
-			go func() {
-				if err := s.UpdateCorporationsIfNeeded(context.Background(), false); err != nil {
+// Start starts periodically updating corporations in the background, until
+// stopped with [CorporationService.Stop].
+func (s *CorporationService) Start(d time.Duration) {
+	s.update.StartTicker(d, true, func(ctx context.Context) {
+		s.update.Go(func() {
+			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil {
+				if ctx.Err() != nil {
+					// aborted by Stop, not a real failure
+					slog.Debug("Update corporations canceled", "error", err)
+				} else {
 					slog.Error("Failed to update corporations", "error", err)
 				}
-			}()
-			<-time.Tick(d)
-		}
-	}()
+			}
+		})
+	})
+}
+
+// Stop cancels the update loop started with [CorporationService.Start] and waits
+// for it to finish. It is safe to call even when Start was never called.
+func (s *CorporationService) Stop() {
+	s.update.Stop()
 }
 
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -96,6 +106,11 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 		},
 	)
 	if err != nil {
+		if ctx.Err() != nil {
+			// aborted by Stop, not a real failure
+			slog.Debug("Corporation section update canceled", "corporationID", corporationID, "section", section)
+			return
+		}
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
@@ -305,6 +320,12 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 		return f(ctx, arg)
 	})
 	if err != nil {
+		if ctx.Err() != nil {
+			// aborted by Stop, not a real failure; skip persisting since
+			// the DB write below would itself fail with the same canceled ctx
+			slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section)
+			return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
+		}
 		slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}

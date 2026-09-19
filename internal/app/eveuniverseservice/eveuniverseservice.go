@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type StatusCache interface {
@@ -35,6 +36,7 @@ type EVEUniverseService struct {
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
+	update           xsync.BackgroundGroup
 }
 
 type Params struct {

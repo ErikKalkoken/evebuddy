@@ -936,7 +936,7 @@ func (a *communicationsReadingPane) makeCopyAction(cn *app.CharacterNotification
 			s += "(no body)"
 		}
 		fyne.CurrentApp().Clipboard().SetContent(s)
-		a.co.u.ShowSnackbar("Communication copied to clipboard")
+		a.co.u.DisplaySnackbar("Communication copied to clipboard")
 	}
 	return f
 }
@@ -959,14 +959,14 @@ func (a *communicationsReadingPane) makeMenuItems(cn *app.CharacterNotification)
 				b, err := cn.ToJSON()
 				if err != nil {
 					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
-					a.co.u.ShowSnackbar("ERROR: Failed to convert data: " + err.Error())
+					a.co.u.DisplaySnackbar("ERROR: Failed to convert data: " + err.Error())
 					return
 				}
 				if len(b) == 0 {
 					return
 				}
 				fyne.CurrentApp().Clipboard().SetContent(string(b))
-				a.co.u.ShowSnackbar("Notification object copied to clipboard")
+				a.co.u.DisplaySnackbar("Notification object copied to clipboard")
 			},
 		),
 	}
