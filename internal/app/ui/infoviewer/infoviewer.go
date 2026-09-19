@@ -184,31 +184,37 @@ func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 		return
 	}
 
-	ctx := context.Background()
-	et, err := iw.u.EVEUniverse().GetOrCreateTypeESI(ctx, typeID)
-	if err != nil {
-		showError(err)
-		return
-	}
-	switch et.Group.Category.ID {
-	case app.EveCategoryStation:
-		iw.show(Location, itemID)
-		return
-	case app.EveCategoryStructure:
-		iw.show2(showParams{
-			variant:     Location,
-			entityID:    itemID,
-			characterID: characterID,
-		})
-		return
-	}
-	switch et.Group.ID {
-	case app.EveGroupCharacter:
-		iw.show(Character, itemID)
-		return
-	}
+	go func() {
+		ctx := context.Background()
+		et, err := iw.u.EVEUniverse().GetOrCreateTypeESI(ctx, typeID)
+		if err != nil {
+			fyne.Do(func() {
+				showError(err)
+			})
+			return
+		}
+		fyne.Do(func() {
+			switch et.Group.Category.ID {
+			case app.EveCategoryStation:
+				iw.show(Location, itemID)
+				return
+			case app.EveCategoryStructure:
+				iw.show2(showParams{
+					variant:     Location,
+					entityID:    itemID,
+					characterID: characterID,
+				})
+				return
+			}
+			switch et.Group.ID {
+			case app.EveGroupCharacter:
+				iw.show(Character, itemID)
+				return
+			}
 
-	showError(fmt.Errorf("not supported"))
+			showError(fmt.Errorf("not supported"))
+		})
+	}()
 }
 
 func (iw *InfoViewer) ShowBloodline(id int64) {

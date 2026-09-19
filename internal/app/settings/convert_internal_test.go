@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -36,6 +37,7 @@ func TestGetSet(t *testing.T) {
 	t.Run("persists the value to storage", func(t *testing.T) {
 		s := newTestSettings(t)
 		s.set("x", "hello")
+		s.Flush()
 		v, err := s.st.GetSetting(context.Background(), "x")
 		require.NoError(t, err)
 		assert.Equal(t, "hello", v)
@@ -45,6 +47,7 @@ func TestGetSet(t *testing.T) {
 		s1, err := New(context.Background(), st)
 		require.NoError(t, err)
 		s1.set("x", "hello")
+		s1.Flush()
 
 		s2, err := New(context.Background(), st)
 		require.NoError(t, err)
@@ -218,5 +221,11 @@ func TestGetSetFloatList(t *testing.T) {
 		s.set("x", "not-json")
 		fallback := []float64{1}
 		assert.Equal(t, fallback, s.getFloatList("x", fallback))
+	})
+	t.Run("does not update the cache when the value cannot be marshaled", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.setFloatList("x", []float64{1, 2})
+		s.setFloatList("x", []float64{math.NaN()})
+		assert.Equal(t, []float64{1, 2}, s.getFloatList("x", nil))
 	})
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -86,23 +87,27 @@ const (
 )
 
 // Settings represents the settings for the app and provides an API for reading and writing settings.
-//
-// Values are cached in memory and persisted to storage on every write. The whole
-// table is preloaded once at construction time, so reads never touch storage.
+// Values are cached in memory and persisted to storage asynchronously by a background
+// goroutine, so getters and setters never block on I/O and are safe to call from any
+// goroutine, including Fyne's UI thread. Call Flush to wait for pending writes, e.g.
+// before shutdown.
 type Settings struct {
 	st  *storage.Storage
 	ctx context.Context // held deliberately: keeps every public method free of a ctx param
 
 	mu     sync.RWMutex
 	values map[string]string
+
+	writeQueue *syncqueue.SyncQueue[settingWrite]
 }
 
 // New returns a new Settings object, preloading all currently stored values.
 func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
 	s := &Settings{
-		st:     st,
-		ctx:    ctx,
-		values: make(map[string]string),
+		st:         st,
+		ctx:        ctx,
+		values:     make(map[string]string),
+		writeQueue: syncqueue.New[settingWrite](),
 	}
 	rows, err := st.ListSettings(ctx)
 	if err != nil {
@@ -111,7 +116,38 @@ func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
 	for _, r := range rows {
 		s.values[r.Key] = r.Value
 	}
+	go s.persistLoop()
 	return s, nil
+}
+
+// persistLoop writes queued setting values to storage one at a time, off the
+// caller's goroutine, so that Set* calls from a UI callback never block on disk I/O.
+func (s *Settings) persistLoop() {
+	for {
+		w, err := s.writeQueue.Get(s.ctx)
+		if err != nil {
+			return // s.ctx was canceled
+		}
+		if w.done != nil {
+			close(w.done)
+			continue
+		}
+		if err := s.st.SetSetting(s.ctx, w.key, w.value); err != nil {
+			slog.Error("settings: failed to persist value", "key", w.key, "error", err)
+		}
+	}
+}
+
+// Flush blocks until every write enqueued before this call has been persisted
+// to storage. Callers should call this before closing the underlying database,
+// e.g. during app shutdown, to avoid losing writes still in the queue.
+func (s *Settings) Flush() {
+	if s == nil {
+		return
+	}
+	done := make(chan struct{})
+	s.writeQueue.Put(settingWrite{done: done})
+	<-done
 }
 
 func (s *Settings) DeveloperMode() bool {

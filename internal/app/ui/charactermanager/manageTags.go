@@ -170,89 +170,98 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 		if a.selectedTag == nil {
 			return
 		}
-		_, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), a.selectedTag.ID)
-		if err != nil {
-			a.cw.reportError("Failed to list characters", err)
-			return
-		}
-		if len(others) == 0 {
-			return
-		}
-		selected := make(map[int64]bool)
-		list := widget.NewList(
-			func() int {
-				return len(others)
-			},
-			func() fyne.CanvasObject {
-				check := widget.NewIcon(theme.CheckButtonIcon())
-				character := ui.NewEveEntityListItem(a.cw.u.EVEImage().EveEntityLogoAsync)
-				character.IsAvatar = true
-				return container.NewBorder(
-					nil,
-					nil,
-					check,
-					nil,
-					character,
-				)
-			},
-			func(id widget.ListItemID, co fyne.CanvasObject) {
-				if id >= len(others) {
-					return
-				}
-				border := co.(*fyne.Container).Objects
-				r := others[id]
-				border[0].(*ui.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
-
-				check := border[1].(*widget.Icon)
-				if selected[r.ID] {
-					check.SetResource(theme.CheckButtonCheckedIcon())
-				} else {
-					check.SetResource(theme.CheckButtonIcon())
-				}
-			},
-		)
-		list.HideSeparators = true
-		list.OnSelected = func(id widget.ListItemID) {
-			list.UnselectAll()
-			if id >= len(others) {
+		tag := a.selectedTag
+		go func() {
+			_, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), tag.ID)
+			if err != nil {
+				a.cw.reportError("Failed to list characters", err)
 				return
 			}
-			character := others[id]
-			selected[character.ID] = !selected[character.ID]
-			list.RefreshItem(id)
-		}
-		d := dialog.NewCustomConfirm(
-			"Add characters to tag: "+a.selectedTag.Name,
-			"Add",
-			"Cancel",
-			list,
-			func(confirmed bool) {
-				if !confirmed {
-					return
-				}
-				for characterID, v := range selected {
-					if !v {
+			if len(others) == 0 {
+				return
+			}
+			fyne.Do(func() {
+				selected := make(map[int64]bool)
+				list := widget.NewList(
+					func() int {
+						return len(others)
+					},
+					func() fyne.CanvasObject {
+						check := widget.NewIcon(theme.CheckButtonIcon())
+						character := ui.NewEveEntityListItem(a.cw.u.EVEImage().EveEntityLogoAsync)
+						character.IsAvatar = true
+						return container.NewBorder(
+							nil,
+							nil,
+							check,
+							nil,
+							character,
+						)
+					},
+					func(id widget.ListItemID, co fyne.CanvasObject) {
+						if id >= len(others) {
+							return
+						}
+						border := co.(*fyne.Container).Objects
+						r := others[id]
+						border[0].(*ui.EveEntityListItem).Set2(r.ID, r.Name, app.EveEntityCharacter)
+
+						check := border[1].(*widget.Icon)
+						if selected[r.ID] {
+							check.SetResource(theme.CheckButtonCheckedIcon())
+						} else {
+							check.SetResource(theme.CheckButtonIcon())
+						}
+					},
+				)
+				list.HideSeparators = true
+				list.OnSelected = func(id widget.ListItemID) {
+					list.UnselectAll()
+					if id >= len(others) {
 						return
 					}
-					err := a.cw.u.Character().AddTagToCharacter(
-						context.Background(),
-						characterID,
-						a.selectedTag.ID,
-					)
-					if err != nil {
-						a.cw.reportError("Failed to add tag to character", err)
-						return
-					}
+					character := others[id]
+					selected[character.ID] = !selected[character.ID]
+					list.RefreshItem(id)
 				}
-				a.setCharactersAsync(a.selectedTag)
-				go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
-			},
-			a.cw.w,
-		)
-		xdesktop.DisableShortcutsForDialog(d, a.cw.w)
-		d.Show()
-		_, s := a.cw.w.Canvas().InteractiveArea()
-		d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
+				d := dialog.NewCustomConfirm(
+					"Add characters to tag: "+tag.Name,
+					"Add",
+					"Cancel",
+					list,
+					func(confirmed bool) {
+						if !confirmed {
+							return
+						}
+						go func() {
+							for characterID, v := range selected {
+								if !v {
+									continue
+								}
+								err := a.cw.u.Character().AddTagToCharacter(
+									context.Background(),
+									characterID,
+									tag.ID,
+								)
+								if err != nil {
+									a.cw.reportError("Failed to add tag to character", err)
+									return
+								}
+							}
+							fyne.Do(func() {
+								a.setCharactersAsync(tag)
+							})
+							go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+						}()
+					},
+					a.cw.w,
+				)
+				xdesktop.DisableShortcutsForDialog(d, a.cw.w)
+				d.Show()
+				_, s := a.cw.w.Canvas().InteractiveArea()
+				d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
+			})
+		}()
 	})
 	w.Importance = widget.HighImportance
 	w.Disable()
@@ -368,17 +377,22 @@ func (a *manageTags) makeCharacterList() *widget.List {
 				if a.selectedTag == nil {
 					return
 				}
-				err := a.cw.u.Character().RemoveTagFromCharacter(
-					context.Background(),
-					r.ID,
-					a.selectedTag.ID,
-				)
-				if err != nil {
-					a.cw.reportError("Failed to remove tag from character: "+a.selectedTag.Name, err)
-					return
-				}
-				a.setCharactersAsync(a.selectedTag)
-				go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				tag := a.selectedTag
+				go func() {
+					err := a.cw.u.Character().RemoveTagFromCharacter(
+						context.Background(),
+						r.ID,
+						tag.ID,
+					)
+					if err != nil {
+						a.cw.reportError("Failed to remove tag from character: "+tag.Name, err)
+						return
+					}
+					fyne.Do(func() {
+						a.setCharactersAsync(tag)
+					})
+					go a.cw.u.Signals().TagsChanged.Emit(context.Background(), struct{}{})
+				}()
 			}
 		},
 	)
