@@ -185,15 +185,11 @@ func (a *statusBar) start() {
 	a.updateUpdateStatus(ctx)
 	a.updateEveStatus(ctx)
 
-	clockTicker := time.NewTicker(clockUpdateTicker)
-	go func() {
-		for {
-			fyne.Do(func() {
-				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
-			})
-			<-clockTicker.C
-		}
-	}()
+	a.u.clockTicker.Start(clockUpdateTicker, true, func(ctx context.Context) {
+		fyne.Do(func() {
+			a.eveClock.SetText(time.Now().UTC().Format("15:04"))
+		})
+	})
 
 	if a.u.IsOffline() {
 		fyne.Do(func() {

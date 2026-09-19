@@ -165,6 +165,7 @@ type baseUI struct {
 	avatarCache                    xsync.Map[int64, fyne.Resource]
 	character                      atomic.Pointer[app.Character]
 	characterAvatarPlaceholder64   fyne.Resource
+	clockTicker                    cancelableTicker
 	concurrencyLimit               int
 	corporation                    atomic.Pointer[app.Corporation]
 	corporationAvatarPlaceholder64 fyne.Resource
@@ -178,9 +179,7 @@ type baseUI struct {
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
-	refreshMu                      sync.Mutex
-	refreshCancel                  context.CancelFunc
-	refreshDone                    chan struct{}
+	refreshTicker                  cancelableTicker
 	signals                        *app.Signals
 	versionCheckTicker             cancelableTicker
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
@@ -509,8 +508,9 @@ func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
 		u.eus.Stop()
 		u.cs.Stop()
 		u.rs.Stop()
-		u.stopRefreshTicker()
+		u.refreshTicker.Stop()
 		u.versionCheckTicker.Stop()
+		u.clockTicker.Stop()
 		close(done)
 	}()
 	select {
@@ -519,20 +519,6 @@ func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
 	case <-time.After(timeout):
 		slog.Warn("Timed out waiting for update tickers to stop", "timeout", timeout)
 	}
-}
-
-// stopRefreshTicker cancels the UI refresh ticker and waits for it to finish.
-// It is safe to call even when it was never started.
-func (u *baseUI) stopRefreshTicker() {
-	u.refreshMu.Lock()
-	cancel := u.refreshCancel
-	done := u.refreshDone
-	u.refreshMu.Unlock()
-	if cancel == nil {
-		return
-	}
-	cancel()
-	<-done
 }
 
 // Start starts the app and reports whether it was started.
@@ -587,25 +573,9 @@ func (u *baseUI) Start() bool {
 		updateCharactersMissingScope(ctx)
 
 		u.isStartupCompleted.Store(true)
-		refreshCtx, refreshCancel := context.WithCancel(context.Background())
-		refreshDone := make(chan struct{})
-		u.refreshMu.Lock()
-		u.refreshCancel = refreshCancel
-		u.refreshDone = refreshDone
-		u.refreshMu.Unlock()
-		go func() {
-			defer close(refreshDone)
-			ticker := time.NewTicker(refreshUITick)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-refreshCtx.Done():
-					return
-				case <-ticker.C:
-					u.signals.RefreshTickerExpired.Emit(refreshCtx, struct{}{})
-				}
-			}
-		}()
+		u.refreshTicker.Start(refreshUITick, false, func(ctx context.Context) {
+			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+		})
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
