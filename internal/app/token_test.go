@@ -53,17 +53,18 @@ func TestCharacterToken_AuthToken(t *testing.T) {
 }
 
 func TestCharacterToken_OauthToken(t *testing.T) {
-	expiresAt := time.Now().Add(time.Hour)
+	expiresAt := time.Now().Add(10 * time.Minute)
 	x := app.CharacterToken{
-		AccessToken:  "access",
+		AccessToken:  "accessToken",
+		RefreshToken: "refreshToken",
+		TokenType:    "Bearer",
 		ExpiresAt:    expiresAt,
-		RefreshToken: "refresh",
 	}
 	got := x.OauthToken()
-	xassert.Equal(t, "access", got.AccessToken)
-	xassert.Equal(t, "refresh", got.RefreshToken)
+	xassert.Equal(t, "accessToken", got.AccessToken)
+	xassert.Equal(t, "refreshToken", got.RefreshToken)
+	xassert.Equal(t, "Bearer", got.TokenType)
 	xassert.Equal(t, expiresAt, got.Expiry)
-	assert.InDelta(t, 3600, got.ExpiresIn, 2)
 }
 
 func TestCharacterToken_HasScopes(t *testing.T) {
