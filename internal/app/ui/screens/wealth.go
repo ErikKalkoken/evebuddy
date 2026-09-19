@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	wealthArcCornerRadius      = 4
+	wealthArcCornerRadius      = 8
 	wealthArcInnerRadius       = 0.6
 	wealthArcPadAngle          = 1.5
 	wealthMaxCharacters        = 10
@@ -286,8 +286,8 @@ func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
 		wallets += r.walletBalance
 	}
 	d := []namedValue{
-		{name: "Wallet", value: wallets},
 		{name: "Assets", value: assets},
+		{name: "Wallet", value: wallets},
 		{name: "Contracts", value: contracts},
 		{name: "Orders", value: orders},
 	}
