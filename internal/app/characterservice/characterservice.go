@@ -81,7 +81,6 @@ type CharacterService struct {
 	sig                     *singleinstance.Group
 	signals                 *app.Signals
 	st                      *storage.Storage
-	updateMu                sync.Mutex
 	updateCtx               context.Context
 	updateCancel            context.CancelFunc
 	updateWG                sync.WaitGroup
@@ -160,6 +159,7 @@ func New(arg Params) *CharacterService {
 	if arg.SendDesktopNotification != nil {
 		s.sendDesktopNotification = arg.SendDesktopNotification
 	}
+	s.updateCtx, s.updateCancel = context.WithCancel(context.Background())
 	return s
 }
 

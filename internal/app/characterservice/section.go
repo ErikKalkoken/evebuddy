@@ -25,12 +25,7 @@ import (
 // longer-running background work a section update spawns (e.g. mail body
 // downloads), until stopped with [CharacterService.Stop].
 func (s *CharacterService) Start(d time.Duration) {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.updateMu.Lock()
-	s.updateCtx = ctx
-	s.updateCancel = cancel
-	s.updateMu.Unlock()
-
+	ctx := s.updateCtx
 	s.updateWG.Go(func() {
 		fireUpdate := func() {
 			s.updateWG.Go(func() {
@@ -68,30 +63,19 @@ func (s *CharacterService) Start(d time.Duration) {
 	})
 }
 
-// Stop cancels the background work started with [CharacterService.Start] and waits
-// for it to finish. It is safe to call even when Start was never called.
+// Stop cancels the background work owned by this service and waits for it to
+// finish. It is safe to call even when Start was never called.
 func (s *CharacterService) Stop() {
-	s.updateMu.Lock()
-	cancel := s.updateCancel
-	s.updateMu.Unlock()
-	if cancel == nil {
-		return
-	}
-	cancel()
+	s.updateCancel()
 	s.updateWG.Wait()
 }
 
-// backgroundCtx returns the long-lived ctx owned by Start, for background work that
-// must outlive a single update pass (e.g. downloading mail bodies across many ticks).
-// It falls back to context.Background() when Start was never called, e.g. offline
-// mode or updates disabled at startup.
+// backgroundCtx returns the ctx owned by this service, for background work that
+// must outlive a single update pass (e.g. downloading mail bodies across many
+// ticks). It is valid for the service's entire lifetime, whether or not Start
+// was ever called, and is canceled by Stop.
 func (s *CharacterService) backgroundCtx() context.Context {
-	s.updateMu.Lock()
-	defer s.updateMu.Unlock()
-	if s.updateCtx != nil {
-		return s.updateCtx
-	}
-	return context.Background()
+	return s.updateCtx
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
