@@ -42,8 +42,8 @@ func TestFetch(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := &app.ESIStatus{
-				PlayerCount:  12345,
-				ErrorMessage: "",
+				HTTPStatusCode: http.StatusOK,
+				PlayerCount:    12345,
 			}
 			xassert.Equal(t, want, got)
 		}
@@ -63,7 +63,8 @@ func TestFetch(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := &app.ESIStatus{
-				ErrorMessage: "418 I'm a teapot: custom error message",
+				ErrorMessage:   "418 I'm a teapot: custom error message",
+				HTTPStatusCode: http.StatusTeapot,
 			}
 			xassert.Equal(t, want, got)
 		}
@@ -105,6 +106,7 @@ func TestFetchSwaggerErrors(t *testing.T) {
 			got, err := es.Fetch(t.Context())
 			// then
 			if assert.NoError(t, err) {
+				assert.Equal(t, code, got.HTTPStatusCode)
 				assert.True(t, strings.HasPrefix(got.ErrorMessage, fmt.Sprint(code)))
 			}
 		})
