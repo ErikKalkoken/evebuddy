@@ -741,13 +741,13 @@ func TestCharacterService_UpdateTicker_StopWaitsForInFlightWork(t *testing.T) {
 }
 
 // The DownloadMissingMailBodies goroutine spawned from UpdateCharacterSectionAndRefreshIfNeeded
-// must be tracked by s.updateWG, so Stop waits for it instead of abandoning it.
+// must be tracked by s.update, so Stop waits for it instead of abandoning it.
 //
-// Note this test verifies tracking via a direct s.updateWG.Wait(), not via Stop itself:
+// Note this test verifies tracking via a direct s.update.Wait(), not via Stop itself:
 // real ESI/DB calls made with a canceled ctx abort almost immediately (correct, intended
 // behavior), so once Stop's cancel() fires, an elapsed-time assertion can no longer
 // distinguish "tracked and quickly aborted" from "never tracked at all".
-func TestCharacterService_DownloadMissingMailBodies_IsTrackedByUpdateWG(t *testing.T) {
+func TestCharacterService_DownloadMissingMailBodies_IsTracked(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	httpmock.Activate()
@@ -784,7 +784,7 @@ func TestCharacterService_DownloadMissingMailBodies_IsTrackedByUpdateWG(t *testi
 	// when
 	start := time.Now()
 	s.UpdateCharacterSectionAndRefreshIfNeeded(context.Background(), c.ID, app.SectionCharacterMailHeaders, false)
-	s.updateWG.Wait()
+	s.update.Wait()
 	// then
 	assert.GreaterOrEqual(t, time.Since(start), delay)
 }

@@ -20,42 +20,17 @@ import (
 // Start starts periodically updating eveuniverse sections in the background,
 // until stopped with [EVEUniverseService.Stop].
 func (s *EVEUniverseService) Start(d time.Duration) {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.updateMu.Lock()
-	s.updateCancel = cancel
-	s.updateMu.Unlock()
-
-	s.updateWG.Go(func() {
-		fireUpdate := func() {
-			s.updateWG.Go(func() {
-				s.UpdateSectionsIfNeeded(ctx, false)
-			})
-		}
-		ticker := time.NewTicker(d)
-		defer ticker.Stop()
-		fireUpdate()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				fireUpdate()
-			}
-		}
+	s.update.StartTicker(d, true, func(ctx context.Context) {
+		s.update.Go(func() {
+			s.UpdateSectionsIfNeeded(ctx, false)
+		})
 	})
 }
 
 // Stop cancels the update loop started with [EVEUniverseService.Start] and waits
 // for it to finish. It is safe to call even when Start was never called.
 func (s *EVEUniverseService) Stop() {
-	s.updateMu.Lock()
-	cancel := s.updateCancel
-	s.updateMu.Unlock()
-	if cancel == nil {
-		return
-	}
-	cancel()
-	s.updateWG.Wait()
+	s.update.Stop()
 }
 
 func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {

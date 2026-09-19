@@ -165,7 +165,7 @@ type baseUI struct {
 	avatarCache                    xsync.Map[int64, fyne.Resource]
 	character                      atomic.Pointer[app.Character]
 	characterAvatarPlaceholder64   fyne.Resource
-	clockTicker                    cancelableTicker
+	clockTicker                    xsync.BackgroundGroup
 	concurrencyLimit               int
 	corporation                    atomic.Pointer[app.Corporation]
 	corporationAvatarPlaceholder64 fyne.Resource
@@ -182,9 +182,9 @@ type baseUI struct {
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
-	refreshTicker                  cancelableTicker
+	refreshTicker                  xsync.BackgroundGroup
 	signals                        *app.Signals
-	versionCheckTicker             cancelableTicker
+	versionCheckTicker             xsync.BackgroundGroup
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
 	windows                        map[string]fyne.Window // child windows
@@ -600,7 +600,7 @@ func (u *baseUI) Start() bool {
 		updateCharactersMissingScope(ctx)
 
 		u.isStartupCompleted.Store(true)
-		u.refreshTicker.Start(refreshUITick, false, func(ctx context.Context) {
+		u.refreshTicker.StartTicker(refreshUITick, false, func(ctx context.Context) {
 			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
 		})
 		if u.onAppFirstStarted != nil {

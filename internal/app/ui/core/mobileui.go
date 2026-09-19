@@ -718,7 +718,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		updateUpdateStatus(ctx)
 
 		if !u.IsOffline() {
-			u.versionCheckTicker.Start(3600*time.Second, true, func(ctx context.Context) {
+			u.versionCheckTicker.StartTicker(3600*time.Second, true, func(ctx context.Context) {
 				v, err := u.availableUpdate(ctx)
 				if err != nil {
 					if ctx.Err() == nil {

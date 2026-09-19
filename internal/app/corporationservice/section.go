@@ -24,49 +24,24 @@ import (
 // Start starts periodically updating corporations in the background, until
 // stopped with [CorporationService.Stop].
 func (s *CorporationService) Start(d time.Duration) {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.updateMu.Lock()
-	s.updateCancel = cancel
-	s.updateMu.Unlock()
-
-	s.updateWG.Go(func() {
-		fireUpdate := func() {
-			s.updateWG.Go(func() {
-				if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil {
-					if ctx.Err() != nil {
-						// aborted by Stop, not a real failure
-						slog.Debug("Update corporations canceled", "error", err)
-					} else {
-						slog.Error("Failed to update corporations", "error", err)
-					}
+	s.update.StartTicker(d, true, func(ctx context.Context) {
+		s.update.Go(func() {
+			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil {
+				if ctx.Err() != nil {
+					// aborted by Stop, not a real failure
+					slog.Debug("Update corporations canceled", "error", err)
+				} else {
+					slog.Error("Failed to update corporations", "error", err)
 				}
-			})
-		}
-		ticker := time.NewTicker(d)
-		defer ticker.Stop()
-		fireUpdate()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				fireUpdate()
 			}
-		}
+		})
 	})
 }
 
 // Stop cancels the update loop started with [CorporationService.Start] and waits
 // for it to finish. It is safe to call even when Start was never called.
 func (s *CorporationService) Stop() {
-	s.updateMu.Lock()
-	cancel := s.updateCancel
-	s.updateMu.Unlock()
-	if cancel == nil {
-		return
-	}
-	cancel()
-	s.updateWG.Wait()
+	s.update.Stop()
 }
 
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {

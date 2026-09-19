@@ -25,49 +25,34 @@ import (
 // longer-running background work a section update spawns (e.g. mail body
 // downloads), until stopped with [CharacterService.Stop].
 func (s *CharacterService) Start(d time.Duration) {
-	ctx := s.updateCtx
-	s.updateWG.Go(func() {
-		fireUpdate := func() {
-			s.updateWG.Go(func() {
-				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
-					if ctx.Err() != nil {
-						// aborted by Stop, not a real failure
-						slog.Debug("Notify characters canceled", "error", err)
-					} else {
-						slog.Error("Failed to notify characters", "error", err)
-					}
+	s.update.StartTicker(d, true, func(ctx context.Context) {
+		s.update.Go(func() {
+			if err := s.notifyCharactersIfNeeded(ctx); err != nil {
+				if ctx.Err() != nil {
+					// aborted by Stop, not a real failure
+					slog.Debug("Notify characters canceled", "error", err)
+				} else {
+					slog.Error("Failed to notify characters", "error", err)
 				}
-			})
-			s.updateWG.Go(func() {
-				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
-					if ctx.Err() != nil {
-						// aborted by Stop, not a real failure
-						slog.Debug("Update characters canceled", "error", err)
-					} else {
-						slog.Error("Failed to update characters", "error", err)
-					}
-				}
-			})
-		}
-		ticker := time.NewTicker(d)
-		defer ticker.Stop()
-		fireUpdate()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				fireUpdate()
 			}
-		}
+		})
+		s.update.Go(func() {
+			if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
+				if ctx.Err() != nil {
+					// aborted by Stop, not a real failure
+					slog.Debug("Update characters canceled", "error", err)
+				} else {
+					slog.Error("Failed to update characters", "error", err)
+				}
+			}
+		})
 	})
 }
 
 // Stop cancels the background work owned by this service and waits for it to
 // finish. It is safe to call even when Start was never called.
 func (s *CharacterService) Stop() {
-	s.updateCancel()
-	s.updateWG.Wait()
+	s.update.Stop()
 }
 
 // backgroundCtx returns the ctx owned by this service, for background work that
@@ -75,7 +60,7 @@ func (s *CharacterService) Stop() {
 // ticks). It is valid for the service's entire lifetime, whether or not Start
 // was ever called, and is canceled by Stop.
 func (s *CharacterService) backgroundCtx() context.Context {
-	return s.updateCtx
+	return s.update.Context()
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -261,7 +246,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 
 	switch section {
 	case app.SectionCharacterMailHeaders:
-		s.updateWG.Go(func() {
+		s.update.Go(func() {
 			ctx, cancel := context.WithCancel(s.backgroundCtx())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d-%s", characterID, s.signals.PseudoUniqueID())
