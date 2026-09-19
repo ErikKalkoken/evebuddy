@@ -182,6 +182,7 @@ type baseUI struct {
 	refreshCancel                  context.CancelFunc
 	refreshDone                    chan struct{}
 	signals                        *app.Signals
+	versionCheckTicker             cancelableTicker
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
 	windows                        map[string]fyne.Window // child windows
@@ -509,6 +510,7 @@ func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
 		u.cs.Stop()
 		u.rs.Stop()
 		u.stopRefreshTicker()
+		u.versionCheckTicker.Stop()
 		close(done)
 	}()
 	select {

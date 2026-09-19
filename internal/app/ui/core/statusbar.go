@@ -207,26 +207,22 @@ func (a *statusBar) start() {
 	})
 
 	if !a.u.IsOffline() {
-		tickerNewVersion := time.NewTicker(versionTicker)
-		go func() {
-			for {
-				func() {
-					v, err := a.u.availableUpdate(ctx)
-					if err != nil {
-						slog.Error("fetch latest github version for download hint", "err", err)
-						return
-					}
-					if !v.IsRemoteNewer {
-						return
-					}
-					fyne.Do(func() {
-						a.updateHint.set(v)
-						a.updateHint.Show()
-					})
-				}()
-				<-tickerNewVersion.C
+		a.u.versionCheckTicker.Start(versionTicker, true, func(ctx context.Context) {
+			v, err := a.u.availableUpdate(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					slog.Error("fetch latest github version for download hint", "err", err)
+				}
+				return
 			}
-		}()
+			if !v.IsRemoteNewer {
+				return
+			}
+			fyne.Do(func() {
+				a.updateHint.set(v)
+				a.updateHint.Show()
+			})
+		})
 	}
 }
 
