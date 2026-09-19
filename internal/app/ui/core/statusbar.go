@@ -292,6 +292,9 @@ func (a *statusBar) showClockDialog() {
 	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
 
 	stop := make(chan struct{})
+	var stopOnce sync.Once
+	doStop := func() { stopOnce.Do(func() { close(stop) }) }
+
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
 		defer timer.Stop()
@@ -307,8 +310,14 @@ func (a *statusBar) showClockDialog() {
 			}
 		}
 	}()
+
+	key := a.u.Signals().UniqueKey()
+	a.u.Signals().AppShutdown.AddListener(func(ctx context.Context, _ struct{}) {
+		doStop()
+	}, key)
 	d.SetOnClosed(func() {
-		stop <- struct{}{}
+		doStop()
+		a.u.Signals().AppShutdown.RemoveListener(key)
 	})
 	d.Show()
 }
