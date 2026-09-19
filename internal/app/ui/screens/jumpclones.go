@@ -395,6 +395,9 @@ func (a *JumpClones) updateRoutesAsync() {
 		a.routesMu.Unlock()
 		return
 	}
+	if a.routesCancel != nil {
+		a.routesCancel() // supersede any still-running fetch
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	a.routesCancel = cancel
