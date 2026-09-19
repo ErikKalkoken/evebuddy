@@ -678,11 +678,11 @@ func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
 }
 
 func (u *baseUI) ShowSnackbar(text string) {
-	u.snackbar.Show(text)
+	u.snackbar.Display(text)
 }
 
 func (u *baseUI) ShowSnackbarWithTimeout(text string, timeout time.Duration) {
-	u.snackbar.ShowWithTimeout(text, timeout)
+	u.snackbar.DisplayWithTimeout(text, timeout)
 }
 
 func (u *baseUI) Signals() *app.Signals {
@@ -987,7 +987,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 				err := u.LoadCharacter(ctx, c.ID)
 				if err != nil {
 					slog.Error("make character switch menu", "error", err)
-					u.snackbar.Show("ERROR: Failed to switch character")
+					u.snackbar.Display("ERROR: Failed to switch character")
 				}
 			}()
 		})
@@ -1047,7 +1047,7 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 				err := u.LoadCorporation(ctx, c.ID)
 				if err != nil {
 					slog.Error("make corporation switch menu", "error", err)
-					u.snackbar.Show("ERROR: Failed to switch corporation")
+					u.snackbar.Display("ERROR: Failed to switch corporation")
 				}
 			}()
 		})

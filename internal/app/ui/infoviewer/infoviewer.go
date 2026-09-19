@@ -744,7 +744,7 @@ func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
 		if ok && x != nil {
 			err := w.openURL(x)
 			if err != nil {
-				w.iw.sb.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
+				w.iw.sb.Display(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
 			}
 			return
 		}

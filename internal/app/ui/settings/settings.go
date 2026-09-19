@@ -332,7 +332,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
 				widget.DangerImportance,
 				func() {
 					a.u.ClearAllCaches()
-					a.sb.Show("Cache cleared")
+					a.sb.Display("Cache cleared")
 				}, a.w,
 			)
 		},
@@ -425,9 +425,9 @@ func (a *settings) showDeleteFileDialog(name, path string) {
 			}()
 			if err != nil {
 				slog.Error("delete "+name, "path", path, "error", err)
-				a.sb.Show("ERROR: Failed to delete " + name)
+				a.sb.Display("ERROR: Failed to delete " + name)
 			} else {
-				a.sb.Show(xstrings.Title(name) + " deleted")
+				a.sb.Display(xstrings.Title(name) + " deleted")
 			}
 		}, a.w)
 }
@@ -436,7 +436,7 @@ func (a *settings) showExportFileDialog(topic, path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		a.sb.Show("No file to export: " + filename)
+		a.sb.Display("No file to export: " + filename)
 		return
 	} else if err != nil {
 		ui.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
@@ -446,7 +446,7 @@ func (a *settings) showExportFileDialog(topic, path string) {
 	filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
 		CompletionText: xstrings.Title(topic) + " exported",
 		Filename:       filename,
-		ShowSnackbar:   a.sb.Show,
+		ShowSnackbar:   a.sb.Display,
 		Title:          "Export " + topic,
 		WindowID:       "export-log",
 		WriteFunc: func(_ context.Context, w io.Writer) error {
@@ -710,7 +710,7 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButt
 
 // func (a *userSettings) reportError(text string, err error) {
 // 	slog.Error(text, "error", err)
-// 	a.sb.Show(fmt.Sprintf("ERROR: %s: %s", text, err))
+// 	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
 // }
 
 func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {

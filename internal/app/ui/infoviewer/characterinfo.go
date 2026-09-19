@@ -132,7 +132,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 		go func() {
 			ec, err := a.iw.u.EVEUniverse().GetCharacterESI(context.Background(), a.id)
 			if err != nil {
-				a.iw.sb.Show("Failed to get character for forum: " + a.iw.u.ErrorDisplay(err))
+				a.iw.sb.Display("Failed to get character for forum: " + a.iw.u.ErrorDisplay(err))
 				return
 			}
 			name := strings.ReplaceAll(ec.Name, " ", "_")

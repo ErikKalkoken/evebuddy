@@ -132,7 +132,7 @@ func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) 
 		err := a.cw.u.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
-			a.cw.sb.Show("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
+			a.cw.sb.Display("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
 		}
 		fyne.Do(func() {
 			a.characters[id].IsTrainingWatched = on
