@@ -171,6 +171,7 @@ type baseUI struct {
 	corporationAvatarPlaceholder64 fyne.Resource
 	dataPaths                      xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme                   fyne.Theme
+	entityExchangeWG               sync.WaitGroup
 	isDeveloperMode                atomic.Bool
 	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
 	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
@@ -513,6 +514,7 @@ func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 		wg.Go(u.versionCheckTicker.Stop)
 		wg.Go(u.clockTicker.Stop)
 		wg.Go(func() { u.signals.AppShutdown.Emit(context.Background(), struct{}{}) })
+		wg.Go(u.entityExchangeWG.Wait)
 		wg.Wait()
 		close(done)
 	}()
@@ -780,7 +782,7 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 
 func (u *baseUI) ResetCharacter(ctx context.Context) {
 	u.character.Store(nil)
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, nil)
+	u.entityExchangeWG.Go(func() { u.signals.CurrentCharacterExchanged.Emit(ctx, nil) })
 	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
@@ -790,9 +792,9 @@ func (u *baseUI) ResetCharacter(ctx context.Context) {
 func (u *baseUI) SetCharacter(ctx context.Context, c *app.Character) {
 	u.character.Store(c)
 	if u.onSetCharacter != nil {
-		go u.onSetCharacter(c)
+		u.entityExchangeWG.Go(func() { u.onSetCharacter(c) })
 	}
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, c)
+	u.entityExchangeWG.Go(func() { u.signals.CurrentCharacterExchanged.Emit(ctx, c) })
 	u.settings.SetLastCharacterID(c.ID)
 }
 
@@ -853,7 +855,7 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 
 func (u *baseUI) ResetCorporation(ctx context.Context) {
 	u.corporation.Store(nil)
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, nil)
+	u.entityExchangeWG.Go(func() { u.signals.CurrentCorporationExchanged.Emit(ctx, nil) })
 	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
@@ -863,9 +865,9 @@ func (u *baseUI) ResetCorporation(ctx context.Context) {
 func (u *baseUI) SetCorporation(ctx context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
 	if u.onSetCorporation != nil {
-		go u.onSetCorporation(c)
+		u.entityExchangeWG.Go(func() { u.onSetCorporation(c) })
 	}
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, c)
+	u.entityExchangeWG.Go(func() { u.signals.CurrentCorporationExchanged.Emit(ctx, c) })
 	u.settings.SetLastCorporationID(c.ID)
 }
 
