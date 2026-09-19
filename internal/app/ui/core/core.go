@@ -490,7 +490,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	})
 	u.app.Lifecycle().SetOnStopped(func() {
 		slog.Info("Starting graceful shutdown")
-		u.shutdownUpdateTickers(shutdownTimeout)
+		u.shutdownBackgroundWork(shutdownTimeout)
 		slog.Info("App stopped")
 		if u.onAppStopped != nil {
 			u.onAppStopped()
@@ -499,25 +499,27 @@ func newBaseUI(arg UIParams) *baseUI {
 	return u
 }
 
-// shutdownUpdateTickers cancels the character, corporation and eveuniverse update tickers
-// and waits for any in-flight update to finish, up to timeout.
-func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
-	slog.Info("Stopping update tickers")
+// shutdownBackgroundWork lets in-flight work finish cleanly instead of being killed
+// abruptly when the app closes, bounded by timeout.
+func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
+	slog.Info("Stopping background work")
 	done := make(chan struct{})
 	go func() {
-		u.eus.Stop()
-		u.cs.Stop()
-		u.rs.Stop()
-		u.refreshTicker.Stop()
-		u.versionCheckTicker.Stop()
-		u.clockTicker.Stop()
+		var wg sync.WaitGroup
+		wg.Go(u.eus.Stop)
+		wg.Go(u.cs.Stop)
+		wg.Go(u.rs.Stop)
+		wg.Go(u.refreshTicker.Stop)
+		wg.Go(u.versionCheckTicker.Stop)
+		wg.Go(u.clockTicker.Stop)
+		wg.Wait()
 		close(done)
 	}()
 	select {
 	case <-done:
-		slog.Info("Update tickers stopped")
+		slog.Info("Background work stopped")
 	case <-time.After(timeout):
-		slog.Warn("Timed out waiting for update tickers to stop", "timeout", timeout)
+		slog.Warn("Timed out waiting for background work to stop", "timeout", timeout)
 	}
 }
 
