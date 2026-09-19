@@ -57,6 +57,7 @@ const (
 	corporationUpdateTick   = 60 * time.Second
 	eveUniverseUpdateTick   = 300 * time.Second
 	delayBeforeUpdateStatus = 3 * time.Second
+	shutdownTimeout         = 5 * time.Second
 )
 
 // Default ScaleMode for images
@@ -485,12 +486,32 @@ func newBaseUI(arg UIParams) *baseUI {
 		u.isForeground.Store(false)
 	})
 	u.app.Lifecycle().SetOnStopped(func() {
+		u.shutdownUpdateTickers(shutdownTimeout)
 		slog.Info("App stopped")
 		if u.onAppStopped != nil {
 			u.onAppStopped()
 		}
 	})
 	return u
+}
+
+// shutdownUpdateTickers cancels the character, corporation and eveuniverse update tickers
+// and waits for any in-flight update to finish, up to timeout.
+func (u *baseUI) shutdownUpdateTickers(timeout time.Duration) {
+	slog.Info("Stopping update tickers")
+	done := make(chan struct{})
+	go func() {
+		u.eus.StopUpdateTicker()
+		u.cs.StopUpdateTicker()
+		u.rs.StopUpdateTicker()
+		close(done)
+	}()
+	select {
+	case <-done:
+		slog.Info("Update tickers stopped")
+	case <-time.After(timeout):
+		slog.Warn("Timed out waiting for update tickers to stop", "timeout", timeout)
+	}
 }
 
 // Start starts the app and reports whether it was started.

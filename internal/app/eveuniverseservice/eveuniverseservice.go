@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -35,6 +36,9 @@ type EVEUniverseService struct {
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
+	updateMu         sync.Mutex
+	updateCancel     context.CancelFunc
+	updateWG         sync.WaitGroup
 }
 
 type Params struct {

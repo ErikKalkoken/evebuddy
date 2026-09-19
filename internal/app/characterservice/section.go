@@ -22,23 +22,59 @@ import (
 )
 
 func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
-	go func() {
-		for {
-			ctx := context.Background()
-			go func() {
-				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
-					slog.Error("Failed to notify characters", "error", err)
-				}
-			}()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.updateMu.Lock()
+	s.updateCancel = cancel
+	s.updateMu.Unlock()
 
-			go func() {
-				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
-					slog.Error("Failed to update characters", "error", err)
+	s.updateWG.Go(func() {
+		fireUpdate := func() {
+			s.updateWG.Go(func() {
+				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
+					if ctx.Err() != nil {
+						// aborted by StopUpdateTicker, not a real failure
+						slog.Debug("Notify characters canceled", "error", err)
+					} else {
+						slog.Error("Failed to notify characters", "error", err)
+					}
 				}
-			}()
-			<-time.Tick(d)
+			})
+			s.updateWG.Go(func() {
+				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
+					if ctx.Err() != nil {
+						// aborted by StopUpdateTicker, not a real failure
+						slog.Debug("Update characters canceled", "error", err)
+					} else {
+						slog.Error("Failed to update characters", "error", err)
+					}
+				}
+			})
 		}
-	}()
+		ticker := time.NewTicker(d)
+		defer ticker.Stop()
+		fireUpdate()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fireUpdate()
+			}
+		}
+	})
+}
+
+// StopUpdateTicker cancels the update ticker started with [CharacterService.StartUpdateTickerCharacters]
+// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
+func (s *CharacterService) StopUpdateTicker() {
+	s.updateMu.Lock()
+	cancel := s.updateCancel
+	s.updateMu.Unlock()
+	if cancel == nil {
+		return
+	}
+	cancel()
+	s.updateWG.Wait()
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -192,6 +228,14 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 // to make sure they are refreshed when data changes.
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
+		if ctx.Err() != nil {
+			// aborted by StopUpdateTicker, not a real failure
+			slog.Debug("Character section update canceled",
+				"characterID", characterID,
+				"section", section,
+			)
+			return
+		}
 		slog.Error("Failed to process update for character section",
 			"characterID", characterID,
 			"section", section,
@@ -478,6 +522,12 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
+	if ctx.Err() != nil {
+		// aborted by StopUpdateTicker, not a real failure; skip persisting since
+		// the DB write below would itself fail with the same canceled ctx
+		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section)
+		return
+	}
 	slog.Error("Character section update failed", "characterID", arg.characterID, "section", arg.section, "error", err)
 	errorMessage := err.Error()
 	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{

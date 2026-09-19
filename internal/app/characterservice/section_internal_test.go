@@ -658,3 +658,83 @@ func TestNotifyCharactersIfNeeded(t *testing.T) {
 		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
 	})
 }
+
+func TestCharacterService_UpdateTicker_StopWithoutStart(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	// when
+	done := make(chan struct{})
+	go func() {
+		s.StopUpdateTicker()
+		close(done)
+	}()
+	// then
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("StopUpdateTicker did not return")
+	}
+}
+
+func TestCharacterService_UpdateTicker_StartThenStop(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	s.StartUpdateTickerCharacters(10 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond) // let at least one tick fire
+	// when
+	done := make(chan struct{})
+	go func() {
+		s.StopUpdateTicker()
+		close(done)
+	}()
+	// then
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopUpdateTicker did not return within timeout")
+	}
+}
+
+func TestCharacterService_UpdateTicker_StopIsIdempotent(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	s.StartUpdateTickerCharacters(10 * time.Millisecond)
+	s.StopUpdateTicker()
+	// when/then
+	assert.NotPanics(t, func() {
+		s.StopUpdateTicker()
+	})
+}
+
+func TestCharacterService_UpdateTicker_StopWaitsForInFlightWork(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const delay = 200 * time.Millisecond
+	entered := make(chan struct{}, 1)
+	s := NewFake(Params{
+		Storage: st,
+		SendDesktopNotification: func(title, content string) {
+			select {
+			case entered <- struct{}{}:
+			default:
+			}
+			time.Sleep(delay)
+		},
+	})
+	factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
+	s.StartUpdateTickerCharacters(10 * time.Millisecond)
+	select {
+	case <-entered:
+		// the notification callback is now sleeping, i.e. an update is genuinely in flight
+	case <-time.After(2 * time.Second):
+		t.Fatal("notification callback was never entered")
+	}
+	// when
+	start := time.Now()
+	s.StopUpdateTicker()
+	// then
+	assert.GreaterOrEqual(t, time.Since(start), delay)
+}

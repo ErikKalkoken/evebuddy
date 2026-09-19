@@ -18,12 +18,42 @@ import (
 )
 
 func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
-	go func() {
-		for {
-			go s.UpdateSectionsIfNeeded(context.Background(), false)
-			<-time.Tick(d)
+	ctx, cancel := context.WithCancel(context.Background())
+	s.updateMu.Lock()
+	s.updateCancel = cancel
+	s.updateMu.Unlock()
+
+	s.updateWG.Go(func() {
+		fireUpdate := func() {
+			s.updateWG.Go(func() {
+				s.UpdateSectionsIfNeeded(ctx, false)
+			})
 		}
-	}()
+		ticker := time.NewTicker(d)
+		defer ticker.Stop()
+		fireUpdate()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fireUpdate()
+			}
+		}
+	})
+}
+
+// StopUpdateTicker cancels the update ticker started with [EVEUniverseService.StartUpdateTicker]
+// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
+func (s *EVEUniverseService) StopUpdateTicker() {
+	s.updateMu.Lock()
+	cancel := s.updateCancel
+	s.updateMu.Unlock()
+	if cancel == nil {
+		return
+	}
+	cancel()
+	s.updateWG.Wait()
 }
 
 func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
@@ -50,6 +80,11 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 
 func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
+		if ctx.Err() != nil {
+			// aborted by StopUpdateTicker, not a real failure
+			slog.Debug("General section update canceled", "section", section)
+			return
+		}
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
 	changedIDs, err := s.updateSectionIfNeeded(ctx, eveUniverseSectionUpdateParams{
@@ -146,6 +181,12 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 		return changed, err
 	})
 	if err != nil {
+		if ctx.Err() != nil {
+			// aborted by StopUpdateTicker, not a real failure; skip persisting since
+			// the DB write below would itself fail with the same canceled ctx
+			slog.Debug("General section update canceled", "section", arg.section)
+			return zero, err
+		}
 		slog.Error("General section update failed", "section", arg.section, "error", err)
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}

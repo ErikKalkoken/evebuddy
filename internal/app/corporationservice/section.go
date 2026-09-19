@@ -22,16 +22,49 @@ import (
 )
 
 func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
-	go func() {
-		for {
-			go func() {
-				if err := s.UpdateCorporationsIfNeeded(context.Background(), false); err != nil {
-					slog.Error("Failed to update corporations", "error", err)
+	ctx, cancel := context.WithCancel(context.Background())
+	s.updateMu.Lock()
+	s.updateCancel = cancel
+	s.updateMu.Unlock()
+
+	s.updateWG.Go(func() {
+		fireUpdate := func() {
+			s.updateWG.Go(func() {
+				if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil {
+					if ctx.Err() != nil {
+						// aborted by StopUpdateTicker, not a real failure
+						slog.Debug("Update corporations canceled", "error", err)
+					} else {
+						slog.Error("Failed to update corporations", "error", err)
+					}
 				}
-			}()
-			<-time.Tick(d)
+			})
 		}
-	}()
+		ticker := time.NewTicker(d)
+		defer ticker.Stop()
+		fireUpdate()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				fireUpdate()
+			}
+		}
+	})
+}
+
+// StopUpdateTicker cancels the update ticker started with [CorporationService.StartUpdateTickerCorporations]
+// and waits for any in-flight update to finish. It is safe to call even when the ticker was never started.
+func (s *CorporationService) StopUpdateTicker() {
+	s.updateMu.Lock()
+	cancel := s.updateCancel
+	s.updateMu.Unlock()
+	if cancel == nil {
+		return
+	}
+	cancel()
+	s.updateWG.Wait()
 }
 
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -96,6 +129,11 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 		},
 	)
 	if err != nil {
+		if ctx.Err() != nil {
+			// aborted by StopUpdateTicker, not a real failure
+			slog.Debug("Corporation section update canceled", "corporationID", corporationID, "section", section)
+			return
+		}
 		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
@@ -305,6 +343,12 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 		return f(ctx, arg)
 	})
 	if err != nil {
+		if ctx.Err() != nil {
+			// aborted by StopUpdateTicker, not a real failure; skip persisting since
+			// the DB write below would itself fail with the same canceled ctx
+			slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section)
+			return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
+		}
 		slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)
 		errorMessage := err.Error()
 		startedAt := optional.Optional[time.Time]{}
