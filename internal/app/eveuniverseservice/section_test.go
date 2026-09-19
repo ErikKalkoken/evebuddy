@@ -3,6 +3,7 @@ package eveuniverseservice_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -66,6 +67,33 @@ func TestEveuniverseservice_HasSection(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, got)
 	})
+}
+
+func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_DoesNotReportSuccessOnFailedUpdate(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	sig := app.NewSignals()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st, Signals: sig})
+	ctx := context.Background()
+	httpmock.Reset()
+	httpmock.RegisterResponder(
+		"GET",
+		"https://esi.evetech.net/markets/prices",
+		httpmock.NewErrorResponder(fmt.Errorf("failed")),
+	)
+	var updated bool
+	sig.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		updated = true
+	})
+	// when
+	s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, false)
+	// then
+	status, err := st.GetGeneralSectionStatus(ctx, app.SectionEveMarketPrices)
+	require.NoError(t, err)
+	assert.True(t, status.HasError(), "expected section status to record the ESI failure")
+	assert.False(t, updated, "EveUniverseSectionUpdated must not be emitted for a failed update")
 }
 
 func TestEveuniverseservice_UpdateTicker_StopWithoutStart(t *testing.T) {

@@ -2,16 +2,36 @@ package corporationservice
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 )
+
+// statusCacheRecorder records whether SetCorporationSection was ever called
+// with a nil status, unlike the real StatusCache which silently no-ops on nil.
+type statusCacheRecorder struct {
+	calledWithNil bool
+}
+
+func (c *statusCacheRecorder) SetCorporationSection(o *app.CorporationSectionStatus) {
+	if o == nil {
+		c.calledWithNil = true
+	}
+}
+
+func (c *statusCacheRecorder) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
+	return nil
+}
 
 func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -144,6 +164,44 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			assert.True(t, hasUpdated)
 		}
 	})
+}
+
+func TestUpdateSectionIfNeeded_DoesNotCacheStatusWhenErrorPersistFails(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	scs := &statusCacheRecorder{}
+	s := NewFake(Params{
+		Storage:            st,
+		StatusCacheService: scs,
+		CharacterService: &CharacterServiceFake{
+			Token: &app.CharacterToken{AccessToken: "accessToken"},
+		},
+	})
+	ctx := context.Background()
+	testutil.MustTruncateTables(db)
+	c := factory.CreateCorporation()
+	httpmock.Reset()
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
+		func(req *http.Request) (*http.Response, error) {
+			// close the DB so the section status write that follows this
+			// failed ESI call also fails, reproducing the bug
+			db.Close()
+			return httpmock.NewStringResponse(500, "server error"), nil
+		},
+	)
+	arg := corporationSectionUpdateParams{
+		corporationID: c.ID,
+		section:       app.SectionCorporationWalletBalances,
+		forceUpdate:   true,
+	}
+	// when
+	_, err := s.updateSectionIfNeeded(ctx, arg)
+	// then
+	assert.Error(t, err)
+	assert.False(t, scs.calledWithNil, "SetCorporationSection must not be called with a nil status when persisting the error failed")
 }
 
 func TestHasSectionChanged(t *testing.T) {
