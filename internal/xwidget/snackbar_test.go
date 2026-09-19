@@ -1,6 +1,8 @@
 package xwidget
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -214,6 +216,85 @@ func TestSnackbar_StopAndRestart(t *testing.T) {
 
 		if !sb.popup.Visible() {
 			t.Fatal("expected snackbar to function normally after restart")
+		}
+	})
+}
+
+func TestSnackbar_MessageContent(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		app := test.NewTempApp(t)
+
+		window := app.NewWindow("Test Window")
+		window.Resize(fyne.NewSize(400, 300))
+
+		sb := NewSnackbar(window.Canvas())
+		sb.Start()
+		defer sb.Stop()
+
+		sb.Display("First message")
+		synctest.Wait()
+
+		if got, want := sb.text.String(), "First message"; got != want {
+			t.Fatalf("expected displayed text %q, got %q", want, got)
+		}
+
+		time.Sleep(snackbarTimeoutDefault + 10*time.Millisecond)
+		synctest.Wait()
+
+		sb.Display("Second message")
+		synctest.Wait()
+
+		if got, want := sb.text.String(), "Second message"; got != want {
+			t.Fatalf("expected displayed text %q, got %q", want, got)
+		}
+	})
+}
+
+func TestSnackbar_ConcurrentDisplay(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		app := test.NewTempApp(t)
+
+		window := app.NewWindow("Test Window")
+		window.Resize(fyne.NewSize(400, 300))
+
+		sb := NewSnackbar(window.Canvas())
+		sb.Start()
+		defer sb.Stop()
+
+		const n = 10
+		const timeout = 50 * time.Millisecond
+
+		var wg sync.WaitGroup
+		wg.Add(n)
+		for i := range n {
+			go func(i int) {
+				defer wg.Done()
+				sb.DisplayWithTimeout(fmt.Sprintf("message-%d", i), timeout)
+			}(i)
+		}
+		wg.Wait()
+		synctest.Wait()
+
+		// Sample more often than the per-message timeout so no message's
+		// display window can be skipped over, then keep sampling past the
+		// point where all messages must have been processed.
+		seen := make(map[string]bool)
+		step := timeout / 3
+		deadline := time.Duration(n)*timeout + timeout
+		for elapsed := time.Duration(0); elapsed < deadline; elapsed += step {
+			synctest.Wait()
+			if sb.popup.Visible() {
+				seen[sb.text.String()] = true
+			}
+			time.Sleep(step)
+		}
+		synctest.Wait()
+
+		if sb.popup.Visible() {
+			t.Fatal("expected popup hidden after processing all concurrently queued messages")
+		}
+		if len(seen) != n {
+			t.Fatalf("expected %d distinct messages to be displayed, got %d: %v", n, len(seen), seen)
 		}
 	})
 }
