@@ -2,6 +2,7 @@ package xwidget
 
 import (
 	"context"
+	"image/color"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 )
 
@@ -23,6 +25,8 @@ const (
 	snackbarMarginBottom        = 7  // multiples of standard padding
 	snackbarMarginSides         = 10 // multiples of standard padding
 	snackbarTimeoutDefault      = 3 * time.Second
+	snackbarAnimDuration        = 150 * time.Millisecond // matches Material Design 3's snackbar enter transition
+	snackbarAnimStartScale      = 0.8                    // matches Material Design 3's snackbar scale-in factor
 )
 
 type snackbarMessage struct {
@@ -48,6 +52,7 @@ type Snackbar struct {
 	parentCancel func()
 	popup        *popUp2
 	q            *syncqueue.SyncQueue[snackbarMessage]
+	showAnim     *fyne.Animation
 	text         *RichText
 }
 
@@ -61,9 +66,11 @@ func NewSnackbar(c fyne.Canvas) *Snackbar {
 	p := theme.Padding()
 	content := container.NewStack(
 		sb.bg,
-		container.New(
-			layout.NewCustomPaddedLayout(0, 0, p, p),
-			sb.text,
+		container.NewClip(
+			container.New(
+				layout.NewCustomPaddedLayout(0, 0, p, p),
+				sb.text,
+			),
 		),
 	)
 	sb.popup = newPopUp2(content, c, func() {
@@ -137,6 +144,9 @@ func (sb *Snackbar) showMessage(parentCtx context.Context, m snackbarMessage) bo
 		timer.Stop()
 		itemCancel()
 		fyne.Do(func() {
+			if sb.showAnim != nil {
+				sb.showAnim.Stop()
+			}
 			sb.popup.Hide()
 		})
 	}()
@@ -180,31 +190,48 @@ func (sb *Snackbar) show(text string) {
 	measurer.TextSize = theme.TextSize()
 	unwrappedSize := measurer.MinSize()
 
-	if unwrappedSize.Width > maxW {
+	wrapped := unwrappedSize.Width > maxW
+	if wrapped {
 		sb.text.Wrapping = fyne.TextWrapWord
 	} else {
 		sb.text.Wrapping = fyne.TextWrapOff
 	}
 
-	// 2. Set label size explicitly to fixed width so Fyne calculates the true wrapped height
-	if unwrappedSize.Width > maxW {
-		// Force the label to maxW; Fyne's internal layout recalculates height for wrapped text
-		sb.text.Resize(fyne.NewSize(maxW, sb.text.MinSize().Height))
+	// 2. Set label size explicitly to fixed width so Fyne calculates the true wrapped height.
+	// Measure at maxW-2p, the width CustomPaddedLayout will actually render it at below,
+	// or the wrap could add a line at final layout that this height doesn't account for.
+	if wrapped {
+		sb.text.Resize(fyne.NewSize(maxW-2*p, sb.text.MinSize().Height))
 	} else {
 		sb.text.Resize(unwrappedSize)
 	}
 
 	sb.text.Refresh()
 
-	// 3. Obtain the exact minimum height Fyne requires for this wrapped label
+	// 3. Obtain the exact minimum size Fyne requires for this label.
 	labelMin := sb.text.MinSize()
-	actualWidth := unwrappedSize.Width
-	if actualWidth > maxW {
+
+	// RichText.MinSize() has no meaningful width while wrapped, so use maxW then;
+	// otherwise it's more accurate than the plain-text measurer above.
+	var actualWidth float32
+	if wrapped {
 		actualWidth = maxW
+	} else {
+		actualWidth = labelMin.Width
+		if actualWidth > maxW {
+			actualWidth = maxW
+		}
 	}
 
-	// 4. Set the content size explicitly before querying outer popup dimensions
-	contentSize := fyne.NewSize(actualWidth, labelMin.Height)
+	// 4. Set the content size explicitly before querying outer popup dimensions.
+	// container.Clip (see NewSnackbar) hides the padding popup.MinSize() would
+	// otherwise contribute below, so add it back for the single-line case; wrapped
+	// text already reserves it within maxW.
+	contentWidth := actualWidth
+	if !wrapped {
+		contentWidth += 2 * p
+	}
+	contentSize := fyne.NewSize(contentWidth, labelMin.Height)
 	sb.popup.Content.Resize(contentSize)
 
 	// 5. Query the outer popup size (includes theme paddings/borders)
@@ -216,19 +243,45 @@ func (sb *Snackbar) show(text string) {
 		popupSize.Height = contentSize.Height
 	}
 
-	sb.popup.Resize(popupSize)
-
-	// 6. Calculate position anchored to bottom margin
-	sb.popup.Move(fyne.NewPos(
+	// 6. Calculate the final resting position, anchored to the bottom margin
+	finalPos := fyne.NewPos(
 		canvasSize.Width/2-popupSize.Width/2,
 		canvasSize.Height-popupSize.Height-snackbarMarginBottom*p-sb.BottomMargin,
-	))
+	)
 
-	// 7. Update background style
-	sb.bg.FillColor = theme.Color(snackbarColorNameBackground)
-	sb.bg.Refresh()
+	// 7. Reveal with a Material Design 3 style scale + fade entrance
+	sb.animateShow(popupSize, finalPos)
+}
 
+// animateShow plays a Material Design 3 style scale + fade entrance. Fyne has
+// no content-scale transform, so scale is approximated by resizing/moving the
+// popup around its final rect's center; container.Clip (see NewSnackbar) lets
+// it shrink below its natural size and hides the overflow while it does.
+func (sb *Snackbar) animateShow(finalSize fyne.Size, finalPos fyne.Position) {
+	if sb.showAnim != nil {
+		sb.showAnim.Stop()
+	}
+
+	center := finalPos.AddXY(finalSize.Width/2, finalSize.Height/2)
+	r, g, b, _ := fynetools.ToNRGBA(theme.Color(snackbarColorNameBackground))
+
+	setFrame := func(scale, alpha float32) {
+		size := fyne.NewSize(finalSize.Width*scale, finalSize.Height*scale)
+		sb.popup.Resize(size)
+		sb.popup.Move(center.SubtractXY(size.Width/2, size.Height/2))
+		sb.bg.FillColor = &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(255 * alpha)}
+		sb.bg.Refresh()
+	}
+
+	setFrame(snackbarAnimStartScale, 0)
 	sb.popup.Show()
+
+	sb.showAnim = fyne.NewAnimation(snackbarAnimDuration, func(done float32) {
+		scale := snackbarAnimStartScale + (1-snackbarAnimStartScale)*fyne.AnimationEaseOut(done)
+		setFrame(scale, done)
+	})
+	sb.showAnim.Curve = fyne.AnimationLinear
+	sb.showAnim.Start()
 }
 
 type popUp2 struct {
