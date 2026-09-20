@@ -599,6 +599,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				}
 			}
 
+			if sections.Contains(app.SectionCorporationAssets) &&
+				sections.Contains(app.SectionCorporationContracts) &&
+				sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWealthItem.Enable()
+			} else {
+				corpWealthItem.Disable()
+				hasDisabled = true
+			}
+
 			if hasDisabled {
 				corporationNav.Select(corpSheetItem)
 			}
