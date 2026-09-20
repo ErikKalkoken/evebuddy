@@ -780,7 +780,12 @@ func TestCharacterService_UpdateTicker_StopWaitsForInFlightWork(t *testing.T) {
 	start := time.Now()
 	s.Stop()
 	// then
-	assert.GreaterOrEqual(t, time.Since(start), delay)
+	// A small tolerance absorbs scheduling jitter between the callback signaling
+	// entered and it actually starting its sleep, and between the test goroutine
+	// receiving on entered and capturing start; without it this assertion flakes
+	// on loaded CI runners by a fraction of a millisecond.
+	const tolerance = 5 * time.Millisecond
+	assert.GreaterOrEqual(t, time.Since(start), delay-tolerance)
 }
 
 // The DownloadMissingMailBodies goroutine spawned from UpdateCharacterSectionAndRefreshIfNeeded
