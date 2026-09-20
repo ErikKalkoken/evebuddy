@@ -347,6 +347,14 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
+	corpWealthNav := xwidget.NewNavListItem(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		func() {
+			corpNav.Push(newCorpAppBar("Wealth", u.corporationWealth))
+		},
+	)
+
 	corpList := xwidget.NewNavList(
 		slices.Concat([]*xwidget.NavListItem{
 			corpSheetNav,
@@ -355,6 +363,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
+			corpWealthNav,
 			corpWalletNav,
 		})...,
 	)

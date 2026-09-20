@@ -41,6 +41,21 @@ func (d Division) DefaultWalletName() string {
 	return m[d]
 }
 
+// DefaultHangarName returns the generic in-game name for a corporation hangar division,
+// used when the corporation has not set a custom name for it.
+func (d Division) DefaultHangarName() string {
+	m := map[Division]string{
+		Division1: "Division 1",
+		Division2: "Division 2",
+		Division3: "Division 3",
+		Division4: "Division 4",
+		Division5: "Division 5",
+		Division6: "Division 6",
+		Division7: "Division 7",
+	}
+	return m[d]
+}
+
 var Divisions = []Division{
 	Division1,
 	Division2,

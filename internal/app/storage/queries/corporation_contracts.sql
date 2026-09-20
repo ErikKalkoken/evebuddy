@@ -1,3 +1,36 @@
+-- name: CalculateCorporationContractsAuctionEscrow :one
+SELECT
+    bidder_id,
+    SUM(amount) AS total_winning_bids
+FROM
+    corporation_contract_bids AS main_bids
+    JOIN corporation_contracts cc ON cc.id = main_bids.contract_id
+WHERE
+    amount = (
+        SELECT
+            MAX(amount)
+        FROM
+            corporation_contract_bids
+        WHERE
+            contract_id = main_bids.contract_id
+    )
+    AND main_bids.bidder_id = cc.corporation_id
+    AND cc.corporation_id = ?
+    AND cc.status IN (sqlc.slice('status'))
+GROUP BY
+    main_bids.bidder_id;
+
+-- name: CalculateCorporationContractsCourierEscrow :one
+SELECT
+    SUM(collateral)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND acceptor_id == corporation_id
+    AND type = ?
+    AND status IN (sqlc.slice('status'));
+
 -- name: CreateCorporationContract :one
 INSERT INTO
     corporation_contracts (

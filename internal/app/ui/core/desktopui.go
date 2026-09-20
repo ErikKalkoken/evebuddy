@@ -413,6 +413,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
+	corpWealthItem := xwidget.NewNavPage(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		newContentPage("Wealth", u.corporationWealth),
+	)
+
 	corporationNav = xwidget.NewNavDrawer(slices.Concat(
 		[]*xwidget.NavItem{
 			corpSheetItem,
@@ -420,6 +426,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			corpContractsItem,
 			corpIndustryItem,
 			corpStructuresItem,
+			corpWealthItem,
 		},
 		corpWalletItems,
 	)...)

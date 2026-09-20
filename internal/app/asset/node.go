@@ -216,6 +216,22 @@ func (n *Node) CorporationAsset() (*app.CorporationAsset, bool) {
 	return x, true
 }
 
+// TotalValue returns the sum of price times quantity for this node and all its descendants.
+func (n *Node) TotalValue() float64 {
+	if n == nil {
+		return 0
+	}
+	var total float64
+	for x := range n.All() {
+		as, ok := x.Asset()
+		if !ok {
+			continue
+		}
+		total += as.Price.ValueOrZero() * float64(as.Quantity)
+	}
+	return total
+}
+
 // Children returns a new slice containing the children of a node.
 func (n *Node) Children() []*Node {
 	if n == nil {

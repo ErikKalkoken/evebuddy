@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -142,6 +143,51 @@ func TestNode_CharacterAsset(t *testing.T) {
 			xassert.Equal(t, tt.wantAsset, got)
 		})
 	}
+}
+
+func TestNode_TotalValue(t *testing.T) {
+	t.Run("should return zero for a node with no children", func(t *testing.T) {
+		division := newCustomNode(NodeOffice1)
+		xassert.Equal(t, 0.0, division.TotalValue())
+	})
+
+	t.Run("should sum price times quantity across nested containers and ships", func(t *testing.T) {
+		division := newCustomNode(NodeOffice1)
+		top := newAssetNode(&app.CorporationAsset{
+			Asset: app.Asset{ItemID: 1, Price: optional.New(10.0), Quantity: 2},
+		})
+		division.addChild(top)
+		ship := newAssetNode(&app.CorporationAsset{
+			Asset: app.Asset{ItemID: 2, Price: optional.New(1_000_000.0), Quantity: 1},
+		})
+		division.addChild(ship)
+		cargo := newAssetNode(&app.CorporationAsset{
+			Asset: app.Asset{ItemID: 3, Price: optional.New(5.0), Quantity: 4},
+		})
+		ship.addChild(cargo)
+
+		got := division.TotalValue()
+
+		want := 10.0*2 + 1_000_000.0*1 + 5.0*4
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should treat items with no price as zero", func(t *testing.T) {
+		division := newCustomNode(NodeOffice1)
+		n := newAssetNode(&app.CorporationAsset{
+			Asset: app.Asset{ItemID: 1, Quantity: 3},
+		})
+		division.addChild(n)
+
+		got := division.TotalValue()
+
+		xassert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should return zero for nil node", func(t *testing.T) {
+		var n *Node
+		xassert.Equal(t, 0.0, n.TotalValue())
+	})
 }
 
 func TestNode_CorporationAsset(t *testing.T) {

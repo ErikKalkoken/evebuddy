@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -89,6 +90,54 @@ type CreateCorporationContractParams struct {
 	Type                app.ContractType
 	UpdatedAt           time.Time
 	Volume              optional.Optional[float64]
+}
+
+func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Context, corporationID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationContractsCourierEscrow: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCorporationContractsCourierEscrow(ctx, queries.CalculateCorporationContractsCourierEscrowParams{
+		CorporationID: corporationID,
+		Type:          corporationContractTypeToDBValue[app.ContractTypeCourier],
+		Status: []string{
+			corporationContractStatusToDBValue[app.ContractStatusOutstanding],
+			corporationContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	v2 := optional.FromNullFloat64(v)
+	return v2.ValueOrZero(), nil
+}
+
+func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Context, corporationID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationContractsAuctionEscrow: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCorporationContractsAuctionEscrow(ctx, queries.CalculateCorporationContractsAuctionEscrowParams{
+		CorporationID: corporationID,
+		Status: []string{
+			corporationContractStatusToDBValue[app.ContractStatusInProgress],
+		},
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	v2 := optional.FromNullFloat64(v.TotalWinningBids)
+	return v2.ValueOrZero(), nil
 }
 
 func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorporationContractParams) (int64, error) {
