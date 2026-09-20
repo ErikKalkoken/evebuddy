@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -35,6 +36,70 @@ func (s *CorporationService) ListAssets(ctx context.Context, corporationID int64
 // ListAllAssets returns the assets from all corporations.
 func (s *CorporationService) ListAllAssets(ctx context.Context) ([]*app.CorporationAsset, error) {
 	return s.st.ListAllCorporationAssets(ctx)
+}
+
+// CalculateAssetTotalValue returns the total value of all assets for a corporation.
+func (s *CorporationService) CalculateAssetTotalValue(ctx context.Context, corporationID int64) (float64, error) {
+	return s.st.CalculateCorporationAssetTotalValue(ctx, corporationID)
+}
+
+var nodeCategory2Division = map[asset.NodeCategory]app.Division{
+	asset.NodeOffice1: app.Division1,
+	asset.NodeOffice2: app.Division2,
+	asset.NodeOffice3: app.Division3,
+	asset.NodeOffice4: app.Division4,
+	asset.NodeOffice5: app.Division5,
+	asset.NodeOffice6: app.Division6,
+	asset.NodeOffice7: app.Division7,
+}
+
+// CalculateAssetValueByDivision returns the total asset value per hangar division for a corporation.
+func (s *CorporationService) CalculateAssetValueByDivision(ctx context.Context, corporationID int64) (map[app.Division]float64, error) {
+	assets, err := s.ListAssets(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	locations, err := s.eus.ListLocations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tree := asset.NewFromCorporationAssets(assets, locations)
+	m := make(map[app.Division]float64)
+	for _, loc := range tree.Locations() {
+		for n := range loc.All() {
+			d, ok := nodeCategory2Division[n.Category()]
+			if !ok {
+				continue
+			}
+			m[d] += n.TotalValue()
+		}
+	}
+	return m, nil
+}
+
+// ListHangarNames returns the names of a corporation's asset (hangar) divisions.
+func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID int64) map[app.Division]string {
+	m := map[app.Division]string{
+		app.Division1: "1st Division",
+		app.Division2: "2nd Division",
+		app.Division3: "3rd Division",
+		app.Division4: "4th Division",
+		app.Division5: "5th Division",
+		app.Division6: "6th Division",
+		app.Division7: "7th Division",
+	}
+	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
+	if err != nil {
+		slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		return m
+	}
+	for _, o := range oo {
+		if o.Name == "" {
+			continue
+		}
+		m[app.Division(o.DivisionID)] = o.Name
+	}
+	return m
 }
 
 var (

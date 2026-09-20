@@ -413,6 +413,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
+	corpWealthItem := xwidget.NewNavPage(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		newContentPage("Wealth", u.corporationWealth),
+	)
+
 	corporationNav = xwidget.NewNavDrawer(slices.Concat(
 		[]*xwidget.NavItem{
 			corpSheetItem,
@@ -420,6 +426,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			corpContractsItem,
 			corpIndustryItem,
 			corpStructuresItem,
+			corpWealthItem,
 		},
 		corpWalletItems,
 	)...)
@@ -581,6 +588,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				hasDisabled = true
 			}
 
+			if sections.Contains(app.SectionCorporationContracts) {
+				corpContractsItem.Enable()
+			} else {
+				corpContractsItem.Disable()
+				hasDisabled = true
+			}
+
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				for _, it := range corpWalletItems {
 					it.Enable()
@@ -590,6 +604,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 					it.Disable()
 					hasDisabled = true
 				}
+			}
+
+			if sections.Contains(app.SectionCorporationAssets) &&
+				sections.Contains(app.SectionCorporationContracts) &&
+				sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWealthItem.Enable()
+			} else {
+				corpWealthItem.Disable()
+				hasDisabled = true
 			}
 
 			if hasDisabled {

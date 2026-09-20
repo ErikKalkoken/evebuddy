@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
@@ -299,6 +300,155 @@ func TestListAllAssets(t *testing.T) {
 			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
 			xassert.Equal(t, set.Of(a1.ItemID, a2.ItemID), ids)
 		}
+	})
+}
+
+func TestCalculateAssetTotalValue(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can calculate total asset value for corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		ca := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			Quantity:      2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca.Type.ID,
+			AveragePrice: optional.New(100.0),
+		})
+		got, err := s.CalculateAssetTotalValue(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.InDelta(t, 200.0, got, 0.01)
+		}
+	})
+}
+
+func TestCalculateAssetValueByDivision(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+
+	t.Run("should sum asset value per hangar division and exclude non-division assets", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		loc := factory.CreateEveLocationStructure()
+
+		et1 := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       et1.ID,
+			AveragePrice: optional.New(10.0),
+		})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     et1.ID,
+			LocationID:    loc.ID,
+			LocationFlag:  app.FlagCorpSAG1,
+			Quantity:      2,
+		})
+
+		et2 := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       et2.ID,
+			AveragePrice: optional.New(5.0),
+		})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     et2.ID,
+			LocationID:    loc.ID,
+			LocationFlag:  app.FlagCorpSAG2,
+			Quantity:      4,
+		})
+
+		et3 := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       et3.ID,
+			AveragePrice: optional.New(1000.0),
+		})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     et3.ID,
+			LocationID:    loc.ID,
+			LocationFlag:  app.FlagHangar,
+			Quantity:      1,
+		})
+
+		got, err := s.CalculateAssetValueByDivision(ctx, c.ID)
+
+		require.NoError(t, err)
+		assert.InDelta(t, 20.0, got[app.Division1], 0.01)
+		assert.InDelta(t, 20.0, got[app.Division2], 0.01)
+		assert.NotContains(t, got, app.Division3)
+	})
+
+	t.Run("should include value of items nested inside a container within a division", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		loc := factory.CreateEveLocationStructure()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID})
+		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID})
+		container := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     shipType.ID,
+			LocationID:    loc.ID,
+			LocationFlag:  app.FlagCorpSAG1,
+			IsSingleton:   true,
+		})
+		cargoType := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       cargoType.ID,
+			AveragePrice: optional.New(50.0),
+		})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     cargoType.ID,
+			LocationID:    container.ItemID,
+			LocationFlag:  app.FlagCargo,
+			Quantity:      3,
+		})
+
+		got, err := s.CalculateAssetValueByDivision(ctx, c.ID)
+
+		require.NoError(t, err)
+		assert.InDelta(t, 150.0, got[app.Division1], 0.01)
+	})
+
+	t.Run("should return empty map when corporation has no assets", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+
+		got, err := s.CalculateAssetValueByDivision(ctx, c.ID)
+
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+}
+
+func TestListHangarNames(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("returns stored names merged with defaults", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Name:          "Awesome Hangar",
+		})
+		got := s.ListHangarNames(ctx, c.ID)
+		assert.Equal(t, "Awesome Hangar", got[app.Division1])
+		assert.Equal(t, "2nd Division", got[app.Division2])
+	})
+	t.Run("returns defaults when corporation unknown", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		got := s.ListHangarNames(ctx, 42)
+		assert.Equal(t, "1st Division", got[app.Division1])
 	})
 }
 

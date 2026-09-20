@@ -133,6 +133,7 @@ type baseUI struct {
 	corporationSheet           *screens.CorporationSheet
 	corporationStructures      *screens.Structures
 	corporationWallets         map[app.Division]*screens.CorporationWallet
+	corporationWealth          *screens.CorporationWealth
 	gameSearch                 *gamesearch.GameSearch
 	industryJobs               *screens.IndustryJobs
 	industrySlotsManufacturing *screens.IndustrySlots
@@ -447,6 +448,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	for _, d := range app.Divisions {
 		u.corporationWallets[d] = screens.NewCorporationWallet(u, d)
 	}
+	u.corporationWealth = screens.NewCorporationWealth(u)
 	u.gameSearch = gamesearch.NewGameSearch(u)
 	u.industryJobs = screens.NewJobsForOverview(u)
 	u.loyaltyPoints = screens.NewLoyaltyPoints(u)

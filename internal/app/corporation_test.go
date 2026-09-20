@@ -16,6 +16,11 @@ func TestDivisionDefaultWalletName(t *testing.T) {
 	xassert.Equal(t, "", app.DivisionZero.DefaultWalletName())
 }
 
+func TestDivisionDefaultHangarName(t *testing.T) {
+	xassert.Equal(t, "Division 1", app.Division1.DefaultHangarName())
+	xassert.Equal(t, "", app.DivisionZero.DefaultHangarName())
+}
+
 func TestCorporationWalletJournalEntryRefTypeDisplay(t *testing.T) {
 	we := app.CorporationWalletJournalEntry{RefType: "market_transaction"}
 	xassert.Equal(t, "Market Transaction", we.RefTypeDisplay())

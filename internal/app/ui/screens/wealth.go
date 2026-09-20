@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	wealthArcCornerRadius      = 4
+	wealthArcCornerRadius      = 8
 	wealthArcInnerRadius       = 0.6
 	wealthArcPadAngle          = 1.5
 	wealthMaxCharacters        = 10
@@ -130,13 +130,11 @@ func NewWealth(u baseUI) *Wealth {
 	a.walletSwatch = newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })
 	a.contractsSwatch = newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })
 	a.ordersSwatch = newLegendSwatch(func() color.Color { return wealthOrdersSeriesColor })
-	legend := container.NewHBox(
-		layout.NewSpacer(),
+	legend := newSeriesLegend(
 		newLegendEntry("Assets", a.assetsSwatch),
 		newLegendEntry("Wallet", a.walletSwatch),
 		newLegendEntry("Contracts", a.contractsSwatch),
 		newLegendEntry("Orders", a.ordersSwatch),
-		layout.NewSpacer(),
 	)
 
 	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
@@ -286,8 +284,8 @@ func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
 		wallets += r.walletBalance
 	}
 	d := []namedValue{
-		{name: "Wallet", value: wallets},
 		{name: "Assets", value: assets},
+		{name: "Wallet", value: wallets},
 		{name: "Contracts", value: contracts},
 		{name: "Orders", value: orders},
 	}
@@ -505,4 +503,14 @@ func newLegendEntry(label string, swatch *legendSwatch) fyne.CanvasObject {
 	l := widget.NewLabel(label)
 	l.SizeName = theme.SizeNameCaptionText
 	return container.NewHBox(container.NewCenter(swatch.object()), container.NewCenter(l))
+}
+
+// newSeriesLegend centers a row of legend entries (as built by [newLegendEntry]),
+// for use in a chartCard's legend slot.
+func newSeriesLegend(entries ...fyne.CanvasObject) fyne.CanvasObject {
+	objects := make([]fyne.CanvasObject, 0, len(entries)+2)
+	objects = append(objects, layout.NewSpacer())
+	objects = append(objects, entries...)
+	objects = append(objects, layout.NewSpacer())
+	return container.NewHBox(objects...)
 }

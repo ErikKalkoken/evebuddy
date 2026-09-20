@@ -12,6 +12,94 @@ import (
 	"time"
 )
 
+const calculateCorporationContractsAuctionEscrow = `-- name: CalculateCorporationContractsAuctionEscrow :one
+SELECT
+    bidder_id,
+    SUM(amount) AS total_winning_bids
+FROM
+    corporation_contract_bids AS main_bids
+    JOIN corporation_contracts cc ON cc.id = main_bids.contract_id
+WHERE
+    amount = (
+        SELECT
+            MAX(amount)
+        FROM
+            corporation_contract_bids
+        WHERE
+            contract_id = main_bids.contract_id
+    )
+    AND main_bids.bidder_id = cc.corporation_id
+    AND cc.corporation_id = ?
+    AND cc.status IN (/*SLICE:status*/?)
+GROUP BY
+    main_bids.bidder_id
+`
+
+type CalculateCorporationContractsAuctionEscrowParams struct {
+	CorporationID int64
+	Status        []string
+}
+
+type CalculateCorporationContractsAuctionEscrowRow struct {
+	BidderID         int64
+	TotalWinningBids sql.NullFloat64
+}
+
+func (q *Queries) CalculateCorporationContractsAuctionEscrow(ctx context.Context, arg CalculateCorporationContractsAuctionEscrowParams) (CalculateCorporationContractsAuctionEscrowRow, error) {
+	query := calculateCorporationContractsAuctionEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var i CalculateCorporationContractsAuctionEscrowRow
+	err := row.Scan(&i.BidderID, &i.TotalWinningBids)
+	return i, err
+}
+
+const calculateCorporationContractsCourierEscrow = `-- name: CalculateCorporationContractsCourierEscrow :one
+SELECT
+    SUM(collateral)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND acceptor_id == corporation_id
+    AND type = ?
+    AND status IN (/*SLICE:status*/?)
+`
+
+type CalculateCorporationContractsCourierEscrowParams struct {
+	CorporationID int64
+	Type          string
+	Status        []string
+}
+
+func (q *Queries) CalculateCorporationContractsCourierEscrow(ctx context.Context, arg CalculateCorporationContractsCourierEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCorporationContractsCourierEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	queryParams = append(queryParams, arg.Type)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const createCorporationContract = `-- name: CreateCorporationContract :one
 INSERT INTO
     corporation_contracts (

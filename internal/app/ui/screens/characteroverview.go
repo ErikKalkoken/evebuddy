@@ -488,11 +488,11 @@ func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 			slog.Error("Failed to load location for character in overview", "characterID", c.ID, "error", err)
 		} else {
 			r.location.Set(el)
-		}
-		if es, ok := el.SolarSystem.Value(); ok {
-			r.regionName = es.Constellation.Region.Name
-			r.solarSystemName = es.Name
-			r.searchTarget += "~" + strings.ToLower(es.Name)
+			if es, ok := el.SolarSystem.Value(); ok {
+				r.regionName = es.Constellation.Region.Name
+				r.solarSystemName = es.Name
+				r.searchTarget += "~" + strings.ToLower(es.Name)
+			}
 		}
 	}
 	if id, ok := c.ShipTypeID.Value(); ok {

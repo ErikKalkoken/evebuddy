@@ -347,6 +347,14 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
+	corpWealthNav := xwidget.NewNavListItem(
+		"Wealth",
+		theme.NewThemedResource(icons.GoldSvg),
+		func() {
+			corpNav.Push(newCorpAppBar("Wealth", u.corporationWealth))
+		},
+	)
+
 	corpList := xwidget.NewNavList(
 		slices.Concat([]*xwidget.NavListItem{
 			corpSheetNav,
@@ -355,6 +363,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
+			corpWealthNav,
 			corpWalletNav,
 		})...,
 	)
@@ -518,10 +527,22 @@ func NewMobileUI(params UIParams) *MobileUI {
 			} else {
 				corpIndustryNav.IsDisabled = true
 			}
+			if sections.Contains(app.SectionCorporationContracts) {
+				corpContractsNav.IsDisabled = false
+			} else {
+				corpContractsNav.IsDisabled = true
+			}
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				corpWalletNav.IsDisabled = false
 			} else {
 				corpWalletNav.IsDisabled = true
+			}
+			if sections.Contains(app.SectionCorporationAssets) &&
+				sections.Contains(app.SectionCorporationContracts) &&
+				sections.Contains(app.SectionCorporationWalletBalances) {
+				corpWealthNav.IsDisabled = false
+			} else {
+				corpWealthNav.IsDisabled = true
 			}
 			corpList.Refresh()
 		})

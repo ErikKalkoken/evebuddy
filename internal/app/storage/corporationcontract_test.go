@@ -385,3 +385,138 @@ func TestCorporationContractItem(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestCalculateCorporationContractsCourierEscrow(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should sum collateral of courier contracts accepted by the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(100.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(200.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContract() // should be ignored
+
+		// when
+		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 300.0, got)
+	})
+
+	t.Run("should not include courier contract accepted by someone else", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    0,
+			Collateral:    optional.New(123.0),
+			Status:        app.ContractStatusInProgress,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+
+		// when
+		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}
+
+func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should include when own bid is highest", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Type:          app.ContractTypeAuction,
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			Amount:     12.3,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			Amount:     3,
+			ContractID: o.ID,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 12.3, got)
+	})
+
+	t.Run("should not include when own bid is not highest", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Type:          app.ContractTypeAuction,
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			Amount:     12.3,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			Amount:     15,
+			ContractID: o.ID,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+
+		// when
+		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}

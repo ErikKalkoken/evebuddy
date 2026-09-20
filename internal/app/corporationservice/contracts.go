@@ -59,6 +59,19 @@ func (s *CorporationService) ListContractItems(ctx context.Context, contractID i
 	return s.st.ListCorporationContractItems(ctx, contractID)
 }
 
+// CalculateContractsEscrow returns the sum of courier and auction contract escrow held by the corporation.
+func (s *CorporationService) CalculateContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
+	v1, err := s.st.CalculateCorporationContractsCourierEscrow(ctx, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	v2, err := s.st.CalculateCorporationContractsAuctionEscrow(ctx, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return v1 + v2, nil
+}
+
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
