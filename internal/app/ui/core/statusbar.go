@@ -186,6 +186,9 @@ func (a *statusBar) start() {
 	a.updateEveStatus(ctx)
 
 	a.u.clockTicker.StartTicker(clockUpdateTicker, true, func(ctx context.Context) {
+		if a.u.Signals().IsShuttingDown() {
+			return
+		}
 		fyne.Do(func() {
 			a.eveClock.SetText(time.Now().UTC().Format("15:04"))
 		})
@@ -204,6 +207,9 @@ func (a *statusBar) start() {
 
 	if !a.u.IsOffline() {
 		a.u.versionCheckTicker.StartTicker(versionTicker, true, func(ctx context.Context) {
+			if a.u.Signals().IsShuttingDown() {
+				return
+			}
 			v, err := a.u.availableUpdate(ctx)
 			if err != nil {
 				if ctx.Err() == nil {

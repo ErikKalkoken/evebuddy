@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"sync/atomic"
@@ -90,32 +91,68 @@ type Signals struct {
 	// A section update has stopped.
 	UpdateStopped signals.Signal[string]
 
-	keyID atomic.Uint64
+	keyID        atomic.Uint64
+	shuttingDown atomic.Bool
 }
 
 func NewSignals() *Signals {
 	s := &Signals{
-		AppInit:                     signals.New[struct{}](),
-		AppShutdown:                 signals.New[struct{}](),
-		CharacterAdded:              signals.New[*Character](),
-		CharacterChanged:            signals.New[int64](),
-		CharacterRemoved:            signals.New[*EntityShort](),
-		CharacterSectionChanged:     signals.New[CharacterSectionUpdated](),
-		CharacterSectionUpdated:     signals.New[CharacterSectionUpdated](),
-		CorporationsChanged:         signals.New[struct{}](),
-		CorporationSectionChanged:   signals.New[CorporationSectionUpdated](),
-		CorporationSectionUpdated:   signals.New[CorporationSectionUpdated](),
-		CurrentCharacterExchanged:   signals.New[*Character](),
-		CurrentCorporationExchanged: signals.New[*Corporation](),
-		DataUpdated:                 signals.New[string](),
-		EveUniverseSectionChanged:   signals.New[EveUniverseSectionUpdated](),
-		EveUniverseSectionUpdated:   signals.New[EveUniverseSectionUpdated](),
-		RefreshTickerExpired:        signals.New[struct{}](),
-		TagsChanged:                 signals.New[struct{}](),
-		UpdateStarted:               signals.New[string](),
-		UpdateStopped:               signals.New[string](),
+		AppShutdown: signals.New[struct{}](),
 	}
+	g := &s.shuttingDown
+	s.AppInit = newGuardedSignal[struct{}](g)
+	s.CharacterAdded = newGuardedSignal[*Character](g)
+	s.CharacterChanged = newGuardedSignal[int64](g)
+	s.CharacterRemoved = newGuardedSignal[*EntityShort](g)
+	s.CharacterSectionChanged = newGuardedSignal[CharacterSectionUpdated](g)
+	s.CharacterSectionUpdated = newGuardedSignal[CharacterSectionUpdated](g)
+	s.CorporationsChanged = newGuardedSignal[struct{}](g)
+	s.CorporationSectionChanged = newGuardedSignal[CorporationSectionUpdated](g)
+	s.CorporationSectionUpdated = newGuardedSignal[CorporationSectionUpdated](g)
+	s.CurrentCharacterExchanged = newGuardedSignal[*Character](g)
+	s.CurrentCorporationExchanged = newGuardedSignal[*Corporation](g)
+	s.DataUpdated = newGuardedSignal[string](g)
+	s.EveUniverseSectionChanged = newGuardedSignal[EveUniverseSectionUpdated](g)
+	s.EveUniverseSectionUpdated = newGuardedSignal[EveUniverseSectionUpdated](g)
+	s.RefreshTickerExpired = newGuardedSignal[struct{}](g)
+	s.TagsChanged = newGuardedSignal[struct{}](g)
+	s.UpdateStarted = newGuardedSignal[string](g)
+	s.UpdateStopped = newGuardedSignal[string](g)
 	return s
+}
+
+// BeginShutdown makes Emit a no-op on every signal except AppShutdown. Needed
+// because fyne.Do stops serializing onto the main thread once Fyne's quit sequence
+// starts draining its dispatch queue.
+func (s *Signals) BeginShutdown() {
+	s.shuttingDown.Store(true)
+}
+
+func (s *Signals) IsShuttingDown() bool {
+	return s.shuttingDown.Load()
+}
+
+// guardedSignal suppresses Emit once shuttingDown is set.
+//
+// The check isn't atomic with BeginShutdown, so a call already past it can still
+// dispatch after shutdown starts. Accepted as low-risk: on paths the app controls,
+// Fyne is still fully alive at that point; on paths it isn't, the flag is set before
+// any service Stop(), i.e. before the cancellation burst that caused the panic this
+// guard exists for.
+type guardedSignal[T any] struct {
+	signals.Signal[T]
+	shuttingDown *atomic.Bool
+}
+
+func newGuardedSignal[T any](shuttingDown *atomic.Bool) signals.Signal[T] {
+	return guardedSignal[T]{signals.New[T](), shuttingDown}
+}
+
+func (g guardedSignal[T]) Emit(ctx context.Context, arg T) {
+	if g.shuttingDown.Load() {
+		return
+	}
+	g.Signal.Emit(ctx, arg)
 }
 
 // UniqueKey returns a unique key for registering listeners.
