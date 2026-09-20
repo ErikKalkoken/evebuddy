@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"sync/atomic"
@@ -90,32 +91,60 @@ type Signals struct {
 	// A section update has stopped.
 	UpdateStopped signals.Signal[string]
 
-	keyID atomic.Uint64
+	keyID        atomic.Uint64
+	shuttingDown atomic.Bool
 }
 
 func NewSignals() *Signals {
 	s := &Signals{
-		AppInit:                     signals.New[struct{}](),
-		AppShutdown:                 signals.New[struct{}](),
-		CharacterAdded:              signals.New[*Character](),
-		CharacterChanged:            signals.New[int64](),
-		CharacterRemoved:            signals.New[*EntityShort](),
-		CharacterSectionChanged:     signals.New[CharacterSectionUpdated](),
-		CharacterSectionUpdated:     signals.New[CharacterSectionUpdated](),
-		CorporationsChanged:         signals.New[struct{}](),
-		CorporationSectionChanged:   signals.New[CorporationSectionUpdated](),
-		CorporationSectionUpdated:   signals.New[CorporationSectionUpdated](),
-		CurrentCharacterExchanged:   signals.New[*Character](),
-		CurrentCorporationExchanged: signals.New[*Corporation](),
-		DataUpdated:                 signals.New[string](),
-		EveUniverseSectionChanged:   signals.New[EveUniverseSectionUpdated](),
-		EveUniverseSectionUpdated:   signals.New[EveUniverseSectionUpdated](),
-		RefreshTickerExpired:        signals.New[struct{}](),
-		TagsChanged:                 signals.New[struct{}](),
-		UpdateStarted:               signals.New[string](),
-		UpdateStopped:               signals.New[string](),
+		AppShutdown: signals.New[struct{}](),
 	}
+	g := &s.shuttingDown
+	s.AppInit = guardedSignal[struct{}]{signals.New[struct{}](), g}
+	s.CharacterAdded = guardedSignal[*Character]{signals.New[*Character](), g}
+	s.CharacterChanged = guardedSignal[int64]{signals.New[int64](), g}
+	s.CharacterRemoved = guardedSignal[*EntityShort]{signals.New[*EntityShort](), g}
+	s.CharacterSectionChanged = guardedSignal[CharacterSectionUpdated]{signals.New[CharacterSectionUpdated](), g}
+	s.CharacterSectionUpdated = guardedSignal[CharacterSectionUpdated]{signals.New[CharacterSectionUpdated](), g}
+	s.CorporationsChanged = guardedSignal[struct{}]{signals.New[struct{}](), g}
+	s.CorporationSectionChanged = guardedSignal[CorporationSectionUpdated]{signals.New[CorporationSectionUpdated](), g}
+	s.CorporationSectionUpdated = guardedSignal[CorporationSectionUpdated]{signals.New[CorporationSectionUpdated](), g}
+	s.CurrentCharacterExchanged = guardedSignal[*Character]{signals.New[*Character](), g}
+	s.CurrentCorporationExchanged = guardedSignal[*Corporation]{signals.New[*Corporation](), g}
+	s.DataUpdated = guardedSignal[string]{signals.New[string](), g}
+	s.EveUniverseSectionChanged = guardedSignal[EveUniverseSectionUpdated]{signals.New[EveUniverseSectionUpdated](), g}
+	s.EveUniverseSectionUpdated = guardedSignal[EveUniverseSectionUpdated]{signals.New[EveUniverseSectionUpdated](), g}
+	s.RefreshTickerExpired = guardedSignal[struct{}]{signals.New[struct{}](), g}
+	s.TagsChanged = guardedSignal[struct{}]{signals.New[struct{}](), g}
+	s.UpdateStarted = guardedSignal[string]{signals.New[string](), g}
+	s.UpdateStopped = guardedSignal[string]{signals.New[string](), g}
 	return s
+}
+
+// BeginShutdown marks the app as shutting down. From this point on, Emit on every
+// signal except AppShutdown becomes a no-op, since listeners may touch Fyne widgets
+// via fyne.Do, which no longer serializes onto the main thread once Fyne's own quit
+// sequence has started draining its dispatch queue.
+func (s *Signals) BeginShutdown() {
+	s.shuttingDown.Store(true)
+}
+
+// IsShuttingDown reports whether BeginShutdown has been called.
+func (s *Signals) IsShuttingDown() bool {
+	return s.shuttingDown.Load()
+}
+
+// guardedSignal wraps a signals.Signal[T] and suppresses Emit once shuttingDown is set.
+type guardedSignal[T any] struct {
+	signals.Signal[T]
+	shuttingDown *atomic.Bool
+}
+
+func (g guardedSignal[T]) Emit(ctx context.Context, arg T) {
+	if g.shuttingDown.Load() {
+		return
+	}
+	g.Signal.Emit(ctx, arg)
 }
 
 // UniqueKey returns a unique key for registering listeners.

@@ -163,6 +163,7 @@ type baseUI struct {
 
 	// UI state & configuration
 	app                            fyne.App
+	appShutdownOnce                sync.Once
 	avatarCache                    xsync.Map[int64, fyne.Resource]
 	character                      atomic.Pointer[app.Character]
 	characterAvatarPlaceholder64   fyne.Resource
@@ -504,10 +505,36 @@ func newBaseUI(arg UIParams) *baseUI {
 	return u
 }
 
+// shutdownUIWork stops the background work that touches Fyne directly, bypassing
+// Signals (the clock and version-check tickers), plus emits AppShutdown. It must run
+// while Fyne's main loop is still fully running, i.e. only from requestQuit, before
+// app.Quit() is called — after that, fyne.Do no longer serializes onto the main
+// thread, so listeners calling it directly would race.
+func (u *baseUI) shutdownUIWork() {
+	var wg sync.WaitGroup
+	wg.Go(u.clockTicker.Stop)
+	wg.Go(u.versionCheckTicker.Stop)
+	wg.Go(u.emitAppShutdownOnce)
+	wg.Wait()
+}
+
+// emitAppShutdownOnce emits AppShutdown exactly once, however shutdown was
+// triggered: from shutdownUIWork (quit paths the app controls, Fyne still fully
+// running) or, as a fallback for quit paths it doesn't control, from
+// shutdownBackgroundWork.
+func (u *baseUI) emitAppShutdownOnce() {
+	u.appShutdownOnce.Do(func() {
+		u.signals.AppShutdown.Emit(context.Background(), struct{}{})
+	})
+}
+
 // shutdownBackgroundWork lets in-flight work finish cleanly instead of being killed
-// abruptly when the app closes, bounded by timeout.
+// abruptly when the app closes, bounded by timeout. Every signal it triggers is
+// suppressed once BeginShutdown has been called, so it is safe to run after Fyne
+// has already begun tearing down its main-thread dispatch (e.g. from SetOnStopped).
 func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 	slog.Info("Stopping background work")
+	u.signals.BeginShutdown()
 	done := make(chan struct{})
 	go func() {
 		var wg sync.WaitGroup
@@ -515,9 +542,9 @@ func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 		wg.Go(u.cs.Stop)
 		wg.Go(u.rs.Stop)
 		wg.Go(u.refreshTicker.Stop)
-		wg.Go(u.versionCheckTicker.Stop)
-		wg.Go(u.clockTicker.Stop)
-		wg.Go(func() { u.signals.AppShutdown.Emit(context.Background(), struct{}{}) })
+		wg.Go(u.clockTicker.Stop)        // idempotent fallback in case requestQuit did not run
+		wg.Go(u.versionCheckTicker.Stop) // same
+		wg.Go(u.emitAppShutdownOnce)     // fallback for quit paths that skip requestQuit
 		wg.Go(u.stopEntityExchange)
 		wg.Wait()
 		close(done)

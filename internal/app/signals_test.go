@@ -1,9 +1,11 @@
 package app_test
 
 import (
+	"context"
 	"regexp"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -41,6 +43,74 @@ func TestSignals_UniqueKey(t *testing.T) {
 
 		seen := set.Of(keys...)
 		xassert.Equal(t, n, seen.Size())
+	})
+}
+
+func TestSignals_Shutdown(t *testing.T) {
+	t.Run("should deliver Emit to listeners before shutdown began", func(t *testing.T) {
+		s := app.NewSignals()
+		received := make(chan struct{}, 1)
+		s.UpdateStarted.AddListener(func(ctx context.Context, _ string) {
+			received <- struct{}{}
+		})
+		s.UpdateStarted.Emit(context.Background(), "x")
+		select {
+		case <-received:
+		case <-time.After(time.Second):
+			t.Fatal("listener was not called")
+		}
+	})
+	t.Run("should suppress Emit on a guarded signal after BeginShutdown", func(t *testing.T) {
+		s := app.NewSignals()
+		received := make(chan struct{}, 1)
+		s.UpdateStarted.AddListener(func(ctx context.Context, _ string) {
+			received <- struct{}{}
+		})
+		s.BeginShutdown()
+		s.UpdateStarted.Emit(context.Background(), "x")
+		select {
+		case <-received:
+			t.Fatal("listener should not have been called after shutdown began")
+		case <-time.After(100 * time.Millisecond):
+		}
+	})
+	t.Run("should still deliver AppShutdown after BeginShutdown", func(t *testing.T) {
+		s := app.NewSignals()
+		received := make(chan struct{}, 1)
+		s.AppShutdown.AddListener(func(ctx context.Context, _ struct{}) {
+			received <- struct{}{}
+		})
+		s.BeginShutdown()
+		s.AppShutdown.Emit(context.Background(), struct{}{})
+		select {
+		case <-received:
+		case <-time.After(time.Second):
+			t.Fatal("AppShutdown listener was not called")
+		}
+	})
+	t.Run("should report IsShuttingDown before and after BeginShutdown", func(t *testing.T) {
+		s := app.NewSignals()
+		assert.False(t, s.IsShuttingDown())
+		s.BeginShutdown()
+		assert.True(t, s.IsShuttingDown())
+	})
+	t.Run("should be safe under concurrent BeginShutdown and Emit calls", func(t *testing.T) {
+		s := app.NewSignals()
+		s.UpdateStarted.AddListener(func(ctx context.Context, _ string) {})
+		const n = 100
+		var wg sync.WaitGroup
+		for range n {
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				s.BeginShutdown()
+			}()
+			go func() {
+				defer wg.Done()
+				s.UpdateStarted.Emit(context.Background(), "x")
+			}()
+		}
+		wg.Wait()
 	})
 }
 
