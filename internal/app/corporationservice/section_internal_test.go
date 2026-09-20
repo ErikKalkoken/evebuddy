@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 // statusCacheRecorder records whether SetCorporationSection was ever called
@@ -131,6 +132,46 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				assert.False(t, x2.HasError())
 			}
 		}
+	})
+	t.Run("should mark context for force refresh only when forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		section := app.SectionCorporationMembers
+		var gotForceRefresh bool
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section, forceUpdate: true}
+		// when
+		_, err := s.updateSectionIfChanged(ctx, arg, false,
+			func(ctx context.Context, _ corporationSectionUpdateParams) (any, error) {
+				gotForceRefresh = xgoesi.IsForceRefresh(ctx)
+				return "any", nil
+			},
+			func(_ context.Context, _ corporationSectionUpdateParams, _ any) (bool, error) {
+				return true, nil
+			})
+		// then
+		require.NoError(t, err)
+		assert.True(t, gotForceRefresh)
+	})
+	t.Run("should not mark context for force refresh when not forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		section := app.SectionCorporationMembers
+		var gotForceRefresh bool
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
+		// when
+		_, err := s.updateSectionIfChanged(ctx, arg, false,
+			func(ctx context.Context, _ corporationSectionUpdateParams) (any, error) {
+				gotForceRefresh = xgoesi.IsForceRefresh(ctx)
+				return "any", nil
+			},
+			func(_ context.Context, _ corporationSectionUpdateParams, _ any) (bool, error) {
+				return true, nil
+			})
+		// then
+		require.NoError(t, err)
+		assert.False(t, gotForceRefresh)
 	})
 	t.Run("should update when data has not changed and forced", func(t *testing.T) {
 		// given

@@ -124,11 +124,16 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg characterSec
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkills")
-			skills, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkills(ctx, characterID).Execute()
+			skills, resp, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkills(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received character skills from ESI", "characterID", characterID, "items", len(skills.Skills))
+			slog.Debug(
+				"Received character skills from ESI",
+				"characterID", characterID,
+				"items", len(skills.Skills),
+				"fromCache", xgoesi.ResponseFromCache(resp),
+			)
 			return skills, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
@@ -271,11 +276,16 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
-			items, _, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkillqueue(ctx, characterID).Execute()
+			items, resp, err := s.esiClient.SkillsAPI.GetCharactersCharacterIdSkillqueue(ctx, characterID).Execute()
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("Received skillqueue from ESI", "characterID", characterID, "items", len(items))
+			slog.Debug(
+				"Received skillqueue from ESI",
+				"characterID", characterID,
+				"items", len(items),
+				"fromCache", xgoesi.ResponseFromCache(resp),
+			)
 			return items, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {

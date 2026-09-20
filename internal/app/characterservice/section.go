@@ -435,6 +435,11 @@ func (s *CharacterService) updateSectionIfChanged(
 		return false, err
 	}
 	ctx = xgoesi.NewContextWithAuth(ctx, arg.characterID, ts)
+	if arg.forceUpdate {
+		// Bypass the local HTTP cache so a forced update can't silently
+		// re-confirm a stale or wrongly-304'd ESI response.
+		ctx = xgoesi.NewContextWithForceRefresh(ctx)
+	}
 	data, err := fetch(ctx, arg.characterID)
 	if err != nil {
 		return false, err

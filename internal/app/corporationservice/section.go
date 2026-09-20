@@ -391,6 +391,11 @@ func (s *CorporationService) updateSectionIfChanged(
 	} else {
 		slog.Debug("Found valid token for updating corporation section", "corporationID", arg.corporationID, "section", arg.section, "characterID", characterID)
 		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
+		if arg.forceUpdate {
+			// Bypass the local HTTP cache so a forced update can't silently
+			// re-confirm a stale or wrongly-304'd ESI response.
+			ctx = xgoesi.NewContextWithForceRefresh(ctx)
+		}
 		data, err := fetch(ctx, arg)
 		if err != nil {
 			return false, err

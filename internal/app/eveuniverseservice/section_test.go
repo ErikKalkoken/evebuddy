@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func TestEveuniverseservice_HasSection(t *testing.T) {
@@ -94,6 +96,43 @@ func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_DoesNotReportSuccess
 	require.NoError(t, err)
 	assert.True(t, status.HasError(), "expected section status to record the ESI failure")
 	assert.False(t, updated, "EveUniverseSectionUpdated must not be emitted for a failed update")
+}
+
+func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_ForceRefresh(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	ctx := context.Background()
+	newResponder := func(gotForceRefresh *bool) httpmock.Responder {
+		return func(req *http.Request) (*http.Response, error) {
+			*gotForceRefresh = xgoesi.IsForceRefresh(req.Context())
+			return httpmock.NewJsonResponse(200, []any{})
+		}
+	}
+	t.Run("should mark context for force refresh only when forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		var gotForceRefresh bool
+		httpmock.RegisterResponder("GET", "https://esi.evetech.net/markets/prices", newResponder(&gotForceRefresh))
+		// when
+		s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, true)
+		// then
+		assert.True(t, gotForceRefresh)
+	})
+	t.Run("should not mark context for force refresh when not forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		var gotForceRefresh bool
+		httpmock.RegisterResponder("GET", "https://esi.evetech.net/markets/prices", newResponder(&gotForceRefresh))
+		// when
+		s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, false)
+		// then
+		assert.False(t, gotForceRefresh)
+	})
 }
 
 func TestEveuniverseservice_UpdateTicker_StopWithoutStart(t *testing.T) {
