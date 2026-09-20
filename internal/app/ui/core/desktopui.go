@@ -588,6 +588,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				hasDisabled = true
 			}
 
+			if sections.Contains(app.SectionCorporationContracts) {
+				corpContractsItem.Enable()
+			} else {
+				corpContractsItem.Disable()
+				hasDisabled = true
+			}
+
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				for _, it := range corpWalletItems {
 					it.Enable()

@@ -527,6 +527,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 			} else {
 				corpIndustryNav.IsDisabled = true
 			}
+			if sections.Contains(app.SectionCorporationContracts) {
+				corpContractsNav.IsDisabled = false
+			} else {
+				corpContractsNav.IsDisabled = true
+			}
 			if sections.Contains(app.SectionCorporationWalletBalances) {
 				corpWalletNav.IsDisabled = false
 			} else {
