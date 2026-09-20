@@ -100,44 +100,52 @@ func NewSignals() *Signals {
 		AppShutdown: signals.New[struct{}](),
 	}
 	g := &s.shuttingDown
-	s.AppInit = guardedSignal[struct{}]{signals.New[struct{}](), g}
-	s.CharacterAdded = guardedSignal[*Character]{signals.New[*Character](), g}
-	s.CharacterChanged = guardedSignal[int64]{signals.New[int64](), g}
-	s.CharacterRemoved = guardedSignal[*EntityShort]{signals.New[*EntityShort](), g}
-	s.CharacterSectionChanged = guardedSignal[CharacterSectionUpdated]{signals.New[CharacterSectionUpdated](), g}
-	s.CharacterSectionUpdated = guardedSignal[CharacterSectionUpdated]{signals.New[CharacterSectionUpdated](), g}
-	s.CorporationsChanged = guardedSignal[struct{}]{signals.New[struct{}](), g}
-	s.CorporationSectionChanged = guardedSignal[CorporationSectionUpdated]{signals.New[CorporationSectionUpdated](), g}
-	s.CorporationSectionUpdated = guardedSignal[CorporationSectionUpdated]{signals.New[CorporationSectionUpdated](), g}
-	s.CurrentCharacterExchanged = guardedSignal[*Character]{signals.New[*Character](), g}
-	s.CurrentCorporationExchanged = guardedSignal[*Corporation]{signals.New[*Corporation](), g}
-	s.DataUpdated = guardedSignal[string]{signals.New[string](), g}
-	s.EveUniverseSectionChanged = guardedSignal[EveUniverseSectionUpdated]{signals.New[EveUniverseSectionUpdated](), g}
-	s.EveUniverseSectionUpdated = guardedSignal[EveUniverseSectionUpdated]{signals.New[EveUniverseSectionUpdated](), g}
-	s.RefreshTickerExpired = guardedSignal[struct{}]{signals.New[struct{}](), g}
-	s.TagsChanged = guardedSignal[struct{}]{signals.New[struct{}](), g}
-	s.UpdateStarted = guardedSignal[string]{signals.New[string](), g}
-	s.UpdateStopped = guardedSignal[string]{signals.New[string](), g}
+	s.AppInit = newGuardedSignal[struct{}](g)
+	s.CharacterAdded = newGuardedSignal[*Character](g)
+	s.CharacterChanged = newGuardedSignal[int64](g)
+	s.CharacterRemoved = newGuardedSignal[*EntityShort](g)
+	s.CharacterSectionChanged = newGuardedSignal[CharacterSectionUpdated](g)
+	s.CharacterSectionUpdated = newGuardedSignal[CharacterSectionUpdated](g)
+	s.CorporationsChanged = newGuardedSignal[struct{}](g)
+	s.CorporationSectionChanged = newGuardedSignal[CorporationSectionUpdated](g)
+	s.CorporationSectionUpdated = newGuardedSignal[CorporationSectionUpdated](g)
+	s.CurrentCharacterExchanged = newGuardedSignal[*Character](g)
+	s.CurrentCorporationExchanged = newGuardedSignal[*Corporation](g)
+	s.DataUpdated = newGuardedSignal[string](g)
+	s.EveUniverseSectionChanged = newGuardedSignal[EveUniverseSectionUpdated](g)
+	s.EveUniverseSectionUpdated = newGuardedSignal[EveUniverseSectionUpdated](g)
+	s.RefreshTickerExpired = newGuardedSignal[struct{}](g)
+	s.TagsChanged = newGuardedSignal[struct{}](g)
+	s.UpdateStarted = newGuardedSignal[string](g)
+	s.UpdateStopped = newGuardedSignal[string](g)
 	return s
 }
 
-// BeginShutdown marks the app as shutting down. From this point on, Emit on every
-// signal except AppShutdown becomes a no-op, since listeners may touch Fyne widgets
-// via fyne.Do, which no longer serializes onto the main thread once Fyne's own quit
-// sequence has started draining its dispatch queue.
+// BeginShutdown makes Emit a no-op on every signal except AppShutdown. Needed
+// because fyne.Do stops serializing onto the main thread once Fyne's quit sequence
+// starts draining its dispatch queue.
 func (s *Signals) BeginShutdown() {
 	s.shuttingDown.Store(true)
 }
 
-// IsShuttingDown reports whether BeginShutdown has been called.
 func (s *Signals) IsShuttingDown() bool {
 	return s.shuttingDown.Load()
 }
 
-// guardedSignal wraps a signals.Signal[T] and suppresses Emit once shuttingDown is set.
+// guardedSignal suppresses Emit once shuttingDown is set.
+//
+// The check isn't atomic with BeginShutdown, so a call already past it can still
+// dispatch after shutdown starts. Accepted as low-risk: on paths the app controls,
+// Fyne is still fully alive at that point; on paths it isn't, the flag is set before
+// any service Stop(), i.e. before the cancellation burst that caused the panic this
+// guard exists for.
 type guardedSignal[T any] struct {
 	signals.Signal[T]
 	shuttingDown *atomic.Bool
+}
+
+func newGuardedSignal[T any](shuttingDown *atomic.Bool) signals.Signal[T] {
+	return guardedSignal[T]{signals.New[T](), shuttingDown}
 }
 
 func (g guardedSignal[T]) Emit(ctx context.Context, arg T) {

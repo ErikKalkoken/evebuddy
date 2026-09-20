@@ -505,23 +505,29 @@ func newBaseUI(arg UIParams) *baseUI {
 	return u
 }
 
-// shutdownUIWork stops the background work that touches Fyne directly, bypassing
-// Signals (the clock and version-check tickers), plus emits AppShutdown. It must run
-// while Fyne's main loop is still fully running, i.e. only from requestQuit, before
-// app.Quit() is called — after that, fyne.Do no longer serializes onto the main
-// thread, so listeners calling it directly would race.
-func (u *baseUI) shutdownUIWork() {
-	var wg sync.WaitGroup
-	wg.Go(u.clockTicker.Stop)
-	wg.Go(u.versionCheckTicker.Stop)
-	wg.Go(u.emitAppShutdownOnce)
-	wg.Wait()
+// shutdownUIWork stops the tickers that call fyne.Do directly and emits AppShutdown.
+// Must run before app.Quit(), since fyne.Do stops serializing onto the main thread
+// once Fyne's quit sequence begins. Bounded so a stuck listener can't hang the
+// "Shutting down" modal forever.
+func (u *baseUI) shutdownUIWork(timeout time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		var wg sync.WaitGroup
+		wg.Go(u.clockTicker.Stop)
+		wg.Go(u.versionCheckTicker.Stop)
+		wg.Go(u.emitAppShutdownOnce)
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		slog.Warn("Timed out waiting for UI shutdown work to stop", "timeout", timeout)
+	}
 }
 
-// emitAppShutdownOnce emits AppShutdown exactly once, however shutdown was
-// triggered: from shutdownUIWork (quit paths the app controls, Fyne still fully
-// running) or, as a fallback for quit paths it doesn't control, from
-// shutdownBackgroundWork.
+// emitAppShutdownOnce guards against double-firing: shutdownUIWork and
+// shutdownBackgroundWork can both call this depending on the quit path taken.
 func (u *baseUI) emitAppShutdownOnce() {
 	u.appShutdownOnce.Do(func() {
 		u.signals.AppShutdown.Emit(context.Background(), struct{}{})
@@ -529,9 +535,9 @@ func (u *baseUI) emitAppShutdownOnce() {
 }
 
 // shutdownBackgroundWork lets in-flight work finish cleanly instead of being killed
-// abruptly when the app closes, bounded by timeout. Every signal it triggers is
-// suppressed once BeginShutdown has been called, so it is safe to run after Fyne
-// has already begun tearing down its main-thread dispatch (e.g. from SetOnStopped).
+// abruptly when the app closes, bounded by timeout. Safe to run after Fyne's
+// main-thread dispatch has begun tearing down, since BeginShutdown suppresses every
+// signal it triggers.
 func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 	slog.Info("Stopping background work")
 	u.signals.BeginShutdown()
@@ -542,9 +548,9 @@ func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
 		wg.Go(u.cs.Stop)
 		wg.Go(u.rs.Stop)
 		wg.Go(u.refreshTicker.Stop)
-		wg.Go(u.clockTicker.Stop)        // idempotent fallback in case requestQuit did not run
-		wg.Go(u.versionCheckTicker.Stop) // same
-		wg.Go(u.emitAppShutdownOnce)     // fallback for quit paths that skip requestQuit
+		wg.Go(u.clockTicker.Stop)        // fallback if requestQuit didn't run
+		wg.Go(u.versionCheckTicker.Stop) // fallback if requestQuit didn't run
+		wg.Go(u.emitAppShutdownOnce)     // fallback if requestQuit didn't run
 		wg.Go(u.stopEntityExchange)
 		wg.Wait()
 		close(done)

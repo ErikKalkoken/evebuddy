@@ -51,11 +51,8 @@ type DesktopUI struct {
 	quitting atomic.Bool
 }
 
-// requestQuit shows a "Shutting down" modal while gracefully stopping background
-// work that touches Fyne directly, then quits the app. It is the chokepoint for
-// every quit trigger the app controls (the Ctrl+Q shortcut, the hamburger menu's
-// Quit item, and the main window's close button when the system tray is disabled).
-// Safe to call more than once; only the first call has an effect.
+// requestQuit is the chokepoint for every quit trigger the app controls, so
+// Fyne-touching shutdown work runs before app.Quit() instead of racing it.
 func (u *DesktopUI) requestQuit() {
 	if !u.quitting.CompareAndSwap(false, true) {
 		return
@@ -66,7 +63,7 @@ func (u *DesktopUI) requestQuit() {
 		"Shutting down, please wait...",
 		func(done func(error)) {
 			go func() {
-				u.shutdownUIWork()
+				u.shutdownUIWork(shutdownTimeout)
 				done(nil)
 				fyne.Do(u.app.Quit)
 			}()
