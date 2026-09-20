@@ -4,6 +4,7 @@ package testutil
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"testing"
 
@@ -12,15 +13,63 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+// defaultDBSetupLogLevel is the log level used while setting up a test DB
+// (which includes applying migrations) unless overridden with [WithLogLevel].
+// It is set above [slog.LevelInfo] to silence the otherwise very noisy
+// migration log output that would otherwise appear on every test run.
+const defaultDBSetupLogLevel = slog.LevelWarn
+
+type dbOptions struct {
+	logLevel slog.Level
+}
+
+// DBOption configures [NewDBInMemory] or [NewDBOnDisk].
+type DBOption func(*dbOptions)
+
+// WithLogLevel overrides the log level used while setting up a test DB,
+// which is otherwise silenced to [defaultDBSetupLogLevel] to avoid
+// drowning test output in migration log lines. Since this ultimately calls
+// [slog.SetLogLoggerLevel], it affects the process-wide default logger for
+// the duration of the DB setup, not just migration-related log records.
+func WithLogLevel(level slog.Level) DBOption {
+	return func(o *dbOptions) {
+		o.logLevel = level
+	}
+}
+
+func newDBOptions(opts []DBOption) dbOptions {
+	o := dbOptions{logLevel: defaultDBSetupLogLevel}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return o
+}
+
+// withDBSetupLogLevel temporarily sets the default logger's level for the
+// duration of f, then restores the previous level.
+//
+// This mutates process-wide global state, which is safe only because DB
+// setup is a short, synchronous call and this test suite does not use
+// t.Parallel(). Revisit if that ever changes.
+func withDBSetupLogLevel(level slog.Level, f func()) {
+	prev := slog.SetLogLoggerLevel(level)
+	defer slog.SetLogLoggerLevel(prev)
+	f()
+}
+
 // NewDBInMemory creates and returns a database in memory for tests.
 // Important: This variant is not suitable for DB code that runs in goroutines.
-func NewDBInMemory() (*sql.DB, *storage.Storage, Factory) {
+func NewDBInMemory(opts ...DBOption) (*sql.DB, *storage.Storage, Factory) {
+	o := newDBOptions(opts)
 	// in-memory DB for faster running tests
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		panic(err)
 	}
-	if err := storage.ApplyMigrations(db); err != nil {
+	withDBSetupLogLevel(o.logLevel, func() {
+		err = storage.ApplyMigrations(db)
+	})
+	if err != nil {
 		panic(err)
 	}
 	st := storage.New(db, db)
@@ -30,10 +79,15 @@ func NewDBInMemory() (*sql.DB, *storage.Storage, Factory) {
 
 // NewDBOnDisk creates and returns a new temporary database on disk for tests.
 // The database is automatically removed once the tests have concluded.
-func NewDBOnDisk(t testing.TB) (*sql.DB, *storage.Storage, Factory) {
+func NewDBOnDisk(t testing.TB, opts ...DBOption) (*sql.DB, *storage.Storage, Factory) {
+	o := newDBOptions(opts)
 	// real DB for more thorough tests
 	p := filepath.Join(t.TempDir(), "evebuddy_test.sqlite")
-	dbRW, dbRO, err := storage.InitDB("file:" + p)
+	var dbRW, dbRO *sql.DB
+	var err error
+	withDBSetupLogLevel(o.logLevel, func() {
+		dbRW, dbRO, err = storage.InitDB("file:" + p)
+	})
 	if err != nil {
 		panic(err)
 	}
