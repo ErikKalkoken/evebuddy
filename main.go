@@ -290,6 +290,7 @@ func main() {
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
+		CacheKey:            xgoesi.CacheKeyWithForceRefresh,
 		Transport: &xgoesi.TokenRefresher{
 			Transport: &xgoesi.RateLimiter{
 				Transport: &xgoesi.DowntimeBlocker{},

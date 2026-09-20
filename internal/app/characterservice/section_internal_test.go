@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 // TODO: Add tests for UpdateSectionIfNeeded()
@@ -129,6 +130,48 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				assert.False(t, x2.HasError())
 			}
 		}
+	})
+	t.Run("should mark context for force refresh only when forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		section := app.SectionCharacterImplants
+		var gotForceRefresh bool
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section, forceUpdate: true}
+		// when
+		_, err := s.updateSectionIfChanged(ctx, arg, false,
+			func(ctx context.Context, characterID int64) (any, error) {
+				gotForceRefresh = xgoesi.IsForceRefresh(ctx)
+				return "any", nil
+			},
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
+				return true, nil
+			})
+		// then
+		require.NoError(t, err)
+		assert.True(t, gotForceRefresh)
+	})
+	t.Run("should not mark context for force refresh when not forced", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		section := app.SectionCharacterImplants
+		var gotForceRefresh bool
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
+		// when
+		_, err := s.updateSectionIfChanged(ctx, arg, false,
+			func(ctx context.Context, characterID int64) (any, error) {
+				gotForceRefresh = xgoesi.IsForceRefresh(ctx)
+				return "any", nil
+			},
+			func(ctx context.Context, characterID int64, data any) (bool, error) {
+				return true, nil
+			})
+		// then
+		require.NoError(t, err)
+		assert.False(t, gotForceRefresh)
 	})
 	t.Run("should update when data has not changed and forced", func(t *testing.T) {
 		// given

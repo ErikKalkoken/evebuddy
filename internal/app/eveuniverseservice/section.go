@@ -142,6 +142,11 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 	default:
 		return zero, fmt.Errorf("eveuniverseservice: unknown section: %s", arg.section)
 	}
+	if arg.forceUpdate {
+		// Bypass the local HTTP cache so a forced update can't silently
+		// re-confirm a stale or wrongly-304'd ESI response.
+		ctx = xgoesi.NewContextWithForceRefresh(ctx)
+	}
 	changed, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("update-general-section-%s", arg.section), func() (set.Set[int64], error) {
 		slog.Debug("Started updating eveuniverse section", "section", arg.section)
 		startedAt := optional.New(time.Now())
