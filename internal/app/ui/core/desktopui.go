@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"slices"
-	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -20,8 +19,6 @@ import (
 	"github.com/icrowley/fake"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
-
-	"github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -47,30 +44,6 @@ type shortcutDef struct {
 // The DesktopUI creates the UI for desktop.
 type DesktopUI struct {
 	*baseUI
-
-	quitting atomic.Bool
-}
-
-// requestQuit is the chokepoint for every quit trigger the app controls, so
-// Fyne-touching shutdown work runs before app.Quit() instead of racing it.
-func (u *DesktopUI) requestQuit() {
-	if !u.quitting.CompareAndSwap(false, true) {
-		return
-	}
-	u.signals.BeginShutdown()
-	m := modal.NewProgressInfinite(
-		"Shutdown",
-		"Shutting down, please wait...",
-		func(done func(error)) {
-			go func() {
-				u.shutdownUIWork(shutdownTimeout)
-				done(nil)
-				fyne.Do(u.app.Quit)
-			}()
-		},
-		u.MainWindow(),
-	)
-	m.Start()
 }
 
 // NewDesktopUI build the UI and returns it.
@@ -560,8 +533,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.MainWindow().SetCloseIntercept(func() {
 			u.MainWindow().Hide()
 		})
-	} else {
-		u.MainWindow().SetCloseIntercept(u.requestQuit)
 	}
 	u.hideMailIndicator() // init system tray icon
 
@@ -893,7 +864,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.requestQuit()
+				u.app.Quit()
 			}},
 	}
 	for name, def := range m {

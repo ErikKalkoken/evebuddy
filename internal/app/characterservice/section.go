@@ -21,46 +21,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-// Start starts periodically updating characters in the background, plus any
-// longer-running background work a section update spawns (e.g. mail body
-// downloads), until stopped with [CharacterService.Stop].
-func (s *CharacterService) Start(d time.Duration) {
-	s.update.StartTicker(d, true, func(ctx context.Context) {
-		s.update.Go(func() {
-			if err := s.notifyCharactersIfNeeded(ctx); err != nil {
-				if ctx.Err() != nil {
-					// aborted by Stop, not a real failure
-					slog.Debug("Notify characters canceled", "error", err)
-				} else {
+func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
+	go func() {
+		for {
+			ctx := context.Background()
+			go func() {
+				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
 					slog.Error("Failed to notify characters", "error", err)
 				}
-			}
-		})
-		s.update.Go(func() {
-			if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
-				if ctx.Err() != nil {
-					// aborted by Stop, not a real failure
-					slog.Debug("Update characters canceled", "error", err)
-				} else {
+			}()
+
+			go func() {
+				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
 					slog.Error("Failed to update characters", "error", err)
 				}
-			}
-		})
-	})
-}
-
-// Stop cancels the background work owned by this service and waits for it to
-// finish. It is safe to call even when Start was never called.
-func (s *CharacterService) Stop() {
-	s.update.Stop()
-}
-
-// backgroundCtx returns the ctx owned by this service, for background work that
-// must outlive a single update pass (e.g. downloading mail bodies across many
-// ticks). It is valid for the service's entire lifetime, whether or not Start
-// was ever called, and is canceled by Stop.
-func (s *CharacterService) backgroundCtx() context.Context {
-	return s.update.Context()
+			}()
+			<-time.Tick(d)
+		}
+	}()
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -214,14 +192,6 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 // to make sure they are refreshed when data changes.
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
-		if ctx.Err() != nil {
-			// aborted by Stop, not a real failure
-			slog.Debug("Character section update canceled",
-				"characterID", characterID,
-				"section", section,
-			)
-			return
-		}
 		slog.Error("Failed to process update for character section",
 			"characterID", characterID,
 			"section", section,
@@ -246,8 +216,8 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 
 	switch section {
 	case app.SectionCharacterMailHeaders:
-		s.update.Go(func() {
-			ctx, cancel := context.WithCancel(s.backgroundCtx())
+		go func() {
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d-%s", characterID, s.signals.PseudoUniqueID())
 			s.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
@@ -262,7 +232,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 			if err != nil {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
 			}
-		})
+		}()
 		if s.settings.NotifyMailsEnabled() {
 			earliest := s.settings.NotifyMailsEarliest()
 			if err := s.NotifyMails(ctx, characterID, earliest, s.sendDesktopNotification); err != nil {
@@ -513,12 +483,6 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
-	if ctx.Err() != nil {
-		// aborted by Stop, not a real failure; skip persisting since
-		// the DB write below would itself fail with the same canceled ctx
-		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section)
-		return
-	}
 	slog.Error("Character section update failed", "characterID", arg.characterID, "section", arg.section, "error", err)
 	errorMessage := err.Error()
 	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{

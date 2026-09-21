@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // Cache defines a cache.
@@ -49,7 +48,6 @@ type CorporationService struct {
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
-	update           xsync.BackgroundGroup
 }
 
 type Params struct {

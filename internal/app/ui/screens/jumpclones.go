@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -62,6 +61,7 @@ type JumpClones struct {
 	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
 	origin            *app.EveSolarSystem
 	originLabel       *xwidget.RichText
+	routeCancel       context.CancelFunc
 	routePref         app.EveRoutePreference
 	rows              []jumpCloneRow
 	rowsFiltered      []jumpCloneRow
@@ -71,11 +71,6 @@ type JumpClones struct {
 	selectTag         *kxwidget.FilterChipSelect
 	sortChip          *kxwidget.SortChip
 	u                 baseUI
-
-	routesMu     sync.Mutex
-	routesCancel context.CancelFunc
-	routesDone   chan struct{}
-	stopped      bool
 }
 
 func NewJumpClones(u baseUI) *JumpClones {
@@ -205,9 +200,6 @@ func NewJumpClones(u baseUI) *JumpClones {
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 		a.update(ctx)
 	})
-	a.u.Signals().AppShutdown.AddListener(func(ctx context.Context, _ struct{}) {
-		a.stop()
-	})
 
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if arg.Section == app.SectionCharacterJumpClones {
@@ -322,12 +314,6 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 }
 
 func (a *JumpClones) update(ctx context.Context) {
-	a.routesMu.Lock()
-	stopped := a.stopped
-	a.routesMu.Unlock()
-	if stopped {
-		return
-	}
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		slog.Error("Failed to refresh clones UI", "err", err)
@@ -390,26 +376,17 @@ func (a *JumpClones) updateRoutesAsync() {
 			Preference:  a.routePref,
 		})
 	}
-	a.routesMu.Lock()
-	if a.stopped {
-		a.routesMu.Unlock()
-		return
-	}
-	if a.routesCancel != nil {
-		a.routesCancel() // supersede any still-running fetch
+	if a.routeCancel != nil {
+		a.routeCancel() // supersede any still-running fetch
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	a.routesCancel = cancel
-	a.routesDone = done
-	a.routesMu.Unlock()
+	a.routeCancel = cancel
 	go func() {
-		defer close(done)
 		routes, err := a.u.EVEUniverse().FetchRoutes(ctx, headers)
+		if ctx.Err() != nil {
+			return // superseded
+		}
 		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
 				s := "Failed to fetch routes: " + a.u.ErrorDisplay(err)
@@ -417,9 +394,6 @@ func (a *JumpClones) updateRoutesAsync() {
 					ColorName: theme.ColorNameError,
 				}))
 			})
-			return
-		}
-		if ctx.Err() != nil {
 			return
 		}
 		m := make(map[int64][]*app.EveSolarSystem)
@@ -438,21 +412,6 @@ func (a *JumpClones) updateRoutesAsync() {
 			a.filterRowsAsync("")
 		})
 	}()
-}
-
-// stop cancels any in-flight route fetch and waits for it to finish, and prevents
-// further route fetches from starting. It is safe to call even if none is in flight.
-func (a *JumpClones) stop() {
-	a.routesMu.Lock()
-	a.stopped = true
-	cancel := a.routesCancel
-	done := a.routesDone
-	a.routesMu.Unlock()
-	if cancel == nil {
-		return
-	}
-	cancel()
-	<-done
 }
 
 func (a *JumpClones) setOrigin(w fyne.Window) {

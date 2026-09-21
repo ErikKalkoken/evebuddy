@@ -739,32 +739,36 @@ func NewMobileUI(params UIParams) *MobileUI {
 		updateUpdateStatus(ctx)
 
 		if !u.IsOffline() {
-			u.versionCheckTicker.StartTicker(3600*time.Second, true, func(ctx context.Context) {
-				v, err := u.availableUpdate(ctx)
-				if err != nil {
-					if ctx.Err() == nil {
-						slog.Error("fetch github version for menu info", "error", err)
-					}
-					return
+			tickerNewVersion := time.NewTicker(3600 * time.Second)
+			go func() {
+				for {
+					func() {
+						v, err := u.availableUpdate(ctx)
+						if err != nil {
+							slog.Error("fetch github version for menu info", "error", err)
+							return
+						}
+						if v.IsRemoteNewer {
+							hasUpdate.Store(true)
+							fyne.Do(func() {
+								refreshMoreBadge()
+								navItemAbout.Supporting = "Update available"
+								navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
+								navItemAbout.Refresh()
+							})
+						} else {
+							hasUpdate.Store(false)
+							fyne.Do(func() {
+								refreshMoreBadge()
+								navItemAbout.Supporting = ""
+								navItemAbout.Trailing = nil
+								navItemAbout.Refresh()
+							})
+						}
+					}()
+					<-tickerNewVersion.C
 				}
-				if v.IsRemoteNewer {
-					hasUpdate.Store(true)
-					fyne.Do(func() {
-						refreshMoreBadge()
-						navItemAbout.Supporting = "Update available"
-						navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
-						navItemAbout.Refresh()
-					})
-				} else {
-					hasUpdate.Store(false)
-					fyne.Do(func() {
-						refreshMoreBadge()
-						navItemAbout.Supporting = ""
-						navItemAbout.Trailing = nil
-						navItemAbout.Refresh()
-					})
-				}
-			})
+			}()
 		}
 	}
 

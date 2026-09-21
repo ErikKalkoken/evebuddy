@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type AuthClient interface {
@@ -81,7 +80,6 @@ type CharacterService struct {
 	sig                     *singleinstance.Group
 	signals                 *app.Signals
 	st                      *storage.Storage
-	update                  xsync.BackgroundGroup
 }
 
 type Params struct {

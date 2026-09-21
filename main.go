@@ -50,7 +50,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/remoteservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
-	"github.com/ErikKalkoken/evebuddy/internal/xslog"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
@@ -98,7 +97,6 @@ var (
 func main() {
 	// init log & flags
 	slog.SetLogLoggerLevel(logLevelDefault)
-	slog.SetDefault(slog.New(xslog.NewCanceledDowngradingHandler(slog.Default().Handler())))
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	flag.Parse()
 

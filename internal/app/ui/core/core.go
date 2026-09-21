@@ -57,7 +57,6 @@ const (
 	corporationUpdateTick   = 60 * time.Second
 	eveUniverseUpdateTick   = 300 * time.Second
 	delayBeforeUpdateStatus = 3 * time.Second
-	shutdownTimeout         = 5 * time.Second
 )
 
 // Default ScaleMode for images
@@ -163,19 +162,14 @@ type baseUI struct {
 
 	// UI state & configuration
 	app                            fyne.App
-	appShutdownOnce                sync.Once
 	avatarCache                    xsync.Map[int64, fyne.Resource]
 	character                      atomic.Pointer[app.Character]
 	characterAvatarPlaceholder64   fyne.Resource
-	clockTicker                    xsync.BackgroundGroup
 	concurrencyLimit               int
 	corporation                    atomic.Pointer[app.Corporation]
 	corporationAvatarPlaceholder64 fyne.Resource
 	dataPaths                      xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme                   fyne.Theme
-	entityExchangeMu               sync.Mutex
-	entityExchangeStopped          bool
-	entityExchangeWG               sync.WaitGroup
 	isDeveloperMode                atomic.Bool
 	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
 	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
@@ -184,9 +178,7 @@ type baseUI struct {
 	isOfflineMode                  bool
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
-	refreshTicker                  xsync.BackgroundGroup
 	signals                        *app.Signals
-	versionCheckTicker             xsync.BackgroundGroup
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
 	windows                        map[string]fyne.Window // child windows
@@ -495,92 +487,12 @@ func newBaseUI(arg UIParams) *baseUI {
 		u.isForeground.Store(false)
 	})
 	u.app.Lifecycle().SetOnStopped(func() {
-		slog.Info("Starting graceful shutdown")
-		u.shutdownBackgroundWork(shutdownTimeout)
 		slog.Info("App stopped")
 		if u.onAppStopped != nil {
 			u.onAppStopped()
 		}
 	})
 	return u
-}
-
-// shutdownUIWork stops the tickers that call fyne.Do directly and emits AppShutdown.
-// Must run before app.Quit(), since fyne.Do stops serializing onto the main thread
-// once Fyne's quit sequence begins. Bounded so a stuck listener can't hang the
-// "Shutting down" modal forever.
-func (u *baseUI) shutdownUIWork(timeout time.Duration) {
-	done := make(chan struct{})
-	go func() {
-		var wg sync.WaitGroup
-		wg.Go(u.clockTicker.Stop)
-		wg.Go(u.versionCheckTicker.Stop)
-		wg.Go(u.emitAppShutdownOnce)
-		wg.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(timeout):
-		slog.Warn("Timed out waiting for UI shutdown work to stop", "timeout", timeout)
-	}
-}
-
-// emitAppShutdownOnce guards against double-firing: shutdownUIWork and
-// shutdownBackgroundWork can both call this depending on the quit path taken.
-func (u *baseUI) emitAppShutdownOnce() {
-	u.appShutdownOnce.Do(func() {
-		u.signals.AppShutdown.Emit(context.Background(), struct{}{})
-	})
-}
-
-// shutdownBackgroundWork lets in-flight work finish cleanly instead of being killed
-// abruptly when the app closes, bounded by timeout. Safe to run after Fyne's
-// main-thread dispatch has begun tearing down, since BeginShutdown suppresses every
-// signal it triggers.
-func (u *baseUI) shutdownBackgroundWork(timeout time.Duration) {
-	slog.Info("Stopping background work")
-	u.signals.BeginShutdown()
-	done := make(chan struct{})
-	go func() {
-		var wg sync.WaitGroup
-		wg.Go(u.eus.Stop)
-		wg.Go(u.cs.Stop)
-		wg.Go(u.rs.Stop)
-		wg.Go(u.refreshTicker.Stop)
-		wg.Go(u.clockTicker.Stop)        // fallback if requestQuit didn't run
-		wg.Go(u.versionCheckTicker.Stop) // fallback if requestQuit didn't run
-		wg.Go(u.emitAppShutdownOnce)     // fallback if requestQuit didn't run
-		wg.Go(u.stopEntityExchange)
-		wg.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-		slog.Info("Background work stopped")
-	case <-time.After(timeout):
-		slog.Warn("Timed out waiting for background work to stop", "timeout", timeout)
-	}
-}
-
-// trackEntityExchange runs f in a tracked goroutine, unless shutdown has already
-// begun, in which case it is a no-op.
-func (u *baseUI) trackEntityExchange(f func()) {
-	u.entityExchangeMu.Lock()
-	defer u.entityExchangeMu.Unlock()
-	if u.entityExchangeStopped {
-		return
-	}
-	u.entityExchangeWG.Go(f)
-}
-
-// stopEntityExchange stops tracking further character/corporation exchange
-// notifications and waits for any already in flight to finish.
-func (u *baseUI) stopEntityExchange() {
-	u.entityExchangeMu.Lock()
-	u.entityExchangeStopped = true
-	u.entityExchangeMu.Unlock()
-	u.entityExchangeWG.Wait()
 }
 
 // Start starts the app and reports whether it was started.
@@ -635,18 +547,20 @@ func (u *baseUI) Start() bool {
 		updateCharactersMissingScope(ctx)
 
 		u.isStartupCompleted.Store(true)
-		u.refreshTicker.StartTicker(refreshUITick, false, func(ctx context.Context) {
-			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
-		})
+		go func() {
+			for range time.Tick(refreshUITick) {
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			}
+		}()
 		if u.onAppFirstStarted != nil {
 			u.onAppFirstStarted()
 		}
 		if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 			time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
 			slog.Info("Starting update ticker")
-			u.eus.Start(eveUniverseUpdateTick)
-			u.cs.Start(characterUpdateTick)
-			u.rs.Start(corporationUpdateTick)
+			u.eus.StartUpdateTicker(eveUniverseUpdateTick)
+			u.cs.StartUpdateTickerCharacters(characterUpdateTick)
+			u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
 		} else {
 			slog.Info("Update ticker disabled")
 		}
@@ -839,7 +753,7 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 
 func (u *baseUI) ResetCharacter(ctx context.Context) {
 	u.character.Store(nil)
-	u.trackEntityExchange(func() { u.signals.CurrentCharacterExchanged.Emit(ctx, nil) })
+	go u.signals.CurrentCharacterExchanged.Emit(ctx, nil)
 	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
@@ -849,9 +763,9 @@ func (u *baseUI) ResetCharacter(ctx context.Context) {
 func (u *baseUI) SetCharacter(ctx context.Context, c *app.Character) {
 	u.character.Store(c)
 	if u.onSetCharacter != nil {
-		u.trackEntityExchange(func() { u.onSetCharacter(c) })
+		go u.onSetCharacter(c)
 	}
-	u.trackEntityExchange(func() { u.signals.CurrentCharacterExchanged.Emit(ctx, c) })
+	go u.signals.CurrentCharacterExchanged.Emit(ctx, c)
 	u.settings.SetLastCharacterID(c.ID)
 }
 
@@ -912,7 +826,7 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 
 func (u *baseUI) ResetCorporation(ctx context.Context) {
 	u.corporation.Store(nil)
-	u.trackEntityExchange(func() { u.signals.CurrentCorporationExchanged.Emit(ctx, nil) })
+	go u.signals.CurrentCorporationExchanged.Emit(ctx, nil)
 	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
@@ -922,9 +836,9 @@ func (u *baseUI) ResetCorporation(ctx context.Context) {
 func (u *baseUI) SetCorporation(ctx context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
 	if u.onSetCorporation != nil {
-		u.trackEntityExchange(func() { u.onSetCorporation(c) })
+		go u.onSetCorporation(c)
 	}
-	u.trackEntityExchange(func() { u.signals.CurrentCorporationExchanged.Emit(ctx, c) })
+	go u.signals.CurrentCorporationExchanged.Emit(ctx, c)
 	u.settings.SetLastCorporationID(c.ID)
 }
 

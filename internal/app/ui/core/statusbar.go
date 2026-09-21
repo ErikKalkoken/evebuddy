@@ -185,14 +185,15 @@ func (a *statusBar) start() {
 	a.updateUpdateStatus(ctx)
 	a.updateEveStatus(ctx)
 
-	a.u.clockTicker.StartTicker(clockUpdateTicker, true, func(ctx context.Context) {
-		if a.u.Signals().IsShuttingDown() {
-			return
+	clockTicker := time.NewTicker(clockUpdateTicker)
+	go func() {
+		for {
+			fyne.Do(func() {
+				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
+			})
+			<-clockTicker.C
 		}
-		fyne.Do(func() {
-			a.eveClock.SetText(time.Now().UTC().Format("15:04"))
-		})
-	})
+	}()
 
 	if a.u.IsOffline() {
 		fyne.Do(func() {
@@ -206,25 +207,26 @@ func (a *statusBar) start() {
 	})
 
 	if !a.u.IsOffline() {
-		a.u.versionCheckTicker.StartTicker(versionTicker, true, func(ctx context.Context) {
-			if a.u.Signals().IsShuttingDown() {
-				return
+		tickerNewVersion := time.NewTicker(versionTicker)
+		go func() {
+			for {
+				func() {
+					v, err := a.u.availableUpdate(ctx)
+					if err != nil {
+						slog.Error("fetch latest github version for download hint", "err", err)
+						return
+					}
+					if !v.IsRemoteNewer {
+						return
+					}
+					fyne.Do(func() {
+						a.updateHint.set(v)
+						a.updateHint.Show()
+					})
+				}()
+				<-tickerNewVersion.C
 			}
-			v, err := a.u.availableUpdate(ctx)
-			if err != nil {
-				if ctx.Err() == nil {
-					slog.Error("fetch latest github version for download hint", "err", err)
-				}
-				return
-			}
-			if !v.IsRemoteNewer {
-				return
-			}
-			fyne.Do(func() {
-				a.updateHint.set(v)
-				a.updateHint.Show()
-			})
-		})
+		}()
 	}
 }
 
@@ -298,9 +300,6 @@ func (a *statusBar) showClockDialog() {
 	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
 
 	stop := make(chan struct{})
-	var stopOnce sync.Once
-	doStop := func() { stopOnce.Do(func() { close(stop) }) }
-
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
 		defer timer.Stop()
@@ -316,14 +315,8 @@ func (a *statusBar) showClockDialog() {
 			}
 		}
 	}()
-
-	key := a.u.Signals().UniqueKey()
-	a.u.Signals().AppShutdown.AddListener(func(ctx context.Context, _ struct{}) {
-		doStop()
-	}, key)
 	d.SetOnClosed(func() {
-		doStop()
-		a.u.Signals().AppShutdown.RemoveListener(key)
+		stop <- struct{}{}
 	})
 	d.Show()
 }
