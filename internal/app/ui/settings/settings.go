@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -434,6 +435,9 @@ func (a *settings) showDeleteFileDialog(name, path string) {
 
 func (a *settings) showExportFileDialog(topic, path string) {
 	filename := filepath.Base(path)
+	ext := filepath.Ext(filename)
+	timestamp := time.Now().Format("060102150405")
+	filename = strings.TrimSuffix(filename, ext) + "_" + timestamp + ext
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		a.sb.Display("No file to export: " + filename)
