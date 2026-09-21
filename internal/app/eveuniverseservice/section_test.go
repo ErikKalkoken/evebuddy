@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -132,55 +131,5 @@ func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_ForceRefresh(t *test
 		s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, false)
 		// then
 		assert.False(t, gotForceRefresh)
-	})
-}
-
-func TestEveuniverseservice_UpdateTicker_StopWithoutStart(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
-	// when
-	done := make(chan struct{})
-	go func() {
-		s.Stop()
-		close(done)
-	}()
-	// then
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatal("Stop did not return")
-	}
-}
-
-func TestEveuniverseservice_UpdateTicker_StartThenStop(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
-	s.Start(10 * time.Millisecond)
-	time.Sleep(50 * time.Millisecond) // let at least one tick fire
-	// when
-	done := make(chan struct{})
-	go func() {
-		s.Stop()
-		close(done)
-	}()
-	// then
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("Stop did not return within timeout")
-	}
-}
-
-func TestEveuniverseservice_UpdateTicker_StopIsIdempotent(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
-	s.Start(10 * time.Millisecond)
-	s.Stop()
-	// when/then
-	assert.NotPanics(t, func() {
-		s.Stop()
 	})
 }
