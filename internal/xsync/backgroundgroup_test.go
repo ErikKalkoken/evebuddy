@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -69,27 +70,31 @@ func TestBackgroundGroup_Immediate_FiresRightAway(t *testing.T) {
 }
 
 func TestBackgroundGroup_StopWaitsForInFlightFire(t *testing.T) {
-	var g BackgroundGroup
-	const delay = 200 * time.Millisecond
-	entered := make(chan struct{}, 1)
-	g.StartTicker(10*time.Millisecond, true, func(ctx context.Context) {
+	synctest.Test(t, func(t *testing.T) {
+		var g BackgroundGroup
+		const delay = 200 * time.Millisecond
+		entered := make(chan struct{}, 1)
+		g.StartTicker(10*time.Millisecond, true, func(ctx context.Context) {
+			select {
+			case entered <- struct{}{}:
+			default:
+			}
+			time.Sleep(delay)
+		})
 		select {
-		case entered <- struct{}{}:
-		default:
+		case <-entered:
+			// fire is now sleeping, i.e. genuinely in flight
+		case <-time.After(time.Second):
+			t.Fatal("fire was never entered")
 		}
-		time.Sleep(delay)
+		// when
+		start := time.Now()
+		g.Stop()
+		// then
+		// synctest's fake clock advances deterministically, so no jitter tolerance
+		// is needed here as it would be with the real clock.
+		assert.GreaterOrEqual(t, time.Since(start), delay)
 	})
-	select {
-	case <-entered:
-		// fire is now sleeping, i.e. genuinely in flight
-	case <-time.After(time.Second):
-		t.Fatal("fire was never entered")
-	}
-	// when
-	start := time.Now()
-	g.Stop()
-	// then
-	assert.GreaterOrEqual(t, time.Since(start), delay)
 }
 
 func TestBackgroundGroup_StopCancelsFiresCtx(t *testing.T) {
@@ -130,17 +135,21 @@ func TestBackgroundGroup_DoubleStartTicker_DoesNotOrphanFirst(t *testing.T) {
 }
 
 func TestBackgroundGroup_Go_IsTrackedByStop(t *testing.T) {
-	var g BackgroundGroup
-	const delay = 100 * time.Millisecond
-	entered := make(chan struct{})
-	g.Go(func() {
-		close(entered)
-		time.Sleep(delay)
+	synctest.Test(t, func(t *testing.T) {
+		var g BackgroundGroup
+		const delay = 100 * time.Millisecond
+		entered := make(chan struct{})
+		g.Go(func() {
+			close(entered)
+			time.Sleep(delay)
+		})
+		<-entered
+		// when
+		start := time.Now()
+		g.Stop()
+		// then
+		// synctest's fake clock advances deterministically, so no jitter tolerance
+		// is needed here as it would be with the real clock.
+		assert.GreaterOrEqual(t, time.Since(start), delay)
 	})
-	<-entered
-	// when
-	start := time.Now()
-	g.Stop()
-	// then
-	assert.GreaterOrEqual(t, time.Since(start), delay)
 }
