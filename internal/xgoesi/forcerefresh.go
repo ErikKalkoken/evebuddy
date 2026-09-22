@@ -2,6 +2,9 @@ package xgoesi
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"net/http"
 
 	"github.com/gohugoio/httpcache"
@@ -9,9 +12,7 @@ import (
 
 var contextForceRefresh contextKey = "forceRefresh"
 
-// NewContextWithForceRefresh returns a new context marking that any ESI request made
-// with it should bypass the local HTTP cache and force a genuine network fetch,
-// instead of potentially returning a cached or 304-revalidated stale response.
+// NewContextWithForceRefresh marks ctx so ESI requests made with it bypass the local HTTP cache.
 func NewContextWithForceRefresh(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextForceRefresh, true)
 }
@@ -22,16 +23,11 @@ func IsForceRefresh(ctx context.Context) bool {
 	return ok && v
 }
 
-// CacheKeyWithForceRefresh returns the cache key for req for use as a
-// [github.com/gohugoio/httpcache.Transport] CacheKey func.
-//
-// It mirrors httpcache's own default key logic (method + URL, skipping ranged
-// requests), except it returns "" when req's context was marked via
-// [NewContextWithForceRefresh]. An empty key disables both cache lookup and
-// cache storage for that request, forcing a real network round trip: httpcache
-// otherwise trusts a server's 304 response and replays the cached body, which
-// ESI has been observed to do incorrectly for frequently-changing endpoints
-// such as the skill queue.
+// CacheKeyWithForceRefresh is a [github.com/gohugoio/httpcache.Transport] CacheKey
+// func. It returns "" for a force-refreshed request, since ESI has been observed to
+// replay stale bodies on 304s for frequently-changing endpoints like the skill queue.
+// For non-GET requests it hashes the body into the key, since some ESI POST endpoints
+// identify the request by body rather than URL.
 func CacheKeyWithForceRefresh(req *http.Request) string {
 	if IsForceRefresh(req.Context()) {
 		return ""
@@ -42,13 +38,28 @@ func CacheKeyWithForceRefresh(req *http.Request) string {
 	if req.Method == http.MethodGet {
 		return req.URL.String()
 	}
-	return req.Method + " " + req.URL.String()
+	key := req.Method + " " + req.URL.String()
+	if req.Body == nil {
+		return key
+	}
+	if req.GetBody == nil {
+		// Can't safely re-read the body, so disable caching to avoid a collision.
+		return ""
+	}
+	rc, err := req.GetBody()
+	if err != nil {
+		return ""
+	}
+	defer rc.Close()
+	body, err := io.ReadAll(rc)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(body)
+	return key + " " + hex.EncodeToString(sum[:])
 }
 
-// ResponseFromCache reports whether resp was served from the local HTTP cache
-// rather than fetched fresh over the network, for use in diagnostic logging.
-// It relies on the ESI transport's httpcache.Transport being configured with
-// MarkCachedResponses: true. It reports false for a nil response.
+// ResponseFromCache reports whether resp was served from the local HTTP cache.
 func ResponseFromCache(resp *http.Response) bool {
 	if resp == nil {
 		return false
