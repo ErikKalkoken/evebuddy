@@ -84,9 +84,13 @@ func TestCacheKeyWithForceRefresh(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodGet)
 		assert.Equal(t, req.URL.String(), xgoesi.CacheKeyWithForceRefresh(req))
 	})
-	t.Run("should return method and URL for a normal POST request", func(t *testing.T) {
+	t.Run("should return empty string for a normal POST request", func(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodPost)
-		assert.Equal(t, "POST "+req.URL.String(), xgoesi.CacheKeyWithForceRefresh(req))
+		assert.Equal(t, "", xgoesi.CacheKeyWithForceRefresh(req))
+	})
+	t.Run("should return the URL for a normal HEAD request", func(t *testing.T) {
+		req := newRequest(t, context.Background(), http.MethodHead)
+		assert.Equal(t, req.URL.String(), xgoesi.CacheKeyWithForceRefresh(req))
 	})
 	t.Run("should return empty string for a ranged request", func(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodGet)

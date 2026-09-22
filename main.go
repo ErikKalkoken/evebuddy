@@ -289,6 +289,7 @@ func main() {
 		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
 		MarkCachedResponses: true,
 		CacheKey:            xgoesi.CacheKeyWithForceRefresh,
+		ShouldCache:         xgoesi.ShouldCacheGetOrHeadOnly,
 		Transport: &xgoesi.TokenRefresher{
 			Transport: &xgoesi.RateLimiter{
 				Transport: &xgoesi.DowntimeBlocker{},
@@ -310,6 +311,7 @@ func main() {
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
 		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
+		ShouldCache:         xgoesi.ShouldCacheGetOrHeadOnly,
 	}
 	rhc2.Logger = slog.Default()
 	rhc2.ResponseLogHook = xgoesi.LogResponse

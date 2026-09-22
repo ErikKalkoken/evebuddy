@@ -23,15 +23,9 @@ func IsForceRefresh(ctx context.Context) bool {
 }
 
 // CacheKeyWithForceRefresh returns the cache key for req for use as a
-// [github.com/gohugoio/httpcache.Transport] CacheKey func.
-//
-// It mirrors httpcache's own default key logic (method + URL, skipping ranged
-// requests), except it returns "" when req's context was marked via
-// [NewContextWithForceRefresh]. An empty key disables both cache lookup and
-// cache storage for that request, forcing a real network round trip: httpcache
-// otherwise trusts a server's 304 response and replays the cached body, which
-// ESI has been observed to do incorrectly for frequently-changing endpoints
-// such as the skill queue.
+// [github.com/gohugoio/httpcache.Transport] CacheKey func. It returns "" to
+// disable caching for a force-refresh context, a ranged request, or any
+// non-GET/HEAD method (ESI's POST responses depend on the body).
 func CacheKeyWithForceRefresh(req *http.Request) string {
 	if IsForceRefresh(req.Context()) {
 		return ""
@@ -39,10 +33,10 @@ func CacheKeyWithForceRefresh(req *http.Request) string {
 	if req.Header.Get("Range") != "" {
 		return ""
 	}
-	if req.Method == http.MethodGet {
-		return req.URL.String()
+	if req.Method != http.MethodGet && req.Method != http.MethodHead {
+		return ""
 	}
-	return req.Method + " " + req.URL.String()
+	return req.URL.String()
 }
 
 // ResponseFromCache reports whether resp was served from the local HTTP cache
