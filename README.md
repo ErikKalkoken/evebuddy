@@ -104,6 +104,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Members: List of current corporation members
   - Structures: List of all corporation structures with current fuel status, state and potential timers
   - Wallets: Wallet, market transactions and balances for corporation wallets
+  - Wealth: Charts showing wealth distribution for the corporation
 
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates:
   - Training queue became empty
