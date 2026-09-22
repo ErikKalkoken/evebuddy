@@ -143,7 +143,7 @@ type baseUI struct {
 	marketOrdersBuy            *screens.MarketOrders
 	marketOrdersSell           *screens.MarketOrders
 	skillSearch                *screens.SkillSearch
-	snackbar                   *xwidget.Snackbar
+	snackbar                   *kxwidget.Snackbar
 	statusText                 *statusText
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
@@ -450,7 +450,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.industrySlotsManufacturing = screens.NewIndustrySlots(u, app.ManufacturingJob)
 	u.industrySlotsReactions = screens.NewIndustrySlots(u, app.ReactionJob)
 	u.industrySlotsResearch = screens.NewIndustrySlots(u, app.ScienceJob)
-	u.snackbar = xwidget.NewSnackbar(u.window.Canvas())
+	u.snackbar = kxwidget.NewSnackbar(u.window.Canvas())
 	u.skillSearch = screens.NewSkillSearch(u)
 	u.training = screens.NewTraining(u)
 	u.wealth = screens.NewWealth(u)

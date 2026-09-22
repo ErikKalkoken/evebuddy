@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
@@ -20,8 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type baseUI interface {
@@ -74,14 +73,14 @@ type manageCharacters struct {
 	characterAdmin    *admin
 	characterTags     *manageTags
 	characterTraining *training
-	sb                *xwidget.Snackbar
+	sb                *kxwidget.Snackbar
 	u                 baseUI
 	w                 fyne.Window
 }
 
 func newManageCharacters(u baseUI, w fyne.Window) *manageCharacters {
 	a := &manageCharacters{
-		sb: xwidget.NewSnackbar(w.Canvas()),
+		sb: kxwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}
