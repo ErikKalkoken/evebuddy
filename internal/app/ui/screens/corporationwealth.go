@@ -3,11 +3,13 @@ package screens
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/nathabonfim59/fyneline"
 
@@ -47,7 +49,7 @@ type CorporationWealth struct {
 }
 
 func NewCorporationWealth(u baseUI) *CorporationWealth {
-	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%s: %.1f", v.name, v.value) }
+	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%.1f", v.value) }
 	a := &CorporationWealth{
 		categorySplit: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
@@ -76,7 +78,13 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 	a.assets.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 	a.assets.SetOrientation(fyneline.BarHorizontal)
 
-	a.categorySplitCard = newChartCard(a.categorySplitTitle, nil, a.categorySplit)
+	categorySplitLegend := newSeriesLegend(
+		newLegendEntry("Assets", newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })),
+		newLegendEntry("Wallet", newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })),
+		newLegendEntry(corporationWealthContractsLabel, newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })),
+	)
+
+	a.categorySplitCard = newChartCard(a.categorySplitTitle, categorySplitLegend, a.categorySplit)
 	a.walletsCard = newChartCard(a.walletsTitle, nil, a.wallets)
 	a.assetsCard = newChartCard(a.assetsTitle, nil, a.assets)
 
