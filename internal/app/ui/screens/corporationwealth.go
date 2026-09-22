@@ -77,9 +77,9 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 	a.assets.SetOrientation(fyneline.BarHorizontal)
 
 	categorySplitLegend := newSeriesLegend(
-		newLegendEntry("Assets", wealthBlueColor),
-		newLegendEntry("Wallet", wealthOrangeColor),
-		newLegendEntry(corporationWealthContractsLabel, wealthGreenColor),
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry(corporationWealthContractsLabel, wealthArcColor(2)),
 	)
 
 	a.categorySplitCard = newChartCard(a.categorySplitTitle, categorySplitLegend, a.categorySplit)

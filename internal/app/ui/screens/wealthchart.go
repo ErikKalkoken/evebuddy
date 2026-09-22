@@ -21,18 +21,26 @@ const (
 	swatchSize            = 12
 )
 
-// Colors matches fyneline's default series colors.
+// wealthBlueColor etc. are the building blocks of wealthPalette below; the
+// first 6 seed from fyneline's own default series colors, extended with more
+// to cover charts with more segments than fyneline's default palette has.
 var (
-	wealthBlueColor   = color.NRGBA{R: 62, G: 126, B: 247, A: 255}
-	wealthOrangeColor = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
-	wealthGreenColor  = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
-	wealthRedColor    = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
-	wealthPurpleColor = color.NRGBA{R: 139, G: 92, B: 246, A: 255}
-	wealthTealColor   = color.NRGBA{R: 16, G: 164, B: 190, A: 255}
+	wealthBlueColor    = color.NRGBA{R: 62, G: 126, B: 247, A: 255}
+	wealthOrangeColor  = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
+	wealthGreenColor   = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
+	wealthRedColor     = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
+	wealthPurpleColor  = color.NRGBA{R: 139, G: 92, B: 246, A: 255}
+	wealthTealColor    = color.NRGBA{R: 16, G: 164, B: 190, A: 255}
+	wealthYellowColor  = color.NRGBA{R: 234, G: 179, B: 8, A: 255}
+	wealthLimeColor    = color.NRGBA{R: 132, G: 204, B: 22, A: 255}
+	wealthFuchsiaColor = color.NRGBA{R: 217, G: 70, B: 239, A: 255}
+	wealthIndigoColor  = color.NRGBA{R: 99, G: 102, B: 241, A: 255}
+	wealthBrownColor   = color.NRGBA{R: 161, G: 98, B: 7, A: 255}
+	wealthGrayColor    = color.NRGBA{R: 100, G: 116, B: 139, A: 255}
 )
 
-// wealthPalette mirrors fyneline's internal default series color cycle, so
-// a manually-built legend can match arc-chart slice colors by index.
+// wealthPalette is the palette shared by every wealth arc chart and its
+// legend, applied via wealthArcStyle so both always agree on segment colors.
 var wealthPalette = []color.Color{
 	wealthBlueColor,
 	wealthOrangeColor,
@@ -40,11 +48,21 @@ var wealthPalette = []color.Color{
 	wealthRedColor,
 	wealthPurpleColor,
 	wealthTealColor,
+	wealthYellowColor,
+	wealthLimeColor,
+	wealthFuchsiaColor,
+	wealthIndigoColor,
+	wealthBrownColor,
+	wealthGrayColor,
 }
 
-// wealthSliceColor returns a color of the palette.
-func wealthSliceColor(index int) color.Color {
-	return wealthPalette[index%len(wealthPalette)]
+// wealthArcColor returns wealthPalette's color for a slice index, cycling
+// if index exceeds the palette length.
+var wealthArcColor = fyneline.Palette(wealthPalette...)
+
+// wealthArcStyle assigns each arc chart segment its wealthPalette color.
+func wealthArcStyle(_ namedValue, index int) fyneline.ArcStyle {
+	return fyneline.ArcStyle{Fill: fyneline.FillStyle{Color: wealthArcColor(index), Opacity: 1}}
 }
 
 // namedValue is a single category/value pair used by the charts.
@@ -64,6 +82,7 @@ func configureArcChart(chart *fyneline.ArcChart[namedValue]) {
 	chart.SetInnerRadius(wealthArcInnerRadius)
 	chart.SetPadAngle(wealthArcPadAngle)
 	chart.SetCornerRadius(wealthArcCornerRadius)
+	chart.SetStyle(wealthArcStyle)
 }
 
 // wealthAxisValueFormatter formats a value-axis tick to 1 decimal.

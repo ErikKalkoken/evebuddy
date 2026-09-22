@@ -101,17 +101,17 @@ func NewWealth(u baseUI) *Wealth {
 	configureArcChart(a.totalSplit)
 
 	legend := newSeriesLegend(
-		newLegendEntry("Assets", wealthBlueColor),
-		newLegendEntry("Wallet", wealthOrangeColor),
-		newLegendEntry("Contracts", wealthGreenColor),
-		newLegendEntry("Orders", wealthRedColor),
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry("Contracts", wealthArcColor(2)),
+		newLegendEntry("Orders", wealthArcColor(3)),
 	)
 
 	totalLegend := newSeriesLegend(
-		newLegendEntry("Assets", wealthBlueColor),
-		newLegendEntry("Wallet", wealthOrangeColor),
-		newLegendEntry("Contracts", wealthGreenColor),
-		newLegendEntry("Orders", wealthRedColor),
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry("Contracts", wealthArcColor(2)),
+		newLegendEntry("Orders", wealthArcColor(3)),
 	)
 
 	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
@@ -247,7 +247,7 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
 
 	entries := make([]*legendEntry, len(d))
 	for i, v := range d {
-		entries[i] = newLegendEntry(v.name, wealthSliceColor(i))
+		entries[i] = newLegendEntry(v.name, wealthArcColor(i))
 	}
 
 	fyne.Do(func() {
