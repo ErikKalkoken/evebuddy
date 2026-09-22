@@ -3,13 +3,11 @@ package screens
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/nathabonfim59/fyneline"
 
@@ -79,9 +77,9 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 	a.assets.SetOrientation(fyneline.BarHorizontal)
 
 	categorySplitLegend := newSeriesLegend(
-		newLegendEntry("Assets", newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })),
-		newLegendEntry("Wallet", newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })),
-		newLegendEntry(corporationWealthContractsLabel, newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })),
+		newLegendEntry("Assets", wealthBlueColor),
+		newLegendEntry("Wallet", wealthOrangeColor),
+		newLegendEntry(corporationWealthContractsLabel, wealthGreenColor),
 	)
 
 	a.categorySplitCard = newChartCard(a.categorySplitTitle, categorySplitLegend, a.categorySplit)

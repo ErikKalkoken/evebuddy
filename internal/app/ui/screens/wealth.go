@@ -4,14 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/nathabonfim59/fyneline"
 
@@ -57,10 +55,6 @@ type Wealth struct {
 	characters             *fyneline.BarChart[assetWalletValue]
 	charactersCard         *chartCard
 	assetWalletDetailTitle *widget.Label
-	assetsSwatch           *legendSwatch
-	walletSwatch           *legendSwatch
-	contractsSwatch        *legendSwatch
-	ordersSwatch           *legendSwatch
 	characterSplit         *fyneline.ArcChart[namedValue]
 	characterSplitCard     *chartCard
 	characterSplitTitle    *widget.Label
@@ -106,22 +100,18 @@ func NewWealth(u baseUI) *Wealth {
 	configureArcChart(a.characterSplit)
 	configureArcChart(a.totalSplit)
 
-	a.assetsSwatch = newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })
-	a.walletSwatch = newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })
-	a.contractsSwatch = newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })
-	a.ordersSwatch = newLegendSwatch(func() color.Color { return wealthOrdersSeriesColor })
 	legend := newSeriesLegend(
-		newLegendEntry("Assets", a.assetsSwatch),
-		newLegendEntry("Wallet", a.walletSwatch),
-		newLegendEntry("Contracts", a.contractsSwatch),
-		newLegendEntry("Orders", a.ordersSwatch),
+		newLegendEntry("Assets", wealthBlueColor),
+		newLegendEntry("Wallet", wealthOrangeColor),
+		newLegendEntry("Contracts", wealthGreenColor),
+		newLegendEntry("Orders", wealthRedColor),
 	)
 
 	totalLegend := newSeriesLegend(
-		newLegendEntry("Assets", newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })),
-		newLegendEntry("Wallet", newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })),
-		newLegendEntry("Contracts", newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })),
-		newLegendEntry("Orders", newLegendSwatch(func() color.Color { return wealthOrdersSeriesColor })),
+		newLegendEntry("Assets", wealthBlueColor),
+		newLegendEntry("Wallet", wealthOrangeColor),
+		newLegendEntry("Contracts", wealthGreenColor),
+		newLegendEntry("Orders", wealthRedColor),
 	)
 
 	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
@@ -255,11 +245,9 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
 	}
 	d = reduceSliceValues(d, wealthMinSliceShare, wealthMinSliceCount)
 
-	entries := make([]fyne.CanvasObject, len(d))
+	entries := make([]*legendEntry, len(d))
 	for i, v := range d {
-		index := i
-		swatch := newLegendSwatch(func() color.Color { return wealthSliceColor(a, index) })
-		entries[i] = newLegendEntry(v.name, swatch)
+		entries[i] = newLegendEntry(v.name, wealthSliceColor(i))
 	}
 
 	fyne.Do(func() {

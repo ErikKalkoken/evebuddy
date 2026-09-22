@@ -18,38 +18,33 @@ const (
 	wealthArcCornerRadius = 8
 	wealthArcInnerRadius  = 0.6
 	wealthArcPadAngle     = 1.5
+	swatchSize            = 12
 )
 
-// wealthWalletSeriesColor, wealthContractsSeriesColor, wealthOrdersSeriesColor,
-// wealthPurpleSeriesColor, and wealthTealSeriesColor match fyneline's default
-// series colors.
+// Colors matches fyneline's default series colors.
 var (
-	wealthWalletSeriesColor    = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
-	wealthContractsSeriesColor = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
-	wealthOrdersSeriesColor    = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
-	wealthPurpleSeriesColor    = color.NRGBA{R: 139, G: 92, B: 246, A: 255}
-	wealthTealSeriesColor      = color.NRGBA{R: 16, G: 164, B: 190, A: 255}
+	wealthBlueColor   = color.NRGBA{R: 62, G: 126, B: 247, A: 255}
+	wealthOrangeColor = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
+	wealthGreenColor  = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
+	wealthRedColor    = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
+	wealthPurpleColor = color.NRGBA{R: 139, G: 92, B: 246, A: 255}
+	wealthTealColor   = color.NRGBA{R: 16, G: 164, B: 190, A: 255}
 )
 
-// wealthArcPalette mirrors fyneline's internal default series color cycle, so
-// a manually-built legend can match arc-chart slice colors by index (index 0
-// uses the theme primary color instead, see wealthSliceColor).
-var wealthArcPalette = []color.Color{
-	color.NRGBA{R: 62, G: 126, B: 247, A: 255},
-	wealthWalletSeriesColor,
-	wealthContractsSeriesColor,
-	wealthOrdersSeriesColor,
-	wealthPurpleSeriesColor,
-	wealthTealSeriesColor,
+// wealthPalette mirrors fyneline's internal default series color cycle, so
+// a manually-built legend can match arc-chart slice colors by index.
+var wealthPalette = []color.Color{
+	wealthBlueColor,
+	wealthOrangeColor,
+	wealthGreenColor,
+	wealthRedColor,
+	wealthPurpleColor,
+	wealthTealColor,
 }
 
-// wealthSliceColor returns the color fyneline's ArcChart uses for the slice
-// at index, so a manually-built legend can match it exactly.
-func wealthSliceColor(w fyne.Widget, index int) color.Color {
-	if index == 0 {
-		return theme.ColorForWidget(theme.ColorNamePrimary, w)
-	}
-	return wealthArcPalette[index%len(wealthArcPalette)]
+// wealthSliceColor returns a color of the palette.
+func wealthSliceColor(index int) color.Color {
+	return wealthPalette[index%len(wealthPalette)]
 }
 
 // namedValue is a single category/value pair used by the charts.
@@ -138,7 +133,8 @@ func (w *chartCard) CreateRenderer() fyne.WidgetRenderer {
 	// around a nil pointer, so nil it out explicitly instead.
 	var legend fyne.CanvasObject
 	if w.legend != nil {
-		legend = w.legend
+		p := theme.Padding()
+		legend = container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 0), w.legend)
 	}
 	content := container.NewBorder(w.title, legend, nil, nil, w.chart)
 	return widget.NewSimpleRenderer(container.NewStack(w.bg, container.NewPadded(content)))
@@ -152,49 +148,57 @@ func (w *chartCard) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-// legendSwatch is a color swatch that tracks a theme-derived color.
-type legendSwatch struct {
-	rect    *canvas.Rectangle
-	colorFn func() color.Color
+// legendEntry is a single legend row: a color swatch plus a label.
+type legendEntry struct {
+	widget.BaseWidget
+
+	rect  *canvas.Rectangle
+	label *widget.Label
 }
 
-func newLegendSwatch(colorFn func() color.Color) *legendSwatch {
-	return &legendSwatch{rect: canvas.NewRectangle(colorFn()), colorFn: colorFn}
+func newLegendEntry(text string, c color.Color) *legendEntry {
+	label := widget.NewLabel(text)
+	label.SizeName = theme.SizeNameCaptionText // match fyneline's axis label size
+	w := &legendEntry{rect: canvas.NewRectangle(c), label: label}
+	w.ExtendBaseWidget(w)
+	return w
 }
 
-func (s *legendSwatch) object() fyne.CanvasObject {
-	const swatchSize = 12
-	return container.NewGridWrap(fyne.NewSize(swatchSize, swatchSize), s.rect)
+func (w *legendEntry) CreateRenderer() fyne.WidgetRenderer {
+	swatch := container.NewGridWrap(fyne.NewSize(swatchSize, swatchSize), w.rect)
+	c := container.NewHBox(container.NewCenter(swatch), container.NewCenter(w.label))
+	return widget.NewSimpleRenderer(c)
 }
 
-func newLegendEntry(label string, swatch *legendSwatch) fyne.CanvasObject {
-	// Match the text size fyneline uses for its axis labels.
-	l := widget.NewLabel(label)
-	l.SizeName = theme.SizeNameCaptionText
-	return container.NewHBox(container.NewCenter(swatch.object()), container.NewCenter(l))
-}
-
-// seriesLegend wraps a row of legend entries (as built by [newLegendEntry]),
-// wrapping onto multiple lines as needed, for use in a chartCard's legend slot.
+// seriesLegend wraps a row of [legendEntry] items, wrapping onto multiple
+// lines as needed, for use in a chartCard's legend slot.
 type seriesLegend struct {
 	widget.BaseWidget
 
 	container *fyne.Container
 }
 
-// newSeriesLegend creates a legend from entries (as built by [newLegendEntry]).
-func newSeriesLegend(entries ...fyne.CanvasObject) *seriesLegend {
-	w := &seriesLegend{container: container.New(layout.NewRowWrapLayout(), entries...)}
+// newSeriesLegend creates a legend from entries.
+func newSeriesLegend(entries ...*legendEntry) *seriesLegend {
+	w := &seriesLegend{container: container.New(layout.NewRowWrapLayout(), legendEntryObjects(entries)...)}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *seriesLegend) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(w.container)
+	return widget.NewSimpleRenderer(container.NewPadded(w.container))
 }
 
-// SetEntries replaces the legend's entries (as built by [newLegendEntry]).
-func (w *seriesLegend) SetEntries(entries ...fyne.CanvasObject) {
-	w.container.Objects = entries
+// SetEntries replaces the legend's entries.
+func (w *seriesLegend) SetEntries(entries ...*legendEntry) {
+	w.container.Objects = legendEntryObjects(entries)
 	w.container.Refresh()
+}
+
+func legendEntryObjects(entries []*legendEntry) []fyne.CanvasObject {
+	objects := make([]fyne.CanvasObject, len(entries))
+	for i, e := range entries {
+		objects[i] = e
+	}
+	return objects
 }
