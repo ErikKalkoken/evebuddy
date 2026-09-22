@@ -47,7 +47,7 @@ type CorporationWealth struct {
 }
 
 func NewCorporationWealth(u baseUI) *CorporationWealth {
-	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%s: %.1f", v.name, v.value) }
+	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%.1f", v.value) }
 	a := &CorporationWealth{
 		categorySplit: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
@@ -76,7 +76,13 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 	a.assets.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 	a.assets.SetOrientation(fyneline.BarHorizontal)
 
-	a.categorySplitCard = newChartCard(a.categorySplitTitle, nil, a.categorySplit)
+	categorySplitLegend := newSeriesLegend(
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry(corporationWealthContractsLabel, wealthArcColor(2)),
+	)
+
+	a.categorySplitCard = newChartCard(a.categorySplitTitle, categorySplitLegend, a.categorySplit)
 	a.walletsCard = newChartCard(a.walletsTitle, nil, a.wallets)
 	a.assetsCard = newChartCard(a.assetsTitle, nil, a.assets)
 

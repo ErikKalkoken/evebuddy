@@ -4,17 +4,12 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"image/color"
 	"log/slog"
-	"math"
 	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/nathabonfim59/fyneline"
 
@@ -25,23 +20,12 @@ import (
 )
 
 const (
-	wealthArcCornerRadius      = 8
-	wealthArcInnerRadius       = 0.6
-	wealthArcPadAngle          = 1.5
 	wealthMaxCharacters        = 10
 	wealthMinSliceCount        = 1 // not included others
 	wealthMinSliceShare        = 0.05
 	wealthMultiplier           = 1_000_000_000
 	wealthNameTruncationLimit  = 20
 	wealthNameTruncationSuffix = 0
-)
-
-// wealthWalletSeriesColor, wealthContractsSeriesColor, and
-// wealthOrdersSeriesColor match fyneline's default series colors.
-var (
-	wealthWalletSeriesColor    = color.NRGBA{R: 240, G: 135, B: 48, A: 255}
-	wealthContractsSeriesColor = color.NRGBA{R: 47, G: 176, B: 117, A: 255}
-	wealthOrdersSeriesColor    = color.NRGBA{R: 220, G: 72, B: 103, A: 255}
 )
 
 type wealthRow struct {
@@ -52,12 +36,6 @@ type wealthRow struct {
 	contractsEscrow float64
 	ordersEscrow    float64
 	total           float64
-}
-
-// namedValue is a single category/value pair used by the charts.
-type namedValue struct {
-	name  string
-	value float64
 }
 
 // assetWalletValue holds one character's wealth breakdown.
@@ -77,10 +55,6 @@ type Wealth struct {
 	characters             *fyneline.BarChart[assetWalletValue]
 	charactersCard         *chartCard
 	assetWalletDetailTitle *widget.Label
-	assetsSwatch           *legendSwatch
-	walletSwatch           *legendSwatch
-	contractsSwatch        *legendSwatch
-	ordersSwatch           *legendSwatch
 	characterSplit         *fyneline.ArcChart[namedValue]
 	characterSplitCard     *chartCard
 	characterSplitTitle    *widget.Label
@@ -93,7 +67,7 @@ type Wealth struct {
 }
 
 func NewWealth(u baseUI) *Wealth {
-	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%s: %.1f", v.name, v.value) }
+	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%.1f", v.value) }
 	a := &Wealth{
 		characters: fyneline.NewBarChart([]assetWalletValue(nil),
 			func(v assetWalletValue) string { return v.name },
@@ -126,20 +100,23 @@ func NewWealth(u baseUI) *Wealth {
 	configureArcChart(a.characterSplit)
 	configureArcChart(a.totalSplit)
 
-	a.assetsSwatch = newLegendSwatch(func() color.Color { return theme.ColorForWidget(theme.ColorNamePrimary, a) })
-	a.walletSwatch = newLegendSwatch(func() color.Color { return wealthWalletSeriesColor })
-	a.contractsSwatch = newLegendSwatch(func() color.Color { return wealthContractsSeriesColor })
-	a.ordersSwatch = newLegendSwatch(func() color.Color { return wealthOrdersSeriesColor })
 	legend := newSeriesLegend(
-		newLegendEntry("Assets", a.assetsSwatch),
-		newLegendEntry("Wallet", a.walletSwatch),
-		newLegendEntry("Contracts", a.contractsSwatch),
-		newLegendEntry("Orders", a.ordersSwatch),
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry("Contracts", wealthArcColor(2)),
+		newLegendEntry("Orders", wealthArcColor(3)),
+	)
+
+	totalLegend := newSeriesLegend(
+		newLegendEntry("Assets", wealthArcColor(0)),
+		newLegendEntry("Wallet", wealthArcColor(1)),
+		newLegendEntry("Contracts", wealthArcColor(2)),
+		newLegendEntry("Orders", wealthArcColor(3)),
 	)
 
 	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
-	a.characterSplitCard = newChartCard(a.characterSplitTitle, nil, a.characterSplit)
-	a.totalSplitCard = newChartCard(a.totalSplitTitle, nil, a.totalSplit)
+	a.characterSplitCard = newChartCard(a.characterSplitTitle, newSeriesLegend(), a.characterSplit)
+	a.totalSplitCard = newChartCard(a.totalSplitTitle, totalLegend, a.totalSplit)
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -268,8 +245,14 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
 	}
 	d = reduceSliceValues(d, wealthMinSliceShare, wealthMinSliceCount)
 
+	entries := make([]*legendEntry, len(d))
+	for i, v := range d {
+		entries[i] = newLegendEntry(v.name, wealthArcColor(i))
+	}
+
 	fyne.Do(func() {
 		a.characterSplit.SetData(d)
+		a.characterSplitCard.legend.SetEntries(entries...)
 		a.characterSplitTitle.SetText(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B", total))
 	})
 }
@@ -328,53 +311,6 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 	})
 	grantTotal := optional.Sum(totals...)
 	return rows, grantTotal, nil
-}
-
-// newChartTitleLabel returns a bold label for a chart card's title.
-func newChartTitleLabel() *widget.Label {
-	return widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-}
-
-// configureArcChart applies this screen's shared pie/doughnut styling.
-func configureArcChart(chart *fyneline.ArcChart[namedValue]) {
-	chart.SetLabels(true)
-	chart.SetInnerRadius(wealthArcInnerRadius)
-	chart.SetPadAngle(wealthArcPadAngle)
-	chart.SetCornerRadius(wealthArcCornerRadius)
-}
-
-// wealthAxisValueFormatter formats a value-axis tick to 1 decimal.
-func wealthAxisValueFormatter(v float64) string { return fmt.Sprintf("%.1f", v) }
-
-// niceAxisBounds picks an axis max and tick count so ticks fall on round
-// step boundaries and the last tick sits close to value, instead of value
-// possibly landing well short of a coarsely-rounded max (e.g. 74 -> 100).
-func niceAxisBounds(value float64, targetIntervals int) (axisMax float64, tickCount int) {
-	if value <= 0 {
-		return 1, 2
-	}
-	step := niceStep(value / float64(max(targetIntervals, 1)))
-	axisMax = step * math.Ceil(value/step)
-	return axisMax, int(math.Round(axisMax/step)) + 1
-}
-
-// niceStep rounds value up to the nearest "nice" 1-2-5-10 number at its
-// order of magnitude.
-func niceStep(value float64) float64 {
-	magnitude := math.Pow(10, math.Floor(math.Log10(value)))
-	normalized := value / magnitude
-	var niceFraction float64
-	switch {
-	case normalized <= 1:
-		niceFraction = 1
-	case normalized <= 2:
-		niceFraction = 2
-	case normalized <= 5:
-		niceFraction = 5
-	default:
-		niceFraction = 10
-	}
-	return niceFraction * magnitude
 }
 
 // reduceAssetWalletValues keeps the top m rows by combined value, bucketing the rest into "Others".
@@ -441,76 +377,4 @@ func reduceSliceValues(rows []namedValue, minShare float64, minCount int) []name
 	})
 	kept = append(kept, namedValue{name: "Others", value: others})
 	return kept
-}
-
-// chartCard wraps a chart with a title, an optional legend, and a themed
-// grey backdrop, and adds theming support.
-type chartCard struct {
-	widget.BaseWidget
-
-	title   *widget.Label
-	legend  fyne.CanvasObject
-	chart   fyne.CanvasObject
-	bg      *canvas.Rectangle
-	variant fyne.ThemeVariant
-}
-
-// newChartCard creates a chart card; applyTheme reapplies colors fyneline
-// itself won't re-derive, e.g. WithFill fills.
-func newChartCard(title *widget.Label, legend, chart fyne.CanvasObject) *chartCard {
-	w := &chartCard{
-		title:  title,
-		legend: legend,
-		chart:  chart,
-		bg:     canvas.NewRectangle(color.Transparent),
-	}
-	w.ExtendBaseWidget(w)
-	w.bg.CornerRadius = theme.Size(theme.SizeNameCardRadius)
-	w.bg.FillColor = theme.Color(theme.ColorNameInputBackground)
-	return w
-}
-
-func (w *chartCard) CreateRenderer() fyne.WidgetRenderer {
-	content := container.NewBorder(w.title, w.legend, nil, nil, w.chart)
-	return widget.NewSimpleRenderer(container.NewStack(w.bg, container.NewPadded(content)))
-}
-
-func (w *chartCard) Refresh() {
-	th := w.Theme()
-	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.bg.FillColor = th.Color(theme.ColorNameInputBackground, v)
-	w.bg.Refresh()
-	w.BaseWidget.Refresh()
-}
-
-// legendSwatch is a color swatch that tracks a theme-derived color.
-type legendSwatch struct {
-	rect    *canvas.Rectangle
-	colorFn func() color.Color
-}
-
-func newLegendSwatch(colorFn func() color.Color) *legendSwatch {
-	return &legendSwatch{rect: canvas.NewRectangle(colorFn()), colorFn: colorFn}
-}
-
-func (s *legendSwatch) object() fyne.CanvasObject {
-	const swatchSize = 12
-	return container.NewGridWrap(fyne.NewSize(swatchSize, swatchSize), s.rect)
-}
-
-func newLegendEntry(label string, swatch *legendSwatch) fyne.CanvasObject {
-	// Match the text size fyneline uses for its axis labels.
-	l := widget.NewLabel(label)
-	l.SizeName = theme.SizeNameCaptionText
-	return container.NewHBox(container.NewCenter(swatch.object()), container.NewCenter(l))
-}
-
-// newSeriesLegend centers a row of legend entries (as built by [newLegendEntry]),
-// for use in a chartCard's legend slot.
-func newSeriesLegend(entries ...fyne.CanvasObject) fyne.CanvasObject {
-	objects := make([]fyne.CanvasObject, 0, len(entries)+2)
-	objects = append(objects, layout.NewSpacer())
-	objects = append(objects, entries...)
-	objects = append(objects, layout.NewSpacer())
-	return container.NewHBox(objects...)
 }
