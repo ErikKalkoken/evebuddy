@@ -81,14 +81,14 @@ type settingAction struct {
 type settings struct {
 	widget.BaseWidget
 
-	sb *xwidget.Snackbar
+	sb *kxwidget.Snackbar
 	u  baseUI
 	w  fyne.Window
 }
 
 func newSettings(u baseUI, w fyne.Window) *settings {
 	a := &settings{
-		sb: xwidget.NewSnackbar(w.Canvas()),
+		sb: kxwidget.NewSnackbar(w.Canvas()),
 		u:  u,
 		w:  w,
 	}

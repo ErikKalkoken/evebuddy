@@ -20,6 +20,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
@@ -105,7 +106,7 @@ type InfoViewer struct {
 	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
 	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
-	sb            *xwidget.Snackbar
+	sb            *kxwidget.Snackbar
 	u             baseUI
 	w             fyne.Window
 }
@@ -367,7 +368,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
-		iw.sb = xwidget.NewSnackbar(w.Canvas())
+		iw.sb = kxwidget.NewSnackbar(w.Canvas())
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		w.SetOnClosed(func() {

@@ -106,7 +106,7 @@ type updateStatus struct {
 	entityMoreButton  *kxwidget.IconButton
 	entitySections    []app.CacheSectionStatus
 	nav               *xwidget.Navigator
-	sb                *xwidget.Snackbar
+	sb                *kxwidget.Snackbar
 	sectionList       *widget.List
 	sectionMoreButton *kxwidget.IconButton
 	sectionStatus     *sectionStatus
@@ -117,7 +117,7 @@ type updateStatus struct {
 func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
 		sectionStatus:    newSectionStatus(u.IsMobile()),
-		sb:               xwidget.NewSnackbar(w.Canvas()),
+		sb:               kxwidget.NewSnackbar(w.Canvas()),
 		currentEntityID:  -1,
 		currentSectionID: -1,
 		signalKey:        u.Signals().UniqueKey(),
