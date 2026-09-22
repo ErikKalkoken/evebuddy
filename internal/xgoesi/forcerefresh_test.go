@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -84,9 +85,34 @@ func TestCacheKeyWithForceRefresh(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodGet)
 		assert.Equal(t, req.URL.String(), xgoesi.CacheKeyWithForceRefresh(req))
 	})
-	t.Run("should return method and URL for a normal POST request", func(t *testing.T) {
+	t.Run("should return method and URL for a normal POST request with no body", func(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodPost)
 		assert.Equal(t, "POST "+req.URL.String(), xgoesi.CacheKeyWithForceRefresh(req))
+	})
+	newPostRequest := func(t *testing.T, body string) *http.Request {
+		req, err := http.NewRequest(http.MethodPost, "https://esi.evetech.net/characters/affiliation", strings.NewReader(body))
+		require.NoError(t, err)
+		require.NotNil(t, req.GetBody, "http.NewRequest should auto-populate GetBody for a strings.Reader body")
+		return req
+	}
+	t.Run("should return different keys for POST requests with different bodies to the same URL", func(t *testing.T) {
+		req1 := newPostRequest(t, "[1]")
+		req2 := newPostRequest(t, "[2]")
+		key1 := xgoesi.CacheKeyWithForceRefresh(req1)
+		key2 := xgoesi.CacheKeyWithForceRefresh(req2)
+		assert.NotEqual(t, key1, key2)
+	})
+	t.Run("should return the same key for POST requests with identical bodies to the same URL", func(t *testing.T) {
+		req1 := newPostRequest(t, "[1]")
+		req2 := newPostRequest(t, "[1]")
+		key1 := xgoesi.CacheKeyWithForceRefresh(req1)
+		key2 := xgoesi.CacheKeyWithForceRefresh(req2)
+		assert.Equal(t, key1, key2)
+	})
+	t.Run("should return empty string for a POST request whose body can not be safely re-read", func(t *testing.T) {
+		req := newPostRequest(t, "[1]")
+		req.GetBody = nil
+		assert.Equal(t, "", xgoesi.CacheKeyWithForceRefresh(req))
 	})
 	t.Run("should return empty string for a ranged request", func(t *testing.T) {
 		req := newRequest(t, context.Background(), http.MethodGet)
@@ -131,5 +157,43 @@ func TestCacheKeyWithForceRefresh(t *testing.T) {
 		// a force-refreshed request bypasses the cache and hits the network again
 		do(xgoesi.NewContextWithForceRefresh(context.Background()))
 		assert.Equal(t, 2, calls, "expected force refresh to bypass the cache")
+	})
+	t.Run("should not serve one POST body's cached response for a different body to the same URL", func(t *testing.T) {
+		var calls int
+		mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			calls++
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			w.Header().Set("Cache-Control", "max-age=3600")
+			w.WriteHeader(http.StatusOK)
+			w.Write(body)
+		})
+		ts := httptest.NewServer(mockHandler)
+		defer ts.Close()
+
+		transport := &httpcache.Transport{
+			Cache:    newMemoryCache(),
+			CacheKey: xgoesi.CacheKeyWithForceRefresh,
+		}
+		client := &http.Client{Transport: transport}
+		do := func(body string) string {
+			req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(body))
+			require.NoError(t, err)
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			got, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			return string(got)
+		}
+
+		// requests with different bodies to the same URL must not collide
+		assert.Equal(t, "[1]", do("[1]"))
+		assert.Equal(t, "[2]", do("[2]"))
+		assert.Equal(t, 2, calls, "expected each distinct body to hit the network")
+
+		// a repeated, identical body is served from cache
+		assert.Equal(t, "[1]", do("[1]"))
+		assert.Equal(t, 2, calls, "expected identical body to be served from cache")
 	})
 }
