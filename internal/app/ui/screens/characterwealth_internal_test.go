@@ -7,8 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestReduceSliceValues(t *testing.T) {
@@ -140,7 +142,7 @@ func TestReduceAssetWalletValues(t *testing.T) {
 			input := make([]characterWealthValue, len(tt.data))
 			copy(input, tt.data)
 
-			actual := reduceAssetWalletValues(input, tt.m)
+			actual := reduceCharacterWealthValues(input, tt.m)
 
 			xassert.Equal(t, tt.expected, actual)
 		})
@@ -225,4 +227,81 @@ func TestNewWealthDetailsRow(t *testing.T) {
 		xassert.Equal(t, "?", r.walletDisplay)
 		assert.True(t, r.totalNetWorth.IsEmpty())
 	})
+}
+
+func TestFilterWealthRows(t *testing.T) {
+	corpA := &app.EveEntity{ID: 1, Name: "Corp A", Category: app.EveEntityCorporation}
+	corpB := &app.EveEntity{ID: 2, Name: "Corp B", Category: app.EveEntityCorporation}
+	allianceX := &app.EveEntity{ID: 3, Name: "Alliance X", Category: app.EveEntityAlliance}
+	rows := []characterWealthRow{
+		{characterName: "Alpha", corporation: corpA, alliance: optional.New(allianceX), tags: set.Of("Main")},
+		{characterName: "Bravo", corporation: corpA, alliance: optional.New(allianceX), tags: set.Of("Alt")},
+		{characterName: "Charlie", corporation: corpB, tags: set.Of("Alt", "Industry")},
+	}
+	names := func(rows []characterWealthRow) []string {
+		return xslices.Map(rows, func(r characterWealthRow) string {
+			return r.characterName
+		})
+	}
+	cases := []struct {
+		name        string
+		tag         string
+		corporation string
+		alliance    string
+		want        []string
+	}{
+		{"no filter", "", "", "", []string{"Alpha", "Bravo", "Charlie"}},
+		{"tag", "Alt", "", "", []string{"Bravo", "Charlie"}},
+		{"corporation", "", "Corp B", "", []string{"Charlie"}},
+		{"alliance", "", "", "Alliance X", []string{"Alpha", "Bravo"}},
+		{"combined", "Alt", "Corp A", "", []string{"Bravo"}},
+		{"no match", "Main", "Corp B", "", []string{}},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterWealthRows(rows, tt.tag, tt.corporation, tt.alliance)
+			xassert.Equal(t, tt.want, names(got))
+		})
+	}
+	t.Run("does not modify input", func(t *testing.T) {
+		filterWealthRows(rows, "Main", "", "")
+		xassert.Equal(t, []string{"Alpha", "Bravo", "Charlie"}, names(rows))
+	})
+}
+
+func TestWealthFilterOptions(t *testing.T) {
+	corpA := &app.EveEntity{ID: 1, Name: "Corp A", Category: app.EveEntityCorporation}
+	corpB := &app.EveEntity{ID: 2, Name: "Corp B", Category: app.EveEntityCorporation}
+	allianceX := &app.EveEntity{ID: 3, Name: "Alliance X", Category: app.EveEntityAlliance}
+	rows := []characterWealthRow{
+		{corporation: corpB, alliance: optional.New(allianceX), tags: set.Of("Main")},
+		{corporation: corpA, alliance: optional.New(allianceX), tags: set.Of("Alt")},
+		{corporation: corpA, tags: set.Of("Alt", "Industry")},
+	}
+	tags, corporations, alliances := wealthFilterOptions(rows)
+	xassert.Equal(t, []string{"Alt", "Industry", "Main"}, tags)
+	xassert.Equal(t, []string{"Corp A", "Corp B"}, corporations)
+	xassert.Equal(t, []string{"Alliance X"}, alliances)
+}
+
+func TestWealthEmptyText(t *testing.T) {
+	cases := []struct {
+		name          string
+		isFiltered    bool
+		filteredCount int
+		chartCount    int
+		want          string
+	}{
+		{"has data", false, 3, 2, ""},
+		{"has filtered data", true, 1, 1, ""},
+		{"no characters", false, 0, 0, "No characters"},
+		{"no filter match", true, 0, 0, "No characters match the filter"},
+		{"no wealth data", false, 2, 0, "No wealth data yet"},
+		{"no wealth data for filtered", true, 2, 0, "No wealth data yet"},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			xassert.Equal(t, tt.want, wealthEmptyText(tt.isFiltered, tt.filteredCount, tt.chartCount))
+		})
+	}
 }

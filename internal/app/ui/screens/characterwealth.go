@@ -37,10 +37,12 @@ const (
 
 // characterWealthRow is the shared data for all tabs of the wealth screen.
 type characterWealthRow struct {
+	alliance        optional.Optional[*app.EveEntity]
 	characterID     int64
 	characterName   string
 	combinedAssets  optional.Optional[float64]
 	contractsEscrow optional.Optional[float64]
+	corporation     *app.EveEntity
 	ordersEscrow    optional.Optional[float64]
 	skillPoints     optional.Optional[float64]
 	tags            set.Set[string]
@@ -48,8 +50,44 @@ type characterWealthRow struct {
 	walletBalance   optional.Optional[float64]
 }
 
+func (r characterWealthRow) allianceName() string {
+	return optional.Map(r.alliance, "", func(v *app.EveEntity) string {
+		return v.Name
+	})
+}
+
+func (r characterWealthRow) corporationName() string {
+	if r.corporation == nil {
+		return ""
+	}
+	return r.corporation.Name
+}
+
 func (r characterWealthRow) chartName() string {
 	return xstrings.TruncateWithSuffix(r.characterName, wealthNameTruncationLimit, wealthNameTruncationSuffix)
+}
+
+// filterWealthRows returns the rows matching all non-empty filter values.
+func filterWealthRows(rows []characterWealthRow, tag, corporation, alliance string) []characterWealthRow {
+	return slices.DeleteFunc(slices.Clone(rows), func(r characterWealthRow) bool {
+		return (tag != "" && !r.tags.Contains(tag)) ||
+			(corporation != "" && r.corporationName() != corporation) ||
+			(alliance != "" && r.allianceName() != alliance)
+	})
+}
+
+// wealthFilterOptions returns the sorted options for the filter chips.
+func wealthFilterOptions(rows []characterWealthRow) (tags, corporations, alliances []string) {
+	sortedNonEmpty := func(s set.Set[string]) []string {
+		s.Delete("")
+		return slices.Sorted(s.All())
+	}
+	tags = sortedNonEmpty(set.Union(xslices.Map(rows, func(r characterWealthRow) set.Set[string] {
+		return r.tags
+	})...))
+	corporations = sortedNonEmpty(set.Of(xslices.Map(rows, characterWealthRow.corporationName)...))
+	alliances = sortedNonEmpty(set.Of(xslices.Map(rows, characterWealthRow.allianceName)...))
+	return tags, corporations, alliances
 }
 
 // wealthBillions returns v in billion ISK for the charts.
@@ -71,6 +109,7 @@ type CharacterWealth struct {
 
 	OnUpdate func(totalNetWorth optional.Optional[float64])
 
+	breakdownEmpty               *widget.Label
 	characterBreakdownCard       *chartCard
 	characterBreakdownChart      *fyneline.BarChart[characterWealthValue]
 	characterBreakdownTitleLabel *widget.Label
@@ -78,6 +117,14 @@ type CharacterWealth struct {
 	characterSplitChart          *fyneline.ArcChart[namedValue]
 	characterSplitTitleLabel     *widget.Label
 	details                      *characterWealthDetails
+	footer                       *widget.Label
+	overviewEmpty                *widget.Label
+	overviewGrid                 *fyne.Container
+	rows                         []characterWealthRow
+	selectAlliance               *kxwidget.FilterChipSelect
+	selectCorporation            *kxwidget.FilterChipSelect
+	selectTag                    *kxwidget.FilterChipSelect
+	showHelp                     *xwidget.IconButton
 	topLabel                     *widget.Label
 	totalSplitCard               *chartCard
 	totalSplitChart              *fyneline.ArcChart[namedValue]
@@ -101,6 +148,7 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 			sliceLabel,
 		),
 		characterSplitTitleLabel: newChartTitleLabel(),
+		footer:                   widget.NewLabel(""),
 		topLabel:                 ui.NewLabelWithWrapping(""),
 		totalSplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
@@ -136,6 +184,31 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 	a.characterBreakdownCard = newChartCard(a.characterBreakdownTitleLabel, legend, a.characterBreakdownChart)
 	a.characterSplitCard = newChartCard(a.characterSplitTitleLabel, newSeriesLegend(), a.characterSplitChart)
 	a.totalSplitCard = newChartCard(a.totalSplitTitleLabel, totalLegend, a.totalSplitChart)
+	a.overviewGrid = container.NewAdaptiveGrid(2, a.totalSplitCard, a.characterSplitCard)
+
+	newEmptyLabel := func() *widget.Label {
+		l := widget.NewLabel("")
+		l.Importance = widget.LowImportance
+		l.Hide()
+		return l
+	}
+	a.overviewEmpty = newEmptyLabel()
+	a.breakdownEmpty = newEmptyLabel()
+
+	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
+		a.filterRowsAsync()
+	})
+
+	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(characterWealthHelpText, a.u.IsMobile(), a.showHelp)
+	})
+	a.showHelp.SetToolTip("Show explanation for values")
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -171,23 +244,28 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
 		container.NewTabItem(
 			"Overview",
-			container.NewAdaptiveGrid(2, a.totalSplitCard, a.characterSplitCard),
+			container.NewStack(a.overviewGrid, container.NewCenter(a.overviewEmpty)),
 		),
-		container.NewTabItem("Characters", a.characterBreakdownCard),
+		container.NewTabItem(
+			"Characters",
+			container.NewStack(a.characterBreakdownCard, container.NewCenter(a.breakdownEmpty)),
+		),
 		container.NewTabItem("Details", a.details),
 	)
-	var c fyne.CanvasObject
+	filterBar := container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
+	var top fyne.CanvasObject
 	if !a.u.IsMobile() {
-		c = container.NewBorder(
-			a.topLabel,
-			nil,
-			nil,
-			nil,
-			tabs,
-		)
+		top = container.NewVBox(a.topLabel, filterBar)
 	} else {
-		c = tabs
+		top = filterBar
 	}
+	c := container.NewBorder(
+		top,
+		container.NewHBox(a.footer, layout.NewSpacer(), a.showHelp),
+		nil,
+		nil,
+		tabs,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -200,36 +278,25 @@ func (a *CharacterWealth) update(ctx context.Context) {
 			a.topLabel.Importance = widget.DangerImportance
 			a.topLabel.Refresh()
 			a.topLabel.Show()
-			a.details.setError(err)
+			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
+			a.footer.Importance = widget.DangerImportance
+			a.footer.Refresh()
 		})
 		return
 	}
-	fyne.Do(func() {
-		a.details.setRows(rows)
-	})
-
-	// Characters without any wealth data are shown in details only.
-	chartRows := slices.DeleteFunc(slices.Clone(rows), func(r characterWealthRow) bool {
-		return r.total.IsEmpty()
-	})
-	if len(chartRows) == 0 {
-		fyne.Do(func() {
-			a.topLabel.Text = "No characters"
-			a.topLabel.Importance = widget.LowImportance
-			a.topLabel.Refresh()
-			a.topLabel.Show()
-		})
-		return
-	}
-
 	fyne.Do(func() {
 		a.topLabel.Hide()
+		a.rows = rows
+		a.filterRowsAsync()
 	})
 
-	a.updateAssetWalletDetail(ctx, chartRows)
-	a.updateCharacterSplit(ctx, chartRows)
-	a.updateTotalSplit(ctx, chartRows)
-
+	// Only report when there is wealth data to show.
+	hasWealth := slices.ContainsFunc(rows, func(r characterWealthRow) bool {
+		return !r.total.IsEmpty()
+	})
+	if !hasWealth {
+		return
+	}
 	fyne.Do(func() {
 		if a.OnUpdate != nil {
 			a.OnUpdate(total)
@@ -237,7 +304,84 @@ func (a *CharacterWealth) update(ctx context.Context) {
 	})
 }
 
-func (a *CharacterWealth) updateAssetWalletDetail(_ context.Context, rows []characterWealthRow) {
+// filterRowsAsync applies the filters and updates all tabs.
+// Must be called on the main thread.
+func (a *CharacterWealth) filterRowsAsync() {
+	rows := slices.Clone(a.rows)
+	alliance := a.selectAlliance.Selected
+	corporation := a.selectCorporation.Selected
+	tag := a.selectTag.Selected
+	isFiltered := alliance != "" || corporation != "" || tag != ""
+
+	go func() {
+		filtered := filterWealthRows(rows, tag, corporation, alliance)
+		tagOptions, corporationOptions, allianceOptions := wealthFilterOptions(filtered)
+		footer := fmt.Sprintf("Showing %d / %d characters", len(filtered), len(rows))
+
+		fyne.Do(func() {
+			a.footer.Text = footer
+			a.footer.Importance = widget.MediumImportance
+			a.footer.Refresh()
+			a.selectAlliance.SetOptions(allianceOptions)
+			a.selectCorporation.SetOptions(corporationOptions)
+			a.selectTag.SetOptions(tagOptions)
+			a.details.setRows(filtered)
+		})
+
+		// Characters without any wealth data are shown in details only.
+		chartRows := slices.DeleteFunc(slices.Clone(filtered), func(r characterWealthRow) bool {
+			return r.total.IsEmpty()
+		})
+		if text := wealthEmptyText(isFiltered, len(filtered), len(chartRows)); text != "" {
+			fyne.Do(func() {
+				a.setChartsEmpty(text)
+			})
+			return
+		}
+
+		a.updateCharacterBreakdown(chartRows)
+		a.updateCharacterSplit(chartRows)
+		a.updateTotalSplit(chartRows)
+		// Queued after the chart updates, so no stale data is shown.
+		fyne.Do(func() {
+			a.setChartsEmpty("")
+		})
+	}()
+}
+
+// setChartsEmpty replaces the charts with text, or shows them again when text is empty.
+// Must be called on the main thread.
+func (a *CharacterWealth) setChartsEmpty(text string) {
+	for _, l := range []*widget.Label{a.overviewEmpty, a.breakdownEmpty} {
+		l.SetText(text)
+		l.Hidden = text == ""
+		l.Refresh()
+	}
+	if text == "" {
+		a.overviewGrid.Show()
+		a.characterBreakdownCard.Show()
+	} else {
+		a.overviewGrid.Hide()
+		a.characterBreakdownCard.Hide()
+	}
+}
+
+// wealthEmptyText returns the text to show instead of the charts
+// or an empty string when there is data to chart.
+func wealthEmptyText(isFiltered bool, filteredCount, chartCount int) string {
+	switch {
+	case chartCount > 0:
+		return ""
+	case filteredCount == 0 && isFiltered:
+		return "No characters match the filter"
+	case filteredCount == 0:
+		return "No characters"
+	default:
+		return "No wealth data yet"
+	}
+}
+
+func (a *CharacterWealth) updateCharacterBreakdown(rows []characterWealthRow) {
 	var total float64
 	d := make([]characterWealthValue, 0, len(rows))
 	for _, r := range rows {
@@ -250,7 +394,7 @@ func (a *CharacterWealth) updateAssetWalletDetail(_ context.Context, rows []char
 		})
 		total += wealthBillions(r.total)
 	}
-	d = reduceAssetWalletValues(d, wealthMaxCharacters)
+	d = reduceCharacterWealthValues(d, wealthMaxCharacters)
 
 	var maxValue float64
 	for _, v := range d {
@@ -268,7 +412,7 @@ func (a *CharacterWealth) updateAssetWalletDetail(_ context.Context, rows []char
 	})
 }
 
-func (a *CharacterWealth) updateCharacterSplit(_ context.Context, rows []characterWealthRow) {
+func (a *CharacterWealth) updateCharacterSplit(rows []characterWealthRow) {
 	var total float64
 	d := make([]namedValue, 0, len(rows))
 	for _, r := range rows {
@@ -290,7 +434,7 @@ func (a *CharacterWealth) updateCharacterSplit(_ context.Context, rows []charact
 	})
 }
 
-func (a *CharacterWealth) updateTotalSplit(_ context.Context, rows []characterWealthRow) {
+func (a *CharacterWealth) updateTotalSplit(rows []characterWealthRow) {
 	var assets, wallets, contracts, orders, total float64
 	for _, r := range rows {
 		assets += wealthBillions(r.combinedAssets)
@@ -330,7 +474,9 @@ func (a *CharacterWealth) fetchRows(ctx context.Context) ([]characterWealthRow, 
 		total := optional.Sum(c.WalletBalance, combinedAssets, c.ContractsEscrow, c.OrdersEscrow)
 		totals = append(totals, total)
 		rows = append(rows, characterWealthRow{
+			alliance:        c.EveCharacter.Alliance,
 			characterID:     c.ID,
+			corporation:     c.EveCharacter.Corporation,
 			characterName:   c.EveCharacter.Name,
 			combinedAssets:  combinedAssets,
 			contractsEscrow: c.ContractsEscrow,
@@ -361,7 +507,6 @@ type characterWealthDetailsRow struct {
 	searchTarget           string
 	skillPoints            optional.Optional[float64]
 	skillPointsDisplay     string
-	tags                   set.Set[string]
 	tagsDisplay            string
 	totalNetWorth          optional.Optional[float64]
 	totalNetWorthDisplay   string
@@ -382,7 +527,6 @@ func newWealthDetailsRow(r characterWealthRow) characterWealthDetailsRow {
 		searchTarget:           strings.ToLower(r.characterName),
 		skillPoints:            r.skillPoints,
 		skillPointsDisplay:     formatISKValue(r.skillPoints),
-		tags:                   r.tags,
 		tagsDisplay:            strings.Join(slices.Sorted(r.tags.All()), ", "),
 		totalNetWorth:          r.total,
 		totalNetWorthDisplay:   formatISKValue(r.total),
@@ -404,21 +548,18 @@ func (r characterWealthDetailsRow) eveEntity() *app.EveEntity {
 type characterWealthDetails struct {
 	widget.BaseWidget
 
-	footer       *widget.Label
 	columnSorter *xwidget.ColumnSorter[characterWealthDetailsRow]
 	main         fyne.CanvasObject
 	rows         []characterWealthDetailsRow
 	rowsFiltered []characterWealthDetailsRow
 	searchEntry  *xwidget.SearchEntry
-	selectTag    *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
 	u            baseUI
-	showHelp     *xwidget.IconButton
 }
 
 const characterWealthDetailsValueWidth = 125
 
-const characterWealthDetailsHelpText = `Wallet Balance: The balance of the wallet.
+const characterWealthHelpText = `Wallet Balance: The balance of the wallet.
 
 Combined Assets: The estimated value of all personal assets, items in outstanding sell orders on the market and items in outstanding contracts.
 
@@ -528,7 +669,6 @@ func newCharacterWealthDetails(u baseUI) *characterWealthDetails {
 	})
 	a := &characterWealthDetails{
 		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
-		footer:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -536,11 +676,6 @@ func newCharacterWealthDetails(u baseUI) *characterWealthDetails {
 	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
 		a.filterRowsAsync("")
 	})
-
-	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
-		showHelpPopUp(characterWealthDetailsHelpText, a.u.IsMobile(), a.showHelp)
-	})
-	a.showHelp.SetToolTip("Show explanation for columns")
 
 	showRow := func(r characterWealthDetailsRow) {
 		o := r.eveEntity()
@@ -594,9 +729,6 @@ func newCharacterWealthDetails(u baseUI) *characterWealthDetails {
 			},
 		)
 	}
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -604,26 +736,16 @@ func newCharacterWealthDetails(u baseUI) *characterWealthDetails {
 }
 
 func (a *characterWealthDetails) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectTag)
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
-	}
-	var topBox *fyne.Container
+	var topBox fyne.CanvasObject
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
 			a.searchEntry,
-			container.NewHScroll(filter),
+			container.NewHScroll(container.NewHBox(a.sortChip)),
 		)
 	} else {
-		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
+		topBox = a.searchEntry
 	}
-	c := container.NewBorder(
-		topBox,
-		container.NewHBox(a.footer, layout.NewSpacer(), a.showHelp),
-		nil,
-		nil,
-		a.main,
-	)
+	c := container.NewBorder(topBox, nil, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -633,37 +755,18 @@ func (a *characterWealthDetails) setRows(rows []characterWealthRow) {
 	a.filterRowsAsync("")
 }
 
-// setError shows err in the footer. Must be called on the main thread.
-func (a *characterWealthDetails) setError(err error) {
-	a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-	a.footer.Importance = widget.DangerImportance
-	a.footer.Refresh()
-}
-
 func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
-	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	selectTag := a.selectTag.Selected
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	go func() {
-		if selectTag != "" {
-			rows = slices.DeleteFunc(rows, func(r characterWealthDetailsRow) bool {
-				return !r.tags.Contains(selectTag)
-			})
-		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterWealthDetailsRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r characterWealthDetailsRow) set.Set[string] {
-			return r.tags
-		})...).All())
-
-		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 
 		// add totals
 		var assets, wallets, totals, contracts, orders, skillpoints []optional.Optional[float64]
@@ -694,7 +797,6 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 			searchTarget:           "",
 			skillPoints:            skillpointsTotal,
 			skillPointsDisplay:     formatISKValue(skillpointsTotal),
-			tags:                   set.Set[string]{},
 			totalNetWorth:          grandTotal1,
 			totalNetWorthDisplay:   formatISKValue(grandTotal1),
 			walletBalance:          walletsTotal,
@@ -702,18 +804,14 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 		})
 
 		fyne.Do(func() {
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
 	}()
 }
 
-// reduceAssetWalletValues keeps the top m rows by combined value, bucketing the rest into "Others".
-func reduceAssetWalletValues(rows []characterWealthValue, m int) []characterWealthValue {
+// reduceCharacterWealthValues keeps the top m rows by combined value, bucketing the rest into "Others".
+func reduceCharacterWealthValues(rows []characterWealthValue, m int) []characterWealthValue {
 	if len(rows) <= m {
 		return rows
 	}
