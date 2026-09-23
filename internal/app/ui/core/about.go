@@ -44,9 +44,22 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 	showSnackbar := widget.NewButton("Show Snackbar (debug)", func() {
 		u.DisplaySnackbar(fake.Paragraph())
 	})
+	dummyInput := widget.NewEntry()
+	dummyInput.PlaceHolder = "Enter sb to fire a snackbar"
+	var fired bool
+	dummyInput.OnChanged = func(s string) {
+		if s == "sb" && !fired {
+			fired = true
+			u.DisplaySnackbar(fake.Paragraph())
+		}
+		if s == "" {
+			fired = false
+		}
+	}
 	if !u.IsDeveloperMode() {
 		techInfos.Hide()
 		showSnackbar.Hide()
+		dummyInput.Hide()
 	}
 	discordURL, _ := url.Parse(discordServerURL)
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
@@ -81,6 +94,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		updateAvailableRow,
 		techInfos,
 		showSnackbar,
+		dummyInput,
 		support,
 		container.NewHBox(
 			widget.NewHyperlink("Website", rootURL),
