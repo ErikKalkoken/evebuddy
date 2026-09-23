@@ -15,9 +15,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
-const corporationWealthMultiplier = 1_000_000_000
-
-const corporationWealthContractsLabel = "Contract Escrow"
+const (
+	corporationWealthMultiplier     = 1_000_000_000
+	corporationWealthContractsLabel = "Contract Escrow"
+)
 
 // corporationDivisionValue holds one division's wallet and asset value, in billions ISK.
 type corporationDivisionValue struct {
@@ -33,48 +34,48 @@ type CorporationWealth struct {
 
 	corporation atomic.Pointer[app.Corporation]
 
-	categorySplit      *fyneline.ArcChart[namedValue]
-	categorySplitCard  *chartCard
-	categorySplitTitle *widget.Label
-	wallets            *fyneline.BarChart[corporationDivisionValue]
-	walletsCard        *chartCard
-	walletsTitle       *widget.Label
-	assets             *fyneline.BarChart[corporationDivisionValue]
-	assetsCard         *chartCard
-	assetsTitle        *widget.Label
-	top                *widget.Label
-	u                  baseUI
+	assetsCard              *chartCard
+	assetsChart             *fyneline.BarChart[corporationDivisionValue]
+	assetsTitleLabel        *widget.Label
+	categorySplitCard       *chartCard
+	categorySplitChart      *fyneline.ArcChart[namedValue]
+	categorySplitTitleLabel *widget.Label
+	top                     *widget.Label
+	u                       baseUI
+	walletsCard             *chartCard
+	walletsChart            *fyneline.BarChart[corporationDivisionValue]
+	walletsTitleLabel       *widget.Label
 }
 
 func NewCorporationWealth(u baseUI) *CorporationWealth {
 	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%.1f", v.value) }
 	a := &CorporationWealth{
-		categorySplit: fyneline.NewArcChart([]namedValue(nil),
+		categorySplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
 			sliceLabel,
 		),
-		categorySplitTitle: newChartTitleLabel(),
-		wallets: fyneline.NewBarChart([]corporationDivisionValue(nil),
+		categorySplitTitleLabel: newChartTitleLabel(),
+		walletsChart: fyneline.NewBarChart([]corporationDivisionValue(nil),
 			func(v corporationDivisionValue) string { return v.walletName },
 			fyneline.NewBarSeries("Wallet Balance", func(v corporationDivisionValue) float64 { return v.walletBalance }),
 		),
-		walletsTitle: newChartTitleLabel(),
-		assets: fyneline.NewBarChart([]corporationDivisionValue(nil),
+		walletsTitleLabel: newChartTitleLabel(),
+		assetsChart: fyneline.NewBarChart([]corporationDivisionValue(nil),
 			func(v corporationDivisionValue) string { return v.name },
 			fyneline.NewBarSeries("Asset Value", func(v corporationDivisionValue) float64 { return v.assetValue }),
 		),
-		assetsTitle: newChartTitleLabel(),
-		top:         ui.NewLabelWithWrapping(""),
-		u:           u,
+		assetsTitleLabel: newChartTitleLabel(),
+		top:              ui.NewLabelWithWrapping(""),
+		u:                u,
 	}
 	a.ExtendBaseWidget(a)
 	a.top.Hide()
 
-	configureArcChart(a.categorySplit)
-	a.wallets.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
-	a.wallets.SetOrientation(fyneline.BarHorizontal)
-	a.assets.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
-	a.assets.SetOrientation(fyneline.BarHorizontal)
+	configureArcChart(a.categorySplitChart)
+	a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
+	a.walletsChart.SetOrientation(fyneline.BarHorizontal)
+	a.assetsChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
+	a.assetsChart.SetOrientation(fyneline.BarHorizontal)
 
 	categorySplitLegend := newSeriesLegend(
 		newLegendEntry("Assets", wealthArcColor(0)),
@@ -82,9 +83,9 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 		newLegendEntry(corporationWealthContractsLabel, wealthArcColor(2)),
 	)
 
-	a.categorySplitCard = newChartCard(a.categorySplitTitle, categorySplitLegend, a.categorySplit)
-	a.walletsCard = newChartCard(a.walletsTitle, nil, a.wallets)
-	a.assetsCard = newChartCard(a.assetsTitle, nil, a.assets)
+	a.categorySplitCard = newChartCard(a.categorySplitTitleLabel, categorySplitLegend, a.categorySplitChart)
+	a.walletsCard = newChartCard(a.walletsTitleLabel, nil, a.walletsChart)
+	a.assetsCard = newChartCard(a.assetsTitleLabel, nil, a.assetsChart)
 
 	// Signals
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
@@ -249,12 +250,12 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 	}
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
 	fyne.Do(func() {
-		a.wallets.SetValueAxis(fyneline.NewNumericAxis().
+		a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().
 			WithFormatter(wealthAxisValueFormatter).
 			WithDomain(0, axisMax).
 			WithTickCount(tickCount))
-		a.wallets.SetData(rows)
-		a.walletsTitle.SetText("Wallet Balance by Division")
+		a.walletsChart.SetData(rows)
+		a.walletsTitleLabel.SetText("Wallet Balance by Division")
 	})
 }
 
@@ -265,12 +266,12 @@ func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
 	}
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
 	fyne.Do(func() {
-		a.assets.SetValueAxis(fyneline.NewNumericAxis().
+		a.assetsChart.SetValueAxis(fyneline.NewNumericAxis().
 			WithFormatter(wealthAxisValueFormatter).
 			WithDomain(0, axisMax).
 			WithTickCount(tickCount))
-		a.assets.SetData(rows)
-		a.assetsTitle.SetText("Asset Value by Division")
+		a.assetsChart.SetData(rows)
+		a.assetsTitleLabel.SetText("Asset Value by Division")
 	})
 }
 
@@ -285,7 +286,7 @@ func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBala
 		{name: corporationWealthContractsLabel, value: contractsB},
 	}
 	fyne.Do(func() {
-		a.categorySplit.SetData(d)
-		a.categorySplitTitle.SetText(fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total))
+		a.categorySplitChart.SetData(d)
+		a.categorySplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total))
 	})
 }

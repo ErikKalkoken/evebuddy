@@ -28,7 +28,7 @@ const (
 	wealthNameTruncationSuffix = 0
 )
 
-type wealthRow struct {
+type characterWealthRow struct {
 	characterID     int64
 	characterName   string
 	walletBalance   float64
@@ -38,8 +38,8 @@ type wealthRow struct {
 	total           float64
 }
 
-// assetWalletValue holds one character's wealth breakdown.
-type assetWalletValue struct {
+// characterWealthValue holds one character's wealth breakdown.
+type characterWealthValue struct {
 	name      string
 	assets    float64
 	wallet    float64
@@ -47,58 +47,58 @@ type assetWalletValue struct {
 	orders    float64
 }
 
-type Wealth struct {
+type CharacterWealth struct {
 	widget.BaseWidget
 
 	OnUpdate func(totalNetWorth optional.Optional[float64])
 
-	characters             *fyneline.BarChart[assetWalletValue]
-	charactersCard         *chartCard
-	assetWalletDetailTitle *widget.Label
-	characterSplit         *fyneline.ArcChart[namedValue]
-	characterSplitCard     *chartCard
-	characterSplitTitle    *widget.Label
-	top                    *widget.Label
-	totalSplit             *fyneline.ArcChart[namedValue]
-	totalSplitCard         *chartCard
-	totalSplitTitle        *widget.Label
-	u                      baseUI
-	details                *WealthDetails
+	characterBreakdownCard       *chartCard
+	characterBreakdownChart      *fyneline.BarChart[characterWealthValue]
+	characterBreakdownTitleLabel *widget.Label
+	characterSplitCard           *chartCard
+	characterSplitChart          *fyneline.ArcChart[namedValue]
+	characterSplitTitleLabel     *widget.Label
+	details                      *WealthDetails
+	topLabel                     *widget.Label
+	totalSplitCard               *chartCard
+	totalSplitChart              *fyneline.ArcChart[namedValue]
+	totalSplitTitleLabel         *widget.Label
+	u                            baseUI
 }
 
-func NewWealth(u baseUI) *Wealth {
+func NewCharacterWealth(u baseUI) *CharacterWealth {
 	sliceLabel := func(v namedValue) string { return fmt.Sprintf("%.1f", v.value) }
-	a := &Wealth{
-		characters: fyneline.NewBarChart([]assetWalletValue(nil),
-			func(v assetWalletValue) string { return v.name },
-			fyneline.NewBarSeries("Assets", func(v assetWalletValue) float64 { return v.assets }),
-			fyneline.NewBarSeries("Wallet", func(v assetWalletValue) float64 { return v.wallet }),
-			fyneline.NewBarSeries("Contracts", func(v assetWalletValue) float64 { return v.contracts }),
-			fyneline.NewBarSeries("Orders", func(v assetWalletValue) float64 { return v.orders }),
+	a := &CharacterWealth{
+		characterBreakdownChart: fyneline.NewBarChart([]characterWealthValue(nil),
+			func(v characterWealthValue) string { return v.name },
+			fyneline.NewBarSeries("Assets", func(v characterWealthValue) float64 { return v.assets }),
+			fyneline.NewBarSeries("Wallet", func(v characterWealthValue) float64 { return v.wallet }),
+			fyneline.NewBarSeries("Contracts", func(v characterWealthValue) float64 { return v.contracts }),
+			fyneline.NewBarSeries("Orders", func(v characterWealthValue) float64 { return v.orders }),
 		),
-		assetWalletDetailTitle: newChartTitleLabel(),
-		characterSplit: fyneline.NewArcChart([]namedValue(nil),
+		characterBreakdownTitleLabel: newChartTitleLabel(),
+		characterSplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
 			sliceLabel,
 		),
-		characterSplitTitle: newChartTitleLabel(),
-		top:                 ui.NewLabelWithWrapping(""),
-		totalSplit: fyneline.NewArcChart([]namedValue(nil),
+		characterSplitTitleLabel: newChartTitleLabel(),
+		topLabel:                 ui.NewLabelWithWrapping(""),
+		totalSplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
 			sliceLabel,
 		),
-		totalSplitTitle: newChartTitleLabel(),
-		u:               u,
-		details:         newWealthDetails(u),
+		totalSplitTitleLabel: newChartTitleLabel(),
+		u:                    u,
+		details:              newWealthDetails(u),
 	}
 	a.ExtendBaseWidget(a)
-	a.top.Hide()
+	a.topLabel.Hide()
 
-	a.characters.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
-	a.characters.SetOrientation(fyneline.BarHorizontal)
-	a.characters.SetSeriesLayout(fyneline.SeriesStack)
-	configureArcChart(a.characterSplit)
-	configureArcChart(a.totalSplit)
+	a.characterBreakdownChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
+	a.characterBreakdownChart.SetOrientation(fyneline.BarHorizontal)
+	a.characterBreakdownChart.SetSeriesLayout(fyneline.SeriesStack)
+	configureArcChart(a.characterSplitChart)
+	configureArcChart(a.totalSplitChart)
 
 	legend := newSeriesLegend(
 		newLegendEntry("Assets", wealthArcColor(0)),
@@ -114,9 +114,9 @@ func NewWealth(u baseUI) *Wealth {
 		newLegendEntry("Orders", wealthArcColor(3)),
 	)
 
-	a.charactersCard = newChartCard(a.assetWalletDetailTitle, legend, a.characters)
-	a.characterSplitCard = newChartCard(a.characterSplitTitle, newSeriesLegend(), a.characterSplit)
-	a.totalSplitCard = newChartCard(a.totalSplitTitle, totalLegend, a.totalSplit)
+	a.characterBreakdownCard = newChartCard(a.characterBreakdownTitleLabel, legend, a.characterBreakdownChart)
+	a.characterSplitCard = newChartCard(a.characterSplitTitleLabel, newSeriesLegend(), a.characterSplitChart)
+	a.totalSplitCard = newChartCard(a.totalSplitTitleLabel, totalLegend, a.totalSplitChart)
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -144,19 +144,19 @@ func NewWealth(u baseUI) *Wealth {
 	return a
 }
 
-func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
+func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
 		container.NewTabItem(
 			"Overview",
 			container.NewAdaptiveGrid(2, a.totalSplitCard, a.characterSplitCard),
 		),
-		container.NewTabItem("Characters", a.charactersCard),
+		container.NewTabItem("Characters", a.characterBreakdownCard),
 		container.NewTabItem("Details", a.details),
 	)
 	var c fyne.CanvasObject
 	if !a.u.IsMobile() {
 		c = container.NewBorder(
-			a.top,
+			a.topLabel,
 			nil,
 			nil,
 			nil,
@@ -168,30 +168,30 @@ func (a *Wealth) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *Wealth) update(ctx context.Context) {
+func (a *CharacterWealth) update(ctx context.Context) {
 	rows, total, err := a.fetchData(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		fyne.Do(func() {
-			a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
+			a.topLabel.Importance = widget.DangerImportance
+			a.topLabel.Refresh()
+			a.topLabel.Show()
 		})
 		return
 	}
 	if len(rows) == 0 {
 		fyne.Do(func() {
-			a.top.Text = "No characters"
-			a.top.Importance = widget.LowImportance
-			a.top.Refresh()
-			a.top.Show()
+			a.topLabel.Text = "No characters"
+			a.topLabel.Importance = widget.LowImportance
+			a.topLabel.Refresh()
+			a.topLabel.Show()
 		})
 		return
 	}
 
 	fyne.Do(func() {
-		a.top.Hide()
+		a.topLabel.Hide()
 	})
 
 	a.updateAssetWalletDetail(ctx, rows)
@@ -205,11 +205,11 @@ func (a *Wealth) update(ctx context.Context) {
 	})
 }
 
-func (a *Wealth) updateAssetWalletDetail(_ context.Context, rows []wealthRow) {
+func (a *CharacterWealth) updateAssetWalletDetail(_ context.Context, rows []characterWealthRow) {
 	var total float64
-	d := make([]assetWalletValue, 0, len(rows))
+	d := make([]characterWealthValue, 0, len(rows))
 	for _, r := range rows {
-		d = append(d, assetWalletValue{
+		d = append(d, characterWealthValue{
 			name:      r.characterName,
 			assets:    r.combinedAssets,
 			wallet:    r.walletBalance,
@@ -227,16 +227,16 @@ func (a *Wealth) updateAssetWalletDetail(_ context.Context, rows []wealthRow) {
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
 
 	fyne.Do(func() {
-		a.characters.SetValueAxis(fyneline.NewNumericAxis().
+		a.characterBreakdownChart.SetValueAxis(fyneline.NewNumericAxis().
 			WithFormatter(wealthAxisValueFormatter).
 			WithDomain(0, axisMax).
 			WithTickCount(tickCount))
-		a.characters.SetData(d)
-		a.assetWalletDetailTitle.SetText(fmt.Sprintf("Wealth Breakdown by Character - Total: %.1f B", total))
+		a.characterBreakdownChart.SetData(d)
+		a.characterBreakdownTitleLabel.SetText(fmt.Sprintf("Wealth Breakdown by Character - Total: %.1f B", total))
 	})
 }
 
-func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
+func (a *CharacterWealth) updateCharacterSplit(_ context.Context, rows []characterWealthRow) {
 	var total float64
 	d := make([]namedValue, 0, len(rows))
 	for _, r := range rows {
@@ -251,13 +251,13 @@ func (a *Wealth) updateCharacterSplit(_ context.Context, rows []wealthRow) {
 	}
 
 	fyne.Do(func() {
-		a.characterSplit.SetData(d)
+		a.characterSplitChart.SetData(d)
 		a.characterSplitCard.legend.SetEntries(entries...)
-		a.characterSplitTitle.SetText(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B", total))
+		a.characterSplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B", total))
 	})
 }
 
-func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
+func (a *CharacterWealth) updateTotalSplit(_ context.Context, rows []characterWealthRow) {
 	var assets, wallets, contracts, orders, total float64
 	for _, r := range rows {
 		assets += r.combinedAssets
@@ -274,18 +274,18 @@ func (a *Wealth) updateTotalSplit(_ context.Context, rows []wealthRow) {
 	}
 
 	fyne.Do(func() {
-		a.totalSplit.SetData(d)
+		a.totalSplitChart.SetData(d)
 		title := fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total)
-		a.totalSplitTitle.SetText(title)
+		a.totalSplitTitleLabel.SetText(title)
 	})
 }
 
-func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[float64], error) {
+func (a *CharacterWealth) fetchData(ctx context.Context) ([]characterWealthRow, optional.Optional[float64], error) {
 	cc, err := a.u.Character().ListCharacters(ctx)
 	if err != nil {
 		return nil, optional.Optional[float64]{}, err
 	}
-	var rows []wealthRow
+	var rows []characterWealthRow
 	var totals []optional.Optional[float64]
 	for _, c := range cc {
 		combinedAssets := c.CombinedAssetsValue()
@@ -295,7 +295,7 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 			continue
 		}
 		name := xstrings.TruncateWithSuffix(c.EveCharacter.Name, wealthNameTruncationLimit, wealthNameTruncationSuffix)
-		r := wealthRow{
+		r := characterWealthRow{
 			characterID:     c.ID,
 			characterName:   name,
 			combinedAssets:  combinedAssets.ValueOrZero() / wealthMultiplier,
@@ -306,7 +306,7 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 		}
 		rows = append(rows, r)
 	}
-	slices.SortFunc(rows, func(a, b wealthRow) int {
+	slices.SortFunc(rows, func(a, b characterWealthRow) int {
 		return strings.Compare(a.characterName, b.characterName)
 	})
 	grantTotal := optional.Sum(totals...)
@@ -314,12 +314,12 @@ func (a *Wealth) fetchData(ctx context.Context) ([]wealthRow, optional.Optional[
 }
 
 // reduceAssetWalletValues keeps the top m rows by combined value, bucketing the rest into "Others".
-func reduceAssetWalletValues(rows []assetWalletValue, m int) []assetWalletValue {
+func reduceAssetWalletValues(rows []characterWealthValue, m int) []characterWealthValue {
 	if len(rows) <= m {
 		return rows
 	}
-	combined := func(v assetWalletValue) float64 { return v.assets + v.wallet + v.contracts + v.orders }
-	slices.SortFunc(rows, func(a, b assetWalletValue) int {
+	combined := func(v characterWealthValue) float64 { return v.assets + v.wallet + v.contracts + v.orders }
+	slices.SortFunc(rows, func(a, b characterWealthValue) int {
 		return cmp.Compare(combined(b), combined(a))
 	})
 	others := rows[m]
@@ -331,7 +331,7 @@ func reduceAssetWalletValues(rows []assetWalletValue, m int) []assetWalletValue 
 		others.orders += x.orders
 	}
 	rows = rows[:m]
-	slices.SortFunc(rows, func(a, b assetWalletValue) int {
+	slices.SortFunc(rows, func(a, b characterWealthValue) int {
 		return strings.Compare(a.name, b.name)
 	})
 	rows = append(rows, others)

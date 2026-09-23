@@ -148,7 +148,7 @@ type baseUI struct {
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
 	unifiedStructures          *screens.Structures
-	wealth                     *screens.Wealth
+	wealth                     *screens.CharacterWealth
 
 	// Services
 	cs       *characterservice.CharacterService
@@ -453,7 +453,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.snackbar = kxwidget.NewSnackbar(u.window.Canvas())
 	u.skillSearch = screens.NewSkillSearch(u)
 	u.training = screens.NewTraining(u)
-	u.wealth = screens.NewWealth(u)
+	u.wealth = screens.NewCharacterWealth(u)
 
 	u.MainWindow().SetMaster()
 

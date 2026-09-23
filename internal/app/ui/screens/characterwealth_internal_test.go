@@ -88,32 +88,32 @@ func TestReduceSliceValues(t *testing.T) {
 func TestReduceAssetWalletValues(t *testing.T) {
 	tests := []struct {
 		name     string
-		data     []assetWalletValue
+		data     []characterWealthValue
 		m        int
-		expected []assetWalletValue
+		expected []characterWealthValue
 	}{
 		{
 			name: "No reduction needed",
-			data: []assetWalletValue{
+			data: []characterWealthValue{
 				{name: "A", assets: 10, wallet: 1},
 				{name: "B", assets: 20, wallet: 2},
 			},
 			m: 5,
-			expected: []assetWalletValue{
+			expected: []characterWealthValue{
 				{name: "A", assets: 10, wallet: 1},
 				{name: "B", assets: 20, wallet: 2},
 			},
 		},
 		{
 			name: "Reduces to top M by combined value and aggregates others",
-			data: []assetWalletValue{
+			data: []characterWealthValue{
 				{name: "Banana", assets: 8, wallet: 2, contracts: 1},            // combined 11, Top 2
 				{name: "Apple", assets: 40, wallet: 10, orders: 5},              // combined 55, Top 1
 				{name: "Cherry", assets: 4, wallet: 1, contracts: 1, orders: 1}, // combined 7, Other
 				{name: "Date", assets: 1, wallet: 1},                            // combined 2, Other
 			},
 			m: 2,
-			expected: []assetWalletValue{
+			expected: []characterWealthValue{
 				{name: "Apple", assets: 40, wallet: 10, orders: 5},              // Sorted alphabetically
 				{name: "Banana", assets: 8, wallet: 2, contracts: 1},            // Sorted alphabetically
 				{name: "Others", assets: 5, wallet: 2, contracts: 1, orders: 1}, // (4+1), (1+1), (1+0), (0+1)
@@ -121,12 +121,12 @@ func TestReduceAssetWalletValues(t *testing.T) {
 		},
 		{
 			name: "M is zero",
-			data: []assetWalletValue{
+			data: []characterWealthValue{
 				{name: "A", assets: 10, wallet: 1},
 				{name: "B", assets: 20, wallet: 2},
 			},
 			m: 0,
-			expected: []assetWalletValue{
+			expected: []characterWealthValue{
 				{name: "Others", assets: 30, wallet: 3},
 			},
 		},
@@ -135,7 +135,7 @@ func TestReduceAssetWalletValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// We pass a copy to avoid mutating the test case slice if reused
-			input := make([]assetWalletValue, len(tt.data))
+			input := make([]characterWealthValue, len(tt.data))
 			copy(input, tt.data)
 
 			actual := reduceAssetWalletValues(input, tt.m)
