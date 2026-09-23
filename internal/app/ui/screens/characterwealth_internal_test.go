@@ -3,9 +3,11 @@ package screens
 import (
 	"testing"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -184,4 +186,43 @@ func TestNiceAxisBounds(t *testing.T) {
 		xassert.Equal(t, tt.expectedAxisMax, axisMax)
 		xassert.Equal(t, tt.expectedTickCount, tickCount)
 	}
+}
+
+func TestNewWealthDetailsRow(t *testing.T) {
+	t.Run("converts row with all values", func(t *testing.T) {
+		r := newWealthDetailsRow(characterWealthRow{
+			characterID:     42,
+			characterName:   "Bruce Wayne",
+			combinedAssets:  optional.New(1_000_000.0),
+			contractsEscrow: optional.New(2_000.0),
+			ordersEscrow:    optional.New(3_000.0),
+			skillPoints:     optional.New(4_000.0),
+			tags:            set.Of("Zeta", "Alpha"),
+			total:           optional.New(1_005_000.0),
+			walletBalance:   optional.New(0.0),
+		})
+		xassert.Equal(t, int64(42), r.characterID)
+		xassert.Equal(t, "Bruce Wayne", r.characterName)
+		xassert.Equal(t, "bruce wayne", r.searchTarget)
+		xassert.Equal(t, "Alpha, Zeta", r.tagsDisplay)
+		xassert.Equal(t, "1,000,000", r.combinedAssetsDisplay)
+		xassert.Equal(t, "2,000", r.contractsEscrowDisplay)
+		xassert.Equal(t, "3,000", r.ordersEscrowDisplay)
+		xassert.Equal(t, "4,000", r.skillPointsDisplay)
+		xassert.Equal(t, "1,005,000", r.totalNetWorthDisplay)
+		xassert.Equal(t, "0", r.walletDisplay)
+		xassert.Equal(t, optional.New(1_000_000.0), r.combinedAssetsValue)
+		assert.False(t, r.isTotal)
+	})
+	t.Run("shows missing values as ?", func(t *testing.T) {
+		r := newWealthDetailsRow(characterWealthRow{
+			characterName: "Bruce Wayne",
+			tags:          set.Of[string](),
+		})
+		xassert.Equal(t, "", r.tagsDisplay)
+		xassert.Equal(t, "?", r.combinedAssetsDisplay)
+		xassert.Equal(t, "?", r.totalNetWorthDisplay)
+		xassert.Equal(t, "?", r.walletDisplay)
+		assert.True(t, r.totalNetWorth.IsEmpty())
+	})
 }
