@@ -619,7 +619,6 @@ func (a *communicationsMessagePane) markCurrentFolderRead() {
 				}
 			}
 			a.co.NavigationPane.update()
-			a.filterRowsAsync()
 		})
 	}()
 }
@@ -638,7 +637,6 @@ func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id 
 			}
 		}
 		a.co.NavigationPane.update()
-		a.filterRowsAsync()
 	})
 }
 
