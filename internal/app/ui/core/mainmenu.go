@@ -16,20 +16,12 @@ func makeMainMenu(u *DesktopUI) *fyne.Menu {
 		it.Shortcut = sc.Shortcut
 		return it
 	}
-	it := fyne.NewMenuItem("Close", func() {
-		u.MainWindow().Hide()
-	})
-	it.Shortcut = &desktop.CustomShortcut{
-		KeyName:  fyne.KeyF4,
-		Modifier: fyne.KeyModifierAlt,
-	}
 	w := u.MainWindow()
 	settings, _ := xdesktop.Shortcut("settings", w)
 	characters, _ := xdesktop.Shortcut("manageCharacters", w)
 	status, _ := xdesktop.Shortcut("updateStatus", w)
 	quit, _ := xdesktop.Shortcut("quit", w)
-	menu := fyne.NewMenu(
-		"",
+	items := []*fyne.MenuItem{
 		makeMenuItem("Settings", settings),
 		makeMenuItem("Manage Characters", characters),
 		makeMenuItem("Update Status", status),
@@ -37,8 +29,18 @@ func makeMainMenu(u *DesktopUI) *fyne.Menu {
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.showAboutDialog),
 		fyne.NewMenuItemSeparator(),
-		it,
-		makeMenuItem("Quit", quit),
-	)
-	return menu
+	}
+	// without a tray icon a hidden window can not be shown again
+	if u.settings.SysTrayEnabled() {
+		it := fyne.NewMenuItem("Close", func() {
+			w.Hide()
+		})
+		it.Shortcut = &desktop.CustomShortcut{
+			KeyName:  fyne.KeyF4,
+			Modifier: fyne.KeyModifierAlt,
+		}
+		items = append(items, it)
+	}
+	items = append(items, makeMenuItem("Quit", quit))
+	return fyne.NewMenu("", items...)
 }

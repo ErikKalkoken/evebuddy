@@ -496,7 +496,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	rail := xwidget.NewNavRail(
 		[]*xwidget.NavRailItem{homeItem, characterItem, corporationItem},
 		searchItem,
-		xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Main menu", makeMainMenu(u)),
+		xwidget.NewNavRailMenuItem(theme.SettingsIcon(), "Manage", makeMainMenu(u)),
 	)
 
 	statusBar := newStatusBar(u)
