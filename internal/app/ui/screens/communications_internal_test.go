@@ -3,6 +3,7 @@ package screens
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,6 +113,24 @@ func TestCommunicationsMessagePane_SyncSelection(t *testing.T) {
 		a.MessagePane.syncSelection(id2idx)
 		assert.Equal(t, 0, selectedCount)
 		assert.EqualValues(t, 2, a.ReadingPane.requestedID)
+	})
+	t.Run("mobile does not scroll to current notification", func(t *testing.T) {
+		a := setup(t)
+		a.MessagePane.OnSelected = func() {}
+		sender := &app.EveEntity{ID: 1, Name: "Sender", Category: app.EveEntityCorporation}
+		var rows []notificationRow
+		id2idx := make(map[int64]int)
+		for i := range 50 {
+			id := int64(i + 1)
+			rows = append(rows, notificationRow{id: id, sender: sender, subject: "Subject"})
+			id2idx[id] = i
+		}
+		a.MessagePane.rowsFiltered = rows
+		test.WidgetRenderer(a.MessagePane.messageList)
+		a.MessagePane.messageList.Resize(fyne.NewSize(300, 200))
+		a.ReadingPane.requestedID = 40 // off-screen
+		a.MessagePane.syncSelection(id2idx)
+		assert.Zero(t, a.MessagePane.messageList.GetScrollOffset())
 	})
 	t.Run("clears reading pane when current notification is gone", func(t *testing.T) {
 		a := setup(t)

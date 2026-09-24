@@ -769,12 +769,11 @@ func (a *communicationsMessagePane) syncSelection(id2idx map[int64]int) {
 		a.co.ReadingPane.clear()
 		return
 	}
-	a.messageList.ScrollTo(idx)
 	if a.OnSelected != nil {
 		return // mobile does not keep a selection
 	}
 	a.reselecting = true
-	a.messageList.Select(idx)
+	a.messageList.Select(idx) // also scrolls to the row
 	a.reselecting = false
 }
 
