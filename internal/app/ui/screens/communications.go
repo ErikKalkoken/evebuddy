@@ -409,13 +409,13 @@ type folderItemWidget struct {
 	widget.BaseWidget
 
 	name   *widget.Label
-	unread *kxwidget.Badge
+	unread *widget.Label
 }
 
 func newFolderItemWidget() *folderItemWidget {
 	w := &folderItemWidget{
 		name:   widget.NewLabel(""),
-		unread: kxwidget.NewBadge(""),
+		unread: widget.NewLabel(""),
 	}
 	w.ExtendBaseWidget(w)
 	return w

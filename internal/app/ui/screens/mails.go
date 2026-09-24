@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -827,14 +826,14 @@ type mailFolderItemWidget struct {
 
 	icon   *widget.Icon
 	name   *widget.Label
-	unread *kxwidget.Badge
+	unread *widget.Label
 }
 
 func newMailFolderItemWidget() *mailFolderItemWidget {
 	w := &mailFolderItemWidget{
 		name:   widget.NewLabel(""),
 		icon:   widget.NewIcon(icons.BlankSvg),
-		unread: kxwidget.NewBadge("999"),
+		unread: widget.NewLabel("999"),
 	}
 	w.ExtendBaseWidget(w)
 	w.name.Truncation = fyne.TextTruncateClip
