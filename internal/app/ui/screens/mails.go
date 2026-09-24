@@ -659,6 +659,7 @@ func (a *Mails) showMailerWindow(mode mailer.Mode, mail *app.CharacterMail) {
 			a.u.IsDeveloperMode(),
 			a.u.MainWindow(),
 		)
+		return
 	}
 	w.Show()
 }
