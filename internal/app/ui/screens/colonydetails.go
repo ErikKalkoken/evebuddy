@@ -287,7 +287,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		if type2 != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
 				return r.name != type2
@@ -314,7 +314,7 @@ func (a *colonyDetails) filterRowsAsync() {
 			a.installations.Refresh()
 
 		})
-	}()
+	})
 }
 
 func (a *colonyDetails) Update(ctx context.Context) error {

@@ -278,7 +278,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 	et := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
 				return r.refTypeDisplay != et
@@ -298,7 +298,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *WalletJournal) Update(ctx context.Context) {

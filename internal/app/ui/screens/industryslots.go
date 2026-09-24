@@ -322,7 +322,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		rows := slices.Clone(rows)
 		// filter
 		if freeSlots != "" {
@@ -373,7 +373,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *IndustrySlots) update(ctx context.Context) {

@@ -260,7 +260,7 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if character != "" {
 			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
@@ -310,7 +310,7 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *JumpClones) update(ctx context.Context) {

@@ -350,7 +350,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 	et := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if activity := a.selectActivity.Selected; activity != "" {
 			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
@@ -419,7 +419,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *WalletTransactions) Update(ctx context.Context) {

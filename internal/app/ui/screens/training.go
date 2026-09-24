@@ -479,7 +479,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if selectStatus != "" {
 			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
@@ -519,7 +519,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Training) update(ctx context.Context) {

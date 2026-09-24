@@ -514,7 +514,7 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 	search := a.searchEntry.Text
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
 			status := r.statusCalculated()
@@ -603,7 +603,7 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 				x.ScrollToTop()
 			}
 		})
-	}()
+	})
 }
 
 func (a *IndustryJobs) update(ctx context.Context) {

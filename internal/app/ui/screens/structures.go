@@ -301,7 +301,7 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 	power := a.selectPower.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if owner != "" {
 			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
@@ -380,7 +380,7 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Structures) update(ctx context.Context) {

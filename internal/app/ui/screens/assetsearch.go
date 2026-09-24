@@ -692,7 +692,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		if state != "" {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
 				return r.state != state
@@ -796,7 +796,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 				x.ScrollToTop()
 			}
 		})
-	}()
+	})
 }
 
 func (a *AssetSearch) update(ctx context.Context) {

@@ -189,7 +189,7 @@ func (a *FlyableShips) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		if group != "" {
 			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
 				return r.groupName != group
@@ -233,7 +233,7 @@ func (a *FlyableShips) filterRowsAsync() {
 			a.grid.Refresh()
 			a.grid.ScrollToTop()
 		})
-	}()
+	})
 }
 
 func (a *FlyableShips) update(ctx context.Context) {

@@ -324,7 +324,7 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if alliance != "" {
 			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
@@ -388,7 +388,7 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *CharacterOverview) update(ctx context.Context) {

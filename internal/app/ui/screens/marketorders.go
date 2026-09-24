@@ -373,7 +373,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows := slices.DeleteFunc(rows, func(r marketOrderRow) bool {
 			s := r.stateCorrected()
@@ -440,7 +440,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *MarketOrders) update(ctx context.Context) {

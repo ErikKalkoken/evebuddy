@@ -494,7 +494,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows = slices.DeleteFunc(rows, func(r contractRow) bool {
 			switch a.selectStatus.Selected {
@@ -564,7 +564,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Contracts) update(ctx context.Context) {

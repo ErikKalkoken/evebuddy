@@ -428,7 +428,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		if extracting != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
 				return !r.extracting.Contains(extracting)
@@ -530,7 +530,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Colonies) Update(ctx context.Context) {

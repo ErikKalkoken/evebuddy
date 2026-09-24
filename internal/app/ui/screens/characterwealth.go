@@ -313,7 +313,7 @@ func (a *CharacterWealth) filterRowsAsync() {
 	tag := a.selectTag.Selected
 	isFiltered := alliance != "" || corporation != "" || tag != ""
 
-	go func() {
+	runAsync(func() {
 		filtered := filterWealthRows(rows, tag, corporation, alliance)
 		tagOptions, corporationOptions, allianceOptions := wealthFilterOptions(filtered)
 		footer := fmt.Sprintf("Showing %d / %d characters", len(filtered), len(rows))
@@ -346,7 +346,7 @@ func (a *CharacterWealth) filterRowsAsync() {
 		fyne.Do(func() {
 			a.setChartsEmpty("")
 		})
-	}()
+	})
 }
 
 // setChartsEmpty replaces the charts with text, or shows them again when text is empty.
@@ -760,7 +760,7 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterWealthDetailsRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -807,7 +807,7 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 // reduceCharacterWealthValues keeps the top m rows by combined value, bucketing the rest into "Others".

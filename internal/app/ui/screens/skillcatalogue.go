@@ -254,7 +254,7 @@ func (a *SkillCatalogue) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		switch main {
 		case skillCatalogueMySkill:
 			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
@@ -300,7 +300,7 @@ func (a *SkillCatalogue) filterRowsAsync() {
 			a.rowsFiltered = rows
 			a.skills.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *SkillCatalogue) update(ctx context.Context) {

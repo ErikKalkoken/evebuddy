@@ -12,6 +12,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 )
 
+// runAsync runs f in a new goroutine.
+//
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
+
 // copyRowsToClipboard copies rows from a data table to clipboard.
 //
 // The function can be called in the main thread.

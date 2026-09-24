@@ -120,7 +120,7 @@ func (a *Members) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r memberRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -139,7 +139,7 @@ func (a *Members) filterRowsAsync() {
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Members) update(ctx context.Context) {

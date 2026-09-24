@@ -172,7 +172,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	faction := a.selectFaction.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		if faction != "" {
 			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 				return r.factionName != faction
@@ -198,7 +198,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {

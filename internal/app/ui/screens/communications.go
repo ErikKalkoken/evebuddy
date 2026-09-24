@@ -645,7 +645,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
-	go func() {
+	runAsync(func() {
 		// filter
 		if x := filter[communicationsFilterStatus]; x != "" {
 			switch x {
@@ -750,7 +750,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			a.messageList.Refresh()
 			a.syncSelection(id2idx)
 		})
-	}()
+	})
 }
 
 // syncSelection keeps the current notification selected after the rows changed
