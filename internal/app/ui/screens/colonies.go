@@ -108,6 +108,7 @@ type Colonies struct {
 
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
+	filterRun         latestRun
 	footer            *widget.Label
 	rows              []colonyRow
 	rowsFiltered      []colonyRow
@@ -120,7 +121,7 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip          *kxwidget.SortChip
 	u                 baseUI
 }
 
@@ -415,6 +416,7 @@ func (w *colonyListItem) set(r colonyRow) {
 }
 
 func (a *Colonies) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	extracting := a.selectExtracting.Selected
@@ -517,6 +519,9 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		}
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

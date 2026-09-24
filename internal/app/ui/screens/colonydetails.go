@@ -51,6 +51,7 @@ type colonyDetails struct {
 	characterID   atomic.Int64
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
 	expiryTimes   []time.Time
+	filterRun     latestRun
 	footer        *widget.Label
 	icon          *canvas.Image
 	installations *widget.List
@@ -281,6 +282,7 @@ func (a *colonyDetails) refreshStatus() {
 }
 
 func (a *colonyDetails) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	type2 := a.selectType2.Selected
@@ -306,6 +308,9 @@ func (a *colonyDetails) filterRowsAsync() {
 		footer := fmt.Sprintf("Showing %d / %d installations", len(rows), totalRows)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

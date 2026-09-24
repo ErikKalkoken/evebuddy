@@ -76,6 +76,7 @@ type Structures struct {
 
 	columnSorter      *xwidget.ColumnSorter[structureRow]
 	corporation       atomic.Pointer[app.Corporation]
+	filterRun         latestRun
 	footer            *widget.Label
 	forCorporation    bool
 	main              fyne.CanvasObject
@@ -290,6 +291,7 @@ func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Structures) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	owner := a.selectOwner.Selected
@@ -368,6 +370,9 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s structures", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

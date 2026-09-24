@@ -109,6 +109,7 @@ type IndustryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
+	filterRun       latestRun
 	footer          *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
@@ -505,6 +506,7 @@ func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
 // filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *IndustryJobs) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	installer := a.selectInstaller.Selected
@@ -592,6 +594,9 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s jobs", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

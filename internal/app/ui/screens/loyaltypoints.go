@@ -44,6 +44,7 @@ func (n loyaltyPointsNode) UID() widget.TreeNodeID {
 type LoyaltyPoints struct {
 	widget.BaseWidget
 
+	filterRun        latestRun
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
@@ -184,6 +185,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 }
 
 func (a *LoyaltyPoints) filterTreeAsync() {
+	isLatest := a.filterRun.start()
 	data := maps.Clone(a.data)
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
@@ -259,6 +261,9 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 
 		bottom := fmt.Sprintf("Showing %d / %d corporations", len(corporations), len(data))
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = bottom
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

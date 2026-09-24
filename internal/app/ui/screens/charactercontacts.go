@@ -51,6 +51,7 @@ type CharacterContacts struct {
 
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[characterContactRow]
+	filterRun      latestRun
 	footer         *widget.Label
 	list           fyne.CanvasObject
 	rows           []characterContactRow
@@ -239,6 +240,7 @@ func (a *CharacterContacts) makeList() fyne.CanvasObject {
 }
 
 func (a *CharacterContacts) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	blocked := a.selectBlocked.Selected
@@ -342,6 +344,9 @@ func (a *CharacterContacts) filterRowsAsync() {
 		)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

@@ -46,6 +46,7 @@ type FlyableShips struct {
 
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
+	filterRun     latestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	imageCache    xsync.Map[string, *image.RGBA]
@@ -54,7 +55,7 @@ type FlyableShips struct {
 	searchEntry   *xwidget.SearchEntry
 	selectFlyable *kxwidget.FilterChipSelect
 	selectGroup   *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip      *kxwidget.SortChip
 	top           *widget.Label
 	u             baseUI
 }
@@ -182,6 +183,7 @@ func (a *FlyableShips) makeShipsGrid() *widget.GridWrap {
 }
 
 func (a *FlyableShips) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	group := a.selectGroup.Selected
@@ -224,6 +226,9 @@ func (a *FlyableShips) filterRowsAsync() {
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

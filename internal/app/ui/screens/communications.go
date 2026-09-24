@@ -469,6 +469,7 @@ type communicationsMessagePane struct {
 	columnSorter  *xwidget.ColumnSorter[notificationRow]
 	currentFolder app.EveNotificationGroup
 	filterChip    *xwidget.FilterChipCompact
+	filterRun     latestRun
 	footerLabel   *widget.Label
 	messageList   *widget.List
 	moreButton    *kxwidget.IconButton
@@ -641,6 +642,7 @@ func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id 
 }
 
 func (a *communicationsMessagePane) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	var rows []notificationRow
 	if a.currentFolder == app.GroupAll {
 		rows = slices.Clone(a.co.rows)
@@ -728,6 +730,9 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			ihumanize.Comma(totalRows),
 		)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			options := []xwidget.FilterOption{
 				xwidget.NewFilterOptionMultiChoice(
 					communicationsFilterStatus,

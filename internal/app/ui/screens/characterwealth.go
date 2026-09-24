@@ -117,6 +117,7 @@ type CharacterWealth struct {
 	characterSplitChart          *fyneline.ArcChart[namedValue]
 	characterSplitTitleLabel     *widget.Label
 	details                      *characterWealthDetails
+	filterRun                    latestRun
 	footer                       *widget.Label
 	overviewEmpty                *widget.Label
 	overviewGrid                 *fyne.Container
@@ -307,6 +308,7 @@ func (a *CharacterWealth) update(ctx context.Context) {
 // filterRowsAsync applies the filters and updates all tabs.
 // Must be called on the main thread.
 func (a *CharacterWealth) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	alliance := a.selectAlliance.Selected
 	corporation := a.selectCorporation.Selected
@@ -319,6 +321,9 @@ func (a *CharacterWealth) filterRowsAsync() {
 		footer := fmt.Sprintf("Showing %d / %d characters", len(filtered), len(rows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -334,16 +339,25 @@ func (a *CharacterWealth) filterRowsAsync() {
 		})
 		if text := wealthEmptyText(isFiltered, len(filtered), len(chartRows)); text != "" {
 			fyne.Do(func() {
+				if !isLatest() {
+					return
+				}
 				a.setChartsEmpty(text)
 			})
 			return
 		}
 
+		if !isLatest() {
+			return // skip chart updates for outdated results
+		}
 		a.updateCharacterBreakdown(chartRows)
 		a.updateCharacterSplit(chartRows)
 		a.updateTotalSplit(chartRows)
 		// Queued after the chart updates, so no stale data is shown.
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.setChartsEmpty("")
 		})
 	})
@@ -549,6 +563,7 @@ type characterWealthDetails struct {
 	widget.BaseWidget
 
 	columnSorter *xwidget.ColumnSorter[characterWealthDetailsRow]
+	filterRun    latestRun
 	main         fyne.CanvasObject
 	rows         []characterWealthDetailsRow
 	rowsFiltered []characterWealthDetailsRow
@@ -756,6 +771,7 @@ func (a *characterWealthDetails) setRows(rows []characterWealthRow) {
 }
 
 func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
@@ -804,6 +820,9 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 		})
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})

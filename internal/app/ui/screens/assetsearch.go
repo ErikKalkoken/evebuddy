@@ -220,6 +220,7 @@ type AssetSearch struct {
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
+	filterRun      latestRun
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
@@ -679,6 +680,7 @@ func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) erro
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -779,6 +781,9 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 		}
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

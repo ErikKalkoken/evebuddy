@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"slices"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 
@@ -16,6 +17,16 @@ import (
 //
 // Tests replace it to run f synchronously.
 var runAsync = func(f func()) { go f() }
+
+// latestRun identifies the newest of overlapping async runs,
+// so results from older runs can be discarded.
+type latestRun struct{ n atomic.Int64 }
+
+// start begins a new run and returns a function reporting whether it is still the newest.
+func (l *latestRun) start() func() bool {
+	n := l.n.Add(1)
+	return func() bool { return l.n.Load() == n }
+}
 
 // copyRowsToClipboard copies rows from a data table to clipboard.
 //

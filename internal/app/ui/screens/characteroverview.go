@@ -74,6 +74,7 @@ type CharacterOverview struct {
 
 	OnUpdate func(characters int)
 
+	filterRun         latestRun
 	footer            *widget.Label
 	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
 	loadInfo          *widget.Label
@@ -314,6 +315,7 @@ func (a *CharacterOverview) makeList() *widget.List {
 }
 
 func (a *CharacterOverview) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	alliance := a.selectAlliance.Selected
@@ -377,6 +379,9 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), total)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

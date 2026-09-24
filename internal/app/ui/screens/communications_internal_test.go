@@ -278,3 +278,34 @@ func TestCommunications_UnreadFilterKeepsOpenedNotification(t *testing.T) {
 	require.NotNil(t, a.ReadingPane.currentNotification)
 	assert.Equal(t, r.id, a.ReadingPane.currentNotification.ID)
 }
+
+func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	e := &app.EveEntity{ID: 1, Name: "Alpha", Category: app.EveEntityCorporation}
+	for i := range 3 {
+		a.rows = append(a.rows, notificationRow{id: int64(i + 1), sender: e, recipient: e, searchTarget: "alpha"})
+	}
+	mp := a.MessagePane
+	mp.currentFolder = app.GroupAll
+
+	// queue async work, so runs can complete out of order
+	var pending []func()
+	orig := runAsync
+	runAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { runAsync = orig })
+
+	mp.searchEntry.Text = "no match"
+	mp.filterRowsAsync()
+	mp.searchEntry.Text = ""
+	mp.filterRowsAsync()
+	require.Len(t, pending, 2)
+	pending[1]() // newest run completes first
+	pending[0]()
+
+	assert.Len(t, mp.rowsFiltered, 3)
+}

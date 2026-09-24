@@ -64,6 +64,7 @@ type WalletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
+	filterRun      latestRun
 	footer         *widget.Label
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
@@ -77,7 +78,7 @@ type WalletTransactions struct {
 	selectLocation *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip       *kxwidget.SortChip
 	u              baseUI
 }
 
@@ -341,6 +342,7 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 }
 
 func (a *WalletTransactions) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	category := a.selectCategory.Selected
@@ -408,6 +410,9 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s transactions", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

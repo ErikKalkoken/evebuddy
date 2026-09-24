@@ -56,6 +56,7 @@ type JumpClones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
+	filterRun         latestRun
 	footer            *widget.Label
 	changeOrigin      *widget.Button
 	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
@@ -252,6 +253,7 @@ func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *JumpClones) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	character := a.selectCharacter.Selected
@@ -300,6 +302,9 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %d / %d clones", len(rows), totalRows)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

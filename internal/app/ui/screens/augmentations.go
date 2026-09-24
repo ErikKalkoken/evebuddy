@@ -51,6 +51,7 @@ type Augmentations struct {
 	widget.BaseWidget
 
 	collapseBranches *ttwidget.Button
+	filterRun        latestRun
 	footer           *widget.Label
 	selectImplants   *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
@@ -143,6 +144,7 @@ func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 }
 
 func (a *Augmentations) filterTreeAsync() {
+	isLatest := a.filterRun.start()
 	total := a.treeData.ChildrenCount(nil)
 	tag := a.selectTag.Selected
 	implants := a.selectImplants.Selected
@@ -191,6 +193,9 @@ func (a *Augmentations) filterTreeAsync() {
 		footer := fmt.Sprintf("Showing %d / %d characters", td.ChildrenCount(nil), total)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()

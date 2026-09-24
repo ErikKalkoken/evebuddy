@@ -81,6 +81,7 @@ type ContractSlots struct {
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[contractSlotRow]
 	corporationSlots  bool
+	filterRun         latestRun
 	footer            *widget.Label
 	rows              []contractSlotRow
 	rowsFiltered      []contractSlotRow
@@ -286,6 +287,7 @@ func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRo
 }
 
 func (a *ContractSlots) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	corporation := a.selectCorporation.Selected
@@ -343,6 +345,9 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 		})...).All())
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
