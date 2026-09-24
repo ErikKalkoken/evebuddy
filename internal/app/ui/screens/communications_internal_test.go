@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
@@ -107,17 +108,16 @@ func TestCommunicationsMessagePane_SyncSelection(t *testing.T) {
 		a.MessagePane.OnSelected = func() {
 			selectedCount++
 		}
-		cn := &app.CharacterNotification{ID: 2}
-		a.ReadingPane.currentNotification = cn
+		a.ReadingPane.requestedID = 2
 		a.MessagePane.syncSelection(id2idx)
 		assert.Equal(t, 0, selectedCount)
-		assert.Same(t, cn, a.ReadingPane.currentNotification)
+		assert.EqualValues(t, 2, a.ReadingPane.requestedID)
 	})
 	t.Run("clears reading pane when current notification is gone", func(t *testing.T) {
 		a := setup(t)
-		a.ReadingPane.currentNotification = &app.CharacterNotification{ID: 99}
+		a.ReadingPane.requestedID = 99
 		a.MessagePane.syncSelection(id2idx)
-		assert.Nil(t, a.ReadingPane.currentNotification)
+		assert.Zero(t, a.ReadingPane.requestedID)
 	})
 }
 
@@ -125,18 +125,80 @@ func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	character := factory.CreateCharacterFull()
+	n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
 	a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
 		Storage: st,
 	}))
+	p := a.ReadingPane
+	makeRow := func(n *app.CharacterNotification) notificationRow {
+		return notificationRow{
+			characterID:    n.CharacterID,
+			id:             n.ID,
+			notificationID: n.NotificationID,
+			recipient:      n.Sender,
+		}
+	}
+	r1, r2 := makeRow(n1), makeRow(n2)
+	// request mimics set without starting the async load,
+	// so tests can control the order in which loads complete.
+	request := func(r notificationRow) {
+		p.requestedID = r.id
+	}
 
+	t.Run("shows requested notification", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n1.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores earlier request completing after later one", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		request(r2)
+		p.loadNotification(t.Context(), r2)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores earlier request completing before later one", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		request(r2)
+		p.loadNotification(t.Context(), r1)
+		assert.Nil(t, p.currentNotification)
+		p.loadNotification(t.Context(), r2)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores result after pane was cleared", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.clear()
+		p.loadNotification(t.Context(), r1)
+		assert.Nil(t, p.currentNotification)
+	})
+	t.Run("keeps pending request when rows refresh before load completes", func(t *testing.T) {
+		p.clear()
+		a.MessagePane.rowsFiltered = []notificationRow{r1, r2}
+		request(r1)
+		a.MessagePane.syncSelection(map[int64]int{r1.id: 0, r2.id: 1})
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n1.ID, p.currentNotification.ID)
+	})
 	t.Run("shows error when notification can not be loaded", func(t *testing.T) {
-		a.ReadingPane.currentNotification = &app.CharacterNotification{ID: 1}
-		a.ReadingPane.loadNotification(t.Context(), notificationRow{
+		p.clear()
+		r := notificationRow{
 			characterID:    character.ID,
+			id:             999_999_999,
 			notificationID: 999_999_999, // does not exist
-		})
-		assert.Nil(t, a.ReadingPane.currentNotification)
-		assert.Contains(t, a.ReadingPane.bodyText.String(), "ERROR")
+		}
+		request(r)
+		p.loadNotification(t.Context(), r)
+		assert.Nil(t, p.currentNotification)
+		assert.Contains(t, p.bodyText.String(), "ERROR")
 	})
 }

@@ -757,12 +757,13 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 // and clears it when it is no longer shown.
 func (a *communicationsMessagePane) syncSelection(id2idx map[int64]int) {
 	a.messageList.UnselectAll()
-	cn := a.co.ReadingPane.currentNotification
-	if cn == nil {
+	// requestedID instead of currentNotification, so a pending load is not dropped
+	id := a.co.ReadingPane.requestedID
+	if id == 0 {
 		a.co.ReadingPane.clear()
 		return
 	}
-	idx, ok := id2idx[cn.ID]
+	idx, ok := id2idx[id]
 	if !ok {
 		a.messageList.ScrollToOffset(0)
 		a.co.ReadingPane.clear()
@@ -799,6 +800,7 @@ type communicationsReadingPane struct {
 	developerAction     *widget.ToolbarAction
 	copyAction          *widget.ToolbarAction
 	headerWidget        *MailHeaderWidget
+	requestedID         int64 // row ID of the latest notification requested for display
 	subjectLabel        *widget.Label
 	toolbar             *widget.Toolbar
 }
@@ -837,6 +839,7 @@ func (a *communicationsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *communicationsReadingPane) clear() {
 	a.currentNotification = nil
+	a.requestedID = 0
 	a.bodyText.Hide()
 	a.headerWidget.Hide()
 	a.subjectLabel.Hide()
@@ -844,6 +847,7 @@ func (a *communicationsReadingPane) clear() {
 }
 
 func (a *communicationsReadingPane) set(r notificationRow) {
+	a.requestedID = r.id
 	ctx := context.Background()
 	if !r.isRead2 {
 		r.isRead2 = true
@@ -857,6 +861,9 @@ func (a *communicationsReadingPane) loadNotification(ctx context.Context, r noti
 	if err != nil {
 		slog.Error("Failed to load communication", "characterID", r.characterID, "notificationID", r.notificationID, "error", err)
 		fyne.Do(func() {
+			if a.requestedID != r.id {
+				return
+			}
 			a.bodyText.SetWithText("ERROR: Failed to load communication: "+a.co.u.ErrorDisplay(err), widget.RichTextStyle{
 				ColorName: theme.ColorNameError,
 			})
@@ -869,6 +876,9 @@ func (a *communicationsReadingPane) loadNotification(ctx context.Context, r noti
 		return
 	}
 	fyne.Do(func() {
+		if a.requestedID != r.id {
+			return
+		}
 		subject := cn.TitleDisplay()
 		if a.co.u.IsDeveloperMode() {
 			subject += fmt.Sprintf(" (%s)", r.notificationType)
@@ -971,7 +981,7 @@ func (a *communicationsReadingPane) makeMenuItems(cn *app.CharacterNotification)
 			func() {
 				b, err := cn.ToJSON()
 				if err != nil {
-					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
+					slog.Error("Failed to convert notification to JSON", "characterID", cn.CharacterID, "notificationID", cn.NotificationID, "error", err)
 					a.co.u.DisplaySnackbar("ERROR: Failed to convert data: " + err.Error())
 					return
 				}
