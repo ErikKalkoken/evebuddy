@@ -657,8 +657,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 			return
 		}
 		r := a.headers[id]
-		a.ma.ReadingPane.clear() // prevents actions from targeting the previous mail while loading
-		go a.ma.ReadingPane.loadMail(context.Background(), r.MailID)
+		a.ma.ReadingPane.showMail(r.MailID)
 		if a.OnSelected != nil {
 			a.OnSelected()
 			l.UnselectAll()
@@ -748,12 +747,13 @@ func (a *mailsMessagePane) fetchHeaders(ctx context.Context, f *mailFolderNode) 
 type mailsReadingPane struct {
 	widget.BaseWidget
 
-	body    *widget.Label
-	header  *MailHeaderWidget
-	ma      *Mails
-	mail    *app.CharacterMail
-	subject *widget.Label
-	toolbar *widget.Toolbar
+	body      *widget.Label
+	header    *MailHeaderWidget
+	ma        *Mails
+	mail      *app.CharacterMail
+	requested struct{ characterID, mailID int64 } // latest mail requested for display
+	subject   *widget.Label
+	toolbar   *widget.Toolbar
 }
 
 func newMailsReadingPane(ma *Mails) *mailsReadingPane {
@@ -869,8 +869,24 @@ func (a *mailsReadingPane) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
+// showMail displays a mail and discards results from earlier requests.
+func (a *mailsReadingPane) showMail(mailID int64) {
+	a.clear()
+	characterID := a.ma.character.Load().IDOrZero()
+	if characterID == 0 {
+		return
+	}
+	a.requested.characterID, a.requested.mailID = characterID, mailID
+	go a.loadMail(context.Background(), characterID, mailID)
+}
+
+func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
+	return a.requested.characterID == characterID && a.requested.mailID == mailID
+}
+
 func (a *mailsReadingPane) clear() {
 	a.mail = nil
+	a.requested.characterID, a.requested.mailID = 0, 0
 	a.subject.SetText("")
 	a.header.Clear()
 	a.body.SetText("")
@@ -894,20 +910,22 @@ func (a *mailsReadingPane) setBody(s string) {
 	a.body.Refresh()
 }
 
-func (a *mailsReadingPane) loadMail(ctx context.Context, mailID int64) {
-	characterID := a.ma.character.Load().IDOrZero()
-	if characterID == 0 {
-		return
-	}
+func (a *mailsReadingPane) loadMail(ctx context.Context, characterID, mailID int64) {
 	mail, err := a.ma.u.Character().GetMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		fyne.Do(func() {
+			if !a.isRequested(characterID, mailID) {
+				return
+			}
 			a.setBody("ERROR: Failed to load: " + a.ma.u.ErrorDisplay(err))
 		})
 		return
 	}
 	fyne.Do(func() {
+		if !a.isRequested(characterID, mailID) {
+			return
+		}
 		a.mail = mail
 		a.setMail(mail)
 		a.toolbar.Show()
