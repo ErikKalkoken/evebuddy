@@ -316,3 +316,58 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 		assert.Equal(t, bravo.MailID, p.requested.mailID)
 	})
 }
+
+func TestMails_UnreadCount(t *testing.T) {
+	setup := func(t *testing.T) (testutil.Factory, *storage.Storage, *app.Character, *app.CharacterMailLabel) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		custom := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		return factory, st, c, custom
+	}
+	unreadCount := func(t *testing.T, st *storage.Storage, c *app.Character) int64 {
+		a := NewMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		return a.unreadCount.Load()
+	}
+
+	t.Run("counts unread mail with one label once", func(t *testing.T) {
+		factory, st, c, _ := setup(t)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+	t.Run("counts unread mail with two labels once", func(t *testing.T) {
+		factory, st, c, custom := setup(t)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox, custom.LabelID},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+	t.Run("counts unread mailing list mail with label once", func(t *testing.T) {
+		factory, st, c, _ := setup(t)
+		list := factory.CreateCharacterMailList(c.ID)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			IsRead:       optional.New(false),
+			LabelIDs:     []int64{app.MailLabelInbox},
+			RecipientIDs: []int64{list.ID},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+}

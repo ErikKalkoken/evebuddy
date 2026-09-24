@@ -508,16 +508,19 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 	if err != nil {
 		return 0, err
 	}
+	// summing label and list counts would count mails with several labels or lists repeatedly
+	_, totalCount, err := a.ma.u.Character().GetMailCounts(ctx, characterID)
+	if err != nil {
+		return 0, err
+	}
 
-	var totalCount, labelCount, listCount int
+	var labelCount, listCount int
 	for id, c := range labelUnreadCounts {
-		totalCount += c
 		if id > app.MailLabelAlliance {
 			labelCount += c
 		}
 	}
 	for _, c := range listUnreadCounts {
-		totalCount += c
 		listCount += c
 	}
 
