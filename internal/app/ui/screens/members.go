@@ -35,6 +35,7 @@ type Members struct {
 	widget.BaseWidget
 
 	corporation  atomic.Pointer[app.Corporation]
+	filterRun    latestRun
 	footer       *widget.Label
 	list         *widget.List
 	rows         []memberRow
@@ -116,11 +117,12 @@ func (a *Members) makeList() *widget.List {
 }
 
 func (a *Members) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r memberRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -133,13 +135,16 @@ func (a *Members) filterRowsAsync() {
 		footer := fmt.Sprintf("Showing %s / %s members", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Members) update(ctx context.Context) {

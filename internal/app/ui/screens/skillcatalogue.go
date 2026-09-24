@@ -57,6 +57,7 @@ type SkillCatalogue struct {
 
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[skillCatalogueRow]
+	filterRun      latestRun
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
@@ -247,6 +248,7 @@ func (a *SkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 }
 
 func (a *SkillCatalogue) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	total := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
@@ -254,7 +256,7 @@ func (a *SkillCatalogue) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		switch main {
 		case skillCatalogueMySkill:
 			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
@@ -295,12 +297,15 @@ func (a *SkillCatalogue) filterRowsAsync() {
 		footer := fmt.Sprintf("Showing %d / %d skills", len(rows), total)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.SetText(footer)
 			a.selectGroup.SetOptions(groupOptions)
 			a.rowsFiltered = rows
 			a.skills.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *SkillCatalogue) update(ctx context.Context) {

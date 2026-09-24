@@ -189,6 +189,16 @@ func (a *Communications) update(ctx context.Context) {
 	}
 
 	fyne.Do(func() {
+		// keep the filter snapshot, so rows don't vanish from an active Unread/Read filter
+		snapshot := make(map[int64]bool, len(a.rows))
+		for _, r := range a.rows {
+			snapshot[r.id] = r.isRead
+		}
+		for i, r := range rows {
+			if v, ok := snapshot[r.id]; ok {
+				rows[i].isRead = v
+			}
+		}
 		a.rows = rows
 		a.NavigationPane.update()
 	})
@@ -459,9 +469,11 @@ type communicationsMessagePane struct {
 	columnSorter  *xwidget.ColumnSorter[notificationRow]
 	currentFolder app.EveNotificationGroup
 	filterChip    *xwidget.FilterChipCompact
+	filterRun     latestRun
 	footerLabel   *widget.Label
 	messageList   *widget.List
 	moreButton    *kxwidget.IconButton
+	reselecting   bool // suppresses OnSelected while restoring the selection
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
 	sortButton    *kxwidget.SortChip
@@ -559,6 +571,9 @@ func (a *communicationsMessagePane) makeMessageList() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		if a.reselecting {
+			return
+		}
 		if id >= len(a.rowsFiltered) {
 			a.co.ReadingPane.clear()
 			l.UnselectAll()
@@ -605,7 +620,6 @@ func (a *communicationsMessagePane) markCurrentFolderRead() {
 				}
 			}
 			a.co.NavigationPane.update()
-			a.filterRowsAsync()
 		})
 	}()
 }
@@ -624,11 +638,11 @@ func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id 
 			}
 		}
 		a.co.NavigationPane.update()
-		a.filterRowsAsync()
 	})
 }
 
 func (a *communicationsMessagePane) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	var rows []notificationRow
 	if a.currentFolder == app.GroupAll {
 		rows = slices.Clone(a.co.rows)
@@ -641,7 +655,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
-	go func() {
+	runAsync(func() {
 		// filter
 		if x := filter[communicationsFilterStatus]; x != "" {
 			switch x {
@@ -716,6 +730,9 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			ihumanize.Comma(totalRows),
 		)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			options := []xwidget.FilterOption{
 				xwidget.NewFilterOptionMultiChoice(
 					communicationsFilterStatus,
@@ -744,23 +761,33 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			a.filterChip.SetOptions(options...)
 			a.rowsFiltered = rows
 			a.messageList.Refresh()
-			a.messageList.UnselectAll()
-			var notClear bool
-			if cn := a.co.ReadingPane.currentNotification; cn != nil {
-				// try to update selection for current message
-				if idx, ok := id2idx[cn.ID]; ok {
-					a.messageList.Select(idx)
-					a.messageList.ScrollTo(idx)
-					notClear = true
-				} else {
-					a.messageList.ScrollToTop()
-				}
-			}
-			if !notClear {
-				a.co.ReadingPane.clear()
-			}
+			a.syncSelection(id2idx)
 		})
-	}()
+	})
+}
+
+// syncSelection keeps the current notification selected after the rows changed
+// and clears it when it is no longer shown.
+func (a *communicationsMessagePane) syncSelection(id2idx map[int64]int) {
+	a.messageList.UnselectAll()
+	// requestedID instead of currentNotification, so a pending load is not dropped
+	id := a.co.ReadingPane.requestedID
+	if id == 0 {
+		a.co.ReadingPane.clear()
+		return
+	}
+	idx, ok := id2idx[id]
+	if !ok {
+		a.messageList.ScrollToOffset(0)
+		a.co.ReadingPane.clear()
+		return
+	}
+	if a.OnSelected != nil {
+		return // mobile does not keep a selection
+	}
+	a.reselecting = true
+	a.messageList.Select(idx) // also scrolls to the row
+	a.reselecting = false
 }
 
 func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
@@ -785,6 +812,7 @@ type communicationsReadingPane struct {
 	developerAction     *widget.ToolbarAction
 	copyAction          *widget.ToolbarAction
 	headerWidget        *MailHeaderWidget
+	requestedID         int64 // row ID of the latest notification requested for display
 	subjectLabel        *widget.Label
 	toolbar             *widget.Toolbar
 }
@@ -823,6 +851,7 @@ func (a *communicationsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *communicationsReadingPane) clear() {
 	a.currentNotification = nil
+	a.requestedID = 0
 	a.bodyText.Hide()
 	a.headerWidget.Hide()
 	a.subjectLabel.Hide()
@@ -830,80 +859,91 @@ func (a *communicationsReadingPane) clear() {
 }
 
 func (a *communicationsReadingPane) set(r notificationRow) {
+	a.clear() // prevents actions from targeting the previous notification while loading
+	a.requestedID = r.id
 	ctx := context.Background()
 	if !r.isRead2 {
 		r.isRead2 = true
-		go a.co.MessagePane.setNotificationRead(ctx, r.id)
+		runAsync(func() {
+			a.co.MessagePane.setNotificationRead(ctx, r.id)
+		})
 	}
-	go func() {
-		cn, err := a.co.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
-		if err != nil {
-			fyne.Do(func() {
-				slog.Error("Failed to load communication", "notificationID", cn.ID, "error", err)
-				a.bodyText.SetWithText("ERROR: Failed to load communication: "+a.co.u.ErrorDisplay(err), widget.RichTextStyle{
-					ColorName: theme.ColorNameError,
-				})
+	runAsync(func() {
+		a.loadNotification(ctx, r)
+	})
+}
 
+func (a *communicationsReadingPane) loadNotification(ctx context.Context, r notificationRow) {
+	cn, err := a.co.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
+	if err != nil {
+		slog.Error("Failed to load communication", "characterID", r.characterID, "notificationID", r.notificationID, "error", err)
+		fyne.Do(func() {
+			if a.requestedID != r.id {
+				return
+			}
+			a.bodyText.SetWithText("ERROR: Failed to load communication: "+a.co.u.ErrorDisplay(err), widget.RichTextStyle{
+				ColorName: theme.ColorNameError,
 			})
-			fyne.Do(func() {
-				a.currentNotification = cn
-				a.bodyText.Show()
-				a.headerWidget.Hide()
-				a.subjectLabel.Hide()
-				a.toolbar.Hide()
-			})
+			a.currentNotification = nil
+			a.bodyText.Show()
+			a.headerWidget.Hide()
+			a.subjectLabel.Hide()
+			a.toolbar.Hide()
+		})
+		return
+	}
+	fyne.Do(func() {
+		if a.requestedID != r.id {
 			return
 		}
-		fyne.Do(func() {
-			subject := cn.TitleDisplay()
-			if a.co.u.IsDeveloperMode() {
-				subject += fmt.Sprintf(" (%s)", r.notificationType)
-			}
-			a.subjectLabel.SetText(subject)
-			a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
-			if v, ok := cn.Body.Value(); !ok {
-				a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
-					ColorName: theme.ColorNameDisabled,
-				})
-			} else {
-				a.bodyText.ParseMarkdown(v)
-				for _, s := range a.bodyText.Segments {
-					s2, ok := s.(*widget.HyperlinkSegment)
-					if !ok {
-						continue
-					}
-					if s2.URL.Scheme != "showinfo" {
-						continue
-					}
-					typeID, itemID, err := parseIDs(s2.URL.Opaque)
-					if err != nil {
-						slog.Warn("Failed to parse showinfo link in communication", "error", err)
-						s2.OnTapped = nil
-						continue
-					}
-					s2.OnTapped = func() {
-						a.co.u.InfoViewer().Show2(typeID, itemID, cn.CharacterID)
-					}
+		subject := cn.TitleDisplay()
+		if a.co.u.IsDeveloperMode() {
+			subject += fmt.Sprintf(" (%s)", r.notificationType)
+		}
+		a.subjectLabel.SetText(subject)
+		a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
+		if v, ok := cn.Body.Value(); !ok {
+			a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
+				ColorName: theme.ColorNameDisabled,
+			})
+		} else {
+			a.bodyText.ParseMarkdown(v)
+			for _, s := range a.bodyText.Segments {
+				s2, ok := s.(*widget.HyperlinkSegment)
+				if !ok {
+					continue
 				}
-				a.bodyText.Refresh()
+				if s2.URL.Scheme != "showinfo" {
+					continue
+				}
+				typeID, itemID, err := parseIDs(s2.URL.Opaque)
+				if err != nil {
+					slog.Warn("Failed to parse showinfo link in communication", "error", err)
+					s2.OnTapped = nil
+					continue
+				}
+				s2.OnTapped = func() {
+					a.co.u.InfoViewer().Show2(typeID, itemID, cn.CharacterID)
+				}
 			}
-			if a.co.u.IsDeveloperMode() {
-				items := a.makeMenuItems(cn)
-				xwidget.SetToolbarActionMenu(a.developerAction, fyne.NewMenu("", items...))
-				a.developerAction.ToolbarObject().Show()
-			} else {
-				a.developerAction.ToolbarObject().Hide()
-			}
+			a.bodyText.Refresh()
+		}
+		if a.co.u.IsDeveloperMode() {
+			items := a.makeMenuItems(cn)
+			xwidget.SetToolbarActionMenu(a.developerAction, fyne.NewMenu("", items...))
+			a.developerAction.ToolbarObject().Show()
+		} else {
+			a.developerAction.ToolbarObject().Hide()
+		}
 
-			a.copyAction.OnActivated = a.makeCopyAction(cn, r.recipient.NameOrZero())
+		a.copyAction.OnActivated = a.makeCopyAction(cn, r.recipient.NameOrZero())
 
-			a.currentNotification = cn
-			a.bodyText.Show()
-			a.headerWidget.Show()
-			a.subjectLabel.Show()
-			a.toolbar.Show()
-		})
-	}()
+		a.currentNotification = cn
+		a.bodyText.Show()
+		a.headerWidget.Show()
+		a.subjectLabel.Show()
+		a.toolbar.Show()
+	})
 }
 
 func (a *communicationsReadingPane) makeCopyAction(cn *app.CharacterNotification, recipientName string) func() {
@@ -958,7 +998,7 @@ func (a *communicationsReadingPane) makeMenuItems(cn *app.CharacterNotification)
 			func() {
 				b, err := cn.ToJSON()
 				if err != nil {
-					slog.Error("Failed to convert notification to JSON", "characterID", a.currentNotification.CharacterID, "notificationID", a.currentNotification.NotificationID, "error", err)
+					slog.Error("Failed to convert notification to JSON", "characterID", cn.CharacterID, "notificationID", cn.NotificationID, "error", err)
 					a.co.u.DisplaySnackbar("ERROR: Failed to convert data: " + err.Error())
 					return
 				}

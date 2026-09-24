@@ -240,6 +240,7 @@ type browserNavigation struct {
 	b              *AssetBrowser
 	collapseAll    *ttwidget.Button
 	filteredTrees  map[assetFilter]filteredTree
+	filterRun      latestRun
 	filters        []assetFilter
 	locations      *xwidget.Tree[containerNode]
 	searchEntry    *xwidget.SearchEntry
@@ -543,12 +544,13 @@ var assetFilterLookup = map[string]assetFilter{
 }
 
 func (a *browserNavigation) filterLocationsAsync() {
+	isLatest := a.filterRun.start()
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft := a.filteredTrees[filter]
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
@@ -559,13 +561,16 @@ func (a *browserNavigation) filterLocationsAsync() {
 			td = ft.td
 		}
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			footer := fmt.Sprintf("%s / %s locations", ihumanize.Comma(td.ChildrenCount(nil)), totalItems)
 			a.setFooter(footer, widget.MediumImportance)
 			a.locations.UnselectAll()
 			a.locations.Set(td)
 			a.b.Selected.clear()
 		})
-	}()
+	})
 }
 
 func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
@@ -607,12 +612,14 @@ type browserContainer struct {
 	widget.BaseWidget
 
 	ab            *AssetBrowser
+	filterRun     latestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
 	location      *browserLocation
 	searchEntry   *xwidget.SearchEntry
+	setRun        latestRun
 }
 
 func newBrowserContainer(ab *AssetBrowser) *browserContainer {
@@ -688,6 +695,7 @@ func (a *browserContainer) makeAssetGrid() *widget.GridWrap {
 }
 
 func (a *browserContainer) set(cn *containerNode) {
+	isLatest := a.setRun.start()
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
@@ -698,7 +706,7 @@ func (a *browserContainer) set(cn *containerNode) {
 	} else {
 		nodes = cn.node.Children()
 	}
-	go func() {
+	runAsync(func() {
 		var items []containerItem
 		for _, n := range nodes {
 			var s string
@@ -715,6 +723,9 @@ func (a *browserContainer) set(cn *containerNode) {
 			})
 		}
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.items = items
 			a.location.set(cn)
 			a.searchEntry.Show()
@@ -722,7 +733,7 @@ func (a *browserContainer) set(cn *containerNode) {
 			a.Refresh()
 			a.filterItemsAsync()
 		})
-	}()
+	})
 }
 
 func (a *browserContainer) clear() {
@@ -735,11 +746,12 @@ func (a *browserContainer) clear() {
 }
 
 func (a *browserContainer) filterItemsAsync() {
+	isLatest := a.filterRun.start()
 	totalItems := len(a.items)
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		if len(search) > 1 {
 			items = slices.DeleteFunc(items, func(ci containerItem) bool {
 				return !strings.Contains(ci.searchText, search)
@@ -781,13 +793,16 @@ func (a *browserContainer) filterItemsAsync() {
 		}
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.itemsFiltered = items
 			a.grid.Refresh()
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *browserContainer) showNodeInfo(n *asset.Node) {

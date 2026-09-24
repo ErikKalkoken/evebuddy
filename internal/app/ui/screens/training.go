@@ -119,6 +119,7 @@ type Training struct {
 	OnUpdate func(expired int)
 
 	exportButton *xwidget.ContextMenuButton
+	filterRun    latestRun
 	footer       *widget.Label
 	columnSorter *xwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
@@ -472,6 +473,7 @@ func writeTrainingRowsToCSV(w io.Writer, rows []trainingRow) error {
 }
 
 func (a *Training) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	selectStatus := a.selectStatus.Selected
@@ -479,7 +481,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		if selectStatus != "" {
 			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
@@ -512,6 +514,9 @@ func (a *Training) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -519,7 +524,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Training) update(ctx context.Context) {

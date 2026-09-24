@@ -63,6 +63,7 @@ type WalletJournal struct {
 	columnSorter *xwidget.ColumnSorter[walletJournalRow]
 	corporation  atomic.Pointer[app.Corporation]
 	division     app.Division
+	filterRun    latestRun
 	footer       *widget.Label
 	rows         []walletJournalRow
 	rowsFiltered []walletJournalRow
@@ -273,12 +274,13 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 }
 
 func (a *WalletJournal) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	et := a.selectType.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		if et != "" {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
 				return r.refTypeDisplay != et
@@ -291,6 +293,9 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s entries", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -298,7 +303,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *WalletJournal) Update(ctx context.Context) {

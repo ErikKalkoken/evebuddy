@@ -195,6 +195,7 @@ type Contracts struct {
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
+	filterRun      latestRun
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
@@ -485,6 +486,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 }
 
 func (a *Contracts) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	issuer := a.selectIssuer.Selected
@@ -494,7 +496,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows = slices.DeleteFunc(rows, func(r contractRow) bool {
 			switch a.selectStatus.Selected {
@@ -554,6 +556,9 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %d / %d contracts", len(rows), totalRows)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -564,7 +569,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *Contracts) update(ctx context.Context) {

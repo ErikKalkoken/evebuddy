@@ -35,6 +35,7 @@ type characterLoyaltyPointsRow struct {
 type CharacterLoyaltyPoints struct {
 	widget.BaseWidget
 
+	filterRun     latestRun
 	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[characterLoyaltyPointsRow]
@@ -166,13 +167,14 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 }
 
 func (a *CharacterLoyaltyPoints) filterRowsAsync() {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 	faction := a.selectFaction.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		if faction != "" {
 			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 				return r.factionName != faction
@@ -191,6 +193,9 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 		footer := fmt.Sprintf("Showing %d / %d corporations", len(rows), totalRows)
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -198,7 +203,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {

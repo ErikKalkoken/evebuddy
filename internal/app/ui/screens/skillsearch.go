@@ -64,6 +64,7 @@ type SkillSearch struct {
 
 	body            fyne.CanvasObject
 	columnSorter    *xwidget.ColumnSorter[skillSearchRow]
+	filterRun       latestRun
 	footer          *widget.Label
 	rows            []skillSearchRow
 	rowsFiltered    []skillSearchRow
@@ -270,6 +271,7 @@ func (a *SkillSearch) Focus() {
 }
 
 func (a *SkillSearch) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	group := a.selectGroup.Selected
@@ -278,7 +280,7 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows := slices.DeleteFunc(rows, func(r skillSearchRow) bool {
 			switch a.selectSkill.Selected {
@@ -329,6 +331,9 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -342,7 +347,7 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 				x.ScrollToTop()
 			}
 		})
-	}()
+	})
 }
 
 func (a *SkillSearch) update(ctx context.Context) {

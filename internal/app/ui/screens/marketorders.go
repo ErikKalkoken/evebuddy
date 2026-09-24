@@ -123,6 +123,7 @@ type MarketOrders struct {
 	widget.BaseWidget
 
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
+	filterRun    latestRun
 	footer       *widget.Label
 	isBuyOrders  bool
 	main         fyne.CanvasObject
@@ -133,7 +134,7 @@ type MarketOrders struct {
 	selectState  *kxwidget.FilterChipSelect
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
-	sortChip *kxwidget.SortChip
+	sortChip     *kxwidget.SortChip
 	u            baseUI
 }
 
@@ -365,6 +366,7 @@ func (a *MarketOrders) makeDataList() *xwidget.StripedList {
 }
 
 func (a *MarketOrders) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	region := a.selectRegion.Selected
@@ -373,7 +375,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		// filter
 		rows := slices.DeleteFunc(rows, func(r marketOrderRow) bool {
 			s := r.stateCorrected()
@@ -430,6 +432,9 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 		}
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -440,7 +445,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *MarketOrders) update(ctx context.Context) {

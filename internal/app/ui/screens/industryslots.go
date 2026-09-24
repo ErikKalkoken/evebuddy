@@ -88,6 +88,7 @@ type IndustrySlots struct {
 	widget.BaseWidget
 
 	body            fyne.CanvasObject
+	filterRun       latestRun
 	footer          *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industrySlotRow]
 	rows            []industrySlotRow
@@ -316,13 +317,14 @@ func (a *IndustrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRo
 }
 
 func (a *IndustrySlots) filterRowsAsync(sortCol string) {
+	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	freeSlots := a.selectFreeSlots.Selected
 	tag := a.selectTag.Selected
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	go func() {
+	runAsync(func() {
 		rows := slices.Clone(rows)
 		// filter
 		if freeSlots != "" {
@@ -366,6 +368,9 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 		})...).All())
 
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -373,7 +378,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *IndustrySlots) update(ctx context.Context) {

@@ -44,6 +44,7 @@ func (n loyaltyPointsNode) UID() widget.TreeNodeID {
 type LoyaltyPoints struct {
 	widget.BaseWidget
 
+	filterRun        latestRun
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
@@ -184,6 +185,7 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 }
 
 func (a *LoyaltyPoints) filterTreeAsync() {
+	isLatest := a.filterRun.start()
 	data := maps.Clone(a.data)
 	character := a.selectCharacter.Selected
 	faction := a.selectFaction.Selected
@@ -191,7 +193,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	go func() {
+	runAsync(func() {
 		// filter data
 		data2 := make(map[*loyaltyPointsNode][]*loyaltyPointsNode)
 		for c := range data {
@@ -259,6 +261,9 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 
 		bottom := fmt.Sprintf("Showing %d / %d corporations", len(corporations), len(data))
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = bottom
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
@@ -267,7 +272,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 			a.selectTag.SetOptions(tagOptions)
 			a.tree.Set(td)
 		})
-	}()
+	})
 }
 
 func (a *LoyaltyPoints) update(ctx context.Context) {

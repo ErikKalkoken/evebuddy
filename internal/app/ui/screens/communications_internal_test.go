@@ -3,8 +3,16 @@ package screens
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 )
 
 func TestParseIDs(t *testing.T) {
@@ -80,4 +88,224 @@ func TestParseIDs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommunicationsMessagePane_SyncSelection(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	setup := func(t *testing.T) *Communications {
+		a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.MessagePane.rowsFiltered = []notificationRow{{id: 1}, {id: 2}, {id: 3}}
+		a.MessagePane.messageList.Refresh()
+		return a
+	}
+	id2idx := map[int64]int{1: 0, 2: 1, 3: 2}
+
+	t.Run("mobile keeps current notification without selecting it again", func(t *testing.T) {
+		a := setup(t)
+		var selectedCount int
+		a.MessagePane.OnSelected = func() {
+			selectedCount++
+		}
+		a.ReadingPane.requestedID = 2
+		a.MessagePane.syncSelection(id2idx)
+		assert.Equal(t, 0, selectedCount)
+		assert.EqualValues(t, 2, a.ReadingPane.requestedID)
+	})
+	t.Run("mobile does not scroll to current notification", func(t *testing.T) {
+		a := setup(t)
+		a.MessagePane.OnSelected = func() {}
+		sender := &app.EveEntity{ID: 1, Name: "Sender", Category: app.EveEntityCorporation}
+		var rows []notificationRow
+		id2idx := make(map[int64]int)
+		for i := range 50 {
+			id := int64(i + 1)
+			rows = append(rows, notificationRow{id: id, sender: sender, subject: "Subject"})
+			id2idx[id] = i
+		}
+		a.MessagePane.rowsFiltered = rows
+		test.WidgetRenderer(a.MessagePane.messageList)
+		a.MessagePane.messageList.Resize(fyne.NewSize(300, 200))
+		a.ReadingPane.requestedID = 40 // off-screen
+		a.MessagePane.syncSelection(id2idx)
+		assert.Zero(t, a.MessagePane.messageList.GetScrollOffset())
+	})
+	t.Run("clears reading pane when current notification is gone", func(t *testing.T) {
+		a := setup(t)
+		a.ReadingPane.requestedID = 99
+		a.MessagePane.syncSelection(id2idx)
+		assert.Zero(t, a.ReadingPane.requestedID)
+	})
+}
+
+func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	n1 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	n2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	p := a.ReadingPane
+	makeRow := func(n *app.CharacterNotification) notificationRow {
+		return notificationRow{
+			characterID:    n.CharacterID,
+			id:             n.ID,
+			notificationID: n.NotificationID,
+			recipient:      n.Sender,
+		}
+	}
+	r1, r2 := makeRow(n1), makeRow(n2)
+	// request mimics set without starting the async load,
+	// so tests can control the order in which loads complete.
+	request := func(r notificationRow) {
+		p.requestedID = r.id
+	}
+
+	t.Run("shows requested notification", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n1.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores earlier request completing after later one", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		request(r2)
+		p.loadNotification(t.Context(), r2)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores earlier request completing before later one", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		request(r2)
+		p.loadNotification(t.Context(), r1)
+		assert.Nil(t, p.currentNotification)
+		p.loadNotification(t.Context(), r2)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+	})
+	t.Run("ignores result after pane was cleared", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.clear()
+		p.loadNotification(t.Context(), r1)
+		assert.Nil(t, p.currentNotification)
+	})
+	t.Run("keeps pending request when rows refresh before load completes", func(t *testing.T) {
+		p.clear()
+		a.MessagePane.rowsFiltered = []notificationRow{r1, r2}
+		request(r1)
+		a.MessagePane.syncSelection(map[int64]int{r1.id: 0, r2.id: 1})
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n1.ID, p.currentNotification.ID)
+	})
+	t.Run("shows error when notification can not be loaded", func(t *testing.T) {
+		p.clear()
+		r := notificationRow{
+			characterID:    character.ID,
+			id:             999_999_999,
+			notificationID: 999_999_999, // does not exist
+		}
+		request(r)
+		p.loadNotification(t.Context(), r)
+		assert.Nil(t, p.currentNotification)
+		assert.Contains(t, p.bodyText.String(), "ERROR")
+	})
+	t.Run("hides previous notification while loading the next", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		require.True(t, p.toolbar.Visible())
+
+		// queue async work, so the state while loading can be checked
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+
+		r := r2
+		r.isRead2 = true // skip marking as read
+		p.set(r)
+		assert.Nil(t, p.currentNotification)
+		assert.False(t, p.toolbar.Visible())
+
+		require.Len(t, pending, 1)
+		pending[0]()
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+		assert.True(t, p.toolbar.Visible())
+	})
+}
+
+func TestCommunications_UnreadFilterKeepsOpenedNotification(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	for range 2 {
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	}
+	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+	a := NewUnifiedCommunications(u)
+	u.Signals().AppInit.Emit(t.Context(), struct{}{})
+	mp := a.MessagePane
+	mp.filterChip.SetSelected(map[string]string{communicationsFilterStatus: communicationsFilterStatusUnread})
+	a.updateIsRead(mp.currentFolder)
+	mp.filterRowsAsync()
+	require.Len(t, mp.rowsFiltered, 2)
+
+	// open a notification and mark it as read, as the reading pane does
+	r := mp.rowsFiltered[0]
+	r.isRead2 = true // skip async mark as read
+	a.ReadingPane.set(r)
+	require.NotNil(t, a.ReadingPane.currentNotification)
+	err := u.Character().SetNotificationsAsRead(t.Context(), set.Of(r.id))
+	require.NoError(t, err)
+
+	a.update(t.Context()) // reload triggered by DataUpdated in the unified view
+
+	assert.Len(t, mp.rowsFiltered, 2)
+	require.NotNil(t, a.ReadingPane.currentNotification)
+	assert.Equal(t, r.id, a.ReadingPane.currentNotification.ID)
+}
+
+func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	e := &app.EveEntity{ID: 1, Name: "Alpha", Category: app.EveEntityCorporation}
+	for i := range 3 {
+		a.rows = append(a.rows, notificationRow{id: int64(i + 1), sender: e, recipient: e, searchTarget: "alpha"})
+	}
+	mp := a.MessagePane
+	mp.currentFolder = app.GroupAll
+
+	// queue async work, so runs can complete out of order
+	var pending []func()
+	orig := runAsync
+	runAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { runAsync = orig })
+
+	mp.searchEntry.Text = "no match"
+	mp.filterRowsAsync()
+	mp.searchEntry.Text = ""
+	mp.filterRowsAsync()
+	require.Len(t, pending, 2)
+	pending[1]() // newest run completes first
+	pending[0]()
+
+	assert.Len(t, mp.rowsFiltered, 3)
 }
