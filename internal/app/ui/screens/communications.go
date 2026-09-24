@@ -462,6 +462,7 @@ type communicationsMessagePane struct {
 	footerLabel   *widget.Label
 	messageList   *widget.List
 	moreButton    *kxwidget.IconButton
+	reselecting   bool // suppresses OnSelected while restoring the selection
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
 	sortButton    *kxwidget.SortChip
@@ -559,6 +560,9 @@ func (a *communicationsMessagePane) makeMessageList() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		if a.reselecting {
+			return
+		}
 		if id >= len(a.rowsFiltered) {
 			a.co.ReadingPane.clear()
 			l.UnselectAll()
@@ -744,23 +748,33 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			a.filterChip.SetOptions(options...)
 			a.rowsFiltered = rows
 			a.messageList.Refresh()
-			a.messageList.UnselectAll()
-			var notClear bool
-			if cn := a.co.ReadingPane.currentNotification; cn != nil {
-				// try to update selection for current message
-				if idx, ok := id2idx[cn.ID]; ok {
-					a.messageList.Select(idx)
-					a.messageList.ScrollTo(idx)
-					notClear = true
-				} else {
-					a.messageList.ScrollToTop()
-				}
-			}
-			if !notClear {
-				a.co.ReadingPane.clear()
-			}
+			a.syncSelection(id2idx)
 		})
 	}()
+}
+
+// syncSelection keeps the current notification selected after the rows changed
+// and clears it when it is no longer shown.
+func (a *communicationsMessagePane) syncSelection(id2idx map[int64]int) {
+	a.messageList.UnselectAll()
+	cn := a.co.ReadingPane.currentNotification
+	if cn == nil {
+		a.co.ReadingPane.clear()
+		return
+	}
+	idx, ok := id2idx[cn.ID]
+	if !ok {
+		a.messageList.ScrollToOffset(0)
+		a.co.ReadingPane.clear()
+		return
+	}
+	a.messageList.ScrollTo(idx)
+	if a.OnSelected != nil {
+		return // mobile does not keep a selection
+	}
+	a.reselecting = true
+	a.messageList.Select(idx)
+	a.reselecting = false
 }
 
 func (a *communicationsMessagePane) set(ng app.EveNotificationGroup) {
