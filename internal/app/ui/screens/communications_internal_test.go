@@ -120,3 +120,23 @@ func TestCommunicationsMessagePane_SyncSelection(t *testing.T) {
 		assert.Nil(t, a.ReadingPane.currentNotification)
 	})
 }
+
+func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+
+	t.Run("shows error when notification can not be loaded", func(t *testing.T) {
+		a.ReadingPane.currentNotification = &app.CharacterNotification{ID: 1}
+		a.ReadingPane.loadNotification(t.Context(), notificationRow{
+			characterID:    character.ID,
+			notificationID: 999_999_999, // does not exist
+		})
+		assert.Nil(t, a.ReadingPane.currentNotification)
+		assert.Contains(t, a.ReadingPane.bodyText.String(), "ERROR")
+	})
+}

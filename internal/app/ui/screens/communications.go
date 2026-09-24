@@ -849,75 +849,74 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 		r.isRead2 = true
 		go a.co.MessagePane.setNotificationRead(ctx, r.id)
 	}
-	go func() {
-		cn, err := a.co.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
-		if err != nil {
-			fyne.Do(func() {
-				slog.Error("Failed to load communication", "notificationID", cn.ID, "error", err)
-				a.bodyText.SetWithText("ERROR: Failed to load communication: "+a.co.u.ErrorDisplay(err), widget.RichTextStyle{
-					ColorName: theme.ColorNameError,
-				})
+	go a.loadNotification(ctx, r)
+}
 
-			})
-			fyne.Do(func() {
-				a.currentNotification = cn
-				a.bodyText.Show()
-				a.headerWidget.Hide()
-				a.subjectLabel.Hide()
-				a.toolbar.Hide()
-			})
-			return
-		}
+func (a *communicationsReadingPane) loadNotification(ctx context.Context, r notificationRow) {
+	cn, err := a.co.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
+	if err != nil {
+		slog.Error("Failed to load communication", "characterID", r.characterID, "notificationID", r.notificationID, "error", err)
 		fyne.Do(func() {
-			subject := cn.TitleDisplay()
-			if a.co.u.IsDeveloperMode() {
-				subject += fmt.Sprintf(" (%s)", r.notificationType)
-			}
-			a.subjectLabel.SetText(subject)
-			a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
-			if v, ok := cn.Body.Value(); !ok {
-				a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
-					ColorName: theme.ColorNameDisabled,
-				})
-			} else {
-				a.bodyText.ParseMarkdown(v)
-				for _, s := range a.bodyText.Segments {
-					s2, ok := s.(*widget.HyperlinkSegment)
-					if !ok {
-						continue
-					}
-					if s2.URL.Scheme != "showinfo" {
-						continue
-					}
-					typeID, itemID, err := parseIDs(s2.URL.Opaque)
-					if err != nil {
-						slog.Warn("Failed to parse showinfo link in communication", "error", err)
-						s2.OnTapped = nil
-						continue
-					}
-					s2.OnTapped = func() {
-						a.co.u.InfoViewer().Show2(typeID, itemID, cn.CharacterID)
-					}
-				}
-				a.bodyText.Refresh()
-			}
-			if a.co.u.IsDeveloperMode() {
-				items := a.makeMenuItems(cn)
-				xwidget.SetToolbarActionMenu(a.developerAction, fyne.NewMenu("", items...))
-				a.developerAction.ToolbarObject().Show()
-			} else {
-				a.developerAction.ToolbarObject().Hide()
-			}
-
-			a.copyAction.OnActivated = a.makeCopyAction(cn, r.recipient.NameOrZero())
-
-			a.currentNotification = cn
+			a.bodyText.SetWithText("ERROR: Failed to load communication: "+a.co.u.ErrorDisplay(err), widget.RichTextStyle{
+				ColorName: theme.ColorNameError,
+			})
+			a.currentNotification = nil
 			a.bodyText.Show()
-			a.headerWidget.Show()
-			a.subjectLabel.Show()
-			a.toolbar.Show()
+			a.headerWidget.Hide()
+			a.subjectLabel.Hide()
+			a.toolbar.Hide()
 		})
-	}()
+		return
+	}
+	fyne.Do(func() {
+		subject := cn.TitleDisplay()
+		if a.co.u.IsDeveloperMode() {
+			subject += fmt.Sprintf(" (%s)", r.notificationType)
+		}
+		a.subjectLabel.SetText(subject)
+		a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
+		if v, ok := cn.Body.Value(); !ok {
+			a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
+				ColorName: theme.ColorNameDisabled,
+			})
+		} else {
+			a.bodyText.ParseMarkdown(v)
+			for _, s := range a.bodyText.Segments {
+				s2, ok := s.(*widget.HyperlinkSegment)
+				if !ok {
+					continue
+				}
+				if s2.URL.Scheme != "showinfo" {
+					continue
+				}
+				typeID, itemID, err := parseIDs(s2.URL.Opaque)
+				if err != nil {
+					slog.Warn("Failed to parse showinfo link in communication", "error", err)
+					s2.OnTapped = nil
+					continue
+				}
+				s2.OnTapped = func() {
+					a.co.u.InfoViewer().Show2(typeID, itemID, cn.CharacterID)
+				}
+			}
+			a.bodyText.Refresh()
+		}
+		if a.co.u.IsDeveloperMode() {
+			items := a.makeMenuItems(cn)
+			xwidget.SetToolbarActionMenu(a.developerAction, fyne.NewMenu("", items...))
+			a.developerAction.ToolbarObject().Show()
+		} else {
+			a.developerAction.ToolbarObject().Hide()
+		}
+
+		a.copyAction.OnActivated = a.makeCopyAction(cn, r.recipient.NameOrZero())
+
+		a.currentNotification = cn
+		a.bodyText.Show()
+		a.headerWidget.Show()
+		a.subjectLabel.Show()
+		a.toolbar.Show()
+	})
 }
 
 func (a *communicationsReadingPane) makeCopyAction(cn *app.CharacterNotification, recipientName string) func() {
