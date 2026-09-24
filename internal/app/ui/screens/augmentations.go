@@ -148,7 +148,7 @@ func (a *Augmentations) filterTreeAsync() {
 	implants := a.selectImplants.Selected
 	td := a.treeData.Clone()
 
-	go func() {
+	runAsync(func() {
 		var del []func(c *augmentationNode) bool // f returns true when c is to be deleted
 		if tag != "" {
 			del = append(del, func(c *augmentationNode) bool {
@@ -197,7 +197,7 @@ func (a *Augmentations) filterTreeAsync() {
 			a.selectTag.SetOptions(tagOptions)
 			a.tree.Set(td)
 		})
-	}()
+	})
 }
 
 func (a *Augmentations) update(ctx context.Context) {

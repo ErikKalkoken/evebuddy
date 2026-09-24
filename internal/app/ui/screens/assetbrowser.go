@@ -548,7 +548,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
 		if len(search) > 1 {
 			td = ft.td.Clone()
@@ -565,7 +565,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 			a.locations.Set(td)
 			a.b.Selected.clear()
 		})
-	}()
+	})
 }
 
 func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
@@ -698,7 +698,7 @@ func (a *browserContainer) set(cn *containerNode) {
 	} else {
 		nodes = cn.node.Children()
 	}
-	go func() {
+	runAsync(func() {
 		var items []containerItem
 		for _, n := range nodes {
 			var s string
@@ -722,7 +722,7 @@ func (a *browserContainer) set(cn *containerNode) {
 			a.Refresh()
 			a.filterItemsAsync()
 		})
-	}()
+	})
 }
 
 func (a *browserContainer) clear() {
@@ -739,7 +739,7 @@ func (a *browserContainer) filterItemsAsync() {
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	go func() {
+	runAsync(func() {
 		if len(search) > 1 {
 			items = slices.DeleteFunc(items, func(ci containerItem) bool {
 				return !strings.Contains(ci.searchText, search)
@@ -787,7 +787,7 @@ func (a *browserContainer) filterItemsAsync() {
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
 		})
-	}()
+	})
 }
 
 func (a *browserContainer) showNodeInfo(n *asset.Node) {
