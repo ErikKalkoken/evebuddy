@@ -88,6 +88,8 @@ func (n mailFolderNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.Type, n.ObjID)
 }
 
+const mailsUpdated = "mailsUpdated"
+
 type Mails struct {
 	widget.BaseWidget
 
@@ -97,39 +99,76 @@ type Mails struct {
 	ReadingPane    *mailsReadingPane
 
 	character      atomic.Pointer[app.Character]
+	forCharacter   bool
 	missingPercent atomic.Int64
 	sig            *singleinstance.Group
 	u              baseUI
 	unreadCount    atomic.Int64
 }
 
-func NewMails(u baseUI) *Mails {
+func NewMailsForCharacter(u baseUI) *Mails {
+	return newMails(u, true)
+}
+
+// NewUnifiedMails returns a mail screen showing the mails of all characters.
+func NewUnifiedMails(u baseUI) *Mails {
+	return newMails(u, false)
+}
+
+func newMails(u baseUI, forCharacter bool) *Mails {
 	a := &Mails{
-		u:   u,
-		sig: singleinstance.NewGroup(),
+		forCharacter: forCharacter,
+		u:            u,
+		sig:          singleinstance.NewGroup(),
 	}
 	a.ExtendBaseWidget(a)
 	a.MessagePane = newMailsMessagePane(a)
 	a.NavigationPane = newMailsNavigationPane(a)
 	a.ReadingPane = newMailsReadingPane(a)
 
-	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		a.character.Store(c)
-		fyne.Do(func() {
-			a.ReadingPane.clear()
-		})
-		a.update(ctx)
-	})
-	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDOrZero() != arg.CharacterID {
-			return
-		}
-		switch arg.Section {
+	isMailSection := func(s app.CharacterSection) bool {
+		switch s {
 		case
 			app.SectionCharacterMailLabels,
 			app.SectionCharacterMailLists,
 			app.SectionCharacterMailHeaders:
+			return true
+		}
+		return false
+	}
+	if forCharacter {
+		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+			a.character.Store(c)
+			fyne.Do(func() {
+				a.ReadingPane.clear()
+			})
 			a.update(ctx)
+		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if a.character.Load().IDOrZero() == arg.CharacterID && isMailSection(arg.Section) {
+				a.update(ctx)
+			}
+		})
+	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if isMailSection(arg.Section) {
+				a.update(ctx)
+			}
+		})
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
+	}
+	a.u.Signals().DataUpdated.AddListener(func(ctx context.Context, s string) {
+		if s == mailsUpdated {
+			a.NavigationPane.updateUnreadCounts(ctx)
+			a.MessagePane.update(ctx)
 		}
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
@@ -172,22 +211,37 @@ func (a *Mails) update(ctx context.Context) {
 			a.NavigationPane.setStatus(s, i)
 		})
 	}
-	characterID := a.character.Load().IDOrZero()
-	if characterID == 0 {
-		clearAll()
-		setStatus("No character", widget.LowImportance)
-		return
-	}
-	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterMailHeaders)
-	if err != nil {
-		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
-		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		return
-	}
-	if !hasData {
-		clearAll()
-		setStatus("Data not fully loaded yet", widget.WarningImportance)
-		return
+	var characterID int64
+	if a.forCharacter {
+		characterID = a.character.Load().IDOrZero()
+		if characterID == 0 {
+			clearAll()
+			setStatus("No character", widget.LowImportance)
+			return
+		}
+		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterMailHeaders)
+		if err != nil {
+			slog.Error("Failed to build mail tree", "character", characterID, "error", err)
+			setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			return
+		}
+		if !hasData {
+			clearAll()
+			setStatus("Data not fully loaded yet", widget.WarningImportance)
+			return
+		}
+	} else {
+		ids, err := a.u.Character().ListCharacterIDs(ctx)
+		if err != nil {
+			slog.Error("Failed to build mail tree", "error", err)
+			setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			return
+		}
+		if ids.Size() == 0 {
+			clearAll()
+			setStatus("No characters", widget.LowImportance)
+			return
+		}
 	}
 	td, inbox, err := a.NavigationPane.fetchFolders(ctx, characterID)
 	if err != nil {
@@ -224,10 +278,9 @@ func (a *Mails) update(ctx context.Context) {
 	})
 }
 
-// readStateChanged refreshes everything that shows the read state of mails.
-func (a *Mails) readStateChanged(ctx context.Context, characterID int64) {
-	a.NavigationPane.updateUnreadCounts(ctx)
-	a.MessagePane.update(ctx)
+// mailsChanged refreshes everything that shows mails, including the other mail screens.
+func (a *Mails) mailsChanged(ctx context.Context, characterID int64) {
+	a.u.Signals().DataUpdated.Emit(ctx, mailsUpdated)        // returns after all mail screens are refreshed
 	go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
 	a.u.UpdateMailIndicator(ctx)
 }
@@ -240,10 +293,30 @@ func (a *Mails) callOnUpdate() {
 }
 
 func (a *Mails) showMailerWindow(mode mailer.Mode, mail *app.CharacterMail) {
-	c := a.character.Load()
-	if c == nil {
+	if a.forCharacter {
+		if c := a.character.Load(); c != nil {
+			a.openMailerWindow(c, mode, mail)
+		}
 		return
 	}
+	if mail == nil {
+		return
+	}
+	// the mail's own character sends replies
+	go func() {
+		c, err := a.u.Character().GetCharacter(context.Background(), mail.CharacterID)
+		if err != nil {
+			slog.Error("Failed to load character for mailer", "characterID", mail.CharacterID, "error", err)
+			a.u.DisplaySnackbar("ERROR: Failed to open mailer: " + a.u.ErrorDisplay(err))
+			return
+		}
+		fyne.Do(func() {
+			a.openMailerWindow(c, mode, mail)
+		})
+	}()
+}
+
+func (a *Mails) openMailerWindow(c *app.Character, mode mailer.Mode, mail *app.CharacterMail) {
 	w, err := mailer.NewWindow(a.u, c, mode, mail)
 	if err != nil {
 		ui.ShowErrorAndLog(
@@ -288,6 +361,9 @@ func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	a.compose = widget.NewButtonWithIcon("Compose", r, f)
 	a.compose.Importance = widget.HighImportance
 	a.compose.Disable()
+	if !ma.forCharacter {
+		a.compose.Hide()
+	}
 	return a
 }
 
@@ -362,11 +438,17 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
 	func() {
-		characterID := a.ma.character.Load().IDOrZero()
-		if characterID == 0 {
-			return
+		var total, missing int
+		var err error
+		if a.ma.forCharacter {
+			characterID := a.ma.character.Load().IDOrZero()
+			if characterID == 0 {
+				return
+			}
+			total, missing, err = a.ma.u.Character().DownloadedBodiesPercentage(ctx, characterID)
+		} else {
+			total, missing, err = a.ma.u.Character().AllDownloadedBodiesPercentage(ctx)
 		}
-		total, missing, err := a.ma.u.Character().DownloadedBodiesPercentage(ctx, characterID)
 		if err != nil {
 			slog.Error("updateDownloaded", "error", err)
 			total2 = "ERROR"
@@ -396,10 +478,8 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 	})
 }
 
+// fetchFolders returns the folder tree of a character, or of all characters when characterID is 0.
 func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int64) (*xwidget.TreeData[mailFolderNode], *mailFolderNode, error) {
-	if characterID == 0 {
-		return nil, nil, nil
-	}
 
 	td := xwidget.NewTreeData[mailFolderNode]()
 
@@ -431,10 +511,14 @@ func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int6
 		}
 	}
 
-	// Add custom labels
-	labels, err := a.ma.u.Character().ListMailLabelsOrdered(ctx, characterID)
-	if err != nil {
-		return td, nil, err
+	// Add custom labels. They can not be merged, because each character has its own label IDs.
+	var labels []*app.CharacterMailLabel
+	if characterID != 0 {
+		var err error
+		labels, err = a.ma.u.Character().ListMailLabelsOrdered(ctx, characterID)
+		if err != nil {
+			return td, nil, err
+		}
 	}
 	if len(labels) > 0 {
 		n := &mailFolderNode{
@@ -462,7 +546,13 @@ func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int6
 	}
 
 	// Add mailing lists
-	lists, err := a.ma.u.Character().ListMailLists(ctx, characterID)
+	var lists []*app.EveEntity
+	var err error
+	if characterID != 0 {
+		lists, err = a.ma.u.Character().ListMailLists(ctx, characterID)
+	} else {
+		lists, err = a.ma.u.Character().ListAllMailLists(ctx)
+	}
 	if err != nil {
 		return td, nil, err
 	}
@@ -508,18 +598,37 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 	if td.IsEmpty() {
 		return 0, nil
 	}
-	labelUnreadCounts, err := a.ma.u.Character().GetMailLabelUnreadCounts(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	listUnreadCounts, err := a.ma.u.Character().GetMailListUnreadCounts(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	// summing label and list counts would count mails with several labels or lists repeatedly
-	_, totalCount, err := a.ma.u.Character().GetMailCounts(ctx, characterID)
-	if err != nil {
-		return 0, err
+	cs := a.ma.u.Character()
+	var labelUnreadCounts, listUnreadCounts map[int64]int
+	var unreadCount int
+	var err error
+	if characterID != 0 {
+		labelUnreadCounts, err = cs.GetMailLabelUnreadCounts(ctx, characterID)
+		if err != nil {
+			return 0, err
+		}
+		listUnreadCounts, err = cs.GetMailListUnreadCounts(ctx, characterID)
+		if err != nil {
+			return 0, err
+		}
+		// summing label and list counts would count mails with several labels or lists repeatedly
+		_, unreadCount, err = cs.GetMailCounts(ctx, characterID)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		labelUnreadCounts, err = cs.GetAllMailLabelUnreadCounts(ctx)
+		if err != nil {
+			return 0, err
+		}
+		listUnreadCounts, err = cs.GetAllMailListUnreadCounts(ctx)
+		if err != nil {
+			return 0, err
+		}
+		_, unreadCount, err = cs.GetAllMailCounts(ctx)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	var labelCount, listCount int
@@ -536,7 +645,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 		var c int
 		switch n.Type {
 		case folderNodeAll:
-			c = totalCount
+			c = unreadCount
 		case folderNodeInbox, folderNodeAlliance, folderNodeCorp:
 			c = labelUnreadCounts[n.ObjID]
 		case folderNodeLabel:
@@ -557,7 +666,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 		}
 		return true
 	})
-	return totalCount, nil
+	return unreadCount, nil
 }
 
 func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
@@ -631,19 +740,21 @@ func (w *mailFolderItemWidget) set(n *mailFolderNode) {
 }
 
 type mailRow struct {
-	characterID  int64
-	from         *app.EveEntity
-	id           int64
-	isRead       bool // snapshot used for filtering, so rows don't vanish from an active Unread filter
-	isRead2      bool // current state, used for display
-	mailID       int64
-	searchTarget string
-	subject      string
-	timestamp    time.Time
+	characterID   int64
+	characterName string
+	from          *app.EveEntity
+	id            int64
+	isRead        bool // snapshot used for filtering, so rows don't vanish from an active Unread filter
+	isRead2       bool // current state, used for display
+	mailID        int64
+	searchTarget  string
+	subject       string
+	timestamp     time.Time
 }
 
 // Filter options
 const (
+	mailsFilterCharacter    = "Character"
 	mailsFilterFrom         = "From"
 	mailsFilterStatus       = "Status"
 	mailsFilterStatusRead   = "Read"
@@ -753,7 +864,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 				return
 			}
 			r := a.rowsFiltered[id]
-			if a.ma.character.Load() == nil {
+			if a.ma.forCharacter && a.ma.character.Load() == nil {
 				return
 			}
 			item := co.(*MailHeaderItemWidget)
@@ -764,7 +875,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.ma.ReadingPane.showMail(r.mailID)
+		a.ma.ReadingPane.showMail(r)
 		if !r.isRead2 && !a.ma.u.IsOffline() && !a.ma.u.IsUpdateDisabled() {
 			a.markRead(r)
 		}
@@ -808,12 +919,12 @@ func (a *mailsMessagePane) markRead(r mailRow) {
 				slog.Error("Failed to mark mail as read", "characterID", r.characterID, "mailID", r.mailID, "error", err)
 				return nil, nil
 			}
-			a.ma.readStateChanged(ctx, r.characterID)
+			a.ma.mailsChanged(ctx, r.characterID)
 			err = a.ma.u.Character().UpdateMailRead(ctx, r.characterID, r.mailID, true)
 			if err != nil {
 				slog.Error("Failed to mark mail as read on ESI", "characterID", r.characterID, "mailID", r.mailID, "error", err)
 				a.ma.u.DisplaySnackbar("ERROR: Failed to mark mail as read: " + r.subject)
-				a.ma.readStateChanged(ctx, r.characterID) // local state was reset
+				a.ma.mailsChanged(ctx, r.characterID) // local state was reset
 			}
 			return nil, nil
 		})
@@ -847,17 +958,19 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 		reset()
 		return
 	}
-	hasData, err := a.ma.u.Character().HasSection(ctx, folder.CharacterID, app.SectionCharacterMailHeaders)
-	if err != nil {
-		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
-		setStatus("Failed to load: "+a.ma.u.ErrorDisplay(err), widget.DangerImportance)
-		reset()
-		return
-	}
-	if !hasData {
-		setStatus("Data not yet loaded", widget.WarningImportance)
-		reset()
-		return
+	if a.ma.forCharacter {
+		hasData, err := a.ma.u.Character().HasSection(ctx, folder.CharacterID, app.SectionCharacterMailHeaders)
+		if err != nil {
+			slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
+			setStatus("Failed to load: "+a.ma.u.ErrorDisplay(err), widget.DangerImportance)
+			reset()
+			return
+		}
+		if !hasData {
+			setStatus("Data not yet loaded", widget.WarningImportance)
+			reset()
+			return
+		}
 	}
 
 	rows, err := a.fetchRows(ctx, folder)
@@ -909,6 +1022,11 @@ func (a *mailsMessagePane) filterRowsAsync() {
 				})
 			}
 		}
+		if x := filter[mailsFilterCharacter]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r mailRow) bool {
+				return r.characterName != x
+			})
+		}
 		if x := filter[mailsFilterFrom]; x != "" {
 			rows = slices.DeleteFunc(rows, func(r mailRow) bool {
 				return r.from.NameOrZero() != x
@@ -924,6 +1042,9 @@ func (a *mailsMessagePane) filterRowsAsync() {
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		// collect options
+		characterOptions := xslices.Map(rows, func(r mailRow) string {
+			return r.characterName
+		})
 		fromOptions := xslices.Map(rows, func(r mailRow) string {
 			return r.from.NameOrZero()
 		})
@@ -944,10 +1065,14 @@ func (a *mailsMessagePane) filterRowsAsync() {
 				return
 			}
 			a.footerLabel.SetText(footer)
-			a.filterChip.SetOptions(
+			options := []xwidget.FilterOption{
 				xwidget.NewFilterOptionMultiChoice(mailsFilterStatus, statusOptions),
-				xwidget.NewFilterOptionMultiChoice(mailsFilterFrom, fromOptions),
-			)
+			}
+			if !a.ma.forCharacter {
+				options = append(options, xwidget.NewFilterOptionMultiChoice(mailsFilterCharacter, characterOptions))
+			}
+			options = append(options, xwidget.NewFilterOptionMultiChoice(mailsFilterFrom, fromOptions))
+			a.filterChip.SetOptions(options...)
 			a.rowsFiltered = rows
 			a.headerList.Refresh()
 			a.syncSelection()
@@ -958,12 +1083,12 @@ func (a *mailsMessagePane) filterRowsAsync() {
 // syncSelection keeps the displayed mail selected after the rows changed
 // and clears it when it is no longer shown.
 func (a *mailsMessagePane) syncSelection() {
-	mailID := a.ma.ReadingPane.requested.mailID
-	if mailID == 0 {
+	requested := a.ma.ReadingPane.requested
+	if requested.mailID == 0 {
 		return
 	}
 	idx := slices.IndexFunc(a.rowsFiltered, func(r mailRow) bool {
-		return r.mailID == mailID
+		return r.characterID == requested.characterID && r.mailID == requested.mailID
 	})
 	if idx == -1 {
 		a.headerList.UnselectAll()
@@ -979,29 +1104,43 @@ func (a *mailsMessagePane) syncSelection() {
 }
 
 func (a *mailsMessagePane) fetchRows(ctx context.Context, f *mailFolderNode) ([]mailRow, error) {
+	cs := a.ma.u.Character()
 	var hh []*app.CharacterMailHeader
 	var err error
-	switch f.Category {
-	case nodeCategoryLabel:
-		hh, err = a.ma.u.Character().ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
-	case nodeCategoryList:
-		hh, err = a.ma.u.Character().ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
+	switch {
+	case a.ma.forCharacter && f.Category == nodeCategoryLabel:
+		hh, err = cs.ListMailHeadersForLabelOrdered(ctx, f.CharacterID, f.ObjID)
+	case a.ma.forCharacter && f.Category == nodeCategoryList:
+		hh, err = cs.ListMailHeadersForListOrdered(ctx, f.CharacterID, f.ObjID)
+	case f.Category == nodeCategoryLabel:
+		hh, err = cs.ListAllMailHeadersForLabelOrdered(ctx, f.ObjID)
+	case f.Category == nodeCategoryList:
+		hh, err = cs.ListAllMailHeadersForListOrdered(ctx, f.ObjID)
 	}
 	if err != nil {
 		return nil, err
 	}
+	var characterNames map[int64]string
+	if !a.ma.forCharacter {
+		characterNames, err = cs.CharacterNames(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	rows := make([]mailRow, len(hh))
 	for i, h := range hh {
+		characterName := characterNames[h.CharacterID]
 		rows[i] = mailRow{
-			characterID:  h.CharacterID,
-			from:         h.From,
-			id:           h.ID,
-			isRead:       h.IsRead,
-			isRead2:      h.IsRead,
-			mailID:       h.MailID,
-			searchTarget: strings.ToLower(h.Subject + "-" + h.From.NameOrZero()),
-			subject:      h.Subject,
-			timestamp:    h.Timestamp,
+			characterID:   h.CharacterID,
+			characterName: characterName,
+			from:          h.From,
+			id:            h.ID,
+			isRead:        h.IsRead,
+			isRead2:       h.IsRead,
+			mailID:        h.MailID,
+			searchTarget:  strings.ToLower(h.Subject + "-" + h.From.NameOrZero() + "-" + characterName),
+			subject:       h.Subject,
+			timestamp:     h.Timestamp,
 		}
 	}
 	return rows, nil
@@ -1011,6 +1150,7 @@ type mailsReadingPane struct {
 	widget.BaseWidget
 
 	body      *widget.Label
+	character *widget.Label
 	header    *MailHeaderWidget
 	ma        *Mails
 	mail      *app.CharacterMail
@@ -1021,12 +1161,16 @@ type mailsReadingPane struct {
 
 func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 	a := &mailsReadingPane{
-		body:    widget.NewLabel(""),
-		header:  NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
-		ma:      ma,
-		subject: widget.NewLabel(""),
+		body:      widget.NewLabel(""),
+		character: widget.NewLabel(""),
+		header:    NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
+		ma:        ma,
+		subject:   widget.NewLabel(""),
 	}
 	a.ExtendBaseWidget(a)
+	a.character.Importance = widget.LowImportance
+	a.character.Truncation = fyne.TextTruncateEllipsis
+	a.character.Hide()
 	a.subject.SizeName = theme.SizeNameSubHeadingText
 	a.subject.Truncation = fyne.TextTruncateClip
 	a.subject.Selectable = true
@@ -1039,7 +1183,7 @@ func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 
 func (a *mailsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewVBox(a.subject, a.header),
+		container.NewVBox(a.subject, a.header, a.character),
 		nil,
 		nil,
 		nil,
@@ -1078,7 +1222,7 @@ func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, fu
 					a.ma.u.DisplaySnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.ma.u.ErrorDisplay(err)))
 					return
 				}
-				a.ma.MessagePane.update(ctx)
+				a.ma.mailsChanged(ctx, m.CharacterID)
 				if onSuccess != nil {
 					onSuccess()
 				}
@@ -1132,15 +1276,18 @@ func (a *mailsReadingPane) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-// showMail displays a mail and discards results from earlier requests.
-func (a *mailsReadingPane) showMail(mailID int64) {
+// showMail displays the mail of a row and discards results from earlier requests.
+func (a *mailsReadingPane) showMail(r mailRow) {
 	a.clear()
-	characterID := a.ma.character.Load().IDOrZero()
-	if characterID == 0 {
+	if r.characterID == 0 {
 		return
 	}
-	a.requested.characterID, a.requested.mailID = characterID, mailID
-	go a.loadMail(context.Background(), characterID, mailID)
+	if !a.ma.forCharacter {
+		a.character.SetText("Character: " + r.characterName)
+		a.character.Show()
+	}
+	a.requested.characterID, a.requested.mailID = r.characterID, r.mailID
+	go a.loadMail(context.Background(), r.characterID, r.mailID)
 }
 
 func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
@@ -1153,6 +1300,7 @@ func (a *mailsReadingPane) clear() {
 	a.subject.SetText("")
 	a.header.Clear()
 	a.body.SetText("")
+	a.character.Hide()
 	a.toolbar.Hide()
 }
 

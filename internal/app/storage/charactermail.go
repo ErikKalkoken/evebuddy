@@ -117,6 +117,24 @@ func (st *Storage) GetAllCharactersMailUnreadCount(ctx context.Context) (int, er
 	return int(count), err
 }
 
+// GetAllCharactersMailCount returns the number of mails of all characters.
+func (st *Storage) GetAllCharactersMailCount(ctx context.Context) (int, error) {
+	count, err := st.qRO.GetAllMailCount(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("get all mail count: %w", err)
+	}
+	return int(count), nil
+}
+
+// GetAllCharactersMailWithoutBodyCount returns the number of mails of all characters without a body.
+func (st *Storage) GetAllCharactersMailWithoutBodyCount(ctx context.Context) (int, error) {
+	count, err := st.qRO.GetAllMailWithoutBodyCount(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("get all mail without body count: %w", err)
+	}
+	return int(count), nil
+}
+
 func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int64) (int, error) {
 	count, err := st.qRO.GetMailCount(ctx, characterID)
 	if err != nil {
@@ -140,6 +158,30 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 		return wrapErr(err)
 	}
 	return nil
+}
+
+func (st *Storage) GetAllCharactersMailLabelUnreadCounts(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.GetAllCharactersMailLabelUnreadCounts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get mail label unread counts for all characters: %w", err)
+	}
+	result := make(map[int64]int)
+	for _, r := range rows {
+		result[r.LabelID] = int(r.UnreadCount2)
+	}
+	return result, nil
+}
+
+func (st *Storage) GetAllCharactersMailListUnreadCounts(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.GetAllCharactersMailListUnreadCounts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get mail list unread counts for all characters: %w", err)
+	}
+	result := make(map[int64]int)
+	for _, r := range rows {
+		result[r.ListID] = int(r.UnreadCount2)
+	}
+	return result, nil
 }
 
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
@@ -180,6 +222,19 @@ func (st *Storage) ListCharacterMailsWithoutBody(ctx context.Context, characterI
 		return set.Set[int64]{}, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
 	return set.Collect(slices.Values(ids)), nil
+}
+
+// ListAllCharacterMailListsOrdered returns the mailing lists of all characters without duplicates.
+func (st *Storage) ListAllCharacterMailListsOrdered(ctx context.Context) ([]*app.EveEntity, error) {
+	ll, err := st.qRO.ListAllCharacterMailListsOrdered(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list mail lists for all characters: %w", err)
+	}
+	ee := make([]*app.EveEntity, len(ll))
+	for i, l := range ll {
+		ee[i] = eveEntityFromDBModel(l)
+	}
+	return ee, nil
 }
 
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int64) ([]*app.EveEntity, error) {

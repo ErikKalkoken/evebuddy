@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -57,7 +58,7 @@ func TestMails_Refresh(t *testing.T) {
 		f := fixture{st: st, factory: factory, character: createCharacter(factory)}
 		f.mail1 = createInboxMail(f)
 		createInboxMail(f)
-		f.a = NewMails(testdouble.NewUIFake(testdouble.UIParams{
+		f.a = NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
 			App:     test.NewTempApp(t),
 			Storage: st,
 		}))
@@ -138,7 +139,7 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 	character := factory.CreateCharacterFull()
 	mail1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
 	mail2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
-	a := NewMails(testdouble.NewUIFake(testdouble.UIParams{
+	a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
 		Storage: st,
 	}))
@@ -237,7 +238,7 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 	createMail("Charlie", amarr, false, time.Hour)
 
 	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
-	a := NewMails(u)
+	a := NewMailsForCharacter(u)
 	u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character) // shows Inbox
 	mp := a.MessagePane
 	inbox := mp.currentFolder.Load()
@@ -339,7 +340,7 @@ func TestMails_UnreadCount(t *testing.T) {
 		return factory, st, c, custom
 	}
 	unreadCount := func(t *testing.T, st *storage.Storage, c *app.Character) int64 {
-		a := NewMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 		return a.unreadCount.Load()
 	}
@@ -405,7 +406,7 @@ func TestMailsMessagePane_MarkRead(t *testing.T) {
 			Storage:             st,
 			DisplaySnackbarFunc: func(s string) { snackbars = append(snackbars, s) },
 		})
-		a := NewMails(u)
+		a := NewMailsForCharacter(u)
 		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 		require.Len(t, a.MessagePane.rowsFiltered, 1)
 		require.False(t, a.MessagePane.rowsFiltered[0].isRead2)
@@ -437,5 +438,157 @@ func TestMailsMessagePane_MarkRead(t *testing.T) {
 		assert.False(t, a.MessagePane.rowsFiltered[0].isRead2)
 		assert.EqualValues(t, 1, a.unreadCount.Load())
 		assert.Len(t, *snackbars, 1)
+	})
+}
+
+func TestUnifiedMails(t *testing.T) {
+	type fixture struct {
+		a       *Mails
+		u       baseUI
+		st      *storage.Storage
+		factory testutil.Factory
+		c1, c2  *app.Character
+		list    *app.EveEntity
+	}
+	createCharacter := func(factory testutil.Factory) *app.Character {
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID}) // custom label
+		return c
+	}
+	now := time.Now().UTC()
+	createInboxMail := func(f fixture, c *app.Character, mailID int64, age time.Duration) *app.CharacterMail {
+		return f.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox},
+			MailID:      mailID,
+			Timestamp:   now.Add(-age),
+		})
+	}
+	setup := func(t *testing.T) fixture {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		f := fixture{st: st, factory: factory}
+		f.c1 = createCharacter(factory)
+		f.c2 = createCharacter(factory)
+		f.list = factory.CreateCharacterMailList(f.c1.ID)
+		require.NoError(t, st.CreateCharacterMailList(t.Context(), f.c2.ID, f.list.ID))
+		f.u = testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		f.a = NewUnifiedMails(f.u)
+		return f
+	}
+	characterIDs := func(a *Mails) []int64 {
+		var ids []int64
+		for _, r := range a.MessagePane.rowsFiltered {
+			ids = append(ids, r.characterID)
+		}
+		return ids
+	}
+
+	t.Run("shows inbox mails of all characters", func(t *testing.T) {
+		f := setup(t)
+		createInboxMail(f, f.c1, 1, 2*time.Hour)
+		createInboxMail(f, f.c2, 2, time.Hour)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		folder := f.a.MessagePane.currentFolder.Load()
+		require.NotNil(t, folder)
+		assert.Equal(t, folderNodeInbox, folder.Type)
+		assert.Equal(t, []int64{f.c2.ID, f.c1.ID}, characterIDs(f.a))
+		assert.Equal(t, f.c2.EveCharacter.Name, f.a.MessagePane.rowsFiltered[0].characterName)
+		assert.EqualValues(t, 2, f.a.unreadCount.Load())
+	})
+	t.Run("shows merged mailing lists and no custom labels", func(t *testing.T) {
+		f := setup(t)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		var lists []int64
+		var hasLabels bool
+		f.a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+			if n.Category == nodeCategoryList {
+				lists = append(lists, n.ObjID)
+			}
+			if n.Type == folderNodeLabel {
+				hasLabels = true
+			}
+			return true
+		})
+		assert.Equal(t, []int64{f.list.ID}, lists)
+		assert.False(t, hasLabels)
+		assert.False(t, f.a.NavigationPane.compose.Visible())
+	})
+	t.Run("can filter by character", func(t *testing.T) {
+		f := setup(t)
+		createInboxMail(f, f.c1, 1, 2*time.Hour)
+		createInboxMail(f, f.c2, 2, time.Hour)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		mp := f.a.MessagePane
+		mp.filterChip.SetSelected(map[string]string{mailsFilterCharacter: f.c1.EveCharacter.Name})
+		mp.filterRowsAsync()
+		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
+	})
+	t.Run("shows the selected copy of a mail received by several characters", func(t *testing.T) {
+		f := setup(t)
+		createInboxMail(f, f.c1, 42, time.Hour)
+		createInboxMail(f, f.c2, 42, time.Hour)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		mp := f.a.MessagePane
+		idx := slices.IndexFunc(mp.rowsFiltered, func(r mailRow) bool {
+			return r.characterID == f.c2.ID
+		})
+		require.NotEqual(t, -1, idx)
+		p := f.a.ReadingPane
+		p.showMail(mp.rowsFiltered[idx])
+		assert.Equal(t, "Character: "+f.c2.EveCharacter.Name, p.character.Text)
+		assert.True(t, p.character.Visible())
+		p.loadMail(t.Context(), f.c2.ID, 42)
+		require.NotNil(t, p.mail)
+		assert.Equal(t, f.c2.ID, p.mail.CharacterID)
+
+	})
+	t.Run("clears reading pane when the shown copy of a mail is gone", func(t *testing.T) {
+		f := setup(t)
+		createInboxMail(f, f.c1, 42, time.Hour)
+		createInboxMail(f, f.c2, 42, time.Hour)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		mp := f.a.MessagePane
+		idx := slices.IndexFunc(mp.rowsFiltered, func(r mailRow) bool {
+			return r.characterID == f.c2.ID
+		})
+		require.NotEqual(t, -1, idx)
+		p := f.a.ReadingPane
+		p.showMail(mp.rowsFiltered[idx])
+		require.NoError(t, f.st.DeleteCharacterMail(t.Context(), f.c2.ID, 42))
+
+		mp.update(t.Context())
+
+		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
+		assert.Zero(t, p.requested.mailID)
+		assert.False(t, p.character.Visible())
+	})
+	t.Run("is refreshed when a mail is read in the character screen", func(t *testing.T) {
+		f := setup(t)
+		m := createInboxMail(f, f.c1, 1, time.Hour)
+		character := NewMailsForCharacter(f.u)
+		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		require.EqualValues(t, 1, f.a.unreadCount.Load())
+		require.NoError(t, f.st.UpdateCharacterMailSetIsRead(t.Context(), f.c1.ID, m.ID, true))
+
+		character.mailsChanged(t.Context(), f.c1.ID)
+
+		assert.EqualValues(t, 0, f.a.unreadCount.Load())
+		assert.True(t, f.a.MessagePane.rowsFiltered[0].isRead2)
+	})
+	t.Run("shows status when there are no characters", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		a := NewUnifiedMails(u)
+		u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		assert.Equal(t, "No characters", a.NavigationPane.folderStatus.Text)
+		assert.Nil(t, a.MessagePane.currentFolder.Load())
 	})
 }

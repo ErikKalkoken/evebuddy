@@ -933,6 +933,51 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		unifiedCommunicationsMenu.Refresh()
 	}
 
+	unifiedMailMenu := fyne.NewMenu("")
+	navItemUnifiedMail := xwidget.NewNavListItem(
+		"Mail",
+		theme.MailComposeIcon(),
+		func() {
+			u.unifiedMails.MessagePane.OnSelected = func() {
+				homeNav.PushAndHideNavBar(
+					xwidget.NewAppBar(
+						"Mail",
+						u.unifiedMails.ReadingPane,
+						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
+						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
+						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
+						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
+							fyne.Do(func() {
+								homeNav.Pop()
+							})
+						})),
+					),
+				)
+			}
+			homeNav.Push(
+				xwidget.NewAppBar(
+					"Mail",
+					u.unifiedMails.MessagePane,
+					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedMailMenu),
+				),
+			)
+		},
+	)
+	u.unifiedMails.OnUpdate = func(unread, missing int) {
+		var s []string
+		if unread > 0 {
+			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
+		}
+		if missing > 0 {
+			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))
+		}
+		navItemUnifiedMail.Supporting = strings.Join(s, " • ")
+		navItemUnifiedMail.Refresh()
+
+		unifiedMailMenu.Items = u.unifiedMails.NavigationPane.MakeFolderMenu()
+		unifiedMailMenu.Refresh()
+	}
+
 	navItemUnifiedStructures := xwidget.NewNavListItem(
 		"Structures",
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
@@ -991,6 +1036,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				homeNav.Push(xwidget.NewAppBar("Loyalty Points", u.loyaltyPoints))
 			},
 		),
+		navItemUnifiedMail,
 		xwidget.NewNavListItem(
 			"Market Orders",
 			theme.NewThemedResource(icons.ChartAreasplineSvg),

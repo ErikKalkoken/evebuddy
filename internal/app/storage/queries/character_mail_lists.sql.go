@@ -74,6 +74,36 @@ func (q *Queries) GetCharacterMailList(ctx context.Context, arg GetCharacterMail
 	return i, err
 }
 
+const listAllCharacterMailListsOrdered = `-- name: ListAllCharacterMailListsOrdered :many
+SELECT DISTINCT eve_entities.id, eve_entities.category, eve_entities.name
+FROM character_mail_lists
+JOIN eve_entities ON eve_entities.id = character_mail_lists.eve_entity_id
+ORDER by eve_entities.name
+`
+
+func (q *Queries) ListAllCharacterMailListsOrdered(ctx context.Context) ([]EveEntity, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterMailListsOrdered)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EveEntity
+	for rows.Next() {
+		var i EveEntity
+		if err := rows.Scan(&i.ID, &i.Category, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterMailListsOrdered = `-- name: ListCharacterMailListsOrdered :many
 SELECT eve_entities.id, eve_entities.category, eve_entities.name
 FROM character_mail_lists

@@ -27,6 +27,12 @@ SELECT *
 FROM character_mail_lists
 WHERE character_id = ? AND eve_entity_id = ?;
 
+-- name: ListAllCharacterMailListsOrdered :many
+SELECT DISTINCT eve_entities.*
+FROM character_mail_lists
+JOIN eve_entities ON eve_entities.id = character_mail_lists.eve_entity_id
+ORDER by eve_entities.name;
+
 -- name: ListCharacterMailListsOrdered :many
 SELECT eve_entities.*
 FROM character_mail_lists

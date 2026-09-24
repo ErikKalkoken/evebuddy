@@ -147,6 +147,7 @@ type baseUI struct {
 	statusText                 *statusText
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
+	unifiedMails               *screens.Mails
 	unifiedStructures          *screens.Structures
 	wealth                     *screens.CharacterWealth
 
@@ -418,7 +419,8 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.characterCommunications = screens.NewCommunicationsForCharacter(u)
 	u.characterCorporation = screens.NewCorporationSheet(u, false)
 	u.characterJumpClones = screens.NewCharacterClones(u)
-	u.characterMails = screens.NewMails(u)
+	u.characterMails = screens.NewMailsForCharacter(u)
+	u.unifiedMails = screens.NewUnifiedMails(u)
 	u.characterOverview = screens.NewCharacterOverview(u)
 	u.characterSheet = screens.NewCharacterSheet(u)
 	u.characterShips = screens.NewFlyableShips(u)

@@ -130,6 +130,105 @@ func (q *Queries) DeleteMailCharacterMailLabels(ctx context.Context, characterMa
 	return err
 }
 
+const getAllCharactersMailLabelUnreadCounts = `-- name: GetAllCharactersMailLabelUnreadCounts :many
+SELECT
+    label_id,
+    COUNT(cm.id) AS unread_count_2
+FROM
+    character_mail_labels cml
+    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    is_read IS FALSE
+GROUP BY
+    label_id
+`
+
+type GetAllCharactersMailLabelUnreadCountsRow struct {
+	LabelID      int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) GetAllCharactersMailLabelUnreadCounts(ctx context.Context) ([]GetAllCharactersMailLabelUnreadCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCharactersMailLabelUnreadCounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllCharactersMailLabelUnreadCountsRow
+	for rows.Next() {
+		var i GetAllCharactersMailLabelUnreadCountsRow
+		if err := rows.Scan(&i.LabelID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllCharactersMailListUnreadCounts = `-- name: GetAllCharactersMailListUnreadCounts :many
+SELECT
+    eve_entities.id AS list_id,
+    COUNT(cm.id) as unread_count_2
+FROM
+    character_mails cm
+    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
+    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
+WHERE
+    eve_entities.category = "mail_list"
+    AND cm.is_read IS FALSE
+GROUP BY
+    eve_entities.id
+`
+
+type GetAllCharactersMailListUnreadCountsRow struct {
+	ListID       int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) GetAllCharactersMailListUnreadCounts(ctx context.Context) ([]GetAllCharactersMailListUnreadCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCharactersMailListUnreadCounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllCharactersMailListUnreadCountsRow
+	for rows.Next() {
+		var i GetAllCharactersMailListUnreadCountsRow
+		if err := rows.Scan(&i.ListID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllMailCount = `-- name: GetAllMailCount :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+`
+
+func (q *Queries) GetAllMailCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getAllMailCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getAllMailUnreadCount = `-- name: GetAllMailUnreadCount :one
 SELECT
     COUNT(*)
@@ -141,6 +240,22 @@ WHERE
 
 func (q *Queries) GetAllMailUnreadCount(ctx context.Context) (int64, error) {
 	row := q.db.QueryRowContext(ctx, getAllMailUnreadCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getAllMailWithoutBodyCount = `-- name: GetAllMailWithoutBodyCount :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    body_2 IS NULL
+`
+
+func (q *Queries) GetAllMailWithoutBodyCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getAllMailWithoutBodyCount)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -380,6 +495,172 @@ func (q *Queries) GetMailUnreadCount(ctx context.Context, characterID int64) (in
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const listAllMailsForLabelOrdered = `-- name: ListAllMailsForLabelOrdered :many
+SELECT
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
+    ee.id, ee.category, ee.name
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+    JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+    JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE
+    label_id = ?
+ORDER BY
+    timestamp DESC
+`
+
+type ListAllMailsForLabelOrderedRow struct {
+	CharacterMail CharacterMail
+	EveEntity     EveEntity
+}
+
+func (q *Queries) ListAllMailsForLabelOrdered(ctx context.Context, labelID int64) ([]ListAllMailsForLabelOrderedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMailsForLabelOrdered, labelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllMailsForLabelOrderedRow
+	for rows.Next() {
+		var i ListAllMailsForLabelOrderedRow
+		if err := rows.Scan(
+			&i.CharacterMail.ID,
+			&i.CharacterMail.Body,
+			&i.CharacterMail.CharacterID,
+			&i.CharacterMail.FromID,
+			&i.CharacterMail.IsProcessed,
+			&i.CharacterMail.IsRead,
+			&i.CharacterMail.MailID,
+			&i.CharacterMail.Subject,
+			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllMailsForListOrdered = `-- name: ListAllMailsForListOrdered :many
+SELECT
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
+    ee.id, ee.category, ee.name
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+    JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
+WHERE
+    cmr.eve_entity_id = ?
+ORDER BY
+    timestamp DESC
+`
+
+type ListAllMailsForListOrderedRow struct {
+	CharacterMail CharacterMail
+	EveEntity     EveEntity
+}
+
+func (q *Queries) ListAllMailsForListOrdered(ctx context.Context, eveEntityID int64) ([]ListAllMailsForListOrderedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMailsForListOrdered, eveEntityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllMailsForListOrderedRow
+	for rows.Next() {
+		var i ListAllMailsForListOrderedRow
+		if err := rows.Scan(
+			&i.CharacterMail.ID,
+			&i.CharacterMail.Body,
+			&i.CharacterMail.CharacterID,
+			&i.CharacterMail.FromID,
+			&i.CharacterMail.IsProcessed,
+			&i.CharacterMail.IsRead,
+			&i.CharacterMail.MailID,
+			&i.CharacterMail.Subject,
+			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllMailsOrdered = `-- name: ListAllMailsOrdered :many
+SELECT
+    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
+    ee.id, ee.category, ee.name
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+ORDER BY
+    timestamp DESC
+`
+
+type ListAllMailsOrderedRow struct {
+	CharacterMail CharacterMail
+	EveEntity     EveEntity
+}
+
+func (q *Queries) ListAllMailsOrdered(ctx context.Context) ([]ListAllMailsOrderedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMailsOrdered)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllMailsOrderedRow
+	for rows.Next() {
+		var i ListAllMailsOrderedRow
+		if err := rows.Scan(
+			&i.CharacterMail.ID,
+			&i.CharacterMail.Body,
+			&i.CharacterMail.CharacterID,
+			&i.CharacterMail.FromID,
+			&i.CharacterMail.IsProcessed,
+			&i.CharacterMail.IsRead,
+			&i.CharacterMail.MailID,
+			&i.CharacterMail.Subject,
+			&i.CharacterMail.Timestamp,
+			&i.CharacterMail.Body2,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listMailIDs = `-- name: ListMailIDs :many
