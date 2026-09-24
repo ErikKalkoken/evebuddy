@@ -95,7 +95,6 @@ type Mails struct {
 	character        atomic.Pointer[app.Character]
 	compose          *widget.Button
 	currentFolder    atomic.Pointer[mailFolderNode]
-	folderDefault    *mailFolderNode
 	folderDownloaded *ttwidget.Label
 	folders          *xwidget.Tree[mailFolderNode]
 	folderStatus     *widget.Label
@@ -571,10 +570,6 @@ func (a *Mails) makeHeaderList() *widget.List {
 		}
 	}
 	return l
-}
-
-func (a *Mails) ResetCurrentFolder(ctx context.Context) {
-	a.setCurrentFolder(ctx, a.folderDefault)
 }
 
 func (a *Mails) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {

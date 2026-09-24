@@ -618,8 +618,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		ctx := context.Background()
-		go u.characterMails.ResetCurrentFolder(ctx)
 		go func() {
 			fyne.Do(func() {
 				u.characterCommunications.MessagePane.ResetHeaders()
