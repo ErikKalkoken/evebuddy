@@ -49,7 +49,7 @@ func (s *CharacterService) GetAllMailUnreadCount(ctx context.Context) (int, erro
 	return s.st.GetAllCharactersMailUnreadCount(ctx)
 }
 
-// GetMailCounts returns the number of unread mail for a character.
+// GetMailCounts returns the total and unread number of mails for a character.
 func (s *CharacterService) GetMailCounts(ctx context.Context, characterID int64) (int, int, error) {
 	total, err := s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
@@ -182,27 +182,29 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	return mailID, nil
 }
 
-// UpdateMailRead updates an existing mail as read
+// SetMailReadLocal updates the read state of a mail in local storage only.
+func (s *CharacterService) SetMailReadLocal(ctx context.Context, characterID, mailID int64, isRead bool) error {
+	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
+	if err != nil {
+		return err
+	}
+	return s.st.UpdateCharacterMailSetIsRead(ctx, characterID, m.ID, isRead)
+}
+
+// UpdateMailRead updates the read state of a mail on ESI.
+// The local state is expected to be set already with SetMailReadLocal and is reset when the update fails.
 func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int64, isRead bool) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("UpdateMailRead-%d-%d", characterID, mailID), func() (any, error) {
-		ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
-		if err != nil {
-			return nil, err
-		}
-		ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
-		ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
 		m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 		if err != nil {
 			return nil, err
 		}
-		req := esi.PutCharactersCharacterIdMailMailIdRequest{
-			Labels: m.LabelIDs(),
-		}
-		if isRead {
-			req.Read = &isRead
-		}
-		_, err = s.esiClient.MailAPI.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, m.MailID).PutCharactersCharacterIdMailMailIdRequest(req).Execute()
+		err = s.updateMailReadESI(ctx, m, isRead)
 		if err != nil {
+			// reset needs to work even when the update was canceled
+			if err2 := s.st.UpdateCharacterMailSetIsRead(context.WithoutCancel(ctx), characterID, m.ID, !isRead); err2 != nil {
+				slog.Error("Failed to reset mail read state", "characterID", characterID, "mailID", mailID, "error", err2)
+			}
 			return nil, err
 		}
 		if err := s.st.UpdateCharacterMailSetIsRead(ctx, characterID, m.ID, isRead); err != nil {
@@ -214,6 +216,23 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 		return err
 	}
 	return nil
+}
+
+func (s *CharacterService) updateMailReadESI(ctx context.Context, m *app.CharacterMail, isRead bool) error {
+	ts, err := s.TokenSource(ctx, m.CharacterID, app.SectionCharacterMailHeaders.Scopes())
+	if err != nil {
+		return err
+	}
+	ctx = xgoesi.NewContextWithAuth(ctx, m.CharacterID, ts)
+	ctx = xgoesi.NewContextWithOperationID(ctx, "PutCharactersCharacterIdMailMailId")
+	req := esi.PutCharactersCharacterIdMailMailIdRequest{
+		Labels: m.LabelIDs(),
+	}
+	if isRead {
+		req.Read = &isRead
+	}
+	_, err = s.esiClient.MailAPI.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, m.MailID).PutCharactersCharacterIdMailMailIdRequest(req).Execute()
+	return err
 }
 
 // UpdateMailBodyESI updates the body of a mail from ESI.

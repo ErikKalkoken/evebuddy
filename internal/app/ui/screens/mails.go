@@ -224,6 +224,14 @@ func (a *Mails) update(ctx context.Context) {
 	})
 }
 
+// readStateChanged refreshes everything that shows the read state of mails.
+func (a *Mails) readStateChanged(ctx context.Context, characterID int64) {
+	a.NavigationPane.updateUnreadCounts(ctx)
+	a.MessagePane.update(ctx)
+	go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
+	a.u.UpdateMailIndicator(ctx)
+}
+
 func (a *Mails) callOnUpdate() {
 	if a.OnUpdate == nil {
 		return
@@ -757,6 +765,9 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 		}
 		r := a.rowsFiltered[id]
 		a.ma.ReadingPane.showMail(r.mailID)
+		if !r.isRead2 && !a.ma.u.IsOffline() && !a.ma.u.IsUpdateDisabled() {
+			a.markRead(r)
+		}
 		if a.OnSelected != nil {
 			a.OnSelected()
 			l.UnselectAll()
@@ -785,6 +796,28 @@ func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFol
 		a.filterChip.SetSelected(map[string]string{}) // silent, the following update filters again
 	})
 	a.update(ctx)
+}
+
+// markRead marks a mail as read. It is updated locally first, so the UI reflects it right away.
+func (a *mailsMessagePane) markRead(r mailRow) {
+	runAsync(func() {
+		a.ma.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", r.characterID, r.mailID), func() (any, error) {
+			ctx := context.Background()
+			err := a.ma.u.Character().SetMailReadLocal(ctx, r.characterID, r.mailID, true)
+			if err != nil {
+				slog.Error("Failed to mark mail as read", "characterID", r.characterID, "mailID", r.mailID, "error", err)
+				return nil, nil
+			}
+			a.ma.readStateChanged(ctx, r.characterID)
+			err = a.ma.u.Character().UpdateMailRead(ctx, r.characterID, r.mailID, true)
+			if err != nil {
+				slog.Error("Failed to mark mail as read on ESI", "characterID", r.characterID, "mailID", r.mailID, "error", err)
+				a.ma.u.DisplaySnackbar("ERROR: Failed to mark mail as read: " + r.subject)
+				a.ma.readStateChanged(ctx, r.characterID) // local state was reset
+			}
+			return nil, nil
+		})
+	})
 }
 
 func (a *mailsMessagePane) updateIsRead() {
@@ -1186,31 +1219,6 @@ func (a *mailsReadingPane) loadMail(ctx context.Context, characterID, mailID int
 					}
 					a.mail.Body.Set(body)
 					a.setBody(a.mail.BodyPlain())
-				})
-				return nil, nil
-			})
-		}()
-	}
-
-	// try to update mail as read if unread
-	if !mail.IsRead.ValueOrZero() {
-		go func() {
-			a.ma.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", characterID, mailID), func() (any, error) {
-				err := a.ma.u.Character().UpdateMailRead(ctx, characterID, mail.MailID, true)
-				if err != nil {
-					slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
-					a.ma.u.DisplaySnackbar("ERROR: Failed to mark mail as read: " + mail.Subject.ValueOrZero())
-					return nil, nil
-				}
-				a.ma.NavigationPane.updateUnreadCounts(ctx)
-				a.ma.MessagePane.update(ctx)
-				go a.ma.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
-				a.ma.u.UpdateMailIndicator(ctx)
-				fyne.Do(func() {
-					if a.mail == nil || a.mail.CharacterID != characterID || a.mail.MailID != mailID {
-						return
-					}
-					a.mail.IsRead.Set(true)
 				})
 				return nil, nil
 			})

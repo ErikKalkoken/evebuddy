@@ -1,10 +1,13 @@
 package screens
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -369,5 +372,70 @@ func TestMails_UnreadCount(t *testing.T) {
 			RecipientIDs: []int64{list.ID},
 		})
 		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+}
+
+func TestMailsMessagePane_MarkRead(t *testing.T) {
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+	setup := func(t *testing.T, esiStatus int) (*Mails, *app.CharacterMail, *[]string) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		var snackbars []string
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:                 test.NewTempApp(t),
+			Storage:             st,
+			DisplaySnackbarFunc: func(s string) { snackbars = append(snackbars, s) },
+		})
+		a := NewMails(u)
+		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Len(t, a.MessagePane.rowsFiltered, 1)
+		require.False(t, a.MessagePane.rowsFiltered[0].isRead2)
+		require.EqualValues(t, 1, a.unreadCount.Load())
+		httpmock.RegisterResponder(
+			"PUT",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, m.MailID),
+			func(req *http.Request) (*http.Response, error) {
+				// UI must already show the mail as read while ESI is called
+				assert.True(t, a.MessagePane.rowsFiltered[0].isRead2)
+				assert.EqualValues(t, 0, a.unreadCount.Load())
+				return httpmock.NewStringResponse(esiStatus, ""), nil
+			})
+		return a, m, &snackbars
+	}
+
+	t.Run("shows mail as read before ESI is updated", func(t *testing.T) {
+		a, _, snackbars := setup(t, 204)
+		a.MessagePane.markRead(a.MessagePane.rowsFiltered[0])
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.True(t, a.MessagePane.rowsFiltered[0].isRead2)
+		assert.EqualValues(t, 0, a.unreadCount.Load())
+		assert.Empty(t, *snackbars)
+	})
+	t.Run("shows mail as unread again when ESI update fails", func(t *testing.T) {
+		a, _, snackbars := setup(t, 500)
+		a.MessagePane.markRead(a.MessagePane.rowsFiltered[0])
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.False(t, a.MessagePane.rowsFiltered[0].isRead2)
+		assert.EqualValues(t, 1, a.unreadCount.Load())
+		assert.Len(t, *snackbars, 1)
 	})
 }
