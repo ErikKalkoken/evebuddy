@@ -3,6 +3,7 @@ package xwidget_test
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -154,4 +155,65 @@ func TestNavRail_ForeignItemsAreIgnored(t *testing.T) {
 	assert.NotPanics(t, func() { nr.EnableItem(nil) })
 	assert.False(t, nr.ItemEnabled(foreign))
 	assert.Equal(t, a, nr.Selected())
+}
+
+func TestNavRail_MenuItem(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	menu := fyne.NewMenu("", fyne.NewMenuItem("X", nil))
+
+	t.Run("panics without menu", func(t *testing.T) {
+		assert.Panics(t, func() {
+			xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", nil)
+		})
+	})
+
+	t.Run("panics without leading non-menu item", func(t *testing.T) {
+		m := xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", menu)
+		assert.Panics(t, func() {
+			xwidget.NewNavRail([]*xwidget.NavRailItem{m})
+		})
+	})
+
+	t.Run("first leading non-menu item is selected initially", func(t *testing.T) {
+		m := xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", menu)
+		a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		nr := xwidget.NewNavRail([]*xwidget.NavRailItem{m, a})
+		assert.Equal(t, a, nr.Selected())
+	})
+
+	t.Run("can not be selected", func(t *testing.T) {
+		a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		m := xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", menu)
+		nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a}, m)
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		nr.Select(m)
+		assert.Equal(t, a, nr.Selected())
+	})
+
+	t.Run("is skipped when falling back from a disabled item", func(t *testing.T) {
+		a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := xwidget.NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		m := xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", menu)
+		nr := xwidget.NewNavRail([]*xwidget.NavRailItem{m, a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		nr.Select(b)
+		nr.DisableItem(b)
+		assert.Equal(t, a, nr.Selected())
+	})
+
+	t.Run("can be enabled and disabled", func(t *testing.T) {
+		a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		m := xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Menu", menu)
+		nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a}, m)
+		nr.DisableItem(m)
+		assert.False(t, nr.ItemEnabled(m))
+		nr.EnableItem(m)
+		assert.True(t, nr.ItemEnabled(m))
+	})
 }

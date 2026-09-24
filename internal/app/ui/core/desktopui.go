@@ -492,7 +492,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Corporations",
 		makeTabContent(corporationHeader, corporationNav),
 	)
-	rail := xwidget.NewNavRail([]*xwidget.NavRailItem{homeItem, characterItem, corporationItem})
+	rail := xwidget.NewNavRail(
+		[]*xwidget.NavRailItem{homeItem, characterItem, corporationItem},
+		xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Main menu", makeMainMenu(u)),
+	)
 
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)

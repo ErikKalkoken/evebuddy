@@ -2,6 +2,7 @@ package xwidget
 
 import (
 	"image/color"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -149,6 +150,7 @@ type NavRailItem struct {
 	content fyne.CanvasObject
 	dest    *railDestination
 	icon    fyne.Resource
+	menu    *fyne.Menu // shown when tapped; menu items have no content and are never selected
 	rail    *NavRail
 	tooltip string
 }
@@ -156,6 +158,20 @@ type NavRailItem struct {
 // NewNavRailItem returns a new item for a [NavRail].
 func NewNavRailItem(icon fyne.Resource, tooltip string, content fyne.CanvasObject) *NavRailItem {
 	return &NavRailItem{icon: icon, tooltip: tooltip, content: content}
+}
+
+// NewNavRailMenuItem returns a new item for a [NavRail], which shows a pop-up menu when tapped.
+//
+// It panics if menu is nil.
+func NewNavRailMenuItem(icon fyne.Resource, tooltip string, menu *fyne.Menu) *NavRailItem {
+	if menu == nil {
+		panic("menu must not be nil")
+	}
+	return &NavRailItem{icon: icon, tooltip: tooltip, menu: menu}
+}
+
+func (it *NavRailItem) isMenu() bool {
+	return it.menu != nil
 }
 
 // NavRail lets people switch between the top-level views of an app on desktop.
@@ -170,12 +186,15 @@ type NavRail struct {
 	trailing *fyne.Container
 }
 
-// NewNavRail returns a new navigation rail. The first leading item is selected initially.
+// NewNavRail returns a new navigation rail. The first leading non-menu item is selected initially.
 //
-// It panics if no leading items are provided or an item already belongs to another rail.
+// It panics if there is no leading non-menu item or an item already belongs to another rail.
 func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
-	if len(leading) == 0 {
-		panic("must define at least one leading item")
+	first := slices.IndexFunc(leading, func(it *NavRailItem) bool {
+		return !it.isMenu()
+	})
+	if first == -1 {
+		panic("must define at least one leading non-menu item")
 	}
 	gap := 3 * theme.Padding()
 	w := &NavRail{
@@ -190,12 +209,18 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 		}
 		it.rail = w
 		it.dest = newRailDestination(it.icon, it.tooltip, func() {
+			if it.isMenu() {
+				ShowPopUpMenuTrailingAbove(it.dest, it.menu)
+				return
+			}
 			w.Select(it)
 		})
 		c.Add(it.dest)
-		it.content.Hide()
-		w.body.Add(it.content)
 		w.items = append(w.items, it)
+		if !it.isMenu() {
+			it.content.Hide()
+			w.body.Add(it.content)
+		}
 	}
 	for _, it := range leading {
 		add(w.leading, it)
@@ -203,13 +228,13 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	for _, it := range trailing {
 		add(w.trailing, it)
 	}
-	w.selectItem(leading[0])
+	w.selectItem(leading[first])
 	return w
 }
 
-// Select switches to an item. Does nothing when the item is disabled.
+// Select switches to an item. Does nothing when the item is disabled or a menu item.
 func (w *NavRail) Select(it *NavRailItem) {
-	if !w.owns(it) || it.dest.Disabled() {
+	if !w.owns(it) || it.isMenu() || it.dest.Disabled() {
 		return
 	}
 	if it == w.selected {
@@ -235,7 +260,7 @@ func (w *NavRail) EnableItem(it *NavRailItem) {
 }
 
 // DisableItem disables an item. Disabled items can not be selected.
-// When the selected item is disabled, the rail switches to the first enabled item.
+// When the selected item is disabled, the rail switches to the first enabled non-menu item.
 func (w *NavRail) DisableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
@@ -245,7 +270,7 @@ func (w *NavRail) DisableItem(it *NavRailItem) {
 		return
 	}
 	for _, x := range w.items {
-		if !x.dest.Disabled() {
+		if !x.isMenu() && !x.dest.Disabled() {
 			w.selectItem(x)
 			return
 		}

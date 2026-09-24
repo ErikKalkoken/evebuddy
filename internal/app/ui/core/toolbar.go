@@ -4,7 +4,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -22,7 +21,6 @@ type toolbar struct {
 
 	searchEntry *xwidget.SearchEntry
 	searchIcon  *xwidget.IconButton
-	hamburger   *xwidget.IconButton
 	u           *DesktopUI
 }
 
@@ -39,6 +37,17 @@ func newToolbar(u *DesktopUI) *toolbar {
 	})
 	searchIcon.SetToolTip("Advanced search")
 
+	a := &toolbar{
+		searchEntry: searchEntry,
+		searchIcon:  searchIcon,
+		u:           u,
+	}
+	a.ExtendBaseWidget(a)
+	return a
+}
+
+// makeMainMenu returns the app's main menu.
+func makeMainMenu(u *DesktopUI) *fyne.Menu {
 	makeMenuItem := func(title string, sc xdesktop.ShortcutWithHandler) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
 			sc.Handler(sc.Shortcut)
@@ -70,16 +79,7 @@ func newToolbar(u *DesktopUI) *toolbar {
 		it,
 		makeMenuItem("Quit", quit),
 	)
-	hamburger := xwidget.NewIconButtonWithMenu(theme.MenuIcon(), menu)
-	hamburger.SetToolTip("Main menu")
-	a := &toolbar{
-		hamburger:   hamburger,
-		searchEntry: searchEntry,
-		searchIcon:  searchIcon,
-		u:           u,
-	}
-	a.ExtendBaseWidget(a)
-	return a
+	return menu
 }
 
 func (a *toolbar) ToogleSearchBar(enabled bool) {
@@ -93,12 +93,11 @@ func (a *toolbar) ToogleSearchBar(enabled bool) {
 }
 
 func (a *toolbar) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
 	x := container.NewGridWithColumns(
 		3,
 		container.NewHBox(),
 		container.NewBorder(nil, nil, nil, a.searchIcon, a.searchEntry),
-		container.New(layout.NewCustomPaddedHBoxLayout(2*p), layout.NewSpacer(), a.hamburger),
+		container.NewHBox(),
 	)
 	c := container.NewVBox(x, widget.NewSeparator())
 	return widget.NewSimpleRenderer(c)

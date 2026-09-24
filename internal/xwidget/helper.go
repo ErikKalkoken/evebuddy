@@ -33,3 +33,18 @@ func ShowPopUpMenuBelowTrailing(w fyne.CanvasObject, m *fyne.Menu) {
 		w,
 	)
 }
+
+// ShowPopUpMenuTrailingAbove shows a popup menu to the right of a widget with bottom edges aligned.
+func ShowPopUpMenuTrailingAbove(w fyne.CanvasObject, m *fyne.Menu) {
+	if m == nil {
+		return
+	}
+	pum := widget.NewPopUpMenu(m, fyne.CurrentApp().Driver().CanvasForObject(w))
+	pum.ShowAtRelativePosition(
+		fyne.NewPos(
+			w.Size().Width,
+			w.Size().Height-pum.Size().Height,
+		),
+		w,
+	)
+}

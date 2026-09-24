@@ -3,6 +3,7 @@ package xwidget
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
@@ -44,4 +45,19 @@ func TestNavRail_DestinationSizeIsStableOnHoverAndSelect(t *testing.T) {
 	b.dest.MouseOut()
 	nr.Select(b)
 	assert.Equal(t, want, b.dest.MinSize())
+}
+
+func TestNavRail_TappingMenuItemShowsMenuAndKeepsSelection(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	m := NewNavRailMenuItem(theme.MenuIcon(), "Menu", fyne.NewMenu("", fyne.NewMenuItem("X", nil)))
+	nr := NewNavRail([]*NavRailItem{a}, m)
+	w := test.NewWindow(nr)
+	defer w.Close()
+
+	test.Tap(m.dest)
+	assert.Equal(t, a, nr.Selected())
+	assert.NotEmpty(t, w.Canvas().Overlays().List())
 }
