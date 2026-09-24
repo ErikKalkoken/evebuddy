@@ -51,7 +51,6 @@ const (
 	folderNodeList
 	folderNodeSent
 	folderNodeTrash
-	folderNodeUnread
 )
 
 // A mailFolderNode in the folder tree, e.g. the inbox
@@ -190,7 +189,7 @@ func (a *Mails) update(ctx context.Context) {
 		setStatus("Data not fully loaded yet", widget.WarningImportance)
 		return
 	}
-	td, folderAll, err := a.NavigationPane.fetchFolders(ctx, characterID)
+	td, inbox, err := a.NavigationPane.fetchFolders(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -199,12 +198,10 @@ func (a *Mails) update(ctx context.Context) {
 	unread, err := a.NavigationPane.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
-	} else {
-		folderAll.UnreadCount = unread
 	}
 	// keep showing the current folder if it still exists, e.g. after new mail arrived
 	current := a.MessagePane.currentFolder.Load()
-	folder := folderAll
+	folder := inbox
 	if current != nil {
 		if n, ok := td.Node(current.UID()); ok {
 			folder = n
@@ -220,7 +217,7 @@ func (a *Mails) update(ctx context.Context) {
 	} else {
 		a.MessagePane.setCurrentFolder(ctx, folder)
 	}
-	a.unreadCount.Store(int64(folderAll.UnreadCount))
+	a.unreadCount.Store(int64(unread))
 	a.NavigationPane.updateDownloaded(ctx)
 	fyne.Do(func() {
 		a.callOnUpdate()
@@ -398,19 +395,8 @@ func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int6
 
 	td := xwidget.NewTreeData[mailFolderNode]()
 
-	// Add unread folder
-	err := td.Add(nil, &mailFolderNode{
-		Category:    nodeCategoryLabel,
-		CharacterID: characterID,
-		Type:        folderNodeUnread,
-		Name:        "Unread",
-		ObjID:       app.MailLabelUnread,
-	}, false)
-	if err != nil {
-		return td, nil, err
-	}
-
 	// Add default folders
+	var inbox *mailFolderNode
 	defaultFolders := []struct {
 		nodeType folderNodeType
 		labelID  int64
@@ -422,15 +408,18 @@ func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int6
 		{folderNodeAlliance, app.MailLabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
-		err := td.Add(nil, &mailFolderNode{
+		n := &mailFolderNode{
 			CharacterID: characterID,
 			Category:    nodeCategoryLabel,
 			Type:        o.nodeType,
 			Name:        o.name,
 			ObjID:       o.labelID,
-		}, false)
-		if err != nil {
+		}
+		if err := td.Add(nil, n, false); err != nil {
 			return td, nil, err
+		}
+		if o.nodeType == folderNodeInbox {
+			inbox = n
 		}
 	}
 
@@ -494,18 +483,17 @@ func (a *mailsNavigationPane) fetchFolders(ctx context.Context, characterID int6
 		}
 	}
 	// Add all folder
-	folderAll := &mailFolderNode{
+	err = td.Add(nil, &mailFolderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
 		Type:        folderNodeAll,
 		Name:        "All",
 		ObjID:       app.MailLabelAll,
-	}
-	err = td.Add(nil, folderAll, false)
+	}, false)
 	if err != nil {
 		return td, nil, err
 	}
-	return td, folderAll, nil
+	return td, inbox, nil
 }
 
 func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterID int64, td *xwidget.TreeData[mailFolderNode]) (int, error) {
@@ -536,7 +524,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 	td.Walk(nil, func(n *mailFolderNode) bool {
 		var c int
 		switch n.Type {
-		case folderNodeAll, folderNodeUnread:
+		case folderNodeAll:
 			c = totalCount
 		case folderNodeInbox, folderNodeAlliance, folderNodeCorp:
 			c = labelUnreadCounts[n.ObjID]
@@ -868,8 +856,6 @@ func (a *mailsMessagePane) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	totalRows := len(rows)
-	folder := a.currentFolder.Load()
-	isUnreadFolder := folder != nil && folder.Type == folderNodeUnread
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
@@ -921,13 +907,11 @@ func (a *mailsMessagePane) filterRowsAsync() {
 			if !isLatest() {
 				return
 			}
-			var options []xwidget.FilterOption
-			if !isUnreadFolder {
-				options = append(options, xwidget.NewFilterOptionMultiChoice(mailsFilterStatus, statusOptions))
-			}
-			options = append(options, xwidget.NewFilterOptionMultiChoice(mailsFilterFrom, fromOptions))
 			a.footerLabel.SetText(footer)
-			a.filterChip.SetOptions(options...)
+			a.filterChip.SetOptions(
+				xwidget.NewFilterOptionMultiChoice(mailsFilterStatus, statusOptions),
+				xwidget.NewFilterOptionMultiChoice(mailsFilterFrom, fromOptions),
+			)
 			a.rowsFiltered = rows
 			a.headerList.Refresh()
 			a.syncSelection()

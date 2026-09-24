@@ -720,62 +720,6 @@ func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnproce
 	return items, nil
 }
 
-const listMailsUnreadOrdered = `-- name: ListMailsUnreadOrdered :many
-SELECT
-    cm.id, cm.body, cm.character_id, cm.from_id, cm.is_processed, cm.is_read, cm.mail_id, cm.subject, cm.timestamp, cm.body_2,
-    ee.id, ee.category, ee.name
-FROM
-    character_mails cm
-    JOIN eve_entities ee ON ee.id = cm.from_id
-WHERE
-    character_id = ?
-    AND is_read IS FALSE
-ORDER BY
-    timestamp DESC
-`
-
-type ListMailsUnreadOrderedRow struct {
-	CharacterMail CharacterMail
-	EveEntity     EveEntity
-}
-
-func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64) ([]ListMailsUnreadOrderedRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsUnreadOrdered, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListMailsUnreadOrderedRow
-	for rows.Next() {
-		var i ListMailsUnreadOrderedRow
-		if err := rows.Scan(
-			&i.CharacterMail.ID,
-			&i.CharacterMail.Body,
-			&i.CharacterMail.CharacterID,
-			&i.CharacterMail.FromID,
-			&i.CharacterMail.IsProcessed,
-			&i.CharacterMail.IsRead,
-			&i.CharacterMail.MailID,
-			&i.CharacterMail.Subject,
-			&i.CharacterMail.Timestamp,
-			&i.CharacterMail.Body2,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listMailsWithoutBody = `-- name: ListMailsWithoutBody :many
 SELECT
     mail_id

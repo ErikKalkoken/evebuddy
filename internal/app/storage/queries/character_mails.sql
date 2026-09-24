@@ -151,19 +151,6 @@ WHERE
 ORDER BY
     timestamp DESC;
 
--- name: ListMailsUnreadOrdered :many
-SELECT
-    sqlc.embed(cm),
-    sqlc.embed(ee)
-FROM
-    character_mails cm
-    JOIN eve_entities ee ON ee.id = cm.from_id
-WHERE
-    character_id = ?
-    AND is_read IS FALSE
-ORDER BY
-    timestamp DESC;
-
 -- name: ListMailsNoLabelOrdered :many
 SELECT
     sqlc.embed(cm),

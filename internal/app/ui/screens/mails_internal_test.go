@@ -116,14 +116,14 @@ func TestMails_Refresh(t *testing.T) {
 		assert.Nil(t, f.a.ReadingPane.mail)
 		assert.Empty(t, f.a.ReadingPane.subject.Text)
 	})
-	t.Run("resets to All and clears reading pane on character switch", func(t *testing.T) {
+	t.Run("resets to Inbox and clears reading pane on character switch", func(t *testing.T) {
 		f := setup(t)
 		character2 := createCharacter(f.factory)
 		f.a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character2)
 		folder := f.a.MessagePane.currentFolder.Load()
 		require.NotNil(t, folder)
 		assert.Equal(t, character2.ID, folder.CharacterID)
-		assert.Equal(t, folderNodeAll, folder.Type)
+		assert.Equal(t, folderNodeInbox, folder.Type)
 		assert.Nil(t, f.a.ReadingPane.mail)
 		assert.Empty(t, f.a.ReadingPane.subject.Text)
 	})
@@ -235,10 +235,10 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 
 	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 	a := NewMails(u)
-	u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character) // shows folder All
+	u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character) // shows Inbox
 	mp := a.MessagePane
-	folderAll := mp.currentFolder.Load()
-	require.NotNil(t, folderAll)
+	inbox := mp.currentFolder.Load()
+	require.NotNil(t, inbox)
 
 	subjects := func() []string {
 		var s []string
@@ -249,14 +249,14 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 	}
 	reset := func(t *testing.T) {
 		mp.columnSorter.Set("Date", xwidget.SortDesc)
-		mp.setCurrentFolder(t.Context(), folderAll)
+		mp.setCurrentFolder(t.Context(), inbox)
 		require.Equal(t, []string{"Charlie", "Bravo", "Alpha"}, subjects())
 	}
 
 	t.Run("shows all mails newest first", func(t *testing.T) {
 		reset(t)
 		assert.Equal(t, "Showing 3 / 3 messages", mp.footerLabel.Text)
-		assert.Equal(t, folderAll.Name, mp.topLabel.Text)
+		assert.Equal(t, inbox.Name, mp.topLabel.Text)
 	})
 	t.Run("search by subject", func(t *testing.T) {
 		reset(t)
@@ -293,7 +293,7 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
 		mp.filterRowsAsync()
 		require.Equal(t, []string{"Bravo"}, subjects())
-		mp.setCurrentFolder(t.Context(), folderAll)
+		mp.setCurrentFolder(t.Context(), inbox)
 		assert.Empty(t, mp.searchEntry.Text)
 		assert.Empty(t, mp.filterChip.Selected()[mailsFilterFrom])
 		assert.Len(t, mp.rowsFiltered, 3)
