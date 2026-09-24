@@ -569,7 +569,7 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	} else {
 		portrait = xwidget.NewImageFromResource(
 			icons.Characterplaceholder512Jpeg,
-			fyne.NewSquareSize(200),
+			fyne.NewSquareSize(192),
 		)
 	}
 	resTraining := theme.MediaRecordIcon()

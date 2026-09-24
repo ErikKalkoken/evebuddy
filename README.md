@@ -69,7 +69,7 @@ Below are example screenshots for both the desktop and mobile version (EVE Buddy
 
 ### Desktop version
 
-![Desktop](https://cdn.imgpile.com/f/Vr2PbBG_xl.png)
+<img width="1920" height="1046" alt="Image" src="https://github.com/user-attachments/assets/8750c5f8-fa42-4a12-9e60-66d399dc4b80" />
 
 ### Mobile version
 

@@ -432,7 +432,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	moreList := xwidget.NewNavList(
 		xwidget.NewNavListItem(
 			"Settings",
-			theme.NewThemedResource(icons.CogSvg),
+			theme.NewThemedResource(icons.TuneVariantSvg),
 			func() {
 				settings.Show(u)
 			},
@@ -441,7 +441,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemUpdateStatus,
 		navItemAbout,
 	)
-	moreNav = xwidget.NewNavigator(xwidget.NewAppBar("More", moreList))
+	moreNav = xwidget.NewNavigator(xwidget.NewAppBar("Manage", moreList))
 
 	// navigation bar
 	characterDest := xwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), characterNav)
@@ -467,7 +467,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		u.gameSearch.Reset()
 	}
 
-	moreDest := xwidget.NewDestinationDef("More", theme.MenuIcon(), moreNav)
+	moreDest := xwidget.NewDestinationDef("Manage", theme.SettingsIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}

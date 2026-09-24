@@ -457,18 +457,37 @@ func newBaseUI(arg UIParams) *baseUI {
 
 	u.MainWindow().SetMaster()
 
+	u.defaultTheme = theme.Current()
+	u.SetColorTheme(u.settings.ColorTheme())
+
 	// SetOnStarted is called on initial start,
 	// but also when an app is continued after it was temporarily stopped,
 	// which happens regularly on mobile.
 	u.app.Lifecycle().SetOnStarted(func() {
-		u.Start()
+		slog.Debug("Fyne App started")
+		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+		if wasStarted {
+			slog.Info("App resumed")
+			return
+		}
+		// First app start
+		u.isDeveloperMode.Store(u.settings.DeveloperMode())
+		if u.isOfflineMode {
+			slog.Info("App started initially in offline mode")
+		} else {
+			slog.Info("App started initially")
+		}
+		u.snackbar.Start()
+		ctx := context.Background()
+		go u.appInit(ctx)
 	})
+
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
-		slog.Debug("Entered foreground")
+		slog.Debug("Fyne App entered foreground")
 		u.isForeground.Store(true)
 		ctx := context.Background()
 		if u.isMobile {
-			// When the app is restarted on mobile the UI must be
+			// When the app is shown on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
 			go u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
@@ -482,12 +501,14 @@ func newBaseUI(arg UIParams) *baseUI {
 			}
 		}
 	})
+
 	u.app.Lifecycle().SetOnExitedForeground(func() {
-		slog.Debug("Exited foreground")
+		slog.Debug("Fyne App exited foreground")
 		u.isForeground.Store(false)
 	})
+
 	u.app.Lifecycle().SetOnStopped(func() {
-		slog.Info("App stopped")
+		slog.Info("Fyne App stopped")
 		if u.onAppStopped != nil {
 			u.onAppStopped()
 		}
@@ -495,77 +516,57 @@ func newBaseUI(arg UIParams) *baseUI {
 	return u
 }
 
-// Start starts the app and reports whether it was started.
-func (u *baseUI) Start() bool {
-	wasStarted := !u.wasStarted.CompareAndSwap(false, true)
-	if wasStarted {
-		slog.Info("App continued")
-		return false
-	}
-	// First app start
-	u.isDeveloperMode.Store(u.settings.DeveloperMode())
-	u.defaultTheme = theme.Current()
-	u.SetColorTheme(u.settings.ColorTheme())
-	if u.isOfflineMode {
-		slog.Info("App started in offline mode")
-	} else {
-		slog.Info("App started")
-	}
-	u.snackbar.Start()
-	ctx := context.Background()
-	go func() {
-		var wg sync.WaitGroup
-		wg.Go(func() {
-			u.signals.AppInit.Emit(ctx, struct{}{})
-		})
-		wg.Go(func() {
-			u.initCharacter(ctx)
-		})
-		wg.Go(func() {
-			u.initCorporation(ctx)
-		})
-		wg.Wait()
+func (u *baseUI) appInit(ctx context.Context) {
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		u.signals.AppInit.Emit(ctx, struct{}{})
+	})
+	wg.Go(func() {
+		u.initCharacter(ctx)
+	})
+	wg.Go(func() {
+		u.initCorporation(ctx)
+	})
+	wg.Wait()
 
-		updateCharactersMissingScope := func(ctx context.Context) {
-			cc, err := u.cs.CharactersWithMissingScopes(ctx)
-			if err != nil {
-				slog.Error("Failed to fetch characters with missing scopes", "error", err)
-				return
-			}
-			if u.onUpdateMissingScope != nil {
-				fyne.Do(func() {
-					u.onUpdateMissingScope(len(cc))
-				})
-			}
+	updateCharactersMissingScope := func(ctx context.Context) {
+		cc, err := u.cs.CharactersWithMissingScopes(ctx)
+		if err != nil {
+			slog.Error("Failed to fetch characters with missing scopes", "error", err)
+			return
 		}
-		u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-			updateCharactersMissingScope(ctx)
-		})
-		u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-			updateCharactersMissingScope(ctx)
-		})
+		if u.onUpdateMissingScope != nil {
+			fyne.Do(func() {
+				u.onUpdateMissingScope(len(cc))
+			})
+		}
+	}
+	u.signals.CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		updateCharactersMissingScope(ctx)
+	})
+	u.signals.CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		updateCharactersMissingScope(ctx)
+	})
+	updateCharactersMissingScope(ctx)
 
-		u.isStartupCompleted.Store(true)
-		go func() {
-			for range time.Tick(refreshUITick) {
-				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
-			}
-		}()
-		if u.onAppFirstStarted != nil {
-			u.onAppFirstStarted()
-		}
-		if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-			time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
-			slog.Info("Starting update ticker")
-			u.eus.StartUpdateTicker(eveUniverseUpdateTick)
-			u.cs.StartUpdateTickerCharacters(characterUpdateTick)
-			u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
-		} else {
-			slog.Info("Update ticker disabled")
+	u.isStartupCompleted.Store(true)
+	go func() {
+		for range time.Tick(refreshUITick) {
+			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
 		}
 	}()
-	return true
+	if u.onAppFirstStarted != nil {
+		u.onAppFirstStarted()
+	}
+	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
+		time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
+		slog.Info("Starting update ticker")
+		u.eus.StartUpdateTicker(eveUniverseUpdateTick)
+		u.cs.StartUpdateTickerCharacters(characterUpdateTick)
+		u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
+	} else {
+		slog.Info("Update ticker disabled")
+	}
 }
 
 // ShowAndRun shows the UI and runs the Fyne loop (blocking),
