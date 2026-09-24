@@ -562,6 +562,7 @@ func (a *Mails) makeHeaderList() *widget.List {
 			return
 		}
 		r := a.headers[id]
+		a.clearMail() // prevents actions from targeting the previous mail while loading
 		go a.loadMail(context.Background(), r.MailID)
 		a.lastSelected = id
 		if a.OnSelected != nil {
@@ -670,24 +671,29 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
-		subject := xstrings.TruncateWithSuffix(a.mail.Subject.ValueOrFallback("?"), 50, 0)
+		// callback runs off the main thread, so it must not read a.mail
+		m := a.mail
+		if m == nil {
+			return
+		}
+		subject := xstrings.TruncateWithSuffix(m.Subject.ValueOrFallback("?"), 50, 0)
 		ui.ShowProgressConfirm(
 			"Delete mail?",
 			fmt.Sprintf(
 				"You are about to permanently delete \"%s\" from %s. "+
 					"This action cannot be undone and the mail cannot be recovered.",
 				subject,
-				a.mail.From.Name,
+				m.From.Name,
 			),
 			"Delete",
 			widget.DangerImportance,
 			func() {
 				ctx := context.Background()
-				err := a.u.Character().DeleteMail(ctx, a.mail.CharacterID, a.mail.MailID)
+				err := a.u.Character().DeleteMail(ctx, m.CharacterID, m.MailID)
 				if err != nil {
 					slog.Error("Failed to delete mail",
-						slog.Int64("characterID", a.mail.CharacterID),
-						slog.Int64("mailID", a.mail.MailID),
+						slog.Int64("characterID", m.CharacterID),
+						slog.Int64("mailID", m.MailID),
 						slog.Any("err", err),
 					)
 					a.u.DisplaySnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.u.ErrorDisplay(err)))
@@ -705,18 +711,27 @@ func (a *Mails) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 
 func (a *Mails) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
+		if a.mail == nil {
+			return
+		}
 		a.showMailerWindow(mailer.Forward, a.mail)
 	}
 }
 
 func (a *Mails) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
+		if a.mail == nil {
+			return
+		}
 		a.showMailerWindow(mailer.Reply, a.mail)
 	}
 }
 
 func (a *Mails) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
+		if a.mail == nil {
+			return
+		}
 		a.showMailerWindow(mailer.ReplyAll, a.mail)
 	}
 }
@@ -727,6 +742,9 @@ func (a *Mails) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarAction(a.MakeReplyAllAction()),
 		widget.NewToolbarAction(a.MakeForwardAction()),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			if a.mail == nil {
+				return
+			}
 			fyne.CurrentApp().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
@@ -736,6 +754,7 @@ func (a *Mails) makeToolbar() *widget.Toolbar {
 }
 
 func (a *Mails) clearMail() {
+	a.mail = nil
 	a.Detail.clear()
 	a.toolbar.Hide()
 }
@@ -771,7 +790,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 				if err != nil {
 					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
 					fyne.Do(func() {
-						if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+						if a.mail == nil || a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 							return
 						}
 						a.Detail.SetBody("ERROR: Failed to load: " + a.u.ErrorDisplay(err))
@@ -779,7 +798,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 					return nil, nil
 				}
 				fyne.Do(func() {
-					if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+					if a.mail == nil || a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 						return
 					}
 					a.mail.Body.Set(body)
@@ -805,7 +824,7 @@ func (a *Mails) loadMail(ctx context.Context, mailID int64) {
 				go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
 				a.u.UpdateMailIndicator(ctx)
 				fyne.Do(func() {
-					if a.mail.CharacterID != characterID || a.mail.MailID != mailID {
+					if a.mail == nil || a.mail.CharacterID != characterID || a.mail.MailID != mailID {
 						return
 					}
 					a.mail.IsRead.Set(true)
