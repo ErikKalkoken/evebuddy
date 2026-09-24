@@ -285,6 +285,50 @@ func TestUpdateMailRead(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, true, m2.IsRead)
 	})
+	t.Run("resets local read state when ESI update fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		httpmock.RegisterResponder(
+			"PUT",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, m.MailID),
+			httpmock.NewStringResponder(500, ""))
+		err := s.SetMailReadLocal(t.Context(), c.ID, m.MailID, true)
+		require.NoError(t, err)
+		// when
+		err = s.UpdateMailRead(t.Context(), c.ID, m.MailID, true)
+		// then
+		require.Error(t, err)
+		m2, err := s.GetMail(t.Context(), c.ID, m.MailID)
+		require.NoError(t, err)
+		assert.False(t, m2.IsRead.ValueOrZero())
+	})
+}
+
+func TestSetMailReadLocal(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("marks mail as read without calling ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		// when
+		err := s.SetMailReadLocal(t.Context(), c.ID, m.MailID, true)
+		// then
+		require.NoError(t, err)
+		m2, err := s.GetMail(t.Context(), c.ID, m.MailID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, m2.IsRead)
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
 }
 
 func TestGetAllMailUnreadCount(t *testing.T) {

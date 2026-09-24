@@ -1,10 +1,13 @@
 package screens
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestMails_Refresh(t *testing.T) {
@@ -66,7 +70,7 @@ func TestMails_Refresh(t *testing.T) {
 		})
 		require.NotNil(t, f.inbox)
 		f.a.MessagePane.setCurrentFolder(t.Context(), f.inbox)
-		require.Len(t, f.a.MessagePane.headers, 2)
+		require.Len(t, f.a.MessagePane.rowsFiltered, 2)
 		p := f.a.ReadingPane
 		p.requested.characterID, p.requested.mailID = f.character.ID, f.mail1.MailID
 		p.loadMail(t.Context(), f.character.ID, f.mail1.MailID)
@@ -85,7 +89,7 @@ func TestMails_Refresh(t *testing.T) {
 		createInboxMail(f)
 		emitMailHeadersChanged(t, f)
 		assert.Equal(t, f.inbox.UID(), f.a.MessagePane.currentFolder.Load().UID())
-		assert.Len(t, f.a.MessagePane.headers, 3)
+		assert.Len(t, f.a.MessagePane.rowsFiltered, 3)
 		require.NotNil(t, f.a.ReadingPane.mail)
 		assert.Equal(t, f.mail1.MailID, f.a.ReadingPane.mail.MailID)
 		assert.Equal(t, f.mail1.Subject.ValueOrZero(), f.a.ReadingPane.subject.Text)
@@ -111,18 +115,18 @@ func TestMails_Refresh(t *testing.T) {
 		require.NoError(t, err)
 		emitMailHeadersChanged(t, f)
 		assert.Equal(t, f.inbox.UID(), f.a.MessagePane.currentFolder.Load().UID())
-		assert.Len(t, f.a.MessagePane.headers, 1)
+		assert.Len(t, f.a.MessagePane.rowsFiltered, 1)
 		assert.Nil(t, f.a.ReadingPane.mail)
 		assert.Empty(t, f.a.ReadingPane.subject.Text)
 	})
-	t.Run("resets to All and clears reading pane on character switch", func(t *testing.T) {
+	t.Run("resets to Inbox and clears reading pane on character switch", func(t *testing.T) {
 		f := setup(t)
 		character2 := createCharacter(f.factory)
 		f.a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character2)
 		folder := f.a.MessagePane.currentFolder.Load()
 		require.NotNil(t, folder)
 		assert.Equal(t, character2.ID, folder.CharacterID)
-		assert.Equal(t, folderNodeAll, folder.Type)
+		assert.Equal(t, folderNodeInbox, folder.Type)
 		assert.Nil(t, f.a.ReadingPane.mail)
 		assert.Empty(t, f.a.ReadingPane.subject.Text)
 	})
@@ -198,5 +202,240 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		p.loadMail(t.Context(), character.ID, 999_999_999)
 		assert.Nil(t, p.mail)
 		assert.Contains(t, p.body.Text, "ERROR")
+	})
+}
+
+func TestMailsMessagePane_FilterAndSort(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterMailHeaders,
+		CompletedAt: time.Now().UTC(),
+	})
+	factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+		CharacterID: character.ID,
+		LabelID:     app.MailLabelInbox,
+		Name:        optional.New("Inbox"),
+	})
+	amarr := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Amarr"})
+	caldari := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Caldari"})
+	now := time.Now().UTC()
+	createMail := func(subject string, from *app.EveEntity, isRead bool, age time.Duration) *app.CharacterMail {
+		return factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: character.ID,
+			FromID:      from.ID,
+			IsRead:      optional.New(isRead),
+			LabelIDs:    []int64{app.MailLabelInbox},
+			Subject:     optional.New(subject),
+			Timestamp:   now.Add(-age),
+		})
+	}
+	createMail("Alpha", amarr, true, 3*time.Hour)
+	bravo := createMail("Bravo", caldari, false, 2*time.Hour)
+	createMail("Charlie", amarr, false, time.Hour)
+
+	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+	a := NewMails(u)
+	u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character) // shows Inbox
+	mp := a.MessagePane
+	inbox := mp.currentFolder.Load()
+	require.NotNil(t, inbox)
+
+	subjects := func() []string {
+		var s []string
+		for _, r := range mp.rowsFiltered {
+			s = append(s, r.subject)
+		}
+		return s
+	}
+	reset := func(t *testing.T) {
+		mp.columnSorter.Set("Date", xwidget.SortDesc)
+		mp.setCurrentFolder(t.Context(), inbox)
+		require.Equal(t, []string{"Charlie", "Bravo", "Alpha"}, subjects())
+	}
+
+	t.Run("shows all mails newest first", func(t *testing.T) {
+		reset(t)
+		assert.Equal(t, "Showing 3 / 3 messages", mp.footerLabel.Text)
+		assert.Equal(t, inbox.Name, mp.topLabel.Text)
+	})
+	t.Run("search by subject", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("brav")
+		assert.Equal(t, []string{"Bravo"}, subjects())
+		assert.Equal(t, "Showing 1 / 3 messages", mp.footerLabel.Text)
+	})
+	t.Run("search by sender", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("amarr")
+		assert.Equal(t, []string{"Charlie", "Alpha"}, subjects())
+	})
+	t.Run("filter by status", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterStatus: mailsFilterStatusRead})
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Alpha"}, subjects())
+	})
+	t.Run("filter by from", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Bravo"}, subjects())
+	})
+	t.Run("sort by subject", func(t *testing.T) {
+		reset(t)
+		mp.columnSorter.Set("Subject", xwidget.SortAsc)
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Alpha", "Bravo", "Charlie"}, subjects())
+	})
+	t.Run("changing folder resets search and filters", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("brav")
+		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
+		mp.filterRowsAsync()
+		require.Equal(t, []string{"Bravo"}, subjects())
+		mp.setCurrentFolder(t.Context(), inbox)
+		assert.Empty(t, mp.searchEntry.Text)
+		assert.Empty(t, mp.filterChip.Selected()[mailsFilterFrom])
+		assert.Len(t, mp.rowsFiltered, 3)
+	})
+	t.Run("keeps opened mail under unread filter after it was read", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterStatus: mailsFilterStatusUnread})
+		mp.updateIsRead()
+		mp.filterRowsAsync()
+		require.Equal(t, []string{"Charlie", "Bravo"}, subjects())
+		p := a.ReadingPane
+		p.requested.characterID, p.requested.mailID = character.ID, bravo.MailID
+		err := st.UpdateCharacterMailSetIsRead(t.Context(), character.ID, bravo.ID, true)
+		require.NoError(t, err)
+
+		mp.update(t.Context()) // reload triggered after marking as read
+
+		assert.Equal(t, []string{"Charlie", "Bravo"}, subjects())
+		assert.True(t, mp.rowsFiltered[1].isRead2)
+		assert.Equal(t, bravo.MailID, p.requested.mailID)
+	})
+}
+
+func TestMails_UnreadCount(t *testing.T) {
+	setup := func(t *testing.T) (testutil.Factory, *storage.Storage, *app.Character, *app.CharacterMailLabel) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		custom := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		return factory, st, c, custom
+	}
+	unreadCount := func(t *testing.T, st *storage.Storage, c *app.Character) int64 {
+		a := NewMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		return a.unreadCount.Load()
+	}
+
+	t.Run("counts unread mail with one label once", func(t *testing.T) {
+		factory, st, c, _ := setup(t)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+	t.Run("counts unread mail with two labels once", func(t *testing.T) {
+		factory, st, c, custom := setup(t)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox, custom.LabelID},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+	t.Run("counts unread mailing list mail with label once", func(t *testing.T) {
+		factory, st, c, _ := setup(t)
+		list := factory.CreateCharacterMailList(c.ID)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			IsRead:       optional.New(false),
+			LabelIDs:     []int64{app.MailLabelInbox},
+			RecipientIDs: []int64{list.ID},
+		})
+		assert.EqualValues(t, 1, unreadCount(t, st, c))
+	})
+}
+
+func TestMailsMessagePane_MarkRead(t *testing.T) {
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+	setup := func(t *testing.T, esiStatus int) (*Mails, *app.CharacterMail, *[]string) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		var snackbars []string
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:                 test.NewTempApp(t),
+			Storage:             st,
+			DisplaySnackbarFunc: func(s string) { snackbars = append(snackbars, s) },
+		})
+		a := NewMails(u)
+		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Len(t, a.MessagePane.rowsFiltered, 1)
+		require.False(t, a.MessagePane.rowsFiltered[0].isRead2)
+		require.EqualValues(t, 1, a.unreadCount.Load())
+		httpmock.RegisterResponder(
+			"PUT",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail/%d", c.ID, m.MailID),
+			func(req *http.Request) (*http.Response, error) {
+				// UI must already show the mail as read while ESI is called
+				assert.True(t, a.MessagePane.rowsFiltered[0].isRead2)
+				assert.EqualValues(t, 0, a.unreadCount.Load())
+				return httpmock.NewStringResponse(esiStatus, ""), nil
+			})
+		return a, m, &snackbars
+	}
+
+	t.Run("shows mail as read before ESI is updated", func(t *testing.T) {
+		a, _, snackbars := setup(t, 204)
+		a.MessagePane.markRead(a.MessagePane.rowsFiltered[0])
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.True(t, a.MessagePane.rowsFiltered[0].isRead2)
+		assert.EqualValues(t, 0, a.unreadCount.Load())
+		assert.Empty(t, *snackbars)
+	})
+	t.Run("shows mail as unread again when ESI update fails", func(t *testing.T) {
+		a, _, snackbars := setup(t, 500)
+		a.MessagePane.markRead(a.MessagePane.rowsFiltered[0])
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.False(t, a.MessagePane.rowsFiltered[0].isRead2)
+		assert.EqualValues(t, 1, a.unreadCount.Load())
+		assert.Len(t, *snackbars, 1)
 	})
 }

@@ -14,7 +14,6 @@ import (
 // Special mail label IDs
 const (
 	MailLabelAll      = 1<<31 - 1
-	MailLabelUnread   = 1<<31 - 2
 	MailLabelNone     = 0
 	MailLabelInbox    = 1
 	MailLabelSent     = 2
