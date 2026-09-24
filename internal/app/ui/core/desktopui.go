@@ -460,9 +460,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)
 	}
 
-	homeTab := container.NewTabItemWithIcon(
+	homeItem := xwidget.NewNavRailItem(
+		theme.HomeIcon(),
 		"Home",
-		theme.NewThemedResource(theme.HomeIcon()),
 		makeTabContent(NewPageHeader(NewPageHeaderParams{Title: "Home"}), homeNav),
 	)
 
@@ -473,9 +473,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		Title:         "Characters",
 		TitleTooltip:  "Show character information",
 	})
-	characterTab := container.NewTabItemWithIcon(
-		"Characters",
+	characterItem := xwidget.NewNavRailItem(
 		theme.AccountIcon(),
+		"Characters",
 		makeTabContent(characterHeader, characterNav),
 	)
 
@@ -487,12 +487,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		TitleTooltip:  "Show corporation information",
 	})
 
-	corporationTab := container.NewTabItemWithIcon(
+	corporationItem := xwidget.NewNavRailItem(
+		icons.StarCircleOutlineSvg,
 		"Corporations",
-		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		makeTabContent(corporationHeader, corporationNav),
 	)
-	tabs := container.NewAppTabs(homeTab, characterTab, corporationTab)
+	rail := xwidget.NewNavRail([]*xwidget.NavRailItem{homeItem, characterItem, corporationItem})
 
 	statusBar := newStatusBar(u)
 	toolbar := newToolbar(u)
@@ -501,12 +501,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		statusBar,
 		nil,
 		nil,
-		tabs,
+		rail,
 	)
 
 	// initial state is disabled
-	tabs.DisableItem(characterTab)
-	tabs.DisableItem(corporationTab)
+	rail.DisableItem(characterItem)
+	rail.DisableItem(corporationItem)
 	homeNav.Disable()
 	toolbar.ToogleSearchBar(false)
 
@@ -554,7 +554,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {
-			tabs.Select(characterTab)
+			rail.Select(characterItem)
 		})
 	}
 
@@ -645,7 +645,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
-				tabs.DisableItem(characterTab)
+				rail.DisableItem(characterItem)
 				homeNav.Disable()
 				toolbar.ToogleSearchBar(false)
 				characterNav.SelectIndex(0)
@@ -653,7 +653,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			return
 		}
 		fyne.Do(func() {
-			tabs.EnableItem(characterTab)
+			rail.EnableItem(characterItem)
 			homeNav.Enable()
 			toolbar.ToogleSearchBar(true)
 		})
@@ -704,12 +704,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			if len(cc) == 0 {
 				fyne.Do(func() {
 					corporationNav.Select(corpSheetItem)
-					tabs.DisableItem(corporationTab)
+					rail.DisableItem(corporationItem)
 				})
 				return
 			}
 			fyne.Do(func() {
-				tabs.EnableItem(corporationTab)
+				rail.EnableItem(corporationItem)
 			})
 		}()
 	}
