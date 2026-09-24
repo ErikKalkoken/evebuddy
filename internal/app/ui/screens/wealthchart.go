@@ -16,8 +16,8 @@ import (
 
 const (
 	wealthArcCornerRadius = 8
-	wealthArcInnerRadius  = 0.6
-	wealthArcPadAngle     = 1.5
+	wealthArcInnerRadius  = 0.58
+	wealthArcPadAngle     = 3
 	swatchSize            = 12
 )
 
@@ -184,8 +184,9 @@ func newLegendEntry(text string, c color.Color) *legendEntry {
 }
 
 func (w *legendEntry) CreateRenderer() fyne.WidgetRenderer {
+	// p := theme.Padding()
 	swatch := container.NewGridWrap(fyne.NewSize(swatchSize, swatchSize), w.rect)
-	c := container.NewHBox(container.NewCenter(swatch), container.NewCenter(w.label))
+	c := container.New(layout.NewCustomPaddedHBoxLayout(0), container.NewCenter(swatch), container.NewCenter(w.label))
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -199,7 +200,11 @@ type seriesLegend struct {
 
 // newSeriesLegend creates a legend from entries.
 func newSeriesLegend(entries ...*legendEntry) *seriesLegend {
-	w := &seriesLegend{container: container.New(layout.NewRowWrapLayout(), legendEntryObjects(entries)...)}
+	p := theme.Padding()
+	w := &seriesLegend{container: container.New(
+		layout.NewRowWrapLayoutWithCustomPadding(p, -2*p),
+		legendEntryObjects(entries)...,
+	)}
 	w.ExtendBaseWidget(w)
 	return w
 }
