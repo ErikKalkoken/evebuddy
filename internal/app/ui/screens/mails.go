@@ -709,7 +709,7 @@ func (a *mailsMessagePane) clear() {
 func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 	a.currentFolder.Store(folder)
 	fyne.Do(func() {
-		a.headerList.ScrollToTop()
+		a.headerList.ScrollToOffset(0) // ScrollToTop panics on an unrendered list
 		a.headerList.UnselectAll()
 		a.ma.ReadingPane.clear()
 	})

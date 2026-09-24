@@ -57,7 +57,6 @@ func TestMails_Refresh(t *testing.T) {
 			App:     test.NewTempApp(t),
 			Storage: st,
 		}))
-		test.WidgetRenderer(f.a.MessagePane.headerList) // ScrollToTop needs a rendered list
 		f.a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), f.character)
 		f.a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
 			if n.Type == folderNodeInbox {
