@@ -189,6 +189,16 @@ func (a *Communications) update(ctx context.Context) {
 	}
 
 	fyne.Do(func() {
+		// keep the filter snapshot, so rows don't vanish from an active Unread/Read filter
+		snapshot := make(map[int64]bool, len(a.rows))
+		for _, r := range a.rows {
+			snapshot[r.id] = r.isRead
+		}
+		for i, r := range rows {
+			if v, ok := snapshot[r.id]; ok {
+				rows[i].isRead = v
+			}
+		}
 		a.rows = rows
 		a.NavigationPane.update()
 	})

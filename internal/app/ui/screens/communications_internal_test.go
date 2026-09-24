@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -245,4 +246,35 @@ func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
 		assert.Equal(t, n2.ID, p.currentNotification.ID)
 		assert.True(t, p.toolbar.Visible())
 	})
+}
+
+func TestCommunications_UnreadFilterKeepsOpenedNotification(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	for range 2 {
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	}
+	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+	a := NewUnifiedCommunications(u)
+	u.Signals().AppInit.Emit(t.Context(), struct{}{})
+	mp := a.MessagePane
+	mp.filterChip.SetSelected(map[string]string{communicationsFilterStatus: communicationsFilterStatusUnread})
+	a.updateIsRead(mp.currentFolder)
+	mp.filterRowsAsync()
+	require.Len(t, mp.rowsFiltered, 2)
+
+	// open a notification and mark it as read, as the reading pane does
+	r := mp.rowsFiltered[0]
+	r.isRead2 = true // skip async mark as read
+	a.ReadingPane.set(r)
+	require.NotNil(t, a.ReadingPane.currentNotification)
+	err := u.Character().SetNotificationsAsRead(t.Context(), set.Of(r.id))
+	require.NoError(t, err)
+
+	a.update(t.Context()) // reload triggered by DataUpdated in the unified view
+
+	assert.Len(t, mp.rowsFiltered, 2)
+	require.NotNil(t, a.ReadingPane.currentNotification)
+	assert.Equal(t, r.id, a.ReadingPane.currentNotification.ID)
 }
