@@ -29,6 +29,7 @@ type railDestination struct {
 	icon         *canvas.Image
 	iconDisabled fyne.Resource
 	iconEnabled  fyne.Resource
+	iconSelected fyne.Resource
 	indicator    *canvas.Rectangle
 	isActive     bool
 	onTapped     func()
@@ -54,6 +55,7 @@ func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *ra
 		hover:        makePill(),
 		icon:         iconImage,
 		iconEnabled:  theme.NewThemedResource(icon),
+		iconSelected: theme.NewPrimaryThemedResource(icon),
 		iconDisabled: theme.NewDisabledResource(icon),
 		indicator:    makePill(),
 		onTapped:     onTapped,
@@ -76,9 +78,12 @@ func (w *railDestination) setActive(active bool) {
 func (w *railDestination) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	if w.Disabled() {
+	switch {
+	case w.Disabled():
 		w.icon.Resource = w.iconDisabled
-	} else {
+	case w.isActive:
+		w.icon.Resource = w.iconSelected
+	default:
 		w.icon.Resource = w.iconEnabled
 	}
 	if w.isActive {

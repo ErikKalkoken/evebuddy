@@ -122,6 +122,8 @@ func (w *NavDrawer) makeList() *widget.List {
 				var r fyne.Resource
 				if it.isDisabled {
 					r = theme.NewDisabledResource(it.icon)
+				} else if it.isSelected {
+					r = theme.NewPrimaryThemedResource(it.icon)
 				} else {
 					r = it.icon
 				}
