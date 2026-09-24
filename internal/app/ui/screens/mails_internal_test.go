@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestMails_Refresh(t *testing.T) {
@@ -66,7 +67,7 @@ func TestMails_Refresh(t *testing.T) {
 		})
 		require.NotNil(t, f.inbox)
 		f.a.MessagePane.setCurrentFolder(t.Context(), f.inbox)
-		require.Len(t, f.a.MessagePane.headers, 2)
+		require.Len(t, f.a.MessagePane.rowsFiltered, 2)
 		p := f.a.ReadingPane
 		p.requested.characterID, p.requested.mailID = f.character.ID, f.mail1.MailID
 		p.loadMail(t.Context(), f.character.ID, f.mail1.MailID)
@@ -85,7 +86,7 @@ func TestMails_Refresh(t *testing.T) {
 		createInboxMail(f)
 		emitMailHeadersChanged(t, f)
 		assert.Equal(t, f.inbox.UID(), f.a.MessagePane.currentFolder.Load().UID())
-		assert.Len(t, f.a.MessagePane.headers, 3)
+		assert.Len(t, f.a.MessagePane.rowsFiltered, 3)
 		require.NotNil(t, f.a.ReadingPane.mail)
 		assert.Equal(t, f.mail1.MailID, f.a.ReadingPane.mail.MailID)
 		assert.Equal(t, f.mail1.Subject.ValueOrZero(), f.a.ReadingPane.subject.Text)
@@ -111,7 +112,7 @@ func TestMails_Refresh(t *testing.T) {
 		require.NoError(t, err)
 		emitMailHeadersChanged(t, f)
 		assert.Equal(t, f.inbox.UID(), f.a.MessagePane.currentFolder.Load().UID())
-		assert.Len(t, f.a.MessagePane.headers, 1)
+		assert.Len(t, f.a.MessagePane.rowsFiltered, 1)
 		assert.Nil(t, f.a.ReadingPane.mail)
 		assert.Empty(t, f.a.ReadingPane.subject.Text)
 	})
@@ -198,5 +199,120 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		p.loadMail(t.Context(), character.ID, 999_999_999)
 		assert.Nil(t, p.mail)
 		assert.Contains(t, p.body.Text, "ERROR")
+	})
+}
+
+func TestMailsMessagePane_FilterAndSort(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: character.ID,
+		Section:     app.SectionCharacterMailHeaders,
+		CompletedAt: time.Now().UTC(),
+	})
+	factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+		CharacterID: character.ID,
+		LabelID:     app.MailLabelInbox,
+		Name:        optional.New("Inbox"),
+	})
+	amarr := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Amarr"})
+	caldari := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Caldari"})
+	now := time.Now().UTC()
+	createMail := func(subject string, from *app.EveEntity, isRead bool, age time.Duration) *app.CharacterMail {
+		return factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: character.ID,
+			FromID:      from.ID,
+			IsRead:      optional.New(isRead),
+			LabelIDs:    []int64{app.MailLabelInbox},
+			Subject:     optional.New(subject),
+			Timestamp:   now.Add(-age),
+		})
+	}
+	createMail("Alpha", amarr, true, 3*time.Hour)
+	bravo := createMail("Bravo", caldari, false, 2*time.Hour)
+	createMail("Charlie", amarr, false, time.Hour)
+
+	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+	a := NewMails(u)
+	u.Signals().CurrentCharacterExchanged.Emit(t.Context(), character) // shows folder All
+	mp := a.MessagePane
+	folderAll := mp.currentFolder.Load()
+	require.NotNil(t, folderAll)
+
+	subjects := func() []string {
+		var s []string
+		for _, r := range mp.rowsFiltered {
+			s = append(s, r.subject)
+		}
+		return s
+	}
+	reset := func(t *testing.T) {
+		mp.columnSorter.Set("Date", xwidget.SortDesc)
+		mp.setCurrentFolder(t.Context(), folderAll)
+		require.Equal(t, []string{"Charlie", "Bravo", "Alpha"}, subjects())
+	}
+
+	t.Run("shows all mails newest first", func(t *testing.T) {
+		reset(t)
+		assert.Equal(t, "Showing 3 / 3 messages", mp.footerLabel.Text)
+		assert.Equal(t, folderAll.Name, mp.topLabel.Text)
+	})
+	t.Run("search by subject", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("brav")
+		assert.Equal(t, []string{"Bravo"}, subjects())
+		assert.Equal(t, "Showing 1 / 3 messages", mp.footerLabel.Text)
+	})
+	t.Run("search by sender", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("amarr")
+		assert.Equal(t, []string{"Charlie", "Alpha"}, subjects())
+	})
+	t.Run("filter by status", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterStatus: mailsFilterStatusRead})
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Alpha"}, subjects())
+	})
+	t.Run("filter by from", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Bravo"}, subjects())
+	})
+	t.Run("sort by subject", func(t *testing.T) {
+		reset(t)
+		mp.columnSorter.Set("Subject", xwidget.SortAsc)
+		mp.filterRowsAsync()
+		assert.Equal(t, []string{"Alpha", "Bravo", "Charlie"}, subjects())
+	})
+	t.Run("changing folder resets search and filters", func(t *testing.T) {
+		reset(t)
+		mp.searchEntry.SetText("brav")
+		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
+		mp.filterRowsAsync()
+		require.Equal(t, []string{"Bravo"}, subjects())
+		mp.setCurrentFolder(t.Context(), folderAll)
+		assert.Empty(t, mp.searchEntry.Text)
+		assert.Empty(t, mp.filterChip.Selected()[mailsFilterFrom])
+		assert.Len(t, mp.rowsFiltered, 3)
+	})
+	t.Run("keeps opened mail under unread filter after it was read", func(t *testing.T) {
+		reset(t)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterStatus: mailsFilterStatusUnread})
+		mp.updateIsRead()
+		mp.filterRowsAsync()
+		require.Equal(t, []string{"Charlie", "Bravo"}, subjects())
+		p := a.ReadingPane
+		p.requested.characterID, p.requested.mailID = character.ID, bravo.MailID
+		err := st.UpdateCharacterMailSetIsRead(t.Context(), character.ID, bravo.ID, true)
+		require.NoError(t, err)
+
+		mp.update(t.Context()) // reload triggered after marking as read
+
+		assert.Equal(t, []string{"Charlie", "Bravo"}, subjects())
+		assert.True(t, mp.rowsFiltered[1].isRead2)
+		assert.Equal(t, bravo.MailID, p.requested.mailID)
 	})
 }
