@@ -61,3 +61,23 @@ func TestNavRail_TappingMenuItemShowsMenuAndKeepsSelection(t *testing.T) {
 	assert.Equal(t, a, nr.Selected())
 	assert.NotEmpty(t, w.Canvas().Overlays().List())
 }
+
+func TestNavRail_TappingActionItem(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	var tapped int
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	x := NewNavRailActionItem(theme.SearchIcon(), "Search", func() { tapped++ })
+	nr := NewNavRail([]*NavRailItem{a}, x)
+	w := test.NewWindow(nr)
+	defer w.Close()
+
+	test.Tap(x.dest)
+	assert.Equal(t, 1, tapped)
+	assert.Equal(t, a, nr.Selected())
+
+	nr.DisableItem(x)
+	test.Tap(x.dest)
+	assert.Equal(t, 1, tapped)
+}

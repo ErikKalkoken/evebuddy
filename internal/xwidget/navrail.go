@@ -147,17 +147,27 @@ type NavRailItem struct {
 	// OnSelectedAgain is an optional callback that fires when this item is selected while already selected.
 	OnSelectedAgain func()
 
-	content fyne.CanvasObject
-	dest    *railDestination
-	icon    fyne.Resource
-	menu    *fyne.Menu // shown when tapped; menu items have no content and are never selected
-	rail    *NavRail
-	tooltip string
+	content  fyne.CanvasObject
+	dest     *railDestination
+	icon     fyne.Resource
+	onTapped func() // action items run this when tapped; they have no content and are never selected
+	rail     *NavRail
+	tooltip  string
 }
 
 // NewNavRailItem returns a new item for a [NavRail].
 func NewNavRailItem(icon fyne.Resource, tooltip string, content fyne.CanvasObject) *NavRailItem {
 	return &NavRailItem{icon: icon, tooltip: tooltip, content: content}
+}
+
+// NewNavRailActionItem returns a new item for a [NavRail], which runs onTapped when tapped.
+//
+// It panics if onTapped is nil.
+func NewNavRailActionItem(icon fyne.Resource, tooltip string, onTapped func()) *NavRailItem {
+	if onTapped == nil {
+		panic("onTapped must not be nil")
+	}
+	return &NavRailItem{icon: icon, tooltip: tooltip, onTapped: onTapped}
 }
 
 // NewNavRailMenuItem returns a new item for a [NavRail], which shows a pop-up menu when tapped.
@@ -167,11 +177,15 @@ func NewNavRailMenuItem(icon fyne.Resource, tooltip string, menu *fyne.Menu) *Na
 	if menu == nil {
 		panic("menu must not be nil")
 	}
-	return &NavRailItem{icon: icon, tooltip: tooltip, menu: menu}
+	it := &NavRailItem{icon: icon, tooltip: tooltip}
+	it.onTapped = func() {
+		ShowPopUpMenuTrailingAbove(it.dest, menu)
+	}
+	return it
 }
 
-func (it *NavRailItem) isMenu() bool {
-	return it.menu != nil
+func (it *NavRailItem) isAction() bool {
+	return it.onTapped != nil
 }
 
 // NavRail lets people switch between the top-level views of an app on desktop.
@@ -186,15 +200,15 @@ type NavRail struct {
 	trailing *fyne.Container
 }
 
-// NewNavRail returns a new navigation rail. The first leading non-menu item is selected initially.
+// NewNavRail returns a new navigation rail. The first leading non-action item is selected initially.
 //
-// It panics if there is no leading non-menu item or an item already belongs to another rail.
+// It panics if there is no leading non-action item or an item already belongs to another rail.
 func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	first := slices.IndexFunc(leading, func(it *NavRailItem) bool {
-		return !it.isMenu()
+		return !it.isAction()
 	})
 	if first == -1 {
-		panic("must define at least one leading non-menu item")
+		panic("must define at least one leading non-action item")
 	}
 	gap := 3 * theme.Padding()
 	w := &NavRail{
@@ -209,15 +223,15 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 		}
 		it.rail = w
 		it.dest = newRailDestination(it.icon, it.tooltip, func() {
-			if it.isMenu() {
-				ShowPopUpMenuTrailingAbove(it.dest, it.menu)
+			if it.isAction() {
+				it.onTapped()
 				return
 			}
 			w.Select(it)
 		})
 		c.Add(it.dest)
 		w.items = append(w.items, it)
-		if !it.isMenu() {
+		if !it.isAction() {
 			it.content.Hide()
 			w.body.Add(it.content)
 		}
@@ -232,9 +246,9 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	return w
 }
 
-// Select switches to an item. Does nothing when the item is disabled or a menu item.
+// Select switches to an item. Does nothing when the item is disabled or an action item.
 func (w *NavRail) Select(it *NavRailItem) {
-	if !w.owns(it) || it.isMenu() || it.dest.Disabled() {
+	if !w.owns(it) || it.isAction() || it.dest.Disabled() {
 		return
 	}
 	if it == w.selected {
@@ -260,7 +274,7 @@ func (w *NavRail) EnableItem(it *NavRailItem) {
 }
 
 // DisableItem disables an item. Disabled items can not be selected.
-// When the selected item is disabled, the rail switches to the first enabled non-menu item.
+// When the selected item is disabled, the rail switches to the first enabled non-action item.
 func (w *NavRail) DisableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
@@ -270,7 +284,7 @@ func (w *NavRail) DisableItem(it *NavRailItem) {
 		return
 	}
 	for _, x := range w.items {
-		if !x.isMenu() && !x.dest.Disabled() {
+		if !x.isAction() && !x.dest.Disabled() {
 			w.selectItem(x)
 			return
 		}

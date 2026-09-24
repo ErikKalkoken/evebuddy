@@ -217,3 +217,25 @@ func TestNavRail_MenuItem(t *testing.T) {
 		assert.True(t, nr.ItemEnabled(m))
 	})
 }
+
+func TestNavRail_ActionItem(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	t.Run("panics without callback", func(t *testing.T) {
+		assert.Panics(t, func() {
+			xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search", nil)
+		})
+	})
+
+	t.Run("can not be selected", func(t *testing.T) {
+		a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		x := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search", func() {})
+		nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a}, x)
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		nr.Select(x)
+		assert.Equal(t, a, nr.Selected())
+	})
+}

@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	navDrawerMinWidth = 250
+	navDrawerMinWidth = 220
 )
 
 type shortcutDef struct {
@@ -492,15 +492,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Corporations",
 		makeTabContent(corporationHeader, corporationNav),
 	)
+	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search New Eden", u.showSearchWindow)
 	rail := xwidget.NewNavRail(
 		[]*xwidget.NavRailItem{homeItem, characterItem, corporationItem},
+		searchItem,
 		xwidget.NewNavRailMenuItem(theme.MenuIcon(), "Main menu", makeMainMenu(u)),
 	)
 
 	statusBar := newStatusBar(u)
-	toolbar := newToolbar(u)
 	mainContent := container.NewBorder(
-		toolbar,
+		nil,
 		statusBar,
 		nil,
 		nil,
@@ -511,7 +512,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	rail.DisableItem(characterItem)
 	rail.DisableItem(corporationItem)
 	homeNav.Disable()
-	toolbar.ToogleSearchBar(false)
+	rail.DisableItem(searchItem)
 
 	w := u.MainWindow()
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(mainContent, w.Canvas()))
@@ -650,7 +651,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			fyne.Do(func() {
 				rail.DisableItem(characterItem)
 				homeNav.Disable()
-				toolbar.ToogleSearchBar(false)
+				rail.DisableItem(searchItem)
 				characterNav.SelectIndex(0)
 			})
 			return
@@ -658,7 +659,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.Do(func() {
 			rail.EnableItem(characterItem)
 			homeNav.Enable()
-			toolbar.ToogleSearchBar(true)
+			rail.EnableItem(searchItem)
 		})
 	})
 
@@ -733,20 +734,6 @@ func (u *DesktopUI) saveAppState() {
 	}
 	u.settings.SetWindowSize(u.MainWindow().Canvas().Size())
 	slog.Debug("Saved app state")
-}
-
-func (u *DesktopUI) PerformSearch(s string) {
-	u.gameSearch.ResetOptions()
-	u.gameSearch.ToogleOptions(false)
-	u.gameSearch.SetEntry(s)
-	go u.gameSearch.DoSearch(context.Background(), s)
-	u.showSearchWindow()
-}
-
-func (u *DesktopUI) showAdvancedSearch(s string) {
-	u.gameSearch.ToogleOptions(true)
-	u.gameSearch.SetEntry(s)
-	u.showSearchWindow()
 }
 
 func (u *DesktopUI) showSearchWindow() {
