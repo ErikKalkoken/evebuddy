@@ -86,6 +86,8 @@ type MailHeaderWidget struct {
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
 	loadIcon   ui.EveEntityIconLoader
+	owner      *widget.Label
+	ownerRow   *fyne.Container
 	recipients *fyne.Container
 	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
@@ -99,6 +101,7 @@ func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEnti
 	w := &MailHeaderWidget{
 		from:       from,
 		loadIcon:   loadIcon,
+		owner:      widget.NewLabel(""),
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
@@ -110,6 +113,11 @@ func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEnti
 	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
 	w.icon.CornerRadius = ui.IconUnitSize / 2
 	w.to.Hide()
+	w.owner.Importance = widget.LowImportance
+	w.owner.Truncation = fyne.TextTruncateEllipsis
+	// hiding the row instead of the label, because a row with a hidden label still has a negative height
+	w.ownerRow = container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.owner)
+	w.ownerRow.Hide()
 	return w
 }
 
@@ -136,6 +144,16 @@ func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipie
 	w.Refresh()
 }
 
+// SetOwner shows the name of the character owning the mail. An empty name hides it.
+func (w *MailHeaderWidget) SetOwner(name string) {
+	if name == "" {
+		w.ownerRow.Hide()
+		return
+	}
+	w.owner.SetText("[" + name + "]")
+	w.ownerRow.Show()
+}
+
 func (w *MailHeaderWidget) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
@@ -143,6 +161,7 @@ func (w *MailHeaderWidget) Clear() {
 	w.timestamp.Text = ""
 	w.icon.SetResource(icons.BlankSvg)
 	w.icon.OnTapped = nil
+	w.ownerRow.Hide()
 	w.to.Hide()
 	w.Refresh()
 }
@@ -167,7 +186,7 @@ func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		w.recipients,
 	)
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
+	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second, w.ownerRow)
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)
 }

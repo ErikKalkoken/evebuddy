@@ -159,6 +159,7 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		require.NotNil(t, p.mail)
 		assert.Equal(t, mail1.MailID, p.mail.MailID)
 		assert.Equal(t, mail1.Subject.ValueOrZero(), p.subject.Text)
+		assert.False(t, p.header.ownerRow.Visible())
 	})
 	t.Run("ignores earlier request completing after later one", func(t *testing.T) {
 		request(mail1.MailID)
@@ -542,12 +543,10 @@ func TestUnifiedMails(t *testing.T) {
 		require.NotEqual(t, -1, idx)
 		p := f.a.ReadingPane
 		p.showMail(mp.rowsFiltered[idx])
-		assert.Equal(t, "Character: "+f.c2.EveCharacter.Name, p.character.Text)
-		assert.True(t, p.character.Visible())
-		p.loadMail(t.Context(), f.c2.ID, 42)
 		require.NotNil(t, p.mail)
 		assert.Equal(t, f.c2.ID, p.mail.CharacterID)
-
+		assert.Equal(t, "["+f.c2.EveCharacter.Name+"]", p.header.owner.Text)
+		assert.True(t, p.header.ownerRow.Visible())
 	})
 	t.Run("clears reading pane when the shown copy of a mail is gone", func(t *testing.T) {
 		f := setup(t)
@@ -561,13 +560,14 @@ func TestUnifiedMails(t *testing.T) {
 		require.NotEqual(t, -1, idx)
 		p := f.a.ReadingPane
 		p.showMail(mp.rowsFiltered[idx])
+		require.True(t, p.header.ownerRow.Visible())
 		require.NoError(t, f.st.DeleteCharacterMail(t.Context(), f.c2.ID, 42))
 
 		mp.update(t.Context())
 
 		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
 		assert.Zero(t, p.requested.mailID)
-		assert.False(t, p.character.Visible())
+		assert.False(t, p.header.ownerRow.Visible())
 	})
 	t.Run("is refreshed when a mail is read in the character screen", func(t *testing.T) {
 		f := setup(t)

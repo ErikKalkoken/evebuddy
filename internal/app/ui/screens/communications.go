@@ -902,6 +902,9 @@ func (a *communicationsReadingPane) loadNotification(ctx context.Context, r noti
 		}
 		a.subjectLabel.SetText(subject)
 		a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
+		if !a.co.forCharacter.Load() {
+			a.headerWidget.SetOwner(r.characterName)
+		}
 		if v, ok := cn.Body.Value(); !ok {
 			a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
 				ColorName: theme.ColorNameDisabled,

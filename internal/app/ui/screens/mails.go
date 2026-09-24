@@ -1150,10 +1150,10 @@ type mailsReadingPane struct {
 	widget.BaseWidget
 
 	body      *widget.Label
-	character *widget.Label
 	header    *MailHeaderWidget
 	ma        *Mails
 	mail      *app.CharacterMail
+	owner     string                              // name of the character owning the requested mail
 	requested struct{ characterID, mailID int64 } // latest mail requested for display
 	subject   *widget.Label
 	toolbar   *widget.Toolbar
@@ -1161,16 +1161,12 @@ type mailsReadingPane struct {
 
 func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 	a := &mailsReadingPane{
-		body:      widget.NewLabel(""),
-		character: widget.NewLabel(""),
-		header:    NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
-		ma:        ma,
-		subject:   widget.NewLabel(""),
+		body:    widget.NewLabel(""),
+		header:  NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
+		ma:      ma,
+		subject: widget.NewLabel(""),
 	}
 	a.ExtendBaseWidget(a)
-	a.character.Importance = widget.LowImportance
-	a.character.Truncation = fyne.TextTruncateEllipsis
-	a.character.Hide()
 	a.subject.SizeName = theme.SizeNameSubHeadingText
 	a.subject.Truncation = fyne.TextTruncateClip
 	a.subject.Selectable = true
@@ -1183,7 +1179,7 @@ func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 
 func (a *mailsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewVBox(a.subject, a.header, a.character),
+		container.NewVBox(a.subject, a.header),
 		nil,
 		nil,
 		nil,
@@ -1283,11 +1279,12 @@ func (a *mailsReadingPane) showMail(r mailRow) {
 		return
 	}
 	if !a.ma.forCharacter {
-		a.character.SetText("Character: " + r.characterName)
-		a.character.Show()
+		a.owner = r.characterName
 	}
 	a.requested.characterID, a.requested.mailID = r.characterID, r.mailID
-	go a.loadMail(context.Background(), r.characterID, r.mailID)
+	runAsync(func() {
+		a.loadMail(context.Background(), r.characterID, r.mailID)
+	})
 }
 
 func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
@@ -1300,7 +1297,7 @@ func (a *mailsReadingPane) clear() {
 	a.subject.SetText("")
 	a.header.Clear()
 	a.body.SetText("")
-	a.character.Hide()
+	a.owner = ""
 	a.toolbar.Hide()
 }
 
@@ -1308,6 +1305,7 @@ func (a *mailsReadingPane) setMail(m *app.CharacterMail) {
 	a.subject.SetText(m.Subject.ValueOrZero())
 	a.setBody(m.BodyPlain())
 	a.header.Set(m.From, m.Timestamp, m.Recipients...)
+	a.header.SetOwner(a.owner)
 }
 
 func (a *mailsReadingPane) setBody(s string) {

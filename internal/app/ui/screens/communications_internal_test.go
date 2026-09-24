@@ -309,3 +309,34 @@ func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
 
 	assert.Len(t, mp.rowsFiltered, 3)
 }
+
+func TestCommunicationsReadingPane_Owner(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	character := factory.CreateCharacterFull()
+	n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	r := notificationRow{
+		characterID:    n.CharacterID,
+		characterName:  character.EveCharacter.Name,
+		id:             n.ID,
+		notificationID: n.NotificationID,
+		recipient:      n.Sender,
+	}
+	load := func(t *testing.T, a *Communications) {
+		a.ReadingPane.clear()
+		a.ReadingPane.requestedID = r.id
+		a.ReadingPane.loadNotification(t.Context(), r)
+		require.NotNil(t, a.ReadingPane.currentNotification)
+	}
+	t.Run("unified shows owner", func(t *testing.T) {
+		a := NewUnifiedCommunications(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		load(t, a)
+		assert.Equal(t, "["+character.EveCharacter.Name+"]", a.ReadingPane.headerWidget.owner.Text)
+		assert.True(t, a.ReadingPane.headerWidget.ownerRow.Visible())
+	})
+	t.Run("character view hides owner", func(t *testing.T) {
+		a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		load(t, a)
+		assert.False(t, a.ReadingPane.headerWidget.ownerRow.Visible())
+	})
+}
