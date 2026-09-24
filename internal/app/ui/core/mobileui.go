@@ -738,7 +738,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		updateCharacterCount(ctx)
 		updateUpdateStatus(ctx)
 
-		if !u.IsOffline() {
+		if !u.isOfflineMode {
 			tickerNewVersion := time.NewTicker(3600 * time.Second)
 			go func() {
 				for {
