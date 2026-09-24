@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"sync/atomic"
 
@@ -111,6 +112,9 @@ func NewMails(u baseUI) *Mails {
 
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.ReadingPane.clear()
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -194,10 +198,24 @@ func (a *Mails) update(ctx context.Context) {
 	} else {
 		folderAll.UnreadCount = unread
 	}
-	a.MessagePane.setCurrentFolder(ctx, folderAll)
+	// keep showing the current folder if it still exists, e.g. after new mail arrived
+	current := a.MessagePane.currentFolder.Load()
+	folder := folderAll
+	if current != nil {
+		if n, ok := td.Node(current.UID()); ok {
+			folder = n
+		}
+	}
+	isSameFolder := current != nil && current.UID() == folder.UID()
+	a.MessagePane.currentFolder.Store(folder) // before set, so re-selecting the node is a no-op
 	fyne.Do(func() {
-		a.NavigationPane.set(td, folderAll)
+		a.NavigationPane.set(td, folder)
 	})
+	if isSameFolder {
+		a.MessagePane.update(ctx)
+	} else {
+		a.MessagePane.setCurrentFolder(ctx, folder)
+	}
 	a.unreadCount.Store(int64(folderAll.UnreadCount))
 	a.NavigationPane.updateDownloaded(ctx)
 	fyne.Do(func() {
@@ -290,6 +308,9 @@ func (a *mailsNavigationPane) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 			t.ToggleBranchNode(n)
 			return
 		}
+		if c := a.ma.MessagePane.currentFolder.Load(); c != nil && c.UID() == n.UID() {
+			return // already shown, e.g. re-selected after a refresh
+		}
 		go a.ma.MessagePane.setCurrentFolder(context.Background(), n)
 	}
 	return t
@@ -304,7 +325,19 @@ func (a *mailsNavigationPane) clear() {
 func (a *mailsNavigationPane) set(td *xwidget.TreeData[mailFolderNode], selected *mailFolderNode) {
 	a.compose.Enable()
 	a.folderStatus.Hide()
+	var openBranches []widget.TreeNodeID
+	a.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+		if a.folders.IsBranchOpenNode(n) {
+			openBranches = append(openBranches, n.UID())
+		}
+		return true
+	})
 	a.folders.Set(td)
+	for _, uid := range openBranches {
+		if n, ok := td.Node(uid); ok {
+			a.folders.OpenBranchNode(n)
+		}
+	}
 	a.folders.SelectNode(selected)
 }
 
@@ -534,7 +567,7 @@ func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
 	}
 	a.ma.unreadCount.Store(int64(unread))
 	fyne.Do(func() {
-		a.folders.Set(td)
+		a.folders.Refresh() // counts changed in place; Set would reset selection and branches
 		a.ma.callOnUpdate()
 	})
 }
@@ -605,6 +638,7 @@ type mailsMessagePane struct {
 	headerStatus  *widget.Label
 	headersTop    *folderTopWidget
 	ma            *Mails
+	reselecting   bool // suppresses OnSelected while restoring the selection
 }
 
 func newMailsMessagePane(ma *Mails) *mailsMessagePane {
@@ -653,7 +687,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
-		if id >= len(a.headers) {
+		if a.reselecting || id >= len(a.headers) {
 			return
 		}
 		r := a.headers[id]
@@ -674,12 +708,12 @@ func (a *mailsMessagePane) clear() {
 
 func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {
 	a.currentFolder.Store(folder)
-	a.update(ctx)
 	fyne.Do(func() {
 		a.headerList.ScrollToTop()
 		a.headerList.UnselectAll()
 		a.ma.ReadingPane.clear()
 	})
+	a.update(ctx)
 }
 
 // update refreshes the headers for the current folder.
@@ -729,7 +763,31 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 		a.headersTop.set(folder.Name, len(headers))
 		a.headers = headers
 		a.headerList.Refresh()
+		a.syncSelection()
 	})
+}
+
+// syncSelection keeps the displayed mail selected after the headers changed
+// and clears it when it is no longer in the current folder.
+func (a *mailsMessagePane) syncSelection() {
+	mailID := a.ma.ReadingPane.requested.mailID
+	if mailID == 0 {
+		return
+	}
+	idx := slices.IndexFunc(a.headers, func(h *app.CharacterMailHeader) bool {
+		return h.MailID == mailID
+	})
+	if idx == -1 {
+		a.headerList.UnselectAll()
+		a.ma.ReadingPane.clear()
+		return
+	}
+	if a.OnSelected != nil {
+		return // mobile does not keep a selection
+	}
+	a.reselecting = true
+	a.headerList.Select(idx)
+	a.reselecting = false
 }
 
 func (a *mailsMessagePane) fetchHeaders(ctx context.Context, f *mailFolderNode) ([]*app.CharacterMailHeader, error) {
