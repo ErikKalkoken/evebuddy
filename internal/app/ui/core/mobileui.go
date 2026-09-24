@@ -97,15 +97,15 @@ func NewMobileUI(params UIParams) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			u.characterMails.OnSelected = func() {
+			u.characterMails.MessagePane.OnSelected = func() {
 				characterNav.PushAndHideNavBar(
 					newCharacterAppBar(
 						"Mail",
-						u.characterMails.Detail,
-						kxwidget.NewIconButton(u.characterMails.MakeReplyAction()),
-						kxwidget.NewIconButton(u.characterMails.MakeReplyAllAction()),
-						kxwidget.NewIconButton(u.characterMails.MakeForwardAction()),
-						kxwidget.NewIconButton(u.characterMails.MakeDeleteAction(func() {
+						u.characterMails.ReadingPane,
+						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
+						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
+						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
+						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
 							fyne.Do(func() {
 								characterNav.Pop()
 							})
@@ -115,7 +115,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			}
 			mailPage = newCharacterAppBar(
 				"Mail",
-				u.characterMails.Headers,
+				u.characterMails.MessagePane,
 				kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
 				kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
 			)
@@ -193,7 +193,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemMail.Supporting = strings.Join(s, " • ")
 		navItemMail.Refresh()
 
-		mailMenu.Items = u.characterMails.MakeFolderMenu()
+		mailMenu.Items = u.characterMails.NavigationPane.MakeFolderMenu()
 		mailMenu.Refresh()
 
 		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
@@ -618,8 +618,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 				characterSelector.SetIcon(r)
 			})
 		})
-		ctx := context.Background()
-		go u.characterMails.ResetCurrentFolder(ctx)
 		go func() {
 			fyne.Do(func() {
 				u.characterCommunications.MessagePane.ResetHeaders()
