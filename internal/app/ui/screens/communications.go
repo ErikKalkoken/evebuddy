@@ -846,13 +846,18 @@ func (a *communicationsReadingPane) clear() {
 }
 
 func (a *communicationsReadingPane) set(r notificationRow) {
+	a.clear() // prevents actions from targeting the previous notification while loading
 	a.requestedID = r.id
 	ctx := context.Background()
 	if !r.isRead2 {
 		r.isRead2 = true
-		go a.co.MessagePane.setNotificationRead(ctx, r.id)
+		runAsync(func() {
+			a.co.MessagePane.setNotificationRead(ctx, r.id)
+		})
 	}
-	go a.loadNotification(ctx, r)
+	runAsync(func() {
+		a.loadNotification(ctx, r)
+	})
 }
 
 func (a *communicationsReadingPane) loadNotification(ctx context.Context, r notificationRow) {

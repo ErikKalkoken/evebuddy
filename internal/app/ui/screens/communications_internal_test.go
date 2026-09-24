@@ -220,4 +220,29 @@ func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
 		assert.Nil(t, p.currentNotification)
 		assert.Contains(t, p.bodyText.String(), "ERROR")
 	})
+	t.Run("hides previous notification while loading the next", func(t *testing.T) {
+		p.clear()
+		request(r1)
+		p.loadNotification(t.Context(), r1)
+		require.NotNil(t, p.currentNotification)
+		require.True(t, p.toolbar.Visible())
+
+		// queue async work, so the state while loading can be checked
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+
+		r := r2
+		r.isRead2 = true // skip marking as read
+		p.set(r)
+		assert.Nil(t, p.currentNotification)
+		assert.False(t, p.toolbar.Visible())
+
+		require.Len(t, pending, 1)
+		pending[0]()
+		require.NotNil(t, p.currentNotification)
+		assert.Equal(t, n2.ID, p.currentNotification.ID)
+		assert.True(t, p.toolbar.Visible())
+	})
 }
