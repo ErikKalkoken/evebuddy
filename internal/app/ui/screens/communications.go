@@ -901,10 +901,15 @@ func (a *communicationsReadingPane) loadNotification(ctx context.Context, r noti
 			subject += fmt.Sprintf(" (%s)", r.notificationType)
 		}
 		a.subjectLabel.SetText(subject)
-		a.headerWidget.Set(cn.Sender, cn.Timestamp, r.recipient)
+		var owner *app.EveEntity
 		if !a.co.forCharacter.Load() {
-			a.headerWidget.SetOwner(r.characterName)
+			owner = &app.EveEntity{
+				Category: app.EveEntityCharacter,
+				ID:       r.characterID,
+				Name:     r.characterName,
+			}
 		}
+		a.headerWidget.Set(cn.Sender, cn.Timestamp, owner, r.recipient)
 		if v, ok := cn.Body.Value(); !ok {
 			a.bodyText.SetWithText("[This notification type is not fully supported yet]", widget.RichTextStyle{
 				ColorName: theme.ColorNameDisabled,

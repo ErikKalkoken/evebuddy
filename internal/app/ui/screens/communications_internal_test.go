@@ -313,30 +313,26 @@ func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
 func TestCommunicationsReadingPane_Owner(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	character := factory.CreateCharacterFull()
-	n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: character.ID})
+	c := factory.CreateCharacterFull()
+	n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 	r := notificationRow{
-		characterID:    n.CharacterID,
-		characterName:  character.EveCharacter.Name,
+		characterID:    c.ID,
+		characterName:  c.EveCharacter.Name,
 		id:             n.ID,
+		isRead2:        true, // avoids marking as read, which refreshes and clears the pane
 		notificationID: n.NotificationID,
 		recipient:      n.Sender,
 	}
-	load := func(t *testing.T, a *Communications) {
-		a.ReadingPane.clear()
-		a.ReadingPane.requestedID = r.id
-		a.ReadingPane.loadNotification(t.Context(), r)
-		require.NotNil(t, a.ReadingPane.currentNotification)
-	}
 	t.Run("unified shows owner", func(t *testing.T) {
 		a := NewUnifiedCommunications(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
-		load(t, a)
-		assert.Equal(t, "["+character.EveCharacter.Name+"]", a.ReadingPane.headerWidget.owner.Text)
-		assert.True(t, a.ReadingPane.headerWidget.ownerRow.Visible())
+		a.ReadingPane.set(r)
+		require.NotNil(t, a.ReadingPane.currentNotification)
+		assert.True(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
 	})
-	t.Run("character view hides owner", func(t *testing.T) {
+	t.Run("character view does not show owner", func(t *testing.T) {
 		a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
-		load(t, a)
-		assert.False(t, a.ReadingPane.headerWidget.ownerRow.Visible())
+		a.ReadingPane.set(r)
+		require.NotNil(t, a.ReadingPane.currentNotification)
+		assert.False(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
 	})
 }

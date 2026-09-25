@@ -159,7 +159,6 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		require.NotNil(t, p.mail)
 		assert.Equal(t, mail1.MailID, p.mail.MailID)
 		assert.Equal(t, mail1.Subject.ValueOrZero(), p.subject.Text)
-		assert.False(t, p.header.ownerRow.Visible())
 	})
 	t.Run("ignores earlier request completing after later one", func(t *testing.T) {
 		request(mail1.MailID)
@@ -545,8 +544,6 @@ func TestUnifiedMails(t *testing.T) {
 		p.showMail(mp.rowsFiltered[idx])
 		require.NotNil(t, p.mail)
 		assert.Equal(t, f.c2.ID, p.mail.CharacterID)
-		assert.Equal(t, "["+f.c2.EveCharacter.Name+"]", p.header.owner.Text)
-		assert.True(t, p.header.ownerRow.Visible())
 	})
 	t.Run("clears reading pane when the shown copy of a mail is gone", func(t *testing.T) {
 		f := setup(t)
@@ -560,14 +557,12 @@ func TestUnifiedMails(t *testing.T) {
 		require.NotEqual(t, -1, idx)
 		p := f.a.ReadingPane
 		p.showMail(mp.rowsFiltered[idx])
-		require.True(t, p.header.ownerRow.Visible())
 		require.NoError(t, f.st.DeleteCharacterMail(t.Context(), f.c2.ID, 42))
 
 		mp.update(t.Context())
 
 		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
 		assert.Zero(t, p.requested.mailID)
-		assert.False(t, p.header.ownerRow.Visible())
 	})
 	t.Run("is refreshed when a mail is read in the character screen", func(t *testing.T) {
 		f := setup(t)
@@ -590,5 +585,25 @@ func TestUnifiedMails(t *testing.T) {
 		u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		assert.Equal(t, "No characters", a.NavigationPane.folderStatus.Text)
 		assert.Nil(t, a.MessagePane.currentFolder.Load())
+	})
+}
+
+func TestMailsReadingPane_Owner(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	c := factory.CreateCharacterFull()
+	m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	r := mailRow{characterID: c.ID, characterName: c.EveCharacter.Name, mailID: m.MailID}
+	t.Run("unified shows owner", func(t *testing.T) {
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.ReadingPane.showMail(r)
+		require.NotNil(t, a.ReadingPane.mail)
+		assert.True(t, headerShowsOwner(a.ReadingPane.header, c.EveCharacter.Name))
+	})
+	t.Run("character view does not show owner", func(t *testing.T) {
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.ReadingPane.showMail(r)
+		require.NotNil(t, a.ReadingPane.mail)
+		assert.False(t, headerShowsOwner(a.ReadingPane.header, c.EveCharacter.Name))
 	})
 }

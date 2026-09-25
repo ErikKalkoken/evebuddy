@@ -86,8 +86,6 @@ type MailHeaderWidget struct {
 	from       *kxwidget.TappableLabel
 	icon       *xwidget.TappableImage
 	loadIcon   ui.EveEntityIconLoader
-	owner      *widget.Label
-	ownerRow   *fyne.Container
 	recipients *fyne.Container
 	showInfo   func(*app.EveEntity)
 	timestamp  *widget.Label
@@ -95,39 +93,39 @@ type MailHeaderWidget struct {
 }
 
 func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeaderWidget {
-	from := kxwidget.NewTappableLabel("", nil)
-	from.TextStyle.Bold = true
 	p := theme.Padding()
 	w := &MailHeaderWidget{
-		from:       from,
+		from:       kxwidget.NewTappableLabel("", nil),
 		loadIcon:   loadIcon,
-		owner:      widget.NewLabel(""),
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
 		timestamp:  widget.NewLabel(""),
 		to:         widget.NewLabel("to"),
 	}
 	w.ExtendBaseWidget(w)
+	w.from.TextStyle.Bold = true
 	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
 	w.icon.CornerRadius = ui.IconUnitSize / 2
 	w.to.Hide()
-	w.owner.Importance = widget.LowImportance
-	w.owner.Truncation = fyne.TextTruncateEllipsis
-	// hiding the row instead of the label, because a row with a hidden label still has a negative height
-	w.ownerRow = container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.owner)
-	w.ownerRow.Hide()
 	return w
 }
 
-func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, owner *app.EveEntity, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
 		x := kxwidget.NewTappableLabel(r.Name, func() {
 			w.showInfo(r)
 		})
+		w.recipients.Add(x)
+	}
+	if owner != nil {
+		x := xwidget.NewTappableLabel("["+owner.Name+"]", func() {
+			w.showInfo(owner)
+		})
+		x.SetToolTip("Account: " + owner.Name)
 		w.recipients.Add(x)
 	}
 	w.from.Text = from.Name
@@ -144,16 +142,6 @@ func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipie
 	w.Refresh()
 }
 
-// SetOwner shows the name of the character owning the mail. An empty name hides it.
-func (w *MailHeaderWidget) SetOwner(name string) {
-	if name == "" {
-		w.ownerRow.Hide()
-		return
-	}
-	w.owner.SetText("[" + name + "]")
-	w.ownerRow.Show()
-}
-
 func (w *MailHeaderWidget) Clear() {
 	w.from.Text = ""
 	w.from.OnTapped = nil
@@ -161,7 +149,6 @@ func (w *MailHeaderWidget) Clear() {
 	w.timestamp.Text = ""
 	w.icon.SetResource(icons.BlankSvg)
 	w.icon.OnTapped = nil
-	w.ownerRow.Hide()
 	w.to.Hide()
 	w.Refresh()
 }
@@ -186,7 +173,7 @@ func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		w.recipients,
 	)
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second, w.ownerRow)
+	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
 	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
 	return widget.NewSimpleRenderer(c)
 }

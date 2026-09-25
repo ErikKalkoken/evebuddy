@@ -1153,7 +1153,7 @@ type mailsReadingPane struct {
 	header    *MailHeaderWidget
 	ma        *Mails
 	mail      *app.CharacterMail
-	owner     string                              // name of the character owning the requested mail
+	owner     *app.EveEntity
 	requested struct{ characterID, mailID int64 } // latest mail requested for display
 	subject   *widget.Label
 	toolbar   *widget.Toolbar
@@ -1279,7 +1279,11 @@ func (a *mailsReadingPane) showMail(r mailRow) {
 		return
 	}
 	if !a.ma.forCharacter {
-		a.owner = r.characterName
+		a.owner = &app.EveEntity{
+			Category: app.EveEntityCharacter,
+			ID:       r.characterID,
+			Name:     r.characterName,
+		}
 	}
 	a.requested.characterID, a.requested.mailID = r.characterID, r.mailID
 	runAsync(func() {
@@ -1297,15 +1301,14 @@ func (a *mailsReadingPane) clear() {
 	a.subject.SetText("")
 	a.header.Clear()
 	a.body.SetText("")
-	a.owner = ""
+	a.owner = nil
 	a.toolbar.Hide()
 }
 
 func (a *mailsReadingPane) setMail(m *app.CharacterMail) {
 	a.subject.SetText(m.Subject.ValueOrZero())
 	a.setBody(m.BodyPlain())
-	a.header.Set(m.From, m.Timestamp, m.Recipients...)
-	a.header.SetOwner(a.owner)
+	a.header.Set(m.From, m.Timestamp, a.owner, m.Recipients...)
 }
 
 func (a *mailsReadingPane) setBody(s string) {
