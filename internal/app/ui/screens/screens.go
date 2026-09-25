@@ -32,6 +32,7 @@ type baseUI interface {
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
 	Settings() *settings.Settings
+	SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource))
 	ShowCharacter(ctx context.Context, characterID int64)
 	DisplaySnackbar(text string)
 	Signals() *app.Signals

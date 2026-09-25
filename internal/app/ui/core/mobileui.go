@@ -613,7 +613,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			characterPage.SetTitle(c.EveCharacter.Name)
 			characterNav.PopAll()
 		})
-		go u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+		go u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
 				characterSelector.SetIcon(r)
 			})
@@ -954,11 +954,16 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 					),
 				)
 			}
+			var compose *kxwidget.IconButton
+			compose = kxwidget.NewIconButton(theme.DocumentCreateIcon(), func() {
+				u.unifiedMails.Compose(compose)
+			})
 			homeNav.Push(
 				xwidget.NewAppBar(
 					"Mail",
 					u.unifiedMails.MessagePane,
 					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedMailMenu),
+					compose,
 				),
 			)
 		},

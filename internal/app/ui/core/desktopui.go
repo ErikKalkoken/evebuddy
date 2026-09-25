@@ -559,7 +559,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			})
 		})
 		go func() {
-			u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+			u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					characterHeader.SetIcon(r)
 				})

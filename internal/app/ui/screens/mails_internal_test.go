@@ -518,7 +518,7 @@ func TestUnifiedMails(t *testing.T) {
 		})
 		assert.Equal(t, []int64{f.list.ID}, lists)
 		assert.False(t, hasLabels)
-		assert.False(t, f.a.NavigationPane.compose.Visible())
+		assert.True(t, f.a.NavigationPane.compose.Visible())
 	})
 	t.Run("can filter by character", func(t *testing.T) {
 		f := setup(t)
@@ -605,5 +605,42 @@ func TestMailsReadingPane_Owner(t *testing.T) {
 		a.ReadingPane.showMail(r)
 		require.NotNil(t, a.ReadingPane.mail)
 		assert.False(t, headerShowsOwner(a.ReadingPane.header, c.EveCharacter.Name))
+	})
+}
+
+func TestUnifiedMails_ComposeMenu(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	c1 := factory.CreateCharacterFull()
+	c2 := factory.CreateCharacterFull()
+	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+	a := NewUnifiedMails(u)
+	labels := func() []string {
+		var s []string
+		for _, it := range a.composeMenu.Items {
+			if it.IsSeparator {
+				s = append(s, "---")
+				continue
+			}
+			s = append(s, it.Label)
+		}
+		return s
+	}
+	t.Run("lists all characters alphabetically and cancel", func(t *testing.T) {
+		u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		want := []string{c1.EveCharacter.Name, c2.EveCharacter.Name}
+		slices.Sort(want)
+		want = append(want, "---", "Cancel")
+		assert.Equal(t, want, labels())
+		items := a.composeMenu.Items
+		assert.NotNil(t, items[len(items)-1].Action, "cancel needs an action to close the menu")
+		assert.NotNil(t, items[0].Icon)
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("includes added character", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		u.Signals().CharacterAdded.Emit(t.Context(), c)
+		assert.Contains(t, labels(), c.EveCharacter.Name)
+		assert.Len(t, a.composeCharacters, 3)
 	})
 }

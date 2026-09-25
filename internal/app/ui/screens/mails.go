@@ -98,12 +98,14 @@ type Mails struct {
 	NavigationPane *mailsNavigationPane
 	ReadingPane    *mailsReadingPane
 
-	character      atomic.Pointer[app.Character]
-	forCharacter   bool
-	missingPercent atomic.Int64
-	sig            *singleinstance.Group
-	u              baseUI
-	unreadCount    atomic.Int64
+	character         atomic.Pointer[app.Character]
+	composeCharacters []app.EntityShort // senders offered for new mails in unified mode
+	composeMenu       *fyne.Menu
+	forCharacter      bool
+	missingPercent    atomic.Int64
+	sig               *singleinstance.Group
+	u                 baseUI
+	unreadCount       atomic.Int64
 }
 
 func NewMailsForCharacter(u baseUI) *Mails {
@@ -231,13 +233,24 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 	} else {
-		ids, err := a.u.Character().ListCharacterIDs(ctx)
+		names, err := a.u.Character().CharacterNames(ctx)
 		if err != nil {
 			slog.Error("Failed to build mail tree", "error", err)
 			setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 			return
 		}
-		if ids.Size() == 0 {
+		var characters []app.EntityShort
+		for id, name := range names {
+			characters = append(characters, app.EntityShort{ID: id, Name: name})
+		}
+		slices.SortFunc(characters, func(a, b app.EntityShort) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		fyne.Do(func() {
+			a.composeCharacters = characters
+			a.composeMenu = a.makeComposeMenu()
+		})
+		if len(characters) == 0 {
 			clearAll()
 			setStatus("No characters", widget.LowImportance)
 			return
@@ -302,11 +315,14 @@ func (a *Mails) showMailerWindow(mode mailer.Mode, mail *app.CharacterMail) {
 	if mail == nil {
 		return
 	}
-	// the mail's own character sends replies
+	a.showMailerWindowForCharacter(mail.CharacterID, mode, mail) // the mail's own character sends replies
+}
+
+func (a *Mails) showMailerWindowForCharacter(characterID int64, mode mailer.Mode, mail *app.CharacterMail) {
 	go func() {
-		c, err := a.u.Character().GetCharacter(context.Background(), mail.CharacterID)
+		c, err := a.u.Character().GetCharacter(context.Background(), characterID)
 		if err != nil {
-			slog.Error("Failed to load character for mailer", "characterID", mail.CharacterID, "error", err)
+			slog.Error("Failed to load character for mailer", "characterID", characterID, "error", err)
 			a.u.DisplaySnackbar("ERROR: Failed to open mailer: " + a.u.ErrorDisplay(err))
 			return
 		}
@@ -336,6 +352,40 @@ func (a *Mails) MakeComposeMessageAction() (fyne.Resource, func()) {
 	}
 }
 
+// Compose starts a new mail. In unified mode it first asks for the sending character
+// with a menu shown below anchor, unless there is only one character.
+func (a *Mails) Compose(anchor fyne.CanvasObject) {
+	if a.forCharacter {
+		a.showMailerWindow(mailer.New, nil)
+		return
+	}
+	switch len(a.composeCharacters) {
+	case 0:
+		return
+	case 1:
+		a.showMailerWindowForCharacter(a.composeCharacters[0].ID, mailer.New, nil)
+		return
+	}
+	xwidget.ShowPopUpMenuBelowLeading(anchor, a.composeMenu)
+}
+
+// makeComposeMenu returns the menu for choosing the sender of a new mail.
+// It is built in advance, so the avatars can load before the menu is shown.
+func (a *Mails) makeComposeMenu() *fyne.Menu {
+	var items []*fyne.MenuItem
+	for _, c := range a.composeCharacters {
+		it := fyne.NewMenuItem(c.Name, func() {
+			a.showMailerWindowForCharacter(c.ID, mailer.New, nil)
+		})
+		a.u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+			it.Icon = r
+		})
+		items = append(items, it)
+	}
+	items = append(items, fyne.NewMenuItemSeparator(), fyne.NewMenuItem("Cancel", func() {})) // Fyne ignores taps on items without action
+	return fyne.NewMenu("", items...)
+}
+
 type mailsNavigationPane struct {
 	widget.BaseWidget
 
@@ -357,13 +407,11 @@ func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	a.ExtendBaseWidget(a)
 	a.folders = a.makeFolderTree()
 	a.folderStatus.Hide()
-	r, f := ma.MakeComposeMessageAction()
-	a.compose = widget.NewButtonWithIcon("Compose", r, f)
+	a.compose = widget.NewButtonWithIcon("Compose", theme.DocumentCreateIcon(), func() {
+		ma.Compose(a.compose)
+	})
 	a.compose.Importance = widget.HighImportance
 	a.compose.Disable()
-	if !ma.forCharacter {
-		a.compose.Hide()
-	}
 	return a
 }
 

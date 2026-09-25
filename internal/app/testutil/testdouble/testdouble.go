@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
@@ -403,6 +404,10 @@ func (u *UIFake) DisplaySnackbarWithTimeout(text string, timeout time.Duration) 
 	if f := u.showSnackbarFunc; f != nil {
 		f(text)
 	}
+}
+
+func (u *UIFake) SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource)) {
+	setIcon(theme.AccountIcon())
 }
 
 func (u *UIFake) Signals() *app.Signals {
