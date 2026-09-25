@@ -5,6 +5,7 @@ A multi-platform companion app for EVE Online players available on Windows, Linu
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
+[![codecov](https://codecov.io/github/ErikKalkoken/evebuddy/graph/badge.svg?token=2wG1bixLjo)](https://codecov.io/github/ErikKalkoken/evebuddy)
 [![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy?tab=MIT-1-ov-file#readme)
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ErikKalkoken/evebuddy/total)](https://tooomm.github.io/github-release-stats/?username=ErikKalkoken&repository=evebuddy)

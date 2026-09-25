@@ -49,6 +49,27 @@ func (s *CharacterService) GetAllMailUnreadCount(ctx context.Context) (int, erro
 	return s.st.GetAllCharactersMailUnreadCount(ctx)
 }
 
+// GetAllMailCounts returns the total and unread number of mails for all characters.
+func (s *CharacterService) GetAllMailCounts(ctx context.Context) (int, int, error) {
+	total, err := s.st.GetAllCharactersMailCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	unread, err := s.st.GetAllCharactersMailUnreadCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	return total, unread, nil
+}
+
+func (s *CharacterService) GetAllMailLabelUnreadCounts(ctx context.Context) (map[int64]int, error) {
+	return s.st.GetAllCharactersMailLabelUnreadCounts(ctx)
+}
+
+func (s *CharacterService) GetAllMailListUnreadCounts(ctx context.Context) (map[int64]int, error) {
+	return s.st.GetAllCharactersMailListUnreadCounts(ctx)
+}
+
 // GetMailCounts returns the total and unread number of mails for a character.
 func (s *CharacterService) GetMailCounts(ctx context.Context, characterID int64) (int, int, error) {
 	total, err := s.st.GetCharacterMailCount(ctx, characterID)
@@ -97,6 +118,21 @@ func (s *CharacterService) NotifyMails(ctx context.Context, characterID int64, e
 		return fmt.Errorf("NotifyMails for character %d: %w", characterID, err)
 	}
 	return nil
+}
+
+// ListAllMailLists returns the mailing lists of all characters without duplicates.
+func (s *CharacterService) ListAllMailLists(ctx context.Context) ([]*app.EveEntity, error) {
+	return s.st.ListAllCharacterMailListsOrdered(ctx)
+}
+
+// ListAllMailHeadersForLabelOrdered returns the mails of all characters for a label in descending order by timestamp.
+func (s *CharacterService) ListAllMailHeadersForLabelOrdered(ctx context.Context, labelID int64) ([]*app.CharacterMailHeader, error) {
+	return s.st.ListAllCharacterMailHeadersForLabelOrdered(ctx, labelID)
+}
+
+// ListAllMailHeadersForListOrdered returns the mails of all characters for a mailing list in descending order by timestamp.
+func (s *CharacterService) ListAllMailHeadersForListOrdered(ctx context.Context, listID int64) ([]*app.CharacterMailHeader, error) {
+	return s.st.ListAllCharacterMailHeadersForListOrdered(ctx, listID)
 }
 
 func (s *CharacterService) ListMailLists(ctx context.Context, characterID int64) ([]*app.EveEntity, error) {
@@ -327,6 +363,19 @@ func (s *CharacterService) DownloadedBodiesPercentage(ctx context.Context, chara
 		return 0, 0, err
 	}
 	return t2.Size(), m2.Size(), nil
+}
+
+// AllDownloadedBodiesPercentage returns the total number of mails and the number of mails without body for all characters.
+func (s *CharacterService) AllDownloadedBodiesPercentage(ctx context.Context) (total int, missing int, err error) {
+	total, err = s.st.GetAllCharactersMailCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	missing, err = s.st.GetAllCharactersMailWithoutBodyCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	return total, missing, nil
 }
 
 var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{

@@ -93,11 +93,9 @@ type MailHeaderWidget struct {
 }
 
 func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeaderWidget {
-	from := kxwidget.NewTappableLabel("", nil)
-	from.TextStyle.Bold = true
 	p := theme.Padding()
 	w := &MailHeaderWidget{
-		from:       from,
+		from:       kxwidget.NewTappableLabel("", nil),
 		loadIcon:   loadIcon,
 		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
 		showInfo:   show,
@@ -105,6 +103,7 @@ func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEnti
 		to:         widget.NewLabel("to"),
 	}
 	w.ExtendBaseWidget(w)
+	w.from.TextStyle.Bold = true
 	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
 	w.icon.SetFillMode(canvas.ImageFillContain)
 	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
@@ -113,13 +112,20 @@ func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEnti
 	return w
 }
 
-func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, recipients ...*app.EveEntity) {
+func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, owner *app.EveEntity, recipients ...*app.EveEntity) {
 	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
 		x := kxwidget.NewTappableLabel(r.Name, func() {
 			w.showInfo(r)
 		})
+		w.recipients.Add(x)
+	}
+	if owner != nil {
+		x := xwidget.NewTappableLabel("["+owner.Name+"]", func() {
+			w.showInfo(owner)
+		})
+		x.SetToolTip("Account: " + owner.Name)
 		w.recipients.Add(x)
 	}
 	w.from.Text = from.Name

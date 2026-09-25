@@ -85,6 +85,20 @@ FROM
 WHERE
     is_read IS FALSE;
 
+-- name: GetAllMailCount :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails;
+
+-- name: GetAllMailWithoutBodyCount :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    body_2 IS NULL;
+
 -- name: GetMailCount :one
 SELECT
     COUNT(*)
@@ -92,6 +106,33 @@ FROM
     character_mails
 WHERE
     character_mails.character_id = ?;
+
+-- name: GetAllCharactersMailLabelUnreadCounts :many
+SELECT
+    label_id,
+    COUNT(cm.id) AS unread_count_2
+FROM
+    character_mail_labels cml
+    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    is_read IS FALSE
+GROUP BY
+    label_id;
+
+-- name: GetAllCharactersMailListUnreadCounts :many
+SELECT
+    eve_entities.id AS list_id,
+    COUNT(cm.id) as unread_count_2
+FROM
+    character_mails cm
+    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
+    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
+WHERE
+    eve_entities.category = "mail_list"
+    AND cm.is_read IS FALSE
+GROUP BY
+    eve_entities.id;
 
 -- name: GetCharacterMailLabelUnreadCounts :many
 SELECT
@@ -121,6 +162,43 @@ WHERE
     AND cm.is_read IS FALSE
 GROUP BY
     eve_entities.id;
+
+-- name: ListAllMailsOrdered :many
+SELECT
+    sqlc.embed(cm),
+    sqlc.embed(ee)
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+ORDER BY
+    timestamp DESC;
+
+-- name: ListAllMailsForLabelOrdered :many
+SELECT
+    sqlc.embed(cm),
+    sqlc.embed(ee)
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+    JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+    JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE
+    label_id = ?
+ORDER BY
+    timestamp DESC;
+
+-- name: ListAllMailsForListOrdered :many
+SELECT
+    sqlc.embed(cm),
+    sqlc.embed(ee)
+FROM
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
+    JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
+WHERE
+    cmr.eve_entity_id = ?
+ORDER BY
+    timestamp DESC;
 
 -- name: ListMailIDs :many
 SELECT

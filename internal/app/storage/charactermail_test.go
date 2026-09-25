@@ -423,3 +423,165 @@ func TestMailCounts(t *testing.T) {
 		}
 	})
 }
+
+func TestAllCharactersMails(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can list mail headers for a label of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID, LabelID: app.MailLabelInbox})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c1.ID,
+			LabelIDs:    []int64{l1.LabelID},
+			Timestamp:   time.Now().Add(-120 * time.Second),
+		})
+		c2 := factory.CreateCharacterFull()
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: app.MailLabelInbox})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c2.ID,
+			LabelIDs:    []int64{l2.LabelID},
+			Timestamp:   time.Now().Add(-60 * time.Second),
+		})
+		l3 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: app.MailLabelSent})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c2.ID,
+			LabelIDs:    []int64{l3.LabelID},
+		})
+		// when
+		xx, err := st.ListAllCharacterMailHeadersForLabelOrdered(ctx, app.MailLabelInbox)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
+			xassert.Equal(t, []int64{c2.ID, c1.ID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
+		}
+	})
+	t.Run("can list mail headers for all labels of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			Timestamp: time.Now().Add(-120 * time.Second),
+		})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			Timestamp: time.Now().Add(-60 * time.Second),
+		})
+		// when
+		xx, err := st.ListAllCharacterMailHeadersForLabelOrdered(ctx, app.MailLabelAll)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
+			xassert.Equal(t, []int64{m2.CharacterID, m1.CharacterID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
+		}
+	})
+	t.Run("can list mail headers for a mailing list of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		l := factory.CreateCharacterMailList(c1.ID)
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c1.ID,
+			RecipientIDs: []int64{l.ID},
+		})
+		c2 := factory.CreateCharacterFull()
+		assert.NoError(t, st.CreateCharacterMailList(ctx, c2.ID, l.ID))
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c2.ID,
+			RecipientIDs: []int64{l.ID},
+		})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c2.ID})
+		// when
+		xx, err := st.ListAllCharacterMailHeadersForListOrdered(ctx, l.ID)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, []int64{m1.MailID, m2.MailID}, mailIDsFromHeaders(xx))
+		}
+	})
+	t.Run("can list mailing lists of all characters without duplicates", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		e1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList, Name: "alpha"})
+		assert.NoError(t, st.CreateCharacterMailList(ctx, c1.ID, e1.ID))
+		assert.NoError(t, st.CreateCharacterMailList(ctx, c2.ID, e1.ID))
+		e2 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList, Name: "bravo"})
+		assert.NoError(t, st.CreateCharacterMailList(ctx, c2.ID, e2.ID))
+		// when
+		ll, err := st.ListAllCharacterMailListsOrdered(ctx)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, []int64{e1.ID, e2.ID}, []int64{ll[0].ID, ll[1].ID})
+			assert.Len(t, ll, 2)
+		}
+	})
+	t.Run("can get label unread counts of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		for range 2 {
+			c := factory.CreateCharacter()
+			inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
+			factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+				CharacterID: c.ID,
+				LabelIDs:    []int64{inbox.LabelID},
+				IsRead:      optional.New(false),
+			})
+			factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+				CharacterID: c.ID,
+				LabelIDs:    []int64{inbox.LabelID},
+				IsRead:      optional.New(true),
+			})
+		}
+		// when
+		got, err := st.GetAllCharactersMailLabelUnreadCounts(ctx)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, map[int64]int{app.MailLabelInbox: 2}, got)
+		}
+	})
+	t.Run("can get list unread counts of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		l := factory.CreateCharacterMailList(c1.ID)
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c1.ID,
+			RecipientIDs: []int64{l.ID},
+			IsRead:       optional.New(false),
+		})
+		c2 := factory.CreateCharacter()
+		assert.NoError(t, st.CreateCharacterMailList(ctx, c2.ID, l.ID))
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c2.ID,
+			RecipientIDs: []int64{l.ID},
+			IsRead:       optional.New(false),
+		})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID:  c2.ID,
+			RecipientIDs: []int64{l.ID},
+			IsRead:       optional.New(true),
+		})
+		// when
+		got, err := st.GetAllCharactersMailListUnreadCounts(ctx)
+		// then
+		if assert.NoError(t, err) {
+			xassert.Equal(t, map[int64]int{l.ID: 2}, got)
+		}
+	})
+	t.Run("can count mails and mails without body of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacterMailWithBody()
+		factory.CreateCharacterMailWithBody()
+		factory.CreateCharacterMail()
+		// when
+		total, err1 := st.GetAllCharactersMailCount(ctx)
+		missing, err2 := st.GetAllCharactersMailWithoutBodyCount(ctx)
+		// then
+		if assert.NoError(t, err1) && assert.NoError(t, err2) {
+			xassert.Equal(t, 3, total)
+			xassert.Equal(t, 1, missing)
+		}
+	})
+}

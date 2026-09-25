@@ -67,6 +67,45 @@ func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, c
 	return mm, nil
 }
 
+// ListAllCharacterMailHeadersForLabelOrdered returns the mails of all characters for a label
+// in descending order by timestamp.
+func (st *Storage) ListAllCharacterMailHeadersForLabelOrdered(ctx context.Context, labelID int64) ([]*app.CharacterMailHeader, error) {
+	if labelID == app.MailLabelAll {
+		rows, err := st.qRO.ListAllMailsOrdered(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list mails for all characters: %w", err)
+		}
+		mm := make([]*app.CharacterMailHeader, len(rows))
+		for i, r := range rows {
+			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail.CharacterID, r.CharacterMail, r.EveEntity)
+		}
+		return mm, nil
+	}
+	rows, err := st.qRO.ListAllMailsForLabelOrdered(ctx, labelID)
+	if err != nil {
+		return nil, fmt.Errorf("list mails for all characters and label %d: %w", labelID, err)
+	}
+	mm := make([]*app.CharacterMailHeader, len(rows))
+	for i, r := range rows {
+		mm[i] = characterMailHeaderFromDBModel(r.CharacterMail.CharacterID, r.CharacterMail, r.EveEntity)
+	}
+	return mm, nil
+}
+
+// ListAllCharacterMailHeadersForListOrdered returns the mails of all characters for a mailing list
+// in descending order by timestamp.
+func (st *Storage) ListAllCharacterMailHeadersForListOrdered(ctx context.Context, listID int64) ([]*app.CharacterMailHeader, error) {
+	rows, err := st.qRO.ListAllMailsForListOrdered(ctx, listID)
+	if err != nil {
+		return nil, fmt.Errorf("list mails for all characters and list %d: %w", listID, err)
+	}
+	mm := make([]*app.CharacterMailHeader, len(rows))
+	for i, r := range rows {
+		mm[i] = characterMailHeaderFromDBModel(r.CharacterMail.CharacterID, r.CharacterMail, r.EveEntity)
+	}
+	return mm, nil
+}
+
 func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int64, earliest time.Time) ([]*app.CharacterMailHeader, error) {
 	arg := queries.ListMailsUnprocessedParams{
 		CharacterID:characterID,

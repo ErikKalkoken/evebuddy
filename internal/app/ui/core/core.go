@@ -147,6 +147,7 @@ type baseUI struct {
 	statusText                 *statusText
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
+	unifiedMails               *screens.Mails
 	unifiedStructures          *screens.Structures
 	wealth                     *screens.CharacterWealth
 
@@ -418,7 +419,8 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.characterCommunications = screens.NewCommunicationsForCharacter(u)
 	u.characterCorporation = screens.NewCorporationSheet(u, false)
 	u.characterJumpClones = screens.NewCharacterClones(u)
-	u.characterMails = screens.NewMails(u)
+	u.characterMails = screens.NewMailsForCharacter(u)
+	u.unifiedMails = screens.NewUnifiedMails(u)
 	u.characterOverview = screens.NewCharacterOverview(u)
 	u.characterSheet = screens.NewCharacterSheet(u)
 	u.characterShips = screens.NewFlyableShips(u)
@@ -929,7 +931,9 @@ func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error
 
 // Avatars & switch menus
 
-func (u *baseUI) setCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource)) {
+// SetCharacterAvatarAsync sets a character's avatar with setIcon.
+// setIcon is called at once with a cached avatar or placeholder, and again on the main thread after loading.
+func (u *baseUI) SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource)) {
 	xwidget.LoadResourceAsyncWithCache(
 		u.characterAvatarPlaceholder64,
 		func() (fyne.Resource, bool) {
@@ -1000,7 +1004,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 		} else {
 			it.Icon = u.characterAvatarPlaceholder64
 			fyne.Do(func() {
-				u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+				u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 					it.Icon = r
 					refresh()
 				})

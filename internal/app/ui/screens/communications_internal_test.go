@@ -309,3 +309,30 @@ func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
 
 	assert.Len(t, mp.rowsFiltered, 3)
 }
+
+func TestCommunicationsReadingPane_Owner(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	c := factory.CreateCharacterFull()
+	n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+	r := notificationRow{
+		characterID:    c.ID,
+		characterName:  c.EveCharacter.Name,
+		id:             n.ID,
+		isRead2:        true, // avoids marking as read, which refreshes and clears the pane
+		notificationID: n.NotificationID,
+		recipient:      n.Sender,
+	}
+	t.Run("unified shows owner", func(t *testing.T) {
+		a := NewUnifiedCommunications(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.ReadingPane.set(r)
+		require.NotNil(t, a.ReadingPane.currentNotification)
+		assert.True(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
+	})
+	t.Run("character view does not show owner", func(t *testing.T) {
+		a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.ReadingPane.set(r)
+		require.NotNil(t, a.ReadingPane.currentNotification)
+		assert.False(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
+	})
+}

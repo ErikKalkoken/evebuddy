@@ -124,6 +124,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		homeNav.SetItemBadge(unifiedCommunications, s)
 	}
 
+	unifiedMails := xwidget.NewNavPage(
+		"Mail",
+		theme.MailComposeIcon(),
+		newContentPage("Mail", u.unifiedMails),
+	)
+	u.unifiedMails.OnUpdate = func(unread, _ int) {
+		homeNav.SetItemBadge(unifiedMails, formatBadge(unread, 999))
+	}
+
 	unifiedStructures := xwidget.NewNavPage(
 		"Structures",
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
@@ -239,6 +248,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			theme.NewThemedResource(icons.HandHeartSvg),
 			newContentPage("Loyalty Points", u.loyaltyPoints),
 		),
+		unifiedMails,
 		marketOrders,
 		unifiedStructures,
 		skills,
@@ -549,7 +559,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			})
 		})
 		go func() {
-			u.setCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+			u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 				fyne.Do(func() {
 					characterHeader.SetIcon(r)
 				})
