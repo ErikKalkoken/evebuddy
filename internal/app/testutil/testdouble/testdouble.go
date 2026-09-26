@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
+	"github.com/maniartech/signals"
 	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -44,7 +45,7 @@ func NewEVEUniverseServiceFake(args ...eveuniverseservice.Params) *eveuniversese
 		})
 	}
 	if arg.Signals == nil {
-		arg.Signals = app.NewSignals()
+		arg.Signals = newSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -104,7 +105,7 @@ func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.
 		arg.EveNotificationService = &EVENotificationServiceStub{}
 	}
 	if arg.Signals == nil {
-		arg.Signals = app.NewSignals()
+		arg.Signals = newSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -158,7 +159,7 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 		arg.Cache = testutil.NewCacheFake2()
 	}
 	if arg.Signals == nil {
-		arg.Signals = app.NewSignals()
+		arg.Signals = newSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -249,7 +250,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		panic("must define app")
 	}
 	if arg.Signals == nil {
-		arg.Signals = app.NewSignals()
+		arg.Signals = newSignalsSync()
 	}
 	if arg.Settings == nil {
 		s, err := settings.New(context.Background(), arg.Storage)
@@ -415,3 +416,28 @@ func (u *UIFake) Signals() *app.Signals {
 }
 
 func (u *UIFake) UpdateMailIndicator(ctx context.Context) {}
+
+// newSignalsSync returns signals that call listeners sequentially,
+// because the Fyne test driver runs fyne.Do on the calling goroutine.
+func newSignalsSync() *app.Signals {
+	return &app.Signals{
+		AppInit:                     signals.NewSync[struct{}](),
+		CharacterAdded:              signals.NewSync[*app.Character](),
+		CharacterChanged:            signals.NewSync[int64](),
+		CharacterRemoved:            signals.NewSync[*app.EntityShort](),
+		CharacterSectionChanged:     signals.NewSync[app.CharacterSectionUpdated](),
+		CharacterSectionUpdated:     signals.NewSync[app.CharacterSectionUpdated](),
+		CorporationsChanged:         signals.NewSync[struct{}](),
+		CorporationSectionChanged:   signals.NewSync[app.CorporationSectionUpdated](),
+		CorporationSectionUpdated:   signals.NewSync[app.CorporationSectionUpdated](),
+		CurrentCharacterExchanged:   signals.NewSync[*app.Character](),
+		CurrentCorporationExchanged: signals.NewSync[*app.Corporation](),
+		DataUpdated:                 signals.NewSync[string](),
+		EveUniverseSectionChanged:   signals.NewSync[app.EveUniverseSectionUpdated](),
+		EveUniverseSectionUpdated:   signals.NewSync[app.EveUniverseSectionUpdated](),
+		RefreshTickerExpired:        signals.NewSync[struct{}](),
+		TagsChanged:                 signals.NewSync[struct{}](),
+		UpdateStarted:               signals.NewSync[string](),
+		UpdateStopped:               signals.NewSync[string](),
+	}
+}
