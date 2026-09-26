@@ -458,11 +458,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	// Make overall UI
 	makeTabContent := func(header *PageHeader, content fyne.CanvasObject) fyne.CanvasObject {
-		p := theme.Padding()
 		return container.NewBorder(
-			container.New(layout.NewCustomPaddedLayout(p, 0, 0, 0),
-				container.NewVBox(header, widget.NewSeparator()),
-			),
+			container.NewVBox(header, widget.NewSeparator()),
 			nil,
 			nil,
 			nil,
@@ -477,7 +474,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	characterHeader := NewPageHeader(NewPageHeaderParams{
-		ButtonIcon:    theme.NewThemedResource(icons.SwitchaccountSvg),
 		ButtonTooltip: "Switch character",
 		IconFallback:  icons.Characterplaceholder64Jpeg,
 		Title:         "Characters",
@@ -490,7 +486,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	corporationHeader := NewPageHeader(NewPageHeaderParams{
-		ButtonIcon:    theme.NewThemedResource(icons.SwitchaccountSvg),
 		ButtonTooltip: "Switch corporation",
 		IconFallback:  icons.Corporationplaceholder64Png,
 		Title:         "Corporations",
@@ -958,49 +953,40 @@ type PageHeader struct {
 }
 
 type NewPageHeaderParams struct {
-	ButtonIcon    fyne.Resource
 	ButtonTooltip string
-	IconFallback  fyne.Resource
+	IconFallback  fyne.Resource // must be define to show leading icon at all
 	Title         string
 	TitleTooltip  string
 }
 
 func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
-	title2 := xwidget.NewTappableLabel(arg.Title, nil)
-	title2.SizeName = theme.SizeNameSubHeadingText
-	var fb fyne.Resource
-	if arg.IconFallback != nil {
-		fb = arg.IconFallback
-	} else {
-		fb = icons.BlankSvg
-	}
-	icon := xwidget.NewImageFromResource(fb, fyne.NewSquareSize(ui.IconUnitSize))
-	button := xwidget.NewContextMenuButtonWithIcon("", icons.BlankSvg, fyne.NewMenu(""))
 	w := &PageHeader{
-		title:         title2,
-		button:        button,
-		icon:          icon,
+		title:         xwidget.NewTappableLabel(arg.Title, nil),
+		button:        xwidget.NewContextMenuButtonWithIcon("", theme.NewThemedResource(icons.SwitchaccountSvg), fyne.NewMenu("")),
 		buttonTooltip: arg.ButtonTooltip,
 		titleTooltip:  arg.TitleTooltip,
 	}
-	if arg.ButtonIcon != nil {
-		w.buttonIcon = arg.ButtonIcon
-	} else {
-		icon.Hide()
-		button.Hide()
+	if arg.IconFallback != nil {
+		w.icon = xwidget.NewImageFromResource(arg.IconFallback, fyne.NewSquareSize(ui.IconUnitSize))
+
 	}
 	w.ExtendBaseWidget(w)
+	w.title.SizeName = theme.SizeNameSubHeadingText
 	return w
 }
 
 func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	c := container.NewHBox()
+	if w.icon != nil {
+		c.Add(container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon))
+	}
+	c.Add(w.title)
 	spacer := xwidget.NewSpacer(w.button.MinSize())
-	c := container.NewHBox(
-		container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon),
-		w.title,
-		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), container.NewStack(spacer, container.NewCenter(w.button))),
-	)
+	c.Add(container.NewStack(spacer, container.NewCenter(w.button)))
+	if w.buttonTooltip == "" {
+		w.button.Hide()
+	}
 	return widget.NewSimpleRenderer(c)
 }
 
