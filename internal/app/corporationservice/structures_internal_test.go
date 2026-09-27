@@ -28,9 +28,8 @@ func TestGetStructure(t *testing.T) {
 		c := factory.CreateCorporation()
 		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
 		got, err := s.GetStructure(ctx, c.ID, o.StructureID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, o.StructureID, got.StructureID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, o.StructureID, got.StructureID)
 	})
 	t.Run("should return error when structure not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -52,10 +51,9 @@ func TestListStructures(t *testing.T) {
 		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID})
 		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c2.ID})
 		got, err := s.ListStructures(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			require.Len(t, got, 1)
-			xassert.Equal(t, o1.StructureID, got[0].StructureID)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, o1.StructureID, got[0].StructureID)
 	})
 }
 

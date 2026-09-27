@@ -28,10 +28,9 @@ func TestListMembers(t *testing.T) {
 		m1 := factory.CreateCorporationMember(storage.CorporationMemberParams{CorporationID: c1.ID})
 		factory.CreateCorporationMember(storage.CorporationMemberParams{CorporationID: c2.ID})
 		got, err := s.ListMembers(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			require.Len(t, got, 1)
-			xassert.Equal(t, m1.Character.ID, got[0].Character.ID)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, m1.Character.ID, got[0].Character.ID)
 	})
 }
 

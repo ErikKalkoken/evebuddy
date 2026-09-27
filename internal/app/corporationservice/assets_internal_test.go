@@ -277,10 +277,9 @@ func TestListAssets(t *testing.T) {
 		a1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
 		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID, EveTypeID: et.ID})
 		got, err := s.ListAssets(ctx, c.ID)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
-			xassert.Equal(t, set.Of(a1.ItemID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
+		xassert.Equal(t, set.Of(a1.ItemID), ids)
 	})
 }
 
@@ -296,10 +295,9 @@ func TestListAllAssets(t *testing.T) {
 		a1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c1.ID})
 		a2 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c2.ID})
 		got, err := s.ListAllAssets(ctx)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
-			xassert.Equal(t, set.Of(a1.ItemID, a2.ItemID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationAsset) int64 { return x.ItemID }))
+		xassert.Equal(t, set.Of(a1.ItemID, a2.ItemID), ids)
 	})
 }
 
@@ -320,9 +318,8 @@ func TestCalculateAssetTotalValue(t *testing.T) {
 			AveragePrice: optional.New(100.0),
 		})
 		got, err := s.CalculateAssetTotalValue(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.InDelta(t, 200.0, got, 0.01)
-		}
+		require.NoError(t, err)
+		assert.InDelta(t, 200.0, got, 0.01)
 	})
 }
 

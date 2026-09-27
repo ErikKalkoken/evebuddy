@@ -38,20 +38,17 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		// when
 		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
 		// then
-		if assert.NoError(t, err) {
-			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, j1.StartDate, j2.StartDate)
-			}
-			status, err := st.GetCorporationSectionStatus(
-				ctx,
-				corporation.ID,
-				app.SectionCorporationIndustryJobs,
-			)
-			if assert.NoError(t, err) {
-				assert.True(t, status.HasContent())
-			}
-		}
+		require.NoError(t, err)
+		j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		require.NoError(t, err)
+		xassert.Equal(t, j1.StartDate, j2.StartDate)
+		status, err := st.GetCorporationSectionStatus(
+			ctx,
+			corporation.ID,
+			app.SectionCorporationIndustryJobs,
+		)
+		require.NoError(t, err)
+		assert.True(t, status.HasContent())
 	})
 	t.Run("should delete secion when permission does not exit", func(t *testing.T) {
 		// given
@@ -67,18 +64,16 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		// when
 		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-			status, err := st.GetCorporationSectionStatus(
-				ctx,
-				corporation.ID,
-				app.SectionCorporationIndustryJobs,
-			)
-			if assert.NoError(t, err) {
-				assert.False(t, status.HasContent())
-			}
-		}
+		require.NoError(t, err)
+		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		status, err := st.GetCorporationSectionStatus(
+			ctx,
+			corporation.ID,
+			app.SectionCorporationIndustryJobs,
+		)
+		require.NoError(t, err)
+		assert.False(t, status.HasContent())
 	})
 	t.Run("should delete structures when permission does not exist", func(t *testing.T) {
 		// given
@@ -94,18 +89,16 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		// when
 		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetCorporationStructure(ctx, o.CorporationID, o.StructureID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-			status, err := st.GetCorporationSectionStatus(
-				ctx,
-				corporation.ID,
-				app.SectionCorporationStructures,
-			)
-			if assert.NoError(t, err) {
-				assert.False(t, status.HasContent())
-			}
-		}
+		require.NoError(t, err)
+		_, err = st.GetCorporationStructure(ctx, o.CorporationID, o.StructureID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		status, err := st.GetCorporationSectionStatus(
+			ctx,
+			corporation.ID,
+			app.SectionCorporationStructures,
+		)
+		require.NoError(t, err)
+		assert.False(t, status.HasContent())
 	})
 }
 

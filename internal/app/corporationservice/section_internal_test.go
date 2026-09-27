@@ -57,15 +57,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				return true, nil
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			assert.True(t, hasUpdated)
-			x, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-				assert.False(t, x.HasError())
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.True(t, hasUpdated)
+		x, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
+		require.NoError(t, err)
+		assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
+		assert.False(t, x.HasError())
 	})
 	t.Run("should report as changed and run update when data has changed and store update and reset error", func(t *testing.T) {
 		// given
@@ -90,15 +88,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				return true, nil
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			assert.True(t, hasUpdated)
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.False(t, x2.HasError())
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.True(t, hasUpdated)
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
+		require.NoError(t, err)
+		assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
+		assert.False(t, x2.HasError())
 	})
 	t.Run("should report as unchanged and not run update when data has not changed", func(t *testing.T) {
 		// given
@@ -123,15 +119,13 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				return true, nil
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.False(t, changed)
-			assert.False(t, hasUpdated)
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.False(t, x2.HasError())
-			}
-		}
+		require.NoError(t, err)
+		assert.False(t, changed)
+		assert.False(t, hasUpdated)
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, section)
+		require.NoError(t, err)
+		assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
+		assert.False(t, x2.HasError())
 	})
 	t.Run("should mark context for force refresh only when forced", func(t *testing.T) {
 		// given
@@ -200,10 +194,9 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 				return true, nil
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			assert.True(t, hasUpdated)
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.True(t, hasUpdated)
 	})
 }
 
