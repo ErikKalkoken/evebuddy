@@ -342,7 +342,12 @@ func (a *CorporationOverview) update(ctx context.Context) {
 }
 
 func (a *CorporationOverview) updateItem(ctx context.Context, corporationID int64) {
-	r, err := a.fetchRow(ctx, corporationID)
+	c, err := a.u.Corporation().GetCorporation(ctx, corporationID)
+	if err != nil {
+		slog.Error("corporationOverview: Failed to update item", "corporationID", corporationID, "error", err)
+		return
+	}
+	r, err := a.fetchRow(ctx, c)
 	if err != nil {
 		slog.Error("corporationOverview: Failed to update item", "corporationID", corporationID, "error", err)
 		return
@@ -360,13 +365,13 @@ func (a *CorporationOverview) updateItem(ctx context.Context, corporationID int6
 }
 
 func (a *CorporationOverview) fetchRows(ctx context.Context) ([]corporationOverviewRow, error) {
-	corporations, err := a.u.Corporation().ListCorporationsShort(ctx)
+	corporations, err := a.u.Corporation().ListCorporations(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var rows []corporationOverviewRow
 	for _, c := range corporations {
-		r, err := a.fetchRow(ctx, c.ID)
+		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrNotFound) {
 			continue
 		}
@@ -378,14 +383,9 @@ func (a *CorporationOverview) fetchRows(ctx context.Context) ([]corporationOverv
 	return rows, nil
 }
 
-func (a *CorporationOverview) fetchRow(ctx context.Context, corporationID int64) (corporationOverviewRow, error) {
-	cs := a.u.Corporation()
-	corp, err := cs.GetCorporation(ctx, corporationID)
-	if err != nil {
-		return corporationOverviewRow{}, err
-	}
-	if corp.EveCorporation == nil {
-		return corporationOverviewRow{}, app.ErrNotFound
+func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporation) (corporationOverviewRow, error) {
+	if corp == nil {
+		return corporationOverviewRow{}, fmt.Errorf("no corporation: %w", app.ErrInvalid)
 	}
 	r := corporationOverviewRow{
 		alliance:      corp.EveCorporation.Alliance,
@@ -396,20 +396,20 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corporationID int64)
 		searchTarget:  strings.ToLower(corp.EveCorporation.Name),
 	}
 
-	if ok, err := cs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances); err != nil {
+	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationWalletBalances); err != nil {
 		return r, err
 	} else if ok {
-		balance, err := cs.GetWalletBalancesTotal(ctx, corporationID)
+		balance, err := a.u.Corporation().GetWalletBalancesTotal(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
 		r.walletBalance = balance
 	}
 
-	if ok, err := cs.PermittedSection(ctx, corporationID, app.SectionCorporationIndustryJobs); err != nil {
+	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationIndustryJobs); err != nil {
 		return r, err
 	} else if ok {
-		jobs, err := cs.ListCorporationIndustryJobs(ctx, corporationID)
+		jobs, err := a.u.Corporation().ListCorporationIndustryJobs(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
@@ -422,10 +422,10 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corporationID int64)
 		r.activeIndustryJobs = optional.New(active)
 	}
 
-	if ok, err := cs.PermittedSection(ctx, corporationID, app.SectionCorporationContracts); err != nil {
+	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationContracts); err != nil {
 		return r, err
 	} else if ok {
-		contracts, err := cs.ListCorporationContracts(ctx, corporationID)
+		contracts, err := a.u.Corporation().ListCorporationContracts(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
@@ -438,10 +438,10 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corporationID int64)
 		r.activeContracts = optional.New(active)
 	}
 
-	if ok, err := cs.PermittedSection(ctx, corporationID, app.SectionCorporationStructures); err != nil {
+	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationStructures); err != nil {
 		return r, err
 	} else if ok {
-		structures, err := cs.ListStructures(ctx, corporationID)
+		structures, err := a.u.Corporation().ListStructures(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
