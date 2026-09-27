@@ -28,15 +28,11 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		factory.CreateCorporation()
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		want := set.Of(corp.ID)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
@@ -44,30 +40,22 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		character := factory.CreateCharacter()
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 
 		assert.False(t, changed)
 		want := set.Of(corp.ID)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 		want := set.Of[int64]()
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("can add missing corporations", func(t *testing.T) {
@@ -77,14 +65,10 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			ID: character.EveCharacter.Corporation.ID,
 		})
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of(character.EveCharacter.Corporation.ID)
 		xassert.Equal(t, want, got)
 	})
@@ -103,14 +87,10 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			ID: character.EveCharacter.Corporation.ID,
 		})
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, 0, got.Size())
 	})
 }

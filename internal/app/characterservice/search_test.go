@@ -51,9 +51,7 @@ func TestSearchESI(t *testing.T) {
 		// when
 		got, n, err := s.SearchESI(ctx, "search", []app.SearchCategory{app.SearchCharacter}, false)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, 1, n)
 		xassert.Equal(t, map[app.SearchCategory][]*app.EveEntity{app.SearchCharacter: {x1}}, got)
 	})

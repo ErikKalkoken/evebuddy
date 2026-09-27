@@ -109,21 +109,15 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			section:       app.SectionCorporationStructures,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](42)
 		xassert.Equal(t, want, got)
 
 		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, c.ID, x.CorporationID)
 		xassert.Equal(t, 42, x.StructureID)
 		xassert.EqualOptional(t, "Alpha", x.Name)
@@ -184,14 +178,10 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			section:       app.SectionCorporationStructures,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](1, 2)
 		xassert.Equal(t, want, got)
 	})

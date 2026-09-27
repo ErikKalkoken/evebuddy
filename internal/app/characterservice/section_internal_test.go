@@ -219,9 +219,7 @@ func TestHasSectionChanged(t *testing.T) {
 		}, "changed",
 		)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, got)
 	})
 	t.Run("report true when section does not exist", func(t *testing.T) {
@@ -235,9 +233,7 @@ func TestHasSectionChanged(t *testing.T) {
 		}, "changed",
 		)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, got)
 	})
 	t.Run("report false when section has not changed", func(t *testing.T) {
@@ -255,9 +251,7 @@ func TestHasSectionChanged(t *testing.T) {
 		}, status.ContentHash,
 		)
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, got)
 	})
 }

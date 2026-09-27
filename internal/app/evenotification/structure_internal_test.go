@@ -72,9 +72,7 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 	for _, tc := range cases {
 		o, err := eveEntityFromHTMLLink(tc.url)
 		if tc.isValid {
-			if !assert.NoError(t, err) {
-				t.Fatal()
-			}
+			require.NoError(t, err)
 			xassert.Equal(t, tc.category, o.Category)
 			xassert.Equal(t, tc.id, o.ID)
 			xassert.Equal(t, tc.name, o.Name)

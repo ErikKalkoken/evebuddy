@@ -107,9 +107,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 		sendCount++
 	})
 	// then
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	xassert.Equal(t, 1, sendCount)
 	assert.Contains(t, content, p1.EvePlanet.Name)
 	assert.Contains(t, content, p2.EvePlanet.Name)
