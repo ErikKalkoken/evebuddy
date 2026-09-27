@@ -419,6 +419,8 @@ type corporationCard struct {
 	allianceLogo       *xwidget.TappableImage
 	background         *canvas.Rectangle
 	border             *canvas.Rectangle
+	logoBackground     *canvas.Rectangle
+	logoBorder         *canvas.Rectangle
 	factionLogo        *xwidget.TappableImage
 	isSmall            bool
 	loadAlliance       loadFuncAsync
@@ -471,6 +473,8 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 		loadCorporation:    loadCorporation,
 		loadFaction:        loadFaction,
 		logo:               logo,
+		logoBackground:     canvas.NewRectangle(colorDarkBackground),
+		logoBorder:         canvas.NewRectangle(color.Transparent),
 		memberCount:        makeLabel(numberTemplate),
 		name:               widget.NewLabel("Wayne Enterprises"),
 		reinforcedCount:    makeLabel(numberTemplate),
@@ -505,6 +509,12 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 
+	w.logoBackground.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+
+	w.logoBorder.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+	w.logoBorder.StrokeWidth = 1
+	w.logoBorder.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+
 	return w
 }
 
@@ -519,7 +529,7 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 					w.background,
 					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
 						container.NewVBox(
-							w.logo,
+							container.NewStack(w.logoBackground, w.logo, w.logoBorder),
 							container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
 								container.NewHBox(w.allianceLogo, layout.NewSpacer(), w.factionLogo),
 							),
@@ -580,7 +590,7 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		container.NewStack(
-			w.logo,
+			container.NewStack(w.logoBackground, w.logo, w.logoBorder),
 			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.allianceLogo)),
 			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.factionLogo)),
 		),

@@ -83,15 +83,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	var homeNav *xwidget.NavDrawer
 	overview := xwidget.NewNavPage(
-		"Character Overview",
+		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
-		newContentPage("Character Overview", u.characterOverview),
+		newContentPage("Characters", u.characterOverview),
 	)
 
 	corporationOverview := xwidget.NewNavPage(
-		"Corporation Overview",
+		"Corporations",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
-		newContentPage("Corporation Overview", u.corporationOverview),
+		newContentPage("Corporations", u.corporationOverview),
 	)
 
 	wealth := xwidget.NewNavPage(

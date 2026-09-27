@@ -4,6 +4,7 @@ package screens
 
 import (
 	"context"
+	"image/color"
 
 	"fyne.io/fyne/v2"
 
@@ -40,3 +41,6 @@ type baseUI interface {
 }
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
+
+// Fyne color for dark background
+var colorDarkBackground = color.NRGBA{R: 0x17, G: 0x17, B: 0x18, A: 0xff}

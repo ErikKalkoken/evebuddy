@@ -889,10 +889,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	)
 
 	navItemCharacters := xwidget.NewNavListItem(
-		"Character Overview",
+		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Character Overview", u.characterOverview))
+			homeNav.Push(xwidget.NewAppBar("Characters", u.characterOverview))
 		},
 	)
 	u.characterOverview.OnUpdate = func(characters int) {
@@ -901,10 +901,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	}
 
 	navItemCorporations := xwidget.NewNavListItem(
-		"Corporation Overview",
+		"Corporations",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Corporation Overview", u.corporationOverview))
+			homeNav.Push(xwidget.NewAppBar("Corporations", u.corporationOverview))
 		},
 	)
 	u.corporationOverview.OnUpdate = func(corporations int) {
