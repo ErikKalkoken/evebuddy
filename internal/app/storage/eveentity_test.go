@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -36,14 +37,12 @@ func TestEveEntityUpdateOrCreate(t *testing.T) {
 			Category: app.EveEntityCorporation,
 		})
 		// then
-		if assert.NoError(t, err) {
-			e2, err := st.GetEveEntity(ctx, e1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, e1.ID, e2.ID)
-				xassert.Equal(t, "Erik", e2.Name)
-				xassert.Equal(t, app.EveEntityCorporation, e2.Category)
-			}
-		}
+		require.NoError(t, err)
+		e2, err := st.GetEveEntity(ctx, e1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, e1.ID, e2.ID)
+		xassert.Equal(t, "Erik", e2.Name)
+		xassert.Equal(t, app.EveEntityCorporation, e2.Category)
 	})
 	t.Run("should not store with invalid ID 3", func(t *testing.T) {
 		// given
@@ -76,14 +75,12 @@ func TestUpdateEveEntity(t *testing.T) {
 		// when
 		err := st.UpdateEveEntity(ctx, e1.ID, "Erik")
 		// then
-		if assert.NoError(t, err) {
-			e2, err := st.GetEveEntity(ctx, e1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, e1.ID, e2.ID)
-				xassert.Equal(t, "Erik", e2.Name)
-				xassert.Equal(t, app.EveEntityCharacter, e2.Category)
-			}
-		}
+		require.NoError(t, err)
+		e2, err := st.GetEveEntity(ctx, e1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, e1.ID, e2.ID)
+		xassert.Equal(t, "Erik", e2.Name)
+		xassert.Equal(t, app.EveEntityCharacter, e2.Category)
 	})
 }
 
@@ -97,14 +94,12 @@ func TestEveEntity(t *testing.T) {
 		// when
 		_, err := st.CreateEveEntity(ctx, storage.CreateEveEntityParams{42, "Dummy", app.EveEntityAlliance})
 		// then
-		if assert.NoError(t, err) {
-			e, err := st.GetEveEntity(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, e.ID, 42)
-				xassert.Equal(t, e.Name, "Dummy")
-				xassert.Equal(t, e.Category, app.EveEntityAlliance)
-			}
-		}
+		require.NoError(t, err)
+		e, err := st.GetEveEntity(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, e.ID, 42)
+		xassert.Equal(t, e.Name, "Dummy")
+		xassert.Equal(t, e.Category, app.EveEntityAlliance)
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
@@ -119,11 +114,10 @@ func TestEveEntity(t *testing.T) {
 		// when
 		e2, err := st.GetEveEntity(ctx, e1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, e1.ID, e2.ID)
-			xassert.Equal(t, "Alpha", e2.Name)
-			xassert.Equal(t, app.EveEntityCharacter, e2.Category)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, e1.ID, e2.ID)
+		xassert.Equal(t, "Alpha", e2.Name)
+		xassert.Equal(t, app.EveEntityCharacter, e2.Category)
 	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
 		_, err := st.GetEveEntity(ctx, 99)
@@ -139,14 +133,13 @@ func TestEveEntity(t *testing.T) {
 		// when
 		ee, err := st.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
 		// then
-		if assert.NoError(t, err) {
-			var got []string
-			for _, e := range ee {
-				got = append(got, e.Name)
-			}
-			want := []string{"X_alpha1", "Y_alpha2"}
-			xassert.Equal(t, want, got)
+		require.NoError(t, err)
+		var got []string
+		for _, e := range ee {
+			got = append(got, e.Name)
 		}
+		want := []string{"X_alpha1", "Y_alpha2"}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should not store with invalid ID 1", func(t *testing.T) {
 		// given
@@ -184,13 +177,12 @@ func TestListEveEntityByNameAndCategory(t *testing.T) {
 		// when
 		ee, err := st.ListEveEntityByNameAndCategory(ctx, "Erik", app.EveEntityCharacter)
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(ee, func(e *app.EveEntity) string {
-				return e.Name
-			})
-			want := []string{"Erik"}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(e *app.EveEntity) string {
+			return e.Name
+		})
+		want := []string{"Erik"}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return error for empty name", func(t *testing.T) {
 		// given
@@ -224,13 +216,12 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		// when
 		ee, err := st.ListEveEntitiesForIDs(ctx, []int64{4, 1, 3})
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(ee, func(a *app.EveEntity) int64 {
-				return a.ID
-			})
-			want := []int64{4, 1, 3}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{4, 1, 3}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
 		// given
@@ -242,13 +233,12 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		// when
 		ee, err := st.ListEveEntitiesForIDs(ctx, []int64{4, 1, 3})
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(ee, func(a *app.EveEntity) int64 {
-				return a.ID
-			})
-			want := []int64{4, 1, 3}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{4, 1, 3}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return objs with matching ids and chunking", func(t *testing.T) {
 		// given
@@ -265,13 +255,12 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 		// when
 		ee, err := st.ListEveEntitiesForIDs(ctx, []int64{2, 3, 4})
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(ee, func(a *app.EveEntity) int64 {
-				return a.ID
-			})
-			want := []int64{2, 3, 4}
-			assert.ElementsMatch(t, want, got)
-		}
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{2, 3, 4}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("should return error when one object can not be found", func(t *testing.T) {
 		// given
@@ -296,13 +285,12 @@ func TestListEveEntities(t *testing.T) {
 		// when
 		got, err := st.ListEveEntities(ctx)
 		// then
-		if assert.NoError(t, err) {
-			got := xslices.Map(got, func(a *app.EveEntity) int64 {
-				return a.ID
-			})
-			want := []int64{o1.ID, o2.ID}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		ids := xslices.Map(got, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{o1.ID, o2.ID}
+		xassert.Equal(t, want, ids)
 	})
 }
 
@@ -321,14 +309,12 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 		// when
 		_, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			e, err := st.GetEveEntity(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, e.ID, 42)
-				xassert.Equal(t, e.Name, "Dummy")
-				xassert.Equal(t, e.Category, app.EveEntityAlliance)
-			}
-		}
+		require.NoError(t, err)
+		e, err := st.GetEveEntity(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, e.ID, 42)
+		xassert.Equal(t, e.Name, "Dummy")
+		xassert.Equal(t, e.Category, app.EveEntityAlliance)
 	})
 	t.Run("should get when exists", func(t *testing.T) {
 		// given
@@ -348,11 +334,10 @@ func TestEveEntityGetOrCreate(t *testing.T) {
 		// when
 		e, err := st.GetOrCreateEveEntity(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 42, e.ID)
-			xassert.Equal(t, "Alpha", e.Name)
-			xassert.Equal(t, app.EveEntityCharacter, e.Category)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 42, e.ID)
+		xassert.Equal(t, "Alpha", e.Name)
+		xassert.Equal(t, app.EveEntityCharacter, e.Category)
 	})
 }
 
@@ -368,10 +353,9 @@ func TestEveEntityIDs(t *testing.T) {
 		// when
 		got, err := st.ListEveEntityIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64](5, 42)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64](5, 42)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return missing IDs and ignore IDs with zero value", func(t *testing.T) {
 		// given
@@ -380,10 +364,9 @@ func TestEveEntityIDs(t *testing.T) {
 		// when
 		got, err := st.MissingEveEntityIDs(ctx, set.Of[int64](42, 5, 0))
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64](5)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64](5)
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -411,9 +394,8 @@ func TestEveEntityCanCreateAllCategories(t *testing.T) {
 			e1 := factory.CreateEveEntity(app.EveEntity{Category: c})
 			// then
 			e2, err := st.GetEveEntity(ctx, e1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, e2.Category, c)
-			}
+			require.NoError(t, err)
+			xassert.Equal(t, e2.Category, c)
 
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -36,18 +37,16 @@ func TestCharacterAttributes(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCharacterAttributes(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterAttributes(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 20, x.Charisma)
-				xassert.Equal(t, 21, x.Intelligence)
-				xassert.Equal(t, 22, x.Memory)
-				xassert.Equal(t, 23, x.Perception)
-				xassert.Equal(t, 24, x.Willpower)
-				xassert.EqualOptional(t, 7, x.BonusRemaps)
-				xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterAttributes(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 20, x.Charisma)
+		xassert.Equal(t, 21, x.Intelligence)
+		xassert.Equal(t, 22, x.Memory)
+		xassert.Equal(t, 23, x.Perception)
+		xassert.Equal(t, 24, x.Willpower)
+		xassert.EqualOptional(t, 7, x.BonusRemaps)
+		xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -70,18 +69,16 @@ func TestCharacterAttributes(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCharacterAttributes(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterAttributes(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 20, x.Charisma)
-				xassert.Equal(t, 21, x.Intelligence)
-				xassert.Equal(t, 22, x.Memory)
-				xassert.Equal(t, 23, x.Perception)
-				xassert.Equal(t, 24, x.Willpower)
-				xassert.EqualOptional(t, 7, x.BonusRemaps)
-				xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterAttributes(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 20, x.Charisma)
+		xassert.Equal(t, 21, x.Intelligence)
+		xassert.Equal(t, 22, x.Memory)
+		xassert.Equal(t, 23, x.Perception)
+		xassert.Equal(t, 24, x.Willpower)
+		xassert.EqualOptional(t, 7, x.BonusRemaps)
+		xassert.EqualOptional(t, lastRemapDate, x.LastRemapDate)
 	})
 	t.Run("returns not found error", func(t *testing.T) {
 		// given

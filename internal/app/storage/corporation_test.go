@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -25,12 +26,10 @@ func TestCorporation(t *testing.T) {
 		// when
 		err := st.CreateCorporation(ctx, ec.ID)
 		// then
-		if assert.NoError(t, err) {
-			r, err := st.GetCorporation(ctx, ec.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, ec.Name, r.EveCorporation.Name)
-			}
-		}
+		require.NoError(t, err)
+		r, err := st.GetCorporation(ctx, ec.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, ec.Name, r.EveCorporation.Name)
 	})
 	t.Run("raise specfic error when tyring to re-create existing", func(t *testing.T) {
 		// given
@@ -48,9 +47,8 @@ func TestCorporation(t *testing.T) {
 		// when
 		c2, err := st.GetEveCorporation(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c1.EveCorporation.Name, c2.Name)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c1.EveCorporation.Name, c2.Name)
 	})
 	t.Run("can create when not exists", func(t *testing.T) {
 		// given
@@ -59,9 +57,8 @@ func TestCorporation(t *testing.T) {
 		// when
 		c, err := st.GetOrCreateCorporation(ctx, ec.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, ec.Name, c.EveCorporation.Name)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, ec.Name, c.EveCorporation.Name)
 	})
 	t.Run("can get when exists", func(t *testing.T) {
 		// given
@@ -70,9 +67,8 @@ func TestCorporation(t *testing.T) {
 		// when
 		c2, err := st.GetOrCreateCorporation(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c2, c1)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c2, c1)
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
@@ -81,10 +77,9 @@ func TestCorporation(t *testing.T) {
 		// when
 		err := st.DeleteCorporation(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetCorporation(ctx, c.ID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-		}
+		require.NoError(t, err)
+		_, err = st.GetCorporation(ctx, c.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 
@@ -100,10 +95,9 @@ func TestListCorporations(t *testing.T) {
 		// when
 		got, err := st.ListCorporationIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(c1.ID, c2.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list corporations", func(t *testing.T) {
 		// given
@@ -113,13 +107,12 @@ func TestListCorporations(t *testing.T) {
 		// when
 		xx, err := st.ListCorporations(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID)
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.Corporation) int64 {
-				return x.ID
-			}))
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(c1.ID, c2.ID)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.Corporation) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list corporations in short form", func(t *testing.T) {
 		// given
@@ -129,13 +122,12 @@ func TestListCorporations(t *testing.T) {
 		// when
 		xx, err := st.ListCorporationsShort(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(c1.ID, c2.ID)
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
-				return x.ID
-			}))
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(c1.ID, c2.ID)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list priviledged corporations", func(t *testing.T) {
 		// given
@@ -147,13 +139,12 @@ func TestListCorporations(t *testing.T) {
 		// when
 		xx, err := st.ListPrivilegedCorporationsShort(ctx, set.Of(app.RoleBrandManager, app.RoleAccountant))
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(corp1.ID)
-			got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
-				return x.ID
-			}))
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(corp1.ID)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -173,10 +164,9 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(corporation2.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(corporation2.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("orphaned corporation does not exist", func(t *testing.T) {
 		// given
@@ -189,10 +179,9 @@ func TestListOrphanedCorporationIDs(t *testing.T) {
 		// when
 		got, err := st.ListOrphanedCorporationIDs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of[int64]()
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64]()
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -208,9 +197,8 @@ func TestGetAnyCorporation(t *testing.T) {
 		// when
 		c, err := st.GetAnyCorporation(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Contains(t, []int64{c1.ID, c2.ID}, c.ID)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, []int64{c1.ID, c2.ID}, c.ID)
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given

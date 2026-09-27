@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -39,23 +40,21 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// when
 		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
-				CharacterID: c.ID,
-				RefID:       4,
-			})
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, 123.45, i.Amount)
-				xassert.EqualOptional(t, 234.56, i.Balance)
-				xassert.EqualOptional(t, 42, i.ContextID)
-				xassert.EqualOptional(t, "character", i.ContextIDType)
-				xassert.Equal(t, date, i.Date)
-				xassert.Equal(t, "bla bla", i.Description)
-				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.EqualOptional(t, "my reason", i.Reason)
-				xassert.EqualOptional(t, 0.12, i.Tax)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+			RefID:       4,
+		})
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 123.45, i.Amount)
+		xassert.EqualOptional(t, 234.56, i.Balance)
+		xassert.EqualOptional(t, 42, i.ContextID)
+		xassert.EqualOptional(t, "character", i.ContextIDType)
+		xassert.Equal(t, date, i.Date)
+		xassert.Equal(t, "bla bla", i.Description)
+		xassert.Equal(t, "player_donation", i.RefType)
+		xassert.EqualOptional(t, "my reason", i.Reason)
+		xassert.EqualOptional(t, 0.12, i.Tax)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -84,26 +83,24 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// when
 		err := st.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
-				CharacterID: c.ID,
-				RefID:       4,
-			})
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, 123.45, i.Amount)
-				xassert.EqualOptional(t, 234.56, i.Balance)
-				xassert.EqualOptional(t, 42, i.ContextID)
-				xassert.EqualOptional(t, "character", i.ContextIDType)
-				xassert.EqualOptional(t, e1, i.FirstParty)
-				xassert.Equal(t, date, i.Date)
-				xassert.Equal(t, "bla bla", i.Description)
-				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.EqualOptional(t, "my reason", i.Reason)
-				xassert.EqualOptional(t, e2, i.SecondParty)
-				xassert.EqualOptional(t, e3, i.TaxReceiver)
-				xassert.EqualOptional(t, 0.12, i.Tax)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterWalletJournalEntry(ctx, storage.GetCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+			RefID:       4,
+		})
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 123.45, i.Amount)
+		xassert.EqualOptional(t, 234.56, i.Balance)
+		xassert.EqualOptional(t, 42, i.ContextID)
+		xassert.EqualOptional(t, "character", i.ContextIDType)
+		xassert.EqualOptional(t, e1, i.FirstParty)
+		xassert.Equal(t, date, i.Date)
+		xassert.Equal(t, "bla bla", i.Description)
+		xassert.Equal(t, "player_donation", i.RefType)
+		xassert.EqualOptional(t, "my reason", i.Reason)
+		xassert.EqualOptional(t, e2, i.SecondParty)
+		xassert.EqualOptional(t, e3, i.TaxReceiver)
+		xassert.EqualOptional(t, 0.12, i.Tax)
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
@@ -121,10 +118,9 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// when
 		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(e1.RefID, e2.RefID, e3.RefID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(e1.RefID, e2.RefID, e3.RefID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -142,8 +138,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// when
 		ee, err := st.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, ee, 3)
-		}
+		require.NoError(t, err)
+		assert.Len(t, ee, 3)
 	})
 }

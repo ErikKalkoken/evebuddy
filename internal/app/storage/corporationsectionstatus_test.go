@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -29,9 +30,8 @@ func TestCorporationSectionStatus(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationSectionStatus(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, oo, 1)
 	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
@@ -46,18 +46,15 @@ func TestCorporationSectionStatus(t *testing.T) {
 		}
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			if assert.NoError(t, err) {
-				xassert.Equal(t, "", x1.ContentHash)
-				xassert.Equal(t, "error", x1.ErrorMessage)
-				assert.True(t, x1.CompletedAt.IsZero())
-				assert.False(t, x1.UpdatedAt.IsZero())
-			}
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		require.NoError(t, err)
+		xassert.Equal(t, "", x1.ContentHash)
+		xassert.Equal(t, "error", x1.ErrorMessage)
+		assert.True(t, x1.CompletedAt.IsZero())
+		assert.False(t, x1.UpdatedAt.IsZero())
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("can set existing", func(t *testing.T) {
 		// given
@@ -76,17 +73,15 @@ func TestCorporationSectionStatus(t *testing.T) {
 		}
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x.ContentHash, x1.ContentHash)
-			xassert.Equal(t, "error", x1.ErrorMessage)
-			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			xassert.Equal(t, x.StartedAt, x1.StartedAt)
-			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x.ContentHash, x1.ContentHash)
+		xassert.Equal(t, "error", x1.ErrorMessage)
+		xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+		xassert.Equal(t, x.StartedAt, x1.StartedAt)
+		assert.False(t, x1.UpdatedAt.IsZero())
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("can set all fields", func(t *testing.T) {
 		// given
@@ -113,18 +108,16 @@ func TestCorporationSectionStatus(t *testing.T) {
 		}
 		x1, err := st.UpdateOrCreateCorporationSectionStatus(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, comment, x1.Comment)
-			xassert.Equal(t, hash, x1.ContentHash)
-			xassert.Equal(t, e, x1.ErrorMessage)
-			assert.True(t, x1.CompletedAt.Equal(completedAt.Time))
-			assert.True(t, x1.StartedAt.Equal(startedAt.ValueOrZero()))
-			assert.False(t, x1.UpdatedAt.IsZero())
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, comment, x1.Comment)
+		xassert.Equal(t, hash, x1.ContentHash)
+		xassert.Equal(t, e, x1.ErrorMessage)
+		assert.True(t, x1.CompletedAt.Equal(completedAt.Time))
+		assert.True(t, x1.StartedAt.Equal(startedAt.ValueOrZero()))
+		assert.False(t, x1.UpdatedAt.IsZero())
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("can reset content hash", func(t *testing.T) {
 		// given
@@ -140,11 +133,9 @@ func TestCorporationSectionStatus(t *testing.T) {
 			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
-			if assert.NoError(t, err) {
-				assert.False(t, x2.HasContent())
-			}
-		}
+		require.NoError(t, err)
+		x2, err := st.GetCorporationSectionStatus(ctx, c.ID, x.Section.(app.CorporationSection))
+		require.NoError(t, err)
+		assert.False(t, x2.HasContent())
 	})
 }

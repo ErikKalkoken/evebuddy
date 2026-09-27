@@ -25,10 +25,9 @@ func TestTag(t *testing.T) {
 		// when
 		got, err := st.CreateTag(ctx, "name")
 		// then
-		if assert.NoError(t, err) {
-			assert.NotEqual(t, got.ID, 0)
-			xassert.Equal(t, got.Name, "name")
-		}
+		require.NoError(t, err)
+		assert.NotEqual(t, got.ID, 0)
+		xassert.Equal(t, got.Name, "name")
 	})
 	t.Run("can get by ID", func(t *testing.T) {
 		// given
@@ -37,9 +36,8 @@ func TestTag(t *testing.T) {
 		// when
 		t2, err := st.GetTag(ctx, t1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, t2, t1)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, t2, t1)
 	})
 	t.Run("can list ordered by name", func(t *testing.T) {
 		// given
@@ -49,13 +47,12 @@ func TestTag(t *testing.T) {
 		// when
 		oo, err := st.ListTagsByName(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{t2.ID, t1.ID}
-			got := xslices.Map(oo, func(x *app.CharacterTag) int64 {
-				return x.ID
-			})
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []int64{t2.ID, t1.ID}
+		got := xslices.Map(oo, func(x *app.CharacterTag) int64 {
+			return x.ID
+		})
+		xassert.Equal(t, want, got)
 	})
 	t.Run("raise specfic error when tyring to create new with existing name", func(t *testing.T) {
 		// given
@@ -73,12 +70,10 @@ func TestTag(t *testing.T) {
 		// when
 		err := st.UpdateTagName(ctx, t1.ID, "alpha")
 		// then
-		if assert.NoError(t, err) {
-			t2, err := st.GetTag(ctx, t1.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, "alpha", t2.Name)
-			}
-		}
+		require.NoError(t, err)
+		t2, err := st.GetTag(ctx, t1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "alpha", t2.Name)
 	})
 	t.Run("can delete tag", func(t *testing.T) {
 		// given
@@ -87,10 +82,9 @@ func TestTag(t *testing.T) {
 		// when
 		err := st.DeleteTag(ctx, t1.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetTag(ctx, t1.ID)
-			assert.Error(t, err, app.ErrNotFound)
-		}
+		require.NoError(t, err)
+		_, err = st.GetTag(ctx, t1.ID)
+		assert.Error(t, err, app.ErrNotFound)
 	})
 	t.Run("can delete all tags", func(t *testing.T) {
 		// given
@@ -100,12 +94,10 @@ func TestTag(t *testing.T) {
 		// when
 		err := st.DeleteAllTags(ctx)
 		// then
-		if assert.NoError(t, err) {
-			tags, err := st.ListTagsByName(ctx)
-			if assert.NoError(t, err) {
-				assert.Empty(t, tags)
-			}
-		}
+		require.NoError(t, err)
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, tags)
 	})
 }
 
@@ -196,21 +188,19 @@ func TestCharacterTag(t *testing.T) {
 			TagID:       tag.ID,
 		})
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(
-					t,
-					[]*app.EntityShort{
-						{
-							ID:   character1.ID,
-							Name: character1.EveCharacter.Name,
-						},
-					},
-					got,
-				)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
+		require.NoError(t, err)
+		xassert.Equal(
+			t,
+			[]*app.EntityShort{
+				{
+					ID:   character1.ID,
+					Name: character1.EveCharacter.Name,
+				},
+			},
+			got,
+		)
 	})
 	t.Run("can remove tag from character", func(t *testing.T) {
 		// given
@@ -238,16 +228,14 @@ func TestCharacterTag(t *testing.T) {
 			TagID:       tag.ID,
 		})
 		// then
-		if assert.NoError(t, err) {
-			cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
-			if assert.NoError(t, err) {
-				want := set.Of(character2.ID)
-				got := set.Of(xslices.Map(cc, func(x *app.EntityShort) int64 {
-					return x.ID
-				})...)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		cc, err := st.ListCharactersForCharacterTag(ctx, tag.ID)
+		require.NoError(t, err)
+		want := set.Of(character2.ID)
+		got := set.Of(xslices.Map(cc, func(x *app.EntityShort) int64 {
+			return x.ID
+		})...)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list tags for character", func(t *testing.T) {
 		// given
@@ -266,8 +254,7 @@ func TestCharacterTag(t *testing.T) {
 		// when
 		got, err := st.ListCharacterTagsForCharacter(ctx, character.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []*app.CharacterTag{tag}, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.CharacterTag{tag}, got)
 	})
 }

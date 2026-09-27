@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -27,13 +27,11 @@ func TestEveMoon(t *testing.T) {
 		// when
 		err := st.CreateEveMoon(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetEveMoon(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 42, o.ID)
-				xassert.Equal(t, "name", o.Name)
-				xassert.Equal(t, system, o.SolarSystem)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetEveMoon(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, 42, o.ID)
+		xassert.Equal(t, "name", o.Name)
+		xassert.Equal(t, system, o.SolarSystem)
 	})
 }

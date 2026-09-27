@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -41,19 +42,18 @@ func TestCharacterMail(t *testing.T) {
 		}
 		_, err := st.CreateCharacterMail(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			m, err := st.GetCharacterMail(ctx, c.ID, 42)
-			assert.NoError(t, err)
-			xassert.Equal(t, 42, m.MailID)
-			xassert.EqualOptional(t, "body", m.Body)
-			xassert.Equal(t, f, m.From)
-			xassert.Equal(t, c.ID, m.CharacterID)
-			xassert.EqualOptional(t, "subject", m.Subject)
-			xassert.Equal(t, timestamp, m.Timestamp)
-			xassert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
-			xassert.Equal(t, label.Name, m.Labels[0].Name)
-			xassert.Equal(t, label.LabelID, m.Labels[0].LabelID)
-		}
+		require.NoError(t, err)
+		m, err := st.GetCharacterMail(ctx, c.ID, 42)
+		assert.NoError(t, err)
+		xassert.Equal(t, 42, m.MailID)
+		xassert.EqualOptional(t, "body", m.Body)
+		xassert.Equal(t, f, m.From)
+		xassert.Equal(t, c.ID, m.CharacterID)
+		xassert.EqualOptional(t, "subject", m.Subject)
+		xassert.Equal(t, timestamp, m.Timestamp)
+		xassert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
+		xassert.Equal(t, label.Name, m.Labels[0].Name)
+		xassert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 	})
 	t.Run("can update is-read", func(t *testing.T) {
 		// given
@@ -62,11 +62,10 @@ func TestCharacterMail(t *testing.T) {
 		// when
 		err := st.UpdateCharacterMailSetIsRead(ctx, m.CharacterID, m.ID, true)
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			assert.NoError(t, err)
-			assert.True(t, got.IsRead.ValueOrZero())
-		}
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		assert.NoError(t, err)
+		assert.True(t, got.IsRead.ValueOrZero())
 	})
 	t.Run("can update labels", func(t *testing.T) {
 		// given
@@ -76,11 +75,10 @@ func TestCharacterMail(t *testing.T) {
 		// when
 		err := st.UpdateCharacterMailSetLabels(ctx, m.CharacterID, m.ID, []int64{label.LabelID})
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			assert.NoError(t, err)
-			assert.Contains(t, got.Labels, label)
-		}
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		assert.NoError(t, err)
+		assert.Contains(t, got.Labels, label)
 	})
 	t.Run("can update body", func(t *testing.T) {
 		// given
@@ -89,11 +87,10 @@ func TestCharacterMail(t *testing.T) {
 		// when
 		err := st.UpdateCharacterMailSetBody(ctx, m.CharacterID, m.MailID, optional.New("alpha"))
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			assert.NoError(t, err)
-			xassert.EqualOptional(t, "alpha", got.Body)
-		}
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		assert.NoError(t, err)
+		xassert.EqualOptional(t, "alpha", got.Body)
 	})
 	t.Run("can set processed", func(t *testing.T) {
 		// given
@@ -102,12 +99,10 @@ func TestCharacterMail(t *testing.T) {
 		// when
 		err := st.UpdateCharacterMailSetProcessed(ctx, m.ID)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			if assert.NoError(t, err) {
-				assert.True(t, o.IsProcessed)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		require.NoError(t, err)
+		assert.True(t, o.IsProcessed)
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
@@ -163,10 +158,9 @@ func TestCharacterMail(t *testing.T) {
 		// when
 		err := st.DeleteCharacterMail(ctx, m.CharacterID, m.MailID)
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-			assert.ErrorIs(t, err, app.ErrNotFound)
-		}
+		require.NoError(t, err)
+		_, err = st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 
@@ -215,9 +209,8 @@ func TestFetchUnreadCounts(t *testing.T) {
 		})
 		// when
 		r, err := st.GetCharacterMailLabelUnreadCounts(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, map[int64]int{app.MailLabelCorp: 2, app.MailLabelInbox: 1}, r)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]int{app.MailLabelCorp: 2, app.MailLabelInbox: 1}, r)
 	})
 	t.Run("can get mail list unread counts", func(t *testing.T) {
 		// given
@@ -238,9 +231,8 @@ func TestFetchUnreadCounts(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
 		r, err := st.GetCharacterMailListUnreadCounts(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, map[int64]int{l1.ID: 1}, r)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]int{l1.ID: 1}, r)
 	})
 
 }
@@ -303,9 +295,8 @@ func TestUnreadMailCounts(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
 		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 6, r)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 6, r)
 	})
 	t.Run("should return null when no mail exists", func(t *testing.T) {
 		// given
@@ -313,9 +304,8 @@ func TestUnreadMailCounts(t *testing.T) {
 		c := factory.CreateCharacter()
 		// when
 		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, r)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, r)
 	})
 	t.Run("unread count for all characters", func(t *testing.T) {
 		// given
@@ -382,9 +372,8 @@ func TestUnreadMailCounts(t *testing.T) {
 		})
 		// when
 		got, err := st.GetAllCharactersMailUnreadCount(ctx)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 7, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
 	})
 }
 
@@ -407,9 +396,8 @@ func TestMailCounts(t *testing.T) {
 		factory.CreateCharacterMailWithBody()
 		// when
 		got, err := st.GetCharacterMailCount(ctx, character.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 2, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 2, got)
 	})
 	t.Run("character has no mail", func(t *testing.T) {
 		// given
@@ -418,9 +406,8 @@ func TestMailCounts(t *testing.T) {
 		factory.CreateCharacterMailWithBody()
 		// when
 		got, err := st.GetCharacterMailCount(ctx, character.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
 	})
 }
 
@@ -453,10 +440,9 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		xx, err := st.ListAllCharacterMailHeadersForLabelOrdered(ctx, app.MailLabelInbox)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
-			xassert.Equal(t, []int64{c2.ID, c1.ID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
+		xassert.Equal(t, []int64{c2.ID, c1.ID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
 	})
 	t.Run("can list mail headers for all labels of all characters", func(t *testing.T) {
 		// given
@@ -470,10 +456,9 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		xx, err := st.ListAllCharacterMailHeadersForLabelOrdered(ctx, app.MailLabelAll)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
-			xassert.Equal(t, []int64{m2.CharacterID, m1.CharacterID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{m2.MailID, m1.MailID}, mailIDsFromHeaders(xx))
+		xassert.Equal(t, []int64{m2.CharacterID, m1.CharacterID}, []int64{xx[0].CharacterID, xx[1].CharacterID})
 	})
 	t.Run("can list mail headers for a mailing list of all characters", func(t *testing.T) {
 		// given
@@ -494,9 +479,8 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		xx, err := st.ListAllCharacterMailHeadersForListOrdered(ctx, l.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []int64{m1.MailID, m2.MailID}, mailIDsFromHeaders(xx))
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{m1.MailID, m2.MailID}, mailIDsFromHeaders(xx))
 	})
 	t.Run("can list mailing lists of all characters without duplicates", func(t *testing.T) {
 		// given
@@ -511,10 +495,9 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		ll, err := st.ListAllCharacterMailListsOrdered(ctx)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []int64{e1.ID, e2.ID}, []int64{ll[0].ID, ll[1].ID})
-			assert.Len(t, ll, 2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{e1.ID, e2.ID}, []int64{ll[0].ID, ll[1].ID})
+		assert.Len(t, ll, 2)
 	})
 	t.Run("can get label unread counts of all characters", func(t *testing.T) {
 		// given
@@ -536,9 +519,8 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		got, err := st.GetAllCharactersMailLabelUnreadCounts(ctx)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, map[int64]int{app.MailLabelInbox: 2}, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]int{app.MailLabelInbox: 2}, got)
 	})
 	t.Run("can get list unread counts of all characters", func(t *testing.T) {
 		// given
@@ -565,9 +547,8 @@ func TestAllCharactersMails(t *testing.T) {
 		// when
 		got, err := st.GetAllCharactersMailListUnreadCounts(ctx)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, map[int64]int{l.ID: 2}, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]int{l.ID: 2}, got)
 	})
 	t.Run("can count mails and mails without body of all characters", func(t *testing.T) {
 		// given
@@ -579,9 +560,9 @@ func TestAllCharactersMails(t *testing.T) {
 		total, err1 := st.GetAllCharactersMailCount(ctx)
 		missing, err2 := st.GetAllCharactersMailWithoutBodyCount(ctx)
 		// then
-		if assert.NoError(t, err1) && assert.NoError(t, err2) {
-			xassert.Equal(t, 3, total)
-			xassert.Equal(t, 1, missing)
-		}
+		require.NoError(t, err1)
+		require.NoError(t, err2)
+		xassert.Equal(t, 3, total)
+		xassert.Equal(t, 1, missing)
 	})
 }

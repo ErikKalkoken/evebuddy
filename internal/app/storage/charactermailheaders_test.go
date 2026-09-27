@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -40,12 +41,11 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, l1.LabelID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 2)
-			want := []int64{m2.MailID, m1.MailID}
-			got := mailIDsFromHeaders(xx)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		assert.Len(t, xx, 2)
+		want := []int64{m2.MailID, m1.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can fetch for all labels", func(t *testing.T) {
 		// given
@@ -75,11 +75,10 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelAll)
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
-			got := mailIDsFromHeaders(xx)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []int64{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return mail without label only", func(t *testing.T) {
 		// given
@@ -95,11 +94,10 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelNone)
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{m.MailID}
-			got := mailIDsFromHeaders(xx)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []int64{m.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return empty when no match", func(t *testing.T) {
 		// given
@@ -108,9 +106,8 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		mm, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, 99)
 		// then
-		if assert.NoError(t, err) {
-			assert.Empty(t, mm)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, mm)
 	})
 	t.Run("different characters can have same label ID", func(t *testing.T) {
 		// given
@@ -131,9 +128,8 @@ func TestListMailHeaders(t *testing.T) {
 		})
 		// when
 		mm, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c2.ID, l2.LabelID)
-		if assert.NoError(t, err) {
-			assert.Len(t, mm, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, mm, 1)
 	})
 	t.Run("should return mail for selected list only", func(t *testing.T) {
 		// given
@@ -153,11 +149,10 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		xx, err := st.ListCharacterMailHeadersForListOrdered(ctx, c.ID, l1.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{m1.MailID}
-			got := mailIDsFromHeaders(xx)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []int64{m1.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return unprocessed mails only and ignore sent mails", func(t *testing.T) {
 		// given
@@ -187,11 +182,10 @@ func TestListMailHeaders(t *testing.T) {
 		// when
 		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{m1.MailID}
-			got := mailIDsFromHeaders(xx)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []int64{m1.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
 	})
 }
 

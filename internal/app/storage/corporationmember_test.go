@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -29,16 +30,14 @@ func TestCorporationMember(t *testing.T) {
 			CharacterID:   member.ID,
 		})
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCorporationMember(ctx, storage.CorporationMemberParams{
-				CorporationID: c.ID,
-				CharacterID:   member.ID,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, c.ID, x.CorporationID)
-				xassert.Equal(t, member, x.Character)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCorporationMember(ctx, storage.CorporationMemberParams{
+			CorporationID: c.ID,
+			CharacterID:   member.ID,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, x.CorporationID)
+		xassert.Equal(t, member, x.Character)
 	})
 	t.Run("can list members", func(t *testing.T) {
 		// given
@@ -54,13 +53,12 @@ func TestCorporationMember(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationMembers(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int64 {
-				return x.Character.ID
-			})...)
-			want := set.Of(e1.Character.ID, e2.Character.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(oo, func(x *app.CorporationMember) int64 {
+			return x.Character.ID
+		})...)
+		want := set.Of(e1.Character.ID, e2.Character.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list member IDs", func(t *testing.T) {
 		// given
@@ -76,10 +74,9 @@ func TestCorporationMember(t *testing.T) {
 		// when
 		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(e1.Character.ID, e2.Character.ID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(e1.Character.ID, e2.Character.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can delete members", func(t *testing.T) {
 		// given
@@ -94,12 +91,10 @@ func TestCorporationMember(t *testing.T) {
 		// when
 		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID, e2.Character.ID))
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Empty(t, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got)
 	})
 	t.Run("can delete specific members", func(t *testing.T) {
 		// given
@@ -114,13 +109,11 @@ func TestCorporationMember(t *testing.T) {
 		// when
 		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID))
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				want := set.Of(e2.Character.ID)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e2.Character.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("does nothing when no member IDs given", func(t *testing.T) {
 		// given
@@ -132,12 +125,10 @@ func TestCorporationMember(t *testing.T) {
 		// when
 		err := st.DeleteCorporationMembers(ctx, c.ID, set.Set[int64]{})
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCorporationMemberIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				want := set.Of(e1.Character.ID)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e1.Character.ID)
+		xassert.Equal(t, want, got)
 	})
 }

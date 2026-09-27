@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -31,14 +32,12 @@ func TestMailLabel(t *testing.T) {
 		// when
 		_, err := st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, "Dummy", l.Name)
-				xassert.EqualOptional(t, "xyz", l.Color)
-				xassert.EqualOptional(t, 99, l.UnreadCount)
-			}
-		}
+		require.NoError(t, err)
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Dummy", l.Name)
+		xassert.EqualOptional(t, "xyz", l.Color)
+		xassert.EqualOptional(t, 99, l.UnreadCount)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -55,14 +54,12 @@ func TestMailLabel(t *testing.T) {
 		// when
 		_, err := st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, "Dummy", l.Name)
-				xassert.EqualOptional(t, "xyz", l.Color)
-				xassert.EqualOptional(t, 99, l.UnreadCount)
-			}
-		}
+		require.NoError(t, err)
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Dummy", l.Name)
+		xassert.EqualOptional(t, "xyz", l.Color)
+		xassert.EqualOptional(t, 99, l.UnreadCount)
 	})
 	t.Run("can get or create existing", func(t *testing.T) {
 		// given
@@ -83,12 +80,10 @@ func TestMailLabel(t *testing.T) {
 		// when
 		_, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, "Dummy", l.Name)
-			}
-		}
+		require.NoError(t, err)
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Dummy", l.Name)
 	})
 	t.Run("can get or create when not existing", func(t *testing.T) {
 		// given
@@ -104,12 +99,10 @@ func TestMailLabel(t *testing.T) {
 		// when
 		_, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, "Johnny", l.Name)
-			}
-		}
+		require.NoError(t, err)
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Johnny", l.Name)
 	})
 	t.Run("can return all mail labels for a character ordered by name", func(t *testing.T) {
 		// given
@@ -126,10 +119,9 @@ func TestMailLabel(t *testing.T) {
 		factory.CreateCharacterMailLabel()
 		// when
 		got, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-		if assert.NoError(t, err) {
-			want := []*app.CharacterMailLabel{l2, l1}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CharacterMailLabel{l2, l1}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can return all mail labels for a character", func(t *testing.T) {
 		// given
@@ -146,10 +138,9 @@ func TestMailLabel(t *testing.T) {
 		factory.CreateCharacterMailLabel()
 		// when
 		got, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-		if assert.NoError(t, err) {
-			want := []*app.CharacterMailLabel{l2, l1}
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := []*app.CharacterMailLabel{l2, l1}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return empty list when character has no mail labels", func(t *testing.T) {
 		// given
@@ -158,9 +149,8 @@ func TestMailLabel(t *testing.T) {
 		factory.CreateCharacterMailLabel()
 		// when
 		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.Len(t, labels, 0)
-		}
+		require.NoError(t, err)
+		assert.Len(t, labels, 0)
 	})
 }
 
@@ -180,17 +170,14 @@ func TestDeleteObsoleteMailLabels(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int64{l2.LabelID}})
 		// when
 		err := st.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			ids1, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, ids1, 1)
-				xassert.Equal(t, l1.LabelID, ids1[0].LabelID)
-			}
-			ids2, err := st.ListCharacterMailLabelsOrdered(ctx, c2.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, ids2, 1)
-				xassert.Equal(t, l2.LabelID, ids2[0].LabelID)
-			}
-		}
+		require.NoError(t, err)
+		ids1, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
+		require.NoError(t, err)
+		assert.Len(t, ids1, 1)
+		xassert.Equal(t, l1.LabelID, ids1[0].LabelID)
+		ids2, err := st.ListCharacterMailLabelsOrdered(ctx, c2.ID)
+		require.NoError(t, err)
+		assert.Len(t, ids2, 1)
+		xassert.Equal(t, l2.LabelID, ids2[0].LabelID)
 	})
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -38,11 +39,10 @@ func TestMailList(t *testing.T) {
 		// when
 		ll, err := st.ListCharacterMailListsOrdered(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, ll, 2)
-			o := ll[0]
-			xassert.Equal(t, o.Name, "alpha")
-		}
+		require.NoError(t, err)
+		assert.Len(t, ll, 2)
+		o := ll[0]
+		xassert.Equal(t, o.Name, "alpha")
 	})
 	t.Run("can delete obsolete mail lists for a character", func(t *testing.T) {
 		// given
@@ -65,25 +65,22 @@ func TestMailList(t *testing.T) {
 		// when
 		err := st.DeleteObsoleteCharacterMailLists(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			lists, err := st.ListCharacterMailListsOrdered(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				got := set.Of[int64]()
-				for _, l := range lists {
-					got.Add(l.ID)
-				}
-				want := set.Of([]int64{e1.ID}...)
-				xassert.Equal(t, want, got)
-			}
-			lists, err = st.ListCharacterMailListsOrdered(ctx, c2.ID)
-			if assert.NoError(t, err) {
-				got := set.Of[int64]()
-				for _, l := range lists {
-					got.Add(l.ID)
-				}
-				want := set.Of(e3.ID)
-				xassert.Equal(t, want, got)
-			}
+		require.NoError(t, err)
+		lists, err := st.ListCharacterMailListsOrdered(ctx, c1.ID)
+		require.NoError(t, err)
+		got := set.Of[int64]()
+		for _, l := range lists {
+			got.Add(l.ID)
 		}
+		want := set.Of([]int64{e1.ID}...)
+		xassert.Equal(t, want, got)
+		lists, err = st.ListCharacterMailListsOrdered(ctx, c2.ID)
+		require.NoError(t, err)
+		got = set.Of[int64]()
+		for _, l := range lists {
+			got.Add(l.ID)
+		}
+		want = set.Of(e3.ID)
+		xassert.Equal(t, want, got)
 	})
 }
