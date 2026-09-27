@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -62,9 +63,8 @@ func TestNotifyExpiredExtractions(t *testing.T) {
 				sendCount++
 			})
 			// then
-			if assert.NoError(t, err) {
-				 xassert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
+			require.NoError(t, err)
+			xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 		})
 	}
 }
@@ -110,7 +110,7 @@ func TestNotifyExpiredExtractions_ShouldNoifyOnceForMultipleExpired(t *testing.T
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	 xassert.Equal(t, 1, sendCount)
+	xassert.Equal(t, 1, sendCount)
 	assert.Contains(t, content, p1.EvePlanet.Name)
 	assert.Contains(t, content, p2.EvePlanet.Name)
 	assert.Contains(t, title, "2")

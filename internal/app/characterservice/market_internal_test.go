@@ -81,35 +81,33 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListCharacterMarketOrders(ctx, c.ID)
-			if assert.NoError(t, err) {
-				m := make(map[int64]*app.CharacterMarketOrder)
-				for _, o := range oo {
-					m[o.OrderID] = o
-				}
-				want := set.Of[int64](12, 42)
-				got := set.Collect(maps.Keys(m))
-				xassert.Equal(t, want, got)
-				o := m[42]
-				issued := time.Date(2019, 8, 24, 14, 15, 22, 0, time.UTC)
-				xassert.Equal(t, 3, o.Duration)
-				assert.True(t, o.Escrow.IsEmpty())
-				xassert.EqualOptional(t, true, o.IsBuyOrder)
-				xassert.Equal(t, true, o.IsCorporation)
-				assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
-				xassert.Equal(t, location1.ID, o.Location.ID)
-				assert.True(t, o.MinVolume.IsEmpty())
-				xassert.Equal(t, 123.45, o.Price)
-				xassert.Equal(t, "1", o.Range)
-				xassert.Equal(t, location1.SolarSystem.MustValue().Constellation.Region.ID, o.Region.ID)
-				xassert.Equal(t, app.OrderOpen, o.State)
-				xassert.Equal(t, itemType1.ID, o.Type.ID)
-				xassert.Equal(t, 5, o.VolumeRemains)
-				xassert.Equal(t, 10, o.VolumeTotal)
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCharacterMarketOrders(ctx, c.ID)
+		require.NoError(t, err)
+		m := make(map[int64]*app.CharacterMarketOrder)
+		for _, o := range oo {
+			m[o.OrderID] = o
 		}
+		want := set.Of[int64](12, 42)
+		got := set.Collect(maps.Keys(m))
+		xassert.Equal(t, want, got)
+		o := m[42]
+		issued := time.Date(2019, 8, 24, 14, 15, 22, 0, time.UTC)
+		xassert.Equal(t, 3, o.Duration)
+		assert.True(t, o.Escrow.IsEmpty())
+		xassert.EqualOptional(t, true, o.IsBuyOrder)
+		xassert.Equal(t, true, o.IsCorporation)
+		assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", issued, o.Issued)
+		xassert.Equal(t, location1.ID, o.Location.ID)
+		assert.True(t, o.MinVolume.IsEmpty())
+		xassert.Equal(t, 123.45, o.Price)
+		xassert.Equal(t, "1", o.Range)
+		xassert.Equal(t, location1.SolarSystem.MustValue().Constellation.Region.ID, o.Region.ID)
+		xassert.Equal(t, app.OrderOpen, o.State)
+		xassert.Equal(t, itemType1.ID, o.Type.ID)
+		xassert.Equal(t, 5, o.VolumeRemains)
+		xassert.Equal(t, 10, o.VolumeTotal)
 	})
 	t.Run("can update existing orders", func(t *testing.T) {
 		// given
@@ -155,18 +153,16 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListCharacterMarketOrders(ctx, c.ID)
-			if assert.NoError(t, err) {
-				if assert.Len(t, oo, 1) {
-					o2 := oo[0]
-					assert.InDelta(t, escrow, o2.Escrow.ValueOrZero(), 0.01)
-					xassert.Equal(t, remain, o2.VolumeRemains)
-					assert.InDelta(t, price, o2.Price, 0.01)
-					xassert.Equal(t, app.OrderExpired, o2.State)
-				}
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCharacterMarketOrders(ctx, c.ID)
+		require.NoError(t, err)
+		if assert.Len(t, oo, 1) {
+			o2 := oo[0]
+			assert.InDelta(t, escrow, o2.Escrow.ValueOrZero(), 0.01)
+			xassert.Equal(t, remain, o2.VolumeRemains)
+			assert.InDelta(t, price, o2.Price, 0.01)
+			xassert.Equal(t, app.OrderExpired, o2.State)
 		}
 	})
 	t.Run("should mark orphaned orders with state unknown", func(t *testing.T) {
@@ -212,13 +208,11 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			o2a, err := st.GetCharacterMarketOrder(ctx, o2.CharacterID, o2.OrderID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.OrderUnknown, o2a.State)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o2a, err := st.GetCharacterMarketOrder(ctx, o2.CharacterID, o2.OrderID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.OrderUnknown, o2a.State)
 	})
 	t.Run("should delete stale orders", func(t *testing.T) {
 		// given
@@ -266,14 +260,12 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				want := set.Of(o1.OrderID)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(o1.OrderID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should ignore invalid orders", func(t *testing.T) {
 		// given
@@ -331,14 +323,12 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			section:     app.SectionCharacterMarketOrders,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				want := set.Of[int64](12)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of[int64](12)
+		xassert.Equal(t, want, got)
 	})
 }
 

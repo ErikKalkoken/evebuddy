@@ -65,9 +65,8 @@ func TestNotifyUpdatedContracts(t *testing.T) {
 				sendCount++
 			})
 			// then
-			if assert.NoError(t, err) {
-				xassert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
+			require.NoError(t, err)
+			xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 		})
 	}
 }

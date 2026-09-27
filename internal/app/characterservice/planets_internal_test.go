@@ -8,6 +8,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -186,35 +187,31 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			section:     app.SectionCharacterPlanets,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			p, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), p.LastUpdate)
-				xassert.Equal(t, 3, p.UpgradeLevel)
-				pins, err := st.ListPlanetPins(ctx, p.ID)
-				if assert.NoError(t, err) {
-					assert.Len(t, pins, 1)
-					pin, err := st.GetPlanetPin(ctx, p.ID, 1000000017021)
-					if assert.NoError(t, err) {
-						xassert.Equal(t,
-							time.Date(2024, 12, 4, 9, 39, 8, 0, time.UTC),
-							pin.ExpiryTime.ValueOrZero(),
-						)
-						xassert.Equal(t,
-							time.Date(2024, 12, 3, 7, 39, 8, 0, time.UTC),
-							pin.InstallTime.ValueOrZero(),
-						)
-						xassert.Equal(t,
-							time.Date(2024, 12, 3, 7, 39, 12, 0, time.UTC),
-							pin.LastCycleStart.ValueOrZero(),
-						)
-						xassert.EqualOptional(t, productType, pin.ExtractorProductType)
-						xassert.Equal(t, pinType, pin.Type)
-					}
-				}
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		p, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
+		require.NoError(t, err)
+		xassert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), p.LastUpdate)
+		xassert.Equal(t, 3, p.UpgradeLevel)
+		pins, err := st.ListPlanetPins(ctx, p.ID)
+		require.NoError(t, err)
+		assert.Len(t, pins, 1)
+		pin, err := st.GetPlanetPin(ctx, p.ID, 1000000017021)
+		require.NoError(t, err)
+		xassert.Equal(t,
+			time.Date(2024, 12, 4, 9, 39, 8, 0, time.UTC),
+			pin.ExpiryTime.ValueOrZero(),
+		)
+		xassert.Equal(t,
+			time.Date(2024, 12, 3, 7, 39, 8, 0, time.UTC),
+			pin.InstallTime.ValueOrZero(),
+		)
+		xassert.Equal(t,
+			time.Date(2024, 12, 3, 7, 39, 12, 0, time.UTC),
+			pin.LastCycleStart.ValueOrZero(),
+		)
+		xassert.EqualOptional(t, productType, pin.ExtractorProductType)
+		xassert.Equal(t, pinType, pin.Type)
 	})
 	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
@@ -307,18 +304,15 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			section:     app.SectionCharacterPlanets,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListCharacterPlanets(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, oo, 1)
-				o, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
-				if assert.NoError(t, err) {
-					xassert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), o.LastUpdate)
-					xassert.Equal(t, 3, o.UpgradeLevel)
-				}
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, oo, 1)
+		o, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
+		require.NoError(t, err)
+		xassert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), o.LastUpdate)
+		xassert.Equal(t, 3, o.UpgradeLevel)
 	})
 }
 
@@ -334,9 +328,8 @@ func TestGetPlanet(t *testing.T) {
 		// when
 		got, err := s.GetPlanet(ctx, p.CharacterID, p.EvePlanet.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, p.EvePlanet.ID, got.EvePlanet.ID)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, p.EvePlanet.ID, got.EvePlanet.ID)
 	})
 	t.Run("should return own error when not found", func(t *testing.T) {
 		// given
@@ -361,8 +354,7 @@ func TestListAllPlanets(t *testing.T) {
 		// when
 		got, err := s.ListAllPlanets(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 2)
-		}
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
 	})
 }

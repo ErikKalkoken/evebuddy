@@ -294,16 +294,15 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	mails, err := s.fetchMailHeadersESI(ctx, 1, 1000)
 
 	// then
-	if assert.NoError(t, err) {
-		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
-		assert.Len(t, mails, 55)
+	require.NoError(t, err)
+	xassert.Equal(t, 2, httpmock.GetTotalCallCount())
+	assert.Len(t, mails, 55)
 
-		newIDs := make([]int64, 0, 55)
-		for _, m := range mails {
-			newIDs = append(newIDs, m.MailID)
-		}
-		xassert.Equal(t, mailIDs, newIDs)
+	newIDs := make([]int64, 0, 55)
+	for _, m := range mails {
+		newIDs = append(newIDs, m.MailID)
 	}
+	xassert.Equal(t, mailIDs, newIDs)
 }
 
 func TestUpdateMailLabel(t *testing.T) {
@@ -347,12 +346,10 @@ func TestUpdateMailLabel(t *testing.T) {
 			section:     app.SectionCharacterMailLabels,
 		})
 		// then
-		if assert.NoError(t, err) {
-			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, labels, 2)
-			}
-		}
+		require.NoError(t, err)
+		labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, labels, 2)
 	})
 	t.Run("should update existing mail labels", func(t *testing.T) {
 		// given
@@ -391,13 +388,11 @@ func TestUpdateMailLabel(t *testing.T) {
 			section:     app.SectionCharacterMailLabels,
 		})
 		// then
-		if assert.NoError(t, err) {
-			l2, err := st.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, "PINK", l2.Name)
-				xassert.EqualOptional(t, "#660066", l2.Color)
-				xassert.EqualOptional(t, 4, l2.UnreadCount)
-			}
-		}
+		require.NoError(t, err)
+		l2, err := st.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "PINK", l2.Name)
+		xassert.EqualOptional(t, "#660066", l2.Color)
+		xassert.EqualOptional(t, 4, l2.UnreadCount)
 	})
 }

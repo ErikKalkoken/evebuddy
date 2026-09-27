@@ -23,9 +23,8 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 	t.Run("empty when no data", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 0)
-		}
+		require.NoError(t, err)
+		assert.Len(t, got, 0)
 	})
 
 	t.Run("manufacturing slots for one character", func(t *testing.T) {
@@ -70,20 +69,19 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ManufacturingJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ManufacturingJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
+		require.NoError(t, err)
+		want := []app.CharacterIndustrySlots{
+			{
+				Type:          app.ManufacturingJob,
+				CharacterID:   character.ID,
+				CharacterName: character.EveCharacter.Name,
+				Busy:          2,
+				Ready:         1,
+				Total:         9,
+				Free:          6,
+			},
 		}
+		assert.ElementsMatch(t, want, got)
 	})
 
 	t.Run("research slots for one character", func(t *testing.T) {
@@ -122,20 +120,19 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ScienceJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ScienceJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
+		require.NoError(t, err)
+		want := []app.CharacterIndustrySlots{
+			{
+				Type:          app.ScienceJob,
+				CharacterID:   character.ID,
+				CharacterName: character.EveCharacter.Name,
+				Busy:          2,
+				Ready:         1,
+				Total:         9,
+				Free:          6,
+			},
 		}
+		assert.ElementsMatch(t, want, got)
 	})
 	t.Run("reactions slots for one character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -173,20 +170,19 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 			Status:      app.JobDelivered,
 		})
 		got, err := cs.ListAllCharactersIndustrySlots(ctx, app.ReactionJob)
-		if assert.NoError(t, err) {
-			want := []app.CharacterIndustrySlots{
-				{
-					Type:          app.ReactionJob,
-					CharacterID:   character.ID,
-					CharacterName: character.EveCharacter.Name,
-					Busy:          2,
-					Ready:         1,
-					Total:         9,
-					Free:          6,
-				},
-			}
-			assert.ElementsMatch(t, want, got)
+		require.NoError(t, err)
+		want := []app.CharacterIndustrySlots{
+			{
+				Type:          app.ReactionJob,
+				CharacterID:   character.ID,
+				CharacterName: character.EveCharacter.Name,
+				Busy:          2,
+				Ready:         1,
+				Total:         9,
+				Free:          6,
+			},
 		}
+		assert.ElementsMatch(t, want, got)
 	})
 }
 
