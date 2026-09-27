@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSkillsForClipboard(t *testing.T) {
@@ -15,10 +16,9 @@ func TestSkillsForClipboard(t *testing.T) {
 			{name: "Spaceship Command", levelActive: 3},
 		}
 		got, err := skillsForClipboard(rows)
-		if assert.NoError(t, err) {
-			want := "Caldari Frigate 5\nGunnery 4\nSpaceship Command 3\n"
-			assert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := "Caldari Frigate 5\nGunnery 4\nSpaceship Command 3\n"
+		assert.Equal(t, want, got)
 	})
 	t.Run("skips skills that are not active", func(t *testing.T) {
 		rows := []skillCatalogueRow{
@@ -26,16 +26,14 @@ func TestSkillsForClipboard(t *testing.T) {
 			{name: "Caldari Frigate", levelActive: 0},
 		}
 		got, err := skillsForClipboard(rows)
-		if assert.NoError(t, err) {
-			want := "Gunnery 4\n"
-			assert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := "Gunnery 4\n"
+		assert.Equal(t, want, got)
 	})
 	t.Run("returns empty string for no rows", func(t *testing.T) {
 		got, err := skillsForClipboard(nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "", got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "", got)
 	})
 }
 
@@ -48,10 +46,9 @@ func TestWriteSkillCatalogueRowsToCSV(t *testing.T) {
 		}
 		var b bytes.Buffer
 		err := writeSkillCatalogueRowsToCSV(&b, rows)
-		if assert.NoError(t, err) {
-			want := "Name,Level\nCaldari Frigate,5\nGunnery,4\nSpaceship Command,3\n"
-			assert.Equal(t, want, b.String())
-		}
+		require.NoError(t, err)
+		want := "Name,Level\nCaldari Frigate,5\nGunnery,4\nSpaceship Command,3\n"
+		assert.Equal(t, want, b.String())
 	})
 	t.Run("skips skills that are not active", func(t *testing.T) {
 		rows := []skillCatalogueRow{
@@ -60,16 +57,14 @@ func TestWriteSkillCatalogueRowsToCSV(t *testing.T) {
 		}
 		var b bytes.Buffer
 		err := writeSkillCatalogueRowsToCSV(&b, rows)
-		if assert.NoError(t, err) {
-			want := "Name,Level\nGunnery,4\n"
-			assert.Equal(t, want, b.String())
-		}
+		require.NoError(t, err)
+		want := "Name,Level\nGunnery,4\n"
+		assert.Equal(t, want, b.String())
 	})
 	t.Run("no rows returns only header", func(t *testing.T) {
 		var b bytes.Buffer
 		err := writeSkillCatalogueRowsToCSV(&b, nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "Name,Level\n", b.String())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "Name,Level\n", b.String())
 	})
 }
