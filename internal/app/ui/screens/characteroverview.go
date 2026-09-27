@@ -702,6 +702,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 	ship.SetToolTip("Current ship")
 	location := ttwidget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg))
 	location.SetToolTip("Current location")
+
 	c := container.NewBorder(
 		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.characterName),
 		container.New(
@@ -713,47 +714,17 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 				container.New(layout.NewCustomPaddedLayout(0, 0, -p, p), w.trainingStatus),
 				w.skillpoints,
 			),
-			container.NewBorder(
-				nil,
-				nil,
-				wallet,
-				nil,
-				w.wallet,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				mails,
-				nil,
-				w.mails,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				ship,
-				nil,
-				w.ship,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				location,
-				nil,
-				w.solarSystem,
-			),
+			container.NewBorder(nil, nil, wallet, nil, w.wallet),
+			container.NewBorder(nil, nil, mails, nil, w.mails),
+			container.NewBorder(nil, nil, ship, nil, w.ship),
+			container.NewBorder(nil, nil, location, nil, w.solarSystem),
 		),
 		nil,
 		nil,
 		container.NewStack(
 			w.portrait,
-			container.New(
-				&xlayout.BottomLeftLayout{},
-				container.New(logoBorder, w.corporationLogo),
-			),
-			container.New(
-				&xlayout.BottomRightLayout{},
-				container.New(logoBorder, w.allianceLogo),
-			),
+			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.corporationLogo)),
+			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.allianceLogo)),
 		),
 	)
 	r := container.NewStack(

@@ -900,6 +900,18 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		navItemCharacters.Refresh()
 	}
 
+	navItemCorporations := xwidget.NewNavListItem(
+		"Corporation Overview",
+		theme.NewThemedResource(icons.StarCircleOutlineSvg),
+		func() {
+			homeNav.Push(xwidget.NewAppBar("Corporation Overview", u.corporationOverview))
+		},
+	)
+	u.corporationOverview.OnUpdate = func(corporations int) {
+		navItemCorporations.Supporting = fmt.Sprintf("%d corporations", corporations)
+		navItemCorporations.Refresh()
+	}
+
 	unifiedCommunicationsMenu := fyne.NewMenu("")
 	navItemUnifiedCommunications := xwidget.NewNavListItem(
 		"Communications",
@@ -1019,6 +1031,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 
 	homeList = xwidget.NewNavList(
 		navItemCharacters,
+		navItemCorporations,
 		navItemAssetSearch,
 		xwidget.NewNavListItem(
 			"Clones",

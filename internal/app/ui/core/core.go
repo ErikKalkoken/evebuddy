@@ -129,6 +129,7 @@ type baseUI struct {
 	corporationContracts       *screens.Contracts
 	corporationIndyJobs        *screens.IndustryJobs
 	corporationMember          *screens.Members
+	corporationOverview        *screens.CorporationOverview
 	corporationSheet           *screens.CorporationSheet
 	corporationStructures      *screens.Structures
 	corporationWallets         map[app.Division]*screens.CorporationWallet
@@ -438,6 +439,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.corporationIndyJobs = screens.NewJobsForCorporation(u)
 
 	u.corporationMember = screens.NewMembers(u)
+	u.corporationOverview = screens.NewCorporationOverview(u)
 	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationSheet = screens.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
