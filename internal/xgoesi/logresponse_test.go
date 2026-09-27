@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
@@ -42,19 +43,18 @@ func TestLogResponse(t *testing.T) {
 		r, err := rhc.Get("https://www.example.com/")
 
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusOK, r.StatusCode)
-			assert.Conditionf(t, func() bool {
-				m, err := regexp.MatchString(
-					`DEBUG HTTP response method=GET .*status="200.*header=.*Dummy:\[alpha\].*.*body=map\[alpha:true\]`,
-					logBuf.String(),
-				)
-				if err != nil {
-					t.Fatal(err)
-				}
-				return m
-			}, logBuf.String())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+		assert.Conditionf(t, func() bool {
+			m, err := regexp.MatchString(
+				`DEBUG HTTP response method=GET .*status="200.*header=.*Dummy:\[alpha\].*.*body=map\[alpha:true\]`,
+				logBuf.String(),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return m
+		}, logBuf.String())
 	})
 	t.Run("should not log response details when log level is not DEBUG and no HTTP error", func(t *testing.T) {
 		// given
@@ -70,10 +70,9 @@ func TestLogResponse(t *testing.T) {
 		r, err := rhc.Get("https://www.example.com/")
 
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusOK, r.StatusCode)
-			assert.NotContains(t, logBuf.String(), "HTTP response")
-		}
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+		assert.NotContains(t, logBuf.String(), "HTTP response")
 	})
 	t.Run("should log response warning when HTTP error and include body", func(t *testing.T) {
 		// given
@@ -89,16 +88,15 @@ func TestLogResponse(t *testing.T) {
 		r, err := rhc.Get("https://www.example.com/")
 
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusNotFound, r.StatusCode)
-			assert.Conditionf(t, func() bool {
-				m, err := regexp.MatchString(`WARN HTTP response .*body=`, logBuf.String())
-				if err != nil {
-					t.Fatal(err)
-				}
-				return m
-			}, logBuf.String())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, r.StatusCode)
+		assert.Conditionf(t, func() bool {
+			m, err := regexp.MatchString(`WARN HTTP response .*body=`, logBuf.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			return m
+		}, logBuf.String())
 	})
 	t.Run("should redact response body for blacklisted URLs", func(t *testing.T) {
 		// given
@@ -114,15 +112,14 @@ func TestLogResponse(t *testing.T) {
 		r, err := rhc.Get("https://login.eveonline.com/v2/oauth/token")
 
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusOK, r.StatusCode)
-			assert.Conditionf(t, func() bool {
-				m, err := regexp.MatchString(`DEBUG HTTP response .*body=xxxxx`, logBuf.String())
-				if err != nil {
-					t.Fatal(err)
-				}
-				return m
-			}, logBuf.String())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+		assert.Conditionf(t, func() bool {
+			m, err := regexp.MatchString(`DEBUG HTTP response .*body=xxxxx`, logBuf.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			return m
+		}, logBuf.String())
 	})
 }
