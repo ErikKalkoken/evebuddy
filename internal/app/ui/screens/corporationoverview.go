@@ -166,6 +166,28 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 			a.updateItem(ctx, arg.CorporationID)
 		}
 	})
+	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+		logErr := func(err error) {
+			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
+		}
+		if arg.Section == app.SectionCharacterRoles {
+			character, err := u.Character().GetCharacter(ctx, arg.CharacterID)
+			if err != nil {
+				logErr(err)
+				return
+			}
+			corporationID := character.EveCharacter.Corporation.ID
+			ok, err := u.Corporation().HasCorporation(ctx, corporationID)
+			if err != nil {
+				logErr(err)
+				return
+			}
+			if !ok {
+				return
+			}
+			a.updateItem(ctx, corporationID)
+		}
+	})
 	return a
 }
 
@@ -395,10 +417,12 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 		name:          corp.EveCorporation.Name,
 		searchTarget:  strings.ToLower(corp.EveCorporation.Name),
 	}
-
-	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationWalletBalances); err != nil {
+	permittedSections, err := a.u.Corporation().PermittedSections(ctx, corp.ID)
+	if err != nil {
 		return r, err
-	} else if ok {
+	}
+
+	if permittedSections.Contains(app.SectionCorporationWalletBalances) {
 		balance, err := a.u.Corporation().GetWalletBalancesTotal(ctx, corp.ID)
 		if err != nil {
 			return r, err
@@ -406,9 +430,7 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 		r.walletBalance = balance
 	}
 
-	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationIndustryJobs); err != nil {
-		return r, err
-	} else if ok {
+	if permittedSections.Contains(app.SectionCorporationIndustryJobs) {
 		jobs, err := a.u.Corporation().ListCorporationIndustryJobs(ctx, corp.ID)
 		if err != nil {
 			return r, err
@@ -422,9 +444,7 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 		r.activeIndustryJobs = optional.New(active)
 	}
 
-	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationContracts); err != nil {
-		return r, err
-	} else if ok {
+	if permittedSections.Contains(app.SectionCorporationContracts) {
 		contracts, err := a.u.Corporation().ListCorporationContracts(ctx, corp.ID)
 		if err != nil {
 			return r, err
@@ -438,9 +458,7 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 		r.activeContracts = optional.New(active)
 	}
 
-	if ok, err := a.u.Corporation().PermittedSection(ctx, corp.ID, app.SectionCorporationStructures); err != nil {
-		return r, err
-	} else if ok {
+	if permittedSections.Contains(app.SectionCorporationStructures) {
 		structures, err := a.u.Corporation().ListStructures(ctx, corp.ID)
 		if err != nil {
 			return r, err
