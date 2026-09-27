@@ -193,9 +193,8 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(6), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(6), x1.ID)
 	})
 	t.Run("should fetch category from ESI and create it", func(t *testing.T) {
 		// given
@@ -214,15 +213,13 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateCategoryESI(ctx, 6)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(6), x1.ID)
-			xassert.Equal(t, "Ship", x1.Name)
-			xassert.Equal(t, true, x1.IsPublished)
-			x2, err := st.GetEveCategory(ctx, 6)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(6), x1.ID)
+		xassert.Equal(t, "Ship", x1.Name)
+		xassert.Equal(t, true, x1.IsPublished)
+		x2, err := st.GetEveCategory(ctx, 6)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -241,9 +238,8 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(25), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(25), x1.ID)
 	})
 	t.Run("should fetch group from ESI and create it", func(t *testing.T) {
 		// given
@@ -264,16 +260,14 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateGroupESI(ctx, 25)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(25), x1.ID)
-			xassert.Equal(t, "Frigate", x1.Name)
-			xassert.Equal(t, int64(6), x1.Category.ID)
-			xassert.Equal(t, true, x1.IsPublished)
-			x2, err := st.GetEveGroup(ctx, 25)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(25), x1.ID)
+		xassert.Equal(t, "Frigate", x1.Name)
+		xassert.Equal(t, int64(6), x1.Category.ID)
+		xassert.Equal(t, true, x1.IsPublished)
+		x2, err := st.GetEveGroup(ctx, 25)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -292,9 +286,8 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(587), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(587), x1.ID)
 	})
 	t.Run("should fetch type from ESI and create it", func(t *testing.T) {
 		// given
@@ -337,25 +330,21 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(587), x1.ID)
-			xassert.Equal(t, "Rifter", x1.Name)
-			xassert.Equal(t, int64(25), x1.Group.ID)
-			xassert.Equal(t, true, x1.IsPublished)
-			x2, err := st.GetEveType(ctx, 587)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-			y, err := st.GetEveTypeDogmaAttribute(ctx, 587, 161)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 11.0, y)
-			}
-			z, err := st.GetEveTypeDogmaEffect(ctx, 587, 111)
-			if assert.NoError(t, err) {
-				assert.True(t, z)
-			}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(587), x1.ID)
+		xassert.Equal(t, "Rifter", x1.Name)
+		xassert.Equal(t, int64(25), x1.Group.ID)
+		xassert.Equal(t, true, x1.IsPublished)
+		x2, err := st.GetEveType(ctx, 587)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
+		y, err := st.GetEveTypeDogmaAttribute(ctx, 587, 161)
+		require.NoError(t, err)
+		xassert.Equal(t, 11.0, y)
+		z, err := st.GetEveTypeDogmaEffect(ctx, 587, 111)
+		require.NoError(t, err)
+		assert.True(t, z)
 
-		}
 	})
 	t.Run("should fetch group from ESI and create it (integration)", func(t *testing.T) {
 		// given
@@ -396,16 +385,14 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateTypeESI(ctx, 587)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(587), x1.ID)
-			xassert.Equal(t, "Rifter", x1.Name)
-			xassert.Equal(t, int64(25), x1.Group.ID)
-			xassert.Equal(t, true, x1.IsPublished)
-			x2, err := st.GetEveType(ctx, 587)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(587), x1.ID)
+		xassert.Equal(t, "Rifter", x1.Name)
+		xassert.Equal(t, int64(25), x1.Group.ID)
+		xassert.Equal(t, true, x1.IsPublished)
+		x2, err := st.GetEveType(ctx, 587)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -424,9 +411,8 @@ func TestAddMissingEveTypes(t *testing.T) {
 		// when
 		err := s.AddMissingTypes(ctx, set.Of(x1.ID))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 	t.Run("ignore invalid IDs", func(t *testing.T) {
 		// given
@@ -436,9 +422,8 @@ func TestAddMissingEveTypes(t *testing.T) {
 		// when
 		err := s.AddMissingTypes(ctx, set.Of(x1.ID, 0))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 }
 
@@ -457,9 +442,8 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		// when
 		x2, err := s.GetOrCreateDogmaAttributeESI(ctx, x1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x2, x1)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x2, x1)
 	})
 	t.Run("should create new object from ESI when it does not exist", func(t *testing.T) {
 		// given
@@ -482,22 +466,20 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateDogmaAttributeESI(ctx, 20)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(20), x1.ID)
-			xassert.EqualOptional(t, 1.0, x1.DefaultValue)
-			xassert.EqualOptional(t, "Factor by which top speed increases.", x1.Description)
-			xassert.EqualOptional(t, "Maximum Velocity Bonus", x1.DisplayName)
-			xassert.EqualOptional(t, int64(1389), x1.IconID)
-			xassert.EqualOptional(t, "speedFactor", x1.Name)
-			assert.True(t, x1.IsHighGood.ValueOrZero())
-			assert.True(t, x1.IsPublished.ValueOrZero())
-			assert.False(t, x1.IsStackable.ValueOrZero())
-			xassert.Equal(t, app.EveUnitID(124), x1.Unit)
-			x2, err := st.GetEveDogmaAttribute(ctx, 20)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(20), x1.ID)
+		xassert.EqualOptional(t, 1.0, x1.DefaultValue)
+		xassert.EqualOptional(t, "Factor by which top speed increases.", x1.Description)
+		xassert.EqualOptional(t, "Maximum Velocity Bonus", x1.DisplayName)
+		xassert.EqualOptional(t, int64(1389), x1.IconID)
+		xassert.EqualOptional(t, "speedFactor", x1.Name)
+		assert.True(t, x1.IsHighGood.ValueOrZero())
+		assert.True(t, x1.IsPublished.ValueOrZero())
+		assert.False(t, x1.IsStackable.ValueOrZero())
+		xassert.Equal(t, app.EveUnitID(124), x1.Unit)
+		x2, err := st.GetEveDogmaAttribute(ctx, 20)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -514,17 +496,15 @@ func TestMarketPrice(t *testing.T) {
 			AveragePrice: optional.New(12.34),
 		})
 		x, err := s.MarketPrice(ctx, o.ID)
-		if assert.NoError(t, err) {
-			assert.InDelta(t, 12.34, x.MustValue(), 0.01)
-		}
+		require.NoError(t, err)
+		assert.InDelta(t, 12.34, x.MustValue(), 0.01)
 	})
 	t.Run("return empty when no price exists", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o := factory.CreateEveType()
 		x, err := s.MarketPrice(ctx, o.ID)
-		if assert.NoError(t, err) {
-			xassert.Empty(t, x)
-		}
+		require.NoError(t, err)
+		xassert.Empty(t, x)
 	})
 }
 

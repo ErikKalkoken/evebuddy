@@ -53,30 +53,28 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationIndustryJob(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 42, o.BlueprintID)
-				xassert.Equal(t, 11, o.BlueprintLocationID)
-				xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
-				xassert.Equal(t, 123, o.Duration)
-				xassert.Equal(t, endDate, o.EndDate)
-				xassert.Equal(t, 12, o.FacilityID)
-				xassert.Equal(t, installer, o.Installer)
-				xassert.Equal(t, 13, o.OutputLocationID)
-				xassert.Equal(t, 7, o.Runs)
-				xassert.Equal(t, startDate, o.StartDate)
-				xassert.Equal(t, app.JobActive, o.Status)
-				xassert.Equal(
-					t, &app.EveLocationShort{
-						ID:             location.ID,
-						Name:           optional.New(location.Name),
-						SecurityStatus: optional.New(location.SolarSystem.ValueOrZero().SecurityStatus),
-					},
-					o.Location,
-				)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
+		require.NoError(t, err)
+		xassert.Equal(t, 42, o.BlueprintID)
+		xassert.Equal(t, 11, o.BlueprintLocationID)
+		xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
+		xassert.Equal(t, 123, o.Duration)
+		xassert.Equal(t, endDate, o.EndDate)
+		xassert.Equal(t, 12, o.FacilityID)
+		xassert.Equal(t, installer, o.Installer)
+		xassert.Equal(t, 13, o.OutputLocationID)
+		xassert.Equal(t, 7, o.Runs)
+		xassert.Equal(t, startDate, o.StartDate)
+		xassert.Equal(t, app.JobActive, o.Status)
+		xassert.Equal(
+			t, &app.EveLocationShort{
+				ID:             location.ID,
+				Name:           optional.New(location.Name),
+				SecurityStatus: optional.New(location.SolarSystem.ValueOrZero().SecurityStatus),
+			},
+			o.Location,
+		)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -120,31 +118,29 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationIndustryJob(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			o, err := st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 42, o.BlueprintID)
-				xassert.Equal(t, 11, o.BlueprintLocationID)
-				xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
-				xassert.EqualOptional(t, completedCharacter, o.CompletedCharacter)
-				xassert.EqualOptional(t, completedDate, o.CompletedDate)
-				xassert.EqualOptional(t, 123.45, o.Cost)
-				xassert.Equal(t, 123, o.Duration)
-				xassert.Equal(t, endDate, o.EndDate)
-				xassert.Equal(t, 12, o.FacilityID)
-				xassert.Equal(t, installer, o.Installer)
-				xassert.EqualOptional(t, 3, o.LicensedRuns)
-				xassert.Equal(t, 13, o.OutputLocationID)
-				xassert.EqualOptional(t, float32(0.8), o.Probability)
-				xassert.EqualOptional(t, eveTypeToEntityShort(productType), o.ProductType)
-				xassert.EqualOptional(t, pauseDate, o.PauseDate)
-				xassert.Equal(t, 7, o.Runs)
-				xassert.Equal(t, startDate, o.StartDate)
-				xassert.Equal(t, app.JobActive, o.Status)
-				xassert.Equal(t, station.ID, o.Location.ID)
-				xassert.EqualOptional(t, 2, o.SuccessfulRuns)
-			}
-		}
+		require.NoError(t, err)
+		o, err := st.GetCorporationIndustryJob(ctx, arg.CorporationID, arg.JobID)
+		require.NoError(t, err)
+		xassert.Equal(t, 42, o.BlueprintID)
+		xassert.Equal(t, 11, o.BlueprintLocationID)
+		xassert.Equal(t, blueprintType.ID, o.BlueprintType.ID)
+		xassert.EqualOptional(t, completedCharacter, o.CompletedCharacter)
+		xassert.EqualOptional(t, completedDate, o.CompletedDate)
+		xassert.EqualOptional(t, 123.45, o.Cost)
+		xassert.Equal(t, 123, o.Duration)
+		xassert.Equal(t, endDate, o.EndDate)
+		xassert.Equal(t, 12, o.FacilityID)
+		xassert.Equal(t, installer, o.Installer)
+		xassert.EqualOptional(t, 3, o.LicensedRuns)
+		xassert.Equal(t, 13, o.OutputLocationID)
+		xassert.EqualOptional(t, float32(0.8), o.Probability)
+		xassert.EqualOptional(t, eveTypeToEntityShort(productType), o.ProductType)
+		xassert.EqualOptional(t, pauseDate, o.PauseDate)
+		xassert.Equal(t, 7, o.Runs)
+		xassert.Equal(t, startDate, o.StartDate)
+		xassert.Equal(t, app.JobActive, o.Status)
+		xassert.Equal(t, station.ID, o.Location.ID)
+		xassert.EqualOptional(t, 2, o.SuccessfulRuns)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -179,17 +175,15 @@ func TestCorporationIndustryJob(t *testing.T) {
 			SuccessfulRuns:       optional.New[int64](5),
 		})
 		// then
-		if assert.NoError(t, err) {
-			j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, completedCharacter, j2.CompletedCharacter)
-				assert.True(t, j2.CompletedDate.MustValue().Equal(completedDate), "got %q, wanted %q", j2.CompletedDate.MustValue(), completedDate)
-				assert.True(t, j2.EndDate.Equal(endDate2), "got %q, wanted %q", j2.EndDate, endDate2)
-				assert.True(t, j2.PauseDate.MustValue().Equal(pauseDate), "got %q, wanted %q", j2.PauseDate.MustValue(), pauseDate)
-				xassert.Equal(t, app.JobDelivered, j2.Status)
-				xassert.EqualOptional(t, 5, j2.SuccessfulRuns)
-			}
-		}
+		require.NoError(t, err)
+		j2, err := st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, completedCharacter, j2.CompletedCharacter)
+		assert.True(t, j2.CompletedDate.MustValue().Equal(completedDate), "got %q, wanted %q", j2.CompletedDate.MustValue(), completedDate)
+		assert.True(t, j2.EndDate.Equal(endDate2), "got %q, wanted %q", j2.EndDate, endDate2)
+		assert.True(t, j2.PauseDate.MustValue().Equal(pauseDate), "got %q, wanted %q", j2.PauseDate.MustValue(), pauseDate)
+		xassert.Equal(t, app.JobDelivered, j2.Status)
+		xassert.EqualOptional(t, 5, j2.SuccessfulRuns)
 	})
 	t.Run("can list jobs for a corporations", func(t *testing.T) {
 		// given
@@ -205,13 +199,12 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		s, err := st.ListCorporationIndustryJobs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(j1.ID, j2.ID)
-			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
-				return x.ID
-			}))
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(j1.ID, j2.ID)
+		got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list jobs for all corporations", func(t *testing.T) {
 		// given
@@ -221,13 +214,12 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		s, err := st.ListAllCorporationIndustryJobs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(j1.ID, j2.ID)
-			got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
-				return x.ID
-			}))
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(j1.ID, j2.ID)
+		got := set.Collect(xiter.Map(slices.Values(s), func(x *app.CorporationIndustryJob) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can get jobs with incomplete locations", func(t *testing.T) {
 		// given
@@ -239,9 +231,8 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		x, err := st.GetCorporationIndustryJob(ctx, j.CorporationID, j.JobID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, el.ID, x.Location.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, el.ID, x.Location.ID)
 	})
 	t.Run("can list jobs with incomplete locations", func(t *testing.T) {
 		// given
@@ -253,9 +244,8 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		x, err := st.ListAllCorporationIndustryJobs(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, x, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, x, 1)
 	})
 	t.Run("can delete all jobs", func(t *testing.T) {
 		// given
@@ -265,16 +255,14 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		err := st.DeleteCorporationIndustryJobs(ctx, j1.CorporationID)
 		// then
-		if assert.NoError(t, err) {
-			oo, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				corporationIDs := xslices.Map(oo, func(x *app.CorporationIndustryJob) int64 {
-					return x.CorporationID
-				})
-				assert.NotContains(t, corporationIDs, j1.CorporationID)
-				assert.Contains(t, corporationIDs, j2.CorporationID)
-			}
-		}
+		require.NoError(t, err)
+		oo, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		corporationIDs := xslices.Map(oo, func(x *app.CorporationIndustryJob) int64 {
+			return x.CorporationID
+		})
+		assert.NotContains(t, corporationIDs, j1.CorporationID)
+		assert.Contains(t, corporationIDs, j2.CorporationID)
 	})
 	t.Run("can delete selected jobs", func(t *testing.T) {
 		// given
@@ -293,16 +281,14 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		err := st.DeleteCorporationIndustryJobsByID(ctx, c.ID, set.Of(j1.JobID, j2.JobID))
 		// then
-		if assert.NoError(t, err) {
-			oo, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationIndustryJob) int64 {
-					return x.ID
-				}))
-				want := set.Of(j3.ID, j4.ID)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		oo, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationIndustryJob) int64 {
+			return x.ID
+		}))
+		want := set.Of(j3.ID, j4.ID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can update status", func(t *testing.T) {
 		// given
@@ -345,9 +331,8 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// when
 		got, err := st.CountCorporationIndustryJobsWithStatus(ctx, c.ID, set.Of(app.JobActive, app.JobReady))
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, int64(2), got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), got)
 	})
 	t.Run("count returns error for empty statuses", func(t *testing.T) {
 		// given

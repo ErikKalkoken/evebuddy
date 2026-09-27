@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
 )
@@ -25,13 +26,11 @@ func TestMigrate(t *testing.T) {
 		// when
 		err := migrate.Run(db, migrations)
 		// then
-		if assert.NoError(t, err) {
-			tables, err := migrate.ListTableNames(db)
-			if assert.NoError(t, err) {
-				names := set.Of(tables...)
-				assert.True(t, names.Contains("alpha"))
-				assert.True(t, names.Contains("bravo"))
-			}
-		}
+		require.NoError(t, err)
+		tables, err := migrate.ListTableNames(db)
+		require.NoError(t, err)
+		names := set.Of(tables...)
+		assert.True(t, names.Contains("alpha"))
+		assert.True(t, names.Contains("bravo"))
 	})
 }

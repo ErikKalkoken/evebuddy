@@ -11,6 +11,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatusservice"
@@ -40,13 +41,12 @@ func TestFetch(t *testing.T) {
 		// when
 		got, err := es.Fetch(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := &app.ESIStatus{
-				PlayerCount:  12345,
-				ErrorMessage: "",
-			}
-			xassert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := &app.ESIStatus{
+			PlayerCount:  12345,
+			ErrorMessage: "",
 		}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return general error message when ESI returns unexpected error code", func(t *testing.T) {
 		// given
@@ -61,12 +61,11 @@ func TestFetch(t *testing.T) {
 		// when
 		got, err := es.Fetch(ctx)
 		// then
-		if assert.NoError(t, err) {
-			want := &app.ESIStatus{
-				ErrorMessage: "418 I'm a teapot: custom error message",
-			}
-			xassert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := &app.ESIStatus{
+			ErrorMessage: "418 I'm a teapot: custom error message",
 		}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should return error when a technical error occurred", func(t *testing.T) {
 		// given
@@ -104,9 +103,8 @@ func TestFetchSwaggerErrors(t *testing.T) {
 			// when
 			got, err := es.Fetch(t.Context())
 			// then
-			if assert.NoError(t, err) {
-				assert.True(t, strings.HasPrefix(got.ErrorMessage, fmt.Sprint(code)))
-			}
+			require.NoError(t, err)
+			assert.True(t, strings.HasPrefix(got.ErrorMessage, fmt.Sprint(code)))
 		})
 	}
 }

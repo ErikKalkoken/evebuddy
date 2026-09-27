@@ -29,9 +29,8 @@ func TestGetContract(t *testing.T) {
 		c := factory.CreateCorporation()
 		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		got, err := s.GetContract(ctx, c.ID, o.ContractID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, o.ID, got.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, o.ID, got.ID)
 	})
 	t.Run("should return error when contract not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -52,17 +51,15 @@ func TestCountContractBids(t *testing.T) {
 		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
 		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
 		got, err := s.CountContractBids(ctx, o.ID)
-		if assert.NoError(t, err) {
-			assert.Equal(t, 2, got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
 	})
 	t.Run("returns zero when contract has no bids", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
 		got, err := s.CountContractBids(ctx, o.ID)
-		if assert.NoError(t, err) {
-			assert.Equal(t, 0, got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, 0, got)
 	})
 }
 
@@ -78,9 +75,8 @@ func TestGetContractTopBid(t *testing.T) {
 		top := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 500})
 		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 200})
 		got, err := s.GetContractTopBid(ctx, o.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, top.BidID, got.BidID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, top.BidID, got.BidID)
 	})
 	t.Run("should return error when contract has no bids", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -102,10 +98,9 @@ func TestListCorporationContracts(t *testing.T) {
 		o2 := factory.CreateCorporationContract(storage.CreateCorporationContractParams{CorporationID: c.ID})
 		factory.CreateCorporationContract()
 		got, err := s.ListCorporationContracts(ctx, c.ID)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContract) int64 { return x.ID }))
-			xassert.Equal(t, set.Of(o1.ID, o2.ID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContract) int64 { return x.ID }))
+		xassert.Equal(t, set.Of(o1.ID, o2.ID), ids)
 	})
 }
 
@@ -120,10 +115,9 @@ func TestListContractItems(t *testing.T) {
 		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
 		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
 		got, err := s.ListContractItems(ctx, o.ID)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContractItem) int64 { return x.RecordID }))
-			xassert.Equal(t, set.Of(i1.RecordID, i2.RecordID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContractItem) int64 { return x.RecordID }))
+		xassert.Equal(t, set.Of(i1.RecordID, i2.RecordID), ids)
 	})
 }
 

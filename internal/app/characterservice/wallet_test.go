@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -23,9 +24,8 @@ func TestGetWalletJournalEntry(t *testing.T) {
 		// when
 		got, err := s.GetWalletJournalEntry(ctx, o.CharacterID, o.RefID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, o.RefID, got.RefID)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, o.RefID, got.RefID)
 	})
 	t.Run("should return error when not found", func(t *testing.T) {
 		// given
@@ -49,9 +49,8 @@ func TestGetWalletTransactions(t *testing.T) {
 		// when
 		got, err := s.GetWalletTransactions(ctx, o.CharacterID, o.TransactionID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, o.TransactionID, got.TransactionID)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, o.TransactionID, got.TransactionID)
 	})
 	t.Run("should return error when not found", func(t *testing.T) {
 		// given

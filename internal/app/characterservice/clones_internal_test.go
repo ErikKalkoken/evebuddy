@@ -59,18 +59,16 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			section:     app.SectionCharacterJumpClones,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 12345, o.CloneID)
-				xassert.EqualOptional(t, "Alpha", o.Name)
-				xassert.Equal(t, 60003463, o.Location.ID)
-				if assert.Len(t, o.Implants, 1) {
-					x := o.Implants[0]
-					xassert.Equal(t, 22118, x.EveType.ID)
-				}
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
+		require.NoError(t, err)
+		xassert.Equal(t, 12345, o.CloneID)
+		xassert.EqualOptional(t, "Alpha", o.Name)
+		xassert.Equal(t, 60003463, o.Location.ID)
+		if assert.Len(t, o.Implants, 1) {
+			x := o.Implants[0]
+			xassert.Equal(t, 22118, x.EveType.ID)
 		}
 	})
 	t.Run("should update existing clone", func(t *testing.T) {
@@ -101,18 +99,16 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 			section:     app.SectionCharacterJumpClones,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 12345, o.CloneID)
-				xassert.EqualOptional(t, "Alpha", o.Name)
-				xassert.Equal(t, station.ID, o.Location.ID)
-				if assert.Len(t, o.Implants, 1) {
-					x := o.Implants[0]
-					xassert.Equal(t, implant1.ID, x.EveType.ID)
-				}
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterJumpClone(ctx, c.ID, 12345)
+		require.NoError(t, err)
+		xassert.Equal(t, 12345, o.CloneID)
+		xassert.EqualOptional(t, "Alpha", o.Name)
+		xassert.Equal(t, station.ID, o.Location.ID)
+		if assert.Len(t, o.Implants, 1) {
+			x := o.Implants[0]
+			xassert.Equal(t, implant1.ID, x.EveType.ID)
 		}
 	})
 }
@@ -136,9 +132,8 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			ActiveSkillLevel: 3,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
-		if assert.NoError(t, err) {
-			assert.WithinDuration(t, now.Add(15*time.Hour), x.MustValue(), 10*time.Second)
-		}
+		require.NoError(t, err)
+		assert.WithinDuration(t, now.Add(15*time.Hour), x.MustValue(), 10*time.Second)
 	})
 	t.Run("should return time of next available jump without skill", func(t *testing.T) {
 		// given
@@ -148,9 +143,8 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			LastCloneJumpAt: optional.New(now.Add(-6 * time.Hour)),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
-		if assert.NoError(t, err) {
-			assert.WithinDuration(t, now.Add(18*time.Hour), x.ValueOrZero(), 10*time.Second)
-		}
+		require.NoError(t, err)
+		assert.WithinDuration(t, now.Add(18*time.Hour), x.ValueOrZero(), 10*time.Second)
 	})
 	t.Run("should return time of next available jump without skill and never jumped before", func(t *testing.T) {
 		// given
@@ -159,9 +153,8 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			LastCloneJumpAt: optional.New(time.Time{}),
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
-		if assert.NoError(t, err) {
-			xassert.EqualOptional(t, time.Time{}, x)
-		}
+		require.NoError(t, err)
+		xassert.EqualOptional(t, time.Time{}, x)
 	})
 	t.Run("should return zero time when next jump available now", func(t *testing.T) {
 		// given
@@ -177,9 +170,8 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
-		if assert.NoError(t, err) {
-			xassert.EqualOptional(t, time.Time{}, x)
-		}
+		require.NoError(t, err)
+		xassert.EqualOptional(t, time.Time{}, x)
 	})
 	t.Run("should return empty time when last jump not found", func(t *testing.T) {
 		// given
@@ -192,9 +184,8 @@ func TestCharacterNextAvailableCloneJump(t *testing.T) {
 			ActiveSkillLevel: 5,
 		})
 		x, err := cs.calcNextCloneJump(ctx, c)
-		if assert.NoError(t, err) {
-			assert.True(t, x.IsEmpty())
-		}
+		require.NoError(t, err)
+		assert.True(t, x.IsEmpty())
 	})
 }
 

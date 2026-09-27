@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -42,24 +43,22 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// when
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
-				CorporationID: c.ID,
-				DivisionID:    1,
-				RefID:         4,
-			})
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, 123.45, i.Amount)
-				xassert.EqualOptional(t, 234.56, i.Balance)
-				xassert.EqualOptional(t, 42, i.ContextID)
-				xassert.EqualOptional(t, "corporation", i.ContextIDType)
-				xassert.Equal(t, date, i.Date)
-				xassert.Equal(t, "bla bla", i.Description)
-				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.EqualOptional(t, "my reason", i.Reason)
-				xassert.EqualOptional(t, 0.12, i.Tax)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			RefID:         4,
+		})
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 123.45, i.Amount)
+		xassert.EqualOptional(t, 234.56, i.Balance)
+		xassert.EqualOptional(t, 42, i.ContextID)
+		xassert.EqualOptional(t, "corporation", i.ContextIDType)
+		xassert.Equal(t, date, i.Date)
+		xassert.Equal(t, "bla bla", i.Description)
+		xassert.Equal(t, "player_donation", i.RefType)
+		xassert.EqualOptional(t, "my reason", i.Reason)
+		xassert.EqualOptional(t, 0.12, i.Tax)
 	})
 	t.Run("can create new full", func(t *testing.T) {
 		// given
@@ -89,27 +88,25 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// when
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
-				CorporationID: c.ID,
-				DivisionID:    1,
-				RefID:         4,
-			})
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, 123.45, i.Amount)
-				xassert.EqualOptional(t, 234.56, i.Balance)
-				xassert.EqualOptional(t, 42, i.ContextID)
-				xassert.EqualOptional(t, "corporation", i.ContextIDType)
-				xassert.EqualOptional(t, firstParty, i.FirstParty)
-				xassert.Equal(t, date, i.Date)
-				xassert.Equal(t, "bla bla", i.Description)
-				xassert.Equal(t, "player_donation", i.RefType)
-				xassert.EqualOptional(t, "my reason", i.Reason)
-				xassert.EqualOptional(t, secondParty, i.SecondParty)
-				xassert.EqualOptional(t, taxReceiver, i.TaxReceiver)
-				xassert.EqualOptional(t, 0.12, i.Tax)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			RefID:         4,
+		})
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 123.45, i.Amount)
+		xassert.EqualOptional(t, 234.56, i.Balance)
+		xassert.EqualOptional(t, 42, i.ContextID)
+		xassert.EqualOptional(t, "corporation", i.ContextIDType)
+		xassert.EqualOptional(t, firstParty, i.FirstParty)
+		xassert.Equal(t, date, i.Date)
+		xassert.Equal(t, "bla bla", i.Description)
+		xassert.Equal(t, "player_donation", i.RefType)
+		xassert.EqualOptional(t, "my reason", i.Reason)
+		xassert.EqualOptional(t, secondParty, i.SecondParty)
+		xassert.EqualOptional(t, taxReceiver, i.TaxReceiver)
+		xassert.EqualOptional(t, 0.12, i.Tax)
 	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
@@ -134,10 +131,9 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			DivisionID:    1,
 		})
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(e1.RefID, e2.RefID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(e1.RefID, e2.RefID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -162,13 +158,12 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			DivisionID:    1,
 		})
 		// then
-		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletJournalEntry) int64 {
-				return x.RefID
-			})...)
-			want := set.Of(e1.RefID, e2.RefID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletJournalEntry) int64 {
+			return x.RefID
+		})...)
+		want := set.Of(e1.RefID, e2.RefID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can store multiple", func(t *testing.T) {
 		// given
@@ -191,20 +186,17 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		}
 
 		err := st.CreateCorporationWalletJournalEntry(ctx, arg)
-		if assert.NoError(t, err) {
-			arg.RefID = 5
-			err := st.CreateCorporationWalletJournalEntry(ctx, arg)
-			if assert.NoError(t, err) {
-				got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
-					CorporationID: c.ID,
-					DivisionID:    1,
-				})
-				if assert.NoError(t, err) {
-					want := set.Of[int64](4, 5)
-					xassert.Equal(t, want, got)
-				}
-			}
-		}
+		require.NoError(t, err)
+		arg.RefID = 5
+		err = st.CreateCorporationWalletJournalEntry(ctx, arg)
+		require.NoError(t, err)
+		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		require.NoError(t, err)
+		want := set.Of[int64](4, 5)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can delete journal", func(t *testing.T) {
 		// given
@@ -214,21 +206,18 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// when
 		err := st.DeleteCorporationWalletJournal(ctx, e1.CorporationID, app.Division(e1.DivisionID))
 		// then
-		if assert.NoError(t, err) {
-			x1, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
-				CorporationID: e1.CorporationID,
-				DivisionID:    e1.DivisionID,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 0, x1.Size())
-			}
-			x2, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
-				CorporationID: e2.CorporationID,
-				DivisionID:    e2.DivisionID,
-			})
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.Size(), 0)
-			}
-		}
+		require.NoError(t, err)
+		x1, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: e1.CorporationID,
+			DivisionID:    e1.DivisionID,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 0, x1.Size())
+		x2, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: e2.CorporationID,
+			DivisionID:    e2.DivisionID,
+		})
+		require.NoError(t, err)
+		assert.Greater(t, x2.Size(), 0)
 	})
 }

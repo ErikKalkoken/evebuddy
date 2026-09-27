@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -26,11 +26,9 @@ func TestEveSchematic(t *testing.T) {
 		// when
 		c1, err := r.CreateEveSchematic(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			c2, err := r.GetEveSchematic(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, c1, c2)
-			}
-		}
+		require.NoError(t, err)
+		c2, err := r.GetEveSchematic(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, c1, c2)
 	})
 }

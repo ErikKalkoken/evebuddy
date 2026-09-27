@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -37,13 +38,11 @@ func TestEveShipSkills(t *testing.T) {
 		// when
 		err := st.CreateEveShipSkill(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetEveShipSkill(ctx, ship.ID, 2)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, skill.ID, x.SkillTypeID)
-				xassert.Equal(t, uint(3), x.SkillLevel)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetEveShipSkill(ctx, ship.ID, 2)
+		require.NoError(t, err)
+		xassert.Equal(t, skill.ID, x.SkillTypeID)
+		xassert.Equal(t, uint(3), x.SkillLevel)
 	})
 	t.Run("can replace and create complete skill ship table", func(t *testing.T) {
 		// given
@@ -176,45 +175,42 @@ func TestEveShipSkills(t *testing.T) {
 		// when
 		err := st.UpdateEveShipSkills(ctx)
 		// then
-		if assert.NoError(t, err) {
-			xx, err := st.ListEveShipSkills(ctx, ship1.ID)
-			if assert.NoError(t, err) {
-				if assert.Len(t, xx, 1) {
-					x := xx[0]
-					xassert.Equal(t, skill11.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(1), x.Rank)
-					xassert.Equal(t, uint(1), x.SkillLevel)
-				}
-			}
-			xx, err = st.ListEveShipSkills(ctx, ship2.ID)
-			if assert.NoError(t, err) {
-				if assert.Len(t, xx, 6) {
-					x := xx[0]
-					xassert.Equal(t, skill21.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(1), x.Rank)
-					xassert.Equal(t, uint(1), x.SkillLevel)
-					x = xx[1]
-					xassert.Equal(t, skill22.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(2), x.Rank)
-					xassert.Equal(t, uint(2), x.SkillLevel)
-					x = xx[2]
-					xassert.Equal(t, skill23.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(3), x.Rank)
-					xassert.Equal(t, uint(3), x.SkillLevel)
-					x = xx[3]
-					xassert.Equal(t, skill24.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(4), x.Rank)
-					xassert.Equal(t, uint(4), x.SkillLevel)
-					x = xx[4]
-					xassert.Equal(t, skill25.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(5), x.Rank)
-					xassert.Equal(t, uint(5), x.SkillLevel)
-					x = xx[5]
-					xassert.Equal(t, skill26.ID, x.SkillTypeID)
-					xassert.Equal(t, uint(6), x.Rank)
-					xassert.Equal(t, uint(3), x.SkillLevel)
-				}
-			}
+		require.NoError(t, err)
+		xx, err := st.ListEveShipSkills(ctx, ship1.ID)
+		require.NoError(t, err)
+		if assert.Len(t, xx, 1) {
+			x := xx[0]
+			xassert.Equal(t, skill11.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(1), x.Rank)
+			xassert.Equal(t, uint(1), x.SkillLevel)
+		}
+		xx, err = st.ListEveShipSkills(ctx, ship2.ID)
+		require.NoError(t, err)
+		if assert.Len(t, xx, 6) {
+			x := xx[0]
+			xassert.Equal(t, skill21.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(1), x.Rank)
+			xassert.Equal(t, uint(1), x.SkillLevel)
+			x = xx[1]
+			xassert.Equal(t, skill22.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(2), x.Rank)
+			xassert.Equal(t, uint(2), x.SkillLevel)
+			x = xx[2]
+			xassert.Equal(t, skill23.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(3), x.Rank)
+			xassert.Equal(t, uint(3), x.SkillLevel)
+			x = xx[3]
+			xassert.Equal(t, skill24.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(4), x.Rank)
+			xassert.Equal(t, uint(4), x.SkillLevel)
+			x = xx[4]
+			xassert.Equal(t, skill25.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(5), x.Rank)
+			xassert.Equal(t, uint(5), x.SkillLevel)
+			x = xx[5]
+			xassert.Equal(t, skill26.ID, x.SkillTypeID)
+			xassert.Equal(t, uint(6), x.Rank)
+			xassert.Equal(t, uint(3), x.SkillLevel)
 		}
 	})
 }

@@ -259,9 +259,8 @@ func TestCorporationStructure(t *testing.T) {
 		// when
 		got, err := st.CountCorporationStructuresWithState(t.Context(), c.ID, set.Of(app.StructureStateArmorReinforce, app.StructureStateHullReinforce))
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, int64(2), got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), got)
 	})
 
 	t.Run("count returns error for empty states", func(t *testing.T) {
@@ -330,8 +329,6 @@ func TestStructureService(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, oo1)
 		_, err2 := st.GetStructureService(t.Context(), x.CorporationStructureID, x.Name)
-		if !assert.NoError(t, err2) {
-			t.Fatal()
-		}
+		assert.NoError(t, err2)
 	})
 }

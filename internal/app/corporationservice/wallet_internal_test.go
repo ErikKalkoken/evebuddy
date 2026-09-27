@@ -31,9 +31,8 @@ func TestGetWalletName(t *testing.T) {
 		c := factory.CreateCorporation()
 		w := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{CorporationID: c.ID, DivisionID: 1})
 		got, err := s.GetWalletName(ctx, c.ID, app.Division1)
-		if assert.NoError(t, err) {
-			assert.Equal(t, w.Name, got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, w.Name, got)
 	})
 	t.Run("should return error when not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -82,23 +81,21 @@ func TestListWalletBalances(t *testing.T) {
 			Balance:       123.45,
 		})
 		got, err := s.ListWalletBalances(ctx, c.ID)
-		if assert.NoError(t, err) {
-			m := make(map[int64]app.CorporationWalletBalanceWithName)
-			for _, x := range got {
-				m[x.DivisionID] = x
-			}
-			require.Contains(t, m, int64(1))
-			assert.Equal(t, 123.45, m[1].Balance)
-			assert.Equal(t, "Master Wallet", m[1].Name)
+		require.NoError(t, err)
+		m := make(map[int64]app.CorporationWalletBalanceWithName)
+		for _, x := range got {
+			m[x.DivisionID] = x
 		}
+		require.Contains(t, m, int64(1))
+		assert.Equal(t, 123.45, m[1].Balance)
+		assert.Equal(t, "Master Wallet", m[1].Name)
 	})
 	t.Run("returns empty when section not enabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.ListWalletBalances(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.Empty(t, got)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, got)
 	})
 }
 
@@ -116,9 +113,8 @@ func TestGetWalletJournalEntry(t *testing.T) {
 			DivisionID:    1,
 		})
 		got, err := s.GetWalletJournalEntry(ctx, c.ID, app.Division1, e.RefID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, e.RefID, got.RefID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, e.RefID, got.RefID)
 	})
 	t.Run("should return error when section not enabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -142,9 +138,8 @@ func TestGetWalletTransaction(t *testing.T) {
 			DivisionID:    1,
 		})
 		got, err := s.GetWalletTransaction(ctx, c.ID, app.Division1, x.TransactionID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x.TransactionID, got.TransactionID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x.TransactionID, got.TransactionID)
 	})
 	t.Run("should return error when section not enabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

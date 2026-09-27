@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -28,9 +29,8 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// when
 		oo, err := st.ListGeneralSectionStatus(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.EveUniverseSectionStatus{s1, s2}, oo)
-		}
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []*app.EveUniverseSectionStatus{s1, s2}, oo)
 	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
@@ -43,17 +43,14 @@ func TestGeneralSectionStatus(t *testing.T) {
 		}
 		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			if assert.NoError(t, err) {
-				xassert.Equal(t, "", x1.ContentHash)
-				xassert.Equal(t, "error", x1.ErrorMessage)
-				assert.True(t, x1.CompletedAt.IsZero())
-			}
-			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		require.NoError(t, err)
+		xassert.Equal(t, "", x1.ContentHash)
+		xassert.Equal(t, "error", x1.ErrorMessage)
+		assert.True(t, x1.CompletedAt.IsZero())
+		x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("can set existing", func(t *testing.T) {
 		// given
@@ -69,15 +66,13 @@ func TestGeneralSectionStatus(t *testing.T) {
 		}
 		x1, err := st.UpdateOrCreateGeneralSectionStatus(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x.ContentHash, x1.ContentHash)
-			xassert.Equal(t, "error", x1.ErrorMessage)
-			xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
-			xassert.Equal(t, x.StartedAt, x1.StartedAt)
-			x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x.ContentHash, x1.ContentHash)
+		xassert.Equal(t, "error", x1.ErrorMessage)
+		xassert.Equal(t, x.CompletedAt, x1.CompletedAt)
+		xassert.Equal(t, x.StartedAt, x1.StartedAt)
+		x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }

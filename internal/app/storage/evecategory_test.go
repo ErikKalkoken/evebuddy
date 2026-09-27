@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -26,11 +27,10 @@ func TestEveCategory(t *testing.T) {
 		// when
 		c, err := st.CreateEveCategory(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 42, c.ID)
-			xassert.Equal(t, "Alpha", c.Name)
-			assert.True(t, c.IsPublished)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 42, c.ID)
+		xassert.Equal(t, "Alpha", c.Name)
+		assert.True(t, c.IsPublished)
 	})
 	t.Run("can get", func(t *testing.T) {
 		// given
@@ -39,9 +39,8 @@ func TestEveCategory(t *testing.T) {
 		// when
 		c2, err := st.GetEveCategory(ctx, c1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c2, c2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c2, c2)
 	})
 	t.Run("can get already existing", func(t *testing.T) {
 		// given
@@ -52,9 +51,8 @@ func TestEveCategory(t *testing.T) {
 			ID: c1.ID,
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c2, c2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c2, c2)
 	})
 	t.Run("can create when not existing", func(t *testing.T) {
 		// given
@@ -66,10 +64,9 @@ func TestEveCategory(t *testing.T) {
 			IsPublished: true,
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 42, c.ID)
-			xassert.Equal(t, "Alpha", c.Name)
-			assert.True(t, c.IsPublished)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 42, c.ID)
+		xassert.Equal(t, "Alpha", c.Name)
+		assert.True(t, c.IsPublished)
 	})
 }

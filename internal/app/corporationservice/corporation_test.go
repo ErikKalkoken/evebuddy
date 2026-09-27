@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
@@ -27,15 +28,11 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		factory.CreateCorporation()
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		want := set.Of(corp.ID)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
@@ -43,30 +40,22 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		character := factory.CreateCharacter()
 		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 
 		assert.False(t, changed)
 		want := set.Of(corp.ID)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("report false when no corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 		want := set.Of[int64]()
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, want, got)
 	})
 	t.Run("can add missing corporations", func(t *testing.T) {
@@ -76,14 +65,10 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			ID: character.EveCharacter.Corporation.ID,
 		})
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of(character.EveCharacter.Corporation.ID)
 		xassert.Equal(t, want, got)
 	})
@@ -102,14 +87,10 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 			ID: character.EveCharacter.Corporation.ID,
 		})
 		changed, err := s.UpdateCorporations(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.False(t, changed)
 		got, err := s.ListCorporationIDs(ctx)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, 0, got.Size())
 	})
 }
@@ -123,9 +104,8 @@ func TestCorporation_GetCorporation(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.GetCorporation(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.ID)
 	})
 	t.Run("should return error when corporation not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -143,9 +123,8 @@ func TestCorporation_GetAnyCorporation(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.GetAnyCorporation(ctx)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.ID, got.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, got.ID)
 	})
 	t.Run("should return error when no corporation found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -164,10 +143,9 @@ func TestCorporation_ListCorporations(t *testing.T) {
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		got, err := s.ListCorporations(ctx)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.Corporation) int64 { return x.ID }))
-			xassert.Equal(t, set.Of(c1.ID, c2.ID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.Corporation) int64 { return x.ID }))
+		xassert.Equal(t, set.Of(c1.ID, c2.ID), ids)
 	})
 }
 
@@ -180,23 +158,20 @@ func TestCorporation_HasCorporation(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.HasCorporation(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.True(t, got)
-		}
+		require.NoError(t, err)
+		assert.True(t, got)
 	})
 	t.Run("reports false when corporation does not exist", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		got, err := s.HasCorporation(ctx, 42)
-		if assert.NoError(t, err) {
-			assert.False(t, got)
-		}
+		require.NoError(t, err)
+		assert.False(t, got)
 	})
 	t.Run("reports false when id is zero", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		got, err := s.HasCorporation(ctx, 0)
-		if assert.NoError(t, err) {
-			assert.False(t, got)
-		}
+		require.NoError(t, err)
+		assert.False(t, got)
 	})
 }
 
@@ -210,10 +185,9 @@ func TestCorporation_ListCorporationsShort(t *testing.T) {
 		c1 := factory.CreateCorporation()
 		c2 := factory.CreateCorporation()
 		got, err := s.ListCorporationsShort(ctx)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.EntityShort) int64 { return x.ID }))
-			xassert.Equal(t, set.Of(c1.ID, c2.ID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.EntityShort) int64 { return x.ID }))
+		xassert.Equal(t, set.Of(c1.ID, c2.ID), ids)
 	})
 }
 
@@ -226,12 +200,10 @@ func TestCorporation_CorporationNames(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.CorporationNames(ctx)
-		if assert.NoError(t, err) {
-			ec, err := st.GetEveCorporation(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Equal(t, ec.Name, got[c.ID])
-			}
-		}
+		require.NoError(t, err)
+		ec, err := st.GetEveCorporation(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, ec.Name, got[c.ID])
 	})
 }
 
@@ -247,9 +219,8 @@ func TestCorporation_ListPrivilegedCorporations(t *testing.T) {
 		factory.SetCharacterRoles(character.ID, app.CorporationSectionWalletJournal(app.Division1).Roles())
 		factory.CreateCorporation()
 		got, err := s.ListPrivilegedCorporations(ctx)
-		if assert.NoError(t, err) {
-			ids := set.Collect(xiter.MapSlice(got, func(x *app.EntityShort) int64 { return x.ID }))
-			xassert.Equal(t, set.Of(corp1.ID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.EntityShort) int64 { return x.ID }))
+		xassert.Equal(t, set.Of(corp1.ID), ids)
 	})
 }

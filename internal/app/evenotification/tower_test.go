@@ -7,6 +7,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -43,13 +44,12 @@ shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, optional.New(text), time.Now())
-		if assert.NoError(t, err) {
+		require.NoError(t, err)
 
-			assert.Contains(t, title, "is under attack")
-			assert.Contains(t, body, aggressorAlliance.Name)
-			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, et.Name)
-		}
+		assert.Contains(t, title, "is under attack")
+		assert.Contains(t, body, aggressorAlliance.Name)
+		assert.Contains(t, body, moon.Name)
+		assert.Contains(t, body, et.Name)
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
 		// given
@@ -71,13 +71,12 @@ shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, optional.New(text), time.Now())
-		if assert.NoError(t, err) {
+		require.NoError(t, err)
 
-			assert.Contains(t, title, "is under attack")
-			assert.Contains(t, body, aggressorAlliance.Name)
-			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, et.Name)
-		}
+		assert.Contains(t, title, "is under attack")
+		assert.Contains(t, body, aggressorAlliance.Name)
+		assert.Contains(t, body, moon.Name)
+		assert.Contains(t, body, et.Name)
 	})
 	t.Run("TowerAlertMsg partial data 1", func(t *testing.T) {
 		// given
@@ -99,12 +98,11 @@ shieldValue: 0.3950949076033535
 solarSystemID: 30002537
 typeID: 16213`
 		title, body, err := en.RenderESI(ctx, app.TowerAlertMsg, optional.New(text), time.Now())
-		if assert.NoError(t, err) {
+		require.NoError(t, err)
 
-			assert.Contains(t, title, "is under attack")
-			assert.Contains(t, body, aggressorAlliance.Name)
-			assert.Contains(t, body, moon.Name)
-			assert.Contains(t, body, et.Name)
-		}
+		assert.Contains(t, title, "is under attack")
+		assert.Contains(t, body, aggressorAlliance.Name)
+		assert.Contains(t, body, moon.Name)
+		assert.Contains(t, body, et.Name)
 	})
 }

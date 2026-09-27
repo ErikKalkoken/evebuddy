@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -36,21 +37,19 @@ func TestEveDogmaAttribute(t *testing.T) {
 		// when
 		x1, err := r.CreateEveDogmaAttribute(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 42, x1.ID)
-			xassert.EqualOptional(t, 1.2, x1.DefaultValue)
-			xassert.EqualOptional(t, "description", x1.Description)
-			xassert.EqualOptional(t, "display name", x1.DisplayName)
-			xassert.EqualOptional(t, 7, x1.IconID)
-			xassert.EqualOptional(t, "name", x1.Name)
-			assert.True(t, x1.IsHighGood.ValueOrZero())
-			assert.True(t, x1.IsPublished.ValueOrZero())
-			assert.True(t, x1.IsStackable.ValueOrZero())
-			xassert.Equal(t, unit, x1.Unit)
-			x2, err := r.GetEveDogmaAttribute(ctx, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 42, x1.ID)
+		xassert.EqualOptional(t, 1.2, x1.DefaultValue)
+		xassert.EqualOptional(t, "description", x1.Description)
+		xassert.EqualOptional(t, "display name", x1.DisplayName)
+		xassert.EqualOptional(t, 7, x1.IconID)
+		xassert.EqualOptional(t, "name", x1.Name)
+		assert.True(t, x1.IsHighGood.ValueOrZero())
+		assert.True(t, x1.IsPublished.ValueOrZero())
+		assert.True(t, x1.IsStackable.ValueOrZero())
+		xassert.Equal(t, unit, x1.Unit)
+		x2, err := r.GetEveDogmaAttribute(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }

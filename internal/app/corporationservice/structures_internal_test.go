@@ -28,9 +28,8 @@ func TestGetStructure(t *testing.T) {
 		c := factory.CreateCorporation()
 		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
 		got, err := s.GetStructure(ctx, c.ID, o.StructureID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, o.StructureID, got.StructureID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, o.StructureID, got.StructureID)
 	})
 	t.Run("should return error when structure not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -52,10 +51,9 @@ func TestListStructures(t *testing.T) {
 		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID})
 		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c2.ID})
 		got, err := s.ListStructures(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			require.Len(t, got, 1)
-			xassert.Equal(t, o1.StructureID, got[0].StructureID)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, o1.StructureID, got[0].StructureID)
 	})
 }
 
@@ -111,21 +109,15 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			section:       app.SectionCorporationStructures,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](42)
 		xassert.Equal(t, want, got)
 
 		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		xassert.Equal(t, c.ID, x.CorporationID)
 		xassert.Equal(t, 42, x.StructureID)
 		xassert.EqualOptional(t, "Alpha", x.Name)
@@ -186,14 +178,10 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 			section:       app.SectionCorporationStructures,
 		})
 		// then
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		assert.True(t, changed)
 		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of[int64](1, 2)
 		xassert.Equal(t, want, got)
 	})

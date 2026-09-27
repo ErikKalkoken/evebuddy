@@ -38,9 +38,8 @@ func TestGetAttributes(t *testing.T) {
 		// when
 		x2, err := cs.GetAttributes(ctx, x1.CharacterID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x1, x2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -75,17 +74,15 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			section:     app.SectionCharacterAttributes,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCharacterAttributes(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 20, x.Charisma)
-				xassert.Equal(t, 21, x.Intelligence)
-				xassert.Equal(t, 22, x.Memory)
-				xassert.Equal(t, 23, x.Perception)
-				xassert.Equal(t, 24, x.Willpower)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterAttributes(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 20, x.Charisma)
+		xassert.Equal(t, 21, x.Intelligence)
+		xassert.Equal(t, 22, x.Memory)
+		xassert.Equal(t, 23, x.Perception)
+		xassert.Equal(t, 24, x.Willpower)
 	})
 }
 
@@ -132,25 +129,21 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			section:     app.SectionCharacterSkills,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			c2, err := st.GetCharacter(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, 90000, c2.TrainedSP)
-			}
-			o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 3, o1.ActiveSkillLevel)
-				xassert.Equal(t, 10000, o1.SkillPointsInSkill)
-				xassert.Equal(t, 4, o1.TrainedSkillLevel)
-			}
-			o2, err := st.GetCharacterSkill(ctx, c.ID, 42)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 1, o2.ActiveSkillLevel)
-				xassert.Equal(t, 20000, o2.SkillPointsInSkill)
-				xassert.Equal(t, 2, o2.TrainedSkillLevel)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 90000, c2.TrainedSP)
+		o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
+		require.NoError(t, err)
+		xassert.Equal(t, 3, o1.ActiveSkillLevel)
+		xassert.Equal(t, 10000, o1.SkillPointsInSkill)
+		xassert.Equal(t, 4, o1.TrainedSkillLevel)
+		o2, err := st.GetCharacterSkill(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, 1, o2.ActiveSkillLevel)
+		xassert.Equal(t, 20000, o2.SkillPointsInSkill)
+		xassert.Equal(t, 2, o2.TrainedSkillLevel)
 	})
 	t.Run("should delete skills not returned from ESI", func(t *testing.T) {
 		// given
@@ -190,13 +183,11 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			section:     app.SectionCharacterSkills,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, set.Of[int64](41), ids)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](41), ids)
 	})
 
 }
@@ -269,13 +260,11 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			section:     app.SectionCharacterSkillqueue,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			ii, err := st.ListCharacterSkillqueueItems(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, ii, 3)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ii, err := st.ListCharacterSkillqueueItems(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, ii, 3)
 	})
 }
 

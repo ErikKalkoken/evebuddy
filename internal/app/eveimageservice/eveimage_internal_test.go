@@ -9,6 +9,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadResourceFromURL(t *testing.T) {
@@ -26,9 +27,8 @@ func TestLoadResourceFromURL(t *testing.T) {
 		//when
 		x, err := loadDataFromURL(url, http.DefaultClient)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, x)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, x)
 
 	})
 	t.Run("should return error from http package", func(t *testing.T) {
@@ -93,9 +93,8 @@ func TestImageFetching(t *testing.T) {
 		m := New(c, http.DefaultClient, false)
 		r, err := m.image(url, 0)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, dat, r.Content())
 	})
 	t.Run("should return dummy image when offline", func(t *testing.T) {
 		// given
@@ -106,9 +105,8 @@ func TestImageFetching(t *testing.T) {
 		m := New(c, http.DefaultClient, true)
 		r, err := m.image(url, 0)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, resourceBrokenimage64Png, r)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, resourceBrokenimage64Png, r)
 	})
 	t.Run("can fetch a SKIN type from the image server", func(t *testing.T) {
 		// given
@@ -117,8 +115,7 @@ func TestImageFetching(t *testing.T) {
 		m := New(c, http.DefaultClient, false)
 		r, err := m.InventoryTypeSKIN(99, 64)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, resourceSkinicon64pxPng, r)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, resourceSkinicon64pxPng, r)
 	})
 }

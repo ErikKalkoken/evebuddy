@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -45,41 +46,39 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		err := st.CreateCharacterWalletTransaction(ctx, arg)
 		// then
 		region := location.SolarSystem.ValueOrZero().Constellation.Region
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
-				CharacterID:   c.ID,
-				TransactionID: 42,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, client, i.Client)
-				xassert.Equal(t, date.UTC(), i.Date.UTC())
-				xassert.Equal(t, eveType.ID, i.Type.ID)
-				xassert.Equal(t, eveType.Name, i.Type.Name)
-				assert.True(t, i.IsBuy)
-				assert.True(t, i.IsPersonal)
-				xassert.Equal(t, 99, i.JournalRefID)
-				xassert.Equal(t, location.ID, i.Location.ID)
-				xassert.Equal(t,
-					&app.EveLocationShort{
-						ID:             location.ID,
-						Name:           optional.New(location.Name),
-						SecurityStatus: i.Location.SecurityStatus,
-					},
-					i.Location,
-				)
-				xassert.Equal(t, c.ID, i.CharacterID)
-				xassert.Equal(t, 7, i.Quantity)
-				xassert.Equal(t, 123.45, i.UnitPrice)
-				xassert.Equal(t, location.ID, i.Location.ID)
-				xassert.Equal(t,
-					&app.EntityShort{
-						ID:   region.ID,
-						Name: region.Name,
-					},
-					i.Region,
-				)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
+			CharacterID:   c.ID,
+			TransactionID: 42,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, client, i.Client)
+		xassert.Equal(t, date.UTC(), i.Date.UTC())
+		xassert.Equal(t, eveType.ID, i.Type.ID)
+		xassert.Equal(t, eveType.Name, i.Type.Name)
+		assert.True(t, i.IsBuy)
+		assert.True(t, i.IsPersonal)
+		xassert.Equal(t, 99, i.JournalRefID)
+		xassert.Equal(t, location.ID, i.Location.ID)
+		xassert.Equal(t,
+			&app.EveLocationShort{
+				ID:             location.ID,
+				Name:           optional.New(location.Name),
+				SecurityStatus: i.Location.SecurityStatus,
+			},
+			i.Location,
+		)
+		xassert.Equal(t, c.ID, i.CharacterID)
+		xassert.Equal(t, 7, i.Quantity)
+		xassert.Equal(t, 123.45, i.UnitPrice)
+		xassert.Equal(t, location.ID, i.Location.ID)
+		xassert.Equal(t,
+			&app.EntityShort{
+				ID:   region.ID,
+				Name: region.Name,
+			},
+			i.Region,
+		)
 	})
 	t.Run("can list IDs of existing entries for a character", func(t *testing.T) {
 		// given
@@ -91,10 +90,9 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// when
 		got, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(e1.TransactionID, e2.TransactionID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(e1.TransactionID, e2.TransactionID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing entries for a character", func(t *testing.T) {
 		// given
@@ -106,12 +104,11 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// when
 		oo, err := st.ListCharacterWalletTransactions(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CharacterWalletTransaction) int64 {
-				return x.TransactionID
-			})...)
-			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(oo, func(x *app.CharacterWalletTransaction) int64 {
+			return x.TransactionID
+		})...)
+		want := set.Of(t1.TransactionID, t2.TransactionID)
+		xassert.Equal(t, want, got)
 	})
 }

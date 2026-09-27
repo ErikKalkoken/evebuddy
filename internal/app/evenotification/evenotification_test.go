@@ -342,13 +342,12 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			typeTested[nt] = true
 			title, body, err := ens.RenderESI(ctx, nt, optional.New(n.Text), n.Timestamp)
-			if assert.NoError(t, err) {
-				assert.NotEqual(t, "", title)
-				assert.NotEqual(t, "", body)
-				switch n.NotificationID {
-				case 1000000515:
-					assert.Contains(t, body, "POCO")
-				}
+			require.NoError(t, err)
+			assert.NotEqual(t, "", title)
+			assert.NotEqual(t, "", body)
+			switch n.NotificationID {
+			case 1000000515:
+				assert.Contains(t, body, "POCO")
 			}
 		})
 	}
@@ -373,10 +372,9 @@ dueDate: 133704743590000000
 externalID: 27
 externalID2: 60003760`
 		got, err := en.EntityIDs(app.CorpAllBillMsg, optional.New(text))
-		if assert.NoError(t, err) {
-			want := set.Of[int64](1000023, 98267621, 27, 60003760)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of[int64](1000023, 98267621, 27, 60003760)
+		xassert.Equal(t, want, got)
 	})
 }
 

@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/test"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -113,9 +114,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		a.update(t.Context())
 		a.corporation.Store(corporation)
 		xx, err := a.fetchCombinedJobs(t.Context())
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of(j1.JobID, j2.JobID)
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID
@@ -132,9 +131,7 @@ func TestIndustryJob_FetchJobs(t *testing.T) {
 		a.update(t.Context())
 
 		xx, err := a.fetchCorporationJobs(t.Context())
-		if !assert.NoError(t, err) {
-			t.Fatal()
-		}
+		require.NoError(t, err)
 		want := set.Of(j2.JobID, j3.JobID)
 		got := set.Collect(xiter.MapSlice(xx, func(x industryJobRow) int64 {
 			return x.jobID

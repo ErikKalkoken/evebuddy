@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -34,9 +35,8 @@ func TestAddMissingRegions(t *testing.T) {
 		// when
 		err := s.AddMissingRegions(ctx, set.Of(r.ID, 0))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 	t.Run("can fetch missing regions from ESI", func(t *testing.T) {
 		// given
@@ -55,10 +55,9 @@ func TestAddMissingRegions(t *testing.T) {
 		// when
 		err := s.AddMissingRegions(ctx, set.Of[int64](10000042))
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetEveRegion(ctx, 10000042)
-			assert.NoError(t, err)
-		}
+		require.NoError(t, err)
+		_, err = st.GetEveRegion(ctx, 10000042)
+		assert.NoError(t, err)
 	})
 }
 
@@ -77,9 +76,8 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateRegionESI(ctx, 6)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(6), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(6), x1.ID)
 	})
 	t.Run("should fetch region from ESI and create it", func(t *testing.T) {
 		// given
@@ -98,14 +96,12 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateRegionESI(ctx, 10000042)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(10000042), x1.ID)
-			xassert.Equal(t, "Metropolis", x1.Name)
-			x2, err := st.GetEveRegion(ctx, 10000042)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(10000042), x1.ID)
+		xassert.Equal(t, "Metropolis", x1.Name)
+		x2, err := st.GetEveRegion(ctx, 10000042)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -124,9 +120,8 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateConstellationESI(ctx, 25)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(25), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(25), x1.ID)
 	})
 	t.Run("should fetch constellation from ESI and create it", func(t *testing.T) {
 		// given
@@ -151,15 +146,13 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateConstellationESI(ctx, 20000009)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(20000009), x1.ID)
-			xassert.Equal(t, "Mekashtad", x1.Name)
-			xassert.Equal(t, int64(10000001), x1.Region.ID)
-			x2, err := st.GetEveConstellation(ctx, 20000009)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(20000009), x1.ID)
+		xassert.Equal(t, "Mekashtad", x1.Name)
+		xassert.Equal(t, int64(10000001), x1.Region.ID)
+		x2, err := st.GetEveConstellation(ctx, 20000009)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -178,9 +171,8 @@ func TestAddMissingSolarSystems(t *testing.T) {
 		// when
 		err := s.AddMissingSolarSystems(ctx, set.Of(x.ID, 0))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 	t.Run("can fetch missing solar systems from ESI", func(t *testing.T) {
 		// given
@@ -207,10 +199,9 @@ func TestAddMissingSolarSystems(t *testing.T) {
 		// when
 		err := s.AddMissingSolarSystems(ctx, set.Of[int64](30000003))
 		// then
-		if assert.NoError(t, err) {
-			_, err := st.GetEveSolarSystem(ctx, 30000003)
-			assert.NoError(t, err)
-		}
+		require.NoError(t, err)
+		_, err = st.GetEveSolarSystem(ctx, 30000003)
+		assert.NoError(t, err)
 	})
 }
 
@@ -229,9 +220,8 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 587)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(587), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(587), x1.ID)
 	})
 	t.Run("should fetch solar system from ESI and create it", func(t *testing.T) {
 		// given
@@ -268,15 +258,13 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(30000003), x1.ID)
-			xassert.Equal(t, "Akpivem", x1.Name)
-			xassert.Equal(t, int64(20000001), x1.Constellation.ID)
-			x2, err := st.GetEveSolarSystem(ctx, 30000003)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(30000003), x1.ID)
+		xassert.Equal(t, "Akpivem", x1.Name)
+		xassert.Equal(t, int64(20000001), x1.Constellation.ID)
+		x2, err := st.GetEveSolarSystem(ctx, 30000003)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should fetch solar system from ESI and create it (integration)", func(t *testing.T) {
 		// given
@@ -365,15 +353,13 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateSolarSystemESI(ctx, 30000003)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(30000003), x1.ID)
-			xassert.Equal(t, "Akpivem", x1.Name)
-			xassert.Equal(t, int64(20000001), x1.Constellation.ID)
-			x2, err := st.GetEveSolarSystem(ctx, 30000003)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(30000003), x1.ID)
+		xassert.Equal(t, "Akpivem", x1.Name)
+		xassert.Equal(t, int64(20000001), x1.Constellation.ID)
+		x2, err := st.GetEveSolarSystem(ctx, 30000003)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }
 
@@ -392,9 +378,8 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreatePlanetESI(ctx, 25)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(25), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(25), x1.ID)
 	})
 	t.Run("should fetch planet from ESI and create it", func(t *testing.T) {
 		// given
@@ -420,12 +405,11 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreatePlanetESI(ctx, 40000046)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(40000046), x1.ID)
-			xassert.Equal(t, "Akpivem III", x1.Name)
-			xassert.Equal(t, solarSystem, x1.SolarSystem)
-			xassert.Equal(t, et, x1.Type)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(40000046), x1.ID)
+		xassert.Equal(t, "Akpivem III", x1.Name)
+		xassert.Equal(t, solarSystem, x1.SolarSystem)
+		xassert.Equal(t, et, x1.Type)
 	})
 }
 
@@ -444,9 +428,8 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateMoonESI(ctx, 25)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(25), x1.ID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(25), x1.ID)
 	})
 	t.Run("should fetch moon from ESI and create it", func(t *testing.T) {
 		// given
@@ -470,11 +453,10 @@ func TestGetOrCreateEveMoonESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateMoonESI(ctx, 40000042)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(40000042), x1.ID)
-			xassert.Equal(t, "Akpivem I - Moon 1", x1.Name)
-			xassert.Equal(t, solarSystem, x1.SolarSystem)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(40000042), x1.ID)
+		xassert.Equal(t, "Akpivem I - Moon 1", x1.Name)
+		xassert.Equal(t, solarSystem, x1.SolarSystem)
 	})
 }
 
@@ -504,9 +486,8 @@ func TestFetchRoute(t *testing.T) {
 			Preference:  app.RouteShorter,
 		})
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveSolarSystem{s1, s2, s3}, x)
 	})
 	t.Run("should return short route when origin and dest the same", func(t *testing.T) {
 		// given
@@ -520,10 +501,9 @@ func TestFetchRoute(t *testing.T) {
 			Preference:  app.RouteShorter,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
-			xassert.Equal(t, 0, httpmock.GetTotalCallCount())
-		}
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []*app.EveSolarSystem{o}, x)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
 	})
 	t.Run("should return invalid route when origin in WH space", func(t *testing.T) {
 		// given
@@ -634,10 +614,10 @@ func TestFetchRoutes(t *testing.T) {
 		}
 		got, err := s.FetchRoutes(ctx, []app.EveRouteHeader{r1, r2})
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 2) {
-			xassert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
-			xassert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 2)
+		xassert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
+		xassert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
 	})
 }
 
@@ -674,24 +654,23 @@ func TestMembershipHistory(t *testing.T) {
 		// when
 		x, err := s.FetchCharacterCorporationHistory(ctx, 42)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, x, 2)
-			xassert.Equal(t, app.MembershipHistoryItem{
-				Days:         4,
-				Organization: c2,
-				RecordID:     501,
-				StartDate:    time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
-			}, x[0])
-			xassert.Equal(t, app.MembershipHistoryItem{
-				EndDate:      time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
-				Days:         30,
-				IsDeleted:    optional.New(true),
-				IsOldest:     true,
-				Organization: c1,
-				RecordID:     500,
-				StartDate:    time.Date(2016, 6, 26, 20, 0, 0, 0, time.UTC),
-			}, x[1])
-		}
+		require.NoError(t, err)
+		assert.Len(t, x, 2)
+		xassert.Equal(t, app.MembershipHistoryItem{
+			Days:         4,
+			Organization: c2,
+			RecordID:     501,
+			StartDate:    time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
+		}, x[0])
+		xassert.Equal(t, app.MembershipHistoryItem{
+			EndDate:      time.Date(2016, 7, 26, 20, 0, 0, 0, time.UTC),
+			Days:         30,
+			IsDeleted:    optional.New(true),
+			IsOldest:     true,
+			Organization: c1,
+			RecordID:     500,
+			StartDate:    time.Date(2016, 6, 26, 20, 0, 0, 0, time.UTC),
+		}, x[1])
 	})
 	t.Run("should return alliance membership history", func(t *testing.T) {
 		// given
@@ -717,23 +696,22 @@ func TestMembershipHistory(t *testing.T) {
 		// when
 		x, err := s.FetchCorporationAllianceHistory(ctx, 42)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, x, 2)
-			xassert.Equal(t, app.MembershipHistoryItem{
-				Days:         5,
-				IsDeleted:    optional.New(true),
-				Organization: c1,
-				RecordID:     23,
-				StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
-			}, x[0])
-			xassert.Equal(t, app.MembershipHistoryItem{
-				EndDate:   time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
-				Days:      476,
-				IsOldest:  true,
-				RecordID:  1,
-				StartDate: time.Date(2015, 7, 6, 20, 56, 0, 0, time.UTC),
-			}, x[1])
-		}
+		require.NoError(t, err)
+		assert.Len(t, x, 2)
+		xassert.Equal(t, app.MembershipHistoryItem{
+			Days:         5,
+			IsDeleted:    optional.New(true),
+			Organization: c1,
+			RecordID:     23,
+			StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
+		}, x[0])
+		xassert.Equal(t, app.MembershipHistoryItem{
+			EndDate:   time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
+			Days:      476,
+			IsOldest:  true,
+			RecordID:  1,
+			StartDate: time.Date(2015, 7, 6, 20, 56, 0, 0, time.UTC),
+		}, x[1])
 	})
 }
 
@@ -764,9 +742,8 @@ func TestGetStarTypeID(t *testing.T) {
 	// when
 	got, err := s.GetStarTypeID(ctx, 40000046)
 	// then
-	if assert.NoError(t, err) {
-		xassert.Equal(t, 45033, got)
-	}
+	require.NoError(t, err)
+	xassert.Equal(t, 45033, got)
 }
 
 func TestGetSolarSystemInfoESI(t *testing.T) {
@@ -816,24 +793,23 @@ func TestGetSolarSystemInfoESI(t *testing.T) {
 	// when
 	starID, planets, stargateIDs, stations, structures, err := s.GetSolarSystemInfoESI(ctx, system.ID)
 	// then
-	if assert.NoError(t, err) {
-		xassert.EqualOptional(t, 40000040, starID)
-		assert.ElementsMatch(t, []app.EveSolarSystemPlanet{
-			{
-				PlanetID: int64(40000041),
-				MoonIDs:  []int64{40000042},
-			},
-			{
-				PlanetID:        int64(40000043),
-				AsteroidBeltIDs: []int64{40000051},
-			},
+	require.NoError(t, err)
+	xassert.EqualOptional(t, 40000040, starID)
+	assert.ElementsMatch(t, []app.EveSolarSystemPlanet{
+		{
+			PlanetID: int64(40000041),
+			MoonIDs:  []int64{40000042},
 		},
-			planets,
-		)
-		assert.ElementsMatch(t, []int64{50000342}, stargateIDs)
-		assert.ElementsMatch(t, []*app.EveEntity{station}, stations)
-		assert.ElementsMatch(t, []*app.EveLocation{structure}, structures)
-	}
+		{
+			PlanetID:        int64(40000043),
+			AsteroidBeltIDs: []int64{40000051},
+		},
+	},
+		planets,
+	)
+	assert.ElementsMatch(t, []int64{50000342}, stargateIDs)
+	assert.ElementsMatch(t, []*app.EveEntity{station}, stations)
+	assert.ElementsMatch(t, []*app.EveLocation{structure}, structures)
 }
 
 func TestGetRegionConstellationsESI(t *testing.T) {
@@ -865,10 +841,9 @@ func TestGetRegionConstellationsESI(t *testing.T) {
 	// when
 	got, err := s.GetRegionConstellationsESI(ctx, 10000042)
 	// then
-	if assert.NoError(t, err) {
-		want := []*app.EveEntity{c1, c2}
-		assert.ElementsMatch(t, want, got)
-	}
+	require.NoError(t, err)
+	want := []*app.EveEntity{c1, c2}
+	assert.ElementsMatch(t, want, got)
 }
 
 func TestGetConstellationSolarSystemsESI(t *testing.T) {
@@ -899,10 +874,9 @@ func TestGetConstellationSolarSystemsESI(t *testing.T) {
 	// when
 	got, err := s.GetConstellationSolarSystemsESI(ctx, 20000009)
 	// then
-	if assert.NoError(t, err) {
-		want := []*app.EveSolarSystem{s1, s2}
-		assert.ElementsMatch(t, want, got)
-	}
+	require.NoError(t, err)
+	want := []*app.EveSolarSystem{s1, s2}
+	assert.ElementsMatch(t, want, got)
 }
 
 func TestGetStargateSolarSystemsESI(t *testing.T) {
@@ -936,10 +910,9 @@ func TestGetStargateSolarSystemsESI(t *testing.T) {
 	// when
 	got, err := s.GetStargatesSolarSystemsESI(ctx, []int64{20000009})
 	// then
-	if assert.NoError(t, err) {
-		want := []*app.EveSolarSystem{system}
-		assert.ElementsMatch(t, want, got)
-	}
+	require.NoError(t, err)
+	want := []*app.EveSolarSystem{system}
+	assert.ElementsMatch(t, want, got)
 }
 
 func TestGetSolarSystemPlanets(t *testing.T) {
@@ -956,8 +929,7 @@ func TestGetSolarSystemPlanets(t *testing.T) {
 		{PlanetID: p2.ID},
 	})
 	// then
-	if assert.NoError(t, err) {
-		want := []*app.EvePlanet{p1, p2}
-		assert.ElementsMatch(t, want, got)
-	}
+	require.NoError(t, err)
+	want := []*app.EvePlanet{p1, p2}
+	assert.ElementsMatch(t, want, got)
 }

@@ -62,13 +62,11 @@ func TestSyncQueue_GetNoWait(t *testing.T) {
 		q.Put(99)
 		q.Put(42)
 		v, err := q.GetNoWait()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 99, v)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, 99, v)
 		v, err = q.GetNoWait()
-		if assert.NoError(t, err) {
-			assert.Equal(t, 42, v)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, 42, v)
 	})
 	t.Run("should return specific error when trying to pop from empty queue", func(t *testing.T) {
 		q := syncqueue.New[int]()

@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -30,9 +31,8 @@ func TestGetCorporationIndustryJob(t *testing.T) {
 		c := factory.CreateCorporation()
 		j := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c.ID})
 		got, err := s.GetCorporationIndustryJob(ctx, c.ID, j.JobID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, j.JobID, got.JobID)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, j.JobID, got.JobID)
 	})
 	t.Run("should return error when job not found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -54,10 +54,9 @@ func TestListAllCorporationIndustryJobs(t *testing.T) {
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c1.ID})
 		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c2.ID})
 		got, err := s.ListAllCorporationIndustryJobs(ctx)
-		if assert.NoError(t, err) {
-			ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
-			xassert.Equal(t, set.Of(j1.JobID, j2.JobID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
+		xassert.Equal(t, set.Of(j1.JobID, j2.JobID), ids)
 	})
 }
 
@@ -73,10 +72,9 @@ func TestListCorporationIndustryJobs(t *testing.T) {
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c1.ID})
 		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{CorporationID: c2.ID})
 		got, err := s.ListCorporationIndustryJobs(ctx, c1.ID)
-		if assert.NoError(t, err) {
-			ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
-			xassert.Equal(t, set.Of(j1.JobID), ids)
-		}
+		require.NoError(t, err)
+		ids := set.Of(xslices.Map(got, func(x *app.CorporationIndustryJob) int64 { return x.JobID })...)
+		xassert.Equal(t, set.Of(j1.JobID), ids)
 	})
 }
 
@@ -129,29 +127,27 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.Manufacturing, x.Activity)
-				xassert.Equal(t, 1015116533326, x.BlueprintID)
-				xassert.Equal(t, 2047, x.BlueprintType.ID)
-				xassert.Equal(t, 11, x.BlueprintLocationID)
-				xassert.EqualOptional(t, 118.01, x.Cost)
-				xassert.Equal(t, 548, x.Duration)
-				xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				xassert.Equal(t, 12, x.FacilityID)
-				xassert.Equal(t, 498338451, x.Installer.ID)
-				xassert.Equal(t, 229136101, x.JobID)
-				xassert.EqualOptional(t, 200, x.LicensedRuns)
-				xassert.Equal(t, 13, x.OutputLocationID)
-				xassert.Equal(t, 2046, x.ProductType.MustValue().ID)
-				xassert.Equal(t, 1, x.Runs)
-				xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
-				xassert.Equal(t, 60006382, x.Location.ID)
-				xassert.Equal(t, app.JobReady, x.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, app.Manufacturing, x.Activity)
+		xassert.Equal(t, 1015116533326, x.BlueprintID)
+		xassert.Equal(t, 2047, x.BlueprintType.ID)
+		xassert.Equal(t, 11, x.BlueprintLocationID)
+		xassert.EqualOptional(t, 118.01, x.Cost)
+		xassert.Equal(t, 548, x.Duration)
+		xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+		xassert.Equal(t, 12, x.FacilityID)
+		xassert.Equal(t, 498338451, x.Installer.ID)
+		xassert.Equal(t, 229136101, x.JobID)
+		xassert.EqualOptional(t, 200, x.LicensedRuns)
+		xassert.Equal(t, 13, x.OutputLocationID)
+		xassert.Equal(t, 2046, x.ProductType.MustValue().ID)
+		xassert.Equal(t, 1, x.Runs)
+		xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
+		xassert.Equal(t, 60006382, x.Location.ID)
+		xassert.Equal(t, app.JobReady, x.Status)
 	})
 	t.Run("should update existing job", func(t *testing.T) {
 		// given
@@ -201,20 +197,18 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			xx, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-				j2 := xx[0]
-				xassert.Equal(t, c.ID, j2.CorporationID)
-				xassert.Equal(t, app.JobDelivered, j2.Status)
-				xassert.EqualOptional(t, 42, j2.SuccessfulRuns)
-				assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
-				assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
-				xassert.EqualOptional(t, completer, j2.CompletedCharacter)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xx, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
+		j2 := xx[0]
+		xassert.Equal(t, c.ID, j2.CorporationID)
+		xassert.Equal(t, app.JobDelivered, j2.Status)
+		xassert.EqualOptional(t, 42, j2.SuccessfulRuns)
+		assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
+		assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
+		xassert.EqualOptional(t, completer, j2.CompletedCharacter)
 	})
 	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given
@@ -259,13 +253,11 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.JobReady, x.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, app.JobReady, x.Status)
 	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
@@ -310,16 +302,14 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			xx, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-				j2 := xx[0]
-				xassert.Equal(t, c.ID, j2.CorporationID)
-				xassert.Equal(t, app.JobReady, j2.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xx, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
+		j2 := xx[0]
+		xassert.Equal(t, c.ID, j2.CorporationID)
+		xassert.Equal(t, app.JobReady, j2.Status)
 	})
 	t.Run("should not fix correct status", func(t *testing.T) {
 		// given
@@ -366,13 +356,11 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.JobActive, x.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, app.JobActive, x.Status)
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
@@ -436,13 +424,11 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			for jobID, activityID := range activities {
-				j, err := st.GetCorporationIndustryJob(ctx, c.ID, int64(jobID))
-				if assert.NoError(t, err) {
-					xassert.Equal(t, activityID, int64(j.Activity))
-				}
-			}
+		require.NoError(t, err)
+		for jobID, activityID := range activities {
+			j, err := st.GetCorporationIndustryJob(ctx, c.ID, int64(jobID))
+			require.NoError(t, err)
+			xassert.Equal(t, activityID, int64(j.Activity))
 		}
 	})
 	t.Run("can fetch jobs from multiple pages", func(t *testing.T) {
@@ -514,16 +500,14 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			jobs, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				got := set.Of(xslices.Map(jobs, func(x *app.CorporationIndustryJob) int64 {
-					return x.JobID
-				})...)
-				want := set.Of[int64](229136101, 229136102)
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		jobs, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(jobs, func(x *app.CorporationIndustryJob) int64 {
+			return x.JobID
+		})...)
+		want := set.Of[int64](229136101, 229136102)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("should mark orphaned jobs", func(t *testing.T) {
 		// given
@@ -584,21 +568,19 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			section:       app.SectionCorporationIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListAllCorporationIndustryJobs(ctx)
-			if assert.NoError(t, err) {
-				got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
-					return x.JobID, x.Status
-				}))
-				want := map[int64]app.IndustryJobStatus{
-					j1.JobID: app.JobDelivered,
-					j2.JobID: app.JobCancelled,
-					j3.JobID: app.JobReady,
-					j4.JobID: app.JobUnknown,
-				}
-				xassert.Equal(t, want, got)
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
+			return x.JobID, x.Status
+		}))
+		want := map[int64]app.IndustryJobStatus{
+			j1.JobID: app.JobDelivered,
+			j2.JobID: app.JobCancelled,
+			j3.JobID: app.JobReady,
+			j4.JobID: app.JobUnknown,
 		}
+		xassert.Equal(t, want, got)
 	})
 }

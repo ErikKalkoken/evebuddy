@@ -11,6 +11,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFetchPagesConcurrently(t *testing.T) {
@@ -77,14 +78,13 @@ func TestFetchPagesConcurrently(t *testing.T) {
 			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		})
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{1000000016835, 1000000016836, 1000000016837}
-			got := make([]int64, 0)
-			for _, x := range xx {
-				got = append(got, x.ItemId)
-			}
-			assert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := []int64{1000000016835, 1000000016836, 1000000016837}
+		got := make([]int64, 0)
+		for _, x := range xx {
+			got = append(got, x.ItemId)
 		}
+		assert.Equal(t, want, got)
 	})
 	t.Run("should fetch single page", func(t *testing.T) {
 		// given
@@ -112,9 +112,8 @@ func TestFetchPagesConcurrently(t *testing.T) {
 				return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
 	})
 	t.Run("can ignore missing x-pages header", func(t *testing.T) {
 		// given
@@ -141,9 +140,8 @@ func TestFetchPagesConcurrently(t *testing.T) {
 				return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 			})
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
 	})
 	t.Run("should return error from function", func(t *testing.T) {
 		// given
@@ -237,14 +235,13 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{1000000016835, 1000000016836, 1000000016837}
-			got := make([]int64, 0)
-			for _, x := range xx {
-				got = append(got, x.ItemId)
-			}
-			assert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := []int64{1000000016835, 1000000016836, 1000000016837}
+		got := make([]int64, 0)
+		for _, x := range xx {
+			got = append(got, x.ItemId)
 		}
+		assert.Equal(t, want, got)
 	})
 	t.Run("should fetch single page", func(t *testing.T) {
 		// given
@@ -271,9 +268,8 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
 	})
 	t.Run("can ignore missing x-pages header", func(t *testing.T) {
 		// given
@@ -299,9 +295,8 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			return client.AssetsAPI.GetCharactersCharacterIdAssets(ctx, 99).Page(page).Execute()
 		}, nil)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, xx, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
 	})
 	t.Run("should return error from function", func(t *testing.T) {
 		// given
@@ -386,14 +381,13 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			return x.ItemId == 1000000016836
 		})
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{1000000016835, 1000000016836}
-			got := make([]int64, 0)
-			for _, x := range xx {
-				got = append(got, x.ItemId)
-			}
-			assert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := []int64{1000000016835, 1000000016836}
+		got := make([]int64, 0)
+		for _, x := range xx {
+			got = append(got, x.ItemId)
 		}
+		assert.Equal(t, want, got)
 	})
 	t.Run("can exit after first page", func(t *testing.T) {
 		// given
@@ -454,13 +448,12 @@ func TestFetchPagesWithShortcut(t *testing.T) {
 			return x.ItemId == 1000000016835
 		})
 		// then
-		if assert.NoError(t, err) {
-			want := []int64{1000000016835}
-			got := make([]int64, 0)
-			for _, x := range xx {
-				got = append(got, x.ItemId)
-			}
-			assert.Equal(t, want, got)
+		require.NoError(t, err)
+		want := []int64{1000000016835}
+		got := make([]int64, 0)
+		for _, x := range xx {
+			got = append(got, x.ItemId)
 		}
+		assert.Equal(t, want, got)
 	})
 }

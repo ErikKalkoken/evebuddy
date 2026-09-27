@@ -32,9 +32,8 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, x)
-		}
+		require.NoError(t, err)
+		assert.True(t, x)
 	})
 	t.Run("should return false when token is missing scopes", func(t *testing.T) {
 		// given
@@ -47,9 +46,8 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			assert.False(t, x)
-		}
+		require.NoError(t, err)
+		assert.False(t, x)
 	})
 	t.Run("should return true when token has at least requested scopes", func(t *testing.T) {
 		// given
@@ -62,9 +60,8 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// when
 		x, err := s.HasTokenWithScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, x)
-		}
+		require.NoError(t, err)
+		assert.True(t, x)
 	})
 }
 
@@ -90,13 +87,12 @@ func TestCharactersWithMissingScopes(t *testing.T) {
 		// when
 		got, err := s.CharactersWithMissingScopes(ctx)
 		// then
-		if assert.NoError(t, err) {
-			ids := make([]int64, len(got))
-			for i, c := range got {
-				ids[i] = c.ID
-			}
-			assert.ElementsMatch(t, []int64{incomplete.ID, noToken.ID}, ids)
+		require.NoError(t, err)
+		ids := make([]int64, len(got))
+		for i, c := range got {
+			ids[i] = c.ID
 		}
+		assert.ElementsMatch(t, []int64{incomplete.ID, noToken.ID}, ids)
 	})
 	t.Run("should return empty when no characters exist", func(t *testing.T) {
 		// given
@@ -104,9 +100,8 @@ func TestCharactersWithMissingScopes(t *testing.T) {
 		// when
 		got, err := s.CharactersWithMissingScopes(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Empty(t, got)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, got)
 	})
 }
 
@@ -126,9 +121,8 @@ func TestMissingScopes(t *testing.T) {
 		// when
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, got.Size())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
 	})
 	t.Run("should return scopes that are missing", func(t *testing.T) {
 		// given
@@ -141,10 +135,9 @@ func TestMissingScopes(t *testing.T) {
 		// when
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of("bravo")
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of("bravo")
+		xassert.Equal(t, want, got)
 	})
 	t.Run("when no token found all scopes are missing", func(t *testing.T) {
 		// given
@@ -153,10 +146,9 @@ func TestMissingScopes(t *testing.T) {
 		// when
 		got, err := s.MissingScopes(ctx, c.ID, set.Of("alpha", "bravo"))
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of("alpha", "bravo")
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of("alpha", "bravo")
+		xassert.Equal(t, want, got)
 	})
 }
 
@@ -180,12 +172,11 @@ func TestCharacterTokenForCorporation(t *testing.T) {
 		// when
 		ts, id, err := s.TokenSourceForCorporation(ctx, c.EveCharacter.Corporation.ID, set.Of(app.RoleAccountant), set.Set[string]{})
 		// then
-		if assert.NoError(t, err) {
-			token, err := ts.Token()
-			require.NoError(t, err)
-			xassert.Equal(t, o1.AccessToken, token.AccessToken)
-			xassert.Equal(t, o1.CharacterID, id)
-		}
+		require.NoError(t, err)
+		token, err := ts.Token()
+		require.NoError(t, err)
+		xassert.Equal(t, o1.AccessToken, token.AccessToken)
+		xassert.Equal(t, o1.CharacterID, id)
 	})
 	t.Run("should report not found when token exists and role not matching", func(t *testing.T) {
 		// given

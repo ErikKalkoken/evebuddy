@@ -9,6 +9,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -63,27 +64,25 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.Manufacturing, x.Activity)
-				xassert.Equal(t, 1015116533326, x.BlueprintID)
-				xassert.Equal(t, 60006382, x.BlueprintLocation.ID)
-				xassert.EqualOptional(t, 118.01, x.Cost)
-				xassert.Equal(t, 548, x.Duration)
-				xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
-				xassert.Equal(t, 60006382, x.Facility.ID)
-				xassert.Equal(t, 498338451, x.Installer.ID)
-				xassert.Equal(t, 229136101, x.JobID)
-				xassert.EqualOptional(t, 200, x.LicensedRuns)
-				xassert.Equal(t, 60006382, x.OutputLocation.ID)
-				xassert.Equal(t, 1, x.Runs)
-				xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
-				xassert.Equal(t, 60006382, x.Station.ID)
-				xassert.Equal(t, app.JobReady, x.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, app.Manufacturing, x.Activity)
+		xassert.Equal(t, 1015116533326, x.BlueprintID)
+		xassert.Equal(t, 60006382, x.BlueprintLocation.ID)
+		xassert.EqualOptional(t, 118.01, x.Cost)
+		xassert.Equal(t, 548, x.Duration)
+		xassert.Equal(t, time.Date(2014, 7, 19, 15, 56, 14, 0, time.UTC), x.EndDate)
+		xassert.Equal(t, 60006382, x.Facility.ID)
+		xassert.Equal(t, 498338451, x.Installer.ID)
+		xassert.Equal(t, 229136101, x.JobID)
+		xassert.EqualOptional(t, 200, x.LicensedRuns)
+		xassert.Equal(t, 60006382, x.OutputLocation.ID)
+		xassert.Equal(t, 1, x.Runs)
+		xassert.Equal(t, time.Date(2014, 7, 19, 15, 47, 6, 0, time.UTC), x.StartDate)
+		xassert.Equal(t, 60006382, x.Station.ID)
+		xassert.Equal(t, app.JobReady, x.Status)
 	})
 	t.Run("should update existing job", func(t *testing.T) {
 		// given
@@ -131,20 +130,18 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			xx, err := st.ListCharacterIndustryJobs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-				j2 := xx[0]
-				xassert.Equal(t, c.ID, j2.CharacterID)
-				xassert.Equal(t, app.JobDelivered, j2.Status)
-				xassert.EqualOptional(t, 42, j2.SuccessfulRuns)
-				assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
-				assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
-				xassert.EqualOptional(t, completer, j2.CompletedCharacter)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xx, err := st.ListCharacterIndustryJobs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
+		j2 := xx[0]
+		xassert.Equal(t, c.ID, j2.CharacterID)
+		xassert.Equal(t, app.JobDelivered, j2.Status)
+		xassert.EqualOptional(t, 42, j2.SuccessfulRuns)
+		assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
+		assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
+		xassert.EqualOptional(t, completer, j2.CompletedCharacter)
 	})
 	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given
@@ -185,14 +182,12 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
 
-				xassert.Equal(t, app.JobReady, x.Status)
-			}
-		}
+		xassert.Equal(t, app.JobReady, x.Status)
 	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
@@ -235,16 +230,14 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			xx, err := st.ListCharacterIndustryJobs(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, xx, 1)
-				j2 := xx[0]
-				xassert.Equal(t, c.ID, j2.CharacterID)
-				xassert.Equal(t, app.JobReady, j2.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xx, err := st.ListCharacterIndustryJobs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, xx, 1)
+		j2 := xx[0]
+		xassert.Equal(t, c.ID, j2.CharacterID)
+		xassert.Equal(t, app.JobReady, j2.Status)
 	})
 	t.Run("should not fix status when correct", func(t *testing.T) {
 		// given
@@ -287,13 +280,11 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, app.JobActive, x.Status)
-			}
-		}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, app.JobActive, x.Status)
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
@@ -352,13 +343,11 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			for jobID, activityID := range activities {
-				j, err := st.GetCharacterIndustryJob(ctx, c.ID, int64(jobID))
-				if assert.NoError(t, err) {
-					xassert.Equal(t, activityID, int64(j.Activity))
-				}
-			}
+		require.NoError(t, err)
+		for jobID, activityID := range activities {
+			j, err := st.GetCharacterIndustryJob(ctx, c.ID, int64(jobID))
+			require.NoError(t, err)
+			xassert.Equal(t, activityID, int64(j.Activity))
 		}
 	})
 	t.Run("should mark orphaned jobs", func(t *testing.T) {
@@ -416,21 +405,19 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			section:     app.SectionCharacterIndustryJobs,
 		})
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			oo, err := st.ListAllCharacterIndustryJob(ctx)
-			if assert.NoError(t, err) {
-				got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
-					return x.JobID, x.Status
-				}))
-				want := map[int64]app.IndustryJobStatus{
-					j1.JobID: app.JobDelivered,
-					j2.JobID: app.JobCancelled,
-					j3.JobID: app.JobReady,
-					j4.JobID: app.JobUnknown,
-				}
-				xassert.Equal(t, want, got)
-			}
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListAllCharacterIndustryJob(ctx)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
+			return x.JobID, x.Status
+		}))
+		want := map[int64]app.IndustryJobStatus{
+			j1.JobID: app.JobDelivered,
+			j2.JobID: app.JobCancelled,
+			j3.JobID: app.JobReady,
+			j4.JobID: app.JobUnknown,
 		}
+		xassert.Equal(t, want, got)
 	})
 }

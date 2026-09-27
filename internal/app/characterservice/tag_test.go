@@ -143,13 +143,12 @@ func TestCreateTag(t *testing.T) {
 		// when
 		got, err := s.CreateTag(ctx, "Alpha")
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, "Alpha", got.Name)
-			tags, err := st.ListTagsByName(ctx)
-			if assert.NoError(t, err) && assert.Len(t, tags, 1) {
-				assert.Equal(t, "Alpha", tags[0].Name)
-			}
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "Alpha", got.Name)
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		require.Len(t, tags, 1)
+		assert.Equal(t, "Alpha", tags[0].Name)
 	})
 }
 
@@ -165,12 +164,10 @@ func TestDeleteTag(t *testing.T) {
 		// when
 		err := s.DeleteTag(ctx, tag.ID)
 		// then
-		if assert.NoError(t, err) {
-			tags, err := st.ListTagsByName(ctx)
-			if assert.NoError(t, err) {
-				assert.Empty(t, tags)
-			}
-		}
+		require.NoError(t, err)
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, tags)
 	})
 }
 
@@ -187,12 +184,10 @@ func TestDeleteAllTags(t *testing.T) {
 		// when
 		err := s.DeleteAllTags(ctx)
 		// then
-		if assert.NoError(t, err) {
-			tags, err := st.ListTagsByName(ctx)
-			if assert.NoError(t, err) {
-				assert.Empty(t, tags)
-			}
-		}
+		require.NoError(t, err)
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, tags)
 	})
 }
 
@@ -209,10 +204,10 @@ func TestListTagsByName(t *testing.T) {
 		// when
 		got, err := s.ListTagsByName(ctx)
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 2) {
-			assert.Equal(t, "Alpha", got[0].Name)
-			assert.Equal(t, "Zulu", got[1].Name)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 2)
+		assert.Equal(t, "Alpha", got[0].Name)
+		assert.Equal(t, "Zulu", got[1].Name)
 	})
 }
 
@@ -228,12 +223,11 @@ func TestRenameTag(t *testing.T) {
 		// when
 		err := s.RenameTag(ctx, tag.ID, "New")
 		// then
-		if assert.NoError(t, err) {
-			tags, err := st.ListTagsByName(ctx)
-			if assert.NoError(t, err) && assert.Len(t, tags, 1) {
-				assert.Equal(t, "New", tags[0].Name)
-			}
-		}
+		require.NoError(t, err)
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		require.Len(t, tags, 1)
+		assert.Equal(t, "New", tags[0].Name)
 	})
 }
 
@@ -250,21 +244,17 @@ func TestAddAndRemoveTagFromCharacter(t *testing.T) {
 		// when
 		err := s.AddTagToCharacter(ctx, c.ID, tag.ID)
 		// then
-		if assert.NoError(t, err) {
-			cc, err := st.ListCharacterTagsForCharacter(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, cc, 1)
-			}
-		}
+		require.NoError(t, err)
+		cc, err := st.ListCharacterTagsForCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Len(t, cc, 1)
 		// when
 		err = s.RemoveTagFromCharacter(ctx, c.ID, tag.ID)
 		// then
-		if assert.NoError(t, err) {
-			cc, err := st.ListCharacterTagsForCharacter(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Empty(t, cc)
-			}
-		}
+		require.NoError(t, err)
+		cc, err = st.ListCharacterTagsForCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, cc)
 	})
 }
 
@@ -283,12 +273,11 @@ func TestListCharactersForTag(t *testing.T) {
 		// when
 		tagged, others, err := s.ListCharactersForTag(ctx, tag.ID)
 		// then
-		if assert.NoError(t, err) {
-			taggedIDs := xslices.Map(tagged, func(x *app.EntityShort) int64 { return x.ID })
-			otherIDs := xslices.Map(others, func(x *app.EntityShort) int64 { return x.ID })
-			assert.ElementsMatch(t, []int64{c1.ID}, taggedIDs)
-			assert.ElementsMatch(t, []int64{c2.ID}, otherIDs)
-		}
+		require.NoError(t, err)
+		taggedIDs := xslices.Map(tagged, func(x *app.EntityShort) int64 { return x.ID })
+		otherIDs := xslices.Map(others, func(x *app.EntityShort) int64 { return x.ID })
+		assert.ElementsMatch(t, []int64{c1.ID}, taggedIDs)
+		assert.ElementsMatch(t, []int64{c2.ID}, otherIDs)
 	})
 }
 
@@ -306,9 +295,8 @@ func TestListTagsForCharacter(t *testing.T) {
 		// when
 		got, err := s.ListTagsForCharacter(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, got.Contains("Alpha"))
-		}
+		require.NoError(t, err)
+		assert.True(t, got.Contains("Alpha"))
 	})
 	t.Run("returns empty set when character has no tags", func(t *testing.T) {
 		// given
@@ -317,8 +305,7 @@ func TestListTagsForCharacter(t *testing.T) {
 		// when
 		got, err := s.ListTagsForCharacter(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, 0, got.Size())
-		}
+		require.NoError(t, err)
+		assert.Equal(t, 0, got.Size())
 	})
 }

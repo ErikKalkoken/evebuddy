@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -55,9 +56,8 @@ func TestNotifyCommunications(t *testing.T) {
 			// when
 			err := cs.NotifyNotifications(t.Context(), n.CharacterID, earliest, typesEnabled)
 			// then
-			if assert.NoError(t, err) {
-				xassert.Equal(t, tc.shouldNotify, sendCount == 1)
-			}
+			require.NoError(t, err)
+			xassert.Equal(t, tc.shouldNotify, sendCount == 1)
 		})
 	}
 }
@@ -73,9 +73,8 @@ func TestGetNotification(t *testing.T) {
 		// when
 		got, err := cs.GetNotification(t.Context(), n.CharacterID, n.NotificationID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, n.NotificationID, got.NotificationID)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, n.NotificationID, got.NotificationID)
 	})
 	t.Run("should return own error when not found", func(t *testing.T) {
 		// given
@@ -99,12 +98,10 @@ func TestSetNotificationsAsRead(t *testing.T) {
 		// when
 		err := cs.SetNotificationsAsRead(t.Context(), set.Of(n1.ID, n2.ID))
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.GetCharacterNotification(t.Context(), n1.CharacterID, n1.NotificationID)
-			if assert.NoError(t, err) {
-				assert.True(t, got.IsRead)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.GetCharacterNotification(t.Context(), n1.CharacterID, n1.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, got.IsRead)
 	})
 }
 
@@ -121,8 +118,8 @@ func TestListNotifications(t *testing.T) {
 		// when
 		got, err := cs.ListNotifications(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 1) {
-			assert.Equal(t, n.NotificationID, got[0].NotificationID)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, n.NotificationID, got[0].NotificationID)
 	})
 }

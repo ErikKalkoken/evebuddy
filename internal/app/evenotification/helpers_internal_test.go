@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
@@ -67,9 +68,8 @@ func TestMakeMarkDownLink(t *testing.T) {
 func TestLinkDataUint64(t *testing.T) {
 	t.Run("returns value for valid index and type", func(t *testing.T) {
 		got, err := linkDataUint64("ctx", []any{"x", uint64(123)}, 1)
-		if assert.NoError(t, err) {
-			assert.Equal(t, uint64(123), got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, uint64(123), got)
 	})
 	t.Run("returns error when index out of range", func(t *testing.T) {
 		_, err := linkDataUint64("ctx", []any{"x"}, 5)
@@ -88,9 +88,8 @@ func TestLinkDataUint64(t *testing.T) {
 func TestLinkDataString(t *testing.T) {
 	t.Run("returns value for valid index and type", func(t *testing.T) {
 		got, err := linkDataString("ctx", []any{"x", "hello"}, 1)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "hello", got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "hello", got)
 	})
 	t.Run("returns error when index out of range", func(t *testing.T) {
 		_, err := linkDataString("ctx", []any{"x"}, 5)

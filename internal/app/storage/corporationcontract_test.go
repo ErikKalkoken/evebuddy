@@ -296,9 +296,8 @@ func TestCorporationContract(t *testing.T) {
 		got, err := st.CountCorporationContractsWithStatus(t.Context(), c.ID, set.Of(app.ContractStatusOutstanding, app.ContractStatusInProgress))
 
 		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, int64(2), got)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), got)
 	})
 
 	t.Run("count returns error for empty statuses", func(t *testing.T) {

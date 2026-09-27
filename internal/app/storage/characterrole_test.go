@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -25,12 +24,10 @@ func TestCharacterRole(t *testing.T) {
 		// when
 		err := st.UpdateCharacterRoles(ctx, c.ID, r1)
 		// then
-		if assert.NoError(t, err) {
-			r2, err := st.ListCharacterRoles(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, r1, r2)
-			}
-		}
+		require.NoError(t, err)
+		r2, err := st.ListCharacterRoles(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, r1, r2)
 	})
 	t.Run("can add roles", func(t *testing.T) {
 		// given
@@ -42,12 +39,10 @@ func TestCharacterRole(t *testing.T) {
 		// when
 		err = st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCharacterRoles(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCharacterRoles(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can remove roles", func(t *testing.T) {
 		// given
@@ -59,11 +54,9 @@ func TestCharacterRole(t *testing.T) {
 		// when
 		err = st.UpdateCharacterRoles(ctx, c.ID, want)
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.ListCharacterRoles(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, want, got)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.ListCharacterRoles(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, want, got)
 	})
 }

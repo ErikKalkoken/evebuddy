@@ -57,9 +57,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		start := time.Now()
 		for range 2 {
 			resp, err := client.Do(req)
-			if !assert.NoError(t, err) {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		}
 		end := time.Since(start)
@@ -84,9 +82,7 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 		for range 2 {
 			wg.Go(func() {
 				resp, err := client.Do(req)
-				if !assert.NoError(t, err) {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 			})
 		}
@@ -112,13 +108,9 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 				ctx := xgoesi.NewContextWithAuthStatic(t.Context(), characterID, "token")
 				ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdLocation")
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-				if !assert.NoError(t, err) {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				resp, err := client.Do(req)
-				if !assert.NoError(t, err) {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 			})
 		}
@@ -144,13 +136,9 @@ func TestRateLimiter_RateLimited(t *testing.T) {
 				ctx := xgoesi.NewContextWithAuthStatic(t.Context(), 42, "token")
 				ctx = xgoesi.NewContextWithOperationID(ctx, operationID)
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-				if !assert.NoError(t, err) {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				resp, err := client.Do(req)
-				if !assert.NoError(t, err) {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 			})
 		}

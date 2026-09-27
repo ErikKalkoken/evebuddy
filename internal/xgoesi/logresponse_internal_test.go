@@ -10,6 +10,7 @@ import (
 	"testing/iotest"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExtractBodyForLog(t *testing.T) {
@@ -22,9 +23,8 @@ func TestExtractBodyForLog(t *testing.T) {
 			},
 		}
 		x, err := extractBodyForLog(r)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "test", x)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "test", x)
 	})
 	t.Run("should return copy of the body as JSON", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")
@@ -36,9 +36,8 @@ func TestExtractBodyForLog(t *testing.T) {
 			Header: http.Header{headerContentTypeKey: []string{headerContentTypeJSON}},
 		}
 		x, err := extractBodyForLog(r)
-		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]any{"alpha": true}, x)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"alpha": true}, x)
 	})
 	t.Run("should return empty when no body", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")
@@ -48,9 +47,8 @@ func TestExtractBodyForLog(t *testing.T) {
 			},
 		}
 		x, err := extractBodyForLog(r)
-		if assert.NoError(t, err) {
-			assert.Nil(t, x)
-		}
+		require.NoError(t, err)
+		assert.Nil(t, x)
 	})
 	t.Run("should redact blocked URL with text content-type", func(t *testing.T) {
 		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
@@ -61,9 +59,8 @@ func TestExtractBodyForLog(t *testing.T) {
 			},
 		}
 		x, err := extractBodyForLog(r)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "xxxxx", x)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "xxxxx", x)
 	})
 	t.Run("should redact blocked URL with JSON content-type", func(t *testing.T) {
 		u, _ := url.Parse("https://login.eveonline.com/v2/oauth/token")
@@ -75,9 +72,8 @@ func TestExtractBodyForLog(t *testing.T) {
 			Header: http.Header{headerContentTypeKey: []string{"application/json; charset=UTF-8"}},
 		}
 		x, err := extractBodyForLog(r)
-		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]bool{"redacted": true}, x)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, map[string]bool{"redacted": true}, x)
 	})
 	t.Run("should return error", func(t *testing.T) {
 		u, _ := url.Parse("http://www.example.com")

@@ -6,6 +6,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -27,13 +28,12 @@ func TestMakeStructureBaseText(t *testing.T) {
 		// when
 		x, err := makeStructureBaseText(ctx, o.Type.ValueOrZero().ID, o.SolarSystem.ValueOrZero().ID, o.ID, o.Name, eus)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, o.Name, x.name)
-			xassert.Equal(t, o.SolarSystem.MustValue().Name, x.solarSystem.Name)
-			xassert.Equal(t, o.Type.MustValue().Name, x.eveType.Name)
-			xassert.Equal(t, o.Owner.MustValue().Name, x.owner.Name)
-			assert.NotEmpty(t, x.intro)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, o.Name, x.name)
+		xassert.Equal(t, o.SolarSystem.MustValue().Name, x.solarSystem.Name)
+		xassert.Equal(t, o.Type.MustValue().Name, x.eveType.Name)
+		xassert.Equal(t, o.Owner.MustValue().Name, x.owner.Name)
+		assert.NotEmpty(t, x.intro)
 	})
 	t.Run("can create base text from minimal input data", func(t *testing.T) {
 		// given
@@ -43,13 +43,12 @@ func TestMakeStructureBaseText(t *testing.T) {
 		// when
 		x, err := makeStructureBaseText(ctx, 0, es.ID, 1_000_000_000_000, "", eus)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, "???", x.name)
-			xassert.Equal(t, es.Name, x.solarSystem.Name)
-			assert.Empty(t, x.eveType)
-			assert.Empty(t, x.owner)
-			assert.NotEmpty(t, x.intro)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, "???", x.name)
+		xassert.Equal(t, es.Name, x.solarSystem.Name)
+		assert.Empty(t, x.eveType)
+		assert.Empty(t, x.owner)
+		assert.NotEmpty(t, x.intro)
 	})
 }
 
@@ -73,9 +72,7 @@ func TestEveEntityFromHTMLLink(t *testing.T) {
 	for _, tc := range cases {
 		o, err := eveEntityFromHTMLLink(tc.url)
 		if tc.isValid {
-			if !assert.NoError(t, err) {
-				t.Fatal()
-			}
+			require.NoError(t, err)
 			xassert.Equal(t, tc.category, o.Category)
 			xassert.Equal(t, tc.id, o.ID)
 			xassert.Equal(t, tc.name, o.Name)

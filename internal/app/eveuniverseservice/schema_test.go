@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -28,9 +28,8 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		// when
 		x2, err := s.GetOrCreateSchematicESI(ctx, x1.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, x1, x2)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 	t.Run("should fetch schematic from ESI and create it", func(t *testing.T) {
 		// given
@@ -47,14 +46,12 @@ func TestGetOrCreateEveSchematicESI(t *testing.T) {
 		// when
 		x1, err := s.GetOrCreateSchematicESI(ctx, 3)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, int64(3), x1.ID)
-			xassert.Equal(t, "Bacteria", x1.Name)
-			xassert.Equal(t, 1800, x1.CycleTime)
-			x2, err := st.GetEveSchematic(ctx, 3)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, x1, x2)
-			}
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, int64(3), x1.ID)
+		xassert.Equal(t, "Bacteria", x1.Name)
+		xassert.Equal(t, 1800, x1.CycleTime)
+		x2, err := st.GetEveSchematic(ctx, 3)
+		require.NoError(t, err)
+		xassert.Equal(t, x1, x2)
 	})
 }

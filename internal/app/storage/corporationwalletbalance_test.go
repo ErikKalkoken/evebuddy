@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -29,17 +30,15 @@ func TestCorporationWalletBalance(t *testing.T) {
 			Balance:       12.34,
 		})
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
-				CorporationID: c.ID,
-				DivisionID:    3,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, c.ID, x.CorporationID)
-				xassert.Equal(t, 3, x.DivisionID)
-				xassert.Equal(t, 12.34, x.Balance)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			DivisionID:    3,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, x.CorporationID)
+		xassert.Equal(t, 3, x.DivisionID)
+		xassert.Equal(t, 12.34, x.Balance)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -52,15 +51,13 @@ func TestCorporationWalletBalance(t *testing.T) {
 			Balance:       12.34,
 		})
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
-				CorporationID: x1.CorporationID,
-				DivisionID:    x1.DivisionID,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 12.34, x.Balance)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
+			CorporationID: x1.CorporationID,
+			DivisionID:    x1.DivisionID,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 12.34, x.Balance)
 	})
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
@@ -78,16 +75,15 @@ func TestCorporationWalletBalance(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
-				return x.DivisionID, x.Balance
-			}))
-			want := map[int64]float64{
-				e1.DivisionID: e1.Balance,
-				e2.DivisionID: e2.Balance,
-			}
-			xassert.Equal(t, want, got)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
+			return x.DivisionID, x.Balance
+		}))
+		want := map[int64]float64{
+			e1.DivisionID: e1.Balance,
+			e2.DivisionID: e2.Balance,
 		}
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can delete entries", func(t *testing.T) {
 		// given
@@ -97,15 +93,12 @@ func TestCorporationWalletBalance(t *testing.T) {
 		// when
 		err := st.DeleteCorporationWalletBalance(ctx, e1.CorporationID)
 		// then
-		if assert.NoError(t, err) {
-			x1, err := st.ListCorporationWalletBalances(ctx, e1.CorporationID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 0, len(x1))
-			}
-			x2, err := st.ListCorporationWalletBalances(ctx, e2.CorporationID)
-			if assert.NoError(t, err) {
-				assert.Greater(t, len(x2), 0)
-			}
-		}
+		require.NoError(t, err)
+		x1, err := st.ListCorporationWalletBalances(ctx, e1.CorporationID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, len(x1))
+		x2, err := st.ListCorporationWalletBalances(ctx, e2.CorporationID)
+		require.NoError(t, err)
+		assert.Greater(t, len(x2), 0)
 	})
 }

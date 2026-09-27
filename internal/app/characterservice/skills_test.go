@@ -266,9 +266,8 @@ func TestListShipsAbilities(t *testing.T) {
 		// when
 		got, err := cs.ListShipsAbilities(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, got, 2)
-		}
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
 	})
 }
 
@@ -294,10 +293,9 @@ func TestListAllSkills(t *testing.T) {
 		// when
 		got, err := cs.ListAllSkills(ctx)
 		// then
-		if assert.NoError(t, err) {
-			ids := xslices.Map(got, func(x *app.CharacterSkill) int64 { return x.CharacterID })
-			assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, ids)
-		}
+		require.NoError(t, err)
+		ids := xslices.Map(got, func(x *app.CharacterSkill) int64 { return x.CharacterID })
+		assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, ids)
 	})
 }
 
@@ -323,11 +321,10 @@ func TestTotalTrainingTime(t *testing.T) {
 		// when
 		got, err := cs.TotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			v, ok := got.Value()
-			if assert.True(t, ok) {
-				assert.Greater(t, v, time.Duration(0))
-			}
+		require.NoError(t, err)
+		v, ok := got.Value()
+		if assert.True(t, ok) {
+			assert.Greater(t, v, time.Duration(0))
 		}
 	})
 	t.Run("should return empty when no section status exists yet", func(t *testing.T) {
@@ -337,10 +334,9 @@ func TestTotalTrainingTime(t *testing.T) {
 		// when
 		got, err := cs.TotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, ok := got.Value()
-			assert.False(t, ok)
-		}
+		require.NoError(t, err)
+		_, ok := got.Value()
+		assert.False(t, ok)
 	})
 	t.Run("should return empty when section status is stale", func(t *testing.T) {
 		// given
@@ -354,10 +350,9 @@ func TestTotalTrainingTime(t *testing.T) {
 		// when
 		got, err := cs.TotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, ok := got.Value()
-			assert.False(t, ok)
-		}
+		require.NoError(t, err)
+		_, ok := got.Value()
+		assert.False(t, ok)
 	})
 	t.Run("should return empty when section status has an error", func(t *testing.T) {
 		// given
@@ -371,10 +366,9 @@ func TestTotalTrainingTime(t *testing.T) {
 		// when
 		got, err := cs.TotalTrainingTime(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			_, ok := got.Value()
-			assert.False(t, ok)
-		}
+		require.NoError(t, err)
+		_, ok := got.Value()
+		assert.False(t, ok)
 	})
 }
 
@@ -390,12 +384,10 @@ func TestUpdateIsTrainingWatched(t *testing.T) {
 		// when
 		err := cs.UpdateIsTrainingWatched(ctx, c.ID, true)
 		// then
-		if assert.NoError(t, err) {
-			got, err := st.GetCharacter(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.True(t, got.IsTrainingWatched)
-			}
-		}
+		require.NoError(t, err)
+		got, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		assert.True(t, got.IsTrainingWatched)
 	})
 	t.Run("clears the training-notified cache so a new notification can be sent", func(t *testing.T) {
 		// given

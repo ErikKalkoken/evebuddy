@@ -35,16 +35,14 @@ func TestToken(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCharacterToken(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			x, err := st.GetCharacterToken(ctx, c.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, arg.AccessToken, x.AccessToken)
-				xassert.Equal(t, c.ID, x.CharacterID)
-				xassert.Equal(t, arg.ExpiresAt.UTC(), x.ExpiresAt.UTC())
-				assert.True(t, x.Scopes.Equal(arg.Scopes), "got %q, wanted %q", x.Scopes, arg.Scopes)
-				xassert.Equal(t, arg.TokenType, x.TokenType)
-			}
-		}
+		require.NoError(t, err)
+		x, err := st.GetCharacterToken(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, arg.AccessToken, x.AccessToken)
+		xassert.Equal(t, c.ID, x.CharacterID)
+		xassert.Equal(t, arg.ExpiresAt.UTC(), x.ExpiresAt.UTC())
+		assert.True(t, x.Scopes.Equal(arg.Scopes), "got %q, wanted %q", x.Scopes, arg.Scopes)
+		xassert.Equal(t, arg.TokenType, x.TokenType)
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
@@ -53,13 +51,12 @@ func TestToken(t *testing.T) {
 		// when
 		r, err := st.GetCharacterToken(ctx, c.CharacterID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, c.AccessToken, r.AccessToken)
-			xassert.Equal(t, c.CharacterID, r.CharacterID)
-			xassert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
-			xassert.Equal(t, c.RefreshToken, r.RefreshToken)
-			xassert.Equal(t, c.TokenType, r.TokenType)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, c.AccessToken, r.AccessToken)
+		xassert.Equal(t, c.CharacterID, r.CharacterID)
+		xassert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
+		xassert.Equal(t, c.RefreshToken, r.RefreshToken)
+		xassert.Equal(t, c.TokenType, r.TokenType)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -74,13 +71,12 @@ func TestToken(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		o2, err := st.GetCharacterToken(ctx, c.ID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, "changed", o2.AccessToken)
-			xassert.Equal(t, c.ID, o2.CharacterID)
-			xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
-			xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
-			xassert.Equal(t, o1.TokenType, o2.TokenType)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, "changed", o2.AccessToken)
+		xassert.Equal(t, c.ID, o2.CharacterID)
+		xassert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
+		xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
+		xassert.Equal(t, o1.TokenType, o2.TokenType)
 	})
 
 	t.Run("should return correct error when not found", func(t *testing.T) {
@@ -146,10 +142,9 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 			set.Of("alpha", "bravo"),
 		)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, r, 1)
-			xassert.Equal(t, c1.ID, r[0].CharacterID)
-		}
+		require.NoError(t, err)
+		assert.Len(t, r, 1)
+		xassert.Equal(t, c1.ID, r[0].CharacterID)
 	})
 	t.Run("matches any when no roles", func(t *testing.T) {
 		// given
@@ -178,9 +173,8 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 			set.Of("alpha", "bravo"),
 		)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, r, 2)
-		}
+		require.NoError(t, err)
+		assert.Len(t, r, 2)
 	})
 	t.Run("returns empty when no tokens found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

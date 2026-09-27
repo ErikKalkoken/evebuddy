@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetupCrashFile(t *testing.T) {
 	p := filepath.Join(t.TempDir(), crashFileName)
 	err := setupCrashFile(p)
-	if assert.NoError(t, err) {
-		_, err := os.Stat(p)
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+	_, err = os.Stat(p)
+	assert.NoError(t, err)
 }

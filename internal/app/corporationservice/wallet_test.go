@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
@@ -29,9 +30,8 @@ func TestGetWalletBalance(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		got, err := s.GetWalletBalance(ctx, b.CorporationID, app.Division(b.DivisionID))
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, b.Balance, got)
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, b.Balance, got)
 	})
 	t.Run("return not found error", func(t *testing.T) {
 		// when
@@ -71,9 +71,8 @@ func TestWalletBalancesTotal(t *testing.T) {
 		// when
 		got, err := s.GetWalletBalancesTotal(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			xassert.EqualOptional(t, 36, got)
-		}
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 36, got)
 	})
 	t.Run("return empty when no balances found", func(t *testing.T) {
 		// given
@@ -83,8 +82,7 @@ func TestWalletBalancesTotal(t *testing.T) {
 		// when
 		got, err := s.GetWalletBalancesTotal(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, got.IsEmpty())
-		}
+		require.NoError(t, err)
+		assert.True(t, got.IsEmpty())
 	})
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
@@ -120,8 +121,8 @@ func TestDumpData(t *testing.T) {
 		got := s.DumpData("characters")
 		// then
 		var world map[string][]map[string]any
-		if assert.NoError(t, json.Unmarshal([]byte(got), &world)) && assert.Len(t, world["characters"], 1) {
-			assert.EqualValues(t, c.ID, world["characters"][0]["id"])
-		}
+		require.NoError(t, json.Unmarshal([]byte(got), &world))
+		require.Len(t, world["characters"], 1)
+		assert.EqualValues(t, c.ID, world["characters"][0]["id"])
 	})
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -32,15 +33,13 @@ func TestPlanet(t *testing.T) {
 		// when
 		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, c.ID, i.CharacterID)
-				xassert.Equal(t, evePlanet, i.EvePlanet)
-				xassert.Equal(t, lastUpdate, i.LastUpdate)
-				xassert.Equal(t, 3, i.UpgradeLevel)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, i.CharacterID)
+		xassert.Equal(t, evePlanet, i.EvePlanet)
+		xassert.Equal(t, lastUpdate, i.LastUpdate)
+		xassert.Equal(t, 3, i.UpgradeLevel)
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
@@ -65,16 +64,14 @@ func TestPlanet(t *testing.T) {
 		// when
 		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-			if assert.NoError(t, err) {
-				xassert.Equal(t, c.ID, i.CharacterID)
-				xassert.Equal(t, evePlanet, i.EvePlanet)
-				xassert.Equal(t, lastUpdate, i.LastUpdate)
-				xassert.EqualOptional(t, lastNotified, i.LastNotified)
-				xassert.Equal(t, 3, i.UpgradeLevel)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, i.CharacterID)
+		xassert.Equal(t, evePlanet, i.EvePlanet)
+		xassert.Equal(t, lastUpdate, i.LastUpdate)
+		xassert.EqualOptional(t, lastNotified, i.LastNotified)
+		xassert.Equal(t, 3, i.UpgradeLevel)
 	})
 	t.Run("can list planets", func(t *testing.T) {
 		// given
@@ -86,14 +83,13 @@ func TestPlanet(t *testing.T) {
 		// when
 		oo, err := st.ListCharacterPlanets(ctx, c.ID)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 3)
-			assert.ElementsMatch(
-				t,
-				[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
-				[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
-			)
-		}
+		require.NoError(t, err)
+		assert.Len(t, oo, 3)
+		assert.ElementsMatch(
+			t,
+			[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
+			[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
+		)
 	})
 	t.Run("can delete planets", func(t *testing.T) {
 		// given
@@ -105,14 +101,13 @@ func TestPlanet(t *testing.T) {
 		// when
 		err := st.DeleteCharacterPlanet(ctx, c.ID, set.Of(p1.EvePlanet.ID, p2.EvePlanet.ID))
 		// then
-		if assert.NoError(t, err) {
-			oo, err := st.ListCharacterPlanets(ctx, c.ID)
-			if err != nil {
-				t.Fatal(err)
-			}
-			assert.Len(t, oo, 1)
-			assert.ElementsMatch(t, []int64{p3.EvePlanet.ID}, []int64{oo[0].EvePlanet.ID})
+		require.NoError(t, err)
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
+		if err != nil {
+			t.Fatal(err)
 		}
+		assert.Len(t, oo, 1)
+		assert.ElementsMatch(t, []int64{p3.EvePlanet.ID}, []int64{oo[0].EvePlanet.ID})
 	})
 	t.Run("can update last notified", func(t *testing.T) {
 		// given
@@ -127,12 +122,10 @@ func TestPlanet(t *testing.T) {
 		// when
 		err := st.UpdateCharacterPlanetLastNotified(ctx, arg)
 		// then
-		if assert.NoError(t, err) {
-			i, err := st.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
-			if assert.NoError(t, err) {
-				xassert.EqualOptional(t, lastNotified, i.LastNotified)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, lastNotified, i.LastNotified)
 	})
 	t.Run("can list planets from all characters", func(t *testing.T) {
 		// given
@@ -145,13 +138,12 @@ func TestPlanet(t *testing.T) {
 		// when
 		oo, err := st.ListAllCharacterPlanets(ctx)
 		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 3)
-			assert.ElementsMatch(
-				t,
-				[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
-				[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
-			)
-		}
+		require.NoError(t, err)
+		assert.Len(t, oo, 3)
+		assert.ElementsMatch(
+			t,
+			[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
+			[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
+		)
 	})
 }

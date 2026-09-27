@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -45,41 +46,39 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		err := st.CreateCorporationWalletTransaction(ctx, arg)
 		// then
 		region := location.SolarSystem.ValueOrZero().Constellation.Region
-		if assert.NoError(t, err) {
-			i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
-				CorporationID: c.ID,
-				DivisionID:    1,
-				TransactionID: 42,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, client, i.Client)
-				xassert.Equal(t, date.UTC(), i.Date.UTC())
-				xassert.Equal(t, eveType.ID, i.Type.ID)
-				xassert.Equal(t, eveType.Name, i.Type.Name)
-				assert.True(t, i.IsBuy)
-				xassert.Equal(t, 99, i.JournalRefID)
-				xassert.Equal(t, location.ID, i.Location.ID)
-				xassert.Equal(t,
-					&app.EveLocationShort{
-						ID:             location.ID,
-						Name:           optional.New(location.Name),
-						SecurityStatus: i.Location.SecurityStatus,
-					},
-					i.Location,
-				)
-				xassert.Equal(t, c.ID, i.CorporationID)
-				xassert.Equal(t, 7, i.Quantity)
-				xassert.Equal(t, 123.45, i.UnitPrice)
-				xassert.Equal(t, location.ID, i.Location.ID)
-				xassert.Equal(t,
-					&app.EntityShort{
-						ID:   region.ID,
-						Name: region.Name,
-					},
-					i.Region,
-				)
-			}
-		}
+		require.NoError(t, err)
+		i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			TransactionID: 42,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, client, i.Client)
+		xassert.Equal(t, date.UTC(), i.Date.UTC())
+		xassert.Equal(t, eveType.ID, i.Type.ID)
+		xassert.Equal(t, eveType.Name, i.Type.Name)
+		assert.True(t, i.IsBuy)
+		xassert.Equal(t, 99, i.JournalRefID)
+		xassert.Equal(t, location.ID, i.Location.ID)
+		xassert.Equal(t,
+			&app.EveLocationShort{
+				ID:             location.ID,
+				Name:           optional.New(location.Name),
+				SecurityStatus: i.Location.SecurityStatus,
+			},
+			i.Location,
+		)
+		xassert.Equal(t, c.ID, i.CorporationID)
+		xassert.Equal(t, 7, i.Quantity)
+		xassert.Equal(t, 123.45, i.UnitPrice)
+		xassert.Equal(t, location.ID, i.Location.ID)
+		xassert.Equal(t,
+			&app.EntityShort{
+				ID:   region.ID,
+				Name: region.Name,
+			},
+			i.Region,
+		)
 	})
 	t.Run("can list IDs of existing entries for a corporation", func(t *testing.T) {
 		// given
@@ -104,10 +103,9 @@ func TestCorporationWalletTransaction(t *testing.T) {
 			DivisionID:    1,
 		})
 		// then
-		if assert.NoError(t, err) {
-			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		want := set.Of(t1.TransactionID, t2.TransactionID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can list existing entries for a corporation", func(t *testing.T) {
 		// given
@@ -132,13 +130,12 @@ func TestCorporationWalletTransaction(t *testing.T) {
 			DivisionID:    1,
 		})
 		// then
-		if assert.NoError(t, err) {
-			got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletTransaction) int64 {
-				return x.TransactionID
-			})...)
-			want := set.Of(t1.TransactionID, t2.TransactionID)
-			xassert.Equal(t, want, got)
-		}
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletTransaction) int64 {
+			return x.TransactionID
+		})...)
+		want := set.Of(t1.TransactionID, t2.TransactionID)
+		xassert.Equal(t, want, got)
 	})
 	t.Run("can delete transactions", func(t *testing.T) {
 		// given
@@ -148,21 +145,18 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// when
 		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
 		// then
-		if assert.NoError(t, err) {
-			x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
-				CorporationID: e1.CorporationID,
-				DivisionID:    e1.DivisionID,
-			})
-			if assert.NoError(t, err) {
-				xassert.Equal(t, 0, x1.Size())
-			}
-			x2, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
-				CorporationID: e2.CorporationID,
-				DivisionID:    e2.DivisionID,
-			})
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.Size(), 0)
-			}
-		}
+		require.NoError(t, err)
+		x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: e1.CorporationID,
+			DivisionID:    e1.DivisionID,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 0, x1.Size())
+		x2, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: e2.CorporationID,
+			DivisionID:    e2.DivisionID,
+		})
+		require.NoError(t, err)
+		assert.Greater(t, x2.Size(), 0)
 	})
 }
