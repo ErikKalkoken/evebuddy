@@ -150,12 +150,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	characterList := xwidget.NewNavList(
 		xwidget.NewNavListItem(
-			"Character Sheet",
+			"Character",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
 				characterNav.Push(
 					newCharacterAppBar(
-						"Character Sheet",
+						"Character",
 						container.NewAppTabs(
 							container.NewTabItem("Character", u.characterSheet),
 							container.NewTabItem("Corporation", u.characterCorporation),
@@ -333,12 +333,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 
 	corpSheetNav := xwidget.NewNavListItem(
-		"Corporation Sheet",
+		"Corporation",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
 			corpNav.Push(
 				newCorpAppBar(
-					"Corporation Sheet",
+					"Corporation",
 					container.NewAppTabs(
 						container.NewTabItem("Corporation", u.corporationSheet),
 						container.NewTabItem("Members", u.corporationMember),

@@ -326,9 +326,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 	characterNav = xwidget.NewNavDrawer(
 		xwidget.NewNavPage(
-			"Character Sheet",
+			"Character",
 			theme.NewThemedResource(icons.PortraitSvg),
-			newContentPage("Character Sheet", container.NewAppTabs(
+			newContentPage("Character", container.NewAppTabs(
 				container.NewTabItem("Character", u.characterSheet),
 				container.NewTabItem("Corporation", u.characterCorporation),
 				container.NewTabItem("Augmentations", u.characterAugmentations),
@@ -422,9 +422,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	corpSheetItem := xwidget.NewNavPage(
-		"Corporation Sheet",
+		"Corporation",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
-		newContentPage("Corporation Sheet", container.NewAppTabs(
+		newContentPage("Corporation", container.NewAppTabs(
 			container.NewTabItem("Corporation", u.corporationSheet),
 			container.NewTabItem("Members", u.corporationMember),
 		)),

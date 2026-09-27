@@ -601,10 +601,7 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 				),
 			),
 		)
-		r := container.NewStack(
-			container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), c),
-			w.border,
-		)
+		r := container.New(layout.NewCustomPaddedLayout(p, p, p, p), container.NewStack(c, w.border))
 		return widget.NewSimpleRenderer(r)
 	}
 
