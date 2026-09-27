@@ -42,6 +42,18 @@ type corporationOverviewRow struct {
 	walletBalance        optional.Optional[float64]
 }
 
+func (r corporationOverviewRow) allianceName() string {
+	return optional.Map(r.alliance, "", func(v *app.EveEntity) string {
+		return v.Name
+	})
+}
+
+func (r corporationOverviewRow) factionName() string {
+	return optional.Map(r.faction, "", func(v *app.EveEntity) string {
+		return v.Name
+	})
+}
+
 // CorporationOverview shows a grid of cards, one per tracked corporation,
 // summarizing operational health: member count, wallet balance, active
 // industry jobs, active contracts and reinforced structures.
@@ -50,16 +62,18 @@ type CorporationOverview struct {
 
 	OnUpdate func(corporations int)
 
-	filterRun    latestRun
-	footer       *widget.Label
-	columnSorter *xwidget.ColumnSorter[corporationOverviewRow]
-	loadInfo     *widget.Label
-	main         fyne.CanvasObject
-	rows         []corporationOverviewRow
-	rowsFiltered []corporationOverviewRow
-	searchEntry  *xwidget.SearchEntry
-	sortChip     *kxwidget.SortChip
-	u            baseUI
+	filterRun      latestRun
+	footer         *widget.Label
+	columnSorter   *xwidget.ColumnSorter[corporationOverviewRow]
+	loadInfo       *widget.Label
+	main           fyne.CanvasObject
+	rows           []corporationOverviewRow
+	rowsFiltered   []corporationOverviewRow
+	searchEntry    *xwidget.SearchEntry
+	selectAlliance *kxwidget.FilterChipSelect
+	selectFaction  *kxwidget.FilterChipSelect
+	sortChip       *kxwidget.SortChip
+	u              baseUI
 }
 
 func NewCorporationOverview(u baseUI) *CorporationOverview {
@@ -67,6 +81,16 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 		Label: "Name",
 		Sort: func(a, b corporationOverviewRow) int {
 			return xstrings.CompareIgnoreCase(a.name, b.name)
+		},
+	}, {
+		Label: "Alliance",
+		Sort: func(a, b corporationOverviewRow) int {
+			return xstrings.CompareIgnoreCase(a.allianceName(), b.allianceName())
+		},
+	}, {
+		Label: "Faction",
+		Sort: func(a, b corporationOverviewRow) int {
+			return xstrings.CompareIgnoreCase(a.factionName(), b.factionName())
 		},
 	}, {
 		Label: "Members",
@@ -116,6 +140,12 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 		a.main = a.makeList()
 	}
 
+	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
+		a.filterRowsAsync("")
+	})
+	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
+		a.filterRowsAsync("")
+	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -142,11 +172,16 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 }
 
 func (a *CorporationOverview) CreateRenderer() fyne.WidgetRenderer {
+	filter := container.NewHBox(
+		a.selectAlliance,
+		a.selectFaction,
+		a.sortChip,
+	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHBox(a.sortChip))
+		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
 	} else {
-		topBox = container.NewBorder(nil, nil, a.sortChip, nil, a.searchEntry)
+		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -230,16 +265,35 @@ func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
+	alliance := a.selectAlliance.Selected
+	faction := a.selectFaction.Selected
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
+		if alliance != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
+				return r.allianceName() != alliance
+			})
+		}
+		if faction != "" {
+			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
+				return r.factionName() != faction
+			})
+		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
 				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
+
+		allianceOptions := xslices.Map(rows, func(r corporationOverviewRow) string {
+			return r.allianceName()
+		})
+		factionOptions := xslices.Map(rows, func(r corporationOverviewRow) string {
+			return r.factionName()
+		})
 
 		footer := fmt.Sprintf("Showing %d / %d corporations", len(rows), total)
 
@@ -250,6 +304,8 @@ func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
+			a.selectAlliance.SetOptions(allianceOptions)
+			a.selectFaction.SetOptions(factionOptions)
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
@@ -563,6 +619,7 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 	industry.SetToolTip("Active industry jobs")
 	contracts := ttwidget.NewIcon(theme.NewThemedResource(icons.FileSignSvg))
 	contracts.SetToolTip("Active contracts")
+	w.reinforcedIcon.SetToolTip("Reinforced structures")
 
 	logoBorder := &layout.CustomPaddedLayout{
 		TopPadding:    1 * p,
@@ -671,10 +728,8 @@ func (w *corporationCard) set(c corporationOverviewRow) {
 	if v, ok := c.reinforcedStructures.Value(); ok && v > 0 {
 		w.reinforcedCount.SetText(humanize.Comma(int64(v)))
 		w.reinforcedIcon.SetResource(w.resourceReinforced)
-		w.reinforcedIcon.SetToolTip(fmt.Sprintf("%d structure(s) reinforced", v))
 	} else {
 		w.reinforcedCount.SetText("-")
 		w.reinforcedIcon.SetResource(w.resourceNormal)
-		w.reinforcedIcon.SetToolTip("No structures reinforced")
 	}
 }
