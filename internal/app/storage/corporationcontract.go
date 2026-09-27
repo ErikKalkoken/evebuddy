@@ -140,6 +140,27 @@ func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Contex
 	return v2.ValueOrZero(), nil
 }
 
+func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.ContractStatus]) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CountCorporationContractsWithStatus: %d %v: %w", corporationID, statuses, err)
+	}
+	if statuses.Size() == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	var statuses2 []string
+	for s := range statuses.All() {
+		statuses2 = append(statuses2, corporationContractStatusToDBValue[s])
+	}
+	v, err := st.qRO.CountCorporationContractsWithStatus(ctx, queries.CountCorporationContractsWithStatusParams{
+		CorporationID: corporationID,
+		Statuses:      statuses2,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v, nil
+}
+
 func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorporationContractParams) (int64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationContract: %+v: %w", arg, err)

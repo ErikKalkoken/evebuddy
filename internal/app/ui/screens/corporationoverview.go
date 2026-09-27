@@ -439,17 +439,11 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 	}
 
 	if permittedSections.Contains(app.SectionCorporationContracts) {
-		contracts, err := a.u.Corporation().ListCorporationContracts(ctx, corp.ID)
+		active, err := a.u.Corporation().ListActiveCorporationContracts(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
-		var active int
-		for _, ct := range contracts {
-			if ct.Status.IsActive() {
-				active++
-			}
-		}
-		r.activeContracts = optional.New(active)
+		r.activeContracts = optional.New(int(active))
 	}
 
 	if permittedSections.Contains(app.SectionCorporationStructures) {

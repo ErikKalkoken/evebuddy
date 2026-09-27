@@ -100,6 +100,39 @@ func (q *Queries) CalculateCorporationContractsCourierEscrow(ctx context.Context
 	return sum, err
 }
 
+const countCorporationContractsWithStatus = `-- name: CountCorporationContractsWithStatus :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND status IN (/*SLICE:statuses*/?)
+`
+
+type CountCorporationContractsWithStatusParams struct {
+	CorporationID int64
+	Statuses      []string
+}
+
+func (q *Queries) CountCorporationContractsWithStatus(ctx context.Context, arg CountCorporationContractsWithStatusParams) (int64, error) {
+	query := countCorporationContractsWithStatus
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Statuses) > 0 {
+		for _, v := range arg.Statuses {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:statuses*/?", strings.Repeat(",?", len(arg.Statuses))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:statuses*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createCorporationContract = `-- name: CreateCorporationContract :one
 INSERT INTO
     corporation_contracts (

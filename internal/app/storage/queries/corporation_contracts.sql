@@ -31,6 +31,15 @@ WHERE
     AND type = ?
     AND status IN (sqlc.slice('status'));
 
+-- name: CountCorporationContractsWithStatus :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND status IN (sqlc.slice('statuses'));
+
 -- name: CreateCorporationContract :one
 INSERT INTO
     corporation_contracts (
