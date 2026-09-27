@@ -134,12 +134,9 @@ func (s IndustryJobStatus) String() string {
 	return x
 }
 
+// IsActive reports whether a status is considered active.
 func (s IndustryJobStatus) IsActive() bool {
-	switch s {
-	case JobActive, JobReady, JobPaused:
-		return true
-	}
-	return false
+	return IndustryJobStatusActive.Contains(s)
 }
 
 func (s IndustryJobStatus) Display() string {
@@ -159,6 +156,9 @@ func (s IndustryJobStatus) Color() fyne.ThemeColorName {
 	}
 	return theme.ColorNameForeground
 }
+
+// IndustryJobStatusActive defines which status is considered active.
+var IndustryJobStatusActive = set.Of(JobActive, JobReady, JobPaused)
 
 type CharacterIndustryJob struct {
 	Activity           IndustryActivity

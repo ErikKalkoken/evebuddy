@@ -15,6 +15,27 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+func (st *Storage) CountCorporationIndustryJobsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.IndustryJobStatus]) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CountCorporationIndustryJobsWithStatus: %d %v: %w", corporationID, statuses, err)
+	}
+	if statuses.Size() == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	var statuses2 []string
+	for s := range statuses.All() {
+		statuses2 = append(statuses2, jobStatusToDBValue[s])
+	}
+	v, err := st.qRO.CountCorporationIndustryJobsWithStatus(ctx, queries.CountCorporationIndustryJobsWithStatusParams{
+		CorporationID: corporationID,
+		Statuses:      statuses2,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v, nil
+}
+
 func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationIndustryJobs: %d: %w", corporationID, err)
@@ -116,7 +137,6 @@ func (st *Storage) ListAllCorporationIndustryJobs(ctx context.Context) ([]*app.C
 	}
 	return oo, nil
 }
-
 
 func corporationIndustryJobFromDBModel(
 	blueprintTypeName blueprintTypeName,

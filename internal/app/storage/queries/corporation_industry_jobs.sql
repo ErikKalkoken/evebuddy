@@ -1,3 +1,14 @@
+-- name: CountCorporationIndustryJobsWithStatus :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_industry_jobs
+WHERE
+    corporation_id = ?
+    AND status IN (sqlc.slice('statuses'));
+
+;
+
 -- name: DeleteCorporationIndustryJobs :exec
 DELETE FROM corporation_industry_jobs
 WHERE

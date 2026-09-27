@@ -12,7 +12,42 @@ import (
 	"time"
 )
 
+const countCorporationIndustryJobsWithStatus = `-- name: CountCorporationIndustryJobsWithStatus :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_industry_jobs
+WHERE
+    corporation_id = ?
+    AND status IN (/*SLICE:statuses*/?)
+`
+
+type CountCorporationIndustryJobsWithStatusParams struct {
+	CorporationID int64
+	Statuses      []string
+}
+
+func (q *Queries) CountCorporationIndustryJobsWithStatus(ctx context.Context, arg CountCorporationIndustryJobsWithStatusParams) (int64, error) {
+	query := countCorporationIndustryJobsWithStatus
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Statuses) > 0 {
+		for _, v := range arg.Statuses {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:statuses*/?", strings.Repeat(",?", len(arg.Statuses))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:statuses*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteCorporationIndustryJobs = `-- name: DeleteCorporationIndustryJobs :exec
+;
+
 DELETE FROM corporation_industry_jobs
 WHERE
     corporation_id = ?

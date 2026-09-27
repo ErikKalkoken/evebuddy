@@ -31,7 +31,7 @@ import (
 
 type corporationOverviewRow struct {
 	activeContracts      optional.Optional[int]
-	activeIndustryJobs   optional.Optional[int]
+	activeIndustryJobs   optional.Optional[int64]
 	alliance             optional.Optional[*app.EveEntity]
 	corporationID        int64
 	faction              optional.Optional[*app.EveEntity]
@@ -431,17 +431,11 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 	}
 
 	if permittedSections.Contains(app.SectionCorporationIndustryJobs) {
-		jobs, err := a.u.Corporation().ListCorporationIndustryJobs(ctx, corp.ID)
+		v, err := a.u.Corporation().ListActiveCorporationIndustryJobs(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
-		var active int
-		for _, j := range jobs {
-			if j.Status.IsActive() {
-				active++
-			}
-		}
-		r.activeIndustryJobs = optional.New(active)
+		r.activeIndustryJobs = optional.New(v)
 	}
 
 	if permittedSections.Contains(app.SectionCorporationContracts) {
@@ -726,11 +720,11 @@ func (w *corporationCard) set(c corporationOverviewRow) {
 		return humanize.Comma(int64(v)) + " ISK"
 	}))
 
-	w.activeIndustryJobs.SetText(c.activeIndustryJobs.StringFunc("?", func(v int) string {
+	w.activeIndustryJobs.SetText(c.activeIndustryJobs.StringFunc("?", func(v int64) string {
 		if v == 0 {
 			return "-"
 		}
-		return humanize.Comma(int64(v))
+		return humanize.Comma(v)
 	}))
 
 	w.activeContracts.SetText(c.activeContracts.StringFunc("?", func(v int) string {
