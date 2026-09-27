@@ -52,6 +52,27 @@ func init() {
 	}
 }
 
+func (st *Storage) CountCorporationStructuresWithState(ctx context.Context, corporationID int64, states set.Set[app.StructureState]) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CountCorporationStructuresWithState: %d %v: %w", corporationID, states, err)
+	}
+	if states.Size() == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	var states2 []string
+	for s := range states.All() {
+		states2 = append(states2, structureStateToDBValue[s])
+	}
+	v, err := st.qRO.CountCorporationStructuresWithState(ctx, queries.CountCorporationStructuresWithStateParams{
+		CorporationID: corporationID,
+		States:        states2,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v, nil
+}
+
 func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64, structureIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationStructuresByID for corporation %d and structures IDs: %v: %w", corporationID, structureIDs, err)

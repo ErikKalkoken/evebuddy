@@ -30,6 +30,11 @@ func (s *CorporationService) ListStructures(ctx context.Context, corporationID i
 	return s.st.ListCorporationStructures(ctx, corporationID)
 }
 
+// ListReinforcedCorporationStructures returns the amount of reinforced structures in a corporation.
+func (s *CorporationService) ListReinforcedCorporationStructures(ctx context.Context, corporationID int64) (int64, error) {
+	return s.st.CountCorporationStructuresWithState(ctx, corporationID, app.StructureStateReinforced)
+}
+
 func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
 	if arg.section != app.SectionCorporationStructures {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)

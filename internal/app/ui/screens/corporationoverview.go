@@ -30,14 +30,14 @@ import (
 )
 
 type corporationOverviewRow struct {
-	activeContracts      optional.Optional[int]
+	activeContracts      optional.Optional[int64]
 	activeIndustryJobs   optional.Optional[int64]
 	alliance             optional.Optional[*app.EveEntity]
 	corporationID        int64
 	faction              optional.Optional[*app.EveEntity]
 	memberCount          optional.Optional[int]
 	name                 string
-	reinforcedStructures optional.Optional[int]
+	reinforcedStructures optional.Optional[int64]
 	searchTarget         string
 	walletBalance        optional.Optional[float64]
 }
@@ -439,25 +439,19 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 	}
 
 	if permittedSections.Contains(app.SectionCorporationContracts) {
-		active, err := a.u.Corporation().ListActiveCorporationContracts(ctx, corp.ID)
+		v, err := a.u.Corporation().ListActiveCorporationContracts(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
-		r.activeContracts = optional.New(int(active))
+		r.activeContracts = optional.New(v)
 	}
 
 	if permittedSections.Contains(app.SectionCorporationStructures) {
-		structures, err := a.u.Corporation().ListStructures(ctx, corp.ID)
+		v, err := a.u.Corporation().ListReinforcedCorporationStructures(ctx, corp.ID)
 		if err != nil {
 			return r, err
 		}
-		var reinforced int
-		for _, st := range structures {
-			if st.State.IsReinforce() {
-				reinforced++
-			}
-		}
-		r.reinforcedStructures = optional.New(reinforced)
+		r.reinforcedStructures = optional.New(v)
 	}
 
 	return r, nil
@@ -721,11 +715,11 @@ func (w *corporationCard) set(c corporationOverviewRow) {
 		return humanize.Comma(v)
 	}))
 
-	w.activeContracts.SetText(c.activeContracts.StringFunc("?", func(v int) string {
+	w.activeContracts.SetText(c.activeContracts.StringFunc("?", func(v int64) string {
 		if v == 0 {
 			return "-"
 		}
-		return humanize.Comma(int64(v))
+		return humanize.Comma(v)
 	}))
 
 	if v, ok := c.reinforcedStructures.Value(); ok && v > 0 {

@@ -235,6 +235,44 @@ func TestCorporationStructure(t *testing.T) {
 		want := set.Of(o2.StructureID)
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("can count structures with state", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			State:         app.StructureStateArmorReinforce,
+		})
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			State:         app.StructureStateHullReinforce,
+		})
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			State:         app.StructureStateShieldVulnerable,
+		})
+		// structure for a different corporation with a matching state must not be counted
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			State: app.StructureStateArmorReinforce,
+		})
+		// when
+		got, err := st.CountCorporationStructuresWithState(t.Context(), c.ID, set.Of(app.StructureStateArmorReinforce, app.StructureStateHullReinforce))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int64(2), got)
+		}
+	})
+
+	t.Run("count returns error for empty states", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		_, err := st.CountCorporationStructuresWithState(t.Context(), c.ID, set.Set[app.StructureState]{})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestStructureService(t *testing.T) {

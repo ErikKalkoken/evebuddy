@@ -1,3 +1,12 @@
+-- name: CountCorporationStructuresWithState :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_structures
+WHERE
+    corporation_id = ?
+    AND state IN (sqlc.slice('states'));
+
 -- name: DeleteCorporationStructures :exec
 DELETE FROM corporation_structures
 WHERE
