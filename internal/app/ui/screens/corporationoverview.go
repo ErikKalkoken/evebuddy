@@ -186,10 +186,7 @@ func (a *CorporationOverview) makeGrid() *widget.GridWrap {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.u.InfoViewer().Show(&app.EveEntity{
-			Category: app.EveEntityCorporation,
-			ID:       r.corporationID,
-		})
+		go a.u.ShowCorporation(context.Background(), r.corporationID)
 	}
 	return g
 }
@@ -223,10 +220,7 @@ func (a *CorporationOverview) makeList() *widget.List {
 			return
 		}
 		r := a.rowsFiltered[id]
-		a.u.InfoViewer().Show(&app.EveEntity{
-			Category: app.EveEntityCorporation,
-			ID:       r.corporationID,
-		})
+		go a.u.ShowCorporation(context.Background(), r.corporationID)
 	}
 
 	return l

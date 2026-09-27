@@ -629,6 +629,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 			navBar.Select(1)
 		})
 	}
+	u.onShowCorporation = func() {
+		fyne.Do(func() {
+			navBar.Select(2)
+		})
+	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		fyne.Do(func() {

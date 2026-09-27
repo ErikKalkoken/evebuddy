@@ -573,6 +573,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			rail.Select(characterItem)
 		})
 	}
+	u.onShowCorporation = func() {
+		fyne.Do(func() {
+			rail.Select(corporationItem)
+		})
+	}
 
 	togglePermittedSections := func() {
 		sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
