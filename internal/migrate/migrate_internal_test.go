@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplyMigrations(t *testing.T) {
@@ -27,18 +28,15 @@ func TestApplyMigrations(t *testing.T) {
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
-		if assert.NoError(t, err) {
-			applied, err := listMigrationNames(db)
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
-			}
-			tables, err := ListTableNames(db)
-			if assert.NoError(t, err) {
-				names := set.Of(tables...)
-				assert.True(t, names.Contains("alpha"))
-				assert.True(t, names.Contains("bravo"))
-			}
-		}
+		require.NoError(t, err)
+		applied, err := listMigrationNames(db)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
+		tables, err := ListTableNames(db)
+		require.NoError(t, err)
+		names := set.Of(tables...)
+		assert.True(t, names.Contains("alpha"))
+		assert.True(t, names.Contains("bravo"))
 	})
 	t.Run("should apply new migrations only", func(t *testing.T) {
 		// given
@@ -52,18 +50,15 @@ func TestApplyMigrations(t *testing.T) {
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
-		if assert.NoError(t, err) {
-			applied, err := listMigrationNames(db)
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
-			}
-			tables, err := ListTableNames(db)
-			if assert.NoError(t, err) {
-				names := set.Of(tables...)
-				assert.False(t, names.Contains("alpha"))
-				assert.True(t, names.Contains("bravo"))
-			}
-		}
+		require.NoError(t, err)
+		applied, err := listMigrationNames(db)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
+		tables, err := ListTableNames(db)
+		require.NoError(t, err)
+		names := set.Of(tables...)
+		assert.False(t, names.Contains("alpha"))
+		assert.True(t, names.Contains("bravo"))
 	})
 	t.Run("should do nothing when no new migrations", func(t *testing.T) {
 		// given
@@ -80,18 +75,15 @@ func TestApplyMigrations(t *testing.T) {
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
-		if assert.NoError(t, err) {
-			applied, err := listMigrationNames(db)
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
-			}
-			tables, err := ListTableNames(db)
-			if assert.NoError(t, err) {
-				names := set.Of(tables...)
-				assert.False(t, names.Contains("alpha"))
-				assert.False(t, names.Contains("bravo"))
-			}
-		}
+		require.NoError(t, err)
+		applied, err := listMigrationNames(db)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
+		tables, err := ListTableNames(db)
+		require.NoError(t, err)
+		names := set.Of(tables...)
+		assert.False(t, names.Contains("alpha"))
+		assert.False(t, names.Contains("bravo"))
 	})
 }
 
@@ -108,9 +100,8 @@ func TestMigrate(t *testing.T) {
 			t.Fatal(err)
 		}
 		names, err := listMigrationNames(db)
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"test1", "test2"}, names)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, []string{"test1", "test2"}, names)
 	})
 	t.Run("should return true when db is empty", func(t *testing.T) {
 		// given
@@ -118,9 +109,8 @@ func TestMigrate(t *testing.T) {
 		// when
 		r, err := isEmpty(db)
 		// then
-		if assert.NoError(t, err) {
-			assert.True(t, r)
-		}
+		require.NoError(t, err)
+		assert.True(t, r)
 	})
 	t.Run("should return false when db is not empty", func(t *testing.T) {
 		// given
@@ -131,9 +121,8 @@ func TestMigrate(t *testing.T) {
 		// when
 		r, err := isEmpty(db)
 		// then
-		if assert.NoError(t, err) {
-			assert.False(t, r)
-		}
+		require.NoError(t, err)
+		assert.False(t, r)
 	})
 }
 
