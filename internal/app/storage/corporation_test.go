@@ -105,6 +105,22 @@ func TestListCorporations(t *testing.T) {
 			xassert.Equal(t, want, got)
 		}
 	})
+	t.Run("can list corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		// when
+		xx, err := st.ListCorporations(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := set.Of(c1.ID, c2.ID)
+			got := set.Collect(xiter.MapSlice(xx, func(x *app.Corporation) int64 {
+				return x.ID
+			}))
+			xassert.Equal(t, want, got)
+		}
+	})
 	t.Run("can list corporations in short form", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

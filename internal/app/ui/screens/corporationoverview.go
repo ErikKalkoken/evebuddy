@@ -54,9 +54,7 @@ func (r corporationOverviewRow) factionName() string {
 	})
 }
 
-// CorporationOverview shows a grid of cards, one per tracked corporation,
-// summarizing operational health: member count, wallet balance, active
-// industry jobs, active contracts and reinforced structures.
+// CorporationOverview shows a card per tracked corporation with key operational stats.
 type CorporationOverview struct {
 	widget.BaseWidget
 
@@ -459,8 +457,7 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corporationID int64)
 	return r, nil
 }
 
-// corporationCard is a widget that shows a card for a corporation.
-// It has a large version designed for desktop and a small version designed for mobile.
+// corporationCard shows a corporation card, in a large (desktop) and small (mobile) variant.
 type corporationCard struct {
 	widget.BaseWidget
 

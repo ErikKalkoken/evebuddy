@@ -55,7 +55,7 @@ func (st *Storage) GetCorporation(ctx context.Context, corporationID int64) (*ap
 	if err != nil {
 		return nil, fmt.Errorf("get corporation %d: %w", corporationID, convertGetError(err))
 	}
-	o := corporationFromDBModel(r)
+	o := corporationFromGetCorporationRow(r)
 	return o, nil
 }
 
@@ -82,40 +82,71 @@ func (st *Storage) GetAnyCorporation(ctx context.Context) (*app.Corporation, err
 	return o, nil
 }
 
-func corporationFromDBModel(r queries.GetCorporationRow) *app.Corporation {
-	ec := eveCorporationFromDBModel(
-		r.EveCorporation,
+// corporationFromDBModel takes fields individually, not a row struct,
+// so it works across queries whose sqlc-generated row types differ
+// despite embedding EveCorporation the same way.
+func corporationFromDBModel(
+	ec queries.EveCorporation,
+	ceoName, ceoCategory sql.NullString,
+	creatorName, creatorCategory sql.NullString,
+	allianceName, allianceCategory sql.NullString,
+	factionName, factionCategory sql.NullString,
+	stationName, stationCategory sql.NullString,
+) *app.Corporation {
+	o := eveCorporationFromDBModel(
+		ec,
 		nullCEO{
-			id:       r.EveCorporation.CeoID,
-			name:     r.CeoName,
-			category: r.CeoCategory,
+			id:       ec.CeoID,
+			name:     ceoName,
+			category: ceoCategory,
 		},
 		nullCreator{
-			id:       r.EveCorporation.CreatorID,
-			name:     r.CreatorName,
-			category: r.CreatorCategory,
+			id:       ec.CreatorID,
+			name:     creatorName,
+			category: creatorCategory,
 		},
 		nullAlliance{
-			id:       r.EveCorporation.AllianceID,
-			name:     r.AllianceName,
-			category: r.AllianceCategory,
+			id:       ec.AllianceID,
+			name:     allianceName,
+			category: allianceCategory,
 		},
 		nullFaction{
-			id:       r.EveCorporation.FactionID,
-			name:     r.FactionName,
-			category: r.FactionCategory,
+			id:       ec.FactionID,
+			name:     factionName,
+			category: factionCategory,
 		},
 		nullStation{
-			id:       r.EveCorporation.HomeStationID,
-			name:     r.StationName,
-			category: r.StationCategory,
+			id:       ec.HomeStationID,
+			name:     stationName,
+			category: stationCategory,
 		},
 	)
-	o := &app.Corporation{
-		ID:             r.EveCorporation.ID,
-		EveCorporation: ec,
+	return &app.Corporation{
+		ID:             ec.ID,
+		EveCorporation: o,
 	}
-	return o
+}
+
+func corporationFromGetCorporationRow(r queries.GetCorporationRow) *app.Corporation {
+	return corporationFromDBModel(
+		r.EveCorporation,
+		r.CeoName, r.CeoCategory,
+		r.CreatorName, r.CreatorCategory,
+		r.AllianceName, r.AllianceCategory,
+		r.FactionName, r.FactionCategory,
+		r.StationName, r.StationCategory,
+	)
+}
+
+func corporationFromListCorporationsRow(r queries.ListCorporationsRow) *app.Corporation {
+	return corporationFromDBModel(
+		r.EveCorporation,
+		r.CeoName, r.CeoCategory,
+		r.CreatorName, r.CreatorCategory,
+		r.AllianceName, r.AllianceCategory,
+		r.FactionName, r.FactionCategory,
+		r.StationName, r.StationCategory,
+	)
 }
 
 func (st *Storage) GetOrCreateCorporation(ctx context.Context, corporationID int64) (*app.Corporation, error) {
@@ -144,7 +175,7 @@ func (st *Storage) GetOrCreateCorporation(ctx context.Context, corporationID int
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
-		return corporationFromDBModel(r), nil
+		return corporationFromGetCorporationRow(r), nil
 	}()
 	if err != nil {
 		return nil, fmt.Errorf("GetOrCreateCorporation: %d: %w", corporationID, err)
@@ -172,7 +203,19 @@ func (st *Storage) ListOrphanedCorporationIDs(ctx context.Context) (set.Set[int6
 	return ids2, nil
 }
 
-// ListCorporationsShort returns all corporations ordered by name.
+// ListCorporations returns all corporations.
+func (st *Storage) ListCorporations(ctx context.Context) ([]*app.Corporation, error) {
+	rows, err := st.qRO.ListCorporations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list corporations: %w", err)
+	}
+	oo := make([]*app.Corporation, len(rows))
+	for i, r := range rows {
+		oo[i] = corporationFromListCorporationsRow(r)
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort, error) {
 	rows, err := st.qRO.ListCorporationsShort(ctx)
 	if err != nil {

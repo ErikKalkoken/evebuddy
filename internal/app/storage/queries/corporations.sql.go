@@ -136,6 +136,92 @@ func (q *Queries) ListCorporationIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const listCorporations = `-- name: ListCorporations :many
+SELECT
+    ec.id, ec.alliance_id, ec.ceo_id, ec.creator_id, ec.date_founded, ec.description, ec.faction_id, ec.home_station_id, ec.member_count, ec.name, ec.shares, ec.tax_rate, ec.ticker, ec.url, ec.war_eligible,
+    eec.name as ceo_name,
+    eec.category as ceo_category,
+    eer.name as creator_name,
+    eer.category as creator_category,
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
+    eeh.name as station_name,
+    eeh.category as station_category
+FROM
+    corporations co
+    JOIN eve_corporations ec ON ec.id = co.id
+    LEFT JOIN eve_entities AS eec ON eec.id = ec.ceo_id
+    LEFT JOIN eve_entities AS eer ON eer.id = ec.creator_id
+    LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
+    LEFT JOIN eve_entities as eeh ON eeh.id = ec.home_station_id
+`
+
+type ListCorporationsRow struct {
+	EveCorporation   EveCorporation
+	CeoName          sql.NullString
+	CeoCategory      sql.NullString
+	CreatorName      sql.NullString
+	CreatorCategory  sql.NullString
+	AllianceName     sql.NullString
+	AllianceCategory sql.NullString
+	FactionName      sql.NullString
+	FactionCategory  sql.NullString
+	StationName      sql.NullString
+	StationCategory  sql.NullString
+}
+
+func (q *Queries) ListCorporations(ctx context.Context) ([]ListCorporationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCorporationsRow
+	for rows.Next() {
+		var i ListCorporationsRow
+		if err := rows.Scan(
+			&i.EveCorporation.ID,
+			&i.EveCorporation.AllianceID,
+			&i.EveCorporation.CeoID,
+			&i.EveCorporation.CreatorID,
+			&i.EveCorporation.DateFounded,
+			&i.EveCorporation.Description,
+			&i.EveCorporation.FactionID,
+			&i.EveCorporation.HomeStationID,
+			&i.EveCorporation.MemberCount,
+			&i.EveCorporation.Name,
+			&i.EveCorporation.Shares,
+			&i.EveCorporation.TaxRate,
+			&i.EveCorporation.Ticker,
+			&i.EveCorporation.Url,
+			&i.EveCorporation.WarEligible,
+			&i.CeoName,
+			&i.CeoCategory,
+			&i.CreatorName,
+			&i.CreatorCategory,
+			&i.AllianceName,
+			&i.AllianceCategory,
+			&i.FactionName,
+			&i.FactionCategory,
+			&i.StationName,
+			&i.StationCategory,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCorporationsShort = `-- name: ListCorporationsShort :many
 SELECT
     cp.id,

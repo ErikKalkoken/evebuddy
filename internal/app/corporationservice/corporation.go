@@ -60,6 +60,11 @@ func (s *CorporationService) HasCorporation(ctx context.Context, corporationID i
 	return ids.Contains(corporationID), nil
 }
 
+// ListCorporations returns all tracked corporations.
+func (s *CorporationService) ListCorporations(ctx context.Context) ([]*app.Corporation, error) {
+	return s.st.ListCorporations(ctx)
+}
+
 // ListCorporationsShort returns all corporations in short form.
 func (s *CorporationService) ListCorporationsShort(ctx context.Context) ([]*app.EntityShort, error) {
 	return s.st.ListCorporationsShort(ctx)
