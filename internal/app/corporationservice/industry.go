@@ -36,6 +36,11 @@ func (s *CorporationService) ListCorporationIndustryJobs(ctx context.Context, co
 	return s.st.ListCorporationIndustryJobs(ctx, corporationID)
 }
 
+// ListActiveCorporationIndustryJobs returns the amount of active industry jobs in a corporation.
+func (s *CorporationService) ListActiveCorporationIndustryJobs(ctx context.Context, corporationID int64) (int64, error) {
+	return s.st.CountCorporationIndustryJobsWithStatus(ctx, corporationID, app.IndustryJobStatusActive)
+}
+
 var jobStatusFromESIValue = map[string]app.IndustryJobStatus{
 	"active":    app.JobActive,
 	"cancelled": app.JobCancelled,

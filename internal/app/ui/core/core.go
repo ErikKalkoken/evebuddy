@@ -94,6 +94,7 @@ type baseUI struct {
 	onSetCharacter                  func(*app.Character)
 	onShowCharacter                 func()
 	onSetCorporation                func(*app.Corporation)
+	onShowCorporation               func()
 	onShowAndRun                    func()
 	onUpdateCorporationWalletTotals func(balance optional.Optional[float64])
 	onUpdateMissingScope            func(characterCount int)
@@ -129,6 +130,7 @@ type baseUI struct {
 	corporationContracts       *screens.Contracts
 	corporationIndyJobs        *screens.IndustryJobs
 	corporationMember          *screens.Members
+	corporationOverview        *screens.CorporationOverview
 	corporationSheet           *screens.CorporationSheet
 	corporationStructures      *screens.Structures
 	corporationWallets         map[app.Division]*screens.CorporationWallet
@@ -438,6 +440,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.corporationIndyJobs = screens.NewJobsForCorporation(u)
 
 	u.corporationMember = screens.NewMembers(u)
+	u.corporationOverview = screens.NewCorporationOverview(u)
 	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationSheet = screens.NewCorporationSheet(u, true)
 	for _, d := range app.Divisions {
@@ -677,6 +680,20 @@ func (u *baseUI) ShowCharacter(ctx context.Context, characterID int64) {
 		if err != nil {
 			slog.Error("Failed to load character", "characterID", characterID, "error", err)
 			u.DisplaySnackbar(fmt.Sprintf("Failed to load character: %s", u.ErrorDisplay(err)))
+			return
+		}
+	}
+}
+
+func (u *baseUI) ShowCorporation(ctx context.Context, corporationID int64) {
+	corporation := u.corporation.Load()
+	if u.onShowCorporation != nil {
+		u.onShowCorporation()
+	}
+	if corporation.IDOrZero() != corporationID {
+		if err := u.LoadCorporation(ctx, corporationID); err != nil {
+			slog.Error("Failed to load corporation", "corporationID", corporationID, "error", err)
+			u.DisplaySnackbar(fmt.Sprintf("Failed to load corporation: %s", u.ErrorDisplay(err)))
 			return
 		}
 	}

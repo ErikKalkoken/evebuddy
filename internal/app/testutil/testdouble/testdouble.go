@@ -223,9 +223,10 @@ type UIFake struct {
 	iw                *infoviewer.InfoViewer
 	settings          *settings.Settings
 	signals           *app.Signals
-	showCharacterFunc func(ctx context.Context, characterID int64)
-	showSnackbarFunc  func(text string)
-	windows           map[string]fyne.Window
+	showCharacterFunc   func(ctx context.Context, characterID int64)
+	showCorporationFunc func(ctx context.Context, corporationID int64)
+	showSnackbarFunc    func(text string)
+	windows             map[string]fyne.Window
 }
 
 type UIParams struct {
@@ -234,6 +235,7 @@ type UIParams struct {
 	Signals             *app.Signals
 	Storage             *storage.Storage
 	ShowCharacterFunc   func(ctx context.Context, characterID int64)
+	ShowCorporationFunc func(ctx context.Context, corporationID int64)
 	DisplaySnackbarFunc func(text string)
 	Settings            *settings.Settings
 }
@@ -287,17 +289,18 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Settings:           arg.Settings,
 	})
 	u := &UIFake{
-		app:               arg.App,
-		cs:                cs,
-		eis:               testutil.NewEveImageServiceStub(),
-		eus:               eus,
-		isMobile:          arg.IsMobile,
-		rs:                rs,
-		showCharacterFunc: arg.ShowCharacterFunc,
-		showSnackbarFunc:  arg.DisplaySnackbarFunc,
-		signals:           arg.Signals,
-		settings:          arg.Settings,
-		windows:           make(map[string]fyne.Window),
+		app:                 arg.App,
+		cs:                  cs,
+		eis:                 testutil.NewEveImageServiceStub(),
+		eus:                 eus,
+		isMobile:            arg.IsMobile,
+		rs:                  rs,
+		showCharacterFunc:   arg.ShowCharacterFunc,
+		showCorporationFunc: arg.ShowCorporationFunc,
+		showSnackbarFunc:    arg.DisplaySnackbarFunc,
+		signals:             arg.Signals,
+		settings:            arg.Settings,
+		windows:             make(map[string]fyne.Window),
 	}
 	u.iw = infoviewer.New(u)
 	return u
@@ -392,6 +395,12 @@ func (u *UIFake) Settings() *settings.Settings {
 func (u *UIFake) ShowCharacter(ctx context.Context, characterID int64) {
 	if f := u.showCharacterFunc; f != nil {
 		f(ctx, characterID)
+	}
+}
+
+func (u *UIFake) ShowCorporation(ctx context.Context, corporationID int64) {
+	if f := u.showCorporationFunc; f != nil {
+		f(ctx, corporationID)
 	}
 }
 

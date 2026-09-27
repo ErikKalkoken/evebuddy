@@ -4,6 +4,7 @@ package screens
 
 import (
 	"context"
+	"image/color"
 
 	"fyne.io/fyne/v2"
 
@@ -34,9 +35,13 @@ type baseUI interface {
 	Settings() *settings.Settings
 	SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource))
 	ShowCharacter(ctx context.Context, characterID int64)
+	ShowCorporation(ctx context.Context, corporationID int64)
 	DisplaySnackbar(text string)
 	Signals() *app.Signals
 	UpdateMailIndicator(ctx context.Context)
 }
 
 type loadFuncAsync func(int64, int, func(fyne.Resource))
+
+// Fyne color for dark background
+var colorDarkBackground = color.NRGBA{R: 0x17, G: 0x17, B: 0x18, A: 0xff}

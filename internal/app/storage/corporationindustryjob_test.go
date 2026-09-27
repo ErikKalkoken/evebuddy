@@ -322,4 +322,40 @@ func TestCorporationIndustryJob(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, app.JobUnknown, j2.Status)
 	})
+	t.Run("can count jobs with status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobActive,
+		})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobReady,
+		})
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobDelivered,
+		})
+		// job for a different corporation with a matching status must not be counted
+		factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			Status: app.JobActive,
+		})
+		// when
+		got, err := st.CountCorporationIndustryJobsWithStatus(ctx, c.ID, set.Of(app.JobActive, app.JobReady))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int64(2), got)
+		}
+	})
+	t.Run("count returns error for empty statuses", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		_, err := st.CountCorporationIndustryJobsWithStatus(ctx, c.ID, set.Set[app.IndustryJobStatus]{})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }

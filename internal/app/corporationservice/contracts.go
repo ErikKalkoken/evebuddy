@@ -55,6 +55,11 @@ func (s *CorporationService) ListCorporationContracts(ctx context.Context, corpo
 	return s.st.ListCorporationContracts(ctx, corporationID)
 }
 
+// ListActiveCorporationContracts returns the amount of active contracts in a corporation.
+func (s *CorporationService) ListActiveCorporationContracts(ctx context.Context, corporationID int64) (int64, error) {
+	return s.st.CountCorporationContractsWithStatus(ctx, corporationID, app.ContractStatusActive)
+}
+
 func (s *CorporationService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CorporationContractItem, error) {
 	return s.st.ListCorporationContractItems(ctx, contractID)
 }

@@ -11,6 +11,39 @@ import (
 	"strings"
 )
 
+const countCorporationStructuresWithState = `-- name: CountCorporationStructuresWithState :one
+SELECT
+    COUNT (*)
+FROM
+    corporation_structures
+WHERE
+    corporation_id = ?
+    AND state IN (/*SLICE:states*/?)
+`
+
+type CountCorporationStructuresWithStateParams struct {
+	CorporationID int64
+	States        []string
+}
+
+func (q *Queries) CountCorporationStructuresWithState(ctx context.Context, arg CountCorporationStructuresWithStateParams) (int64, error) {
+	query := countCorporationStructuresWithState
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.States) > 0 {
+		for _, v := range arg.States {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:states*/?", strings.Repeat(",?", len(arg.States))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:states*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteCorporationStructures = `-- name: DeleteCorporationStructures :exec
 DELETE FROM corporation_structures
 WHERE

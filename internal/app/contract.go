@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -91,12 +93,11 @@ func (cs ContractStatus) String() string {
 }
 
 func (cs ContractStatus) IsActive() bool {
-	switch cs.consolidated() {
-	case contractConsolidatedInProgress, contractConsolidatedOutstanding:
-		return true
-	}
-	return false
+	return ContractStatusActive.Contains(cs)
 }
+
+// ContractStatusActive defines which status is considered active.
+var ContractStatusActive = set.Of(ContractStatusOutstanding, ContractStatusInProgress)
 
 func (cs ContractStatus) IsHistory() bool {
 	return cs.consolidated() == contractConsolidatedHistory

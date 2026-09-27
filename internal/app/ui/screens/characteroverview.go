@@ -540,6 +540,10 @@ type characterCard struct {
 	characterName            *widget.Label
 	corporationLogo          *xwidget.TappableImage
 	isSmall                  bool
+	loadAlliance             loadFuncAsync
+	loadCharacter            loadFuncAsync
+	loadCorporation          loadFuncAsync
+	portraitBorder           *canvas.Rectangle
 	mails                    *widget.Label
 	portrait                 *canvas.Image
 	resourceTrainingActive   fyne.Resource
@@ -552,9 +556,6 @@ type characterCard struct {
 	solarSystem              *xwidget.RichText
 	trainingStatus           *ttwidget.Icon
 	wallet                   *widget.Label
-	loadCharacter            loadFuncAsync
-	loadCorporation          loadFuncAsync
-	loadAlliance             loadFuncAsync
 }
 
 func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *characterCard {
@@ -591,6 +592,7 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 		loadCorporation:          loadCorporation,
 		mails:                    makeLabel(numberTemplate),
 		portrait:                 portrait,
+		portraitBorder:           canvas.NewRectangle(color.Transparent),
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
 		resourceTrainingExpired:  theme.NewErrorThemedResource(resTraining),
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
@@ -624,8 +626,11 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
-	w.border.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	w.border.CornerRadius = theme.InputRadiusSize()
 
+	w.portraitBorder.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+	w.portraitBorder.StrokeWidth = 1
+	w.portraitBorder.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	return w
 }
 
@@ -640,7 +645,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 					w.background,
 					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
 						container.NewVBox(
-							w.portrait,
+							container.NewStack(w.portrait, w.portraitBorder),
 							container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
 								container.NewHBox(
 									w.corporationLogo, layout.NewSpacer(), w.allianceLogo,
@@ -702,6 +707,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 	ship.SetToolTip("Current ship")
 	location := ttwidget.NewIcon(theme.NewThemedResource(icons.MapMarkerSvg))
 	location.SetToolTip("Current location")
+
 	c := container.NewBorder(
 		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.characterName),
 		container.New(
@@ -713,47 +719,17 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 				container.New(layout.NewCustomPaddedLayout(0, 0, -p, p), w.trainingStatus),
 				w.skillpoints,
 			),
-			container.NewBorder(
-				nil,
-				nil,
-				wallet,
-				nil,
-				w.wallet,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				mails,
-				nil,
-				w.mails,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				ship,
-				nil,
-				w.ship,
-			),
-			container.NewBorder(
-				nil,
-				nil,
-				location,
-				nil,
-				w.solarSystem,
-			),
+			container.NewBorder(nil, nil, wallet, nil, w.wallet),
+			container.NewBorder(nil, nil, mails, nil, w.mails),
+			container.NewBorder(nil, nil, ship, nil, w.ship),
+			container.NewBorder(nil, nil, location, nil, w.solarSystem),
 		),
 		nil,
 		nil,
 		container.NewStack(
-			w.portrait,
-			container.New(
-				&xlayout.BottomLeftLayout{},
-				container.New(logoBorder, w.corporationLogo),
-			),
-			container.New(
-				&xlayout.BottomRightLayout{},
-				container.New(logoBorder, w.allianceLogo),
-			),
+			container.NewStack(w.portrait, w.portraitBorder),
+			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.corporationLogo)),
+			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.allianceLogo)),
 		),
 	)
 	r := container.NewStack(

@@ -150,12 +150,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	characterList := xwidget.NewNavList(
 		xwidget.NewNavListItem(
-			"Character Sheet",
+			"Character",
 			theme.NewThemedResource(icons.PortraitSvg),
 			func() {
 				characterNav.Push(
 					newCharacterAppBar(
-						"Character Sheet",
+						"Character",
 						container.NewAppTabs(
 							container.NewTabItem("Character", u.characterSheet),
 							container.NewTabItem("Corporation", u.characterCorporation),
@@ -333,12 +333,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 
 	corpSheetNav := xwidget.NewNavListItem(
-		"Corporation Sheet",
+		"Corporation",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
 			corpNav.Push(
 				newCorpAppBar(
-					"Corporation Sheet",
+					"Corporation",
 					container.NewAppTabs(
 						container.NewTabItem("Corporation", u.corporationSheet),
 						container.NewTabItem("Members", u.corporationMember),
@@ -629,6 +629,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 			navBar.Select(1)
 		})
 	}
+	u.onShowCorporation = func() {
+		fyne.Do(func() {
+			navBar.Select(2)
+		})
+	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		fyne.Do(func() {
@@ -889,15 +894,27 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	)
 
 	navItemCharacters := xwidget.NewNavListItem(
-		"Character Overview",
+		"Characters",
 		theme.NewThemedResource(icons.PortraitSvg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Character Overview", u.characterOverview))
+			homeNav.Push(xwidget.NewAppBar("Characters", u.characterOverview))
 		},
 	)
 	u.characterOverview.OnUpdate = func(characters int) {
 		navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
 		navItemCharacters.Refresh()
+	}
+
+	navItemCorporations := xwidget.NewNavListItem(
+		"Corporations",
+		theme.NewThemedResource(icons.StarCircleOutlineSvg),
+		func() {
+			homeNav.Push(xwidget.NewAppBar("Corporations", u.corporationOverview))
+		},
+	)
+	u.corporationOverview.OnUpdate = func(corporations int) {
+		navItemCorporations.Supporting = fmt.Sprintf("%d corporations", corporations)
+		navItemCorporations.Refresh()
 	}
 
 	unifiedCommunicationsMenu := fyne.NewMenu("")
@@ -1019,6 +1036,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 
 	homeList = xwidget.NewNavList(
 		navItemCharacters,
+		navItemCorporations,
 		navItemAssetSearch,
 		xwidget.NewNavListItem(
 			"Clones",

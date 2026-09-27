@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
@@ -52,8 +54,11 @@ func (ss StructureState) String() string {
 }
 
 func (ss StructureState) IsReinforce() bool {
-	return ss == StructureStateArmorReinforce || ss == StructureStateHullReinforce
+	return StructureStateReinforced.Contains(ss)
 }
+
+// StructureStateReinforced defines which state is considered reinforced.
+var StructureStateReinforced = set.Of(StructureStateArmorReinforce, StructureStateHullReinforce)
 
 func (ss StructureState) Display() string {
 	return xstrings.Title(ss.String())

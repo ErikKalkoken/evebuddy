@@ -270,6 +270,48 @@ func TestCorporationContract(t *testing.T) {
 		want := set.Of(e2.ContractID, e3.ContractID)
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("can count contracts with status", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Status:        app.ContractStatusOutstanding,
+		})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Status:        app.ContractStatusFinished,
+		})
+		// contract for a different corporation with a matching status must not be counted
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			Status: app.ContractStatusOutstanding,
+		})
+
+		// when
+		got, err := st.CountCorporationContractsWithStatus(t.Context(), c.ID, set.Of(app.ContractStatusOutstanding, app.ContractStatusInProgress))
+
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int64(2), got)
+		}
+	})
+
+	t.Run("count returns error for empty statuses", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+
+		// when
+		_, err := st.CountCorporationContractsWithStatus(t.Context(), c.ID, set.Set[app.ContractStatus]{})
+
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestCorporationContractBid(t *testing.T) {

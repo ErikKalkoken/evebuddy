@@ -154,6 +154,23 @@ func TestCorporation_GetAnyCorporation(t *testing.T) {
 	})
 }
 
+func TestCorporation_ListCorporations(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ctx := context.Background()
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+	t.Run("can list corporations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		got, err := s.ListCorporations(ctx)
+		if assert.NoError(t, err) {
+			ids := set.Collect(xiter.MapSlice(got, func(x *app.Corporation) int64 { return x.ID }))
+			xassert.Equal(t, set.Of(c1.ID, c2.ID), ids)
+		}
+	})
+}
+
 func TestCorporation_HasCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
