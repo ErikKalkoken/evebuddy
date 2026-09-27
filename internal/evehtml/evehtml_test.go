@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestXMLtoMarkdown(t *testing.T) {
@@ -61,9 +62,8 @@ func TestXMLtoMarkdown(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("in: %s out: %s", tc.in, tc.want), func(t *testing.T) {
 			got, err := evehtml.ToMarkdown(tc.in)
-			if assert.NoError(t, err) {
-				assert.Equal(t, tc.want, got)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

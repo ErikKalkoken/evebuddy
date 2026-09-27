@@ -6,6 +6,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
@@ -33,18 +34,16 @@ func TestAvailableUpdate(t *testing.T) {
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, data))
 		v, err := github.AvailableUpdate(t.Context(), "ErikKalkoken", "janice", "0.1.0")
-		if assert.NoError(t, err) {
-			assert.Equal(t, github.VersionInfo{"0.1.0", "0.2.0", "0.2.0", true}, v)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, github.VersionInfo{"0.1.0", "0.2.0", "0.2.0", true}, v)
 	})
 	t.Run("should report when remote has no newer version", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, data))
 		v, err := github.AvailableUpdate(t.Context(), "ErikKalkoken", "janice", "0.2.0")
-		if assert.NoError(t, err) {
-			assert.Equal(t, github.VersionInfo{"0.2.0", "0.2.0", "0.2.0", false}, v)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, github.VersionInfo{"0.2.0", "0.2.0", "0.2.0", false}, v)
 	})
 	t.Run("should report error when request failed", func(t *testing.T) {
 		httpmock.Reset()

@@ -32,15 +32,14 @@ func TestCharacterSkillqueue(t *testing.T) {
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1, item2}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, characterID, sq.CharacterID())
-			xassert.Equal(t, 2, sq.Size())
-			xassert.Equal(t, item1, sq.Active())
-			xassert.Equal(t, item2, sq.Item(1))
-			assert.InDelta(t, 0.5, sq.CompletionP().ValueOrZero(), 0.01)
-			assert.True(t, sq.IsActive())
-			xassert.EqualOptional(t, 2, sq.RemainingCount())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, characterID, sq.CharacterID())
+		xassert.Equal(t, 2, sq.Size())
+		xassert.Equal(t, item1, sq.Active())
+		xassert.Equal(t, item2, sq.Item(1))
+		assert.InDelta(t, 0.5, sq.CompletionP().ValueOrZero(), 0.01)
+		assert.True(t, sq.IsActive())
+		xassert.EqualOptional(t, 2, sq.RemainingCount())
 	})
 	t.Run("can return information about an empty skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -61,15 +60,14 @@ func TestCharacterSkillqueue(t *testing.T) {
 		item1.FinishDate.Clear()
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, characterID, sq.CharacterID())
-			xassert.Equal(t, 1, sq.Size())
-			assert.Nil(t, sq.Active())
-			xassert.Equal(t, item1, sq.Item(0))
-			assert.True(t, sq.CompletionP().IsEmpty())
-			assert.False(t, sq.IsActive())
-			assert.True(t, sq.RemainingCount().IsEmpty())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, characterID, sq.CharacterID())
+		xassert.Equal(t, 1, sq.Size())
+		assert.Nil(t, sq.Active())
+		xassert.Equal(t, item1, sq.Item(0))
+		assert.True(t, sq.CompletionP().IsEmpty())
+		assert.False(t, sq.IsActive())
+		assert.True(t, sq.RemainingCount().IsEmpty())
 	})
 	t.Run("should exclude completed skills from remaining count", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -90,10 +88,9 @@ func TestCharacterSkillqueue(t *testing.T) {
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item0, item1, item2}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			assert.True(t, sq.IsActive())
-			xassert.EqualOptional(t, 2, sq.RemainingCount())
-		}
+		require.NoError(t, err)
+		assert.True(t, sq.IsActive())
+		xassert.EqualOptional(t, 2, sq.RemainingCount())
 	})
 	t.Run("can return information about an completed skill queue", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -104,15 +101,14 @@ func TestCharacterSkillqueue(t *testing.T) {
 		})
 		cs := MyCS{items: []*app.CharacterSkillqueueItem{item1}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			xassert.Equal(t, characterID, sq.CharacterID())
-			xassert.Equal(t, 1, sq.Size())
-			assert.Nil(t, sq.Active())
-			xassert.Equal(t, item1, sq.Item(0))
-			assert.True(t, sq.CompletionP().IsEmpty())
-			assert.False(t, sq.IsActive())
-			assert.True(t, sq.RemainingCount().IsEmpty())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, characterID, sq.CharacterID())
+		xassert.Equal(t, 1, sq.Size())
+		assert.Nil(t, sq.Active())
+		xassert.Equal(t, item1, sq.Item(0))
+		assert.True(t, sq.CompletionP().IsEmpty())
+		assert.False(t, sq.IsActive())
+		assert.True(t, sq.RemainingCount().IsEmpty())
 	})
 }
 
@@ -151,9 +147,8 @@ func TestCharacterSkillqueue_Update(t *testing.T) {
 		// when
 		err := sq.Update(ctx, cs, 0)
 		// then
-		if assert.NoError(t, err) {
-			xassert.Equal(t, 0, sq.Size())
-		}
+		require.NoError(t, err)
+		xassert.Equal(t, 0, sq.Size())
 	})
 	t.Run("should return error when fetching items fails", func(t *testing.T) {
 		sq := app.NewCharacterSkillqueue()
@@ -221,9 +216,8 @@ func TestCharacterSkillqueue_RemainingTime(t *testing.T) {
 			QueuePosition: 1,
 		})}}
 		err := sq.Update(ctx, cs, characterID)
-		if assert.NoError(t, err) {
-			assert.True(t, sq.RemainingTime().IsEmpty())
-		}
+		require.NoError(t, err)
+		assert.True(t, sq.RemainingTime().IsEmpty())
 	})
 }
 

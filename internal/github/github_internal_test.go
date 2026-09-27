@@ -7,6 +7,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAvailableUpdateInternal(t *testing.T) {
@@ -32,9 +33,8 @@ func TestAvailableUpdateInternal(t *testing.T) {
 			if tc.hasError {
 				assert.Error(t, err)
 			} else {
-				if assert.NoError(t, err) {
-					assert.Equal(t, tc.updateInfo, u)
-				}
+				require.NoError(t, err)
+				assert.Equal(t, tc.updateInfo, u)
 			}
 		})
 	}
@@ -50,18 +50,16 @@ func TestFetchGithubLatest(t *testing.T) {
 				"tag_name": "v0.2.0",
 			}))
 		r, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "v0.2.0", r)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "v0.2.0", r)
 	})
 	t.Run("should return zero string when version not found", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{}))
 		r, err := fetchGitHubLatest(t.Context(), "ErikKalkoken", "janice")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "", r)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "", r)
 	})
 	t.Run("should report error when request failed", func(t *testing.T) {
 		httpmock.Reset()
