@@ -146,9 +146,9 @@ func TestCreateTag(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Alpha", got.Name)
 		tags, err := st.ListTagsByName(ctx)
-		if assert.NoError(t, err) && assert.Len(t, tags, 1) {
-			assert.Equal(t, "Alpha", tags[0].Name)
-		}
+		require.NoError(t, err)
+		require.Len(t, tags, 1)
+		assert.Equal(t, "Alpha", tags[0].Name)
 	})
 }
 
@@ -204,10 +204,10 @@ func TestListTagsByName(t *testing.T) {
 		// when
 		got, err := s.ListTagsByName(ctx)
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 2) {
-			assert.Equal(t, "Alpha", got[0].Name)
-			assert.Equal(t, "Zulu", got[1].Name)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 2)
+		assert.Equal(t, "Alpha", got[0].Name)
+		assert.Equal(t, "Zulu", got[1].Name)
 	})
 }
 
@@ -225,9 +225,9 @@ func TestRenameTag(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		tags, err := st.ListTagsByName(ctx)
-		if assert.NoError(t, err) && assert.Len(t, tags, 1) {
-			assert.Equal(t, "New", tags[0].Name)
-		}
+		require.NoError(t, err)
+		require.Len(t, tags, 1)
+		assert.Equal(t, "New", tags[0].Name)
 	})
 }
 

@@ -614,10 +614,10 @@ func TestFetchRoutes(t *testing.T) {
 		}
 		got, err := s.FetchRoutes(ctx, []app.EveRouteHeader{r1, r2})
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 2) {
-			xassert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
-			xassert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 2)
+		xassert.Equal(t, []*app.EveSolarSystem{a1, a2, a3}, got[r1])
+		xassert.Equal(t, []*app.EveSolarSystem{b1, b2, b3}, got[r2])
 	})
 }
 

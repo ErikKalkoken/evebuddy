@@ -118,8 +118,8 @@ func TestListNotifications(t *testing.T) {
 		// when
 		got, err := cs.ListNotifications(t.Context(), c.ID)
 		// then
-		if assert.NoError(t, err) && assert.Len(t, got, 1) {
-			assert.Equal(t, n.NotificationID, got[0].NotificationID)
-		}
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, n.NotificationID, got[0].NotificationID)
 	})
 }
