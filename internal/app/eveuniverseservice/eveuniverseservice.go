@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type StatusCache interface {
@@ -31,6 +32,7 @@ type EVEUniverseService struct {
 
 	concurrencyLimit int
 	esiClient        *esi.APIClient
+	scheduler        *xsync.TaskGroup
 	scs              StatusCache
 	sfg              singleflight.Group
 	signals          *app.Signals
@@ -63,6 +65,7 @@ func New(arg Params) *EVEUniverseService {
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
 		Now:              func() time.Time { return time.Now().UTC() },
+		scheduler:        new(xsync.TaskGroup),
 		scs:              arg.StatusCacheService,
 		signals:          arg.Signals,
 		st:               arg.Storage,

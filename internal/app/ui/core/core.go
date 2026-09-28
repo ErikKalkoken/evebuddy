@@ -583,6 +583,7 @@ func (u *baseUI) ShowAndRun() {
 	u.signals.BeginShutdown()
 	u.cs.StopUpdateScheduler()
 	u.rs.StopUpdateScheduler()
+	u.eus.StopUpdateScheduler()
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}
