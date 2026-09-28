@@ -113,7 +113,8 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 		if err := s.authClient.RefreshToken(ctx, at); err != nil {
 			return nil, err
 		}
-		if err = s.st.UpdateOrCreateCharacterToken(ctx, storage.UpdateOrCreateCharacterTokenParams{
+		// Persist even if canceled: the refresh already happened and the old token may be invalid.
+		if err = s.st.UpdateOrCreateCharacterToken(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken:  at.AccessToken,
 			CharacterID:  int64(at.CharacterID),
 			ExpiresAt:    at.ExpiresAt,

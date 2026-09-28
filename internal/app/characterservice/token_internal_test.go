@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/eveauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -76,6 +77,50 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 		xassert.Equal(t, "refresh-new", token.RefreshToken)
 		assert.True(t, token.ExpiresAt.After(time.Now()))
 	})
+	t.Run("should persist refreshed token when canceled after refresh", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  "access-old",
+			CharacterID:  character.ID,
+			ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
+			RefreshToken: "refresh-old",
+		})
+		token2 := factory.CreateToken(app.Token{
+			AccessToken:   "access-new",
+			CharacterID:   character.ID,
+			CharacterName: character.EveCharacter.Name,
+			RefreshToken:  "refresh-new",
+		})
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		cs := NewFake(Params{Storage: st, AuthClient: authClientCancelAfterRefresh{
+			AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
+			cancel:         cancel,
+		}})
+		// when
+		changed, err := cs.ensureValidToken(ctx, token)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterToken(context.Background(), character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "access-new", x.AccessToken)
+		xassert.Equal(t, "refresh-new", x.RefreshToken)
+	})
+}
+
+// authClientCancelAfterRefresh cancels the ctx after a successful refresh.
+type authClientCancelAfterRefresh struct {
+	testutil.AuthClientStub
+	cancel func()
+}
+
+func (s authClientCancelAfterRefresh) RefreshToken(ctx context.Context, token *eveauth.Token) error {
+	err := s.AuthClientStub.RefreshToken(ctx, token)
+	s.cancel()
+	return err
 }
 
 func TestTokenSource_New(t *testing.T) {
