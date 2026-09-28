@@ -28,14 +28,14 @@ func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
 	err := s.scheduler.Run(context.Background(),
 		func(ctx context.Context) {
 			xsync.RunEvery(ctx, d, func(ctx context.Context) {
-				if err := s.notifyCharactersIfNeeded(ctx); err != nil && ctx.Err() == nil {
+				if err := s.notifyCharactersIfNeeded(ctx); err != nil && !app.IsCanceled(ctx, err) {
 					slog.Error("Failed to notify characters", "error", err)
 				}
 			})
 		},
 		func(ctx context.Context) {
 			xsync.RunEvery(ctx, d, func(ctx context.Context) {
-				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil && ctx.Err() == nil {
+				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil && !app.IsCanceled(ctx, err) {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			})
@@ -170,7 +170,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		var level slog.Level
-		if errors.Is(err, app.ErrCanceled) || ctx.Err() != nil {
+		if app.IsCanceled(ctx, err) {
 			level = slog.LevelDebug
 		} else {
 			level = slog.LevelError
@@ -474,7 +474,7 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
-	if errors.Is(err, app.ErrCanceled) {
+	if app.IsCanceled(ctx, err) {
 		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section, "error", err)
 		// Clear StartedAt so the section doesn't show as running after a restart.
 		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterSectionStatusParams{

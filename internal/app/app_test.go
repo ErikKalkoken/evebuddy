@@ -203,3 +203,27 @@ func TestError(t *testing.T) {
 		xassert.Equal(t, "400 Bad Request: my error", got)
 	})
 }
+
+func TestIsCanceled(t *testing.T) {
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	live := context.Background()
+	cases := []struct {
+		name string
+		ctx  context.Context
+		err  error
+		want bool
+	}{
+		{"nil error", canceled, nil, false},
+		{"canceled ctx", canceled, errors.New("dummy"), true},
+		{"wrapped sentinel", live, fmt.Errorf("x: %w", app.ErrCanceled), true},
+		{"wrapped context canceled", live, fmt.Errorf("x: %w", context.Canceled), true},
+		{"plain error", live, errors.New("dummy"), false},
+		{"deadline exceeded", live, fmt.Errorf("x: %w", context.DeadlineExceeded), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			xassert.Equal(t, tc.want, app.IsCanceled(tc.ctx, tc.err))
+		})
+	}
+}

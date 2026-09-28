@@ -68,7 +68,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 
 func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
-		if errors.Is(err, app.ErrCanceled) || ctx.Err() != nil {
+		if app.IsCanceled(ctx, err) {
 			slog.Debug("Failed to update general section", "section", section, "err", err)
 			return
 		}
@@ -201,7 +201,7 @@ func (s *EVEUniverseService) updateSection(ctx context.Context, section app.EveU
 }
 
 func (s *EVEUniverseService) recordUpdateFailed(ctx context.Context, arg eveUniverseSectionUpdateParams, err error) {
-	if errors.Is(err, app.ErrCanceled) {
+	if app.IsCanceled(ctx, err) {
 		slog.Debug("General section update canceled", "section", arg.section, "error", err)
 		// Clear StartedAt so the section doesn't show as running after a restart.
 		o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateGeneralSectionStatusParams{

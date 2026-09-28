@@ -4,6 +4,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/url"
@@ -56,6 +57,14 @@ var (
 	ErrInvalid       = errors.New("invalid parameters")
 	ErrNotFound      = errors.New("object not found")
 )
+
+// IsCanceled reports whether err is from a canceled operation.
+func IsCanceled(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	return ctx.Err() != nil || errors.Is(err, ErrCanceled) || errors.Is(err, context.Canceled)
+}
 
 // VariableDateFormat returns a variable format for [time.Time] values.
 func VariableDateFormat(t time.Time) string {
