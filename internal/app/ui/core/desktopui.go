@@ -691,6 +691,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.onAppStopped = func() {
 		u.saveAppState()
 	}
+	u.onBeginShutdown = statusBar.stop
 	u.onUpdateStatus = func(ctx context.Context) {
 		go func() {
 			u.setCharacterSwitchMenu(

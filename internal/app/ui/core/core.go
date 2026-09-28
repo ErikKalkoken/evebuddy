@@ -90,6 +90,7 @@ type baseUI struct {
 	hideMailIndicator               func()
 	onAppFirstStarted               func()
 	onAppStopped                    func()
+	onBeginShutdown                 func()
 	onAppTerminated                 func()
 	onSetCharacter                  func(*app.Character)
 	onShowCharacter                 func()
@@ -581,6 +582,9 @@ func (u *baseUI) ShowAndRun() {
 	u.window.ShowAndRun()
 	slog.Info("Shutting down app")
 	u.signals.BeginShutdown()
+	if u.onBeginShutdown != nil {
+		u.onBeginShutdown()
+	}
 	u.cs.StopUpdateScheduler()
 	u.rs.StopUpdateScheduler()
 	u.eus.StopUpdateScheduler()
