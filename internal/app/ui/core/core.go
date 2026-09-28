@@ -582,7 +582,7 @@ func (u *baseUI) ShowAndRun() {
 	slog.Info("Shutting down app")
 	u.signals.BeginShutdown()
 	u.cs.StopUpdateScheduler()
-	slog.Info("App terminated")
+	u.rs.StopUpdateScheduler()
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}

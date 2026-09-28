@@ -19,19 +19,35 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// StartUpdateScheduler starts the update ticker.
 func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
-	go func() {
-		for {
-			err := s.UpdateCorporationsIfNeeded(context.Background(), false)
-			if err != nil && !errors.Is(err, context.Canceled) {
+	err := s.scheduler.Run(context.Background(), func(ctx context.Context) {
+		xsync.RunEvery(ctx, d, func(ctx context.Context) {
+			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && ctx.Err() == nil {
 				slog.Error("Failed to update corporations", "error", err)
 			}
-			<-time.Tick(d)
-		}
-	}()
+		})
+	})
+	if errors.Is(err, xsync.ErrTaskGroupStopped) {
+		slog.Info("Corporation update scheduler not started: shutting down")
+		return
+	}
+	if err != nil {
+		slog.Warn("Corporation update scheduler not started", "error", err)
+		return
+	}
 	slog.Info("Corporation update scheduler started")
+}
+
+// StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
+func (s *CorporationService) StopUpdateScheduler() {
+	if !s.scheduler.Stop() {
+		return
+	}
+	slog.Info("Corporation update scheduler stopped")
 }
 
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -96,7 +112,11 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 		},
 	)
 	if err != nil {
-		slog.Error("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
+		logErr := slog.Error
+		if errors.Is(err, app.ErrCanceled) || ctx.Err() != nil {
+			logErr = slog.Debug
+		}
+		logErr("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
 		return
 	}
 	needsRefresh := hasChanged || forceUpdate
@@ -302,23 +322,15 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 	}
 	key := fmt.Sprintf("update-corporation-section-%s-%d", arg.section, arg.corporationID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
-		return f(ctx, arg)
+		hasChanged, err := f(ctx, arg)
+		if err != nil && ctx.Err() != nil {
+			// Tag with the ctx used for the fetch; a follower's own ctx may not be canceled.
+			err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
+		}
+		return hasChanged, err
 	})
 	if err != nil {
-		slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)
-		errorMessage := err.Error()
-		startedAt := optional.Optional[time.Time]{}
-		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
-			CorporationID: arg.corporationID,
-			ErrorMessage:  &errorMessage,
-			Section:       arg.section,
-			StartedAt:     &startedAt,
-		})
-		if err2 != nil {
-			slog.Error("record error for failed section update", "error", err2)
-		} else {
-			s.scs.SetCorporationSection(o)
-		}
+		s.recordUpdateFailed(ctx, arg, err)
 		return false, fmt.Errorf("update corporation section from ESI for %+v: %w", arg, err)
 	}
 	slog.Info(
@@ -329,6 +341,37 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 		"hasChanged", hasChanged,
 	)
 	return hasChanged, err
+}
+
+func (s *CorporationService) recordUpdateFailed(ctx context.Context, arg corporationSectionUpdateParams, err error) {
+	if errors.Is(err, app.ErrCanceled) {
+		slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section, "error", err)
+		// Clear StartedAt so the section doesn't show as running after a restart.
+		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCorporationSectionStatusParams{
+			CorporationID: arg.corporationID,
+			Section:       arg.section,
+			StartedAt:     new(optional.Optional[time.Time]),
+		})
+		if err2 != nil {
+			slog.Debug("clear started for canceled section update", "corporationID", arg.corporationID, "error", err2)
+			return
+		}
+		s.scs.SetCorporationSection(o)
+		return
+	}
+	slog.Error("Corporation section update failed", "corporationID", arg.corporationID, "section", arg.section, "error", err)
+	errorMessage := err.Error()
+	o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
+		CorporationID: arg.corporationID,
+		ErrorMessage:  &errorMessage,
+		Section:       arg.section,
+		StartedAt:     new(optional.Optional[time.Time]),
+	})
+	if err2 != nil {
+		slog.Error("record error for failed section update", "corporationID", arg.corporationID, "error", err2)
+		return
+	}
+	s.scs.SetCorporationSection(o)
 }
 
 // updateSectionIfChanged updates a character section if it has changed

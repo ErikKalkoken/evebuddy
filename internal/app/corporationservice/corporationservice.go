@@ -3,7 +3,6 @@ package corporationservice
 import (
 	"context"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -15,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // Cache defines a cache.
@@ -48,11 +48,8 @@ type CorporationService struct {
 	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
+	scheduler        *xsync.TaskGroup
 	st               *storage.Storage
-
-	mu              sync.Mutex
-	schedulerCancel func()
-	schedulerDone   chan struct{}
 }
 
 type Params struct {
@@ -102,6 +99,7 @@ func New(arg Params) *CorporationService {
 		cs:               arg.CharacterService,
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
+		scheduler:        new(xsync.TaskGroup),
 		scs:              arg.StatusCacheService,
 		settings:         arg.Settings,
 		signals:          arg.Signals,

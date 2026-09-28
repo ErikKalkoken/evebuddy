@@ -443,6 +443,7 @@ func main() {
 		u := core.NewMobileUI(params)
 		u.ShowAndRun()
 	}
+	slog.Info("Shutdown completed")
 }
 
 // realtime represents the current time.
