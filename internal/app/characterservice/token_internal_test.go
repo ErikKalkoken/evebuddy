@@ -111,6 +111,80 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 	})
 }
 
+func TestCharacterService_EnsureValidToken_SingleflightLeaderCanceled(t *testing.T) {
+	_, st, factory := testutil.NewDBOnDisk(t)
+	character := factory.CreateCharacter()
+	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+		AccessToken:  "access-old",
+		CharacterID:  character.ID,
+		ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
+		RefreshToken: "refresh-old",
+	})
+	token2 := factory.CreateToken(app.Token{
+		AccessToken:   "access-new",
+		CharacterID:   character.ID,
+		CharacterName: character.EveCharacter.Name,
+		RefreshToken:  "refresh-new",
+	})
+	ac := authClientBlockRefresh{
+		AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
+		entered:        make(chan struct{}),
+	}
+	cs := NewFake(Params{Storage: st, AuthClient: ac})
+	getToken := func() *app.CharacterToken {
+		x, err := st.GetCharacterToken(context.Background(), character.ID)
+		require.NoError(t, err)
+		return x
+	}
+
+	// leader: cancelable ctx, e.g. tied to the update scheduler
+	ctxLeader, cancelLeader := context.WithCancel(context.Background())
+	var errLeader error
+	leaderDone := make(chan struct{})
+	go func() {
+		defer close(leaderDone)
+		_, errLeader = cs.ensureValidToken(ctxLeader, getToken())
+	}()
+	select {
+	case <-ac.entered:
+		// the leader's refresh is now in flight
+	case <-time.After(time.Second):
+		t.Fatal("leader never reached the refresh")
+	}
+
+	// follower: independent, never-canceled ctx, e.g. from a manual reload
+	tokenFollower := getToken()
+	var errFollower error
+	followerDone := make(chan struct{})
+	go func() {
+		defer close(followerDone)
+		_, errFollower = cs.ensureValidToken(context.Background(), tokenFollower)
+	}()
+	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
+
+	// when
+	cancelLeader()
+	<-leaderDone
+	<-followerDone
+
+	// then
+	assert.ErrorIs(t, errLeader, app.ErrCanceled)
+	assert.ErrorIs(t, errFollower, app.ErrCanceled, "follower must see the leader's cancel as a cancel")
+	xassert.Equal(t, "refresh-old", getToken().RefreshToken)
+}
+
+// authClientBlockRefresh blocks the refresh until its ctx is canceled.
+type authClientBlockRefresh struct {
+	testutil.AuthClientStub
+	entered chan struct{}
+}
+
+func (s authClientBlockRefresh) RefreshToken(ctx context.Context, token *eveauth.Token) error {
+	close(s.entered)
+	<-ctx.Done()
+	return ctx.Err()
+}
+
 // authClientCancelAfterRefresh cancels the ctx after a successful refresh.
 type authClientCancelAfterRefresh struct {
 	testutil.AuthClientStub

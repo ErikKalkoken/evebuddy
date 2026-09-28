@@ -102,32 +102,11 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 	}
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 	token2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("ensureValidToken-%d", token.ID), func() (*app.CharacterToken, error) {
-		token2, err := s.st.GetCharacterToken(ctx, token.CharacterID)
-		if err != nil {
-			return nil, err
+		token2, err := s.refreshToken(ctx, token.CharacterID)
+		if err != nil && ctx.Err() != nil {
+			// Tag with the ctx used for the refresh; a follower's own ctx may not be canceled.
+			err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
 		}
-		if token2.RemainsValid(tokenTimeout) {
-			return token2, nil
-		}
-		at := token2.AuthToken()
-		if err := s.authClient.RefreshToken(ctx, at); err != nil {
-			return nil, err
-		}
-		// Persist even if canceled: the refresh already happened and the old token may be invalid.
-		if err = s.st.UpdateOrCreateCharacterToken(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterTokenParams{
-			AccessToken:  at.AccessToken,
-			CharacterID:  int64(at.CharacterID),
-			ExpiresAt:    at.ExpiresAt,
-			RefreshToken: at.RefreshToken,
-			Scopes:       set.Of(at.Scopes...),
-			TokenType:    at.TokenType,
-		}); err != nil {
-			return nil, err
-		}
-		slog.Info("Token refreshed", "characterID", token.CharacterID)
-		token2.AccessToken = at.AccessToken
-		token2.RefreshToken = at.RefreshToken
-		token2.ExpiresAt = at.ExpiresAt
 		return token2, err
 	})
 	if err != nil {
@@ -135,6 +114,36 @@ func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.Char
 	}
 	*token = *token2
 	return true, err
+}
+
+func (s *CharacterService) refreshToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
+	token, err := s.st.GetCharacterToken(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	if token.RemainsValid(tokenTimeout) {
+		return token, nil
+	}
+	at := token.AuthToken()
+	if err := s.authClient.RefreshToken(ctx, at); err != nil {
+		return nil, err
+	}
+	// Persist even if canceled: the refresh already happened and the old token may be invalid.
+	if err = s.st.UpdateOrCreateCharacterToken(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterTokenParams{
+		AccessToken:  at.AccessToken,
+		CharacterID:  int64(at.CharacterID),
+		ExpiresAt:    at.ExpiresAt,
+		RefreshToken: at.RefreshToken,
+		Scopes:       set.Of(at.Scopes...),
+		TokenType:    at.TokenType,
+	}); err != nil {
+		return nil, err
+	}
+	slog.Info("Token refreshed", "characterID", characterID)
+	token.AccessToken = at.AccessToken
+	token.RefreshToken = at.RefreshToken
+	token.ExpiresAt = at.ExpiresAt
+	return token, nil
 }
 
 type tokenSource struct {
