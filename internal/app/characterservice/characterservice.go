@@ -81,7 +81,7 @@ type CharacterService struct {
 	sig                     *singleinstance.Group
 	signals                 *app.Signals
 	st                      *storage.Storage
-	scheduler               *xsync.TaskGroup
+	tasks                   *xsync.TaskGroup
 }
 
 type Params struct {
@@ -138,7 +138,7 @@ func New(arg Params) *CharacterService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
-		scheduler:        new(xsync.TaskGroup),
+		tasks:            xsync.NewTaskGroup(context.Background()),
 		sendDesktopNotification: func(_, _ string) {
 			slog.Warn("Desktop notifications not configured")
 		},

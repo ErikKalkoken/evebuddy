@@ -32,7 +32,7 @@ type EVEUniverseService struct {
 
 	concurrencyLimit int
 	esiClient        *esi.APIClient
-	scheduler        *xsync.TaskGroup
+	tasks            *xsync.TaskGroup
 	scs              StatusCache
 	sfg              singleflight.Group
 	signals          *app.Signals
@@ -65,7 +65,7 @@ func New(arg Params) *EVEUniverseService {
 		concurrencyLimit: -1, // Default is no limit
 		esiClient:        arg.ESIClient,
 		Now:              func() time.Time { return time.Now().UTC() },
-		scheduler:        new(xsync.TaskGroup),
+		tasks:            xsync.NewTaskGroup(context.Background()),
 		scs:              arg.StatusCacheService,
 		signals:          arg.Signals,
 		st:               arg.Storage,

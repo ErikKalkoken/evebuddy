@@ -25,7 +25,7 @@ import (
 // StartUpdateScheduler starts the update tickers.
 func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
 	// Separate loops so slow updates don't delay notifications.
-	err := s.scheduler.Run(context.Background(),
+	err := s.tasks.Run(
 		func(ctx context.Context) {
 			xsync.RunEvery(ctx, d, func(ctx context.Context) {
 				if err := s.notifyCharactersIfNeeded(ctx); err != nil && !app.IsCanceled(ctx, err) {
@@ -52,9 +52,9 @@ func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
 	slog.Info("Character update scheduler started")
 }
 
-// StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
+// StopUpdateScheduler cancels the update scheduler and background jobs and waits for them.
 func (s *CharacterService) StopUpdateScheduler() {
-	if !s.scheduler.Stop() {
+	if !s.tasks.Stop() {
 		return
 	}
 	slog.Info("Character update scheduler stopped")
@@ -202,8 +202,8 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 
 	switch section {
 	case app.SectionCharacterMailHeaders:
-		go func() {
-			ctx, cancel := context.WithCancel(context.Background())
+		ok := s.tasks.Go(func(ctx context.Context) {
+			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			key := fmt.Sprintf("cancel-DownloadMissingMailBodies-%d-%s", characterID, s.signals.PseudoUniqueID())
 			s.signals.CharacterRemoved.AddListener(func(_ context.Context, c *app.EntityShort) {
@@ -215,10 +215,13 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 				s.signals.CharacterRemoved.RemoveListener(key)
 			}()
 			_, err := s.DownloadMissingMailBodies(ctx, characterID)
-			if err != nil {
+			if err != nil && !app.IsCanceled(ctx, err) {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
 			}
-		}()
+		})
+		if !ok {
+			slog.Debug("Skipped downloading mail bodies: shutting down", "characterID", characterID)
+		}
 		if s.settings.NotifyMailsEnabled() {
 			earliest := s.settings.NotifyMailsEarliest()
 			if err := s.NotifyMails(ctx, characterID, earliest, s.sendDesktopNotification); err != nil {

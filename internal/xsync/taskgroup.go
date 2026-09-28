@@ -11,83 +11,68 @@ var (
 	ErrTaskGroupStopped = errors.New("task group stopped")
 )
 
-// A TaskGroup manages the starting and stopping of goroutines.
-// Start it with Run and stop it with Stop.
+// A TaskGroup runs goroutines that are canceled and awaited together.
+// Long-running tasks are started with Run and one-off jobs with Go.
 // Once stopped it can't be started again.
-// The zero value is ready to use.
+// Use [NewTaskGroup] to create one.
 type TaskGroup struct {
 	mu      sync.Mutex
+	ctx     context.Context
 	cancel  func()
-	done    chan struct{}
-	stopped bool
+	wg      sync.WaitGroup
+	running bool
 }
 
-// Run starts the task group and runs each task in its own goroutine.
-// Tasks must return when ctx is canceled. Stop waits for all of them.
-func (g *TaskGroup) Run(ctx context.Context, tasks ...func(context.Context)) error {
-	ctx, err := g.start(ctx)
-	if err != nil {
-		return err
+// NewTaskGroup returns a task group whose goroutines are canceled with ctx or Stop.
+func NewTaskGroup(ctx context.Context) *TaskGroup {
+	ctx, cancel := context.WithCancel(ctx)
+	return &TaskGroup{ctx: ctx, cancel: cancel}
+}
+
+// Run starts the long-running tasks, each in its own goroutine.
+// Tasks must return when ctx is canceled.
+// Returns [ErrTaskGroupStopped] after Stop and [ErrTaskGroupRunning] when called twice.
+func (g *TaskGroup) Run(tasks ...func(context.Context)) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.ctx.Err() != nil {
+		return ErrTaskGroupStopped
 	}
-	var wg sync.WaitGroup
+	if g.running {
+		return ErrTaskGroupRunning
+	}
+	g.running = true
 	for _, t := range tasks {
-		wg.Go(func() {
-			t(ctx)
+		g.wg.Go(func() {
+			t(g.ctx)
 		})
 	}
-	go func() {
-		wg.Wait()
-		g.markStopped()
-	}()
 	return nil
 }
 
-// start starts the task group and returns the context for its tasks.
-func (g *TaskGroup) start(ctx context.Context) (context.Context, error) {
+// Go starts a one-off job and reports whether it was started.
+// The job must return when ctx is canceled.
+// Can be used before, during or after Run, but not after Stop.
+func (g *TaskGroup) Go(job func(context.Context)) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.stopped {
-		return nil, ErrTaskGroupStopped
-	}
-	if g.cancel != nil {
-		return nil, ErrTaskGroupRunning
-	}
-	g.done = make(chan struct{})
-	ctx, cancel := context.WithCancel(ctx)
-	g.cancel = cancel
-	return ctx, nil
-}
-
-// markStopped reports that all tasks have stopped.
-// It is a no-op before start or when already marked.
-func (g *TaskGroup) markStopped() {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.done == nil {
-		return
-	}
-	select {
-	case <-g.done:
-		return // already marked
-	default:
-	}
-	close(g.done)
-	g.cancel()
-}
-
-// Stop stops the task group, waits for its tasks to finish
-// and reports whether it was running.
-// Stop before Run also prevents any later Run.
-func (g *TaskGroup) Stop() bool {
-	g.mu.Lock()
-	g.stopped = true
-	cancel := g.cancel
-	done := g.done
-	g.mu.Unlock()
-	if cancel == nil {
+	if g.ctx.Err() != nil {
 		return false
 	}
-	cancel()
-	<-done
+	g.wg.Go(func() {
+		job(g.ctx)
+	})
 	return true
+}
+
+// Stop cancels all tasks and jobs and waits for them to finish.
+// Reports whether Run had been called, so callers can log only when it was.
+func (g *TaskGroup) Stop() bool {
+	g.mu.Lock()
+	wasRunning := g.running
+	g.running = false
+	g.cancel()
+	g.mu.Unlock()
+	g.wg.Wait()
+	return wasRunning
 }

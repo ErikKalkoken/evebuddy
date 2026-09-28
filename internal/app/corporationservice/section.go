@@ -24,7 +24,7 @@ import (
 
 // StartUpdateScheduler starts the update ticker.
 func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
-	err := s.scheduler.Run(context.Background(), func(ctx context.Context) {
+	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
 			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsCanceled(ctx, err) {
 				slog.Error("Failed to update corporations", "error", err)
@@ -44,7 +44,7 @@ func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
 
 // StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
 func (s *CorporationService) StopUpdateScheduler() {
-	if !s.scheduler.Stop() {
+	if !s.tasks.Stop() {
 		return
 	}
 	slog.Info("Corporation update scheduler stopped")

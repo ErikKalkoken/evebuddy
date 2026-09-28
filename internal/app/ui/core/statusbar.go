@@ -52,7 +52,7 @@ type statusBar struct {
 	eveClock          *StatusBarItem
 	eveStatus         *StatusBarItem
 	eveStatusError    string
-	tasks             xsync.TaskGroup
+	tasks             *xsync.TaskGroup
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *StatusBarItem
@@ -63,6 +63,7 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	ac := xwidget.NewActivity()
 	ac.SetToolTip("Synchronizing with game server...")
 	a := &statusBar{
+		tasks:             xsync.NewTaskGroup(context.Background()),
 		updatingIndicator: ac,
 		u:                 u,
 	}
@@ -223,7 +224,7 @@ func (a *statusBar) start() {
 			})
 		})
 	}
-	if err := a.tasks.Run(context.Background(), tasks...); err != nil {
+	if err := a.tasks.Run(tasks...); err != nil {
 		slog.Info("Status bar tickers not started", "error", err)
 	}
 }

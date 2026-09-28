@@ -48,7 +48,7 @@ type CorporationService struct {
 	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
-	scheduler        *xsync.TaskGroup
+	tasks            *xsync.TaskGroup
 	st               *storage.Storage
 }
 
@@ -99,7 +99,7 @@ func New(arg Params) *CorporationService {
 		cs:               arg.CharacterService,
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
-		scheduler:        new(xsync.TaskGroup),
+		tasks:            xsync.NewTaskGroup(context.Background()),
 		scs:              arg.StatusCacheService,
 		settings:         arg.Settings,
 		signals:          arg.Signals,

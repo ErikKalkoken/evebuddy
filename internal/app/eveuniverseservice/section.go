@@ -20,7 +20,7 @@ import (
 
 // StartUpdateScheduler starts the update ticker.
 func (s *EVEUniverseService) StartUpdateScheduler(d time.Duration) {
-	err := s.scheduler.Run(context.Background(), func(ctx context.Context) {
+	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
 			s.UpdateSectionsIfNeeded(ctx, false)
 		})
@@ -38,7 +38,7 @@ func (s *EVEUniverseService) StartUpdateScheduler(d time.Duration) {
 
 // StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
 func (s *EVEUniverseService) StopUpdateScheduler() {
-	if !s.scheduler.Stop() {
+	if !s.tasks.Stop() {
 		return
 	}
 	slog.Info("EVEUniverse update scheduler stopped")
