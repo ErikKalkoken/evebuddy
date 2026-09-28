@@ -21,7 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
+func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
 	go func() {
 		for {
 			go func() {
@@ -32,6 +32,7 @@ func (s *CorporationService) StartUpdateTickerCorporations(d time.Duration) {
 			<-time.Tick(d)
 		}
 	}()
+	slog.Info("Corporation update scheduler started")
 }
 
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {

@@ -21,24 +21,64 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *CharacterService) StartUpdateTickerCharacters(d time.Duration) {
+// StartUpdateScheduler starts the update tickers.
+func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
+	s.mu.Lock()
+	if s.schedulerCancel != nil {
+		s.mu.Unlock()
+		slog.Warn("character update scheduler already started")
+		return
+	}
+	s.schedulerDone = make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	s.schedulerCancel = cancel
+	s.mu.Unlock()
+
+	ticker := time.NewTicker(d)
 	go func() {
+		var wg sync.WaitGroup
+	loop:
 		for {
-			ctx := context.Background()
-			go func() {
-				if err := s.notifyCharactersIfNeeded(ctx); err != nil {
+			wg.Go(func() {
+				err := s.notifyCharactersIfNeeded(ctx)
+				if err != nil && !errors.Is(err, context.Canceled) {
 					slog.Error("Failed to notify characters", "error", err)
 				}
-			}()
-
-			go func() {
-				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil {
+			})
+			wg.Go(func() {
+				err := s.UpdateCharactersIfNeeded(ctx, false)
+				if err != nil && !errors.Is(err, context.Canceled) {
 					slog.Error("Failed to update characters", "error", err)
 				}
-			}()
-			<-time.Tick(d)
+			})
+			wg.Wait()
+			select {
+			case <-ctx.Done():
+				break loop
+			case <-ticker.C:
+			}
 		}
+		s.mu.Lock()
+		close(s.schedulerDone)
+		s.schedulerCancel()
+		s.mu.Unlock()
+		ticker.Stop()
 	}()
+	slog.Info("Character update scheduler started")
+}
+
+// StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
+func (s *CharacterService) StopUpdateScheduler() {
+	s.mu.Lock()
+	cancel := s.schedulerCancel
+	done := s.schedulerDone
+	s.mu.Unlock()
+	if cancel == nil {
+		return
+	}
+	cancel()
+	<-done
+	slog.Info("Character update scheduler stopped")
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
@@ -60,48 +100,6 @@ func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUp
 	wg.Wait()
 	slog.Debug("Finished updating characters", "characters", characters, "forceUpdate", forceUpdate)
 	return nil
-}
-
-func (s *CharacterService) notifyCharactersIfNeeded(ctx context.Context) error {
-	characters, err := s.ListCharacters(ctx)
-	if err != nil {
-		return err
-	}
-	if len(characters) == 0 {
-		return nil
-	}
-	var wg sync.WaitGroup
-	for _, c := range characters {
-		if c.IsTrainingWatched && s.settings.NotifyTrainingEnabled() {
-			wg.Go(func() {
-				err := s.NotifyExpiredTrainingForWatched(ctx, c.ID, s.sendDesktopNotification)
-				if err != nil {
-					slog.Error("Notify expired training", "characterID", c.ID, "error", err)
-				}
-			})
-		}
-	}
-	slog.Debug("Started notifying characters", "characters", characters)
-	wg.Wait()
-	slog.Debug("Finished notifying characters", "characters", characters)
-	return nil
-}
-
-func (s *CharacterService) notifyNewCommunications(ctx context.Context, characterID int64) {
-	earliest := s.settings.NotifyCommunicationsEarliest()
-	xx := s.settings.NotificationTypesEnabled()
-	var typesEnabled set.Set[app.EveNotificationType]
-	for x := range xx.All() {
-		nt, found := app.EveNotificationTypeFromString(x)
-		if !found {
-			continue
-		}
-		typesEnabled.Add(nt)
-	}
-	err := s.NotifyNotifications(ctx, characterID, earliest, typesEnabled)
-	if err != nil {
-		slog.Error("Notify communications", "characterID", characterID, "error", err)
-	}
 }
 
 // UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
@@ -192,7 +190,16 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 // to make sure they are refreshed when data changes.
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
-		slog.Error("Failed to process update for character section",
+		var level slog.Level
+		if errors.Is(err, context.Canceled) {
+			level = slog.LevelDebug
+		} else {
+			level = slog.LevelError
+		}
+		slog.Log(
+			ctx,
+			level,
+			"Failed to process update for character section",
 			"characterID", characterID,
 			"section", section,
 			"forcedUpdate", forceUpdate,
@@ -483,6 +490,10 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
+	if errors.Is(err, context.Canceled) {
+		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section, "error", err)
+		return
+	}
 	slog.Error("Character section update failed", "characterID", arg.characterID, "section", arg.section, "error", err)
 	errorMessage := err.Error()
 	o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{

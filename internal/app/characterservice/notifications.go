@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -305,4 +306,46 @@ func (s *CharacterService) loadEntitiesForNotifications(ctx context.Context, cha
 		}
 	}
 	return nil
+}
+
+func (s *CharacterService) notifyCharactersIfNeeded(ctx context.Context) error {
+	characters, err := s.ListCharacters(ctx)
+	if err != nil {
+		return err
+	}
+	if len(characters) == 0 {
+		return nil
+	}
+	var wg sync.WaitGroup
+	for _, c := range characters {
+		if c.IsTrainingWatched && s.settings.NotifyTrainingEnabled() {
+			wg.Go(func() {
+				err := s.NotifyExpiredTrainingForWatched(ctx, c.ID, s.sendDesktopNotification)
+				if err != nil {
+					slog.Error("Notify expired training", "characterID", c.ID, "error", err)
+				}
+			})
+		}
+	}
+	slog.Debug("Started notifying characters", "characters", characters)
+	wg.Wait()
+	slog.Debug("Finished notifying characters", "characters", characters)
+	return nil
+}
+
+func (s *CharacterService) notifyNewCommunications(ctx context.Context, characterID int64) {
+	earliest := s.settings.NotifyCommunicationsEarliest()
+	xx := s.settings.NotificationTypesEnabled()
+	var typesEnabled set.Set[app.EveNotificationType]
+	for x := range xx.All() {
+		nt, found := app.EveNotificationTypeFromString(x)
+		if !found {
+			continue
+		}
+		typesEnabled.Add(nt)
+	}
+	err := s.NotifyNotifications(ctx, characterID, earliest, typesEnabled)
+	if err != nil {
+		slog.Error("Notify communications", "characterID", characterID, "error", err)
+	}
 }

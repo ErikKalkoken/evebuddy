@@ -295,7 +295,7 @@ func main() {
 			},
 		},
 	}
-	rhc1.Logger = slog.Default()
+	rhc1.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
 	rhc1.ResponseLogHook = xgoesi.LogResponse
 	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
 	esiClient := goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
@@ -311,7 +311,7 @@ func main() {
 		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
-	rhc2.Logger = slog.Default()
+	rhc2.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
 	rhc2.ResponseLogHook = xgoesi.LogResponse
 
 	// init shared objects

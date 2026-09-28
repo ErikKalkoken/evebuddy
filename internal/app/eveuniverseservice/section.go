@@ -17,13 +17,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
+func (s *EVEUniverseService) StartUpdateScheduler(d time.Duration) {
 	go func() {
 		for {
 			go s.UpdateSectionsIfNeeded(context.Background(), false)
 			<-time.Tick(d)
 		}
 	}()
+	slog.Info("EVEUniverse update scheduler started")
 }
 
 func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {

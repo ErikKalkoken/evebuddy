@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
@@ -80,6 +81,10 @@ type CharacterService struct {
 	sig                     *singleinstance.Group
 	signals                 *app.Signals
 	st                      *storage.Storage
+
+	mu           sync.Mutex
+	schedulerCancel func()
+	schedulerDone   chan struct{}
 }
 
 type Params struct {

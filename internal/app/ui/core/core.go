@@ -565,10 +565,9 @@ func (u *baseUI) appInit(ctx context.Context) {
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 		time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
-		slog.Info("Starting update ticker")
-		u.eus.StartUpdateTicker(eveUniverseUpdateTick)
-		u.cs.StartUpdateTickerCharacters(characterUpdateTick)
-		u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
+		u.eus.StartUpdateScheduler(eveUniverseUpdateTick)
+		u.cs.StartUpdateScheduler(characterUpdateTick)
+		u.rs.StartUpdateScheduler(corporationUpdateTick)
 	} else {
 		slog.Info("Update ticker disabled")
 	}
@@ -580,6 +579,9 @@ func (u *baseUI) ShowAndRun() {
 		u.onShowAndRun()
 	}
 	u.window.ShowAndRun()
+	slog.Info("Shutting down app")
+	u.signals.BeginShutdown()
+	u.cs.StopUpdateScheduler()
 	slog.Info("App terminated")
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()

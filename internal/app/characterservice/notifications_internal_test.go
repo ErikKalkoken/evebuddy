@@ -1,7 +1,9 @@
 package characterservice
 
 import (
+	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -510,5 +512,113 @@ func TestUpdateNotificationESI_Other(t *testing.T) {
 		xassert.EqualOptional(t, text, o.Text)
 		xassert.Equal(t, time.Date(2017, 8, 16, 10, 8, 0, 0, time.UTC), o.Timestamp)
 		xassert.EqualOptional(t, corporation, o.Recipient)
+	})
+}
+
+// settingsWithNotificationTypes wraps the default settings stub but allows
+// overriding which notification types are enabled and the earliest timestamp,
+// which are needed to exercise notifyNewCommunications deterministically.
+type settingsWithNotificationTypes struct {
+	testutil.SettingsStub
+	types set.Set[string]
+}
+
+func (s *settingsWithNotificationTypes) NotificationTypesEnabled() set.Set[string] {
+	return s.types
+}
+
+func (s *settingsWithNotificationTypes) NotifyCommunicationsEarliest() time.Time {
+	return time.Now().Add(-1 * time.Hour)
+}
+
+func TestNotifyNewCommunications(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should notify for an enabled notification type", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		var count int32
+		settings := &settingsWithNotificationTypes{types: set.Of(app.StructureUnderAttack.String())}
+		s := NewFake(Params{
+			Storage:  st,
+			Settings: settings,
+			SendDesktopNotification: func(title, content string) {
+				atomic.AddInt32(&count, 1)
+			},
+		})
+		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Type:      esiType,
+			Timestamp: time.Now(),
+			Title:     optional.New("title"),
+			Body:      optional.New("body"),
+		})
+		// when
+		s.notifyNewCommunications(ctx, n.CharacterID)
+		// then
+		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
+	})
+	t.Run("should not notify when the notification type is not enabled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		var count int32
+		settings := &settingsWithNotificationTypes{types: set.Of("SomeOtherType")}
+		s := NewFake(Params{
+			Storage:  st,
+			Settings: settings,
+			SendDesktopNotification: func(title, content string) {
+				atomic.AddInt32(&count, 1)
+			},
+		})
+		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Type:      esiType,
+			Timestamp: time.Now(),
+		})
+		// when
+		s.notifyNewCommunications(ctx, n.CharacterID)
+		// then
+		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
+	})
+}
+
+func TestNotifyCharactersIfNeeded(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should notify only watched characters with no active training", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		var count int32
+		s := NewFake(Params{
+			Storage: st,
+			SendDesktopNotification: func(title, content string) {
+				atomic.AddInt32(&count, 1)
+			},
+		})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: false})
+		// when
+		err := s.notifyCharactersIfNeeded(ctx)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
+	})
+	t.Run("should do nothing when there are no characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		var count int32
+		s := NewFake(Params{
+			Storage: st,
+			SendDesktopNotification: func(title, content string) {
+				atomic.AddInt32(&count, 1)
+			},
+		})
+		// when
+		err := s.notifyCharactersIfNeeded(ctx)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
 	})
 }
