@@ -156,19 +156,21 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 			}
 			switch x.Unit {
 			case app.EveUnitGroupID:
-				go func(ctx context.Context, groupID int64) {
+				groupID := int64(o.Value)
+				s.tasks.Go(func(ctx context.Context) {
 					_, err := s.GetOrCreateGroupESI(ctx, groupID)
-					if err != nil {
-						slog.Error("Failed to fetch eve group %d", "ID", groupID, "err", err)
+					if err != nil && !app.IsCanceled(ctx, err) {
+						slog.Error("Failed to fetch eve group", "ID", groupID, "err", err)
 					}
-				}(ctx, int64(o.Value))
+				})
 			case app.EveUnitTypeID:
-				go func(ctx context.Context, typeID int64) {
+				typeID := int64(o.Value)
+				s.tasks.Go(func(ctx context.Context) {
 					_, err := s.GetOrCreateTypeESI(ctx, typeID)
-					if err != nil {
-						slog.Error("Failed to fetch eve type %d", "ID", typeID, "err", err)
+					if err != nil && !app.IsCanceled(ctx, err) {
+						slog.Error("Failed to fetch eve type", "ID", typeID, "err", err)
 					}
-				}(ctx, int64(o.Value))
+				})
 			}
 			arg := storage.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,
@@ -364,7 +366,7 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 		if err != nil {
 			go func() {
 				_, err := args.getOrCreateDogmaAttributeESI(ctx, int64(v))
-				if err != nil {
+				if err != nil && !app.IsCanceled(ctx, err) {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", v, "err", err)
 				}
 			}()
@@ -413,7 +415,7 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 		if err != nil {
 			go func() {
 				_, err := args.getOrCreateTypeESI(ctx, int64(v))
-				if err != nil {
+				if err != nil && !app.IsCanceled(ctx, err) {
 					slog.Error("Failed to fetch type from ESI", "typeID", v, "err", err)
 				}
 			}()
