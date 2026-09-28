@@ -24,11 +24,10 @@ import (
 func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
 	go func() {
 		for {
-			go func() {
-				if err := s.UpdateCorporationsIfNeeded(context.Background(), false); err != nil {
-					slog.Error("Failed to update corporations", "error", err)
-				}
-			}()
+			err := s.UpdateCorporationsIfNeeded(context.Background(), false)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				slog.Error("Failed to update corporations", "error", err)
+			}
 			<-time.Tick(d)
 		}
 	}()

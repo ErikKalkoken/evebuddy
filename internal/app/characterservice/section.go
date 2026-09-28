@@ -19,65 +19,44 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // StartUpdateScheduler starts the update tickers.
 func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
-	s.mu.Lock()
-	if s.schedulerCancel != nil {
-		s.mu.Unlock()
-		slog.Warn("character update scheduler already started")
-		return
-	}
-	s.schedulerDone = make(chan struct{})
-	ctx, cancel := context.WithCancel(context.Background())
-	s.schedulerCancel = cancel
-	s.mu.Unlock()
-
-	ticker := time.NewTicker(d)
-	go func() {
-		var wg sync.WaitGroup
-	loop:
-		for {
-			wg.Go(func() {
-				err := s.notifyCharactersIfNeeded(ctx)
-				if err != nil && !errors.Is(err, context.Canceled) {
+	// Separate loops so slow updates don't delay notifications.
+	err := s.scheduler.Run(context.Background(),
+		func(ctx context.Context) {
+			xsync.RunEvery(ctx, d, func(ctx context.Context) {
+				if err := s.notifyCharactersIfNeeded(ctx); err != nil && ctx.Err() == nil {
 					slog.Error("Failed to notify characters", "error", err)
 				}
 			})
-			wg.Go(func() {
-				err := s.UpdateCharactersIfNeeded(ctx, false)
-				if err != nil && !errors.Is(err, context.Canceled) {
+		},
+		func(ctx context.Context) {
+			xsync.RunEvery(ctx, d, func(ctx context.Context) {
+				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil && ctx.Err() == nil {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			})
-			wg.Wait()
-			select {
-			case <-ctx.Done():
-				break loop
-			case <-ticker.C:
-			}
-		}
-		s.mu.Lock()
-		close(s.schedulerDone)
-		s.schedulerCancel()
-		s.mu.Unlock()
-		ticker.Stop()
-	}()
+		},
+	)
+	if errors.Is(err, xsync.ErrTaskGroupStopped) {
+		slog.Info("Character update scheduler not started: shutting down")
+		return
+	}
+	if err != nil {
+		slog.Warn("Character update scheduler not started", "error", err)
+		return
+	}
 	slog.Info("Character update scheduler started")
 }
 
 // StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
 func (s *CharacterService) StopUpdateScheduler() {
-	s.mu.Lock()
-	cancel := s.schedulerCancel
-	done := s.schedulerDone
-	s.mu.Unlock()
-	if cancel == nil {
+	if !s.scheduler.Stop() {
 		return
 	}
-	cancel()
-	<-done
 	slog.Info("Character update scheduler stopped")
 }
 
@@ -191,7 +170,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		var level slog.Level
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, app.ErrCanceled) || ctx.Err() != nil {
 			level = slog.LevelDebug
 		} else {
 			level = slog.LevelError
@@ -378,7 +357,12 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg charac
 	}
 	key := fmt.Sprintf("update-character-section-%s-%d", arg.section, arg.characterID)
 	hasChanged, err, _ := xsingleflight.Do(&s.sfg, key, func() (bool, error) {
-		return f(ctx, arg)
+		hasChanged, err := f(ctx, arg)
+		if err != nil && ctx.Err() != nil {
+			// Tag with the ctx used for the fetch; a follower's own ctx may not be canceled.
+			err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
+		}
+		return hasChanged, err
 	})
 	if err != nil {
 		s.recordUpdateFailed(ctx, arg, err)
@@ -490,8 +474,19 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, app.ErrCanceled) {
 		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section, "error", err)
+		// Clear StartedAt so the section doesn't show as running after a restart.
+		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: arg.characterID,
+			Section:     arg.section,
+			StartedAt:   new(optional.Optional[time.Time]),
+		})
+		if err2 != nil {
+			slog.Debug("clear started for canceled section update", "characterID", arg.characterID, "error", err2)
+			return
+		}
+		s.scs.SetCharacterSection(o)
 		return
 	}
 	slog.Error("Character section update failed", "characterID", arg.characterID, "section", arg.section, "error", err)

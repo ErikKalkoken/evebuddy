@@ -5,7 +5,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
@@ -19,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type AuthClient interface {
@@ -81,10 +81,7 @@ type CharacterService struct {
 	sig                     *singleinstance.Group
 	signals                 *app.Signals
 	st                      *storage.Storage
-
-	mu           sync.Mutex
-	schedulerCancel func()
-	schedulerDone   chan struct{}
+	scheduler               *xsync.TaskGroup
 }
 
 type Params struct {
@@ -141,6 +138,7 @@ func New(arg Params) *CharacterService {
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
 		scs:              arg.StatusCacheService,
+		scheduler:        new(xsync.TaskGroup),
 		sendDesktopNotification: func(_, _ string) {
 			slog.Warn("Desktop notifications not configured")
 		},

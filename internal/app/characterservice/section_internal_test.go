@@ -3,6 +3,7 @@ package characterservice
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -575,4 +577,117 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
 	})
+}
+
+func TestRecordUpdateFailed(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	scs := new(statuscache.StatusCache)
+	s := NewFake(Params{Storage: st, StatusCacheService: scs})
+	const section = app.SectionCharacterAssets
+	t.Run("should clear started but keep status when canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		completedAt := time.Now().Add(-6 * time.Hour)
+		old := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID:  c.ID,
+			Section:      section,
+			CompletedAt:  completedAt,
+			ErrorMessage: "old error",
+		})
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
+		require.NoError(t, s.recordUpdateStarted(context.Background(), arg))
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		// when
+		s.recordUpdateFailed(ctx, arg, fmt.Errorf("%w: %w", app.ErrCanceled, context.Canceled))
+		// then
+		x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "old error", x.ErrorMessage)
+		xassert.Equal(t, old.ContentHash, x.ContentHash)
+		assert.WithinDuration(t, completedAt, x.CompletedAt, time.Second)
+		y, ok := scs.CharacterSection(c.ID, section)
+		require.True(t, ok)
+		assert.False(t, y.IsRunning())
+	})
+	t.Run("should record error when failed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
+		require.NoError(t, s.recordUpdateStarted(context.Background(), arg))
+		// when
+		s.recordUpdateFailed(context.Background(), arg, fmt.Errorf("dummy"))
+		// then
+		x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "dummy", x.ErrorMessage)
+	})
+}
+
+// A singleflight follower must not record a real error when the singleflight
+// leader's ctx was the one that got canceled, even though the follower's own
+// ctx (e.g. from a manual "reload section" UI action) was never canceled.
+func TestCharacterService_UpdateSectionIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	const section = app.SectionCharacterAssets
+
+	c := factory.CreateCharacter()
+	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
+		func(req *http.Request) (*http.Response, error) {
+			close(entered)
+			select {
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			case <-release:
+				return httpmock.NewJsonResponse(200, []map[string]any{})
+			}
+		},
+	)
+
+	// leader: cancelable ctx, e.g. tied to the update scheduler
+	ctxLeader, cancelLeader := context.WithCancel(context.Background())
+	leaderDone := make(chan struct{})
+	go func() {
+		defer close(leaderDone)
+		s.UpdateSectionIfNeeded(ctxLeader, characterSectionUpdateParams{characterID: c.ID, section: section})
+	}()
+	select {
+	case <-entered:
+		// the leader's HTTP call is now in flight
+	case <-time.After(time.Second):
+		t.Fatal("leader never reached the HTTP call")
+	}
+
+	// follower: independent, never-canceled ctx, e.g. from a manual reload
+	followerDone := make(chan struct{})
+	go func() {
+		defer close(followerDone)
+		s.UpdateSectionIfNeeded(context.Background(), characterSectionUpdateParams{characterID: c.ID, section: section})
+	}()
+	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
+
+	// when
+	cancelLeader()
+	<-leaderDone
+	<-followerDone
+
+	// then
+	x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+	require.NoError(t, err)
+	assert.False(t, x.HasError(), "a canceled leader must not be recorded as a real error via the follower's uncanceled ctx")
+	assert.True(t, x.StartedAt.IsZero(), "a canceled update must not leave the section as running")
 }

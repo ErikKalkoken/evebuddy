@@ -3,6 +3,7 @@ package corporationservice
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -48,6 +49,10 @@ type CorporationService struct {
 	sfg              singleflight.Group
 	signals          *app.Signals
 	st               *storage.Storage
+
+	mu              sync.Mutex
+	schedulerCancel func()
+	schedulerDone   chan struct{}
 }
 
 type Params struct {
