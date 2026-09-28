@@ -22,8 +22,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// StartUpdateScheduler starts the update tickers.
-func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
+// Start starts the update scheduler.
+func (s *CharacterService) Start(d time.Duration) {
 	// Separate loops so slow updates don't delay notifications.
 	err := s.tasks.Run(
 		func(ctx context.Context) {
@@ -52,12 +52,12 @@ func (s *CharacterService) StartUpdateScheduler(d time.Duration) {
 	slog.Info("Character update scheduler started")
 }
 
-// StopUpdateScheduler cancels the update scheduler and background jobs and waits for them.
-func (s *CharacterService) StopUpdateScheduler() {
+// Stop cancels the update scheduler and background jobs and waits for them.
+func (s *CharacterService) Stop() {
 	if !s.tasks.Stop() {
 		return
 	}
-	slog.Info("Character update scheduler stopped")
+	slog.Info("Character update scheduler and background jobs stopped")
 }
 
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {

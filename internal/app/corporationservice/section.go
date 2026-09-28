@@ -22,8 +22,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// StartUpdateScheduler starts the update ticker.
-func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
+// Start starts the update scheduler.
+func (s *CorporationService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
 			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsCanceled(ctx, err) {
@@ -42,8 +42,8 @@ func (s *CorporationService) StartUpdateScheduler(d time.Duration) {
 	slog.Info("Corporation update scheduler started")
 }
 
-// StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
-func (s *CorporationService) StopUpdateScheduler() {
+// Stop cancels the update scheduler and background jobs and waits for them.
+func (s *CorporationService) Stop() {
 	if !s.tasks.Stop() {
 		return
 	}

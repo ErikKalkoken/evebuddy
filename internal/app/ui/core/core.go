@@ -90,7 +90,6 @@ type baseUI struct {
 	hideMailIndicator               func()
 	onAppFirstStarted               func()
 	onAppStopped                    func()
-	onBeginShutdown                 func()
 	onAppTerminated                 func()
 	onSetCharacter                  func(*app.Character)
 	onShowCharacter                 func()
@@ -183,6 +182,7 @@ type baseUI struct {
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
 	signals                        *app.Signals
+	tasks                          *xsync.TaskGroup       // UI tickers, stopped at shutdown
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
 	windows                        map[string]fyne.Window // child windows
@@ -238,6 +238,7 @@ func newBaseUI(arg UIParams) *baseUI {
 		settings:                       arg.Settings,
 		signals:                        arg.Signals,
 		statusText:                     newStatusText(),
+		tasks:                          xsync.NewTaskGroup(context.Background()),
 		windows:                        make(map[string]fyne.Window),
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
@@ -556,19 +557,27 @@ func (u *baseUI) appInit(ctx context.Context) {
 	updateCharactersMissingScope(ctx)
 
 	u.isStartupCompleted.Store(true)
-	go func() {
-		for range time.Tick(refreshUITick) {
-			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+	u.tasks.Go(func(ctx context.Context) {
+		// No immediate fire: the screens have just been loaded.
+		ticker := time.NewTicker(refreshUITick)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			}
 		}
-	}()
+	})
 	if u.onAppFirstStarted != nil {
 		u.onAppFirstStarted()
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 		time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
-		u.eus.StartUpdateScheduler(eveUniverseUpdateTick)
-		u.cs.StartUpdateScheduler(characterUpdateTick)
-		u.rs.StartUpdateScheduler(corporationUpdateTick)
+		u.eus.Start(eveUniverseUpdateTick)
+		u.cs.Start(characterUpdateTick)
+		u.rs.Start(corporationUpdateTick)
 	} else {
 		slog.Info("Update ticker disabled")
 	}
@@ -582,12 +591,10 @@ func (u *baseUI) ShowAndRun() {
 	u.window.ShowAndRun()
 	slog.Info("Shutting down app")
 	u.signals.BeginShutdown()
-	if u.onBeginShutdown != nil {
-		u.onBeginShutdown()
-	}
-	u.cs.StopUpdateScheduler()
-	u.rs.StopUpdateScheduler()
-	u.eus.StopUpdateScheduler()
+	u.tasks.Stop()
+	u.cs.Stop()
+	u.rs.Stop()
+	u.eus.Stop()
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}

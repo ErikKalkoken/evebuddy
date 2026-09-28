@@ -18,8 +18,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-// StartUpdateScheduler starts the update ticker.
-func (s *EVEUniverseService) StartUpdateScheduler(d time.Duration) {
+// Start starts the update scheduler.
+func (s *EVEUniverseService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
 			s.UpdateSectionsIfNeeded(ctx, false)
@@ -36,8 +36,8 @@ func (s *EVEUniverseService) StartUpdateScheduler(d time.Duration) {
 	slog.Info("EVEUniverse update scheduler started")
 }
 
-// StopUpdateScheduler is canceling the update scheduler and waiting for all tasks to finish.
-func (s *EVEUniverseService) StopUpdateScheduler() {
+// Stop cancels the update scheduler and background jobs and waits for them.
+func (s *EVEUniverseService) Stop() {
 	if !s.tasks.Stop() {
 		return
 	}

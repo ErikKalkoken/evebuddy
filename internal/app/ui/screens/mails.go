@@ -485,6 +485,7 @@ func (a *mailsNavigationPane) setStatus(s string, i widget.Importance) {
 func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
+	var canceled bool
 	func() {
 		var total, missing int
 		var err error
@@ -496,6 +497,10 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 			total, missing, err = a.ma.u.Character().DownloadedBodiesPercentage(ctx, characterID)
 		} else {
 			total, missing, err = a.ma.u.Character().AllDownloadedBodiesPercentage(ctx)
+		}
+		if app.IsCanceled(ctx, err) {
+			canceled = true
+			return
 		}
 		if err != nil {
 			slog.Error("updateDownloaded", "error", err)
@@ -512,6 +517,9 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 		downloaded = fmt.Sprintf("%d%%", 100-missingPercent)
 		hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
 	}()
+	if canceled {
+		return
+	}
 	a.ma.missingPercent.Store(int64(missingPercent))
 	fyne.Do(func() {
 		a.folderTotal.SetText(total2)

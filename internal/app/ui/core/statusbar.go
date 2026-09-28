@@ -52,7 +52,6 @@ type statusBar struct {
 	eveClock          *StatusBarItem
 	eveStatus         *StatusBarItem
 	eveStatusError    string
-	tasks             *xsync.TaskGroup
 	u                 *DesktopUI
 	updateHint        *updateHint
 	updateStatus      *StatusBarItem
@@ -63,7 +62,6 @@ func newStatusBar(u *DesktopUI) *statusBar {
 	ac := xwidget.NewActivity()
 	ac.SetToolTip("Synchronizing with game server...")
 	a := &statusBar{
-		tasks:             xsync.NewTaskGroup(context.Background()),
 		updatingIndicator: ac,
 		u:                 u,
 	}
@@ -188,50 +186,40 @@ func (a *statusBar) start() {
 	a.updateUpdateStatus(ctx)
 	a.updateEveStatus(ctx)
 
-	tasks := []func(context.Context){
-		func(ctx context.Context) {
-			xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
-				fyne.Do(func() {
-					a.eveClock.SetText(time.Now().UTC().Format("15:04"))
-				})
+	a.u.tasks.Go(func(ctx context.Context) {
+		xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
+			fyne.Do(func() {
+				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
 			})
-		},
-	}
+		})
+	})
 	if a.u.isOfflineMode {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
-	} else {
-		a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-			a.updateEveStatus(ctx)
-		})
-		tasks = append(tasks, func(ctx context.Context) {
-			xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
-				v, err := a.u.availableUpdate(ctx)
-				if err != nil {
-					if !app.IsCanceled(ctx, err) {
-						slog.Error("fetch latest github version for download hint", "err", err)
-					}
-					return
+		return
+	}
+	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+		a.updateEveStatus(ctx)
+	})
+	a.u.tasks.Go(func(ctx context.Context) {
+		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
+			v, err := a.u.availableUpdate(ctx)
+			if err != nil {
+				if !app.IsCanceled(ctx, err) {
+					slog.Error("fetch latest github version for download hint", "err", err)
 				}
-				if !v.IsRemoteNewer {
-					return
-				}
-				fyne.Do(func() {
-					a.updateHint.set(v)
-					a.updateHint.Show()
-				})
+				return
+			}
+			if !v.IsRemoteNewer {
+				return
+			}
+			fyne.Do(func() {
+				a.updateHint.set(v)
+				a.updateHint.Show()
 			})
 		})
-	}
-	if err := a.tasks.Run(tasks...); err != nil {
-		slog.Info("Status bar tickers not started", "error", err)
-	}
-}
-
-// stop stops the tickers and waits for them to finish.
-func (a *statusBar) stop() {
-	a.tasks.Stop()
+	})
 }
 
 func (a *statusBar) updateEveStatus(ctx context.Context) {
@@ -256,6 +244,9 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	}
 
 	status, err := a.u.ess.Fetch(ctx)
+	if app.IsCanceled(ctx, err) {
+		return
+	}
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
 		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
