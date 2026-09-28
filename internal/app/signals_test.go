@@ -74,20 +74,6 @@ func TestSignals_Shutdown(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 		}
 	})
-	t.Run("should still deliver AppShutdown after BeginShutdown", func(t *testing.T) {
-		s := app.NewSignals()
-		received := make(chan struct{}, 1)
-		s.AppShutdown.AddListener(func(ctx context.Context, _ struct{}) {
-			received <- struct{}{}
-		})
-		s.BeginShutdown()
-		s.AppShutdown.Emit(context.Background(), struct{}{})
-		select {
-		case <-received:
-		case <-time.After(time.Second):
-			t.Fatal("AppShutdown listener was not called")
-		}
-	})
 	t.Run("should report IsShuttingDown before and after BeginShutdown", func(t *testing.T) {
 		s := app.NewSignals()
 		assert.False(t, s.IsShuttingDown())

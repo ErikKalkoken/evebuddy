@@ -36,10 +36,6 @@ type Signals struct {
 	// The app is initialized
 	AppInit signals.Signal[struct{}]
 
-	// The app is shutting down. Listeners should cancel and wait for any
-	// background work they own before returning.
-	AppShutdown signals.Signal[struct{}]
-
 	// A character was added.
 	CharacterAdded signals.Signal[*Character]
 
@@ -96,9 +92,7 @@ type Signals struct {
 }
 
 func NewSignals() *Signals {
-	s := &Signals{
-		AppShutdown: signals.New[struct{}](),
-	}
+	s := &Signals{}
 	g := &s.shuttingDown
 	s.AppInit = newGuardedSignal[struct{}](g)
 	s.CharacterAdded = newGuardedSignal[*Character](g)
@@ -121,9 +115,9 @@ func NewSignals() *Signals {
 	return s
 }
 
-// BeginShutdown makes Emit a no-op on every signal except AppShutdown. Needed
-// because fyne.Do stops serializing onto the main thread once Fyne's quit sequence
-// starts draining its dispatch queue.
+// BeginShutdown makes Emit a no-op on every signal.
+//
+// Needed to prevent making additional Fyne API calls during shutdown.
 func (s *Signals) BeginShutdown() {
 	s.shuttingDown.Store(true)
 }
