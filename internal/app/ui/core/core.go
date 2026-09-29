@@ -807,21 +807,21 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 	u.character.Store(c)
 }
 
-func (u *baseUI) ResetCharacter(ctx context.Context) {
+func (u *baseUI) ResetCharacter(_ context.Context) {
 	u.character.Store(nil)
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, nil)
+	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
 	// }
 }
 
-func (u *baseUI) SetCharacter(ctx context.Context, c *app.Character) {
+func (u *baseUI) SetCharacter(_ context.Context, c *app.Character) {
 	u.character.Store(c)
 	if u.onSetCharacter != nil {
 		go u.onSetCharacter(c)
 	}
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, c)
+	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 }
 
@@ -880,21 +880,21 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (u *baseUI) ResetCorporation(ctx context.Context) {
+func (u *baseUI) ResetCorporation(_ context.Context) {
 	u.corporation.Store(nil)
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, nil)
+	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
 	// }
 }
 
-func (u *baseUI) SetCorporation(ctx context.Context, c *app.Corporation) {
+func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
 	if u.onSetCorporation != nil {
 		go u.onSetCorporation(c)
 	}
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, c)
+	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCorporationID(c.ID)
 }
 

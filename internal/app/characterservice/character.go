@@ -230,7 +230,7 @@ func (s *CharacterService) UpdateAllCalculatedValues(ctx context.Context) error 
 			c1.OrdersEscrow != c2.OrdersEscrow ||
 			c1.SkillPointsValue != c2.SkillPointsValue
 		if changed {
-			go s.signals.CharacterChanged.Emit(ctx, id)
+			go s.signals.CharacterChanged.Emit(context.Background(), id)
 		}
 	}
 	return nil
