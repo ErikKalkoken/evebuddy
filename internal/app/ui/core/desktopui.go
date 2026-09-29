@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"slices"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -694,7 +695,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func(ctx context.Context) {
-		go func() {
+		go togglePermittedSections()
+		var wg sync.WaitGroup
+		wg.Go(func() {
 			u.setCharacterSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -704,8 +707,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 					characterHeader.Refresh()
 				},
 			)
-		}()
-		go func() {
+		})
+		wg.Go(func() {
 			u.setCorporationSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -715,10 +718,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 					corporationHeader.Refresh()
 				},
 			)
-		}()
-		// go statusBar.update()
-		go togglePermittedSections()
-		go func() {
+		})
+		wg.Go(func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
 				if ctx.Err() != nil {
@@ -737,7 +738,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			fyne.Do(func() {
 				rail.EnableItem(corporationItem)
 			})
-		}()
+		})
+		wg.Wait()
 	}
 	return u
 }

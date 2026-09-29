@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -550,7 +551,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	u.onUpdateStatus = func(ctx context.Context) {
 		go togglePermittedSections()
-		go func() {
+		var wg sync.WaitGroup
+		wg.Go(func() {
 			u.setCharacterSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -558,8 +560,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 				},
 				characterSelector.Refresh,
 			)
-		}()
-		go func() {
+		})
+		wg.Go(func() {
 			u.setCorporationSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -567,8 +569,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 				},
 				corpSelector.Refresh,
 			)
-		}()
-		go func() {
+		})
+		wg.Go(func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
 				if ctx.Err() != nil {
@@ -590,7 +592,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			fyne.Do(func() {
 				navBar.Enable(2)
 			})
-		}()
+		})
+		wg.Wait()
 	}
 
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
