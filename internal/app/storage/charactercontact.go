@@ -43,7 +43,7 @@ func (st *Storage) GetCharacterContact(ctx context.Context, characterID int64, c
 	if characterID == 0 || contactID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	tx, err := st.dbRW.Begin()
+	tx, err := st.dbRO.Begin()
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -82,7 +82,7 @@ func (st *Storage) ListCharacterContacts(ctx context.Context, characterID int64)
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	tx, err := st.dbRW.Begin()
+	tx, err := st.dbRO.Begin()
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -92,13 +92,17 @@ func (st *Storage) ListCharacterContacts(ctx context.Context, characterID int64)
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterContact for character %d: %w", characterID, err)
 	}
+	labelRows, err := qtx.ListCharacterContactLabelsForCharacter(ctx, characterID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	labels := make(map[int64][]string)
+	for _, r := range labelRows {
+		labels[r.ContactID] = append(labels[r.ContactID], r.Name)
+	}
 	var oo []*app.CharacterContact
 	for _, r := range rows {
-		labels, err := qtx.ListCharacterContactContactLabels(ctx, r.CharacterContact.ID)
-		if err != nil {
-			return nil, wrapErr(err)
-		}
-		o := characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels)
+		o := characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels[r.CharacterContact.ID])
 		oo = append(oo, o)
 	}
 	if err := tx.Commit(); err != nil {

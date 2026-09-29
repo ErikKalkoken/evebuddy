@@ -71,6 +71,17 @@ FROM
 WHERE
     cc.id = ?;
 
+-- name: ListCharacterContactLabelsForCharacter :many
+SELECT
+    map.contact_id,
+    ccl.name
+FROM
+    character_contacts_labels map
+    JOIN character_contacts cc ON cc.id = map.contact_id
+    JOIN character_contact_labels ccl ON ccl.id = map.label_id
+WHERE
+    cc.character_id = ?;
+
 -- name: CreateCharacterContactContactLabel :exec
 INSERT INTO
     character_contacts_labels (contact_id, label_id)

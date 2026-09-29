@@ -133,27 +133,44 @@ func TestCharacterContact(t *testing.T) {
 		label1 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
 			CharacterID: c.ID,
 		})
+		label2 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		label3 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
 		contact1 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: c.ID,
-			LabelIDs:    []int64{label1.LabelID},
+			LabelIDs:    []int64{label1.LabelID, label2.LabelID},
 		})
 		contact2 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: c.ID,
+			LabelIDs:    []int64{label3.LabelID},
 		})
-		factory.CreateCharacterContact()
+		contact3 := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+		})
+		other := factory.CreateCharacter()
+		otherLabel := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: other.ID,
+		})
+		factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: other.ID,
+			ContactID:   contact1.Contact.ID,
+			LabelIDs:    []int64{otherLabel.LabelID},
+		})
 		// when
 		oo, err := st.ListCharacterContacts(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		want := set.Of(contact1.Contact.ID, contact2.Contact.ID)
+		want := set.Of(contact1.Contact.ID, contact2.Contact.ID, contact3.Contact.ID)
 		oo2 := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterContact) (int64, *app.CharacterContact) {
 			return x.Contact.ID, x
 		}))
 		xassert.Equal(t, want, set.Collect(maps.Keys(oo2)))
-		o := oo2[contact1.Contact.ID]
-		got2 := o.Labels
-		want2 := set.Of(label1.Name)
-		xassert.Equal(t, want2, got2)
+		xassert.Equal(t, set.Of(label1.Name, label2.Name), oo2[contact1.Contact.ID].Labels)
+		xassert.Equal(t, set.Of(label3.Name), oo2[contact2.Contact.ID].Labels)
+		xassert.Equal(t, set.Of[string](), oo2[contact3.Contact.ID].Labels)
 	})
 	t.Run("can list entry IDs for a character", func(t *testing.T) {
 		// given
