@@ -182,7 +182,10 @@ func TestCorporationStructure(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o1 := factory.CreateCorporationStructure()
 		o2 := factory.CreateCorporationStructure()
-		factory.CreateCorporationStructure()
+		o3 := factory.CreateCorporationStructure()
+		s1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		s2 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		s3 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o3.ID})
 		// when
 		xx, err := st.ListAllCorporationStructures(t.Context())
 		// then
@@ -192,6 +195,10 @@ func TestCorporationStructure(t *testing.T) {
 		}))
 		want := set.Of(o1.StructureID, o2.StructureID)
 		xassert.Equal(t, want, got)
+		services := serviceNamesByStructure(xx)
+		xassert.Equal(t, set.Of(s1.Name, s2.Name), services[o1.ID])
+		xassert.Equal(t, set.Of[string](), services[o2.ID])
+		xassert.Equal(t, set.Of(s3.Name), services[o3.ID])
 	})
 
 	t.Run("can list structures for corporation", func(t *testing.T) {
@@ -204,7 +211,9 @@ func TestCorporationStructure(t *testing.T) {
 		o2 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
 			CorporationID: c.ID,
 		})
-		factory.CreateCorporationStructure()
+		o3 := factory.CreateCorporationStructure()
+		s1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o3.ID})
 		// when
 		xx, err := st.ListCorporationStructures(t.Context(), c.ID)
 		// then
@@ -214,6 +223,53 @@ func TestCorporationStructure(t *testing.T) {
 		}))
 		want := set.Of(o1.StructureID, o2.StructureID)
 		xassert.Equal(t, want, got)
+		services := serviceNamesByStructure(xx)
+		xassert.Equal(t, set.Of(s1.Name), services[o1.ID])
+		xassert.Equal(t, set.Of[string](), services[o2.ID])
+	})
+
+	t.Run("can list structures with chunking", func(t *testing.T) {
+		// given
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID}
+		o1 := factory.CreateCorporationStructure(arg)
+		o2 := factory.CreateCorporationStructure(arg)
+		o3 := factory.CreateCorporationStructure(arg)
+		s1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		s2 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o2.ID})
+		s3 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o3.ID})
+		// when
+		xx, err := st.ListCorporationStructures(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		services := serviceNamesByStructure(xx)
+		xassert.Equal(t, set.Of(s1.Name), services[o1.ID])
+		xassert.Equal(t, set.Of(s2.Name), services[o2.ID])
+		xassert.Equal(t, set.Of(s3.Name), services[o3.ID])
+	})
+
+	t.Run("can get structure with services", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID}
+		o1 := factory.CreateCorporationStructure(arg)
+		o2 := factory.CreateCorporationStructure(arg)
+		s1 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		s2 := factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o1.ID})
+		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: o2.ID})
+		// when
+		x, err := st.GetCorporationStructure(t.Context(), c.ID, o1.StructureID)
+		// then
+		require.NoError(t, err)
+		services := serviceNamesByStructure([]*app.CorporationStructure{x})
+		xassert.Equal(t, set.Of(s1.Name, s2.Name), services[o1.ID])
 	})
 
 	t.Run("can delete structures for a corporation", func(t *testing.T) {
@@ -331,4 +387,16 @@ func TestStructureService(t *testing.T) {
 		_, err2 := st.GetStructureService(t.Context(), x.CorporationStructureID, x.Name)
 		assert.NoError(t, err2)
 	})
+}
+
+func serviceNamesByStructure(structures []*app.CorporationStructure) map[int64]set.Set[string] {
+	m := make(map[int64]set.Set[string])
+	for _, s := range structures {
+		names := set.Of[string]()
+		for _, x := range s.Services {
+			names.Add(x.Name)
+		}
+		m[s.ID] = names
+	}
+	return m
 }

@@ -25,3 +25,14 @@ FROM
     corporation_structure_services
 WHERE
     corporation_structure_id = ?;
+
+-- name: ListStructureServicesForStructureIDs :many
+SELECT
+    *
+FROM
+    corporation_structure_services
+WHERE
+    corporation_structure_id IN (sqlc.slice('ids'))
+ORDER BY
+    corporation_structure_id,
+    name;
