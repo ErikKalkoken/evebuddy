@@ -802,6 +802,7 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 			return
 		}
 		slog.Error("reload character", "characterID", id, "error", err)
+		return
 	}
 	u.character.Store(c)
 }
