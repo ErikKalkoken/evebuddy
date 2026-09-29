@@ -271,6 +271,9 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 		} else {
 			enabled, err := s.PermittedSection(ctx, arg.corporationID, arg.section)
 			if err != nil {
+				if ctx.Err() != nil {
+					return false, err
+				}
 				slog.Error("Failed to check enabled sections", "error", err)
 				enabled = false
 			}

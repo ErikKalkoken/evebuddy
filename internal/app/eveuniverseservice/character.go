@@ -218,6 +218,9 @@ func (s *EVEUniverseService) UpdateAllCharactersESI(ctx context.Context) (set.Se
 			if errors.Is(err, app.ErrNotFound) {
 				err := s.st.DeleteEveCharacter(ctx, id)
 				if err != nil {
+					if ctx.Err() != nil {
+						return err
+					}
 					slog.Warn("Deleting character that no longer exists", "characterID", id, "error", err)
 				} else {
 					slog.Info("EVE Character no longer exists and was deleted", "characterID", id)

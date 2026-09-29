@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -52,7 +53,11 @@ func LogResponse(_ retryablehttp.Logger, r *http.Response) {
 
 	data, err := extractBodyForLog(r)
 	if err != nil {
-		slog.Error("Failed to extract response body", "error", err)
+		if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+			slog.Debug("Failed to extract response body", "error", err)
+		} else {
+			slog.Error("Failed to extract response body", "error", err)
+		}
 		data = nil
 	}
 

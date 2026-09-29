@@ -127,7 +127,9 @@ func (n corpAllBillMsg) render(ctx context.Context, text string, _ time.Time) (s
 	} else if id := data.ExternalID2; id > 0 && int64(int32(id)) != id {
 		// this is most likely a structure ID
 		o, err := n.eus.GetOrCreateLocationESI(ctx, id)
-		if err != nil {
+		if app.IsCanceled(ctx, err) {
+			slog.Debug("Failed to fetch location when rendering notification", "notificationType", "CorpAllBillMsg", "locationID", id, "error", err)
+		} else if err != nil {
 			slog.Warn("Failed to fetch location when rendering notification", "notificationType", "CorpAllBillMsg", "locationID", id, "error", err)
 		} else if et, ok := o.Type.Value(); ok {
 			link := fmt.Sprintf("showinfo:%d//%d", et.ID, id)

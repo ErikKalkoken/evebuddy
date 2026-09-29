@@ -53,6 +53,9 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int64) (*app.Cha
 	}
 	x, err := s.calcNextCloneJump(ctx, c)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, err
+		}
 		slog.Error("get character: next clone jump", "characterID", id, "error", err)
 	} else {
 		c.NextCloneJump = x
