@@ -1039,10 +1039,19 @@ func (u *baseUI) setCorporationAvatarAsync(corporationID int64, setIcon func(fyn
 }
 
 func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
-	cc := u.scs.ListCharacters()
+	cc, err := u.cs.ListCharactersShort(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to fetch characters", "error", err)
+		fyne.Do(func() {
+			setItems(nil)
+		})
+		return
+	}
+
 	if len(cc) == 0 {
-		it := fyne.NewMenuItem("No characters", nil)
-		it.Disabled = true
 		fyne.Do(func() {
 			setItems(nil)
 		})
@@ -1056,7 +1065,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCharacter(ctx, c.ID)
+				err := u.LoadCharacter(context.Background(), c.ID)
 				if err != nil {
 					slog.Error("make character switch menu", "error", err)
 					u.snackbar.Display("Failed to switch character. Try again later.")
@@ -1119,7 +1128,7 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCorporation(ctx, c.ID)
+				err := u.LoadCorporation(context.Background(), c.ID)
 				if err != nil {
 					slog.Error("make corporation switch menu", "error", err)
 					u.snackbar.Display("Failed to switch corporation. Try again later.")

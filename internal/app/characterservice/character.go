@@ -87,6 +87,10 @@ func (s *CharacterService) ListEveCharacters(ctx context.Context) ([]*app.EveCha
 	return s.st.ListCharacterEveCharacters(ctx)
 }
 
+func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort, error) {
+	return s.st.ListCharactersShort(ctx)
+}
+
 // CharacterNames returns an ID to name map for all existing characters.
 func (s *CharacterService) CharacterNames(ctx context.Context) (map[int64]string, error) {
 	oo, err := s.st.ListCharactersShort(ctx)
