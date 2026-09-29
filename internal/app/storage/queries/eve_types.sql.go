@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"strings"
 )
 
 const createEveType = `-- name: CreateEveType :exec
@@ -490,6 +491,80 @@ func (q *Queries) ListEveTypes(ctx context.Context) ([]ListEveTypesRow, error) {
 	var items []ListEveTypesRow
 	for rows.Next() {
 		var i ListEveTypesRow
+		if err := rows.Scan(
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveTypesForIDs = `-- name: ListEveTypesForIDs :many
+SELECT
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    eve_types et
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    et.id IN (/*SLICE:ids*/?)
+`
+
+type ListEveTypesForIDsRow struct {
+	EveType     EveType
+	EveGroup    EveGroup
+	EveCategory EveCategory
+}
+
+func (q *Queries) ListEveTypesForIDs(ctx context.Context, ids []int64) ([]ListEveTypesForIDsRow, error) {
+	query := listEveTypesForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveTypesForIDsRow
+	for rows.Next() {
+		var i ListEveTypesForIDsRow
 		if err := rows.Scan(
 			&i.EveType.ID,
 			&i.EveType.EveGroupID,

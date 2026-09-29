@@ -115,6 +115,55 @@ func TestLocation(t *testing.T) {
 		want := []*app.EveLocation{l1, l2}
 		xassert.Equal(t, want, got)
 	})
+	t.Run("can list locations with shared and missing related objects", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		owner := factory.CreateEveEntityCorporation()
+		system := factory.CreateEveSolarSystem()
+		myType := factory.CreateEveType()
+		arg := storage.UpdateOrCreateLocationParams{
+			OwnerID:       optional.New(owner.ID),
+			SolarSystemID: optional.New(system.ID),
+			TypeID:        optional.New(myType.ID),
+		}
+		l1 := factory.CreateEveLocationStructure(arg)
+		l2 := factory.CreateEveLocationStructure(arg)
+		l3 := factory.CreateEveLocationEmptyStructure()
+		// when
+		got, err := st.ListEveLocation(ctx)
+		// then
+		require.NoError(t, err)
+		m := make(map[int64]*app.EveLocation)
+		for _, o := range got {
+			m[o.ID] = o
+		}
+		require.Len(t, m, 3)
+		for _, id := range []int64{l1.ID, l2.ID} {
+			xassert.EqualOptional(t, owner, m[id].Owner)
+			xassert.EqualOptional(t, system, m[id].SolarSystem)
+			xassert.EqualOptional(t, myType, m[id].Type)
+		}
+		assert.True(t, m[l3.ID].Owner.IsEmpty())
+		assert.True(t, m[l3.ID].SolarSystem.IsEmpty())
+		assert.True(t, m[l3.ID].Type.IsEmpty())
+	})
+	t.Run("can list locations with chunking", func(t *testing.T) {
+		// given
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		testutil.MustTruncateTables(db)
+		l1 := factory.CreateEveLocationStructure()
+		l2 := factory.CreateEveLocationStructure()
+		l3 := factory.CreateEveLocationStructure()
+		// when
+		got, err := st.ListEveLocation(ctx)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveLocation{l1, l2, l3}, got)
+	})
 	t.Run("can list location IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
