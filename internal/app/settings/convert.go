@@ -25,11 +25,15 @@ type settingWrite struct {
 
 // set stores value for key in the in-memory cache immediately and queues it to
 // be persisted to storage asynchronously by persistLoop; any persistence error
-// is logged (but not returned) there.
+// is logged (but not returned) there. After Close set is a no-op.
 func (s *Settings) set(key, value string) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		slog.Debug("settings: write after close ignored", "key", key)
+		return
+	}
 	s.values[key] = value
-	s.mu.Unlock()
 	s.writeQueue.Put(settingWrite{key: key, value: value})
 }
 

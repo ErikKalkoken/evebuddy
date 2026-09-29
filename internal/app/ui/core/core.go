@@ -512,6 +512,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.app.Lifecycle().SetOnExitedForeground(func() {
 		slog.Debug("Fyne App exited foreground")
 		u.isForeground.Store(false)
+		if u.isMobile {
+			go u.settings.Flush() // Android may kill the process without shutdown
+		}
 	})
 
 	u.app.Lifecycle().SetOnStopped(func() {

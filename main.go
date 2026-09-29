@@ -252,11 +252,11 @@ func main() {
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
 
-	settings, err := settings.New(context.Background(), st)
+	settings, err := settings.New(st)
 	if err != nil {
 		log.Fatalf("Failed to initialize settings: %s", err)
 	}
-	defer settings.Flush()
+	defer settings.Close()
 	if *resetUIFlag {
 		settings.ResetUI()
 	}
