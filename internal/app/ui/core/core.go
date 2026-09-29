@@ -609,10 +609,13 @@ func (u *baseUI) ShowAndRun() {
 	slog.Info("Shutting down app")
 	u.snackbar.Stop()
 	u.signals.BeginShutdown()
-	u.tasks.Stop()
-	u.cs.Stop()
-	u.rs.Stop()
-	u.eus.Stop()
+	// Stop in parallel so all update contexts are canceled at once.
+	var wg sync.WaitGroup
+	wg.Go(func() { u.tasks.Stop() })
+	wg.Go(u.cs.Stop)
+	wg.Go(u.rs.Stop)
+	wg.Go(u.eus.Stop)
+	wg.Wait()
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}
