@@ -589,7 +589,10 @@ func (u *baseUI) ShowAndRun() {
 		u.onShowAndRun()
 	}
 	u.window.ShowAndRun()
+
+	// App shutdown
 	slog.Info("Shutting down app")
+	u.snackbar.Stop()
 	u.signals.BeginShutdown()
 	u.tasks.Stop()
 	u.cs.Stop()
@@ -1025,7 +1028,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 				err := u.LoadCharacter(ctx, c.ID)
 				if err != nil {
 					slog.Error("make character switch menu", "error", err)
-					u.snackbar.Display("ERROR: Failed to switch character")
+					u.snackbar.Display("Failed to switch character. Try again later.")
 				}
 			}()
 		})
@@ -1085,7 +1088,7 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 				err := u.LoadCorporation(ctx, c.ID)
 				if err != nil {
 					slog.Error("make corporation switch menu", "error", err)
-					u.snackbar.Display("ERROR: Failed to switch corporation")
+					u.snackbar.Display("Failed to switch corporation. Try again later.")
 				}
 			}()
 		})

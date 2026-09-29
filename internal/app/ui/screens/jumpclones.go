@@ -421,11 +421,8 @@ func (a *JumpClones) updateRoutesAsync() {
 
 func (a *JumpClones) setOrigin(w fyne.Window) {
 	if a.u.IsOffline() {
-		ui.ShowInformation("Offline", "Can't set origin while offline", w)
+		a.u.DisplaySnackbar("Can't set origin while offline")
 		return
-	}
-	showErrorDialog := func(search string, err error) {
-		ui.ShowErrorAndLog("Failed to resolve search for "+search, err, a.u.IsDeveloperMode(), w)
 	}
 	var d dialog.Dialog
 	var results []*app.EveEntity
@@ -458,9 +455,7 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 		go func() {
 			s, err := a.u.EVEUniverse().GetOrCreateSolarSystemESI(context.Background(), r.ID)
 			if err != nil {
-				fyne.Do(func() {
-					showErrorDialog("Could not load solar system", err)
-				})
+				ui.NotifyErrorAndLog("Failed to load solar system. Try again later.", err, a.u.DisplaySnackbar)
 				return
 			}
 			fyne.Do(func() {
@@ -496,9 +491,7 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 				false,
 			)
 			if err != nil {
-				fyne.Do(func() {
-					showErrorDialog(search, err)
-				})
+				ui.NotifyErrorAndLog("Failed to resolve search. Try again later.", err, a.u.DisplaySnackbar)
 				return
 			}
 			x := ee[app.SearchSolarSystem]

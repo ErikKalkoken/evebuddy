@@ -20,6 +20,8 @@ import (
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
@@ -754,15 +756,22 @@ func (u *DesktopUI) saveAppState() {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	w, created := u.GetOrCreateWindow("new-eden-search", "Search New Eden")
+	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("new-eden-search", "Search New Eden")
 	if !created {
 		w.Show()
 		return
 	}
+	sb := kxwidget.NewSnackbar(w.Canvas())
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		sb.Stop()
+	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()
-	u.gameSearch.SetWindow(w)
+	u.gameSearch.SetWindow(w, sb.Display)
 	u.gameSearch.Focus()
 }
 

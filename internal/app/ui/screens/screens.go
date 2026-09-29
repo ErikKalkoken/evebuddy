@@ -20,6 +20,7 @@ type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	DestroyWindow(id string) bool
+	DisplaySnackbar(text string)
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
@@ -32,11 +33,10 @@ type baseUI interface {
 	IsUpdateDisabled() bool
 	MainWindow() fyne.Window
 	MakeWindowTitle(parts ...string) string
-	Settings() *settings.Settings
 	SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Resource))
+	Settings() *settings.Settings
 	ShowCharacter(ctx context.Context, characterID int64)
 	ShowCorporation(ctx context.Context, corporationID int64)
-	DisplaySnackbar(text string)
 	Signals() *app.Signals
 	UpdateMailIndicator(ctx context.Context)
 }

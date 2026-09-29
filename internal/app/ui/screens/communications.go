@@ -600,16 +600,10 @@ func (a *communicationsMessagePane) markCurrentFolderRead() {
 		}
 	}
 	go func() {
-		reportError := func(err error) {
-			fyne.Do(func() {
-				ui.ShowErrorAndLog("Failed to mark folder as read", err, a.co.u.IsDeveloperMode(), a.co.u.MainWindow())
-			})
-		}
-
 		ctx := context.Background()
 		err := a.co.u.Character().SetNotificationsAsRead(ctx, ids)
 		if err != nil {
-			reportError(err)
+			ui.NotifyErrorAndLog("Failed to mark folder as read. Try again later.", err, a.co.u.DisplaySnackbar)
 			return
 		}
 		go a.co.u.Signals().DataUpdated.Emit(ctx, unreadNotificationsUpdated)

@@ -86,6 +86,9 @@ func ShowProgressConfirm(
 
 // ShowErrorAndLog shows a error dialog and logs the error.
 func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyne.Window) {
+	if app.IsErrorCanceled(err) {
+		return
+	}
 	errorText := "no error"
 	if err != nil {
 		slog.Error(message, "error", err)
@@ -110,4 +113,14 @@ func ShowErrorAndLog(message string, err error, IsDeveloperMode bool, parent fyn
 	d := dialog.NewCustom("Error", "OK", c, parent)
 	xdesktop.DisableShortcutsForDialog(d, parent)
 	d.Show()
+}
+
+// NotifyErrorAndLog shows a error notification and logs the error.
+// This function can be called from outside the main thread.
+func NotifyErrorAndLog(message string, err error, notify func(string)) {
+	if app.IsErrorCanceled(err) {
+		return
+	}
+	slog.Error(message, "error", err)
+	notify(message)
 }

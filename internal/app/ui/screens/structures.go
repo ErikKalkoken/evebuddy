@@ -506,7 +506,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 		reportError := func(err error) {
 			fyne.Do(func() {
 				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+				ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			})
 		}
 		structure, err := u.Corporation().GetStructure(ctx, corporationID, structureID)
