@@ -90,7 +90,9 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 	}
 	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
 	if err != nil {
-		slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		if ctx.Err() == nil {
+			slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		}
 		return m
 	}
 	for _, o := range oo {
