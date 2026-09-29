@@ -369,6 +369,9 @@ func (a *SkillSearch) update(ctx context.Context) {
 	var err error
 	rows, err = a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh skills", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)

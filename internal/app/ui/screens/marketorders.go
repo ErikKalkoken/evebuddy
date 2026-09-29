@@ -451,6 +451,9 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 func (a *MarketOrders) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh locations UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)

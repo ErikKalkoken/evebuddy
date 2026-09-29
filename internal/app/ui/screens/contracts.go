@@ -582,6 +582,9 @@ func (a *Contracts) update(ctx context.Context) {
 		rows, activeCount, err = a.fetchRowsOverview(ctx)
 	}
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))

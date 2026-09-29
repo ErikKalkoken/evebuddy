@@ -260,6 +260,9 @@ func (a *FlyableShips) update(ctx context.Context) {
 		})
 	}
 	reportError := func(err error) {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update data for flyable ships UI", "error", err)
 		setTop(a.u.ErrorDisplay(err), widget.DangerImportance)
 	}

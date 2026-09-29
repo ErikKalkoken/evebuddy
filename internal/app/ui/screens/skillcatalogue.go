@@ -326,6 +326,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 
 	hasData, err := a.u.EVEUniverse().HasSection(ctx, app.SectionEveTypes)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Updating skill catalogue UI", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -346,6 +349,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 
 	hasData2, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterSkills)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Updating skill catalogue UI", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -359,6 +365,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Updating skill catalogue UI", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -368,6 +377,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 
 	skills, err := a.u.Character().ListSkills(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Updating skill catalogue UI", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -377,6 +389,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 	sq := app.NewCharacterSkillqueue()
 	err = sq.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update skill queue", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)

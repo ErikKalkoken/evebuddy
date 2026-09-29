@@ -412,6 +412,9 @@ func (a *CharacterOverview) update(ctx context.Context) {
 	}
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		slog.Error("Failed to refresh overview UI", "err", err)
@@ -429,6 +432,9 @@ func (a *CharacterOverview) update(ctx context.Context) {
 
 func (a *CharacterOverview) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("characterOverview: Failed to update item", "characterID", characterID, "error", err)
 	}
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
@@ -490,6 +496,9 @@ func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 	if id, ok := c.LocationID.Value(); ok {
 		el, err := a.u.EVEUniverse().GetLocation(ctx, id)
 		if err != nil {
+			if ctx.Err() != nil {
+				return r, err
+			}
 			slog.Error("Failed to load location for character in overview", "characterID", c.ID, "error", err)
 		} else {
 			r.location.Set(el)
@@ -503,6 +512,9 @@ func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 	if id, ok := c.ShipTypeID.Value(); ok {
 		et, err := a.u.EVEUniverse().GetType(ctx, id)
 		if err != nil {
+			if ctx.Err() != nil {
+				return r, err
+			}
 			slog.Error("Failed to load ship for character in overview", "characterID", c.ID, "error", err)
 		}
 		r.ship.Set(et)

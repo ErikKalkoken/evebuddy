@@ -168,6 +168,9 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		logErr := func(err error) {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
 		if arg.Section == app.SectionCharacterRoles {
@@ -348,6 +351,9 @@ func (a *CorporationOverview) update(ctx context.Context) {
 	}
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset()
 		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		slog.Error("Failed to refresh corporation overview UI", "err", err)
@@ -366,11 +372,17 @@ func (a *CorporationOverview) update(ctx context.Context) {
 func (a *CorporationOverview) updateItem(ctx context.Context, corporationID int64) {
 	c, err := a.u.Corporation().GetCorporation(ctx, corporationID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("corporationOverview: Failed to update item", "corporationID", corporationID, "error", err)
 		return
 	}
 	r, err := a.fetchRow(ctx, c)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("corporationOverview: Failed to update item", "corporationID", corporationID, "error", err)
 		return
 	}

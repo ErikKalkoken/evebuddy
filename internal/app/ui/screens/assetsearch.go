@@ -822,6 +822,9 @@ func (a *AssetSearch) update(ctx context.Context) {
 	if !a.forCorporation {
 		n, err := a.characterCount(ctx)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to refresh asset data", "err", err)
 			reset()
 			setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -841,6 +844,9 @@ func (a *AssetSearch) update(ctx context.Context) {
 		rows, err = a.fetchRowsForAll(ctx)
 	}
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh asset data", "err", err)
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)

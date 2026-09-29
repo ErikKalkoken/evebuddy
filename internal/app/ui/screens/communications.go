@@ -621,6 +621,9 @@ func (a *communicationsMessagePane) markCurrentFolderRead() {
 func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id int64) {
 	err := a.co.u.Character().SetNotificationsAsRead(ctx, set.Of(id))
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to set notification as read", "ID", id)
 		return
 	}
@@ -870,6 +873,9 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 func (a *communicationsReadingPane) loadNotification(ctx context.Context, r notificationRow) {
 	cn, err := a.co.u.Character().GetNotification(ctx, r.characterID, r.notificationID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to load communication", "characterID", r.characterID, "notificationID", r.notificationID, "error", err)
 		fyne.Do(func() {
 			if a.requestedID != r.id {

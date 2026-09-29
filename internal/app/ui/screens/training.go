@@ -530,6 +530,9 @@ func (a *Training) filterRowsAsync(sortCol string) {
 func (a *Training) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh training UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
@@ -547,6 +550,9 @@ func (a *Training) update(ctx context.Context) {
 
 func (a *Training) updateItem(ctx context.Context, characterID int64) {
 	logErr := func(err error) {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Training: Failed to update item", "characterID", characterID, "error", err)
 	}
 	c, err := a.u.Character().GetCharacter(ctx, characterID)

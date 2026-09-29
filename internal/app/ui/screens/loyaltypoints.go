@@ -278,6 +278,9 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 func (a *LoyaltyPoints) update(ctx context.Context) {
 	data, err := a.fetchData(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh loyaltyPoints UI", "err", err)
 		fyne.Do(func() {
 			a.top.Text = "ERROR: " + a.u.ErrorDisplay(err)

@@ -130,6 +130,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	}
 	hasAssets, hasContracts, hasWallet, err := a.hasAnyData(ctx, corporationID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch data for corporation wealth charts", "corporationID", corporationID, "err", err)
 		a.showTop(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
 		return
@@ -144,12 +147,18 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	if hasAssets {
 		v, err := a.u.Corporation().CalculateAssetTotalValue(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch corporation asset value", "corporationID", corporationID, "err", err)
 		} else {
 			totalAssetValue = v
 		}
 		m, err := a.u.Corporation().CalculateAssetValueByDivision(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch corporation asset value by division", "corporationID", corporationID, "err", err)
 		} else {
 			assetByDivision = m
@@ -158,6 +167,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	if hasContracts {
 		v, err := a.u.Corporation().CalculateContractsEscrow(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch corporation contracts escrow", "corporationID", corporationID, "err", err)
 		} else {
 			contractsEscrow = v
@@ -167,6 +179,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	if hasWallet {
 		wb, err := a.u.Corporation().ListWalletBalances(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch corporation wallet balances", "corporationID", corporationID, "err", err)
 		} else {
 			walletBalances = wb

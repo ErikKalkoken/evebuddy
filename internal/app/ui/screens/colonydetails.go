@@ -208,6 +208,9 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		if arg.CharacterID == a.characterID.Load() && arg.Section == app.SectionCharacterPlanets {
 			err := a.Update(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("failed to update colony installations", "error", err)
 				fyne.Do(func() {
 					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))

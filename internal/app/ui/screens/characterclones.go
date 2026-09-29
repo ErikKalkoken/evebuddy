@@ -129,6 +129,9 @@ func (a *CharacterClones) update(ctx context.Context) {
 
 	td, err := a.fetchData(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
 			a.top.Set(xwidget.RichTextSegmentsFromText("ERROR: "+a.u.ErrorDisplay(err), widget.RichTextStyle{

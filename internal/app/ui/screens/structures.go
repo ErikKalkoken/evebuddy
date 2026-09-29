@@ -397,6 +397,9 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	rows, err := a.fetchData(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		reset()
 		fyne.Do(func() {

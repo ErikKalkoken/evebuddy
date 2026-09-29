@@ -223,6 +223,9 @@ func (a *Mails) update(ctx context.Context) {
 		}
 		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterMailHeaders)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 			setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 			return
@@ -235,6 +238,9 @@ func (a *Mails) update(ctx context.Context) {
 	} else {
 		names, err := a.u.Character().CharacterNames(ctx)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to build mail tree", "error", err)
 			setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 			return
@@ -258,12 +264,18 @@ func (a *Mails) update(ctx context.Context) {
 	}
 	td, inbox, err := a.NavigationPane.fetchFolders(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to build mail tree", "character", characterID, "error", err)
 		setStatus("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	unread, err := a.NavigationPane.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
 	}
 	// keep showing the current folder if it still exists, e.g. after new mail arrived
@@ -730,6 +742,9 @@ func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
 	characterID := a.ma.character.Load().IDOrZero()
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
 	}
@@ -1017,6 +1032,9 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 	if a.ma.forCharacter {
 		hasData, err := a.ma.u.Character().HasSection(ctx, folder.CharacterID, app.SectionCharacterMailHeaders)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 			setStatus("Failed to load: "+a.ma.u.ErrorDisplay(err), widget.DangerImportance)
 			reset()
@@ -1031,6 +1049,9 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 
 	rows, err := a.fetchRows(ctx, folder)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		setStatus("Failed to load: "+a.ma.u.ErrorDisplay(err), widget.DangerImportance)
 		reset()
@@ -1381,6 +1402,9 @@ func (a *mailsReadingPane) setBody(s string) {
 func (a *mailsReadingPane) loadMail(ctx context.Context, characterID, mailID int64) {
 	mail, err := a.ma.u.Character().GetMail(ctx, characterID, mailID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		fyne.Do(func() {
 			if !a.isRequested(characterID, mailID) {
@@ -1409,6 +1433,9 @@ func (a *mailsReadingPane) loadMail(ctx context.Context, characterID, mailID int
 			a.ma.sig.Do(fmt.Sprintf("charactermails-load-mail-%d-%d", characterID, mailID), func() (any, error) {
 				body, err := a.ma.u.Character().UpdateMailBodyESI(ctx, characterID, mail.MailID)
 				if err != nil {
+					if ctx.Err() != nil {
+						return nil, nil
+					}
 					slog.Error("Failed to update mail body", "characterID", characterID, "mailID", mail.MailID, "error", err)
 					fyne.Do(func() {
 						if a.mail == nil || a.mail.CharacterID != characterID || a.mail.MailID != mailID {
