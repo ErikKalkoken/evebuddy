@@ -297,6 +297,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		slog.Debug("Signal: CharacterSectionChanged", "arg", arg)
 		logErr := func(err error) {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
 		isShown := arg.CharacterID == u.character.Load().IDOrZero()
@@ -373,6 +376,9 @@ func newBaseUI(arg UIParams) *baseUI {
 			}
 			characterIDs, err := u.cs.ListCharacterIDs(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 				return
 			}
@@ -382,6 +388,9 @@ func newBaseUI(arg UIParams) *baseUI {
 		case app.SectionEveCorporations:
 			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update status", "arg", arg, "err", err)
 				return
 			}
@@ -391,6 +400,9 @@ func newBaseUI(arg UIParams) *baseUI {
 		case app.SectionEveMarketPrices:
 			err := u.cs.UpdateAllCalculatedValues(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 				return
 			}
@@ -786,6 +798,9 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 	}
 	c, err := u.cs.GetCharacter(ctx, id)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("reload character", "characterID", id, "error", err)
 	}
 	u.character.Store(c)
@@ -911,6 +926,9 @@ func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	}
 	n, err := u.cs.GetAllMailUnreadCount(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("update mail indicator", "error", err)
 		return
 	}
@@ -939,6 +957,9 @@ func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 		}
 		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
 			return
 		}
@@ -947,11 +968,17 @@ func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 		}
 		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
 			return
 		}
 		v = b
 	}()
+	if ctx.Err() != nil {
+		return
+	}
 	fyne.Do(func() {
 		u.onUpdateCorporationWalletTotals(v)
 	})
@@ -1057,6 +1084,9 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
 	cc, err := u.ListCorporationsForSelection(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch corporations", "error", err)
 		fyne.Do(func() {
 			setItems(nil)

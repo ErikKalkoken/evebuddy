@@ -266,6 +266,9 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 func (a *statusBar) updateCharacterCount(ctx context.Context) {
 	ids, err := a.u.cs.ListCharacterIDs(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("updating character count", "error", err)
 		return
 	}

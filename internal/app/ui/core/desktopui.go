@@ -721,6 +721,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		go func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to fetch corporations", "error", err)
 				return
 			}

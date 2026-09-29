@@ -571,6 +571,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		go func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to fetch corporations", "error", err)
 				return
 			}
@@ -675,6 +678,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 	updateCharacterCount := func(ctx context.Context) {
 		ids, err := u.cs.ListCharacterIDs(ctx)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("updating character count", "error", err)
 			return
 		}
