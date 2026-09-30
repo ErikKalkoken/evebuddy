@@ -207,7 +207,7 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 		arg.TypeID = x.ID
 	}
 	if arg.ItemID == 0 {
-		arg.ItemID = f.calcNewIDWithCharacter("character_assets", "item_id", arg.CharacterID)
+		arg.ItemID = f.calcNewID("character_assets", "item_id", 1)
 	}
 	if arg.LocationFlag == app.FlagUndefined {
 		arg.LocationFlag = app.FlagHangar
@@ -1325,7 +1325,7 @@ func (f Factory) CreateCorporationAsset(args ...storage.CreateCorporationAssetPa
 		arg.EveTypeID = x.ID
 	}
 	if arg.ItemID == 0 {
-		arg.ItemID = f.calcNewIDWithCorporation("corporation_assets", "item_id", arg.CorporationID)
+		arg.ItemID = f.calcNewID("corporation_assets", "item_id", 1)
 	}
 	if arg.LocationFlag == app.FlagUndefined {
 		arg.LocationFlag = app.FlagHangar
