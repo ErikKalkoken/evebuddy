@@ -50,13 +50,14 @@ const (
 	githubRepo  = "evebuddy"
 )
 
-// ticker
+// timings
 const (
-	refreshUITick           = 30 * time.Second
 	characterUpdateTick     = 60 * time.Second
 	corporationUpdateTick   = 60 * time.Second
-	eveUniverseUpdateTick   = 300 * time.Second
 	delayBeforeUpdateStatus = 3 * time.Second
+	eveUniverseUpdateTick   = 300 * time.Second
+	refreshUITick           = 30 * time.Second
+	shutdownTimeout         = 15 * time.Second
 )
 
 // Default ScaleMode for images
@@ -607,15 +608,25 @@ func (u *baseUI) ShowAndRun() {
 
 	// App shutdown
 	slog.Info("Shutting down app")
+	u.settings.Flush() // persist settings before anything can hang
 	u.snackbar.Stop()
 	u.signals.BeginShutdown()
-	// Stop in parallel so all update contexts are canceled at once.
+	// Stop in parallel so shutdown is faster and all update contexts are canceled at once.
 	var wg sync.WaitGroup
 	wg.Go(func() { u.tasks.Stop() })
 	wg.Go(u.cs.Stop)
 	wg.Go(u.rs.Stop)
 	wg.Go(u.eus.Stop)
-	wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownTimeout):
+		slog.Warn("Timed out waiting for background tasks to stop, exiting anyway", "timeout", shutdownTimeout)
+	}
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}
