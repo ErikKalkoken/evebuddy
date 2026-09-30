@@ -27,7 +27,7 @@ func createEveCategory(ctx context.Context, q *queries.Queries, arg CreateEveCat
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	e, err := q.CreateEveCategory(ctx, queries.CreateEveCategoryParams{
-		ID:         arg.ID,
+		ID:          arg.ID,
 		IsPublished: arg.IsPublished,
 		Name:        arg.Name,
 	})
@@ -42,7 +42,7 @@ func (st *Storage) GetEveCategory(ctx context.Context, id int64) (*app.EveCatego
 }
 
 func getEveCategory(ctx context.Context, q *queries.Queries, id int64) (*app.EveCategory, error) {
-	c, err := q.GetEveCategory(ctx,id)
+	c, err := q.GetEveCategory(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("getEveCategory: %+v: %w", id, convertGetError(err))
 	}
@@ -78,7 +78,7 @@ func (st *Storage) GetOrCreateEveCategory(ctx context.Context, arg CreateEveCate
 
 func eveCategoryFromDBModel(c queries.EveCategory) *app.EveCategory {
 	return &app.EveCategory{
-		ID:         c.ID,
+		ID:          c.ID,
 		IsPublished: c.IsPublished,
 		Name:        c.Name,
 	}

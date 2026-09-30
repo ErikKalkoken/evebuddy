@@ -37,15 +37,15 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
-		ClientID:     arg.ClientID,
+		ClientID:      arg.ClientID,
 		Date:          arg.Date,
-		DivisionID:   arg.DivisionID,
-		EveTypeID:    arg.EveTypeID,
+		DivisionID:    arg.DivisionID,
+		EveTypeID:     arg.EveTypeID,
 		IsBuy:         arg.IsBuy,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
-		CorporationID:arg.CorporationID,
-		Quantity:     arg.Quantity,
+		CorporationID: arg.CorporationID,
+		Quantity:      arg.Quantity,
 		TransactionID: arg.TransactionID,
 		UnitPrice:     arg.UnitPrice,
 	})
@@ -63,8 +63,8 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
-		CorporationID:corporationID,
-		DivisionID:   d.ID(),
+		CorporationID: corporationID,
+		DivisionID:    d.ID(),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -87,8 +87,8 @@ func (st *Storage) GetCorporationWalletTransaction(ctx context.Context, arg GetC
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletTransaction(ctx, queries.GetCorporationWalletTransactionParams{
-		CorporationID:arg.CorporationID,
-		DivisionID:   arg.DivisionID,
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {
@@ -116,8 +116,8 @@ func (st *Storage) ListCorporationWalletTransactionIDs(ctx context.Context, arg 
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
 	ids, err := st.qRO.ListCorporationWalletTransactionIDs(ctx, queries.ListCorporationWalletTransactionIDsParams{
-		CorporationID:arg.CorporationID,
-		DivisionID:   arg.DivisionID,
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -133,8 +133,8 @@ func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg Co
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	rows, err := st.qRO.ListCorporationWalletTransactions(ctx, queries.ListCorporationWalletTransactionsParams{
-		CorporationID:arg.CorporationID,
-		DivisionID:   arg.DivisionID,
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -170,7 +170,7 @@ func corporationWalletTransactionFromDBModel(
 	o2 := &app.CorporationWalletTransaction{
 		Client:       eveEntityFromDBModel(client),
 		Date:         o.Date,
-		DivisionID:  o.DivisionID,
+		DivisionID:   o.DivisionID,
 		Type:         eveTypeFromDBModel(et, eg, ec),
 		ID:           o.ID,
 		IsBuy:        o.IsBuy,
@@ -179,14 +179,14 @@ func corporationWalletTransactionFromDBModel(
 			ID:             o.LocationID,
 			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
-		CorporationID:o.CorporationID,
-		Quantity:     o.Quantity,
+		CorporationID: o.CorporationID,
+		Quantity:      o.Quantity,
 		TransactionID: o.TransactionID,
 		UnitPrice:     o.UnitPrice,
 	}
 	if regionID.Valid && regionName.Valid {
 		o2.Region = &app.EntityShort{
-			ID:  regionID.Int64,
+			ID:   regionID.Int64,
 			Name: regionName.String,
 		}
 	}

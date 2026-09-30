@@ -19,8 +19,8 @@ func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTy
 		return fmt.Errorf("CreateEveTypeDogmaEffect: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveTypeDogmaEffectParams{
-		DogmaEffectID:arg.DogmaEffectID,
-		EveTypeID:    arg.EveTypeID,
+		DogmaEffectID: arg.DogmaEffectID,
+		EveTypeID:     arg.EveTypeID,
 		IsDefault:     arg.IsDefault,
 	}
 	err := st.qRW.CreateEveTypeDogmaEffect(ctx, arg2)
@@ -32,8 +32,8 @@ func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTy
 
 func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAttributeID int64) (bool, error) {
 	arg := queries.GetEveTypeDogmaEffectParams{
-		DogmaEffectID:dogmaAttributeID,
-		EveTypeID:    eveTypeID,
+		DogmaEffectID: dogmaAttributeID,
+		EveTypeID:     eveTypeID,
 	}
 	row, err := st.qRO.GetEveTypeDogmaEffect(ctx, arg)
 	if err != nil {

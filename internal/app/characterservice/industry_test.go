@@ -33,19 +33,19 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		industry := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeIndustry})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        industry.ID,
+			TypeID:           industry.ID,
 			ActiveSkillLevel: 5,
 		})
 		massProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassProduction})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        massProduction.ID,
+			TypeID:           massProduction.ID,
 			ActiveSkillLevel: 5,
 		})
 		advancedMassProduction := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedMassProduction})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        advancedMassProduction.ID,
+			TypeID:           advancedMassProduction.ID,
 			ActiveSkillLevel: 3,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
@@ -90,13 +90,13 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		laboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLaboratoryOperation})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        laboratoryOperation.ID,
+			TypeID:           laboratoryOperation.ID,
 			ActiveSkillLevel: 5,
 		})
 		advancedLaboratoryOperation := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedLaboratoryOperation})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        advancedLaboratoryOperation.ID,
+			TypeID:           advancedLaboratoryOperation.ID,
 			ActiveSkillLevel: 3,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
@@ -140,13 +140,13 @@ func TestListAllCharactersIndustrySlots(t *testing.T) {
 		massReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeMassReactions})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        massReactions.ID,
+			TypeID:           massReactions.ID,
 			ActiveSkillLevel: 5,
 		})
 		advancedMassReactions := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeAdvancedMassReactions})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
 			CharacterID:      character.ID,
-			TypeID:        advancedMassReactions.ID,
+			TypeID:           advancedMassReactions.ID,
 			ActiveSkillLevel: 3,
 		})
 		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{

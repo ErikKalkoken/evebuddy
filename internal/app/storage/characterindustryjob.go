@@ -151,8 +151,6 @@ func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) 
 	return result, nil
 }
 
-
-
 func characterIndustryJobFromDBModel(
 	blueprintLocationName blueprintLocationName,
 	blueprintLocationSecurity blueprintLocationSecurity,

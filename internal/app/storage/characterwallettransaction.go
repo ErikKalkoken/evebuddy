@@ -36,15 +36,15 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCharacterWalletTransaction(ctx, queries.CreateCharacterWalletTransactionParams{
-		ClientID:     arg.ClientID,
+		ClientID:      arg.ClientID,
 		Date:          arg.Date,
-		EveTypeID:    arg.EveTypeID,
+		EveTypeID:     arg.EveTypeID,
 		IsBuy:         arg.IsBuy,
 		IsPersonal:    arg.IsPersonal,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
-		CharacterID:  arg.CharacterID,
-		Quantity:     arg.Quantity,
+		CharacterID:   arg.CharacterID,
+		Quantity:      arg.Quantity,
 		TransactionID: arg.TransactionID,
 		UnitPrice:     arg.UnitPrice,
 	})
@@ -67,7 +67,7 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, arg GetCha
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCharacterWalletTransaction(ctx, queries.GetCharacterWalletTransactionParams{
-		CharacterID:  arg.CharacterID,
+		CharacterID:   arg.CharacterID,
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {
@@ -94,7 +94,7 @@ func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, charac
 	if characterID == 0 {
 		return set.Set[int64]{}, wrapErr(app.ErrInvalid)
 	}
-	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx,characterID)
+	ids, err := st.qRO.ListCharacterWalletTransactionIDs(ctx, characterID)
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
 	}
@@ -108,7 +108,7 @@ func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characte
 	if characterID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterWalletTransactions(ctx,characterID)
+	rows, err := st.qRO.ListCharacterWalletTransactions(ctx, characterID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -152,14 +152,14 @@ func characterWalletTransactionFromDBModel(
 			ID:             o.LocationID,
 			Name:           optional.New(locationName),
 			SecurityStatus: optional.FromNullFloat64ToFloat32(systemSecurityStatus)},
-		CharacterID:  o.CharacterID,
-		Quantity:     o.Quantity,
+		CharacterID:   o.CharacterID,
+		Quantity:      o.Quantity,
 		TransactionID: o.TransactionID,
 		UnitPrice:     o.UnitPrice,
 	}
 	if regionID.Valid && regionName.Valid {
 		o2.Region = &app.EntityShort{
-			ID:  regionID.Int64,
+			ID:   regionID.Int64,
 			Name: regionName.String,
 		}
 	}

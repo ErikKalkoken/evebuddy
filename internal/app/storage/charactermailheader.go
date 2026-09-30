@@ -15,7 +15,7 @@ import (
 func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int64, labelID int64) ([]*app.CharacterMailHeader, error) {
 	switch labelID {
 	case app.MailLabelAll:
-		rows, err := st.qRO.ListMailsOrdered(ctx,characterID)
+		rows, err := st.qRO.ListMailsOrdered(ctx, characterID)
 		if err != nil {
 			return nil, fmt.Errorf("list mails for character %d: %w", characterID, err)
 		}
@@ -25,7 +25,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		return mm, nil
 	case app.MailLabelNone:
-		rows, err := st.qRO.ListMailsNoLabelOrdered(ctx,characterID)
+		rows, err := st.qRO.ListMailsNoLabelOrdered(ctx, characterID)
 		if err != nil {
 			return nil, fmt.Errorf("list mails wo labels for character %d: %w", characterID, err)
 		}
@@ -36,8 +36,8 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		return mm, nil
 	default:
 		arg := queries.ListMailsForLabelOrderedParams{
-			CharacterID:characterID,
-			LabelID:    labelID,
+			CharacterID: characterID,
+			LabelID:     labelID,
 		}
 		rows, err := st.qRO.ListMailsForLabelOrdered(ctx, arg)
 		if err != nil {
@@ -53,8 +53,8 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 
 func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, characterID int64, listID int64) ([]*app.CharacterMailHeader, error) {
 	arg := queries.ListMailsForListOrderedParams{
-		CharacterID:characterID,
-		EveEntityID:listID,
+		CharacterID: characterID,
+		EveEntityID: listID,
 	}
 	rows, err := st.qRO.ListMailsForListOrdered(ctx, arg)
 	if err != nil {
@@ -108,7 +108,7 @@ func (st *Storage) ListAllCharacterMailHeadersForListOrdered(ctx context.Context
 
 func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int64, earliest time.Time) ([]*app.CharacterMailHeader, error) {
 	arg := queries.ListMailsUnprocessedParams{
-		CharacterID:characterID,
+		CharacterID: characterID,
 		LabelID:     app.MailLabelSent,
 		Timestamp:   earliest,
 	}
@@ -130,7 +130,7 @@ func characterMailHeaderFromDBModel(
 		From:        eveEntityFromDBModel(from),
 		ID:          mail.ID,
 		IsRead:      mail.IsRead,
-		MailID:     mail.MailID,
+		MailID:      mail.MailID,
 		Subject:     mail.Subject,
 		Timestamp:   mail.Timestamp,
 	}

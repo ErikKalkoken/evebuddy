@@ -16,8 +16,8 @@ func (st *Storage) GetCorporationHangarName(ctx context.Context, arg Corporation
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	o, err := st.qRO.GetCorporationHangarName(ctx, queries.GetCorporationHangarNameParams{
-		CorporationID:arg.CorporationID,
-		DivisionID:   arg.DivisionID,
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -32,7 +32,7 @@ func (st *Storage) ListCorporationHangarNames(ctx context.Context, corporationID
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationHangarNames(ctx,corporationID)
+	rows, err := st.qRO.ListCorporationHangarNames(ctx, corporationID)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -57,8 +57,8 @@ func (st *Storage) UpdateOrCreateCorporationHangarName(ctx context.Context, arg 
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationHangarName(ctx, queries.UpdateOrCreateCorporationHangarNameParams{
-		CorporationID:arg.CorporationID,
-		DivisionID:   arg.DivisionID,
+		CorporationID: arg.CorporationID,
+		DivisionID:    arg.DivisionID,
 		Name:          arg.Name,
 	})
 	if err != nil {
@@ -69,8 +69,8 @@ func (st *Storage) UpdateOrCreateCorporationHangarName(ctx context.Context, arg 
 
 func corporationHangarNameFromDBModel(o queries.CorporationHangarName) *app.CorporationHangarName {
 	o2 := &app.CorporationHangarName{
-		CorporationID:o.CorporationID,
-		DivisionID:   o.DivisionID,
+		CorporationID: o.CorporationID,
+		DivisionID:    o.DivisionID,
 		Name:          o.Name,
 	}
 	return o2
