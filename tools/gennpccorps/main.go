@@ -3,12 +3,15 @@
 package main
 
 import (
+	"bytes"
+	"cmp"
 	_ "embed"
 	"flag"
-	"html/template"
-	"io"
+	"go/format"
 	"log"
 	"os"
+	"slices"
+	"text/template"
 
 	"github.com/goccy/go-yaml"
 )
@@ -49,28 +52,34 @@ func main() {
 		r := row{CorporationID: k, FactionID: v.FactionID}
 		values = append(values, r)
 	}
+	slices.SortFunc(values, func(a, b row) int {
+		return cmp.Compare(a.CorporationID, b.CorporationID)
+	})
 	tmpl, err := template.New("").Parse(tmpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var out io.Writer
-	if *output == "" {
-		out = os.Stdout
-	} else {
-		f, err := os.Create(*output)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		out = f
-	}
-	err = tmpl.Execute(out, map[string]any{
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]any{
 		"Package":  *packageFlag,
 		"Values":   values,
 		"Variable": "corporationToFactionID",
 	})
 	if err != nil {
+		log.Fatal(err)
+	}
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		log.Fatalf("format generated code: %v", err)
+	}
+	if *output == "" {
+		if _, err := os.Stdout.Write(src); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if err := os.WriteFile(*output, src, 0o644); err != nil {
 		log.Fatal(err)
 	}
 }
