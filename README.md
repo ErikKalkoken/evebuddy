@@ -363,4 +363,6 @@ You can find EVE Buddy mentions on other web sites:
 
 ## Credits
 
+The forecasts for planetary industry colonies are based on the colony simulation in [RIFT Intel Fusion Tool](https://gitlab.com/rift-intel-fusion-tool/rift-intel-fusion-tool) by Nohus and used with permission.
+
 "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
