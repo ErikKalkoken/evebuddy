@@ -52,12 +52,11 @@ const (
 
 // timings
 const (
-	characterUpdateTick     = 60 * time.Second
-	corporationUpdateTick   = 60 * time.Second
-	delayBeforeUpdateStatus = 3 * time.Second
-	eveUniverseUpdateTick   = 300 * time.Second
-	refreshUITick           = 30 * time.Second
-	shutdownTimeout         = 15 * time.Second
+	characterUpdateTick   = 60 * time.Second
+	corporationUpdateTick = 60 * time.Second
+	eveUniverseUpdateTick = 300 * time.Second
+	refreshUITick         = 30 * time.Second
+	shutdownTimeout       = 15 * time.Second
 )
 
 // Default ScaleMode for images
@@ -590,7 +589,6 @@ func (u *baseUI) appInit(ctx context.Context) {
 		u.onAppFirstStarted()
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-		time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
 		u.eus.Start(eveUniverseUpdateTick)
 		u.cs.Start(characterUpdateTick)
 		u.rs.Start(corporationUpdateTick)
