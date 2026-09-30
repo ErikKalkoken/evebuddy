@@ -32,7 +32,4 @@ SELECT
 FROM
     corporation_structure_services
 WHERE
-    corporation_structure_id IN (sqlc.slice('ids'))
-ORDER BY
-    corporation_structure_id,
-    name;
+    corporation_structure_id IN (sqlc.slice('ids'));

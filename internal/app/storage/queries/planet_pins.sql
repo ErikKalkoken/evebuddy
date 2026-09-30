@@ -79,7 +79,4 @@ FROM
     LEFT JOIN eve_schematics es ON es.id = pp.schematic_id
     LEFT JOIN eve_schematics fes ON fes.id = pp.factory_schema_id
 WHERE
-    pp.character_planet_id IN (sqlc.slice('ids'))
-ORDER BY
-    pp.character_planet_id,
-    pp.pin_id;
+    pp.character_planet_id IN (sqlc.slice('ids'));

@@ -110,9 +110,6 @@ FROM
     corporation_structure_services
 WHERE
     corporation_structure_id IN (/*SLICE:ids*/?)
-ORDER BY
-    corporation_structure_id,
-    name
 `
 
 func (q *Queries) ListStructureServicesForStructureIDs(ctx context.Context, ids []int64) ([]CorporationStructureService, error) {

@@ -258,9 +258,6 @@ FROM
     LEFT JOIN eve_schematics fes ON fes.id = pp.factory_schema_id
 WHERE
     pp.character_planet_id IN (/*SLICE:ids*/?)
-ORDER BY
-    pp.character_planet_id,
-    pp.pin_id
 `
 
 type ListPlanetPinsForCharacterPlanetIDsRow struct {

@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (st *Storage) GetCharacterToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
@@ -20,14 +17,11 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int64) (*a
 	if err != nil {
 		return nil, fmt.Errorf("get token for character %d: %w", characterID, convertGetError(err))
 	}
-	rows, err := st.qRO.ListCharacterTokenScopes(ctx, characterID)
+	names, err := st.qRO.ListCharacterTokenScopeNames(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	scopes := set.Of(xslices.Map(rows, func(x queries.Scope) string {
-		return x.Name
-	})...)
-	t2 := characterTokenFromDBModel(r, scopes)
+	t2 := characterTokenFromDBModel(r, set.Of(names...))
 	return t2, nil
 }
 
@@ -53,9 +47,21 @@ func UpdateOrCreateCharacterTokenParamsFromToken(o *app.CharacterToken) UpdateOr
 
 func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOrCreateCharacterTokenParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("updateOrCreateCharacterToken: %+v: %w", arg, err)
+		return fmt.Errorf("updateOrCreateCharacterToken: %d %s: %w", arg.CharacterID, arg.Scopes, err)
 	}
-	token, err := st.qRW.UpdateOrCreateCharacterToken(ctx, queries.UpdateOrCreateCharacterTokenParams{
+	if arg.CharacterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if arg.Scopes.Contains("") {
+		return wrapErr(fmt.Errorf("invalid scope name: %w", app.ErrInvalid))
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	tokenID, err := qtx.UpdateOrCreateCharacterToken(ctx, queries.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  arg.AccessToken,
 		CharacterID:  arg.CharacterID,
 		ExpiresAt:    arg.ExpiresAt,
@@ -65,29 +71,39 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	if err != nil {
 		return wrapErr(err)
 	}
-	var ss []queries.Scope
-	for name := range arg.Scopes.All() {
-		s, err := st.getOrCreateScope(ctx, name)
+	if arg.Scopes.Size() > 0 {
+		// create missing scopes if any
+		existing, err := qtx.ListScopeNamesForNames(ctx, slices.Collect(arg.Scopes.All()))
 		if err != nil {
 			return wrapErr(err)
 		}
-		ss = append(ss, s)
+		for missing := range set.Difference(arg.Scopes, set.Of(existing...)).All() {
+			if err := qtx.CreateScopeIfMissing(ctx, missing); err != nil {
+				return wrapErr(err)
+			}
+		}
 	}
-	tx, err := st.dbRW.Begin()
+
+	names, err := qtx.ListCharacterTokenScopeNames(ctx, arg.CharacterID)
 	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	if err := qtx.ClearCharacterTokenScopes(ctx, arg.CharacterID); err != nil {
 		return wrapErr(err)
 	}
-	for _, s := range ss {
-		arg := queries.AddCharacterTokenScopeParams{
-			CharacterTokenID: token.ID,
-			ScopeID:          s.ID,
+	current := set.Of(names...)
+	if removed := set.Difference(current, arg.Scopes); removed.Size() > 0 {
+		err := qtx.DeleteCharacterTokenScopes(ctx, queries.DeleteCharacterTokenScopesParams{
+			CharacterTokenID: tokenID,
+			Names:            slices.Collect(removed.All()),
+		})
+		if err != nil {
+			return wrapErr(err)
 		}
-		if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
+	}
+	if added := set.Difference(arg.Scopes, current); added.Size() > 0 {
+		err := qtx.AddCharacterTokenScopes(ctx, queries.AddCharacterTokenScopesParams{
+			CharacterTokenID: tokenID,
+			Names:            slices.Collect(added.All()),
+		})
+		if err != nil {
 			return wrapErr(err)
 		}
 	}
@@ -95,32 +111,6 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 		return wrapErr(err)
 	}
 	return nil
-}
-
-func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Scope, error) {
-	var s queries.Scope
-	if name == "" {
-		return s, fmt.Errorf("invalid scope name")
-	}
-	tx, err := st.dbRW.Begin()
-	if err != nil {
-		return s, err
-	}
-	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	s, err = qtx.GetScope(ctx, name)
-	if !errors.Is(err, sql.ErrNoRows) {
-		return s, err
-	} else if err != nil {
-		s, err = qtx.CreateScope(ctx, name)
-		if err != nil {
-			return s, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return s, err
-	}
-	return s, nil
 }
 
 // ListCharacterTokenForCorporation returns tokens from a corporation members that match any of the provided roles an scopes.

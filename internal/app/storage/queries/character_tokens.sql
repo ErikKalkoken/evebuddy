@@ -1,19 +1,25 @@
--- name: AddCharacterTokenScope :exec
+-- name: AddCharacterTokenScopes :exec
 INSERT INTO
     character_token_scopes (character_token_id, scope_id)
-VALUES
-    (?, ?);
+SELECT
+    ?,
+    id
+FROM
+    scopes
+WHERE
+    name IN (sqlc.slice('names'));
 
--- name: ClearCharacterTokenScopes :exec
+-- name: DeleteCharacterTokenScopes :exec
 DELETE FROM character_token_scopes
 WHERE
-    character_token_id IN (
+    character_token_id = ?
+    AND scope_id IN (
         SELECT
             id
         FROM
-            character_tokens
+            scopes
         WHERE
-            character_id = ?
+            name IN (sqlc.slice('names'))
     );
 
 -- name: GetCharacterToken :one
@@ -44,17 +50,15 @@ FROM
 WHERE
     ec.corporation_id = ?;
 
--- name: ListCharacterTokenScopes :many
+-- name: ListCharacterTokenScopeNames :many
 SELECT
-    scopes.*
+    scopes.name
 FROM
     character_token_scopes
     JOIN scopes ON scopes.id = character_token_scopes.scope_id
     JOIN character_tokens ON character_tokens.id = character_token_scopes.character_token_id
 WHERE
-    character_id = ?
-ORDER BY
-    scopes.name;
+    character_id = ?;
 
 -- name: ListCharacterTokenScopesForCorporation :many
 SELECT
@@ -84,4 +88,21 @@ SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
-    token_type = ?5 RETURNING *;
+    token_type = ?5
+RETURNING
+    id;
+
+-- name: CreateScopeIfMissing :exec
+INSERT INTO
+    scopes (name)
+VALUES
+    (?)
+ON CONFLICT (name) DO NOTHING;
+
+-- name: ListScopeNamesForNames :many
+SELECT
+    name
+FROM
+    scopes
+WHERE
+    name IN (sqlc.slice('names'));

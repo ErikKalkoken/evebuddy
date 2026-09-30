@@ -79,6 +79,99 @@ func TestToken(t *testing.T) {
 		xassert.Equal(t, o1.TokenType, o2.TokenType)
 	})
 
+	t.Run("should replace scopes on update", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("alpha", "bravo"),
+		})
+		arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(o1)
+		arg.Scopes = set.Of("bravo", "charlie")
+		// when
+		err := st.UpdateOrCreateCharacterToken(ctx, arg)
+		// then
+		require.NoError(t, err)
+		o2, err := st.GetCharacterToken(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of("bravo", "charlie"), o2.Scopes)
+	})
+	t.Run("should keep scopes separate for tokens sharing scopes", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c1.ID,
+			Scopes:      set.Of("alpha", "bravo"),
+		})
+		// when
+		err := st.UpdateOrCreateCharacterToken(ctx, storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  "access",
+			CharacterID:  c2.ID,
+			ExpiresAt:    time.Now(),
+			RefreshToken: "refresh",
+			Scopes:       set.Of("bravo", "charlie"),
+			TokenType:    "xxx",
+		})
+		// then
+		require.NoError(t, err)
+		x1, err := st.GetCharacterToken(ctx, c1.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of("alpha", "bravo"), x1.Scopes)
+		x2, err := st.GetCharacterToken(ctx, c2.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of("bravo", "charlie"), x2.Scopes)
+	})
+	t.Run("should keep scopes when unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("alpha", "bravo"),
+		})
+		arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(o1)
+		arg.AccessToken = "changed"
+		// when
+		err := st.UpdateOrCreateCharacterToken(ctx, arg)
+		// then
+		require.NoError(t, err)
+		o2, err := st.GetCharacterToken(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "changed", o2.AccessToken)
+		xassert.Equal(t, set.Of("alpha", "bravo"), o2.Scopes)
+	})
+	t.Run("can store token without scopes", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		o1 := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("alpha"),
+		})
+		arg := storage.UpdateOrCreateCharacterTokenParamsFromToken(o1)
+		arg.Scopes = set.Of[string]()
+		// when
+		err := st.UpdateOrCreateCharacterToken(ctx, arg)
+		// then
+		require.NoError(t, err)
+		o2, err := st.GetCharacterToken(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, o2.Scopes.Size())
+	})
+	t.Run("should return error when character ID is missing", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := st.UpdateOrCreateCharacterToken(ctx, storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken: "access",
+			Scopes:      set.Of("alpha"),
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
