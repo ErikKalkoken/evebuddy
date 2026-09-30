@@ -25,7 +25,7 @@ WHERE
     character_id = ?;
 
 -- name: ListCharacterTokenForCorporationWithRoles :many
-SELECT
+SELECT DISTINCT
     ct.*
 FROM
     character_tokens ct
@@ -55,6 +55,18 @@ WHERE
     character_id = ?
 ORDER BY
     scopes.name;
+
+-- name: ListCharacterTokenScopesForCorporation :many
+SELECT
+    ct.character_id,
+    s.name
+FROM
+    character_token_scopes cts
+    JOIN scopes s ON s.id = cts.scope_id
+    JOIN character_tokens ct ON ct.id = cts.character_token_id
+    JOIN eve_characters ec ON ec.id = ct.character_id
+WHERE
+    ec.corporation_id = ?;
 
 -- name: UpdateOrCreateCharacterToken :one
 INSERT INTO

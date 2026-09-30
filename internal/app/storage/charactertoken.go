@@ -144,15 +144,22 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 	if err != nil {
 		return nil, wrapErr(err)
 	}
+	scopeRows, err := st.qRO.ListCharacterTokenScopesForCorporation(ctx, corporationID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	tokenScopes := make(map[int64]set.Set[string])
+	for _, r := range scopeRows {
+		s := tokenScopes[r.CharacterID]
+		s.Add(r.Name)
+		tokenScopes[r.CharacterID] = s
+	}
 	var tokens []*app.CharacterToken
 	for _, r := range rows {
-		ss, err := st.qRO.ListCharacterTokenScopes(ctx, r.CharacterID)
-		if err != nil {
-			return nil, wrapErr(err)
+		scopes2, ok := tokenScopes[r.CharacterID]
+		if !ok {
+			scopes2 = set.Of[string]()
 		}
-		scopes2 := set.Of(xslices.Map(ss, func(x queries.Scope) string {
-			return x.Name
-		})...)
 		if !scopes2.ContainsAll(scopes.All()) {
 			continue
 		}

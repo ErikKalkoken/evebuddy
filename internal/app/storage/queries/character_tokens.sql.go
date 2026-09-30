@@ -110,7 +110,7 @@ func (q *Queries) ListCharacterTokenForCorporation(ctx context.Context, corporat
 }
 
 const listCharacterTokenForCorporationWithRoles = `-- name: ListCharacterTokenForCorporationWithRoles :many
-SELECT
+SELECT DISTINCT
     ct.id, ct.access_token, ct.character_id, ct.expires_at, ct.refresh_token, ct.token_type
 FROM
     character_tokens ct
@@ -190,6 +190,47 @@ func (q *Queries) ListCharacterTokenScopes(ctx context.Context, characterID int6
 	for rows.Next() {
 		var i Scope
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterTokenScopesForCorporation = `-- name: ListCharacterTokenScopesForCorporation :many
+SELECT
+    ct.character_id,
+    s.name
+FROM
+    character_token_scopes cts
+    JOIN scopes s ON s.id = cts.scope_id
+    JOIN character_tokens ct ON ct.id = cts.character_token_id
+    JOIN eve_characters ec ON ec.id = ct.character_id
+WHERE
+    ec.corporation_id = ?
+`
+
+type ListCharacterTokenScopesForCorporationRow struct {
+	CharacterID int64
+	Name        string
+}
+
+func (q *Queries) ListCharacterTokenScopesForCorporation(ctx context.Context, corporationID int64) ([]ListCharacterTokenScopesForCorporationRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenScopesForCorporation, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterTokenScopesForCorporationRow
+	for rows.Next() {
+		var i ListCharacterTokenScopesForCorporationRow
+		if err := rows.Scan(&i.CharacterID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
