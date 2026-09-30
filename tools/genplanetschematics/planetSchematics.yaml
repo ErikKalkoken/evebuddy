@@ -1,0 +1,1989 @@
+65:
+  cycleTime: 3600
+  name:
+    de: Superconductors
+    en: Superconductors
+    es: Superconductores
+    fr: Superconducteurs
+    ja: 超電導体
+    ko: 초전도체
+    ru: Superconductors
+    zh: 超导体
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2389:
+      isInput: true
+      quantity: 40
+    3645:
+      isInput: true
+      quantity: 40
+    9838:
+      isInput: false
+      quantity: 5
+66:
+  cycleTime: 3600
+  name:
+    de: Coolant
+    en: Coolant
+    es: Refrigerante
+    fr: Réfrigérant
+    ja: 冷却材
+    ko: 냉각수
+    ru: Coolant
+    zh: 冷却剂
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2390:
+      isInput: true
+      quantity: 40
+    3645:
+      isInput: true
+      quantity: 40
+    9832:
+      isInput: false
+      quantity: 5
+67:
+  cycleTime: 3600
+  name:
+    de: Rocket Fuel
+    en: Rocket Fuel
+    es: Combustible de cohete
+    fr: Carburant de roquette
+    ja: ロケット燃料
+    ko: 로켓 연료
+    ru: Rocket Fuel
+    zh: 火箭燃料
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2389:
+      isInput: true
+      quantity: 40
+    2390:
+      isInput: true
+      quantity: 40
+    9830:
+      isInput: false
+      quantity: 5
+68:
+  cycleTime: 3600
+  name:
+    de: Synthetic Oil
+    en: Synthetic Oil
+    es: Combustible sintético
+    fr: Huile de synthèse
+    ja: 合成石油
+    ko: 합성유
+    ru: Synthetic Oil
+    zh: 合成油
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2390:
+      isInput: true
+      quantity: 40
+    3683:
+      isInput: true
+      quantity: 40
+    3691:
+      isInput: false
+      quantity: 5
+69:
+  cycleTime: 3600
+  name:
+    de: Oxides
+    en: Oxides
+    es: Óxidos
+    fr: Oxydes
+    ja: 酸化物
+    ko: 산화물
+    ru: Oxides
+    zh: 氧化物
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2317:
+      isInput: false
+      quantity: 5
+    2392:
+      isInput: true
+      quantity: 40
+    3683:
+      isInput: true
+      quantity: 40
+70:
+  cycleTime: 3600
+  name:
+    de: Silicate Glass
+    en: Silicate Glass
+    es: Vidrio de silicato
+    fr: Verre de silice
+    ja: シリコンガラス
+    ko: 규산염 유리
+    ru: Silicate Glass
+    zh: 硅酸盐玻璃
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2392:
+      isInput: true
+      quantity: 40
+    3697:
+      isInput: false
+      quantity: 5
+    9828:
+      isInput: true
+      quantity: 40
+71:
+  cycleTime: 3600
+  name:
+    de: Transmitter
+    en: Transmitter
+    es: Transmisor
+    fr: Transmetteur
+    ja: トランスミッター
+    ko: 송신기
+    ru: Transmitter
+    zh: 传信器
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2389:
+      isInput: true
+      quantity: 40
+    2401:
+      isInput: true
+      quantity: 40
+    9840:
+      isInput: false
+      quantity: 5
+72:
+  cycleTime: 3600
+  name:
+    de: Water-Cooled CPU
+    en: Water-Cooled CPU
+    es: CPU refrigerada por agua
+    fr: CPU refroidi par l'eau
+    ja: 水冷式CPU
+    ko: 수냉 CPU
+    ru: Water-Cooled CPU
+    zh: 水冷CPU
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2328:
+      isInput: false
+      quantity: 5
+    2398:
+      isInput: true
+      quantity: 40
+    3645:
+      isInput: true
+      quantity: 40
+73:
+  cycleTime: 3600
+  name:
+    de: Mechanical Parts
+    en: Mechanical Parts
+    es: Piezas mecánicas
+    fr: Composants mécaniques
+    ja: 機械部品
+    ko: 기계 부품
+    ru: Mechanical Parts
+    zh: 机械元件
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2398:
+      isInput: true
+      quantity: 40
+    2399:
+      isInput: true
+      quantity: 40
+    3689:
+      isInput: false
+      quantity: 5
+74:
+  cycleTime: 3600
+  name:
+    de: Construction Blocks
+    en: Construction Blocks
+    es: Bloques de construcción
+    fr: Blocs de construction
+    ja: 建設ブロック
+    ko: 건축 자재
+    ru: Construction Blocks
+    zh: 建筑模块
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2398:
+      isInput: true
+      quantity: 40
+    2400:
+      isInput: true
+      quantity: 40
+    3828:
+      isInput: false
+      quantity: 5
+75:
+  cycleTime: 3600
+  name:
+    de: Enriched Uranium
+    en: Enriched Uranium
+    es: Uranio enriquecido
+    fr: Uranium enrichi
+    ja: 濃縮ウラン
+    ko: 농축 우라늄
+    ru: Enriched Uranium
+    zh: 核能燃料
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    44:
+      isInput: false
+      quantity: 5
+    2399:
+      isInput: true
+      quantity: 40
+    2400:
+      isInput: true
+      quantity: 40
+76:
+  cycleTime: 3600
+  name:
+    de: Consumer Electronics
+    en: Consumer Electronics
+    es: Electrónica para consumo
+    fr: Électronique grand public
+    ja: 電化製品
+    ko: 가전제품
+    ru: Consumer Electronics
+    zh: 消费级电器
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2400:
+      isInput: true
+      quantity: 40
+    2401:
+      isInput: true
+      quantity: 40
+    9836:
+      isInput: false
+      quantity: 5
+77:
+  cycleTime: 3600
+  name:
+    de: Miniature Electronics
+    en: Miniature Electronics
+    es: Electrónica en miniatura
+    fr: Micro-électronique
+    ja: 小型エレクトロニクス
+    ko: 미니어처 전자기기
+    ru: Miniature Electronics
+    zh: 微型电子元件
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2401:
+      isInput: true
+      quantity: 40
+    9828:
+      isInput: true
+      quantity: 40
+    9842:
+      isInput: false
+      quantity: 5
+78:
+  cycleTime: 3600
+  name:
+    de: Nanites
+    en: Nanites
+    es: Nanobots
+    fr: Nanites
+    ja: ナノマシン
+    ko: 나나이트
+    ru: Nanites
+    zh: 纳米体
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2393:
+      isInput: true
+      quantity: 40
+    2398:
+      isInput: true
+      quantity: 40
+    2463:
+      isInput: false
+      quantity: 5
+79:
+  cycleTime: 3600
+  name:
+    de: Biocells
+    en: Biocells
+    es: Biocélulas
+    fr: Biocellules
+    ja: バイオセル
+    ko: 바이오셀
+    ru: Biocells
+    zh: 生物电池
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2329:
+      isInput: false
+      quantity: 5
+    2396:
+      isInput: true
+      quantity: 40
+    2399:
+      isInput: true
+      quantity: 40
+80:
+  cycleTime: 3600
+  name:
+    de: Microfiber Shielding
+    en: Microfiber Shielding
+    es: Escudo de microfibra
+    fr: Protection microfibre
+    ja: マイクロファイバーシールド
+    ko: 마이크로섬유 차폐막
+    ru: Microfiber Shielding
+    zh: 微纤维护盾
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2327:
+      isInput: false
+      quantity: 5
+    2397:
+      isInput: true
+      quantity: 40
+    9828:
+      isInput: true
+      quantity: 40
+81:
+  cycleTime: 3600
+  name:
+    de: Viral Agent
+    en: Viral Agent
+    es: Agente viral
+    fr: Agent viral
+    ja: ウィルス性物質
+    ko: 바이러스 물질
+    ru: Viral Agent
+    zh: 病原体
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2393:
+      isInput: true
+      quantity: 40
+    3775:
+      isInput: false
+      quantity: 5
+    3779:
+      isInput: true
+      quantity: 40
+82:
+  cycleTime: 3600
+  name:
+    de: Fertilizer
+    en: Fertilizer
+    es: Fertilizante
+    fr: Engrais
+    ja: 肥料
+    ko: 비료
+    ru: Fertilizer
+    zh: 肥料
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2393:
+      isInput: true
+      quantity: 40
+    2395:
+      isInput: true
+      quantity: 40
+    3693:
+      isInput: false
+      quantity: 5
+83:
+  cycleTime: 3600
+  name:
+    de: Genetically Enhanced Livestock
+    en: Genetically Enhanced Livestock
+    es: Ganado genéticamente modificado
+    fr: Bétail génétiquement modifié
+    ja: 遺伝子組み換え生命体
+    ko: 유전자변형 가축
+    ru: Genetically Enhanced Livestock
+    zh: 基因肉制品
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2395:
+      isInput: true
+      quantity: 40
+    3779:
+      isInput: true
+      quantity: 40
+    15317:
+      isInput: false
+      quantity: 5
+84:
+  cycleTime: 3600
+  name:
+    de: Livestock
+    en: Livestock
+    es: Ganado
+    fr: Bétail
+    ja: 生命体
+    ko: 가축
+    ru: Livestock
+    zh: 家畜
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2395:
+      isInput: true
+      quantity: 40
+    2396:
+      isInput: true
+      quantity: 40
+    3725:
+      isInput: false
+      quantity: 5
+85:
+  cycleTime: 3600
+  name:
+    de: Polytextiles
+    en: Polytextiles
+    es: Politextiles
+    fr: Polytextiles
+    ja: ポリ繊維
+    ko: 폴리텍스타일
+    ru: Polytextiles
+    zh: 合成纺织品
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2396:
+      isInput: true
+      quantity: 40
+    2397:
+      isInput: true
+      quantity: 40
+    3695:
+      isInput: false
+      quantity: 5
+86:
+  cycleTime: 3600
+  name:
+    de: Test Cultures
+    en: Test Cultures
+    es: Cultivos de prueba
+    fr: Cultures test
+    ja: テストカルチャ
+    ko: 테스트 컬쳐
+    ru: Test Cultures
+    zh: 培养基
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2319:
+      isInput: false
+      quantity: 5
+    2393:
+      isInput: true
+      quantity: 40
+    3645:
+      isInput: true
+      quantity: 40
+87:
+  cycleTime: 3600
+  name:
+    de: Supertensile Plastics
+    en: Supertensile Plastics
+    es: Plástico superextensible
+    fr: Plastiques supertensiles
+    ja: 超伸縮プラスチック
+    ko: 고장력 플라스틱
+    ru: Supertensile Plastics
+    zh: 超张力塑料
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2312:
+      isInput: false
+      quantity: 5
+    3683:
+      isInput: true
+      quantity: 40
+    3779:
+      isInput: true
+      quantity: 40
+88:
+  cycleTime: 3600
+  name:
+    de: Polyaramids
+    en: Polyaramids
+    es: Poliaramidos
+    fr: Polyaramides
+    ja: ポリアミド
+    ko: 폴리아라미드
+    ru: Polyaramids
+    zh: 聚芳酰胺
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2321:
+      isInput: false
+      quantity: 5
+    2392:
+      isInput: true
+      quantity: 40
+    2397:
+      isInput: true
+      quantity: 40
+89:
+  cycleTime: 3600
+  name:
+    de: Ukomi Superconductor
+    en: Ukomi Superconductor
+    es: Superconductor Ukomi
+    fr: Superconducteur Ukomi
+    ja: ユコミ超電導体
+    ko: 우코미 초전도체
+    ru: Ukomi Superconductor
+    zh: 乌克米超导体
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    3691:
+      isInput: true
+      quantity: 10
+    9838:
+      isInput: true
+      quantity: 10
+    17136:
+      isInput: false
+      quantity: 3
+90:
+  cycleTime: 3600
+  name:
+    de: Condensates
+    en: Condensates
+    es: Condensados
+    fr: Condensés
+    ja: 凝縮物
+    ko: 응축물
+    ru: Condensates
+    zh: 凝缩液
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2317:
+      isInput: true
+      quantity: 10
+    2344:
+      isInput: false
+      quantity: 3
+    9832:
+      isInput: true
+      quantity: 10
+91:
+  cycleTime: 3600
+  name:
+    de: Camera Drones
+    en: Camera Drones
+    es: Drones cámara
+    fr: Drones caméra
+    ja: カメラドローン
+    ko: 카메라 드론
+    ru: Camera Drones
+    zh: 监控无人机
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2345:
+      isInput: false
+      quantity: 3
+    3697:
+      isInput: true
+      quantity: 10
+    9830:
+      isInput: true
+      quantity: 10
+92:
+  cycleTime: 3600
+  name:
+    de: Synthetic Synapses
+    en: Synthetic Synapses
+    es: Sinapsis sintéticas
+    fr: Synapses de synthèse
+    ja: 合成シナプス
+    ko: 인조 신경 접합부
+    ru: Synthetic Synapses
+    zh: 合成神经键
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2312:
+      isInput: true
+      quantity: 10
+    2319:
+      isInput: true
+      quantity: 10
+    2346:
+      isInput: false
+      quantity: 3
+94:
+  cycleTime: 3600
+  name:
+    de: High-Tech Transmitter
+    en: High-Tech Transmitter
+    es: Transmisor de alta tecnología
+    fr: Transmetteur High-Tech
+    ja: ハイテクトランスミッター
+    ko: 첨단 송신기
+    ru: High-Tech Transmitter
+    zh: 高科技传信器
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2321:
+      isInput: true
+      quantity: 10
+    9840:
+      isInput: true
+      quantity: 10
+    17898:
+      isInput: false
+      quantity: 3
+95:
+  cycleTime: 3600
+  name:
+    de: Gel-Matrix Biopaste
+    en: Gel-Matrix Biopaste
+    es: Biopasta matriz-gel
+    fr: Biopâte à matrice de gel
+    ja: ゲルマトリックスバイオペースト
+    ko: 겔-매트릭스 생물학 물질
+    ru: Gel-Matrix Biopaste
+    zh: 凝胶基质生物胶
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2317:
+      isInput: true
+      quantity: 10
+    2329:
+      isInput: true
+      quantity: 10
+    2348:
+      isInput: false
+      quantity: 3
+    9838:
+      isInput: true
+      quantity: 10
+96:
+  cycleTime: 3600
+  name:
+    de: Supercomputers
+    en: Supercomputers
+    es: Superordenadores
+    fr: Superordinateurs
+    ja: スーパーコンピュータ
+    ko: 슈퍼컴퓨터
+    ru: Supercomputers
+    zh: 超级计算机
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2328:
+      isInput: true
+      quantity: 10
+    2349:
+      isInput: false
+      quantity: 3
+    9832:
+      isInput: true
+      quantity: 10
+    9836:
+      isInput: true
+      quantity: 10
+97:
+  cycleTime: 3600
+  name:
+    de: Robotics
+    en: Robotics
+    es: Robótica
+    fr: Robotique
+    ja: ロボット
+    ko: 로봇
+    ru: Robotics
+    zh: 机器人技术
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    3689:
+      isInput: true
+      quantity: 10
+    9836:
+      isInput: true
+      quantity: 10
+    9848:
+      isInput: false
+      quantity: 3
+98:
+  cycleTime: 3600
+  name:
+    de: Smartfab Units
+    en: Smartfab Units
+    es: Unidades Smartfab
+    fr: Unités Smartfab
+    ja: スマートファブユニット
+    ko: 스마트 소재
+    ru: Smartfab Units
+    zh: 灵巧单元建筑模块
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2351:
+      isInput: false
+      quantity: 3
+    3828:
+      isInput: true
+      quantity: 10
+    9842:
+      isInput: true
+      quantity: 10
+99:
+  cycleTime: 3600
+  name:
+    de: Nuclear Reactors
+    en: Nuclear Reactors
+    es: Reactores nucleares
+    fr: Réacteurs nucléaires
+    ja: 原子炉
+    ko: 원자력 반응로
+    ru: Nuclear Reactors
+    zh: 核反应堆
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    44:
+      isInput: true
+      quantity: 10
+    2327:
+      isInput: true
+      quantity: 10
+    2352:
+      isInput: false
+      quantity: 3
+100:
+  cycleTime: 3600
+  name:
+    de: Guidance Systems
+    en: Guidance Systems
+    es: Sistemas de guiado
+    fr: Systèmes de guidage
+    ja: 誘導システム
+    ko: 유도 시스템
+    ru: Guidance Systems
+    zh: 制导系统
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2328:
+      isInput: true
+      quantity: 10
+    9834:
+      isInput: false
+      quantity: 3
+    9840:
+      isInput: true
+      quantity: 10
+102:
+  cycleTime: 3600
+  name:
+    de: Neocoms
+    en: Neocoms
+    es: Neocoms
+    fr: Neocoms
+    ja: NeoCom
+    ko: 네오콤
+    ru: Neocoms
+    zh: 控制面板
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2329:
+      isInput: true
+      quantity: 10
+    2354:
+      isInput: false
+      quantity: 3
+    3697:
+      isInput: true
+      quantity: 10
+103:
+  cycleTime: 3600
+  name:
+    de: Planetary Vehicles
+    en: Planetary Vehicles
+    es: Vehículos planetarios
+    fr: Véhicules planétaires
+    ja: 惑星移動車
+    ko: 지상 차량
+    ru: Planetary Vehicles
+    zh: 大气内穿梭机
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2312:
+      isInput: true
+      quantity: 10
+    3689:
+      isInput: true
+      quantity: 10
+    9842:
+      isInput: true
+      quantity: 10
+    9846:
+      isInput: false
+      quantity: 3
+104:
+  cycleTime: 3600
+  name:
+    de: Biotech Research Reports
+    en: Biotech Research Reports
+    es: Informes de investigación biotecnológica
+    fr: Rapports de recherche biotechnologique
+    ja: バイオテクノロジー研究報告書
+    ko: 생물공학 연구보고서
+    ru: Biotech Research Reports
+    zh: 生物技术研究报告
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2358:
+      isInput: false
+      quantity: 3
+    2463:
+      isInput: true
+      quantity: 10
+    3725:
+      isInput: true
+      quantity: 10
+    3828:
+      isInput: true
+      quantity: 10
+105:
+  cycleTime: 3600
+  name:
+    de: Vaccines
+    en: Vaccines
+    es: Vacunas
+    fr: Vaccins
+    ja: ワクチン
+    ko: 백신
+    ru: Vaccines
+    zh: 疫苗
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    3725:
+      isInput: true
+      quantity: 10
+    3775:
+      isInput: true
+      quantity: 10
+    28974:
+      isInput: false
+      quantity: 3
+106:
+  cycleTime: 3600
+  name:
+    de: Industrial Explosives
+    en: Industrial Explosives
+    es: Explosivos industriales
+    fr: Explosifs industriels
+    ja: インダストリアルエクスプローシブ
+    ko: 산업용 폭발물
+    ru: Industrial Explosives
+    zh: 工业爆炸物
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2360:
+      isInput: false
+      quantity: 3
+    3693:
+      isInput: true
+      quantity: 10
+    3695:
+      isInput: true
+      quantity: 10
+107:
+  cycleTime: 3600
+  name:
+    de: Hermetic Membranes
+    en: Hermetic Membranes
+    es: Membranas herméticas
+    fr: Membranes hermétiques
+    ja: 密封膜
+    ko: 밀폐된 멤브레인
+    ru: Hermetic Membranes
+    zh: 密封薄膜
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2321:
+      isInput: true
+      quantity: 10
+    2361:
+      isInput: false
+      quantity: 3
+    15317:
+      isInput: true
+      quantity: 10
+108:
+  cycleTime: 3600
+  name:
+    de: Transcranial Microcontroller
+    en: Transcranial Microcontroller
+    es: Microcontrolador transcraneal
+    fr: Microcontrôleur transcranial
+    ja: 経頭蓋マイクロコントローラー
+    ko: 두개골 장착용 마이크로컨트롤러
+    ru: Transcranial Microcontroller
+    zh: 颅腔穿透型微型控制器
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2329:
+      isInput: true
+      quantity: 10
+    2463:
+      isInput: true
+      quantity: 10
+    12836:
+      isInput: false
+      quantity: 3
+109:
+  cycleTime: 3600
+  name:
+    de: Data Chips
+    en: Data Chips
+    es: Chips de datos
+    fr: Puces de données
+    ja: データチップ
+    ko: 데이터 칩
+    ru: Data Chips
+    zh: 数据芯片
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2312:
+      isInput: true
+      quantity: 10
+    2327:
+      isInput: true
+      quantity: 10
+    17392:
+      isInput: false
+      quantity: 3
+110:
+  cycleTime: 3600
+  name:
+    de: Hazmat Detection Systems
+    en: Hazmat Detection Systems
+    es: Sists. de detección de materiales peligrosos
+    fr: Systèmes de détection hazmat
+    ja: 危険物処理検出システム
+    ko: 위험 감지 시스템
+    ru: Hazmat Detection Systems
+    zh: 危险物探测系统
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2366:
+      isInput: false
+      quantity: 3
+    3695:
+      isInput: true
+      quantity: 10
+    3775:
+      isInput: true
+      quantity: 10
+    9840:
+      isInput: true
+      quantity: 10
+111:
+  cycleTime: 3600
+  name:
+    de: Cryoprotectant Solution
+    en: Cryoprotectant Solution
+    es: Solución crioprotectora
+    fr: Solution cryoprotectrice
+    ja: 抗凍結剤溶液
+    ko: 항냉동제 용액
+    ru: Cryoprotectant Solution
+    zh: 冷冻保存防腐剂
+  pins:
+  - 2470
+  - 2472
+  - 2474
+  - 2480
+  - 2484
+  - 2485
+  - 2491
+  - 2494
+  types:
+    2319:
+      isInput: true
+      quantity: 10
+    2367:
+      isInput: false
+      quantity: 3
+    3691:
+      isInput: true
+      quantity: 10
+    3693:
+      isInput: true
+      quantity: 10
+112:
+  cycleTime: 3600
+  name:
+    de: Organic Mortar Applicators
+    en: Organic Mortar Applicators
+    es: Aplicadores de argamasa orgánica
+    fr: Applicateurs de mortier organique
+    ja: 有機モルタル塗装装置
+    ko: 유기 회반죽 살포기
+    ru: Organic Mortar Applicators
+    zh: 有机砂浆喷注器
+  pins:
+  - 2475
+  - 2482
+  types:
+    2344:
+      isInput: true
+      quantity: 6
+    2393:
+      isInput: true
+      quantity: 40
+    2870:
+      isInput: false
+      quantity: 1
+    9848:
+      isInput: true
+      quantity: 6
+113:
+  cycleTime: 3600
+  name:
+    de: Sterile Conduits
+    en: Sterile Conduits
+    es: Conductos estériles
+    fr: Conduits stériles
+    ja: 無菌導管
+    ko: 멸균 도관
+    ru: Sterile Conduits
+    zh: 无菌管道
+  pins:
+  - 2475
+  - 2482
+  types:
+    2351:
+      isInput: true
+      quantity: 6
+    2875:
+      isInput: false
+      quantity: 1
+    3645:
+      isInput: true
+      quantity: 40
+    28974:
+      isInput: true
+      quantity: 6
+114:
+  cycleTime: 3600
+  name:
+    de: Nano-Factory
+    en: Nano-Factory
+    es: Nanofábrica
+    fr: Nano-usine
+    ja: ナノ工場
+    ko: 나노공장
+    ru: Nano-Factory
+    zh: 纳米-工厂
+  pins:
+  - 2475
+  - 2482
+  types:
+    2360:
+      isInput: true
+      quantity: 6
+    2398:
+      isInput: true
+      quantity: 40
+    2869:
+      isInput: false
+      quantity: 1
+    17136:
+      isInput: true
+      quantity: 6
+115:
+  cycleTime: 3600
+  name:
+    de: Self-Harmonizing Power Core
+    en: Self-Harmonizing Power Core
+    es: Núcleo de potencia autoarmonizador
+    fr: Réacteur principal auto-harmonisant
+    ja: 自己調和型パワーコア
+    ko: 자가진단 파워코어
+    ru: Self-Harmonizing Power Core
+    zh: 自协调能源核心
+  pins:
+  - 2475
+  - 2482
+  types:
+    2345:
+      isInput: true
+      quantity: 6
+    2352:
+      isInput: true
+      quantity: 6
+    2361:
+      isInput: true
+      quantity: 6
+    2872:
+      isInput: false
+      quantity: 1
+116:
+  cycleTime: 3600
+  name:
+    de: Recursive Computing Module
+    en: Recursive Computing Module
+    es: Módulo de computación recursiva
+    fr: Module informatique récursif
+    ja: 再帰的コンピューティングモジュール
+    ko: 재귀 모듈
+    ru: Recursive Computing Module
+    zh: 递推计算模块
+  pins:
+  - 2475
+  - 2482
+  types:
+    2346:
+      isInput: true
+      quantity: 6
+    2871:
+      isInput: false
+      quantity: 1
+    9834:
+      isInput: true
+      quantity: 6
+    12836:
+      isInput: true
+      quantity: 6
+117:
+  cycleTime: 3600
+  name:
+    de: Broadcast Node
+    en: Broadcast Node
+    es: Nodo de transmisión
+    fr: Module de diffusion
+    ja: ブロードキャストノード
+    ko: 송수신 노드
+    ru: Broadcast Node
+    zh: 广播节点
+  pins:
+  - 2475
+  - 2482
+  types:
+    2354:
+      isInput: true
+      quantity: 6
+    2867:
+      isInput: false
+      quantity: 1
+    17392:
+      isInput: true
+      quantity: 6
+    17898:
+      isInput: true
+      quantity: 6
+118:
+  cycleTime: 3600
+  name:
+    de: Integrity Response Drones
+    en: Integrity Response Drones
+    es: Drones de control de integridad
+    fr: Drones de contrôle d'intégrité
+    ja: インテグリティ応答ドローン
+    ko: 피해 복구 드론
+    ru: Integrity Response Drones
+    zh: 反破损快速反应无人机
+  pins:
+  - 2475
+  - 2482
+  types:
+    2348:
+      isInput: true
+      quantity: 6
+    2366:
+      isInput: true
+      quantity: 6
+    2868:
+      isInput: false
+      quantity: 1
+    9846:
+      isInput: true
+      quantity: 6
+119:
+  cycleTime: 3600
+  name:
+    de: Wetware Mainframe
+    en: Wetware Mainframe
+    es: Unidad central de wetware
+    fr: Ordinateur central Wetware
+    ja: ウェットウェアメインフレーム
+    ko: 생체두뇌 중앙 컴퓨터
+    ru: Wetware Mainframe
+    zh: 湿件主机
+  pins:
+  - 2475
+  - 2482
+  types:
+    2349:
+      isInput: true
+      quantity: 6
+    2358:
+      isInput: true
+      quantity: 6
+    2367:
+      isInput: true
+      quantity: 6
+    2876:
+      isInput: false
+      quantity: 1
+121:
+  cycleTime: 1800
+  name:
+    de: Water
+    en: Water
+    es: Agua
+    fr: Eau
+    ja: 水
+    ko: 물
+    ru: Water
+    zh: 水
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2268:
+      isInput: true
+      quantity: 3000
+    3645:
+      isInput: false
+      quantity: 20
+122:
+  cycleTime: 1800
+  name:
+    de: Plasmoids
+    en: Plasmoids
+    es: Plasmoide
+    fr: Plasmoïdes
+    ja: プラズモイド
+    ko: 플라즈모이드
+    ru: Plasmoids
+    zh: 等离子体团
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2308:
+      isInput: true
+      quantity: 3000
+    2389:
+      isInput: false
+      quantity: 20
+123:
+  cycleTime: 1800
+  name:
+    de: Electrolytes
+    en: Electrolytes
+    es: Electrolitos
+    fr: Électrolytes
+    ja: 電解質
+    ko: 전해질
+    ru: Electrolytes
+    zh: 电解物
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2309:
+      isInput: true
+      quantity: 3000
+    2390:
+      isInput: false
+      quantity: 20
+124:
+  cycleTime: 1800
+  name:
+    de: Oxygen
+    en: Oxygen
+    es: Oxígeno
+    fr: Oxygène
+    ja: 酸素
+    ko: 산소
+    ru: Oxygen
+    zh: 氧
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2310:
+      isInput: true
+      quantity: 3000
+    3683:
+      isInput: false
+      quantity: 20
+125:
+  cycleTime: 1800
+  name:
+    de: Oxidizing Compound
+    en: Oxidizing Compound
+    es: Compuesto oxidante
+    fr: Composé oxydant
+    ja: 酸化化合物
+    ko: 산화 복합체
+    ru: Oxidizing Compound
+    zh: 氧化剂
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2311:
+      isInput: true
+      quantity: 3000
+    2392:
+      isInput: false
+      quantity: 20
+126:
+  cycleTime: 1800
+  name:
+    de: Reactive Metals
+    en: Reactive Metals
+    es: Metales reactivos
+    fr: Métaux réactifs
+    ja: リアクティブメタル
+    ko: 활성 금속
+    ru: Reactive Metals
+    zh: 反应金属
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2267:
+      isInput: true
+      quantity: 3000
+    2398:
+      isInput: false
+      quantity: 20
+127:
+  cycleTime: 1800
+  name:
+    de: Precious Metals
+    en: Precious Metals
+    es: Metales preciosos
+    fr: Métaux précieux
+    ja: プレシャスメタル
+    ko: 귀금속
+    ru: Precious Metals
+    zh: 稀有金属
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2270:
+      isInput: true
+      quantity: 3000
+    2399:
+      isInput: false
+      quantity: 20
+128:
+  cycleTime: 1800
+  name:
+    de: Toxic Metals
+    en: Toxic Metals
+    es: Metales tóxicos
+    fr: Métaux toxiques
+    ja: 毒性メタル
+    ko: 유독성 금속
+    ru: Toxic Metals
+    zh: 有毒金属
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2272:
+      isInput: true
+      quantity: 3000
+    2400:
+      isInput: false
+      quantity: 20
+129:
+  cycleTime: 1800
+  name:
+    de: Chiral Structures
+    en: Chiral Structures
+    es: Estructuras quirales
+    fr: Structures chirales
+    ja: キラル建造物
+    ko: 카이랄 크리스탈
+    ru: Chiral Structures
+    zh: 手性结构
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2306:
+      isInput: true
+      quantity: 3000
+    2401:
+      isInput: false
+      quantity: 20
+130:
+  cycleTime: 1800
+  name:
+    de: Silicon
+    en: Silicon
+    es: Silicio
+    fr: Silicium
+    ja: シリコン
+    ko: 규소
+    ru: Silicon
+    zh: 硅
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2307:
+      isInput: true
+      quantity: 3000
+    9828:
+      isInput: false
+      quantity: 20
+131:
+  cycleTime: 1800
+  name:
+    de: Bacteria
+    en: Bacteria
+    es: Bacteria
+    fr: Bactérie
+    ja: バクテリア
+    ko: 박테리아
+    ru: Bacteria
+    zh: 细菌
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2073:
+      isInput: true
+      quantity: 3000
+    2393:
+      isInput: false
+      quantity: 20
+132:
+  cycleTime: 1800
+  name:
+    de: Biomass
+    en: Biomass
+    es: Biomasa
+    fr: Biomasse
+    ja: バイオマス
+    ko: 바이오매스
+    ru: Biomass
+    zh: 生物质
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2286:
+      isInput: true
+      quantity: 3000
+    3779:
+      isInput: false
+      quantity: 20
+133:
+  cycleTime: 1800
+  name:
+    de: Proteins
+    en: Proteins
+    es: Proteínas
+    fr: Protéines
+    ja: タンパク質
+    ko: 단백질
+    ru: Proteins
+    zh: 蛋白质
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2287:
+      isInput: true
+      quantity: 3000
+    2395:
+      isInput: false
+      quantity: 20
+134:
+  cycleTime: 1800
+  name:
+    de: Biofuels
+    en: Biofuels
+    es: Biocombustible
+    fr: Biocarburants
+    ja: バイオ燃料
+    ko: 바이오 연료
+    ru: Biofuels
+    zh: 生物燃料
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2288:
+      isInput: true
+      quantity: 3000
+    2396:
+      isInput: false
+      quantity: 20
+135:
+  cycleTime: 1800
+  name:
+    de: Industrial Fibers
+    en: Industrial Fibers
+    es: Fibras industriales
+    fr: Fibres industrielles
+    ja: インダストリアルファイバー
+    ko: 산업용 섬유
+    ru: Industrial Fibers
+    zh: 工业纤维
+  pins:
+  - 2469
+  - 2471
+  - 2473
+  - 2481
+  - 2483
+  - 2490
+  - 2492
+  - 2493
+  types:
+    2305:
+      isInput: true
+      quantity: 3000
+    2397:
+      isInput: false
+      quantity: 20
