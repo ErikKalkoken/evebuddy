@@ -41,6 +41,18 @@ FROM
     JOIN eve_groups eg ON eg.id = et.eve_group_id
     JOIN eve_categories ec ON ec.id = eg.eve_category_id;
 
+-- name: ListEveTypesForIDs :many
+SELECT
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM
+    eve_types et
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    et.id IN (sqlc.slice('ids'));
+
 -- name: ListEveSkills :many
 SELECT
     sqlc.embed(et),

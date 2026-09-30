@@ -165,7 +165,7 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 		return []*app.EveEntity{}, nil
 	}
 	var rows []queries.EveEntity
-	for idsChunk := range slices.Chunk(ids, st.MaxListEveEntitiesForIDs) {
+	for idsChunk := range slices.Chunk(ids, st.MaxIDsPerQuery) {
 		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)

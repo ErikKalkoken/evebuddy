@@ -44,6 +44,34 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int64) (*app.EveSol
 	return t, nil
 }
 
+// ListEveSolarSystemsForIDs returns a slice of EveSolarSystems in the same order as ids.
+//
+// Returns an error if at least one object can not be found.
+func (st *Storage) ListEveSolarSystemsForIDs(ctx context.Context, ids []int64) ([]*app.EveSolarSystem, error) {
+	if len(ids) == 0 {
+		return []*app.EveSolarSystem{}, nil
+	}
+	m := make(map[int64]*app.EveSolarSystem)
+	for idsChunk := range slices.Chunk(ids, st.MaxIDsPerQuery) {
+		rows, err := st.qRO.ListEveSolarSystemsForIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list eve solar systems for %d ids: %w", len(idsChunk), err)
+		}
+		for _, r := range rows {
+			m[r.EveSolarSystem.ID] = eveSolarSystemFromDBModel(r.EveSolarSystem, r.EveConstellation, r.EveRegion)
+		}
+	}
+	oo := make([]*app.EveSolarSystem, 0, len(ids))
+	for _, id := range ids {
+		o, found := m[id]
+		if !found {
+			return nil, fmt.Errorf("list eve solar systems: id %d: %w", id, app.ErrNotFound)
+		}
+		oo = append(oo, o)
+	}
+	return oo, nil
+}
+
 func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *app.EveSolarSystem {
 	return &app.EveSolarSystem{
 		Constellation:  eveConstellationFromDBModel(c, r),

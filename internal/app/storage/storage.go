@@ -23,7 +23,7 @@ import (
 var embedMigrations embed.FS
 
 type Storage struct {
-	MaxListEveEntitiesForIDs int // Max IDs per SQL query
+	MaxIDsPerQuery int
 
 	dbRO *sql.DB
 	dbRW *sql.DB
@@ -34,11 +34,11 @@ type Storage struct {
 // New returns a new storage object.
 func New(dbRW *sql.DB, dbRO *sql.DB) *Storage {
 	r := &Storage{
-		dbRO:                     dbRO,
-		dbRW:                     dbRW,
-		MaxListEveEntitiesForIDs: 1000,
-		qRO:                      queries.New(dbRO),
-		qRW:                      queries.New(dbRW),
+		dbRO:           dbRO,
+		dbRW:           dbRW,
+		MaxIDsPerQuery: 1000,
+		qRO:            queries.New(dbRO),
+		qRW:            queries.New(dbRW),
 	}
 	return r
 }

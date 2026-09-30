@@ -46,11 +46,11 @@ func (st *Storage) GetLocation(ctx context.Context, id int64) (*app.EveLocation,
 	if err != nil {
 		return nil, fmt.Errorf("get eve location for id %d: %w", id, convertGetError(err))
 	}
-	x, err := st.eveLocationFromDBModel(ctx, o)
+	oo, err := st.eveLocationsFromDBModels(ctx, []queries.EveLocation{o})
 	if err != nil {
 		return nil, err
 	}
-	return x, nil
+	return oo[0], nil
 }
 
 func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, error) {
@@ -58,15 +58,7 @@ func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, err
 	if err != nil {
 		return nil, fmt.Errorf("list eve locations: %w", err)
 	}
-	oo := make([]*app.EveLocation, len(rows))
-	for i, r := range rows {
-		o, err := st.eveLocationFromDBModel(ctx, r)
-		if err != nil {
-			return nil, err
-		}
-		oo[i] = o
-	}
-	return oo, nil
+	return st.eveLocationsFromDBModels(ctx, rows)
 }
 
 func (st *Storage) ListEveLocationIDs(ctx context.Context) (set.Set[int64], error) {
@@ -82,15 +74,7 @@ func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystem
 	if err != nil {
 		return nil, fmt.Errorf("list eve locations in solar system: %w", err)
 	}
-	oo := make([]*app.EveLocation, len(rows))
-	for i, r := range rows {
-		o, err := st.eveLocationFromDBModel(ctx, r)
-		if err != nil {
-			return nil, err
-		}
-		oo[i] = o
-	}
-	return oo, nil
+	return st.eveLocationsFromDBModels(ctx, rows)
 }
 
 // MissingEveLocations returns which ids for eve locations are missing.
@@ -104,33 +88,61 @@ func (st *Storage) MissingEveLocations(ctx context.Context, ids set.Set[int64]) 
 	return missing, nil
 }
 
-// TODO: Refactor for better performance
-func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*app.EveLocation, error) {
-	l2 := &app.EveLocation{
-		ID:        l.ID,
-		Name:      l.Name,
-		UpdatedAt: l.UpdatedAt,
-	}
-	if l.EveTypeID.Valid {
-		o, err := st.GetEveType(ctx, l.EveTypeID.Int64)
-		if err != nil {
-			return nil, err
+// eveLocationsFromDBModels converts rows to locations, batch loading related objects.
+func (st *Storage) eveLocationsFromDBModels(ctx context.Context, rows []queries.EveLocation) ([]*app.EveLocation, error) {
+	var typeIDs, solarSystemIDs, ownerIDs set.Set[int64]
+	for _, r := range rows {
+		if r.EveTypeID.Valid {
+			typeIDs.Add(r.EveTypeID.Int64)
 		}
-		l2.Type = optional.New(o)
-	}
-	if l.EveSolarSystemID.Valid {
-		o, err := st.GetEveSolarSystem(ctx, l.EveSolarSystemID.Int64)
-		if err != nil {
-			return nil, err
+		if r.EveSolarSystemID.Valid {
+			solarSystemIDs.Add(r.EveSolarSystemID.Int64)
 		}
-		l2.SolarSystem = optional.New(o)
-	}
-	if l.OwnerID.Valid {
-		o, err := st.GetEveEntity(ctx, l.OwnerID.Int64)
-		if err != nil {
-			return nil, err
+		if r.OwnerID.Valid {
+			ownerIDs.Add(r.OwnerID.Int64)
 		}
-		l2.Owner = optional.New(o)
 	}
-	return l2, nil
+	types, err := st.ListEveTypesForIDs(ctx, slices.Collect(typeIDs.All()))
+	if err != nil {
+		return nil, err
+	}
+	solarSystems, err := st.ListEveSolarSystemsForIDs(ctx, slices.Collect(solarSystemIDs.All()))
+	if err != nil {
+		return nil, err
+	}
+	owners, err := st.ListEveEntitiesForIDs(ctx, slices.Collect(ownerIDs.All()))
+	if err != nil {
+		return nil, err
+	}
+	typeMap := make(map[int64]*app.EveType, len(types))
+	for _, o := range types {
+		typeMap[o.ID] = o
+	}
+	solarSystemMap := make(map[int64]*app.EveSolarSystem, len(solarSystems))
+	for _, o := range solarSystems {
+		solarSystemMap[o.ID] = o
+	}
+	ownerMap := make(map[int64]*app.EveEntity, len(owners))
+	for _, o := range owners {
+		ownerMap[o.ID] = o
+	}
+	oo := make([]*app.EveLocation, len(rows))
+	for i, r := range rows {
+		o := &app.EveLocation{
+			ID:        r.ID,
+			Name:      r.Name,
+			UpdatedAt: r.UpdatedAt,
+		}
+		if r.EveTypeID.Valid {
+			o.Type = optional.New(typeMap[r.EveTypeID.Int64])
+		}
+		if r.EveSolarSystemID.Valid {
+			o.SolarSystem = optional.New(solarSystemMap[r.EveSolarSystemID.Int64])
+		}
+		if r.OwnerID.Valid {
+			o.Owner = optional.New(ownerMap[r.OwnerID.Int64])
+		}
+		oo[i] = o
+	}
+	return oo, nil
 }

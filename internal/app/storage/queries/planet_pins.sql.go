@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const createPlanetPin = `-- name: CreatePlanetPin :exec
@@ -188,6 +189,107 @@ func (q *Queries) ListPlanetPins(ctx context.Context, characterPlanetID int64) (
 	var items []ListPlanetPinsRow
 	for rows.Next() {
 		var i ListPlanetPinsRow
+		if err := rows.Scan(
+			&i.PlanetPin.ID,
+			&i.PlanetPin.CharacterPlanetID,
+			&i.PlanetPin.ExpiryTime,
+			&i.PlanetPin.ExtractorProductTypeID,
+			&i.PlanetPin.FactorySchemaID,
+			&i.PlanetPin.InstallTime,
+			&i.PlanetPin.LastCycleStart,
+			&i.PlanetPin.PinID,
+			&i.PlanetPin.SchematicID,
+			&i.PlanetPin.TypeID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.SchematicName,
+			&i.SchematicCycle,
+			&i.FactorySchematicName,
+			&i.FactorySchematicCycle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPlanetPinsForCharacterPlanetIDs = `-- name: ListPlanetPinsForCharacterPlanetIDs :many
+SELECT
+    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
+    es.name as schematic_name,
+    es.cycle_time as schematic_cycle,
+    fes.name as factory_schematic_name,
+    fes.cycle_time as factory_schematic_cycle
+FROM
+    planet_pins pp
+    JOIN eve_types et ON et.id = pp.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+    LEFT JOIN eve_schematics es ON es.id = pp.schematic_id
+    LEFT JOIN eve_schematics fes ON fes.id = pp.factory_schema_id
+WHERE
+    pp.character_planet_id IN (/*SLICE:ids*/?)
+`
+
+type ListPlanetPinsForCharacterPlanetIDsRow struct {
+	PlanetPin             PlanetPin
+	EveType               EveType
+	EveGroup              EveGroup
+	EveCategory           EveCategory
+	SchematicName         sql.NullString
+	SchematicCycle        sql.NullInt64
+	FactorySchematicName  sql.NullString
+	FactorySchematicCycle sql.NullInt64
+}
+
+func (q *Queries) ListPlanetPinsForCharacterPlanetIDs(ctx context.Context, ids []int64) ([]ListPlanetPinsForCharacterPlanetIDsRow, error) {
+	query := listPlanetPinsForCharacterPlanetIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlanetPinsForCharacterPlanetIDsRow
+	for rows.Next() {
+		var i ListPlanetPinsForCharacterPlanetIDsRow
 		if err := rows.Scan(
 			&i.PlanetPin.ID,
 			&i.PlanetPin.CharacterPlanetID,

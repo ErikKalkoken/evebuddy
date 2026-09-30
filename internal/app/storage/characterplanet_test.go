@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -80,6 +82,9 @@ func TestPlanet(t *testing.T) {
 		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		x3 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p2.ID})
 		// when
 		oo, err := st.ListCharacterPlanets(ctx, c.ID)
 		// then
@@ -90,6 +95,10 @@ func TestPlanet(t *testing.T) {
 			[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
 			[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
 		)
+		got := pinIDsByPlanet(oo)
+		xassert.Equal(t, set.Of(x1.ID, x2.ID), got[p1.ID])
+		xassert.Equal(t, set.Of(x3.ID), got[p2.ID])
+		xassert.Equal(t, set.Of[int64](), got[p3.ID])
 	})
 	t.Run("can delete planets", func(t *testing.T) {
 		// given
@@ -135,6 +144,9 @@ func TestPlanet(t *testing.T) {
 		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
 		c2 := factory.CreateCharacterFull()
 		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c2.ID})
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p3.ID})
+		x3 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p3.ID})
 		// when
 		oo, err := st.ListAllCharacterPlanets(ctx)
 		// then
@@ -145,5 +157,92 @@ func TestPlanet(t *testing.T) {
 			[]int64{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
 			[]int64{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
 		)
+		got := pinIDsByPlanet(oo)
+		xassert.Equal(t, set.Of(x1.ID), got[p1.ID])
+		xassert.Equal(t, set.Of[int64](), got[p2.ID])
+		xassert.Equal(t, set.Of(x2.ID, x3.ID), got[p3.ID])
 	})
+	t.Run("can list planets with extractor product types", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		product := factory.CreateEveType()
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID:      p1.ID,
+			ExtractorProductTypeID: optional.New(product.ID),
+		})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID:      p2.ID,
+			ExtractorProductTypeID: optional.New(product.ID),
+		})
+		x3 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p2.ID})
+		// when
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		pins := make(map[int64]*app.PlanetPin)
+		for _, p := range oo {
+			for _, x := range p.Pins {
+				pins[x.ID] = x
+			}
+		}
+		require.Len(t, pins, 3)
+		xassert.EqualOptional(t, product, pins[x1.ID].ExtractorProductType)
+		xassert.EqualOptional(t, product, pins[x2.ID].ExtractorProductType)
+		assert.True(t, pins[x3.ID].ExtractorProductType.IsEmpty())
+	})
+	t.Run("can list planets with chunking", func(t *testing.T) {
+		// given
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p2.ID})
+		x3 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p3.ID})
+		// when
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		got := pinIDsByPlanet(oo)
+		xassert.Equal(t, set.Of(x1.ID), got[p1.ID])
+		xassert.Equal(t, set.Of(x2.ID), got[p2.ID])
+		xassert.Equal(t, set.Of(x3.ID), got[p3.ID])
+	})
+	t.Run("can get planet with pins", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p1.ID})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p2.ID})
+		// when
+		o, err := st.GetCharacterPlanet(ctx, c.ID, p1.EvePlanet.ID)
+		// then
+		require.NoError(t, err)
+		got := pinIDsByPlanet([]*app.CharacterPlanet{o})
+		xassert.Equal(t, set.Of(x1.ID, x2.ID), got[p1.ID])
+	})
+}
+
+func pinIDsByPlanet(planets []*app.CharacterPlanet) map[int64]set.Set[int64] {
+	m := make(map[int64]set.Set[int64])
+	for _, p := range planets {
+		ids := set.Of[int64]()
+		for _, x := range p.Pins {
+			ids.Add(x.ID)
+		}
+		m[p.ID] = ids
+	}
+	return m
 }

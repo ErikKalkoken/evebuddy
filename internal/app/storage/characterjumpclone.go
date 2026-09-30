@@ -92,31 +92,33 @@ func characterJumpCloneImplantFromDBModel(
 	return o2
 }
 
-// TODO: Refactor SQL for better performance
-
 func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.CharacterJumpClone2, error) {
 	rows, err := st.qRO.ListAllCharacterJumpClones(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list all character jump clones: %w", err)
 	}
-	var oo []*app.CharacterJumpClone2
-	for _, r := range rows {
-		el, err := st.eveLocationFromDBModel(ctx, queries.EveLocation{
+	locationRows := make([]queries.EveLocation, len(rows))
+	for i, r := range rows {
+		locationRows[i] = queries.EveLocation{
 			ID:               r.LocationID,
 			EveSolarSystemID: r.LocationSolarSystemID,
 			EveTypeID:        r.LocationTypeID,
 			Name:             r.LocationName,
 			OwnerID:          r.LocationOwnerID,
-		})
-		if err != nil {
-			return nil, err
 		}
+	}
+	locations, err := st.eveLocationsFromDBModels(ctx, locationRows)
+	if err != nil {
+		return nil, err
+	}
+	var oo []*app.CharacterJumpClone2
+	for i, r := range rows {
 		oo = append(oo, &app.CharacterJumpClone2{
 			ID:            r.ID,
 			ImplantsCount: int(r.ImplantsCount),
 			CloneID:       r.JumpCloneID,
 			Character:     &app.EntityShort{ID: r.CharacterID, Name: r.CharacterName},
-			Location:      el,
+			Location:      locations[i],
 		})
 	}
 	return oo, nil

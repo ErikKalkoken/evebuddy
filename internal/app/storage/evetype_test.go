@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestEveType(t *testing.T) {
@@ -161,5 +162,77 @@ func TestEveType(t *testing.T) {
 			return x.ID
 		}))
 		xassert.Equal(t, want, got)
+	})
+}
+
+func TestListEveTypesForIDs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 1})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 4})
+		// when
+		oo, err := st.ListEveTypesForIDs(ctx, []int64{4, 1, 3})
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(oo, func(a *app.EveType) int64 {
+			return a.ID
+		})
+		xassert.Equal(t, []int64{4, 1, 3}, got)
+	})
+	t.Run("should return fully mapped objs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		want := factory.CreateEveType()
+		// when
+		oo, err := st.ListEveTypesForIDs(ctx, []int64{want.ID})
+		// then
+		require.NoError(t, err)
+		require.Len(t, oo, 1)
+		xassert.Equal(t, want, oo[0])
+	})
+	t.Run("should return objs with matching ids and chunking", func(t *testing.T) {
+		// given
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 2
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 1})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 4})
+		// when
+		oo, err := st.ListEveTypesForIDs(ctx, []int64{2, 3, 4})
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(oo, func(a *app.EveType) int64 {
+			return a.ID
+		})
+		assert.ElementsMatch(t, []int64{2, 3, 4}, got)
+	})
+	t.Run("should return error when one object can not be found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 1})
+		// when
+		_, err := st.ListEveTypesForIDs(ctx, []int64{1, 2})
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("should return empty slice for empty ids", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		oo, err := st.ListEveTypesForIDs(ctx, []int64{})
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, oo)
 	})
 }

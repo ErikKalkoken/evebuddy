@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -76,18 +78,23 @@ func TestPlanetPin(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		p := factory.CreateCharacterPlanet()
-		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
+		product := factory.CreateEveType()
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID:      p.ID,
+			ExtractorProductTypeID: optional.New(product.ID),
+		})
 		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
 		// when
 		oo, err := st.ListPlanetPins(ctx, p.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Of[int64]()
+		got := make(map[int64]*app.PlanetPin)
 		for _, o := range oo {
-			got.Add(o.ID)
+			got[o.ID] = o
 		}
-		want := set.Of(x1.ID, x2.ID)
-		xassert.Equal(t, want, got)
+		xassert.Equal(t, set.Of(x1.ID, x2.ID), set.Collect(maps.Keys(got)))
+		xassert.EqualOptional(t, product, got[x1.ID].ExtractorProductType)
+		assert.True(t, got[x2.ID].ExtractorProductType.IsEmpty())
 	})
 	t.Run("can delete pins", func(t *testing.T) {
 		// given

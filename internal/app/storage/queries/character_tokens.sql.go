@@ -11,38 +11,84 @@ import (
 	"time"
 )
 
-const addCharacterTokenScope = `-- name: AddCharacterTokenScope :exec
+const addCharacterTokenScopes = `-- name: AddCharacterTokenScopes :exec
 INSERT INTO
     character_token_scopes (character_token_id, scope_id)
-VALUES
-    (?, ?)
+SELECT
+    ?,
+    id
+FROM
+    scopes
+WHERE
+    name IN (/*SLICE:names*/?)
 `
 
-type AddCharacterTokenScopeParams struct {
+type AddCharacterTokenScopesParams struct {
 	CharacterTokenID int64
-	ScopeID          int64
+	Names            []string
 }
 
-func (q *Queries) AddCharacterTokenScope(ctx context.Context, arg AddCharacterTokenScopeParams) error {
-	_, err := q.db.ExecContext(ctx, addCharacterTokenScope, arg.CharacterTokenID, arg.ScopeID)
+func (q *Queries) AddCharacterTokenScopes(ctx context.Context, arg AddCharacterTokenScopesParams) error {
+	query := addCharacterTokenScopes
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterTokenID)
+	if len(arg.Names) > 0 {
+		for _, v := range arg.Names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(arg.Names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
-const clearCharacterTokenScopes = `-- name: ClearCharacterTokenScopes :exec
+const createScopeIfMissing = `-- name: CreateScopeIfMissing :exec
+INSERT INTO
+    scopes (name)
+VALUES
+    (?)
+ON CONFLICT (name) DO NOTHING
+`
+
+func (q *Queries) CreateScopeIfMissing(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, createScopeIfMissing, name)
+	return err
+}
+
+const deleteCharacterTokenScopes = `-- name: DeleteCharacterTokenScopes :exec
 DELETE FROM character_token_scopes
 WHERE
-    character_token_id IN (
+    character_token_id = ?
+    AND scope_id IN (
         SELECT
             id
         FROM
-            character_tokens
+            scopes
         WHERE
-            character_id = ?
+            name IN (/*SLICE:names*/?)
     )
 `
 
-func (q *Queries) ClearCharacterTokenScopes(ctx context.Context, characterID int64) error {
-	_, err := q.db.ExecContext(ctx, clearCharacterTokenScopes, characterID)
+type DeleteCharacterTokenScopesParams struct {
+	CharacterTokenID int64
+	Names            []string
+}
+
+func (q *Queries) DeleteCharacterTokenScopes(ctx context.Context, arg DeleteCharacterTokenScopesParams) error {
+	query := deleteCharacterTokenScopes
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterTokenID)
+	if len(arg.Names) > 0 {
+		for _, v := range arg.Names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(arg.Names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
@@ -110,7 +156,7 @@ func (q *Queries) ListCharacterTokenForCorporation(ctx context.Context, corporat
 }
 
 const listCharacterTokenForCorporationWithRoles = `-- name: ListCharacterTokenForCorporationWithRoles :many
-SELECT
+SELECT DISTINCT
     ct.id, ct.access_token, ct.character_id, ct.expires_at, ct.refresh_token, ct.token_type
 FROM
     character_tokens ct
@@ -167,32 +213,113 @@ func (q *Queries) ListCharacterTokenForCorporationWithRoles(ctx context.Context,
 	return items, nil
 }
 
-const listCharacterTokenScopes = `-- name: ListCharacterTokenScopes :many
+const listCharacterTokenScopeNames = `-- name: ListCharacterTokenScopeNames :many
 SELECT
-    scopes.id, scopes.name
+    scopes.name
 FROM
     character_token_scopes
     JOIN scopes ON scopes.id = character_token_scopes.scope_id
     JOIN character_tokens ON character_tokens.id = character_token_scopes.character_token_id
 WHERE
     character_id = ?
-ORDER BY
-    scopes.name
 `
 
-func (q *Queries) ListCharacterTokenScopes(ctx context.Context, characterID int64) ([]Scope, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterTokenScopes, characterID)
+func (q *Queries) ListCharacterTokenScopeNames(ctx context.Context, characterID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenScopeNames, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Scope
+	var items []string
 	for rows.Next() {
-		var i Scope
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterTokenScopesForCorporation = `-- name: ListCharacterTokenScopesForCorporation :many
+SELECT
+    ct.character_id,
+    s.name
+FROM
+    character_token_scopes cts
+    JOIN scopes s ON s.id = cts.scope_id
+    JOIN character_tokens ct ON ct.id = cts.character_token_id
+    JOIN eve_characters ec ON ec.id = ct.character_id
+WHERE
+    ec.corporation_id = ?
+`
+
+type ListCharacterTokenScopesForCorporationRow struct {
+	CharacterID int64
+	Name        string
+}
+
+func (q *Queries) ListCharacterTokenScopesForCorporation(ctx context.Context, corporationID int64) ([]ListCharacterTokenScopesForCorporationRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenScopesForCorporation, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterTokenScopesForCorporationRow
+	for rows.Next() {
+		var i ListCharacterTokenScopesForCorporationRow
+		if err := rows.Scan(&i.CharacterID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listScopeNamesForNames = `-- name: ListScopeNamesForNames :many
+SELECT
+    name
+FROM
+    scopes
+WHERE
+    name IN (/*SLICE:names*/?)
+`
+
+func (q *Queries) ListScopeNamesForNames(ctx context.Context, names []string) ([]string, error) {
+	query := listScopeNamesForNames
+	var queryParams []interface{}
+	if len(names) > 0 {
+		for _, v := range names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -219,7 +346,9 @@ SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
-    token_type = ?5 RETURNING id, access_token, character_id, expires_at, refresh_token, token_type
+    token_type = ?5
+RETURNING
+    id
 `
 
 type UpdateOrCreateCharacterTokenParams struct {
@@ -230,7 +359,7 @@ type UpdateOrCreateCharacterTokenParams struct {
 	TokenType    string
 }
 
-func (q *Queries) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOrCreateCharacterTokenParams) (CharacterToken, error) {
+func (q *Queries) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOrCreateCharacterTokenParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, updateOrCreateCharacterToken,
 		arg.CharacterID,
 		arg.AccessToken,
@@ -238,14 +367,7 @@ func (q *Queries) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOr
 		arg.RefreshToken,
 		arg.TokenType,
 	)
-	var i CharacterToken
-	err := row.Scan(
-		&i.ID,
-		&i.AccessToken,
-		&i.CharacterID,
-		&i.ExpiresAt,
-		&i.RefreshToken,
-		&i.TokenType,
-	)
-	return i, err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

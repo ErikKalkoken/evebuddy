@@ -108,21 +108,11 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID)
+	oo, err := st.corporationStructuresFromDBModels(ctx, []queries.GetCorporationStructureRow{r})
 	if err != nil {
-		return nil, wrapErr(convertGetError(err))
+		return nil, wrapErr(err)
 	}
-	o := corporationStructureFromDBModel(
-		r.CorporationStructure,
-		r.EveSolarSystem,
-		r.EveConstellation,
-		r.EveRegion,
-		r.EveType,
-		r.EveGroup,
-		r.EveCategory,
-		services,
-	)
-	return o, nil
+	return oo[0], nil
 }
 
 func (st *Storage) ListAllCorporationStructures(ctx context.Context) ([]*app.CorporationStructure, error) {
@@ -133,22 +123,13 @@ func (st *Storage) ListAllCorporationStructures(ctx context.Context) ([]*app.Cor
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	oo := make([]*app.CorporationStructure, len(rows))
+	rows2 := make([]queries.GetCorporationStructureRow, len(rows))
 	for i, r := range rows {
-		services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID) // TODO: Optimize query
-		if err != nil {
-			return nil, wrapErr(convertGetError(err))
-		}
-		oo[i] = corporationStructureFromDBModel(
-			r.CorporationStructure,
-			r.EveSolarSystem,
-			r.EveConstellation,
-			r.EveRegion,
-			r.EveType,
-			r.EveGroup,
-			r.EveCategory,
-			services,
-		)
+		rows2[i] = queries.GetCorporationStructureRow(r)
+	}
+	oo, err := st.corporationStructuresFromDBModels(ctx, rows2)
+	if err != nil {
+		return nil, wrapErr(err)
 	}
 	return oo, nil
 }
@@ -164,11 +145,32 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 	if err != nil {
 		return nil, wrapErr(err)
 	}
+	rows2 := make([]queries.GetCorporationStructureRow, len(rows))
+	for i, r := range rows {
+		rows2[i] = queries.GetCorporationStructureRow(r)
+	}
+	oo, err := st.corporationStructuresFromDBModels(ctx, rows2)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return oo, nil
+}
+
+// corporationStructuresFromDBModels converts rows to structures, batch loading their services.
+func (st *Storage) corporationStructuresFromDBModels(ctx context.Context, rows []queries.GetCorporationStructureRow) ([]*app.CorporationStructure, error) {
+	ids := make([]int64, len(rows))
+	for i, r := range rows {
+		ids[i] = r.CorporationStructure.ID
+	}
+	services, err := st.listStructureServicesByStructure(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	oo := make([]*app.CorporationStructure, len(rows))
 	for i, r := range rows {
-		services, err := st.ListStructureServices(ctx, r.CorporationStructure.ID)
-		if err != nil {
-			return nil, wrapErr(convertGetError(err))
+		ss := services[r.CorporationStructure.ID]
+		if ss == nil {
+			ss = []*app.StructureService{}
 		}
 		oo[i] = corporationStructureFromDBModel(
 			r.CorporationStructure,
@@ -178,7 +180,7 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 			r.EveType,
 			r.EveGroup,
 			r.EveCategory,
-			services,
+			ss,
 		)
 	}
 	return oo, nil
@@ -368,6 +370,21 @@ func (st *Storage) ListStructureServices(ctx context.Context, corporationStructu
 		return nil, wrapErr(err)
 	}
 	return xslices.Map(rows, structureServiceFromDBModel), nil
+}
+
+// listStructureServicesByStructure returns the services for the given structures, keyed by corporation structure ID.
+func (st *Storage) listStructureServicesByStructure(ctx context.Context, corporationStructureIDs []int64) (map[int64][]*app.StructureService, error) {
+	m := make(map[int64][]*app.StructureService)
+	for idsChunk := range slices.Chunk(corporationStructureIDs, st.MaxIDsPerQuery) {
+		rows, err := st.qRO.ListStructureServicesForStructureIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list structure services for %d structures: %w", len(idsChunk), err)
+		}
+		for _, r := range rows {
+			m[r.CorporationStructureID] = append(m[r.CorporationStructureID], structureServiceFromDBModel(r))
+		}
+	}
+	return m, nil
 }
 
 func structureServiceFromDBModel(r queries.CorporationStructureService) *app.StructureService {

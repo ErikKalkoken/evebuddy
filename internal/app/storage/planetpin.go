@@ -3,7 +3,10 @@ package storage
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
+
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
@@ -67,7 +70,11 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	return st.planetPinFromDBModel(ctx, r)
+	oo, err := st.planetPinsFromDBModels(ctx, []queries.GetPlanetPinRow{r})
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return oo[0], nil
 }
 
 func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) ([]*app.PlanetPin, error) {
@@ -81,20 +88,68 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.PlanetPin
-	for _, r := range rows {
-		o, err := st.planetPinFromDBModel(ctx, queries.GetPlanetPinRow(r))
-		if err != nil {
-			return nil, wrapErr(err)
-		}
-		oo = append(oo, o)
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	rows2 := make([]queries.GetPlanetPinRow, len(rows))
+	for i, r := range rows {
+		rows2[i] = queries.GetPlanetPinRow(r)
+	}
+	oo, err := st.planetPinsFromDBModels(ctx, rows2)
+	if err != nil {
+		return nil, wrapErr(err)
 	}
 	return oo, nil
 }
 
-// TODO: Consider removing the additional DB call
+// listPlanetPinsByPlanet returns the pins for the given character planets, keyed by character planet ID.
+func (st *Storage) listPlanetPinsByPlanet(ctx context.Context, characterPlanetIDs []int64) (map[int64][]*app.PlanetPin, error) {
+	var rows []queries.GetPlanetPinRow
+	for idsChunk := range slices.Chunk(characterPlanetIDs, st.MaxIDsPerQuery) {
+		r, err := st.qRO.ListPlanetPinsForCharacterPlanetIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list planet pins for %d character planets: %w", len(idsChunk), err)
+		}
+		for _, x := range r {
+			rows = append(rows, queries.GetPlanetPinRow(x))
+		}
+	}
+	pins, err := st.planetPinsFromDBModels(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int64][]*app.PlanetPin)
+	for i, r := range rows {
+		id := r.PlanetPin.CharacterPlanetID
+		m[id] = append(m[id], pins[i])
+	}
+	return m, nil
+}
 
-func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanetPinRow) (*app.PlanetPin, error) {
+// planetPinsFromDBModels converts rows to pins, batch loading extractor product types.
+func (st *Storage) planetPinsFromDBModels(ctx context.Context, rows []queries.GetPlanetPinRow) ([]*app.PlanetPin, error) {
+	var typeIDs set.Set[int64]
+	for _, r := range rows {
+		if r.PlanetPin.ExtractorProductTypeID.Valid {
+			typeIDs.Add(r.PlanetPin.ExtractorProductTypeID.Int64)
+		}
+	}
+	types, err := st.ListEveTypesForIDs(ctx, slices.Collect(typeIDs.All()))
+	if err != nil {
+		return nil, err
+	}
+	typeMap := make(map[int64]*app.EveType, len(types))
+	for _, o := range types {
+		typeMap[o.ID] = o
+	}
+	oo := make([]*app.PlanetPin, len(rows))
+	for i, r := range rows {
+		oo[i] = planetPinFromDBModel(r, typeMap)
+	}
+	return oo, nil
+}
+
+func planetPinFromDBModel(r queries.GetPlanetPinRow, types map[int64]*app.EveType) *app.PlanetPin {
 	o := &app.PlanetPin{
 		ID:             r.PlanetPin.PinID,
 		ExpiryTime:     optional.FromNullTime(r.PlanetPin.ExpiryTime),
@@ -117,11 +172,7 @@ func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanet
 		}))
 	}
 	if r.PlanetPin.ExtractorProductTypeID.Valid {
-		et, err := st.GetEveType(ctx, r.PlanetPin.ExtractorProductTypeID.Int64)
-		if err != nil {
-			return nil, err
-		}
-		o.ExtractorProductType.Set(et)
+		o.ExtractorProductType.Set(types[r.PlanetPin.ExtractorProductTypeID.Int64])
 	}
-	return o, nil
+	return o
 }

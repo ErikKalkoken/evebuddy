@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"strings"
 )
 
 const createEveSolarSystem = `-- name: CreateEveSolarSystem :exec
@@ -90,6 +91,69 @@ func (q *Queries) ListEveSolarSystemIDs(ctx context.Context) ([]int64, error) {
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveSolarSystemsForIDs = `-- name: ListEveSolarSystemsForIDs :many
+SELECT
+    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
+    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
+    eve_regions.id, eve_regions.description, eve_regions.name
+FROM
+    eve_solar_systems
+    JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+    JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+WHERE
+    eve_solar_systems.id IN (/*SLICE:ids*/?)
+`
+
+type ListEveSolarSystemsForIDsRow struct {
+	EveSolarSystem   EveSolarSystem
+	EveConstellation EveConstellation
+	EveRegion        EveRegion
+}
+
+func (q *Queries) ListEveSolarSystemsForIDs(ctx context.Context, ids []int64) ([]ListEveSolarSystemsForIDsRow, error) {
+	query := listEveSolarSystemsForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveSolarSystemsForIDsRow
+	for rows.Next() {
+		var i ListEveSolarSystemsForIDsRow
+		if err := rows.Scan(
+			&i.EveSolarSystem.ID,
+			&i.EveSolarSystem.EveConstellationID,
+			&i.EveSolarSystem.Name,
+			&i.EveSolarSystem.SecurityStatus,
+			&i.EveConstellation.ID,
+			&i.EveConstellation.EveRegionID,
+			&i.EveConstellation.Name,
+			&i.EveRegion.ID,
+			&i.EveRegion.Description,
+			&i.EveRegion.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

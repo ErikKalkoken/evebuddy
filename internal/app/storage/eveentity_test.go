@@ -242,10 +242,10 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 	})
 	t.Run("should return objs with matching ids and chunking", func(t *testing.T) {
 		// given
-		old := st.MaxListEveEntitiesForIDs
-		st.MaxListEveEntitiesForIDs = 2
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 2
 		defer func() {
-			st.MaxListEveEntitiesForIDs = old
+			st.MaxIDsPerQuery = old
 		}()
 		testutil.MustTruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 1})

@@ -235,6 +235,46 @@ func (q *Queries) ListCharacterContactIDs(ctx context.Context, characterID int64
 	return items, nil
 }
 
+const listCharacterContactLabelsForCharacter = `-- name: ListCharacterContactLabelsForCharacter :many
+SELECT
+    map.contact_id,
+    ccl.name
+FROM
+    character_contacts_labels map
+    JOIN character_contacts cc ON cc.id = map.contact_id
+    JOIN character_contact_labels ccl ON ccl.id = map.label_id
+WHERE
+    cc.character_id = ?
+`
+
+type ListCharacterContactLabelsForCharacterRow struct {
+	ContactID int64
+	Name      string
+}
+
+func (q *Queries) ListCharacterContactLabelsForCharacter(ctx context.Context, characterID int64) ([]ListCharacterContactLabelsForCharacterRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContactLabelsForCharacter, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterContactLabelsForCharacterRow
+	for rows.Next() {
+		var i ListCharacterContactLabelsForCharacterRow
+		if err := rows.Scan(&i.ContactID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterContacts = `-- name: ListCharacterContacts :many
 SELECT
     cc.id, cc.character_id, cc.contact_id, cc.is_blocked, cc.is_watched, cc.standing,
