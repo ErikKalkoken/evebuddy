@@ -1741,11 +1741,7 @@ func (f Factory) CreateCorporationStructure(args ...storage.UpdateOrCreateCorpor
 		arg.CorporationID = x.ID
 	}
 	if arg.StructureID == 0 {
-		arg.StructureID = f.calcNewIDWithCorporation(
-			"corporation_structures",
-			"structure_id",
-			arg.CorporationID,
-		)
+		arg.StructureID = f.calcNewID("corporation_structures", "structure_id", startIDStructure)
 	}
 	if arg.State == app.StructureStateUndefined {
 		arg.State = app.StructureStateShieldVulnerable

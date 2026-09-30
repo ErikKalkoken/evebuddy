@@ -193,7 +193,7 @@ func TestCorporationStructure(t *testing.T) {
 		got := set.Collect(xiter.MapSlice(xx, func(x *app.CorporationStructure) int64 {
 			return x.StructureID
 		}))
-		want := set.Of(o1.StructureID, o2.StructureID)
+		want := set.Of(o1.StructureID, o2.StructureID, o3.StructureID)
 		xassert.Equal(t, want, got)
 		services := serviceNamesByStructure(xx)
 		xassert.Equal(t, set.Of(s1.Name, s2.Name), services[o1.ID])
