@@ -37,40 +37,48 @@ const (
 )
 
 type colonyRow struct {
-	characterID       int64
-	extracting        set.Set[string]
-	extractingText    string
-	extractorExpiries []time.Time
-	extractorExpiry   optional.Optional[time.Time]
-	name              string
-	nameDisplay       []widget.RichTextSegment
-	ownerName         string
-	planetID          int64
-	planetName        string
-	planetTypeID      int64
-	planetTypeName    string
-	producing         set.Set[string]
-	producingText     string
-	regionName        string
-	searchTarget      string
-	solarSystemName   string
-	tags              set.Set[string]
-	titleDisplay      []widget.RichTextSegment
+	characterID     int64
+	extracting      set.Set[string]
+	extractingText  string
+	name            string
+	nameDisplay     []widget.RichTextSegment
+	ownerName       string
+	planet          *app.CharacterPlanet
+	planetID        int64
+	planetName      string
+	planetTypeID    int64
+	planetTypeName  string
+	producing       set.Set[string]
+	producingText   string
+	regionName      string
+	searchTarget    string
+	solarSystemName string
+	status          app.ColonyStatus
+	tags            set.Set[string]
+	titleDisplay    []widget.RichTextSegment
+	workEndsAt      optional.Optional[time.Time]
 }
 
-func (r colonyRow) remaining() time.Duration {
-	if v, ok := r.extractorExpiry.Value(); ok {
-		return time.Until(v)
-	}
-	return 0
+// setForecast updates the row with a new forecast for its colony.
+func (r *colonyRow) setForecast(f *app.ColonyForecast) {
+	r.status = f.Status
+	r.workEndsAt = f.WorkEndsAt
 }
 
-func (r colonyRow) isExpired() bool {
-	return r.remaining() <= 0
+func (r colonyRow) needsAttention() bool {
+	return !r.status.IsWorking()
 }
 
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
-	return colonyStatusDisplay(r.extractorExpiries)
+	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{
+		ColorName: r.status.Color(),
+	})
+}
+
+func (r colonyRow) workEndsDisplay() string {
+	return r.workEndsAt.StringFunc("-", func(v time.Time) string {
+		return v.Format(app.DateTimeFormat)
+	})
 }
 
 func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment {
@@ -111,6 +119,7 @@ type Colonies struct {
 	filterRun         latestRun
 	footer            *widget.Label
 	rows              []colonyRow
+	rowsRun           latestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
 	selectExtracting  *kxwidget.FilterChipSelect
@@ -152,9 +161,9 @@ func NewColonies(u baseUI) *Colonies {
 		},
 	}, {
 		Label: "Status",
-		Width: 100,
+		Width: 150,
 		Sort: func(a, b colonyRow) int {
-			return cmp.Compare(a.remaining(), b.remaining())
+			return cmp.Compare(a.status, b.status)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
@@ -166,17 +175,15 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).SetWithText(r.extractingText)
 		},
 	}, {
-		Label: "End data",
+		Label: "Work ends",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
-			return optional.CompareFunc(a.extractorExpiry, b.extractorExpiry, func(x, y time.Time) int {
+			return optional.CompareFunc(a.workEndsAt, b.workEndsAt, func(x, y time.Time) int {
 				return x.Compare(y)
 			})
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.extractorExpiry.StringFunc("-", func(v time.Time) string {
-				return v.Format(app.DateTimeFormat)
-			}))
+			co.(*xwidget.RichText).SetWithText(r.workEndsDisplay())
 		},
 	}, {
 		Label: "Producing",
@@ -196,7 +203,7 @@ func NewColonies(u baseUI) *Colonies {
 	}})
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, "End data", xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Work ends", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -233,10 +240,7 @@ func NewColonies(u baseUI) *Colonies {
 	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
 		a.filterRowsAsync("")
 	}, a.u.MainWindow())
-	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{
-		colonyStatusExtracting,
-		colonyStatusAllIdle,
-	}, func(string) {
+	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
 	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
@@ -260,8 +264,7 @@ func NewColonies(u baseUI) *Colonies {
 
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.body.Refresh()
-			a.setOnUpdate()
+			a.refreshForecasts()
 		})
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -412,7 +415,11 @@ func (w *colonyListItem) set(r colonyRow) {
 	w.extracting.SetText(r.extractingText)
 	w.title.Set(r.titleDisplay)
 	w.producing.SetText(r.producingText)
-	w.status.Set(r.statusDisplay())
+	status := r.statusDisplay()
+	if v, ok := r.workEndsAt.Value(); ok {
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • "+ihumanize.Duration(time.Until(v))))
+	}
+	w.status.Set(status)
 }
 
 func (a *Colonies) filterRowsAsync(sortCol string) {
@@ -458,13 +465,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		}
 		if status != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				switch status {
-				case colonyStatusExtracting:
-					return r.isExpired()
-				case colonyStatusAllIdle:
-					return !r.isExpired()
-				}
-				return true
+				return r.status.Display() != status
 			})
 		}
 		if planetType != "" {
@@ -499,6 +500,9 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		planetTypeOptions := xslices.Map(rows, func(r colonyRow) string {
 			return r.planetTypeName
 		})
+		statusOptions := xslices.Map(rows, func(r colonyRow) string {
+			return r.status.Display()
+		})
 		var extracting2, producing2 set.Set[string]
 		for _, r := range rows {
 			extracting2.AddSeq(r.extracting.All())
@@ -508,15 +512,16 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		producingOptions := slices.Collect(producing2.All())
 
 		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
-		var expired int
+		var attention int
 		for _, r := range rows {
-			if r.isExpired() {
-				expired++
+			if r.needsAttention() {
+				attention++
 			}
 		}
-		if expired > 0 {
-			footer += fmt.Sprintf(" • %d expired", expired)
+		if attention > 0 {
+			footer += fmt.Sprintf(" • %d not working", attention)
 		}
+		footer += " • Status and work end are estimates"
 
 		fyne.Do(func() {
 			if !isLatest() {
@@ -530,6 +535,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			a.selectRegion.SetOptions(regionOptions)
 			a.selectSolarSystem.SetOptions(solarSystemOptions)
 			a.selectPlanetType.SetOptions(planetTypeOptions)
+			a.selectStatus.SetOptions(statusOptions)
 			a.selectExtracting.SetOptions(extractingOptions)
 			a.selectProducing.SetOptions(producingOptions)
 			a.rowsFiltered = rows
@@ -539,6 +545,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 }
 
 func (a *Colonies) Update(ctx context.Context) {
+	isLatest := a.rowsRun.start()
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -552,21 +559,44 @@ func (a *Colonies) Update(ctx context.Context) {
 		})
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.rows = rows
 		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})
 }
 
+// refreshForecasts recalculates the forecasts for all colonies.
+func (a *Colonies) refreshForecasts() {
+	isLatest := a.rowsRun.start()
+	rows := slices.Clone(a.rows)
+	runAsync(func() {
+		now := time.Now()
+		for i := range rows {
+			rows[i].setForecast(a.u.Character().ForecastPlanet(rows[i].planet, now))
+		}
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.rows = rows
+			a.filterRowsAsync("")
+			a.setOnUpdate()
+		})
+	})
+}
+
 func (a *Colonies) setOnUpdate() {
-	var expired int
+	var attention int
 	for _, r := range a.rows {
-		if r.isExpired() {
-			expired++
+		if r.needsAttention() {
+			attention++
 		}
 	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.rows), expired)
+		a.OnUpdate(len(a.rows), attention)
 	}
 }
 
@@ -579,6 +609,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 	if err != nil {
 		return nil, err
 	}
+	now := time.Now()
 	var rows []colonyRow
 	for _, p := range planets {
 		extracting := set.Collect(xiter.MapSlice(p.ExtractedTypes(), func(x *app.EveType) string {
@@ -593,23 +624,23 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		name := p.EvePlanet.Name
 		searchTargets := slices.Collect(xiter.Map(set.Union(set.Of(name), extracting, producing).All(), strings.ToLower))
 		r := colonyRow{
-			characterID:       p.CharacterID,
-			extractorExpiries: p.ExtractionsExpiryTimes(),
-			extractorExpiry:   p.ExtractionsEarliestExpiry(),
-			extracting:        extracting,
-			name:              name,
-			nameDisplay:       p.NameRichText(),
-			ownerName:         characters[p.CharacterID],
-			planetID:          p.EvePlanet.ID,
-			planetName:        p.EvePlanet.Name,
-			producing:         producing,
-			regionName:        p.EvePlanet.SolarSystem.Constellation.Region.Name,
-			solarSystemName:   p.EvePlanet.SolarSystem.Name,
-			planetTypeName:    p.EvePlanet.TypeDisplay(),
-			planetTypeID:      p.EvePlanet.Type.ID,
-			titleDisplay:      titleDisplay,
-			searchTarget:      strings.Join(searchTargets, "~"),
+			characterID:     p.CharacterID,
+			extracting:      extracting,
+			name:            name,
+			nameDisplay:     p.NameRichText(),
+			ownerName:       characters[p.CharacterID],
+			planet:          p,
+			planetID:        p.EvePlanet.ID,
+			planetName:      p.EvePlanet.Name,
+			producing:       producing,
+			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			solarSystemName: p.EvePlanet.SolarSystem.Name,
+			planetTypeName:  p.EvePlanet.TypeDisplay(),
+			planetTypeID:    p.EvePlanet.Type.ID,
+			titleDisplay:    titleDisplay,
+			searchTarget:    strings.Join(searchTargets, "~"),
 		}
+		r.setForecast(a.u.Character().ForecastPlanet(p, now))
 		if extracting.Size() == 0 {
 			r.extractingText = "-"
 		} else {
