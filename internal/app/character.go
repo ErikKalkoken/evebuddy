@@ -259,6 +259,7 @@ type CharacterPlanet struct {
 	LastUpdate   time.Time
 	LastNotified optional.Optional[time.Time] // expiry time that was last notified
 	Pins         []*PlanetPin
+	Routes       []*PlanetRoute
 	UpgradeLevel int64
 }
 
@@ -330,8 +331,13 @@ func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 
 type PlanetPin struct {
 	ID                   int64
+	Contents             []*PlanetPinContent
 	ExpiryTime           optional.Optional[time.Time]
+	ExtractorCycleTime   optional.Optional[time.Duration]
+	ExtractorHeadRadius  optional.Optional[float64]
+	ExtractorNumHeads    optional.Optional[int64]
 	ExtractorProductType optional.Optional[*EveType]
+	ExtractorQtyPerCycle optional.Optional[int64]
 	FactorySchematic     optional.Optional[*EveSchematic]
 	InstallTime          optional.Optional[time.Time]
 	LastCycleStart       optional.Optional[time.Time]
@@ -345,6 +351,21 @@ func (pp PlanetPin) IsExtracting() bool {
 
 func (pp PlanetPin) IsProducing() bool {
 	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
+}
+
+// PlanetPinContent is a commodity stored in a planet pin.
+type PlanetPinContent struct {
+	Amount int64
+	Type   *EveType
+}
+
+// PlanetRoute is a route for moving commodities between two pins of a colony.
+type PlanetRoute struct {
+	ContentType      *EveType
+	DestinationPinID int64
+	Quantity         int64
+	RouteID          int64
+	SourcePinID      int64
 }
 
 type CharacterShipAbility struct {

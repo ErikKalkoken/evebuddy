@@ -115,6 +115,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		contentType := factory.CreateEveType()
 		productType := factory.CreateEveType()
 		pinType := factory.CreateEveType()
+		routeType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2393})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
@@ -212,6 +213,22 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		)
 		xassert.EqualOptional(t, productType, pin.ExtractorProductType)
 		xassert.Equal(t, pinType, pin.Type)
+		xassert.EqualOptional(t, 30*time.Minute, pin.ExtractorCycleTime)
+		xassert.EqualOptional(t, 0.013043995015323162, pin.ExtractorHeadRadius)
+		xassert.EqualOptional(t, 1, pin.ExtractorNumHeads)
+		xassert.EqualOptional(t, 1081, pin.ExtractorQtyPerCycle)
+		if assert.Len(t, pin.Contents, 1) {
+			xassert.Equal(t, contentType, pin.Contents[0].Type)
+			xassert.Equal(t, 42, pin.Contents[0].Amount)
+		}
+		if assert.Len(t, p.Routes, 1) {
+			r := p.Routes[0]
+			xassert.Equal(t, routeType, r.ContentType)
+			xassert.Equal(t, 1000000017030, r.DestinationPinID)
+			xassert.Equal(t, 20, r.Quantity)
+			xassert.Equal(t, 4, r.RouteID)
+			xassert.Equal(t, 1000000017029, r.SourcePinID)
+		}
 	})
 	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
@@ -232,6 +249,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		contentType := factory.CreateEveType()
 		productType := factory.CreateEveType()
 		pinType := factory.CreateEveType()
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2393})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),

@@ -61,11 +61,11 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int64, pl
 	if err != nil {
 		return nil, convertGetError(err)
 	}
-	pins, err := st.listPlanetPinsByPlanet(ctx, []int64{r.CharacterPlanet.ID})
+	oo, err := st.characterPlanetsFromDBModels(ctx, []queries.GetCharacterPlanetRow{r})
 	if err != nil {
 		return nil, err
 	}
-	return characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID]), nil
+	return oo[0], nil
 }
 
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
@@ -100,7 +100,7 @@ func (st *Storage) ListCharacterPlanets(ctx context.Context, id int64) ([]*app.C
 	return oo, nil
 }
 
-// characterPlanetsFromDBModels converts rows to planets, batch loading their pins.
+// characterPlanetsFromDBModels converts rows to planets, batch loading their pins and routes.
 func (st *Storage) characterPlanetsFromDBModels(ctx context.Context, rows []queries.GetCharacterPlanetRow) ([]*app.CharacterPlanet, error) {
 	ids := make([]int64, len(rows))
 	for i, r := range rows {
@@ -110,9 +110,15 @@ func (st *Storage) characterPlanetsFromDBModels(ctx context.Context, rows []quer
 	if err != nil {
 		return nil, err
 	}
+	routes, err := st.listPlanetRoutesByPlanet(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	oo := make([]*app.CharacterPlanet, len(rows))
 	for i, r := range rows {
-		oo[i] = characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID])
+		o := characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID])
+		o.Routes = routes[r.CharacterPlanet.ID]
+		oo[i] = o
 	}
 	return oo, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -150,8 +151,11 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 					if err != nil {
 						return err
 					}
-					// replace planet pins
+					// replace planet pins and routes
 					if err := s.st.DeletePlanetPins(ctx, characterPlanetID); err != nil {
+						return err
+					}
+					if err := s.st.DeletePlanetRoutes(ctx, characterPlanetID); err != nil {
 						return err
 					}
 					for _, pin := range planet.Pins {
@@ -167,12 +171,30 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 							InstallTime:       optional.FromPtr(pin.InstallTime),
 							LastCycleStart:    optional.FromPtr(pin.LastCycleStart),
 						}
-						if pin.ExtractorDetails != nil && pin.ExtractorDetails.ProductTypeId != nil {
-							et, err := s.eus.GetOrCreateTypeESI(ctx, *pin.ExtractorDetails.ProductTypeId)
-							if err != nil {
-								return err
+						if len(pin.Contents) > 0 {
+							arg.Contents = make(map[int64]int64)
+							for _, c := range pin.Contents {
+								et, err := s.eus.GetOrCreateTypeESI(ctx, c.TypeId)
+								if err != nil {
+									return err
+								}
+								arg.Contents[et.ID] += c.Amount
 							}
-							arg.ExtractorProductTypeID = optional.New(et.ID)
+						}
+						if d := pin.ExtractorDetails; d != nil {
+							if d.ProductTypeId != nil {
+								et, err := s.eus.GetOrCreateTypeESI(ctx, *d.ProductTypeId)
+								if err != nil {
+									return err
+								}
+								arg.ExtractorProductTypeID = optional.New(et.ID)
+							}
+							if d.CycleTime != nil {
+								arg.ExtractorCycleTime = optional.New(time.Duration(*d.CycleTime) * time.Second)
+							}
+							arg.ExtractorHeadRadius = optional.FromPtr(d.HeadRadius)
+							arg.ExtractorQtyPerCycle = optional.FromPtr(d.QtyPerCycle)
+							arg.ExtractorNumHeads = optional.New(int64(len(d.Heads)))
 						}
 						if pin.FactoryDetails != nil && pin.FactoryDetails.SchematicId != 0 {
 							es, err := s.eus.GetOrCreateSchematicESI(ctx, pin.FactoryDetails.SchematicId)
@@ -189,6 +211,23 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 							arg.SchematicID = optional.New(es.ID)
 						}
 						if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
+							return err
+						}
+					}
+					for _, r := range planet.Routes {
+						et, err := s.eus.GetOrCreateTypeESI(ctx, r.ContentTypeId)
+						if err != nil {
+							return err
+						}
+						err = s.st.CreatePlanetRoute(ctx, storage.CreatePlanetRouteParams{
+							CharacterPlanetID: characterPlanetID,
+							ContentTypeID:     et.ID,
+							DestinationPinID:  r.DestinationPinId,
+							Quantity:          int64(math.Round(r.Quantity)),
+							RouteID:           r.RouteId,
+							SourcePinID:       r.SourcePinId,
+						})
+						if err != nil {
 							return err
 						}
 					}

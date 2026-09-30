@@ -50,11 +50,21 @@ func TestPlanetPin(t *testing.T) {
 		lastCycleStart := time.Now()
 		schematic := factory.CreateEveSchematic()
 		factorySchematic := factory.CreateEveSchematic()
+		contentType1 := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Alpha"})
+		contentType2 := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Bravo"})
 		// when
 		err := st.CreatePlanetPin(ctx, storage.CreatePlanetPinParams{
-			CharacterPlanetID:      planet.ID,
+			CharacterPlanetID: planet.ID,
+			Contents: map[int64]int64{
+				contentType1.ID: 42,
+				contentType2.ID: 7,
+			},
 			ExpiryTime:             optional.New(expiryTime),
+			ExtractorCycleTime:     optional.New(30 * time.Minute),
+			ExtractorHeadRadius:    optional.New(0.013),
+			ExtractorNumHeads:      optional.New[int64](10),
 			ExtractorProductTypeID: optional.New(productType.ID),
+			ExtractorQtyPerCycle:   optional.New[int64](1081),
 			FactorySchematicID:     optional.New(factorySchematic.ID),
 			InstallTime:            optional.New(installTime),
 			LastCycleStart:         optional.New(lastCycleStart),
@@ -73,6 +83,16 @@ func TestPlanetPin(t *testing.T) {
 		xassert.EqualOptional(t, lastCycleStart, c2.LastCycleStart)
 		xassert.EqualOptional(t, schematic, c2.Schematic)
 		xassert.EqualOptional(t, factorySchematic, c2.FactorySchematic)
+		xassert.EqualOptional(t, 30*time.Minute, c2.ExtractorCycleTime)
+		xassert.EqualOptional(t, 0.013, c2.ExtractorHeadRadius)
+		xassert.EqualOptional(t, 10, c2.ExtractorNumHeads)
+		xassert.EqualOptional(t, 1081, c2.ExtractorQtyPerCycle)
+		if assert.Len(t, c2.Contents, 2) {
+			xassert.Equal(t, contentType1, c2.Contents[0].Type)
+			xassert.Equal(t, 42, c2.Contents[0].Amount)
+			xassert.Equal(t, contentType2, c2.Contents[1].Type)
+			xassert.Equal(t, 7, c2.Contents[1].Amount)
+		}
 	})
 	t.Run("can list pins", func(t *testing.T) {
 		// given
@@ -118,5 +138,23 @@ func TestPlanetPin(t *testing.T) {
 			t.Fatal(err)
 		}
 		assert.Len(t, oo2, 1)
+	})
+	t.Run("should delete contents with pins", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		planet := factory.CreateCharacterPlanet()
+		contentType := factory.CreateEveType()
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: planet.ID,
+			Contents:          map[int64]int64{contentType.ID: 42},
+		})
+		// when
+		err := st.DeletePlanetPins(ctx, planet.ID)
+		// then
+		require.NoError(t, err)
+		var n int
+		err = db.QueryRow("SELECT COUNT(*) FROM planet_pin_contents").Scan(&n)
+		require.NoError(t, err)
+		assert.Equal(t, 0, n)
 	})
 }
