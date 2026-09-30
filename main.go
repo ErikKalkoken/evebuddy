@@ -430,6 +430,10 @@ func main() {
 	if isDesktop {
 		u := core.NewDesktopUI(params)
 		stop, err := remoteservice.Start(remotePort, func() {
+			if u.Signals().IsShuttingDown() {
+				slog.Warn("Remote service: ignored request to show instance during shutdown")
+				return
+			}
 			fyne.Do(func() {
 				u.MainWindow().Show()
 			})
