@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/colonysim"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -29,6 +30,12 @@ func (s *CharacterService) ListAllPlanets(ctx context.Context) ([]*app.Character
 
 func (s *CharacterService) ListPlanets(ctx context.Context, characterID int64) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
+}
+
+// ForecastPlanet returns the estimated state of a colony at now,
+// simulated forward from its last ESI snapshot.
+func (s *CharacterService) ForecastPlanet(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
+	return colonysim.Forecast(cp, now)
 }
 
 // NotifyExpiredExtractions sends notifications for expired extractions of a character.

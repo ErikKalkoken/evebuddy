@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -374,5 +375,61 @@ func TestListAllPlanets(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Len(t, got, 2)
+	})
+}
+
+func TestForecastPlanet(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should forecast colony loaded from storage", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		t0 := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+		cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: t0})
+		ecuGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+		ecuType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: ecuGroup.ID})
+		storageGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupStorageFacilities})
+		storageType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID:  storageGroup.ID,
+			Capacity: optional.New(12_000.0),
+		})
+		product := factory.CreateEveType(storage.CreateEveTypeParams{Volume: optional.New(0.01)})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID:      cp.ID,
+			PinID:                  1,
+			TypeID:                 ecuType.ID,
+			ExtractorProductTypeID: optional.New(product.ID),
+			ExtractorQtyPerCycle:   optional.New[int64](1081),
+			ExtractorCycleTime:     optional.New(30 * time.Minute),
+			InstallTime:            optional.New(t0),
+			ExpiryTime:             optional.New(t0.Add(4 * time.Hour)),
+			LastCycleStart:         optional.New(t0),
+		})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: cp.ID,
+			PinID:             2,
+			TypeID:            storageType.ID,
+			Contents:          map[int64]int64{product.ID: 100},
+		})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+			CharacterPlanetID: cp.ID,
+			SourcePinID:       1,
+			DestinationPinID:  2,
+			ContentTypeID:     product.ID,
+			Quantity:          10_000,
+		})
+		p, err := s.GetPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+		require.NoError(t, err)
+		// when
+		got := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		// then
+		assert.Equal(t, app.ColonyExtracting, got.Status)
+		assert.Equal(t, app.PinExtracting, got.Pins[1].Status)
+		assert.Equal(t, map[int64]int64{product.ID: 100 + 2467 + 2086}, got.Pins[2].Contents)
+		assert.InDelta(t, float64(100+2467+2086)*0.01, got.Pins[2].CapacityUsed, 0.0001)
+		xassert.EqualOptional(t, 12_000.0, got.Pins[2].Capacity)
+		xassert.EqualOptional(t, t0.Add(4*time.Hour), got.WorkEndsAt)
 	})
 }
