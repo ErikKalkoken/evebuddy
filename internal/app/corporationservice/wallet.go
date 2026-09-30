@@ -43,7 +43,9 @@ func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID 
 	}
 	oo, err := s.st.ListCorporationWalletNames(ctx, corporationID)
 	if err != nil {
-		slog.Error("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		if ctx.Err() == nil {
+			slog.Error("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		}
 		return m
 	}
 	for _, o := range oo {

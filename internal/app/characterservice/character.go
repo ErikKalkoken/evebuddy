@@ -53,6 +53,9 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int64) (*app.Cha
 	}
 	x, err := s.calcNextCloneJump(ctx, c)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, err
+		}
 		slog.Error("get character: next clone jump", "characterID", id, "error", err)
 	} else {
 		c.NextCloneJump = x
@@ -85,6 +88,10 @@ func (s *CharacterService) ListCharacterIDs(ctx context.Context) (set.Set[int64]
 
 func (s *CharacterService) ListEveCharacters(ctx context.Context) ([]*app.EveCharacter, error) {
 	return s.st.ListCharacterEveCharacters(ctx)
+}
+
+func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.EntityShort, error) {
+	return s.st.ListCharactersShort(ctx)
 }
 
 // CharacterNames returns an ID to name map for all existing characters.
@@ -223,7 +230,7 @@ func (s *CharacterService) UpdateAllCalculatedValues(ctx context.Context) error 
 			c1.OrdersEscrow != c2.OrdersEscrow ||
 			c1.SkillPointsValue != c2.SkillPointsValue
 		if changed {
-			go s.signals.CharacterChanged.Emit(ctx, id)
+			go s.signals.CharacterChanged.Emit(context.Background(), id)
 		}
 	}
 	return nil

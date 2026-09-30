@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -185,49 +186,40 @@ func (a *statusBar) start() {
 	a.updateUpdateStatus(ctx)
 	a.updateEveStatus(ctx)
 
-	clockTicker := time.NewTicker(clockUpdateTicker)
-	go func() {
-		for {
+	a.u.tasks.Go(func(ctx context.Context) {
+		xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
 			fyne.Do(func() {
 				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
 			})
-			<-clockTicker.C
-		}
-	}()
-
+		})
+	})
 	if a.u.isOfflineMode {
 		fyne.Do(func() {
 			a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		})
 		return
 	}
-
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
 		a.updateEveStatus(ctx)
 	})
-
-	if !a.u.isOfflineMode {
-		tickerNewVersion := time.NewTicker(versionTicker)
-		go func() {
-			for {
-				func() {
-					v, err := a.u.availableUpdate(ctx)
-					if err != nil {
-						slog.Error("fetch latest github version for download hint", "err", err)
-						return
-					}
-					if !v.IsRemoteNewer {
-						return
-					}
-					fyne.Do(func() {
-						a.updateHint.set(v)
-						a.updateHint.Show()
-					})
-				}()
-				<-tickerNewVersion.C
+	a.u.tasks.Go(func(ctx context.Context) {
+		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
+			v, err := a.u.availableUpdate(ctx)
+			if err != nil {
+				if !app.IsCanceled(ctx, err) {
+					slog.Error("fetch latest github version for download hint", "err", err)
+				}
+				return
 			}
-		}()
-	}
+			if !v.IsRemoteNewer {
+				return
+			}
+			fyne.Do(func() {
+				a.updateHint.set(v)
+				a.updateHint.Show()
+			})
+		})
+	})
 }
 
 func (a *statusBar) updateEveStatus(ctx context.Context) {
@@ -252,6 +244,9 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	}
 
 	status, err := a.u.ess.Fetch(ctx)
+	if app.IsCanceled(ctx, err) {
+		return
+	}
 	if err != nil {
 		slog.Error("Failed to fetch ESI status", "err", err)
 		set(eveStatusError, "ERROR", a.u.ErrorDisplay(err))
@@ -271,6 +266,9 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 func (a *statusBar) updateCharacterCount(ctx context.Context) {
 	ids, err := a.u.cs.ListCharacterIDs(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("updating character count", "error", err)
 		return
 	}
@@ -304,6 +302,9 @@ func (a *statusBar) showClockDialog() {
 	go func() {
 		defer timer.Stop()
 		for {
+			if a.u.Signals().IsShuttingDown() {
+				return
+			}
 			s := time.Now().UTC().Format("15:04:05")
 			fyne.Do(func() {
 				clock.SetText(s)
@@ -316,7 +317,7 @@ func (a *statusBar) showClockDialog() {
 		}
 	}()
 	d.SetOnClosed(func() {
-		stop <- struct{}{}
+		close(stop) // don't block: the ticker may have already returned on shutdown
 	})
 	d.Show()
 }

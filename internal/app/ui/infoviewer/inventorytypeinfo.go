@@ -659,7 +659,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 		return nil
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	a.iw.onClosedFuncs = append(a.iw.onClosedFuncs, cancel)
+	a.iw.onClosedFuncs.Push(cancel)
 	marketTab := container.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
 	go func() {
 		ticker := time.NewTicker(60 * time.Second)
@@ -671,6 +671,9 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			var averagePrice string
 			p, err := a.iw.u.EVEUniverse().MarketPrice(ctx, et.ID)
 			if err != nil {
+				if ctx.Err() != nil {
+					break L
+				}
 				slog.Error("average price", "typeID", et.ID, "error", err)
 				averagePrice = "ERROR: " + a.iw.u.ErrorDisplay(err)
 			} else {
@@ -681,6 +684,9 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			items = append(items, newAttributeItem("Average price", averagePrice))
 			it, err := a.addJanicePriceItems(ctx, et.ID)
 			if err != nil {
+				if ctx.Err() != nil {
+					break L
+				}
 				slog.Error("janice pricer", "typeID", et.ID, "error", err)
 				s := "ERROR: " + a.iw.u.ErrorDisplay(err)
 				items = append(items, newAttributeItem("Janice prices", s))

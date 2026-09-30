@@ -113,6 +113,9 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 
 	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterWalletBalance)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err)
 		reset()
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -131,6 +134,9 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 		return
 	}
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update character wallet ballance UI", "characterID", characterID, "err", err)
 		reset()
 		setBalance("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)

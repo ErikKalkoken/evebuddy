@@ -89,28 +89,33 @@ const (
 // Settings represents the settings for the app and provides an API for reading and writing settings.
 // Values are cached in memory and persisted to storage asynchronously by a background
 // goroutine, so getters and setters never block on I/O and are safe to call from any
-// goroutine, including Fyne's UI thread. Call Flush to wait for pending writes, e.g.
-// before shutdown.
+// goroutine, including Fyne's UI thread. Call Close before closing the database
+// to persist pending writes.
 type Settings struct {
-	st  *storage.Storage
-	ctx context.Context // held deliberately: keeps every public method free of a ctx param
+	st     *storage.Storage
+	ctx    context.Context // held deliberately: keeps every public method free of a ctx param
+	cancel context.CancelFunc
 
 	mu     sync.RWMutex
 	values map[string]string
+	closed bool
 
 	writeQueue *syncqueue.SyncQueue[settingWrite]
 }
 
 // New returns a new Settings object, preloading all currently stored values.
-func New(ctx context.Context, st *storage.Storage) (*Settings, error) {
+func New(st *storage.Storage) (*Settings, error) {
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &Settings{
 		st:         st,
 		ctx:        ctx,
+		cancel:     cancel,
 		values:     make(map[string]string),
 		writeQueue: syncqueue.New[settingWrite](),
 	}
 	rows, err := st.ListSettings(ctx)
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("settings: load: %w", err)
 	}
 	for _, r := range rows {
@@ -139,15 +144,44 @@ func (s *Settings) persistLoop() {
 }
 
 // Flush blocks until every write enqueued before this call has been persisted
-// to storage. Callers should call this before closing the underlying database,
-// e.g. during app shutdown, to avoid losing writes still in the queue.
+// to storage. It returns immediately after Close.
 func (s *Settings) Flush() {
 	if s == nil {
 		return
 	}
+	s.mu.RLock()
+	if s.closed {
+		s.mu.RUnlock()
+		return
+	}
+	done := s.enqueueBarrierLocked()
+	s.mu.RUnlock()
+	<-done
+}
+
+// Close persists all pending writes and stops the background writer.
+// Later Set* calls are ignored. Repeated calls return immediately.
+func (s *Settings) Close() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return
+	}
+	s.closed = true
+	done := s.enqueueBarrierLocked()
+	s.mu.Unlock()
+	<-done
+	s.cancel()
+}
+
+// enqueueBarrierLocked queues a flush barrier. Caller must hold s.mu.
+func (s *Settings) enqueueBarrierLocked() chan struct{} {
 	done := make(chan struct{})
 	s.writeQueue.Put(settingWrite{done: done})
-	<-done
+	return done
 }
 
 func (s *Settings) DeveloperMode() bool {

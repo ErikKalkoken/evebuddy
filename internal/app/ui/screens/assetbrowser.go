@@ -128,6 +128,9 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 		})
 	}
 	reportError := func(err error) {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to update asset browser", "error", err)
 		setFooter(a.u.ErrorDisplay(err), widget.DangerImportance)
 	}

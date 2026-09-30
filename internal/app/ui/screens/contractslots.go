@@ -362,6 +362,9 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 func (a *ContractSlots) update(ctx context.Context) {
 	rows, err := a.fetchData(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)

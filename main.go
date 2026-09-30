@@ -252,11 +252,11 @@ func main() {
 	defer dbRO.Close()
 	st := storage.New(dbRW, dbRO)
 
-	settings, err := settings.New(context.Background(), st)
+	settings, err := settings.New(st)
 	if err != nil {
 		log.Fatalf("Failed to initialize settings: %s", err)
 	}
-	defer settings.Flush()
+	defer settings.Close()
 	if *resetUIFlag {
 		settings.ResetUI()
 	}
@@ -295,7 +295,7 @@ func main() {
 			},
 		},
 	}
-	rhc1.Logger = slog.Default()
+	rhc1.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
 	rhc1.ResponseLogHook = xgoesi.LogResponse
 	userAgent := fmt.Sprintf("%s/%s (%s; +%s)", appName, fyneApp.Metadata().Version, userAgentEmail, sourceURL)
 	esiClient := goesi.NewESIClientWithOptions(rhc1.StandardClient(), goesi.ClientOptions{
@@ -311,7 +311,7 @@ func main() {
 		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
 		MarkCachedResponses: true,
 	}
-	rhc2.Logger = slog.Default()
+	rhc2.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
 	rhc2.ResponseLogHook = xgoesi.LogResponse
 
 	// init shared objects
@@ -430,6 +430,10 @@ func main() {
 	if isDesktop {
 		u := core.NewDesktopUI(params)
 		stop, err := remoteservice.Start(remotePort, func() {
+			if u.Signals().IsShuttingDown() {
+				slog.Warn("Remote service: ignored request to show instance during shutdown")
+				return
+			}
 			fyne.Do(func() {
 				u.MainWindow().Show()
 			})
@@ -443,6 +447,7 @@ func main() {
 		u := core.NewMobileUI(params)
 		u.ShowAndRun()
 	}
+	slog.Info("Shutdown completed")
 }
 
 // realtime represents the current time.

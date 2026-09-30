@@ -323,6 +323,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 				var count int
 				for _, c := range newContracts {
 					if err := s.createNewContract(ctx, characterID, c); err != nil {
+						if ctx.Err() != nil {
+							return false, err
+						}
 						slog.Error("create contract", "contract", c, "error", err)
 						continue
 					}
@@ -334,6 +337,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 				var count int
 				for _, c := range existingContracts {
 					if err := s.updateContract(ctx, characterID, c); err != nil {
+						if ctx.Err() != nil {
+							return false, err
+						}
 						slog.Error("update contract", "contract", c, "error", err)
 						continue
 					}
@@ -348,6 +354,9 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 				}
 				err := s.updateContractBids(ctx, characterID, c.ContractId)
 				if err != nil {
+					if ctx.Err() != nil {
+						return false, err
+					}
 					slog.Error("update contract bids", "contract", c, "error", err)
 					continue
 				}

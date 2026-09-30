@@ -181,7 +181,7 @@ func MakeFakeBaseUI(st *storage.Storage, fyneApp fyne.App, _ bool) *baseUI {
 	if err != nil {
 		panic(err)
 	}
-	settings, err := settings.New(context.Background(), st)
+	settings, err := settings.New(st)
 	if err != nil {
 		panic(err)
 	}

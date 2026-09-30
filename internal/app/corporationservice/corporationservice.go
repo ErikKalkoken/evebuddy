@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // Cache defines a cache.
@@ -47,6 +48,7 @@ type CorporationService struct {
 	settings         Settings
 	sfg              singleflight.Group
 	signals          *app.Signals
+	tasks            *xsync.TaskGroup
 	st               *storage.Storage
 }
 
@@ -97,6 +99,7 @@ func New(arg Params) *CorporationService {
 		cs:               arg.CharacterService,
 		esiClient:        arg.ESIClient,
 		eus:              arg.EveUniverseService,
+		tasks:            xsync.NewTaskGroup(context.Background()),
 		scs:              arg.StatusCacheService,
 		settings:         arg.Settings,
 		signals:          arg.Signals,

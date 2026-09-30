@@ -295,6 +295,10 @@ func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID i
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
 			names, _, err := s.esiClient.AssetsAPI.PostCharactersCharacterIdAssetsNames(ctx, characterID).RequestBody(chunk).Execute()
 			if err != nil {
+				if ctx.Err() != nil {
+					hasError = true
+					break
+				}
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
 				slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)

@@ -397,6 +397,9 @@ func (a *Structures) update(ctx context.Context) {
 	}
 	rows, err := a.fetchData(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		reset()
 		fyne.Do(func() {
@@ -506,7 +509,7 @@ func showCorporationStructureWindowAsync(ctx context.Context, u baseUI, corporat
 		reportError := func(err error) {
 			fyne.Do(func() {
 				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
+				ui.ShowErrorAndLog("Failed to show structure", err, u.IsDeveloperMode(), u.MainWindow())
 			})
 		}
 		structure, err := u.Corporation().GetStructure(ctx, corporationID, structureID)

@@ -620,6 +620,9 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		jobs, err = a.fetchCombinedJobs(ctx)
 	}
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))

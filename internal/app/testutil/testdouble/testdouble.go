@@ -255,7 +255,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		arg.Signals = newSignalsSync()
 	}
 	if arg.Settings == nil {
-		s, err := settings.New(context.Background(), arg.Storage)
+		s, err := settings.New(arg.Storage)
 		if err != nil {
 			panic(err)
 		}

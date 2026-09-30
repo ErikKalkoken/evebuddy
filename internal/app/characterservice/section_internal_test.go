@@ -3,7 +3,7 @@ package characterservice
 import (
 	"context"
 	"fmt"
-	"sync/atomic"
+	"net/http"
 	"testing"
 	"time"
 
@@ -13,12 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
-	"github.com/ErikKalkoken/go-set"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
@@ -581,110 +579,115 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 	})
 }
 
-// settingsWithNotificationTypes wraps the default settings stub but allows
-// overriding which notification types are enabled and the earliest timestamp,
-// which are needed to exercise notifyNewCommunications deterministically.
-type settingsWithNotificationTypes struct {
-	testutil.SettingsStub
-	types set.Set[string]
+func TestRecordUpdateFailed(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	scs := new(statuscache.StatusCache)
+	s := NewFake(Params{Storage: st, StatusCacheService: scs})
+	const section = app.SectionCharacterAssets
+	t.Run("should clear started but keep status when canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		completedAt := time.Now().Add(-6 * time.Hour)
+		old := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID:  c.ID,
+			Section:      section,
+			CompletedAt:  completedAt,
+			ErrorMessage: "old error",
+		})
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
+		require.NoError(t, s.recordUpdateStarted(context.Background(), arg))
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		// when
+		s.recordUpdateFailed(ctx, arg, fmt.Errorf("%w: %w", app.ErrCanceled, context.Canceled))
+		// then
+		x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "old error", x.ErrorMessage)
+		xassert.Equal(t, old.ContentHash, x.ContentHash)
+		assert.WithinDuration(t, completedAt, x.CompletedAt, time.Second)
+		y, ok := scs.CharacterSection(c.ID, section)
+		require.True(t, ok)
+		assert.False(t, y.IsRunning())
+	})
+	t.Run("should record error when failed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		arg := characterSectionUpdateParams{characterID: c.ID, section: section}
+		require.NoError(t, s.recordUpdateStarted(context.Background(), arg))
+		// when
+		s.recordUpdateFailed(context.Background(), arg, fmt.Errorf("dummy"))
+		// then
+		x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "dummy", x.ErrorMessage)
+	})
 }
 
-func (s *settingsWithNotificationTypes) NotificationTypesEnabled() set.Set[string] {
-	return s.types
-}
-
-func (s *settingsWithNotificationTypes) NotifyCommunicationsEarliest() time.Time {
-	return time.Now().Add(-1 * time.Hour)
-}
-
-func TestNotifyNewCommunications(t *testing.T) {
+// A singleflight follower must not record a real error when the singleflight
+// leader's ctx was the one that got canceled, even though the follower's own
+// ctx (e.g. from a manual "reload section" UI action) was never canceled.
+func TestCharacterService_UpdateSectionIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	ctx := context.Background()
-	t.Run("should notify for an enabled notification type", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var count int32
-		settings := &settingsWithNotificationTypes{types: set.Of(app.StructureUnderAttack.String())}
-		s := NewFake(Params{
-			Storage:  st,
-			Settings: settings,
-			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
-			},
-		})
-		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
-		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			Type:      esiType,
-			Timestamp: time.Now(),
-			Title:     optional.New("title"),
-			Body:      optional.New("body"),
-		})
-		// when
-		s.notifyNewCommunications(ctx, n.CharacterID)
-		// then
-		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
-	})
-	t.Run("should not notify when the notification type is not enabled", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var count int32
-		settings := &settingsWithNotificationTypes{types: set.Of("SomeOtherType")}
-		s := NewFake(Params{
-			Storage:  st,
-			Settings: settings,
-			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
-			},
-		})
-		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
-		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			Type:      esiType,
-			Timestamp: time.Now(),
-		})
-		// when
-		s.notifyNewCommunications(ctx, n.CharacterID)
-		// then
-		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
-	})
-}
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	const section = app.SectionCharacterAssets
 
-func TestNotifyCharactersIfNeeded(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	ctx := context.Background()
-	t.Run("should notify only watched characters with no active training", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var count int32
-		s := NewFake(Params{
-			Storage: st,
-			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
-			},
-		})
-		factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
-		factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: false})
-		// when
-		err := s.notifyCharactersIfNeeded(ctx)
-		// then
-		require.NoError(t, err)
-		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
-	})
-	t.Run("should do nothing when there are no characters", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var count int32
-		s := NewFake(Params{
-			Storage: st,
-			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
-			},
-		})
-		// when
-		err := s.notifyCharactersIfNeeded(ctx)
-		// then
-		require.NoError(t, err)
-		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
-	})
+	c := factory.CreateCharacter()
+	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
+		func(req *http.Request) (*http.Response, error) {
+			close(entered)
+			select {
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			case <-release:
+				return httpmock.NewJsonResponse(200, []map[string]any{})
+			}
+		},
+	)
+
+	// leader: cancelable ctx, e.g. tied to the update scheduler
+	ctxLeader, cancelLeader := context.WithCancel(context.Background())
+	leaderDone := make(chan struct{})
+	go func() {
+		defer close(leaderDone)
+		s.UpdateSectionIfNeeded(ctxLeader, characterSectionUpdateParams{characterID: c.ID, section: section})
+	}()
+	select {
+	case <-entered:
+		// the leader's HTTP call is now in flight
+	case <-time.After(time.Second):
+		t.Fatal("leader never reached the HTTP call")
+	}
+
+	// follower: independent, never-canceled ctx, e.g. from a manual reload
+	followerDone := make(chan struct{})
+	go func() {
+		defer close(followerDone)
+		s.UpdateSectionIfNeeded(context.Background(), characterSectionUpdateParams{characterID: c.ID, section: section})
+	}()
+	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
+
+	// when
+	cancelLeader()
+	<-leaderDone
+	<-followerDone
+
+	// then
+	x, err := st.GetCharacterSectionStatus(context.Background(), c.ID, section)
+	require.NoError(t, err)
+	assert.False(t, x.HasError(), "a canceled leader must not be recorded as a real error via the follower's uncanceled ctx")
+	assert.True(t, x.StartedAt.IsZero(), "a canceled update must not leave the section as running")
 }

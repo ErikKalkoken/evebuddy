@@ -85,6 +85,9 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		}
 		c, err := a.u.Character().GetCharacter(ctx, characterID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("characterSkillQueue: update character", "error", err)
 			return
 		}
@@ -192,6 +195,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 	}
 	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterSkillqueue)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		reset()
@@ -204,6 +210,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 	}
 	err = a.skillqueue.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		reset()

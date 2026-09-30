@@ -4,6 +4,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/url"
@@ -52,9 +53,26 @@ type Position struct {
 // App errors
 var (
 	ErrAlreadyExists = errors.New("object already exists")
+	ErrCanceled      = errors.New("operation canceled")
 	ErrInvalid       = errors.New("invalid parameters")
 	ErrNotFound      = errors.New("object not found")
 )
+
+// IsCanceled reports whether err is from a canceled operation or the context is canceled.
+func IsCanceled(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	return ctx.Err() != nil || errors.Is(err, ErrCanceled) || errors.Is(err, context.Canceled)
+}
+
+// IsErrorCanceled reports whether err is from a canceled operation.
+func IsErrorCanceled(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, ErrCanceled) || errors.Is(err, context.Canceled)
+}
 
 // VariableDateFormat returns a variable format for [time.Time] values.
 func VariableDateFormat(t time.Time) string {

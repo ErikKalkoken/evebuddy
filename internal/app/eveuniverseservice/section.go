@@ -15,15 +15,33 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
-func (s *EVEUniverseService) StartUpdateTicker(d time.Duration) {
-	go func() {
-		for {
-			go s.UpdateSectionsIfNeeded(context.Background(), false)
-			<-time.Tick(d)
-		}
-	}()
+// Start starts the update scheduler.
+func (s *EVEUniverseService) Start(d time.Duration) {
+	err := s.tasks.Run(func(ctx context.Context) {
+		xsync.RunEvery(ctx, d, func(ctx context.Context) {
+			s.UpdateSectionsIfNeeded(ctx, false)
+		})
+	})
+	if errors.Is(err, xsync.ErrTaskGroupStopped) {
+		slog.Info("EVEUniverse update scheduler not started: shutting down")
+		return
+	}
+	if err != nil {
+		slog.Warn("EVEUniverse update scheduler not started", "error", err)
+		return
+	}
+	slog.Info("EVEUniverse update scheduler started")
+}
+
+// Stop cancels the update scheduler and background jobs and waits for them.
+func (s *EVEUniverseService) Stop() {
+	if !s.tasks.Stop() {
+		return
+	}
+	slog.Info("EVEUniverse update scheduler stopped")
 }
 
 func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
@@ -50,6 +68,10 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 
 func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
+		if app.IsCanceled(ctx, err) {
+			slog.Debug("Failed to update general section", "section", section, "err", err)
+			return
+		}
 		slog.Error("Failed to update general section", "section", section, "err", err)
 	}
 	changedIDs, err := s.updateSectionIfNeeded(ctx, eveUniverseSectionUpdateParams{
@@ -136,33 +158,15 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 		ctx = xgoesi.NewContextWithForceRefresh(ctx)
 	}
 	changed, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("update-general-section-%s", arg.section), func() (set.Set[int64], error) {
-		slog.Debug("Started updating eveuniverse section", "section", arg.section)
-		startedAt := optional.New(time.Now())
-		o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section:   arg.section,
-			StartedAt: &startedAt,
-		})
-		if err != nil {
-			return set.Set[int64]{}, err
+		changed, err := s.updateSection(ctx, arg.section, f)
+		if err != nil && ctx.Err() != nil {
+			// Tag with the ctx used for the fetch; a follower's own ctx may not be canceled.
+			err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
 		}
-		s.scs.SetEveUniverseSection(o)
-		changed, err := f(ctx)
-		slog.Debug("Finished updating general section", "section", arg.section)
 		return changed, err
 	})
 	if err != nil {
-		slog.Error("General section update failed", "section", arg.section, "error", err)
-		errorMessage := err.Error()
-		startedAt := optional.Optional[time.Time]{}
-		o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
-			Error:     &errorMessage,
-			Section:   arg.section,
-			StartedAt: &startedAt,
-		})
-		if err2 != nil {
-			return zero, err2
-		}
-		s.scs.SetEveUniverseSection(o)
+		s.recordUpdateFailed(ctx, arg, err)
 		return zero, err
 	}
 	completedAt := storage.NewNullTimeFromTime(time.Now())
@@ -179,4 +183,48 @@ func (s *EVEUniverseService) updateSectionIfNeeded(ctx context.Context, arg eveU
 	}
 	s.scs.SetEveUniverseSection(o)
 	return changed, nil
+}
+
+func (s *EVEUniverseService) updateSection(ctx context.Context, section app.EveUniverseSection, f func(context.Context) (set.Set[int64], error)) (set.Set[int64], error) {
+	slog.Debug("Started updating eveuniverse section", "section", section)
+	o, err := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
+		Section:   section,
+		StartedAt: new(optional.New(time.Now())),
+	})
+	if err != nil {
+		return set.Set[int64]{}, err
+	}
+	s.scs.SetEveUniverseSection(o)
+	changed, err := f(ctx)
+	slog.Debug("Finished updating general section", "section", section)
+	return changed, err
+}
+
+func (s *EVEUniverseService) recordUpdateFailed(ctx context.Context, arg eveUniverseSectionUpdateParams, err error) {
+	if app.IsCanceled(ctx, err) {
+		slog.Debug("General section update canceled", "section", arg.section, "error", err)
+		// Clear StartedAt so the section doesn't show as running after a restart.
+		o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateGeneralSectionStatusParams{
+			Section:   arg.section,
+			StartedAt: new(optional.Optional[time.Time]),
+		})
+		if err2 != nil {
+			slog.Debug("clear started for canceled section update", "section", arg.section, "error", err2)
+			return
+		}
+		s.scs.SetEveUniverseSection(o)
+		return
+	}
+	slog.Error("General section update failed", "section", arg.section, "error", err)
+	errorMessage := err.Error()
+	o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
+		Error:     &errorMessage,
+		Section:   arg.section,
+		StartedAt: new(optional.Optional[time.Time]),
+	})
+	if err2 != nil {
+		slog.Error("record error for failed section update", "section", arg.section, "error", err2)
+		return
+	}
+	s.scs.SetEveUniverseSection(o)
 }

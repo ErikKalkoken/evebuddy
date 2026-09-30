@@ -1,7 +1,6 @@
 package settings_test
 
 import (
-	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -19,8 +18,9 @@ import (
 func newTestSettings(t *testing.T) *settings.Settings {
 	t.Helper()
 	_, st, _ := testutil.NewDBInMemory()
-	s, err := settings.New(context.Background(), st)
+	s, err := settings.New(st)
 	require.NoError(t, err)
+	t.Cleanup(s.Close)
 	return s
 }
 
@@ -445,7 +445,7 @@ func TestNew(t *testing.T) {
 	t.Run("returns an error when storage fails to load", func(t *testing.T) {
 		db, st, _ := testutil.NewDBInMemory()
 		require.NoError(t, db.Close())
-		_, err := settings.New(context.Background(), st)
+		_, err := settings.New(st)
 		assert.Error(t, err)
 	})
 }
@@ -453,13 +453,13 @@ func TestNew(t *testing.T) {
 func TestFlush(t *testing.T) {
 	t.Run("waits for pending writes to be persisted", func(t *testing.T) {
 		_, st, _ := testutil.NewDBInMemory()
-		s1, err := settings.New(context.Background(), st)
+		s1, err := settings.New(st)
 		require.NoError(t, err)
 		s1.SetDeveloperMode(true)
 		s1.SetSysTrayEnabled(false)
 		s1.Flush()
 
-		s2, err := settings.New(context.Background(), st)
+		s2, err := settings.New(st)
 		require.NoError(t, err)
 		assert.True(t, s2.DeveloperMode())
 		assert.False(t, s2.SysTrayEnabled())
@@ -470,12 +470,54 @@ func TestFlush(t *testing.T) {
 	})
 	t.Run("keeps the cached value and does not hang when persisting fails", func(t *testing.T) {
 		db, st, _ := testutil.NewDBInMemory()
-		s, err := settings.New(context.Background(), st)
+		s, err := settings.New(st)
 		require.NoError(t, err)
 		require.NoError(t, db.Close())
 
 		s.SetDeveloperMode(true)
 		assert.NotPanics(t, func() { s.Flush() })
 		assert.True(t, s.DeveloperMode())
+	})
+}
+
+func TestClose(t *testing.T) {
+	t.Run("persists pending writes", func(t *testing.T) {
+		_, st, _ := testutil.NewDBInMemory()
+		s1, err := settings.New(st)
+		require.NoError(t, err)
+		s1.SetDeveloperMode(true)
+		s1.Close()
+
+		s2, err := settings.New(st)
+		require.NoError(t, err)
+		t.Cleanup(s2.Close)
+		assert.True(t, s2.DeveloperMode())
+	})
+	t.Run("ignores writes after close", func(t *testing.T) {
+		_, st, _ := testutil.NewDBInMemory()
+		s1, err := settings.New(st)
+		require.NoError(t, err)
+		s1.Close()
+		s1.SetDeveloperMode(true)
+		assert.False(t, s1.DeveloperMode())
+
+		s2, err := settings.New(st)
+		require.NoError(t, err)
+		t.Cleanup(s2.Close)
+		assert.False(t, s2.DeveloperMode())
+	})
+	t.Run("is idempotent", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.Close()
+		assert.NotPanics(t, func() { s.Close() })
+	})
+	t.Run("flush returns after close", func(t *testing.T) {
+		s := newTestSettings(t)
+		s.Close()
+		s.Flush()
+	})
+	t.Run("is a no-op on a nil receiver", func(t *testing.T) {
+		var s *settings.Settings
+		assert.NotPanics(t, func() { s.Close() })
 	})
 }

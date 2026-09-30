@@ -37,10 +37,10 @@ const (
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
+	DisplaySnackbar(text string)
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoViewer() ui.InfoViewer
-	IsDeveloperMode() bool
 	IsOffline() bool
 	MainWindow() fyne.Window
 	Settings() *settings.Settings
@@ -87,14 +87,16 @@ type GameSearch struct {
 	supportedCategories set.Set[app.EveEntityCategory]
 	u                   baseUI
 	w                   fyne.Window
+	displaySnackbar     func(string)
 }
 
 func NewGameSearch(u baseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
-		searchEntry:         widget.NewEntry(),
+		displaySnackbar:     u.DisplaySnackbar,
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
+		searchEntry:         widget.NewEntry(),
 		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
@@ -261,8 +263,9 @@ func (a *GameSearch) Reset() {
 	a.clearResults()
 }
 
-func (a *GameSearch) SetWindow(w fyne.Window) {
+func (a *GameSearch) SetWindow(w fyne.Window, displaySnackbar func(string)) {
 	a.w = w
+	a.displaySnackbar = displaySnackbar
 }
 
 func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
@@ -419,9 +422,7 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 		a.strict.On,
 	)
 	if err != nil {
-		fyne.Do(func() {
-			ui.ShowErrorAndLog("Search failed", err, a.u.IsDeveloperMode(), a.u.MainWindow())
-		})
+		ui.NotifyErrorAndLog("Search failed", err, a.displaySnackbar)
 		return
 	}
 	fyne.Do(func() {

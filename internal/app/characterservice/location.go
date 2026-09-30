@@ -56,6 +56,9 @@ func (s *CharacterService) updateLocationESI(ctx context.Context, arg characterS
 					return err
 				}()
 				if err != nil {
+					if ctx.Err() != nil {
+						return false, err
+					}
 					slog.Error("Failed to update solar system for unknown character location", "characterID", characterID, "error", err)
 				}
 			}

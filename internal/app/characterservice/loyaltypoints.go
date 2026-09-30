@@ -71,6 +71,9 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 			for id := range added.All() {
 				_, err := s.eus.GetOrCreateCorporationESI(ctx, id)
 				if err != nil {
+					if ctx.Err() != nil {
+						return false, err
+					}
 					slog.Error("Failed to get corporation for loyalty point entry", "corporationID", id, "error", err)
 					continue
 				}

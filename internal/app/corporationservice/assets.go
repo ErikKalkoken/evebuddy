@@ -90,7 +90,9 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 	}
 	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
 	if err != nil {
-		slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		if ctx.Err() == nil {
+			slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+		}
 		return m
 	}
 	for _, o := range oo {
@@ -410,6 +412,10 @@ func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporation
 		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
 			names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, corporationID).RequestBody(chunk).Execute()
 			if err != nil {
+				if ctx.Err() != nil {
+					hasError = true
+					break
+				}
 				// We can live temporarily without asset names and will try again to fetch them next time
 				// If some of the requests have succeeded we will use those names
 				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)

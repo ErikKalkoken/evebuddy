@@ -129,6 +129,9 @@ func (a *CharacterClones) update(ctx context.Context) {
 
 	td, err := a.fetchData(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
 			a.top.Set(xwidget.RichTextSegmentsFromText("ERROR: "+a.u.ErrorDisplay(err), widget.RichTextStyle{
@@ -138,11 +141,11 @@ func (a *CharacterClones) update(ctx context.Context) {
 		return
 	}
 
+	n := td.ChildrenCount(nil)
 	fyne.Do(func() {
-		n := td.ChildrenCount(nil)
-		go a.refreshTop(ctx, n)
 		a.tree.Set(td)
 	})
+	a.refreshTop(ctx, n)
 }
 
 func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xwidget.TreeData[characterCloneNode], error) {
@@ -213,6 +216,10 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 	}
 	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterJumpClones)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to refresh jump clones header", "characterID", c.ID, "error", err)
 		setTop("Error: "+a.u.ErrorDisplay(err), theme.ColorNameError)
 		return
 	}

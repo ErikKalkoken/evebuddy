@@ -273,6 +273,9 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 func (a *CharacterWealth) update(ctx context.Context) {
 	rows, total, err := a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch data for wealth", "err", err)
 		fyne.Do(func() {
 			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))

@@ -15,6 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
@@ -236,6 +238,126 @@ func TestUpdateSectionIfNeeded_DoesNotCacheStatusWhenErrorPersistFails(t *testin
 	// then
 	assert.Error(t, err)
 	assert.False(t, scs.calledWithNil, "SetCorporationSection must not be called with a nil status when persisting the error failed")
+}
+
+func TestUpdateSectionIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{
+		Token: &app.CharacterToken{AccessToken: "accessToken"},
+	}})
+	const section = app.SectionCorporationWalletBalances
+
+	c := factory.CreateCorporation()
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
+		func(req *http.Request) (*http.Response, error) {
+			close(entered)
+			select {
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			case <-release:
+				return httpmock.NewJsonResponse(200, []map[string]any{})
+			}
+		},
+	)
+
+	// leader: cancelable ctx, e.g. tied to the update scheduler
+	ctxLeader, cancelLeader := context.WithCancel(context.Background())
+	leaderDone := make(chan struct{})
+	go func() {
+		defer close(leaderDone)
+		s.updateSectionIfNeeded(ctxLeader, corporationSectionUpdateParams{corporationID: c.ID, section: section})
+	}()
+	select {
+	case <-entered:
+		// the leader's HTTP call is now in flight
+	case <-time.After(time.Second):
+		t.Fatal("leader never reached the HTTP call")
+	}
+
+	// follower: independent, never-canceled ctx, e.g. from a manual reload
+	followerDone := make(chan struct{})
+	go func() {
+		defer close(followerDone)
+		s.updateSectionIfNeeded(context.Background(), corporationSectionUpdateParams{corporationID: c.ID, section: section})
+	}()
+	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
+
+	// when
+	cancelLeader()
+	<-leaderDone
+	<-followerDone
+
+	// then
+	x, err := st.GetCorporationSectionStatus(context.Background(), c.ID, section)
+	require.NoError(t, err)
+	assert.False(t, x.HasError(), "a canceled leader must not be recorded as a real error via the follower's uncanceled ctx")
+	assert.True(t, x.StartedAt.IsZero(), "a canceled update must not leave the section as running")
+}
+
+func TestRecordUpdateFailed(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	scs := new(statuscache.StatusCache)
+	s := NewFake(Params{Storage: st, StatusCacheService: scs})
+	const section = app.SectionCorporationWalletBalances
+	recordStarted := func(t *testing.T, arg corporationSectionUpdateParams) {
+		t.Helper()
+		_, err := st.UpdateOrCreateCorporationSectionStatus(context.Background(), storage.UpdateOrCreateCorporationSectionStatusParams{
+			CorporationID: arg.corporationID,
+			Section:       arg.section,
+			StartedAt:     new(optional.New(time.Now())),
+		})
+		require.NoError(t, err)
+	}
+	t.Run("should clear started but keep status when canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		completedAt := time.Now().Add(-6 * time.Hour)
+		old := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       section,
+			CompletedAt:   completedAt,
+			ErrorMessage:  "old error",
+		})
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
+		recordStarted(t, arg)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		// when
+		s.recordUpdateFailed(ctx, arg, fmt.Errorf("%w: %w", app.ErrCanceled, context.Canceled))
+		// then
+		x, err := st.GetCorporationSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "old error", x.ErrorMessage)
+		xassert.Equal(t, old.ContentHash, x.ContentHash)
+		assert.WithinDuration(t, completedAt, x.CompletedAt, time.Second)
+		y, ok := scs.CorporationSection(c.ID, section)
+		require.True(t, ok)
+		assert.False(t, y.IsRunning())
+	})
+	t.Run("should record error when failed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
+		recordStarted(t, arg)
+		// when
+		s.recordUpdateFailed(context.Background(), arg, fmt.Errorf("dummy"))
+		// then
+		x, err := st.GetCorporationSectionStatus(context.Background(), c.ID, section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+		xassert.Equal(t, "dummy", x.ErrorMessage)
+	})
 }
 
 func TestHasSectionChanged(t *testing.T) {

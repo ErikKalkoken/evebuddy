@@ -208,6 +208,9 @@ func (a *Augmentations) filterTreeAsync() {
 func (a *Augmentations) update(ctx context.Context) {
 	td, err := a.fetchData(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh augmentations UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)

@@ -155,6 +155,9 @@ func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 				Category: app.EveEntityUnknown,
 			}
 			if _, err := s.st.GetOrCreateEveEntity(ctx, arg); err != nil {
+				if ctx.Err() != nil {
+					return set.Set[int64]{}, wrapErr(err)
+				}
 				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
 				continue
 			}

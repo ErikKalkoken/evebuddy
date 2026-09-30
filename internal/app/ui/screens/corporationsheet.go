@@ -146,6 +146,9 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			var roles string
 			oo, err := a.u.Character().ListRoles(ctx, character.ID)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to fetch roles", "error", err)
 				roles = "ERROR: " + a.u.ErrorDisplay(err)
 			} else {
@@ -168,6 +171,9 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			if errors.Is(err, app.ErrNotFound) {
 				// ignore
 			} else if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
 			} else {
 				corporation = c

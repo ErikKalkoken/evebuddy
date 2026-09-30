@@ -50,13 +50,14 @@ const (
 	githubRepo  = "evebuddy"
 )
 
-// ticker
+// timings
 const (
-	refreshUITick           = 30 * time.Second
 	characterUpdateTick     = 60 * time.Second
 	corporationUpdateTick   = 60 * time.Second
-	eveUniverseUpdateTick   = 300 * time.Second
 	delayBeforeUpdateStatus = 3 * time.Second
+	eveUniverseUpdateTick   = 300 * time.Second
+	refreshUITick           = 30 * time.Second
+	shutdownTimeout         = 15 * time.Second
 )
 
 // Default ScaleMode for images
@@ -182,6 +183,7 @@ type baseUI struct {
 	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
 	signals                        *app.Signals
+	tasks                          *xsync.TaskGroup       // UI tickers, stopped at shutdown
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
 	windows                        map[string]fyne.Window // child windows
@@ -237,6 +239,7 @@ func newBaseUI(arg UIParams) *baseUI {
 		settings:                       arg.Settings,
 		signals:                        arg.Signals,
 		statusText:                     newStatusText(),
+		tasks:                          xsync.NewTaskGroup(context.Background()),
 		windows:                        make(map[string]fyne.Window),
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
 		corporationAvatarPlaceholder64: corporationAvatarPlaceholder64,
@@ -295,6 +298,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		slog.Debug("Signal: CharacterSectionChanged", "arg", arg)
 		logErr := func(err error) {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
 		}
 		isShown := arg.CharacterID == u.character.Load().IDOrZero()
@@ -371,6 +377,9 @@ func newBaseUI(arg UIParams) *baseUI {
 			}
 			characterIDs, err := u.cs.ListCharacterIDs(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 				return
 			}
@@ -380,6 +389,9 @@ func newBaseUI(arg UIParams) *baseUI {
 		case app.SectionEveCorporations:
 			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update status", "arg", arg, "err", err)
 				return
 			}
@@ -389,6 +401,9 @@ func newBaseUI(arg UIParams) *baseUI {
 		case app.SectionEveMarketPrices:
 			err := u.cs.UpdateAllCalculatedValues(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
 				return
 			}
@@ -510,6 +525,9 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.app.Lifecycle().SetOnExitedForeground(func() {
 		slog.Debug("Fyne App exited foreground")
 		u.isForeground.Store(false)
+		if u.isMobile {
+			go u.settings.Flush() // Android may kill the process without shutdown
+		}
 	})
 
 	u.app.Lifecycle().SetOnStopped(func() {
@@ -555,20 +573,27 @@ func (u *baseUI) appInit(ctx context.Context) {
 	updateCharactersMissingScope(ctx)
 
 	u.isStartupCompleted.Store(true)
-	go func() {
-		for range time.Tick(refreshUITick) {
-			u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+	u.tasks.Go(func(ctx context.Context) {
+		// No immediate fire: the screens have just been loaded.
+		ticker := time.NewTicker(refreshUITick)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			}
 		}
-	}()
+	})
 	if u.onAppFirstStarted != nil {
 		u.onAppFirstStarted()
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 		time.Sleep(delayBeforeUpdateStatus) // allow app to fully load before updating
-		slog.Info("Starting update ticker")
-		u.eus.StartUpdateTicker(eveUniverseUpdateTick)
-		u.cs.StartUpdateTickerCharacters(characterUpdateTick)
-		u.rs.StartUpdateTickerCorporations(corporationUpdateTick)
+		u.eus.Start(eveUniverseUpdateTick)
+		u.cs.Start(characterUpdateTick)
+		u.rs.Start(corporationUpdateTick)
 	} else {
 		slog.Info("Update ticker disabled")
 	}
@@ -580,7 +605,28 @@ func (u *baseUI) ShowAndRun() {
 		u.onShowAndRun()
 	}
 	u.window.ShowAndRun()
-	slog.Info("App terminated")
+
+	// App shutdown
+	slog.Info("Shutting down app")
+	u.settings.Flush() // persist settings before anything can hang
+	u.snackbar.Stop()
+	u.signals.BeginShutdown()
+	// Stop in parallel so shutdown is faster and all update contexts are canceled at once.
+	var wg sync.WaitGroup
+	wg.Go(func() { u.tasks.Stop() })
+	wg.Go(u.cs.Stop)
+	wg.Go(u.rs.Stop)
+	wg.Go(u.eus.Stop)
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownTimeout):
+		slog.Warn("Timed out waiting for background tasks to stop, exiting anyway", "timeout", shutdownTimeout)
+	}
 	if u.onAppTerminated != nil {
 		u.onAppTerminated()
 	}
@@ -766,26 +812,30 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 	}
 	c, err := u.cs.GetCharacter(ctx, id)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("reload character", "characterID", id, "error", err)
+		return
 	}
 	u.character.Store(c)
 }
 
-func (u *baseUI) ResetCharacter(ctx context.Context) {
+func (u *baseUI) ResetCharacter(_ context.Context) {
 	u.character.Store(nil)
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, nil)
+	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCharacterID()
 	// if u.onSetCharacter != nil {
 	// 	u.onSetCharacter(nil)
 	// }
 }
 
-func (u *baseUI) SetCharacter(ctx context.Context, c *app.Character) {
+func (u *baseUI) SetCharacter(_ context.Context, c *app.Character) {
 	u.character.Store(c)
 	if u.onSetCharacter != nil {
 		go u.onSetCharacter(c)
 	}
-	go u.signals.CurrentCharacterExchanged.Emit(ctx, c)
+	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCharacterID(c.ID)
 }
 
@@ -844,21 +894,21 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (u *baseUI) ResetCorporation(ctx context.Context) {
+func (u *baseUI) ResetCorporation(_ context.Context) {
 	u.corporation.Store(nil)
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, nil)
+	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
 	u.settings.ResetLastCorporationID()
 	// if u.onSetCorporation != nil {
 	// 	u.onSetCorporation(nil)
 	// }
 }
 
-func (u *baseUI) SetCorporation(ctx context.Context, c *app.Corporation) {
+func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
 	if u.onSetCorporation != nil {
 		go u.onSetCorporation(c)
 	}
-	go u.signals.CurrentCorporationExchanged.Emit(ctx, c)
+	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
 	u.settings.SetLastCorporationID(c.ID)
 }
 
@@ -891,6 +941,9 @@ func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	}
 	n, err := u.cs.GetAllMailUnreadCount(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("update mail indicator", "error", err)
 		return
 	}
@@ -919,6 +972,9 @@ func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 		}
 		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to determine role for corporation wallet", "error", err)
 			return
 		}
@@ -927,11 +983,17 @@ func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
 		}
 		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
 			return
 		}
 		v = b
 	}()
+	if ctx.Err() != nil {
+		return
+	}
 	fyne.Do(func() {
 		u.onUpdateCorporationWalletTotals(v)
 	})
@@ -991,10 +1053,19 @@ func (u *baseUI) setCorporationAvatarAsync(corporationID int64, setIcon func(fyn
 }
 
 func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
-	cc := u.scs.ListCharacters()
+	cc, err := u.cs.ListCharactersShort(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to fetch characters", "error", err)
+		fyne.Do(func() {
+			setItems(nil)
+		})
+		return
+	}
+
 	if len(cc) == 0 {
-		it := fyne.NewMenuItem("No characters", nil)
-		it.Disabled = true
 		fyne.Do(func() {
 			setItems(nil)
 		})
@@ -1008,10 +1079,10 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCharacter(ctx, c.ID)
+				err := u.LoadCharacter(context.Background(), c.ID)
 				if err != nil {
 					slog.Error("make character switch menu", "error", err)
-					u.snackbar.Display("ERROR: Failed to switch character")
+					u.snackbar.Display("Failed to switch character. Try again later.")
 				}
 			}()
 		})
@@ -1037,6 +1108,9 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
 	cc, err := u.ListCorporationsForSelection(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch corporations", "error", err)
 		fyne.Do(func() {
 			setItems(nil)
@@ -1068,10 +1142,10 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			go func() {
-				err := u.LoadCorporation(ctx, c.ID)
+				err := u.LoadCorporation(context.Background(), c.ID)
 				if err != nil {
 					slog.Error("make corporation switch menu", "error", err)
-					u.snackbar.Display("ERROR: Failed to switch corporation")
+					u.snackbar.Display("Failed to switch corporation. Try again later.")
 				}
 			}()
 		})

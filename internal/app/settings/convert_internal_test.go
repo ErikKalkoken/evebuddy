@@ -15,8 +15,9 @@ import (
 func newTestSettings(t *testing.T) *Settings {
 	t.Helper()
 	_, st, _ := testutil.NewDBInMemory()
-	s, err := New(context.Background(), st)
+	s, err := New(st)
 	require.NoError(t, err)
+	t.Cleanup(s.Close)
 	return s
 }
 
@@ -44,12 +45,12 @@ func TestGetSet(t *testing.T) {
 	})
 	t.Run("a persisted value is visible to a freshly loaded Settings instance", func(t *testing.T) {
 		_, st, _ := testutil.NewDBInMemory()
-		s1, err := New(context.Background(), st)
+		s1, err := New(st)
 		require.NoError(t, err)
 		s1.set("x", "hello")
 		s1.Flush()
 
-		s2, err := New(context.Background(), st)
+		s2, err := New(st)
 		require.NoError(t, err)
 		v, ok := s2.get("x")
 		assert.True(t, ok)

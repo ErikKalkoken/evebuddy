@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"context"
 	"strconv"
 	"testing"
 	"time"
@@ -38,7 +37,7 @@ func TestCalcEarliest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			_, st, _ := testutil.NewDBInMemory()
-			s, err := New(context.Background(), st)
+			s, err := New(st)
 			require.NoError(t, err)
 			now := time.Now().UTC()
 			if earliest := tc.earliest(now); earliest != "" {

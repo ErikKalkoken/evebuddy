@@ -459,7 +459,7 @@ func (a *manageTags) modifyTag(title, confirm string, execute func(name string) 
 				return
 			}
 			if err := execute(name.Text); err != nil {
-				ui.ShowErrorAndLog("Failed to modify tag", err, a.cw.u.IsDeveloperMode(), a.cw.w)
+				ui.NotifyErrorAndLog("Failed to modify tag", err, a.cw.sb.Display)
 				return
 			}
 			ctx := context.Background()

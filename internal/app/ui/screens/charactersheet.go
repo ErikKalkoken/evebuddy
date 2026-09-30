@@ -180,6 +180,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	}
 	c2, err := a.u.Character().GetCharacter(ctx, c.ID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to fetch character for sheet", "err", err)
 		clearAll()
 		return
@@ -188,6 +191,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	if v, ok := c.HomeLocationID.Value(); ok {
 		el, err := a.u.EVEUniverse().GetLocation(ctx, v)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch home for character", "characterID", c.ID, "err", err)
 		} else {
 			home = el
@@ -197,6 +203,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	if v, ok := c.LocationID.Value(); ok {
 		el, err := a.u.EVEUniverse().GetLocation(ctx, v)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch location for character", "characterID", c.ID, "err", err)
 		} else {
 			location = el
@@ -206,6 +215,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	if v, ok := c.ShipTypeID.Value(); ok {
 		et, err := a.u.EVEUniverse().GetType(ctx, v)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			slog.Error("Failed to fetch ship type for character", "characterID", c.ID, "err", err)
 		} else {
 			shipType = et
@@ -280,6 +292,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	var s string
 	tags, err := a.u.Character().ListTagsForCharacter(ctx, c.ID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("character sheet: update", "characterID", c.ID, "error", "err")
 		s = "?"
 	} else {

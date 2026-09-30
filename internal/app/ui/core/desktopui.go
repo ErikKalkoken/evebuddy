@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"slices"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -19,6 +20,8 @@ import (
 	"github.com/icrowley/fake"
 
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
+
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -692,7 +695,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func(ctx context.Context) {
-		go func() {
+		go togglePermittedSections()
+		var wg sync.WaitGroup
+		wg.Go(func() {
 			u.setCharacterSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -702,8 +707,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 					characterHeader.Refresh()
 				},
 			)
-		}()
-		go func() {
+		})
+		wg.Go(func() {
 			u.setCorporationSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
@@ -713,12 +718,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 					corporationHeader.Refresh()
 				},
 			)
-		}()
-		// go statusBar.update()
-		go togglePermittedSections()
-		go func() {
+		})
+		wg.Go(func() {
 			cc, err := u.ListCorporationsForSelection(ctx)
 			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
 				slog.Error("Failed to fetch corporations", "error", err)
 				return
 			}
@@ -732,7 +738,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			fyne.Do(func() {
 				rail.EnableItem(corporationItem)
 			})
-		}()
+		})
+		wg.Wait()
 	}
 	return u
 }
@@ -754,15 +761,22 @@ func (u *DesktopUI) saveAppState() {
 }
 
 func (u *DesktopUI) showSearchWindow() {
-	w, created := u.GetOrCreateWindow("new-eden-search", "Search New Eden")
+	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("new-eden-search", "Search New Eden")
 	if !created {
 		w.Show()
 		return
 	}
+	sb := kxwidget.NewSnackbar(w.Canvas())
+	w.SetOnClosed(func() {
+		if onClosed != nil {
+			onClosed()
+		}
+		sb.Stop()
+	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()
-	u.gameSearch.SetWindow(w)
+	u.gameSearch.SetWindow(w, sb.Display)
 	u.gameSearch.Focus()
 }
 

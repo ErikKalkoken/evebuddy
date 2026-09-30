@@ -24,3 +24,4 @@ ratelimits.md
 internal/app/ui/characters/communications.go
 .claude/
 .mcp.json
+.env

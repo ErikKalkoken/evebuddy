@@ -541,6 +541,9 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 func (a *Colonies) Update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to refresh colony UI", "err", err)
 		fyne.Do(func() {
 			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)

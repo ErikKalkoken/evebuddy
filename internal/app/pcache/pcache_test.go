@@ -274,3 +274,39 @@ func TestPCache_Clear_StorageFailure(t *testing.T) {
 		}
 	})
 }
+
+func TestPCache_Close(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should ignore operations after close", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := pcache.New(st, 0)
+		key := "key"
+		c.Set(key, []byte("value"), 0)
+		c.Close()
+
+		// when
+		c.Set("other", []byte("value"), 0)
+		c.Delete(key)
+		c.Clear()
+		got, found := c.Get(key)
+
+		// then
+		assert.False(t, found)
+		assert.Nil(t, got)
+		assert.False(t, c.Exists(key))
+		assert.Equal(t, 0, c.CleanUp())
+		_, _, err := st.CacheGet(t.Context(), "other")
+		assert.Error(t, err)
+		_, _, err = st.CacheGet(t.Context(), key)
+		assert.NoError(t, err)
+	})
+
+	t.Run("can close multiple times", func(t *testing.T) {
+		c := pcache.New(st, time.Hour)
+		c.Close()
+		c.Close()
+	})
+}
