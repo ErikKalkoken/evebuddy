@@ -30,12 +30,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-const (
-	colonyStatusExtracting = "Active"
-	colonyStatusAllIdle    = "Idle"
-	colonyStatusSomeIdle   = "Partially idle"
-)
-
 type colonyRow struct {
 	characterID     int64
 	extracting      set.Set[string]
@@ -78,34 +72,6 @@ func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 func (r colonyRow) workEndsDisplay() string {
 	return r.workEndsAt.StringFunc("-", func(v time.Time) string {
 		return v.Format(app.DateTimeFormat)
-	})
-}
-
-func colonyStatusDisplay(extractorExpiries []time.Time) []widget.RichTextSegment {
-	if len(extractorExpiries) == 0 {
-		return xwidget.RichTextSegmentsFromText("-")
-	}
-	var expired int
-	for _, v := range extractorExpiries {
-		if v.Before(time.Now()) {
-			expired++
-		}
-	}
-	if expired == len(extractorExpiries) {
-		return xwidget.RichTextSegmentsFromText(colonyStatusAllIdle, widget.RichTextStyle{
-			ColorName: theme.ColorNameError,
-		})
-	}
-	if expired > 0 {
-		return xwidget.RichTextSegmentsFromText(colonyStatusSomeIdle, widget.RichTextStyle{
-			ColorName: theme.ColorNameWarning,
-		})
-	}
-	earliest := slices.MinFunc(extractorExpiries, func(a, b time.Time) int {
-		return a.Compare(b)
-	})
-	return xwidget.RichTextSegmentsFromText(ihumanize.Duration(time.Until(earliest)), widget.RichTextStyle{
-		ColorName: theme.ColorNameForeground,
 	})
 }
 

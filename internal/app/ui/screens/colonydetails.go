@@ -1,9 +1,11 @@
 package screens
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -31,10 +33,10 @@ import (
 )
 
 type colonyDetailsRow struct {
-	endDate           optional.Optional[string]
 	expiryTime        optional.Optional[time.Time]
 	groupID           int64
 	groupName         string
+	info              string
 	name              string
 	output            string
 	searchTarget      string
@@ -49,8 +51,8 @@ type colonyDetails struct {
 	widget.BaseWidget
 
 	characterID   atomic.Int64
+	colony        *app.CharacterPlanet
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
-	expiryTimes   []time.Time
 	filterRun     latestRun
 	footer        *widget.Label
 	icon          *canvas.Image
@@ -62,6 +64,7 @@ type colonyDetails struct {
 	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
+	rowsRun       latestRun
 	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
@@ -106,7 +109,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 		Content: b,
 		Title:   title,
 		Window:  w,
-		MinSize: fyne.NewSize(600, 700),
+		MinSize: fyne.NewSize(600, 600),
 	})
 	w.Show()
 }
@@ -200,8 +203,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	// signals
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
-			a.filterRowsAsync()
-			a.refreshStatus()
+			a.refreshForecast()
 		})
 	}, a.signalKey)
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -280,8 +282,24 @@ func (a *colonyDetails) setIssue(s string) {
 	a.footer.Refresh()
 }
 
-func (a *colonyDetails) refreshStatus() {
-	a.status.Set(colonyStatusDisplay(a.expiryTimes))
+// refreshForecast recalculates the forecast for the colony.
+func (a *colonyDetails) refreshForecast() {
+	cp := a.colony
+	if cp == nil {
+		return
+	}
+	isLatest := a.rowsRun.start()
+	runAsync(func() {
+		status, rows := a.makeRows(cp, time.Now())
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.status.Set(status)
+			a.rows = rows
+			a.filterRowsAsync()
+		})
+	})
 }
 
 func (a *colonyDetails) filterRowsAsync() {
@@ -308,7 +326,7 @@ func (a *colonyDetails) filterRowsAsync() {
 			return r.name
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		footer := fmt.Sprintf("Showing %d / %d installations", len(rows), totalRows)
+		footer := fmt.Sprintf("Showing %d / %d installations • Status and contents are estimates", len(rows), totalRows)
 
 		fyne.Do(func() {
 			if !isLatest() {
@@ -350,14 +368,14 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
-	cp, rows, err := a.fetchData(ctx, c.ID)
+	cp, err := a.u.Character().GetPlanet(ctx, c.ID, a.planetID.Load())
 	if err != nil {
 		reset()
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
-
-	expiryTimes := cp.ExtractionsExpiryTimes()
+	isLatest := a.rowsRun.start()
+	status, rows := a.makeRows(cp, time.Now())
 
 	fyne.Do(func() {
 		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, ui.IconPixelSize, func(res fyne.Resource) {
@@ -379,9 +397,11 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
 
-		a.expiryTimes = expiryTimes
-		a.refreshStatus()
-
+		a.colony = cp
+		if !isLatest() {
+			return
+		}
+		a.status.Set(status)
 		a.rows = rows
 		a.filterRowsAsync()
 	})
@@ -411,12 +431,18 @@ var installationShortNames = map[string]colonyPinType{
 	"Storage Facility":           pinTypeStorage,
 }
 
-func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.CharacterPlanet, []colonyDetailsRow, error) {
-	cp, err := a.u.Character().GetPlanet(ctx, characterID, a.planetID.Load())
-	if err != nil {
-		return nil, nil, err
+// makeRows returns the colony status and the rows for all pins of a colony forecasted at now.
+func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widget.RichTextSegment, []colonyDetailsRow) {
+	f := a.u.Character().ForecastPlanet(cp, now)
+	status := xwidget.RichTextSegmentsFromText(f.Status.Display(), widget.RichTextStyle{
+		ColorName: f.Status.Color(),
+	})
+	if v, ok := f.WorkEndsAt.Value(); ok {
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(
+			fmt.Sprintf(" • work ends in %s (%s)", ihumanize.Duration(v.Sub(now)), v.Format(app.DateTimeFormat)),
+		))
 	}
-
+	typeNames := colonyTypeNames(cp)
 	var rows []colonyDetailsRow
 	for _, p := range cp.Pins {
 		prefix := cp.EvePlanet.TypeDisplay() + " "
@@ -431,7 +457,6 @@ func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.
 
 		var iconColor fyne.ThemeColorName
 		var iconName eveicon.Name
-		statusColor := theme.ColorNameButton
 		switch pinType {
 		case pinTypeCommandCenter:
 			iconName = eveicon.PICommandCenter
@@ -439,13 +464,6 @@ func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.
 		case pinTypeExtractor:
 			iconName = eveicon.PIExtractor
 			iconColor = ui.ColorNameSystem
-			if v, ok := p.ExpiryTime.Value(); ok {
-				if time.Now().Before(v) {
-					statusColor = theme.ColorNameSuccess
-				} else {
-					statusColor = theme.ColorNameError
-				}
-			}
 		case pinTypeBasicProcessor:
 			iconName = eveicon.PIProcessor
 			iconColor = theme.ColorNameWarning
@@ -466,7 +484,14 @@ func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.
 			iconColor = theme.ColorNameDisabled
 		}
 
-		var output string
+		pf := f.Pins[p.ID]
+		if pf == nil {
+			pf = &app.PinForecast{} // pin not simulated
+		}
+
+		var output, info string
+		var statusText string
+		statusColor := pf.Status.Color()
 		switch p.Type.Group.ID {
 		case app.EveGroupExtractorControlUnits:
 			if v, ok := p.ExtractorProductType.Value(); ok {
@@ -475,6 +500,14 @@ func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.
 			} else {
 				output = "-"
 			}
+			if v, ok := p.ExpiryTime.Value(); ok {
+				info = v.Format(app.DateTimeFormat)
+			}
+			if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
+				statusText = ihumanize.Duration(v.Sub(now))
+			} else {
+				statusText = pf.Status.Display()
+			}
 		case app.EveGroupProcessors:
 			if v, ok := p.Schematic.Value(); ok {
 				output = v.Name
@@ -482,48 +515,111 @@ func (a *colonyDetails) fetchData(ctx context.Context, characterID int64) (*app.
 			} else {
 				output = "-"
 			}
-		case app.EveGroupCommandCenters:
-			output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
-		}
-
-		var endDate optional.Optional[string]
-		var statusText string
-		var statusTextColor fyne.ThemeColorName
-		if p.Type.Group.ID == app.EveGroupExtractorControlUnits {
-			if v, ok := p.ExpiryTime.Value(); !ok {
-				statusText = "-"
-				statusTextColor = theme.ColorNameDisabled
-			} else {
-				endDate.Set(v.Format(app.DateTimeFormat))
-				if time.Now().After(v) {
-					statusText = colonyStatusAllIdle
-					statusTextColor = theme.ColorNameError
+			statusText = pf.Status.Display()
+		default:
+			if v, ok := pf.Capacity.Value(); ok && v > 0 {
+				info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
+				if pf.Status == app.PinStorageFull {
+					statusText = pf.Status.Display()
 				} else {
-					statusText = ihumanize.Duration(time.Until(v))
-					statusTextColor = theme.ColorNameForeground
+					statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
+				}
+			}
+			contents := colonyContentsDisplay(pf.Contents, typeNames)
+			if p.Type.Group.ID == app.EveGroupCommandCenters {
+				output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
+				if contents != "" {
+					output += " • " + contents
+				}
+			} else {
+				output = contents
+			}
+			if output == "" {
+				output = "Empty"
+			}
+			for id := range pf.Contents {
+				if n, ok := typeNames[id]; ok {
+					searchTargets = append(searchTargets, strings.ToLower(n))
 				}
 			}
 		}
 		status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
-			ColorName: statusTextColor,
+			ColorName: statusColor,
 		})
 
 		rows = append(rows, colonyDetailsRow{
-			endDate:           endDate,
 			expiryTime:        p.ExpiryTime,
 			groupID:           p.Type.Group.ID,
 			groupName:         p.Type.Group.Name,
+			info:              info,
 			name:              name,
 			output:            output,
 			status:            status,
 			symbolIconColor:   iconColor,
 			symbolIconName:    iconName,
-			symbolStatusColor: statusColor,
+			symbolStatusColor: pinSymbolStatusColor(pf.Status),
 			typeID:            p.Type.ID,
 			searchTarget:      strings.Join(searchTargets, "~"),
 		})
 	}
-	return cp, rows, nil
+	return status, rows
+}
+
+// pinSymbolStatusColor returns the color of the outer ring of a pin symbol.
+func pinSymbolStatusColor(s app.PinStatus) fyne.ThemeColorName {
+	switch s {
+	case app.PinExtracting, app.PinProducing:
+		return theme.ColorNameSuccess
+	case app.PinStatic, app.PinStatusUndefined:
+		return theme.ColorNameButton
+	}
+	return s.Color()
+}
+
+// colonyTypeNames returns the names of all types known to a colony by type ID.
+func colonyTypeNames(cp *app.CharacterPlanet) map[int64]string {
+	m := make(map[int64]string)
+	for _, p := range cp.Pins {
+		for _, c := range p.Contents {
+			m[c.Type.ID] = c.Type.Name
+		}
+		if v, ok := p.ExtractorProductType.Value(); ok {
+			m[v.ID] = v.Name
+		}
+	}
+	for _, r := range cp.Routes {
+		m[r.ContentType.ID] = r.ContentType.Name
+	}
+	return m
+}
+
+// colonyContentsDisplay returns a short summary of the largest contents of a pin.
+func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string) string {
+	const maxItems = 3
+	type item struct {
+		name   string
+		amount int64
+	}
+	var items []item
+	for id, amount := range contents {
+		n, ok := typeNames[id]
+		if !ok {
+			n = fmt.Sprintf("Type #%d", id)
+		}
+		items = append(items, item{n, amount})
+	}
+	slices.SortFunc(items, func(a, b item) int {
+		return cmp.Or(cmp.Compare(b.amount, a.amount), strings.Compare(a.name, b.name))
+	})
+	var parts []string
+	for i, x := range items {
+		if i == maxItems {
+			parts = append(parts, fmt.Sprintf("+%d more", len(items)-maxItems))
+			break
+		}
+		parts = append(parts, fmt.Sprintf("%s %s", x.name, ihumanize.Comma(x.amount)))
+	}
+	return strings.Join(parts, ", ")
 }
 
 type colonyPinItem struct {
@@ -570,7 +666,7 @@ func (w *colonyPinItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *colonyPinItem) Set(r colonyDetailsRow) {
-	w.info.SetText(r.endDate.ValueOrZero())
+	w.info.SetText(r.info)
 	w.name.SetText(r.name)
 	w.output.SetText(r.output)
 	w.status.Set(r.status)
