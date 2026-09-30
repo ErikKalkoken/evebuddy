@@ -1,0 +1,10 @@
+# Hooks for https://pre-commit.com
+# Setup: pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt
+        entry: gofmt -l -w
+        language: system
+        types: [go]
