@@ -2,14 +2,16 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"flag"
-	"html/template"
+	"go/format"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -128,13 +130,21 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = tmpl.Execute(out, map[string]any{
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, map[string]any{
 			"CompatibilityDate": compatibilityDate,
 			"Groups":            groups,
 			"Operations":        operations,
 			"Package":           *packageFlag,
 		})
 		if err != nil {
+			log.Fatal(err)
+		}
+		src, err := format.Source(buf.Bytes())
+		if err != nil {
+			log.Fatalf("format generated code: %v", err)
+		}
+		if _, err := out.Write(src); err != nil {
 			log.Fatal(err)
 		}
 	}

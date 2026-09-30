@@ -19,9 +19,9 @@ func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) e
 		return fmt.Errorf("CreateEveMoon: %+v: %w", arg, app.ErrInvalid)
 	}
 	arg2 := queries.CreateEveMoonParams{
-		ID:              arg.ID,
+		ID:               arg.ID,
 		Name:             arg.Name,
-		EveSolarSystemID:arg.SolarSystemID,
+		EveSolarSystemID: arg.SolarSystemID,
 	}
 	err := st.qRW.CreateEveMoon(ctx, arg2)
 	if err != nil {
@@ -31,7 +31,7 @@ func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) e
 }
 
 func (st *Storage) GetEveMoon(ctx context.Context, id int64) (*app.EveMoon, error) {
-	row, err := st.qRO.GetEveMoon(ctx,id)
+	row, err := st.qRO.GetEveMoon(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get EveMoon for id %d: %w", id, convertGetError(err))
 	}
@@ -47,7 +47,7 @@ func (st *Storage) GetEveMoon(ctx context.Context, id int64) (*app.EveMoon, erro
 
 func EveMoonFromDBModel(p queries.EveMoon, ess *app.EveSolarSystem) *app.EveMoon {
 	return &app.EveMoon{
-		ID:         p.ID,
+		ID:          p.ID,
 		Name:        p.Name,
 		SolarSystem: ess,
 	}

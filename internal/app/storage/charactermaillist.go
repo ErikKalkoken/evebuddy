@@ -12,7 +12,7 @@ func (st *Storage) CreateCharacterMailList(ctx context.Context, characterID, mai
 	if characterID == 0 || mailListID == 0 {
 		return fmt.Errorf("CreateCharacterMailList: %w", app.ErrInvalid)
 	}
-	arg := queries.CreateCharacterMailListParams{CharacterID:characterID, EveEntityID:mailListID}
+	arg := queries.CreateCharacterMailListParams{CharacterID: characterID, EveEntityID: mailListID}
 	if err := st.qRW.CreateCharacterMailList(ctx, arg); err != nil {
 		return fmt.Errorf("create mail list %d for character %d: %w", mailListID, characterID, err)
 	}
@@ -21,9 +21,9 @@ func (st *Storage) CreateCharacterMailList(ctx context.Context, characterID, mai
 
 func (st *Storage) DeleteObsoleteCharacterMailLists(ctx context.Context, characterID int64) error {
 	arg := queries.DeleteObsoleteCharacterMailListsParams{
-		CharacterID:  characterID,
-		CharacterID_2:characterID,
-		CharacterID_3:characterID,
+		CharacterID:   characterID,
+		CharacterID_2: characterID,
+		CharacterID_3: characterID,
 	}
 	if err := st.qRW.DeleteObsoleteCharacterMailLists(ctx, arg); err != nil {
 		return fmt.Errorf("delete obsolete mail lists for character %d: %w", characterID, err)

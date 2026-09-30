@@ -24,6 +24,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l $(git ls-files '*.go'))
+          if [ -n "$unformatted" ]; then
+            echo "Files not formatted with gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
       - name: Install OS dependencies
         run: |
           sudo apt-get update

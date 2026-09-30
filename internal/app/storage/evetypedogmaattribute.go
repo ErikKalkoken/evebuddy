@@ -59,7 +59,7 @@ func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID
 	for _, r := range rows {
 		oo = append(oo, &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
-			Type:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
+			Type:           eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          r.Value,
 		})
 	}
@@ -75,7 +75,7 @@ func (st *Storage) ListEveTypeDogmaAttributesForSkills(ctx context.Context) ([]*
 	for _, r := range rows {
 		oo = append(oo, &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
-			Type:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
+			Type:           eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          r.Value,
 		})
 	}

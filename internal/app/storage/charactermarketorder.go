@@ -164,7 +164,6 @@ func (st *Storage) ListCharacterMarketOrders(ctx context.Context, characterID in
 	return oo, nil
 }
 
-
 func characterMarketOrderFromDBModel(
 	cmo queries.CharacterMarketOrder,
 	locationName string,

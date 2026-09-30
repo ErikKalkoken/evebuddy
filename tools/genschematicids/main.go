@@ -2,15 +2,16 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"flag"
-	"html/template"
-	"io"
+	"go/format"
 	"log"
 	"maps"
 	"os"
 	"slices"
+	"text/template"
 )
 
 //go:embed target.go.template
@@ -48,23 +49,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var out io.Writer
-	if *output == "" {
-		out = os.Stdout
-	} else {
-		f, err := os.Create(*output)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		out = f
-	}
-	err = tmpl.Execute(out, map[string]any{
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]any{
 		"Package":  *packageFlag,
 		"Values":   values,
 		"Variable": "schematicToIconIDs",
 	})
 	if err != nil {
+		log.Fatal(err)
+	}
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		log.Fatalf("format generated code: %v", err)
+	}
+	if *output == "" {
+		if _, err := os.Stdout.Write(src); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if err := os.WriteFile(*output, src, 0o644); err != nil {
 		log.Fatal(err)
 	}
 }

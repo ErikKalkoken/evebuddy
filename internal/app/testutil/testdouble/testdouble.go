@@ -214,15 +214,15 @@ func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache
 }
 
 type UIFake struct {
-	app               fyne.App
-	cs                *characterservice.CharacterService
-	rs                *corporationservice.CorporationService
-	eis               ui.EVEImageService
-	eus               *eveuniverseservice.EVEUniverseService
-	isMobile          bool
-	iw                *infoviewer.InfoViewer
-	settings          *settings.Settings
-	signals           *app.Signals
+	app                 fyne.App
+	cs                  *characterservice.CharacterService
+	rs                  *corporationservice.CorporationService
+	eis                 ui.EVEImageService
+	eus                 *eveuniverseservice.EVEUniverseService
+	isMobile            bool
+	iw                  *infoviewer.InfoViewer
+	settings            *settings.Settings
+	signals             *app.Signals
 	showCharacterFunc   func(ctx context.Context, characterID int64)
 	showCorporationFunc func(ctx context.Context, corporationID int64)
 	showSnackbarFunc    func(text string)

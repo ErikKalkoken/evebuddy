@@ -24,7 +24,7 @@ type CharacterSectionStatusParams struct {
 
 func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int64, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
-		CharacterID:characterID,
+		CharacterID: characterID,
 		SectionID:   section.String(),
 	}
 	s, err := st.qRO.GetCharacterSectionStatus(ctx, arg)
@@ -41,7 +41,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 }
 
 func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int64) ([]*app.CharacterSectionStatus, error) {
-	rows, err := st.qRO.ListCharacterSectionStatus(ctx,characterID)
+	rows, err := st.qRO.ListCharacterSectionStatus(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("list character status for ID %d: %w", characterID, err)
 	}
@@ -77,19 +77,19 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		qtx := st.qRW.WithTx(tx)
 		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
 		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
-			CharacterID:arg.CharacterID,
+			CharacterID: arg.CharacterID,
 			SectionID:   arg.Section.String(),
 		})
 		if errors.Is(err, sql.ErrNoRows) {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID:arg.CharacterID,
+				CharacterID: arg.CharacterID,
 				SectionID:   arg.Section.String(),
 			}
 		} else if err != nil {
 			return nil, err
 		} else {
 			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-				CharacterID:arg.CharacterID,
+				CharacterID: arg.CharacterID,
 				SectionID:   arg.Section.String(),
 				CompletedAt: old.CompletedAt,
 				ContentHash: old.ContentHash,
@@ -131,7 +131,7 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {
 	x := &app.CharacterSectionStatus{
-		CharacterID:o.CharacterID,
+		CharacterID: o.CharacterID,
 		SectionStatus: app.SectionStatus{
 			ErrorMessage: o.Error,
 			ContentHash:  o.ContentHash,
