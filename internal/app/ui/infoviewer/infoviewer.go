@@ -35,6 +35,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -105,7 +106,7 @@ type baseUI interface {
 type InfoViewer struct {
 	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
-	onClosedFuncs []func() // f runs when the window is closed. Useful for cleanup.
+	onClosedFuncs xsync.Stack[func()] // f runs when the window is closed. Useful for cleanup.
 	sb            *kxwidget.Snackbar
 	u             baseUI
 	w             fyne.Window
@@ -372,7 +373,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		w.SetOnClosed(func() {
-			for _, f := range iw.onClosedFuncs {
+			for f, ok := iw.onClosedFuncs.Pop(); ok; f, ok = iw.onClosedFuncs.Pop() {
 				f()
 			}
 			iw.nav = nil
