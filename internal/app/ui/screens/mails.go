@@ -893,6 +893,9 @@ func newMailsMessagePane(ma *Mails) *mailsMessagePane {
 		a.filterRowsAsync()
 	})
 	a.filterChip = xwidget.NewFilterChipCompact(nil, func(state map[string]string) {
+		if f := a.currentFolder.Load(); f == nil || a.rowsFolderUID != f.UID() {
+			return // rows are stale; update filters once the new folder is loaded
+		}
 		if state[mailsFilterStatus] != "" {
 			a.updateIsRead()
 		}
@@ -975,7 +978,7 @@ func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFol
 		a.headerList.UnselectAll()
 		a.ma.ReadingPane.clear()
 		a.searchEntry.ClearSilent()
-		a.filterChip.SetSelected(map[string]string{}) // silent, the following update filters again
+		a.filterChip.Reset()
 	})
 	a.update(ctx)
 }
