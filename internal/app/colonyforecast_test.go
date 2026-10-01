@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -90,4 +91,47 @@ func TestPinStatusColor(t *testing.T) {
 			xassert.Equal(t, tc.want, tc.s.Color())
 		})
 	}
+}
+
+func TestPinStatusIsProblem(t *testing.T) {
+	cases := []struct {
+		s    app.PinStatus
+		want bool
+	}{
+		{app.PinExtractorExpired, true},
+		{app.PinExtractorInactive, true},
+		{app.PinInputNotRouted, true},
+		{app.PinNotSetup, true},
+		{app.PinOutputNotRouted, true},
+		{app.PinStorageFull, true},
+		{app.PinExtracting, false},
+		{app.PinFactoryIdle, false},
+		{app.PinProducing, false},
+		{app.PinStatic, false},
+		{app.PinStatusUndefined, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.s.String(), func(t *testing.T) {
+			xassert.Equal(t, tc.want, tc.s.IsProblem())
+		})
+	}
+}
+
+func TestColonyForecastProblemStatuses(t *testing.T) {
+	t.Run("should return distinct problems ordered by status", func(t *testing.T) {
+		f := app.ColonyForecast{Pins: map[int64]*app.PinForecast{
+			1: {Status: app.PinStorageFull},
+			2: {Status: app.PinExtractorExpired},
+			3: {Status: app.PinStorageFull},
+			4: {Status: app.PinProducing},
+			5: {Status: app.PinFactoryIdle},
+		}}
+		xassert.Equal(t, []app.PinStatus{app.PinExtractorExpired, app.PinStorageFull}, f.ProblemStatuses())
+	})
+	t.Run("should return nothing when there are no problems", func(t *testing.T) {
+		f := app.ColonyForecast{Pins: map[int64]*app.PinForecast{
+			1: {Status: app.PinProducing},
+		}}
+		assert.Empty(t, f.ProblemStatuses())
+	})
 }

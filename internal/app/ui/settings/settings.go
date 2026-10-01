@@ -501,7 +501,7 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButt
 	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.Settings().NotifyPIEnabled(),
 		label:        "Planetary Industry",
-		hint:         "Whether to notify about expired extractions",
+		hint:         "Whether to notify when a PI colony stops working",
 		getter:       a.u.Settings().NotifyPIEnabled,
 		onChanged: func(on bool) {
 			a.u.Settings().SetNotifyPIEnabled(on)

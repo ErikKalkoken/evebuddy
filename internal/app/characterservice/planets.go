@@ -38,11 +38,11 @@ func (s *CharacterService) ForecastPlanet(cp *app.CharacterPlanet, now time.Time
 	return colonysim.Forecast(cp, now)
 }
 
-// NotifyExpiredExtractions sends notifications for expired extractions of a character.
-// Expired notifications are notified once only.
-// It will sent one notification covering all currently expired extractions.
-func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
-	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyExpiredExtractions-%d", characterID), func() (any, error) {
+// NotifyStoppedColonies sends notifications for colonies of a character which stopped working.
+// A colony is notified once per snapshot and only when it was working at the snapshot.
+// It will sent one notification covering all colonies which stopped working.
+func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
+	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyStoppedColonies-%d", characterID), func() (any, error) {
 		planets, err := s.ListPlanets(ctx, characterID)
 		if err != nil {
 			return nil, err
@@ -51,41 +51,50 @@ func (s *CharacterService) NotifyExpiredExtractions(ctx context.Context, charact
 		if err != nil {
 			return nil, err
 		}
-		type expiredPlanet struct {
+		type stoppedPlanet struct {
 			evePlanetID int64
-			name        string
-			expiration  time.Time
+			lastUpdate  time.Time
+			text        string
 		}
-		var expired []expiredPlanet
+		now := time.Now()
+		var stopped []stoppedPlanet
 		for _, p := range planets {
-			expiration, ok := p.ExtractionsEarliestExpiry().Value()
-			if !ok || expiration.After(time.Now()) || expiration.Before(earliest) {
+			if p.LastNotified.ValueOrZero().Equal(p.LastUpdate) {
 				continue
 			}
-			if p.LastNotified.ValueOrZero().Equal(expiration) {
+			// work end is only set when the colony was working at the snapshot
+			workEndsAt, ok := colonysim.Forecast(p, p.LastUpdate).WorkEndsAt.Value()
+			if !ok || workEndsAt.After(now) || workEndsAt.Before(earliest) {
 				continue
 			}
-			expired = append(expired, expiredPlanet{
+			var reasons []string
+			for _, x := range colonysim.Forecast(p, now).ProblemStatuses() {
+				reasons = append(reasons, x.Display())
+			}
+			if len(reasons) == 0 {
+				reasons = append(reasons, app.ColonyIdle.Display())
+			}
+			stopped = append(stopped, stoppedPlanet{
 				evePlanetID: p.EvePlanet.ID,
-				name:        p.EvePlanet.Name,
-				expiration:  expiration,
+				lastUpdate:  p.LastUpdate,
+				text:        fmt.Sprintf("%s (%s)", p.EvePlanet.Name, strings.Join(reasons, ", ")),
 			})
 		}
-		if len(expired) > 0 {
-			names := make([]string, len(expired))
-			for i, p := range expired {
-				names[i] = p.name
+		if len(stopped) > 0 {
+			texts := make([]string, len(stopped))
+			for i, p := range stopped {
+				texts[i] = p.text
 			}
-			slices.Sort(names)
-			title := fmt.Sprintf("%s: PI extraction expired at %d planet(s)", characterName, len(expired))
-			content := fmt.Sprintf("Extraction expired at %s", strings.Join(names, ", "))
+			slices.Sort(texts)
+			title := fmt.Sprintf("%s: PI colony stopped working at %d planet(s)", characterName, len(stopped))
+			content := strings.Join(texts, ", ")
 			notify(title, content)
-			slog.Info("Notified expired planets", "characterID", characterID, "planets", names)
-			for _, p := range expired {
+			slog.Info("Notified stopped colonies", "characterID", characterID, "planets", texts)
+			for _, p := range stopped {
 				err := s.st.UpdateCharacterPlanetLastNotified(ctx, storage.UpdateCharacterPlanetLastNotifiedParams{
 					CharacterID:  characterID,
 					EvePlanetID:  p.evePlanetID,
-					LastNotified: p.expiration,
+					LastNotified: p.lastUpdate,
 				})
 				if err != nil {
 					return nil, err

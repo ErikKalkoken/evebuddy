@@ -257,7 +257,7 @@ type CharacterPlanet struct {
 	CharacterID  int64
 	EvePlanet    *EvePlanet
 	LastUpdate   time.Time
-	LastNotified optional.Optional[time.Time] // expiry time that was last notified
+	LastNotified optional.Optional[time.Time] // last update of the snapshot that was last notified
 	Pins         []*PlanetPin
 	Routes       []*PlanetRoute
 	UpgradeLevel int64
@@ -285,31 +285,6 @@ func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
 	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
 		return o.IsExtracting()
 	})
-}
-
-// ExtractionsEarliestExpiry returns the earliest expiry time of all extractions.
-// When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsEarliestExpiry() optional.Optional[time.Time] {
-	times := cp.ExtractionsExpiryTimes()
-	if len(times) == 0 {
-		return optional.Optional[time.Time]{}
-	}
-	earliest := slices.MinFunc(times, func(a, b time.Time) int {
-		return a.Compare(b)
-	})
-	return optional.New(earliest)
-}
-
-// ExtractionsExpiryTimes returns the expiry times for all extractions.
-// When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsExpiryTimes() []time.Time {
-	var s []time.Time
-	for pp := range cp.ActiveExtractors() {
-		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
-			s = append(s, v)
-		}
-	}
-	return s
 }
 
 func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {

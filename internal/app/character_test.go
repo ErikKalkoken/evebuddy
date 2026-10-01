@@ -2,7 +2,6 @@ package app_test
 
 import (
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -232,48 +231,6 @@ func TestCharacterPlanet_ProducedSchematics(t *testing.T) {
 		x := cp.ExtractedTypes()
 		// then
 		assert.Len(t, x, 0)
-	})
-}
-
-func TestCharacterPlanet_ExtractionsExpire(t *testing.T) {
-	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
-	processorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupProcessors}}
-	productType := &app.EveType{ID: 42}
-	processorPin := &app.PlanetPin{Type: processorType}
-	t.Run("should return earlist expiration date", func(t *testing.T) {
-		// given
-		et1 := time.Now().Add(5 * time.Hour).UTC()
-		et2 := time.Now().Add(10 * time.Hour).UTC()
-		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
-			{
-				Type:                 extractorType,
-				ExpiryTime:           optional.New(et2),
-				ExtractorProductType: optional.New(productType),
-			},
-			{
-				Type:                 extractorType,
-				ExpiryTime:           optional.New(et1),
-				ExtractorProductType: optional.New(productType),
-			},
-			processorPin,
-		}}
-		// when
-		x := cp.ExtractionsEarliestExpiry()
-		// then
-		xassert.EqualOptional(t, et1, x)
-	})
-	t.Run("should return empty time when no expiration date", func(t *testing.T) {
-		// given
-		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
-			{
-				Type: extractorType,
-			},
-			processorPin,
-		}}
-		// when
-		x := cp.ExtractionsEarliestExpiry()
-		// then
-		assert.True(t, x.IsEmpty())
 	})
 }
 

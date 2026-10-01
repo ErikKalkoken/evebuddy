@@ -50,7 +50,7 @@ type colonyDetailsRow struct {
 
 // needsAttention reports whether the pin has a problem, i.e. its ring is red.
 func (r colonyDetailsRow) needsAttention() bool {
-	return r.pinStatus.Color() == theme.ColorNameError
+	return r.pinStatus.IsProblem()
 }
 
 const (
