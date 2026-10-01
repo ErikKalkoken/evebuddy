@@ -539,34 +539,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 		name := string(pinType)
 		searchTargets := []string{strings.ToLower(name)}
 
-		var iconColor fyne.ThemeColorName
-		var iconName eveicon.Name
-		switch pinType {
-		case pinTypeCommandCenter:
-			iconName = eveicon.PICommandCenter
-			iconColor = ui.ColorNameInfo
-		case pinTypeExtractor:
-			iconName = eveicon.PIExtractor
-			iconColor = ui.ColorNameSystem
-		case pinTypeBasicProcessor:
-			iconName = eveicon.PIProcessor
-			iconColor = theme.ColorNameWarning
-		case pinTypeAdvancedProcessor:
-			iconName = eveicon.PIProcessor
-			iconColor = ui.ColorNameAttention
-		case pinTypeHighTechProcessor:
-			iconName = eveicon.PIProcessor
-			iconColor = ui.ColorNameCreative
-		case pinTypeSpacePort:
-			iconName = eveicon.PILaunchpad
-			iconColor = theme.ColorNamePrimary
-		case pinTypeStorage:
-			iconName = eveicon.PIStorage
-			iconColor = theme.ColorNamePrimary
-		default:
-			iconName = eveicon.Undefined
-			iconColor = theme.ColorNameDisabled
-		}
+		iconName, iconColor := colonyPinIconName(pinType)
 
 		pf := f.Pins[p.ID]
 		if pf == nil {
@@ -657,6 +630,42 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 		})
 	}
 	return status, rows
+}
+
+// colonyPinIconName returns the icon and its color for a pin type.
+func colonyPinIconName(pinType colonyPinType) (eveicon.Name, fyne.ThemeColorName) {
+	switch pinType {
+	case pinTypeCommandCenter:
+		return eveicon.PICommandCenter, ui.ColorNameInfo
+	case pinTypeExtractor:
+		return eveicon.PIExtractor, ui.ColorNameSystem
+	case pinTypeBasicProcessor:
+		return eveicon.PIProcessor, theme.ColorNameWarning
+	case pinTypeAdvancedProcessor:
+		return eveicon.PIProcessor, ui.ColorNameAttention
+	case pinTypeHighTechProcessor:
+		return eveicon.PIProcessor, ui.ColorNameCreative
+	case pinTypeSpacePort:
+		return eveicon.PILaunchpad, theme.ColorNamePrimary
+	case pinTypeStorage:
+		return eveicon.PIStorage, theme.ColorNamePrimary
+	}
+	return eveicon.Undefined, theme.ColorNameDisabled
+}
+
+// colonyPinIconResource returns icon tinted in color.
+func colonyPinIconResource(icon fyne.Resource, color fyne.ThemeColorName) fyne.Resource {
+	key := icon.Name() + string(color)
+	if r, ok := planetPinSymbolCache.Load(key); ok {
+		return r
+	}
+	r, err := fynetools.ThemedPNG(icon, theme.Color(color))
+	if err != nil {
+		fyne.LogError("Failed theme PNG", err)
+		return icons.BlankSvg
+	}
+	planetPinSymbolCache.Store(key, r)
+	return r
 }
 
 // colonyProgress returns the ratio of elapsed to total, clamped to 0-1.
@@ -798,19 +807,7 @@ func newPlanetPinSymbol() *planetPinSymbol {
 }
 
 func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName, progress optional.Optional[float64]) {
-	key := icon.Name() + string(iconColor)
-	icon2, ok := planetPinSymbolCache.Load(key)
-	if !ok {
-		r, err := fynetools.ThemedPNG(icon, theme.Color(iconColor))
-		if err != nil {
-			fyne.LogError("Failed theme PNG", err)
-			icon2 = icons.BlankSvg
-		} else {
-			planetPinSymbolCache.Store(key, r)
-			icon2 = r
-		}
-	}
-	w.icon = icon2
+	w.icon = colonyPinIconResource(icon, iconColor)
 	w.iconColor = iconColor
 	w.progress = progress
 	w.statusColor = statusColor

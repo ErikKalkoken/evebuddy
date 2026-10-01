@@ -12,11 +12,14 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -58,6 +61,7 @@ type colonyPinField struct {
 	value  string              // shown when there are no lines
 	color  fyne.ThemeColorName // optional
 	action func()              // optional, shows value as link
+	icon   fyne.Resource       // optional, shown in front of the value
 	lines  []colonyPinItemLine // optional, shown instead of value
 }
 
@@ -253,6 +257,19 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 
 // makeFieldWidget returns the widget for showing the value of a field.
 func (a *colonyPinDetails) makeFieldWidget(x colonyPinField) fyne.CanvasObject {
+	w := a.makeValueWidget(x)
+	if x.icon == nil {
+		return w
+	}
+	if h, ok := w.(*widget.Hyperlink); ok {
+		h.Wrapping = fyne.TextWrapOff // would wrap every word in a HBox
+	}
+	icon := xwidget.NewImageFromResource(x.icon, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
+	// no extra spacing, as the value already has inner padding
+	return container.New(layout.NewCustomPaddedHBoxLayout(0), icon, w)
+}
+
+func (a *colonyPinDetails) makeValueWidget(x colonyPinField) fyne.CanvasObject {
 	switch {
 	case len(x.lines) > 0:
 		box := container.NewVBox()
@@ -322,8 +339,10 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		status.value = pf.Status.Display()
 		status.color = pf.Status.Color()
 	}
+	pinType := colonyPinTypeOf(cp, p)
+	iconName, iconColor := colonyPinIconName(pinType)
 	info.general = []colonyPinField{
-		{label: "Installation", value: string(colonyPinTypeOf(cp, p)), action: func() {
+		{label: "Installation", value: string(pinType), icon: colonyPinIconResource(eveicon.FromName(iconName), iconColor), action: func() {
 			a.u.InfoViewer().ShowType(p.Type.ID, 0)
 		}},
 		{label: "Colony", value: cp.EvePlanet.Name, action: func() {

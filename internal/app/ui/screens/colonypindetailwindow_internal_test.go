@@ -144,6 +144,7 @@ func TestColonyPinDetails(t *testing.T) {
 		info := makeInfo(t, 1)
 		require.True(t, info.found)
 		assert.Equal(t, string(pinTypeExtractor), value(t, info.general, "Installation"))
+		assert.NotNil(t, field(t, info.general, "Installation").icon)
 		assert.Equal(t, cp.EvePlanet.Name, value(t, info.general, "Colony"))
 		assert.Equal(t, character.EveCharacter.Name, value(t, info.general, "Owner"))
 		assert.Equal(t, app.PinExtracting.Display(), value(t, info.general, "Status"))
