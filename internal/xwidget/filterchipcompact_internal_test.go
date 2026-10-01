@@ -1,6 +1,7 @@
 package xwidget
 
 import (
+	"image/color"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -39,6 +40,28 @@ func TestFilterChipCompact_Menu(t *testing.T) {
 			}
 		}
 		assert.Equal(t, []string{"Alpha", "---", "Bravo (0)", "---", "Clear"}, got)
+	})
+}
+
+func TestFilterChipCompact_SetOptionsRestyles(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should clear active styling when selected option is removed", func(t *testing.T) {
+		// given
+		f := NewFilterChipCompact([]FilterOption{
+			NewFilterOptionToogle("Alpha"),
+			NewFilterOptionToogle("Bravo"),
+		}, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		assert.NotEqual(t, color.Transparent, f.background.FillColor)
+
+		// when
+		f.SetOptions(NewFilterOptionToogle("Bravo"))
+
+		// then
+		assert.False(t, f.IsOn())
+		assert.Equal(t, color.Transparent, f.background.FillColor)
 	})
 }
 

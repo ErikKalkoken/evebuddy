@@ -160,6 +160,7 @@ func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
 	w.updateSelectedFromOptions()
 	w.updateOn()
 	w.setMenu()
+	w.Refresh()
 }
 
 // normalizeOptions removes undefined and duplicate options
