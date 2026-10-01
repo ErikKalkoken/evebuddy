@@ -48,10 +48,15 @@ func NewFilterOptionToogle(name string) FilterOption {
 // Choices are sorted alphabetically and deduplicated.
 // Empty choice strings are ignored.
 func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
+	choices2 := xslices.Deduplicate(choices) // also copies
+	choices2 = slices.DeleteFunc(choices2, func(x string) bool {
+		return x == ""
+	})
+	slices.Sort(choices2)
 	return FilterOption{
 		kind:    optionKindMultiChoice,
 		name:    name,
-		choices: choices,
+		choices: choices2,
 	}
 }
 
@@ -281,11 +286,7 @@ func (w *FilterChipCompact) setMenu() {
 
 		case optionKindMultiChoice:
 			var items2 []*fyne.MenuItem
-			choices := xslices.Deduplicate(o.choices)
-			choices = slices.DeleteFunc(choices, func(x string) bool {
-				return x == ""
-			})
-			slices.Sort(choices)
+			choices := o.choices
 
 			makeLabel := func(name string) string {
 				selected := w.selected[name]

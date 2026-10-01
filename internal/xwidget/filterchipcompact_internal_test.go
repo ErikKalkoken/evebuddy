@@ -45,6 +45,50 @@ func TestFilterChipCompact_Menu(t *testing.T) {
 		}
 		assert.Equal(t, []string{"Alpha", "---", "Bravo (0)", "---", "Clear"}, got)
 	})
+	t.Run("should show cleaned up choices", func(t *testing.T) {
+		// when
+		f := NewFilterChipCompact([]FilterOption{
+			NewFilterOptionMultiChoice("Bravo", []string{"b", "a", "", "b", "C"}),
+		}, nil)
+
+		// then
+		it := f.menu.Items[0]
+		assert.Equal(t, "Bravo (3)", it.Label)
+		var got []string
+		for _, it2 := range it.ChildMenu.Items {
+			got = append(got, it2.Label)
+		}
+		assert.Equal(t, []string{"C", "a", "b"}, got)
+	})
+}
+
+func TestNewFilterOptionMultiChoice(t *testing.T) {
+	cases := []struct {
+		name    string
+		choices []string
+		want    []string
+	}{
+		{"should drop blanks, deduplicate and sort", []string{"b", "a", "", "b", "C"}, []string{"C", "a", "b"}},
+		{"should return empty for nil", nil, nil},
+		{"should return empty for empty", []string{}, nil},
+		{"should return empty for blanks only", []string{"", ""}, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o := NewFilterOptionMultiChoice("Bravo", tc.choices)
+			if tc.want == nil {
+				assert.Empty(t, o.choices)
+			} else {
+				assert.Equal(t, tc.want, o.choices)
+			}
+		})
+	}
+	t.Run("should not share the caller's slice", func(t *testing.T) {
+		choices := []string{"a", "b"}
+		o := NewFilterOptionMultiChoice("Bravo", choices)
+		choices[0] = "z"
+		assert.Equal(t, []string{"a", "b"}, o.choices)
+	})
 }
 
 func TestFilterChipCompact_ClearItem(t *testing.T) {
