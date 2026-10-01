@@ -249,7 +249,6 @@ func sanitizeSelected(options []FilterOption, selected map[string]string) map[st
 func (w *FilterChipCompact) setMenu() {
 	if len(w.options) == 0 {
 		w.menu.Items = nil
-		w.menu.Refresh()
 		return
 	}
 	var items1 []*fyne.MenuItem
@@ -278,7 +277,6 @@ func (w *FilterChipCompact) setMenu() {
 					it1.Icon = w.blankResource
 				}
 				w.processChanged()
-				w.menu.Refresh()
 			}
 
 		case optionKindMultiChoice:
@@ -327,7 +325,6 @@ func (w *FilterChipCompact) setMenu() {
 							}
 						}
 						w.processChanged()
-						w.menu.Refresh()
 					}
 					items2 = append(items2, it2)
 				}
@@ -350,7 +347,6 @@ func (w *FilterChipCompact) setMenu() {
 	items1 = append(items1, w.clearItem)
 
 	w.menu.Items = items1
-	w.menu.Refresh()
 }
 
 func (w *FilterChipCompact) processChanged() {
@@ -377,7 +373,6 @@ func (w *FilterChipCompact) Refresh() {
 	w.updateStyling()
 	w.background.Refresh()
 	w.icon.Refresh()
-	w.menu.Refresh()
 	w.BaseWidget.Refresh()
 }
 
