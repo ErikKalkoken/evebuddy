@@ -4,7 +4,10 @@ import (
 	"image/color"
 	"testing"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,6 +78,44 @@ func TestFilterChipCompact_EmptyMenu(t *testing.T) {
 			assert.Empty(t, f.menu.Items)
 		})
 	}
+}
+
+func TestFilterChipCompact_DisableWhileInteracting(t *testing.T) {
+	test.NewTempApp(t)
+	newChip := func(t *testing.T) (*FilterChipCompact, fyne.Window) {
+		f := NewFilterChipCompact([]FilterOption{NewFilterOptionToogle("Alpha")}, nil)
+		w := test.NewWindow(f)
+		t.Cleanup(w.Close)
+		return f, w
+	}
+	t.Run("should not show pointer cursor when disabled while hovered", func(t *testing.T) {
+		f, _ := newChip(t)
+		f.MouseIn(&desktop.MouseEvent{})
+		assert.Equal(t, desktop.PointerCursor, f.Cursor())
+
+		f.Disable()
+
+		assert.Equal(t, desktop.DefaultCursor, f.Cursor())
+	})
+	t.Run("should not show focus border when disabled while focused", func(t *testing.T) {
+		f, w := newChip(t)
+		w.Canvas().Focus(f)
+		normalWidth := theme.Size(theme.SizeNameInputBorder)
+		assert.Greater(t, f.background.StrokeWidth, normalWidth)
+
+		f.Disable()
+
+		assert.Equal(t, normalWidth, f.background.StrokeWidth)
+	})
+	t.Run("should restore focus border when enabled again while focused", func(t *testing.T) {
+		f, w := newChip(t)
+		w.Canvas().Focus(f)
+		f.Disable()
+
+		f.Enable()
+
+		assert.Greater(t, f.background.StrokeWidth, theme.Size(theme.SizeNameInputBorder))
+	})
 }
 
 func TestFilterChipCompact_SetOptionsRestyles(t *testing.T) {

@@ -398,7 +398,7 @@ func (w *FilterChipCompact) updateStyling() {
 		w.background.FillColor = color.Transparent
 	}
 
-	if w.focused {
+	if w.focused && !w.disabled {
 		w.background.StrokeColor = th.Color(theme.ColorNameFocus, v)
 		w.background.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
 	} else {
@@ -434,7 +434,7 @@ func (w *FilterChipCompact) Tapped(pe *fyne.PointEvent) {
 }
 
 func (w *FilterChipCompact) Cursor() desktop.Cursor {
-	if w.hovered {
+	if w.hovered && !w.disabled {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
