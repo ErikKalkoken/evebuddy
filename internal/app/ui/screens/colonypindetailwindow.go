@@ -40,19 +40,18 @@ func showColonyPinWindow(u baseUI, characterID, planetID, pinID int64, title, ow
 		a.stop()
 	})
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-		Content: a,
-		Title:   title,
-		Window:  w,
+		Content: showWhenLoaded(a, func() {
+			if err := a.Update(context.Background()); err != nil {
+				slog.Error("Failed to show colony installation", "characterID", characterID, "planetID", planetID, "pinID", pinID, "error", err)
+				fyne.Do(func() {
+					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
+				})
+			}
+		}),
+		Title:  title,
+		Window: w,
 	})
 	w.Show()
-	go func() {
-		if err := a.Update(context.Background()); err != nil {
-			slog.Error("Failed to show colony installation", "characterID", characterID, "planetID", planetID, "pinID", pinID, "error", err)
-			fyne.Do(func() {
-				a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-			})
-		}
-	}()
 }
 
 // colonyPinField is a labeled value shown for an installation.

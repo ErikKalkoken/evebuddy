@@ -7,12 +7,14 @@ import (
 	"log/slog"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -31,6 +33,45 @@ type latestRun struct{ n atomic.Int64 }
 func (l *latestRun) start() func() bool {
 	n := l.n.Add(1)
 	return func() bool { return l.n.Load() == n }
+}
+
+// showWhenLoaded hides content behind a delayed spinner until load returns
+// and returns the object to show in its place.
+func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
+	content.Hide()
+	spinner := kxwidget.NewSpinner()
+	spinner.Hide()
+	// needs Refresh after Show; Fyne won't repaint never-visible objects
+	body := container.NewStack(
+		content,
+		container.NewCenter(container.NewStack(
+			xwidget.NewSpacer(fyne.NewSquareSize(2*theme.IconInlineSize())),
+			spinner,
+		)),
+	)
+	var loaded bool
+	// delay avoids the spinner flickering when loading is fast
+	time.AfterFunc(100*time.Millisecond, func() {
+		fyne.Do(func() {
+			if loaded {
+				return
+			}
+			spinner.Show()
+			spinner.Start()
+			body.Refresh()
+		})
+	})
+	runAsync(func() {
+		load()
+		fyne.Do(func() {
+			loaded = true
+			spinner.Stop()
+			spinner.Hide()
+			content.Show()
+			body.Refresh()
+		})
+	})
+	return body
 }
 
 // copyRowsToClipboard copies rows from a data table to clipboard.

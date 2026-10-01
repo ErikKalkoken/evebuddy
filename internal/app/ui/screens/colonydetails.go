@@ -124,19 +124,6 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	}
 
 	b := newColonyDetails(u, r.characterID, r.planetID)
-	err := b.Update(context.Background())
-	if err != nil {
-		slog.Error(
-			"Failed to show colony details",
-			slog.Any("characterID", r.characterID),
-			slog.Any("planetID", r.planetID),
-			slog.Any("error", err),
-		)
-		u.DestroyWindow(windowID)
-		ui.ShowErrorAndLog("Failed to show colony details", err, u.IsDeveloperMode(), u.MainWindow())
-		return
-	}
-
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
@@ -145,7 +132,11 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	})
 
 	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-		Content: b,
+		Content: showWhenLoaded(b, func() {
+			if err := b.Update(context.Background()); err != nil {
+				slog.Error("Failed to show colony details", "characterID", r.characterID, "planetID", r.planetID, "error", err)
+			}
+		}),
 		Title:   title,
 		Window:  w,
 		MinSize: fyne.NewSize(600, 600),
@@ -833,7 +824,10 @@ func (w *planetPinSymbol) CreateRenderer() fyne.WidgetRenderer {
 	return r
 }
 
-const planetPinSymbolArcCutout = 0.87 // thin ring
+const (
+	planetPinSymbolArcCutout = 0.87 // thin ring
+	planetPinMinSize         = 50
+)
 
 type tripleCircleRenderer struct {
 	widget   *planetPinSymbol
@@ -884,7 +878,7 @@ func (r *tripleCircleRenderer) Layout(size fyne.Size) {
 }
 
 func (r *tripleCircleRenderer) MinSize() fyne.Size {
-	return fyne.NewSquareSize(50)
+	return fyne.NewSquareSize(planetPinMinSize)
 }
 
 func (r *tripleCircleRenderer) Refresh() {
