@@ -128,11 +128,9 @@ func (s *Signals) IsShuttingDown() bool {
 
 // guardedSignal suppresses Emit once shuttingDown is set.
 //
-// The check isn't atomic with BeginShutdown, so a call already past it can still
-// dispatch after shutdown starts. Accepted as low-risk: on paths the app controls,
-// Fyne is still fully alive at that point; on paths it isn't, the flag is set before
-// any service Stop(), i.e. before the cancellation burst that caused the panic this
-// guard exists for.
+// Quit paths set the flag before Fyne stops its loop. The check isn't atomic with
+// BeginShutdown, so a call already past it can still reach fyne.Do afterwards.
+// Accepted as rare.
 type guardedSignal[T any] struct {
 	signals.Signal[T]
 	shuttingDown *atomic.Bool
