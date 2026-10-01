@@ -295,3 +295,146 @@ func TestSimulation(t *testing.T) {
 		assert.Equal(t, int64(5), cp.Pins[1].Contents[0].Amount)
 	})
 }
+
+func TestSimulation_ExtractorToStorageToFactory(t *testing.T) {
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+			newStorage(2, app.EveGroupStorageFacilities, 12_000),
+			newFactory(3, schematicWater),
+			newStorage(4, app.EveGroupSpaceports, 10_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 10_000),
+			newRoute(2, 2, 3, aqueousLiquids, 3000),
+			newRoute(3, 3, 4, water, 20),
+		},
+	}
+	inputs := func(f *app.ColonyForecast) int64 {
+		return f.Pins[2].Contents[typeAqueousLiquids] + f.Pins[3].Contents[typeAqueousLiquids]
+	}
+	t.Run("should forward extracted inputs from storage to factory", func(t *testing.T) {
+		f := Forecast(cp, t0.Add(65*time.Minute))
+		assert.Equal(t, app.PinProducing, f.Pins[3].Status)
+		assert.Equal(t, int64(2467+2086-3000), inputs(f), "first batch consumed")
+	})
+	t.Run("should process all extracted inputs", func(t *testing.T) {
+		f := Forecast(cp, t0.Add(10*time.Hour))
+		// 18,002 extracted makes 6 batches with 2 left over
+		assert.Equal(t, map[int64]int64{typeWater: 120}, f.Pins[4].Contents)
+		assert.Equal(t, int64(2), inputs(f))
+	})
+	t.Run("should end work when extractor expires", func(t *testing.T) {
+		f := Forecast(cp, t0)
+		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.WorkEndsAt)
+	})
+}
+
+func TestSimulation_FactoryActiveAtSnapshot(t *testing.T) {
+	// factory cycle started before the snapshot and ends at t0+20min, input buffer empty
+	newPlanet := func(stored int64) *app.CharacterPlanet {
+		f := newFactory(2, schematicWater)
+		f.LastCycleStart = optional.New(t0.Add(-10 * time.Minute))
+		var contents []*app.PlanetPinContent
+		if stored > 0 {
+			contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
+		}
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
+				f,
+				newStorage(3, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20),
+			},
+		}
+	}
+	t.Run("should deliver output of cycle running at snapshot", func(t *testing.T) {
+		cp := newPlanet(9000)
+		assert.Equal(t, app.PinProducing, Forecast(cp, t0).Pins[2].Status)
+		assert.Empty(t, Forecast(cp, t0.Add(15*time.Minute)).Pins[3].Contents)
+		assert.Equal(t, map[int64]int64{typeWater: 20}, Forecast(cp, t0.Add(25*time.Minute)).Pins[3].Contents)
+	})
+	t.Run("should keep working when inputs are pulled after the running cycle", func(t *testing.T) {
+		// the factory is idle for an instant between finishing a cycle and pulling inputs
+		cp := newPlanet(9000)
+		assert.Equal(t, optional.New(t0.Add(110*time.Minute)), Forecast(cp, t0).WorkEndsAt)
+		f := Forecast(cp, t0.Add(3*time.Hour))
+		assert.Equal(t, map[int64]int64{typeWater: 80}, f.Pins[3].Contents, "running batch + 3 from storage")
+		assert.Empty(t, f.Pins[1].Contents)
+	})
+	t.Run("should deliver one phantom batch for factory that never ran (known limitation, same as RIFT)", func(t *testing.T) {
+		cp := newPlanet(0)
+		assert.Equal(t, optional.New(t0.Add(20*time.Minute)), Forecast(cp, t0).WorkEndsAt)
+		f := Forecast(cp, t0.Add(3*time.Hour))
+		assert.Equal(t, map[int64]int64{typeWater: 20}, f.Pins[3].Contents)
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
+	})
+}
+
+func TestSimulation_FactoryChain(t *testing.T) {
+	const (
+		typeSuspendedPlasma      = 2308
+		typePlasmoids            = 2389
+		typeSuperconductors      = 9838
+		schematicPlasmoids       = 122
+		schematicSuperconductors = 65
+	)
+	suspendedPlasma := newType(typeSuspendedPlasma, 1032, 0.01, 0)
+	plasmoids := newType(typePlasmoids, 1042, 0.38, 0)
+	superconductors := newType(typeSuperconductors, 1034, 0.75, 0)
+	t.Run("should make P2 from two P1 factories", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000,
+					&app.PlanetPinContent{Type: aqueousLiquids, Amount: 6000},
+					&app.PlanetPinContent{Type: suspendedPlasma, Amount: 6000},
+				),
+				newFactory(2, schematicWater),
+				newFactory(3, schematicPlasmoids),
+				newFactory(4, schematicSuperconductors),
+				newStorage(5, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 1, 3, suspendedPlasma, 3000),
+				newRoute(3, 2, 4, water, 20),
+				newRoute(4, 3, 4, plasmoids, 20),
+				newRoute(5, 4, 5, superconductors, 5),
+			},
+		}
+		// P1 factories make 2 batches each until t0+60min, then the P2 factory runs one 1h cycle
+		assert.Equal(t, optional.New(t0.Add(2*time.Hour)), Forecast(cp, t0).WorkEndsAt)
+		f := Forecast(cp, t0.Add(3*time.Hour))
+		assert.Equal(t, map[int64]int64{typeSuperconductors: 5}, f.Pins[5].Contents)
+		for _, id := range []int64{1, 2, 3, 4} {
+			assert.Empty(t, f.Pins[id].Contents, "pin %d", id)
+		}
+	})
+	t.Run("should route output to the factory with the fuller input buffer first", func(t *testing.T) {
+		fuller := newFactory(4, schematicSuperconductors)
+		fuller.Contents = []*app.PlanetPinContent{{Type: water, Amount: 20}}
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 3000}),
+				newFactory(2, schematicWater),
+				newFactory(3, schematicSuperconductors),
+				fuller,
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20), // lower route ID
+				newRoute(3, 2, 4, water, 20),
+			},
+		}
+		f := Forecast(cp, t0.Add(35*time.Minute))
+		assert.Empty(t, f.Pins[3].Contents)
+		assert.Equal(t, map[int64]int64{typeWater: 40}, f.Pins[4].Contents)
+	})
+}
