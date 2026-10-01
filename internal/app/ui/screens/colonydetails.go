@@ -70,11 +70,33 @@ type colonyDetails struct {
 	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
 	selectType2   *kxwidget.FilterChipSelect
+	showHelp      *xwidget.IconButton
 	signalKey     string
 	sortChip      *kxwidget.SortChip
 	status        *xwidget.RichText
 	u             baseUI
 }
+
+var colonyDetailsHelpText = fmt.Sprintf(`Status: The estimated current status of the colony and when it will stop working.
+%s
+
+Installations: Each installation shows its estimated current state. The ring around the icon is green when working, yellow when idle, red when it needs attention and gray for storage.
+
+Extractor: The resource being extracted, the time left until the program ends and the date when it ends.
+
+Processors: The product being produced and whether the processor is producing or idle, e.g. because it is waiting for inputs.
+
+Storage Facility, Launchpad, Command Center: The largest contents, how full it is in percent and the used and total capacity. The Command Center also shows its upgrade level.
+
+Problems:
+• Expired: The extractor program has ended.
+• Inactive: The extractor is not running.
+• Not Setup: The extractor has no program or the processor has no schematic.
+• Input Not Routed: An input of the processor has no route to it.
+• Output Not Routed: The output has no route to another installation.
+• Storage Full: The storage can not take any more incoming products.
+
+%s`, colonyStatusesHelpText, colonyEstimateHelpText("Status and contents"))
 
 // showColonyDetailsWindow shows the details of a colony in a window.
 func showColonyDetailsWindow(u baseUI, r colonyRow) {
@@ -202,6 +224,11 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		a.filterRowsAsync()
 	})
 
+	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(colonyDetailsHelpText, a.u.IsMobile(), a.showHelp)
+	})
+	a.showHelp.SetToolTip("Show explanation")
+
 	// signals
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
@@ -256,7 +283,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 			filter,
 		),
-		a.footer,
+		container.NewBorder(nil, nil, nil, a.showHelp, a.footer),
 		nil,
 		nil,
 		a.installations,
@@ -330,7 +357,7 @@ func (a *colonyDetails) filterRowsAsync() {
 			return r.name
 		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
-		footer := fmt.Sprintf("Showing %d / %d installations • Status and contents are estimates", len(rows), totalRows)
+		footer := fmt.Sprintf("Showing %d / %d installations", len(rows), totalRows)
 
 		fyne.Do(func() {
 			if !isLatest() {
