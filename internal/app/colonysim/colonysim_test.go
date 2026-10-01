@@ -195,6 +195,9 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 		assert.Equal(t, app.PinProducing, f.Pins[2].Status)
 		assert.Equal(t, map[int64]int64{typeWater: 20}, f.Pins[3].Contents)
 		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 3000}, f.Pins[2].Contents) // buffer for next cycle
+		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 3000}, f.Pins[2].Demands)
+		assert.Equal(t, int64(20), f.Pins[2].OutputQuantity)
+		assert.Equal(t, int64(typeWater), f.Pins[2].OutputTypeID)
 		assert.Empty(t, f.Pins[1].Contents)
 		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.WorkEndsAt)
 	})

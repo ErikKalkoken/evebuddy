@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/colonysim"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/evesde"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
@@ -174,6 +175,15 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 					if err := s.st.DeletePlanetRoutes(ctx, characterPlanetID); err != nil {
 						return err
 					}
+					var recipeTypeIDs set.Set[int64] // of all schematics, so their names and volumes are known
+					addRecipeTypes := func(schematicID int64) {
+						if x, ok := evesde.PlanetSchematicByID(schematicID); ok {
+							recipeTypeIDs.Add(x.OutputTypeID)
+							for _, it := range x.Inputs {
+								recipeTypeIDs.Add(it.TypeID)
+							}
+						}
+					}
 					for _, pin := range planet.Pins {
 						et, err := s.eus.GetOrCreateTypeESI(ctx, pin.TypeId)
 						if err != nil {
@@ -218,6 +228,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 								return err
 							}
 							arg.FactorySchematicID = optional.New(es.ID)
+							addRecipeTypes(es.ID)
 						}
 						if x := pin.SchematicId; x != nil {
 							es, err := s.eus.GetOrCreateSchematicESI(ctx, *x)
@@ -225,10 +236,14 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 								return err
 							}
 							arg.SchematicID = optional.New(es.ID)
+							addRecipeTypes(es.ID)
 						}
 						if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
 							return err
 						}
+					}
+					if err := s.eus.AddMissingTypes(ctx, recipeTypeIDs); err != nil {
+						return err
 					}
 					for _, r := range planet.Routes {
 						et, err := s.eus.GetOrCreateTypeESI(ctx, r.ContentTypeId)

@@ -39,13 +39,13 @@ type colonyDetailsRow struct {
 	info              string
 	name              string
 	output            string
+	pinID             int64
 	pinStatus         app.PinStatus
 	searchTarget      string
 	status            []widget.RichTextSegment
 	symbolIconColor   fyne.ThemeColorName
 	symbolIconName    eveicon.Name
 	symbolStatusColor fyne.ThemeColorName
-	typeID            int64
 }
 
 // needsAttention reports whether the pin has a problem, i.e. its ring is red.
@@ -222,7 +222,12 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		if id >= len(a.rowsFiltered) {
 			return
 		}
-		a.u.InfoViewer().ShowType(a.rowsFiltered[id].typeID, 0)
+		r := a.rowsFiltered[id]
+		title := r.name
+		if a.colony != nil {
+			title = fmt.Sprintf("%s on %s", r.name, a.colony.EvePlanet.Name)
+		}
+		showColonyPinWindow(a.u, a.characterID.Load(), a.planetID.Load(), r.pinID, title, a.owner.Text)
 	}
 	a.installations = list
 
@@ -502,6 +507,16 @@ var installationShortNames = map[string]colonyPinType{
 	"Storage Facility":           pinTypeStorage,
 }
 
+// colonyPinTypeOf returns the short type of a pin, e.g. "Extractor".
+func colonyPinTypeOf(cp *app.CharacterPlanet, p *app.PlanetPin) colonyPinType {
+	n, _ := strings.CutPrefix(p.Type.Name, cp.EvePlanet.TypeDisplay()+" ")
+	pinType, ok := installationShortNames[n]
+	if !ok {
+		return pinTypeUnknown
+	}
+	return pinType
+}
+
 // makeRows returns the colony status and the rows for all pins of a colony forecasted at now.
 func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widget.RichTextSegment, []colonyDetailsRow) {
 	f := a.u.Character().ForecastPlanet(cp, now)
@@ -518,12 +533,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 	typeNames := colonyTypeNames(cp)
 	var rows []colonyDetailsRow
 	for _, p := range cp.Pins {
-		prefix := cp.EvePlanet.TypeDisplay() + " "
-		n, _ := strings.CutPrefix(p.Type.Name, prefix)
-		pinType, ok := installationShortNames[n]
-		if !ok {
-			pinType = pinTypeUnknown
-		}
+		pinType := colonyPinTypeOf(cp, p)
 
 		name := string(pinType)
 		searchTargets := []string{strings.ToLower(name)}
@@ -627,12 +637,12 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			info:              info,
 			name:              name,
 			output:            output,
+			pinID:             p.ID,
 			pinStatus:         pf.Status,
 			status:            status,
 			symbolIconColor:   iconColor,
 			symbolIconName:    iconName,
 			symbolStatusColor: pinSymbolStatusColor(pf.Status),
-			typeID:            p.Type.ID,
 			searchTarget:      strings.Join(searchTargets, "~"),
 		})
 	}

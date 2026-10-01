@@ -149,6 +149,11 @@ func (s *Simulation) Forecast() *app.ColonyForecast {
 			pf.Capacity = optional.New(p.capacity)
 			pf.CapacityUsed = s.usedVolume(p)
 		}
+		if p.schematic != nil {
+			pf.Demands = maps.Clone(p.demands)
+			pf.OutputQuantity = p.schematic.OutputQuantity
+			pf.OutputTypeID = p.schematic.OutputTypeID
+		}
 		f.Pins[id] = pf
 	}
 	return f

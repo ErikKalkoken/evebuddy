@@ -38,12 +38,15 @@ func (f ColonyForecast) ProblemStatuses() []PinStatus {
 
 // PinForecast is the estimated state of a planet pin.
 type PinForecast struct {
-	Capacity     optional.Optional[float64] // m3, only for storage pins
-	CapacityUsed float64                    // m3
-	Contents     map[int64]int64            // amount by type ID
-	IsActive     bool
-	LastRunTime  optional.Optional[time.Time]
-	Status       PinStatus
+	Capacity       optional.Optional[float64] // m3, only for storage pins
+	CapacityUsed   float64                    // m3
+	Contents       map[int64]int64            // amount by type ID
+	Demands        map[int64]int64            // input quantity per cycle by type ID, only for factories
+	IsActive       bool
+	LastRunTime    optional.Optional[time.Time]
+	OutputQuantity int64 // per cycle, only for factories
+	OutputTypeID   int64 // only for factories
+	Status         PinStatus
 }
 
 // ColonyStatus is the overall status of a PI colony.

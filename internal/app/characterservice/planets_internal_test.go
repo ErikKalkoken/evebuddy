@@ -231,6 +231,70 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			xassert.Equal(t, 1000000017029, r.SourcePinID)
 		}
 	})
+	t.Run("should load missing types of schematics", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40023691})
+		pinType := factory.CreateEveType()
+		factory.CreateEveSchematic(storage.CreateEveSchematicParams{ID: 121}) // Water
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3645})          // output already known
+		group := factory.CreateEveGroup()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"last_update":     "2016-11-28T16:42:51Z",
+					"num_pins":        1,
+					"owner_id":        c.ID,
+					"planet_id":       40023691,
+					"planet_type":     "plasma",
+					"solar_system_id": 30000379,
+					"upgrade_level":   3,
+				},
+			}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets/40023691", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"links": []map[string]any{},
+				"pins": []map[string]any{
+					{
+						"latitude":     1.7196671962738037,
+						"longitude":    4.1244120597839355,
+						"pin_id":       1000000017021,
+						"schematic_id": 121,
+						"type_id":      pinType.ID,
+					},
+				},
+				"routes": []map[string]any{},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/universe/types/2268",
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "",
+				"group_id":    group.ID,
+				"name":        "Aqueous Liquids",
+				"published":   true,
+				"type_id":     2268,
+			}),
+		)
+		// when
+		_, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterPlanets,
+		})
+		// then
+		require.NoError(t, err)
+		et, err := st.GetEveType(ctx, 2268)
+		require.NoError(t, err)
+		xassert.Equal(t, "Aqueous Liquids", et.Name)
+	})
 	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
