@@ -39,6 +39,7 @@ type colonyDetailsRow struct {
 	info              string
 	name              string
 	output            string
+	pinStatus         app.PinStatus
 	searchTarget      string
 	status            []widget.RichTextSegment
 	symbolIconColor   fyne.ThemeColorName
@@ -47,12 +48,24 @@ type colonyDetailsRow struct {
 	typeID            int64
 }
 
+// needsAttention reports whether the pin has a problem, i.e. its ring is red.
+func (r colonyDetailsRow) needsAttention() bool {
+	return r.pinStatus.Color() == theme.ColorNameError
+}
+
+const (
+	colonyDetailsFilterAttention = "Needs attention"
+	colonyDetailsFilterStatus    = "Status"
+	colonyDetailsFilterType      = "Type"
+)
+
 type colonyDetails struct {
 	widget.BaseWidget
 
 	characterID   atomic.Int64
 	colony        *app.CharacterPlanet
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
+	filterChip    *xwidget.FilterChipCompact
 	filterRun     latestRun
 	footer        *widget.Label
 	forecastRun   latestRun
@@ -69,7 +82,6 @@ type colonyDetails struct {
 	rowsRun       latestRun
 	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
-	selectType2   *kxwidget.FilterChipSelect
 	showHelp      *xwidget.IconButton
 	signalKey     string
 	sortChip      *kxwidget.SortChip
@@ -213,7 +225,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.installations = list
 
 	// filters
-	a.selectType2 = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
+	a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 		a.filterRowsAsync()
 	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -272,8 +284,8 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	filter := container.NewBorder(
 		nil,
 		nil,
-		container.NewHBox(a.selectType2, a.sortChip),
 		nil,
+		container.NewHBox(a.filterChip, a.sortChip),
 		a.searchEntry,
 	)
 
@@ -337,14 +349,24 @@ func (a *colonyDetails) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	type2 := a.selectType2.Selected
+	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	runAsync(func() {
-		if type2 != "" {
+		if filter[colonyDetailsFilterAttention] != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
-				return r.name != type2
+				return !r.needsAttention()
+			})
+		}
+		if x := filter[colonyDetailsFilterType]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
+				return r.name != x
+			})
+		}
+		if x := filter[colonyDetailsFilterStatus]; x != "" {
+			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
+				return r.pinStatus.Display() != x
 			})
 		}
 		if len(search) > 1 {
@@ -356,6 +378,21 @@ func (a *colonyDetails) filterRowsAsync() {
 		typeOptions := xslices.Map(rows, func(r colonyDetailsRow) string {
 			return r.name
 		})
+		var statusOptions []string
+		for _, r := range rows {
+			switch r.pinStatus {
+			case app.PinStatic, app.PinStatusUndefined:
+				// not shown to users
+			default:
+				statusOptions = append(statusOptions, r.pinStatus.Display())
+			}
+		}
+		options := []xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle(colonyDetailsFilterAttention),
+			xwidget.NewFilterOptionSeparator(),
+			xwidget.NewFilterOptionMultiChoice(colonyDetailsFilterType, typeOptions),
+			xwidget.NewFilterOptionMultiChoice(colonyDetailsFilterStatus, statusOptions),
+		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		footer := fmt.Sprintf("Showing %d / %d installations", len(rows), totalRows)
 
@@ -367,7 +404,7 @@ func (a *colonyDetails) filterRowsAsync() {
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
 			a.rowsFiltered = rows
-			a.selectType2.SetOptions(typeOptions)
+			a.filterChip.SetOptions(options...)
 			a.installations.Refresh()
 
 		})
@@ -588,6 +625,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			info:              info,
 			name:              name,
 			output:            output,
+			pinStatus:         pf.Status,
 			status:            status,
 			symbolIconColor:   iconColor,
 			symbolIconName:    iconName,
