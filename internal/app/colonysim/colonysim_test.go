@@ -438,3 +438,157 @@ func TestSimulation_FactoryChain(t *testing.T) {
 		assert.Equal(t, map[int64]int64{typeWater: 40}, f.Pins[4].Contents)
 	})
 }
+
+func TestSimulation_OutputToSeveralStorages(t *testing.T) {
+	newPlanet := func(contents2, contents3 int64) *app.CharacterPlanet {
+		newContents := func(amount int64) []*app.PlanetPinContent {
+			if amount == 0 {
+				return nil
+			}
+			return []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: amount}}
+		}
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+				newStorage(2, app.EveGroupStorageFacilities, 12_000, newContents(contents2)...),
+				newStorage(3, app.EveGroupStorageFacilities, 12_000, newContents(contents3)...),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 10_000),
+				newRoute(2, 1, 3, aqueousLiquids, 10_000),
+			},
+		}
+	}
+	t.Run("should split output evenly with the remainder going to the lower route ID", func(t *testing.T) {
+		f := Forecast(newPlanet(0, 0), t0.Add(35*time.Minute))
+		assert.Equal(t, int64(1234), f.Pins[2].Contents[typeAqueousLiquids]) // 2467 / 2 rounded up
+		assert.Equal(t, int64(1233), f.Pins[3].Contents[typeAqueousLiquids])
+	})
+	t.Run("should serve the storage with less free space first", func(t *testing.T) {
+		f := Forecast(newPlanet(0, 1000), t0.Add(35*time.Minute))
+		assert.Equal(t, int64(1233), f.Pins[2].Contents[typeAqueousLiquids])
+		assert.Equal(t, int64(1000+1234), f.Pins[3].Contents[typeAqueousLiquids])
+	})
+}
+
+func TestSimulation_FactoryBufferAtSnapshot(t *testing.T) {
+	newPlanet := func(stored int64) *app.CharacterPlanet {
+		f := newFactory(2, schematicWater)
+		f.Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 1500}}
+		var contents []*app.PlanetPinContent
+		if stored > 0 {
+			contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
+		}
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
+				f,
+				newStorage(3, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20),
+			},
+		}
+	}
+	t.Run("should top up a partial buffer from storage and start", func(t *testing.T) {
+		f := Forecast(newPlanet(1500), t0.Add(35*time.Minute))
+		assert.Equal(t, map[int64]int64{typeWater: 20}, f.Pins[3].Contents)
+		assert.Empty(t, f.Pins[1].Contents)
+	})
+	t.Run("should stay idle and keep a partial buffer without more inputs", func(t *testing.T) {
+		cp := newPlanet(0)
+		f := Forecast(cp, t0.Add(3*time.Hour))
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
+		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 1500}, f.Pins[2].Contents)
+		assert.Empty(t, f.Pins[3].Contents)
+		assert.True(t, Forecast(cp, t0).WorkEndsAt.IsEmpty())
+	})
+}
+
+func TestSimulation_ExtractorToFactory(t *testing.T) {
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+			newFactory(2, schematicWater),
+			newStorage(3, app.EveGroupSpaceports, 10_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 3, water, 20),
+		},
+	}
+	t.Run("should fill the factory directly and drop what does not fit", func(t *testing.T) {
+		// 2467 + 533 of 2086 fill the buffer at t0+60min, the rest has nowhere to go
+		f := Forecast(cp, t0.Add(65*time.Minute))
+		assert.Equal(t, app.PinProducing, f.Pins[2].Status)
+		assert.Empty(t, f.Pins[2].Contents)
+		assert.Empty(t, f.Pins[3].Contents)
+	})
+	t.Run("should deliver the first batch", func(t *testing.T) {
+		f := Forecast(cp, t0.Add(95*time.Minute))
+		assert.Equal(t, map[int64]int64{typeWater: 20}, f.Pins[3].Contents)
+	})
+}
+
+func TestSimulation_TypeWithoutVolume(t *testing.T) {
+	weightless := newType(9998, 1032, 0, 0)
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, weightless, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+			newStorage(2, app.EveGroupCommandCenters, 0), // 500 m3
+		},
+		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, weightless, 10_000)},
+	}
+	f := Forecast(cp, t0.Add(5*time.Hour))
+	assert.Equal(t, map[int64]int64{9998: 18_002}, f.Pins[2].Contents, "all 8 cycles stored")
+	assert.Equal(t, app.PinStatic, f.Pins[2].Status)
+}
+
+func TestSimulation_FactoryBeyondHorizon(t *testing.T) {
+	// enough inputs for 1500 cycles of 30 minutes, longer than the horizon
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newStorage(1, app.EveGroupStorageFacilities, 50_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 4_500_000}),
+			newFactory(2, schematicWater),
+			newStorage(3, app.EveGroupSpaceports, 20_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 3, water, 20),
+		},
+	}
+	f := Forecast(cp, t0)
+	assert.True(t, f.WorksBeyondHorizon)
+	assert.True(t, f.WorkEndsAt.IsEmpty())
+}
+
+func TestSimulation_CloneWithFactory(t *testing.T) {
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
+			newFactory(2, schematicWater),
+			newStorage(3, app.EveGroupSpaceports, 10_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 3, water, 20),
+		},
+	}
+	s := New(cp)
+	s.RunUntil(t0.Add(45 * time.Minute))
+	s2 := s.Clone()
+	s2.RunUntil(t0.Add(3 * time.Hour))
+	assert.Equal(t, map[int64]int64{typeWater: 20}, s.Forecast().Pins[3].Contents)
+	assert.Equal(t, map[int64]int64{typeAqueousLiquids: 3000}, s.Forecast().Pins[2].Contents)
+	assert.Equal(t, map[int64]int64{typeWater: 60}, s2.Forecast().Pins[3].Contents)
+	// the original still runs the same after its clone ran
+	s.RunUntil(t0.Add(3 * time.Hour))
+	assert.Equal(t, s2.Forecast().Pins[3].Contents, s.Forecast().Pins[3].Contents)
+}
