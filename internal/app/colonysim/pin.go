@@ -111,6 +111,8 @@ func newPin(pp *app.PlanetPin, lastUpdate time.Time) (*pin, bool) {
 		}
 		p.lastCycleStartTime = pp.LastCycleStart.ValueOrZero()
 		if p.schematic != nil {
+			// Known limitation, same as RIFT: ESI can report a last cycle start for a factory
+			// that never ran (e.g. right after setting its schematic), which yields one phantom batch.
 			p.isActive = lastUpdate.Sub(p.lastCycleStartTime) < p.schematic.CycleTime
 		}
 		// ensures the factory is evaluated at least once

@@ -108,7 +108,9 @@ Problems:
 • Output Not Routed: The output has no route to another installation.
 • Storage Full: The storage can not take any more incoming products.
 
-%s`, colonyStatusesHelpText, colonyEstimateHelpText("Status and contents"))
+%s
+
+Processors which were set up shortly before the colony was last updated in game may show one batch of products, even if they never received any inputs.`, colonyStatusesHelpText, colonyEstimateHelpText("Status and contents"))
 
 // showColonyDetailsWindow shows the details of a colony in a window.
 func showColonyDetailsWindow(u baseUI, r colonyRow) {
