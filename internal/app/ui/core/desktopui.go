@@ -534,11 +534,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	u.snackbar.BottomMargin = statusBar.MinSize().Height
 
+	// Without the tray, closing the main window quits the app.
+	u.MainWindow().SetOnClosed(u.signals.BeginShutdown)
+
 	// system tray menu
 	if u.settings.SysTrayEnabled() {
 		name := ui.Name()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
+		quitItem := fyne.NewMenuItem("Quit", u.quit) // replaces Fyne's default, which skips u.quit
+		quitItem.IsQuit = true
 		m := fyne.NewMenu(
 			"MyApp",
 			item,
@@ -546,6 +551,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
 				u.MainWindow().Show()
 			}),
+			fyne.NewMenuItemSeparator(),
+			quitItem,
 		)
 		deskApp.SetSystemTrayMenu(m)
 		deskApp.SetSystemTrayWindow(u.MainWindow())
@@ -752,6 +759,12 @@ func formatISKValueShort(value optional.Optional[float64]) string {
 	return ihumanize.NumberF(v, 1)
 }
 
+// quit stops signals before Fyne closes its queue, so listeners can't call fyne.Do into a closed channel.
+func (u *DesktopUI) quit() {
+	u.signals.BeginShutdown()
+	u.app.Quit()
+}
+
 func (u *DesktopUI) saveAppState() {
 	if u.MainWindow() == nil || u.app == nil {
 		slog.Warn("Failed to save app state")
@@ -885,7 +898,7 @@ func (u *DesktopUI) defineShortcuts() {
 				Modifier: fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
-				u.app.Quit()
+				u.quit()
 			}},
 	}
 	for name, def := range m {
