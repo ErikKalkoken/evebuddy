@@ -652,6 +652,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
+	isContainer := a.currentFolder.IsContainer()
 	runAsync(func() {
 		// filter
 		if x := filter[communicationsFilterStatus]; x != "" {
@@ -726,32 +727,33 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 			ihumanize.Comma(len(rows)),
 			ihumanize.Comma(totalRows),
 		)
+		options := []xwidget.FilterOption{
+			xwidget.NewFilterOptionMultiChoice(
+				communicationsFilterStatus,
+				unreadOptions,
+			),
+		}
+		if !a.co.forCharacter.Load() {
+			options = append(options, xwidget.NewFilterOptionMultiChoice(
+				communicationsFilterCharacter,
+				characterOptions,
+			))
+		}
+		if isContainer {
+			options = append(options, xwidget.NewFilterOptionMultiChoice(
+				communicationsFilterGroup,
+				groupOptions,
+			))
+		}
+		options = append(options, xwidget.NewFilterOptionMultiChoice(
+			communicationsFilterRecipient,
+			recipientOptions,
+		))
+
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			options := []xwidget.FilterOption{
-				xwidget.NewFilterOptionMultiChoice(
-					communicationsFilterStatus,
-					unreadOptions,
-				),
-			}
-			if !a.co.forCharacter.Load() {
-				options = append(options, xwidget.NewFilterOptionMultiChoice(
-					communicationsFilterCharacter,
-					characterOptions,
-				))
-			}
-			if a.currentFolder.IsContainer() {
-				options = append(options, xwidget.NewFilterOptionMultiChoice(
-					communicationsFilterGroup,
-					groupOptions,
-				))
-			}
-			options = append(options, xwidget.NewFilterOptionMultiChoice(
-				communicationsFilterRecipient,
-				recipientOptions,
-			))
 			a.footerLabel.Text = footer
 			a.footerLabel.Importance = widget.MediumImportance
 			a.footerLabel.Refresh()

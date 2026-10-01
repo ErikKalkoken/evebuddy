@@ -302,6 +302,32 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 		assert.Empty(t, mp.filterChip.Selected()[mailsFilterFrom])
 		assert.Len(t, mp.rowsFiltered, 3)
 	})
+	t.Run("changing folder with active filter does not filter stale rows", func(t *testing.T) {
+		reset(t)
+		var sent *mailFolderNode
+		a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+			if n.Type == folderNodeSent {
+				sent = n
+			}
+			return true
+		})
+		require.NotNil(t, sent)
+		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
+		require.Equal(t, []string{"Bravo"}, subjects())
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+
+		mp.setCurrentFolder(t.Context(), sent)
+
+		assert.Len(t, pending, 1) // only the run for the newly loaded rows
+		for _, f := range pending {
+			f()
+		}
+		assert.Empty(t, mp.rowsFiltered)
+		assert.Empty(t, mp.filterChip.Selected()[mailsFilterFrom])
+	})
 	t.Run("keeps opened mail under unread filter after it was read", func(t *testing.T) {
 		reset(t)
 		mp.filterChip.SetSelected(map[string]string{mailsFilterStatus: mailsFilterStatusUnread})

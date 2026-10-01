@@ -29,6 +29,8 @@ const (
 	optionKindToggle
 )
 
+// FilterOption is an option for [FilterChipCompact].
+// Options can be created on any goroutine.
 type FilterOption struct {
 	kind    filterOptionKind
 	name    string
@@ -48,10 +50,15 @@ func NewFilterOptionToogle(name string) FilterOption {
 // Choices are sorted alphabetically and deduplicated.
 // Empty choice strings are ignored.
 func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
+	choices2 := xslices.Deduplicate(choices) // also copies
+	choices2 = slices.DeleteFunc(choices2, func(x string) bool {
+		return x == ""
+	})
+	slices.Sort(choices2)
 	return FilterOption{
 		kind:    optionKindMultiChoice,
 		name:    name,
-		choices: choices,
+		choices: choices2,
 	}
 }
 
@@ -65,7 +72,8 @@ func NewFilterOptionSeparator() FilterOption {
 type FilterChipCompact struct {
 	widget.BaseWidget
 
-	// OnChanged is a callback that is called when the selection state changed.
+	// OnChanged is a callback that is called when the selection changed,
+	// either by the user or through SetSelected or Reset.
 	// It passes the current selection.
 	OnChanged func(selected map[string]string)
 
@@ -103,17 +111,15 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 		resetText:            "Clear",
 		selected:             make(map[string]string),
 	}
-	w.options = removeDuplicateOptions(options)
+	w.options = normalizeOptions(options)
+	w.updateSelectedFromOptions()
 	w.icon = widget.NewIcon(w.iconResource)
-	w.background.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
 	w.clearItem = fyne.NewMenuItem(w.resetText, func() {
 		w.Reset()
 	})
 	w.clearItem.Icon = theme.DeleteIcon()
 	w.ExtendBaseWidget(w)
-	if len(w.options) > 0 {
-		w.setMenu()
-	}
+	w.setMenu()
 	return w
 }
 
@@ -135,6 +141,9 @@ func (w *FilterChipCompact) updateOn() {
 
 // Reset resets the selection.
 func (w *FilterChipCompact) Reset() {
+	if !w.isOn {
+		return
+	}
 	for name := range w.selected {
 		w.selected[name] = ""
 	}
@@ -155,18 +164,30 @@ func (w *FilterChipCompact) Selected() map[string]string {
 // SetOptions sets new filter options.
 //
 // The order of filter options is preserved.
+// A selected choice is kept even when the option's new choices no longer contain it.
+// Does not call OnChanged, even when a selected option is removed.
 func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
-	w.options = removeDuplicateOptions(options)
+	w.options = normalizeOptions(options)
 	w.updateSelectedFromOptions()
 	w.updateOn()
 	w.setMenu()
+	w.Refresh()
 }
 
-func removeDuplicateOptions(options []FilterOption) []FilterOption {
+// normalizeOptions removes undefined and duplicate options
+// and separators which are leading, trailing or consecutive.
+func normalizeOptions(options []FilterOption) []FilterOption {
 	var options2 []FilterOption
 	names := make(map[string]bool)
 	for _, o := range options {
+		if o.kind == optionKindUndefined {
+			continue // e.g. zero-value FilterOption{}
+		}
 		if o.kind == optionKindSeparator {
+			if len(options2) == 0 || options2[len(options2)-1].kind == optionKindSeparator {
+				continue
+			}
+			options2 = append(options2, o)
 			continue
 		}
 		if names[o.name] {
@@ -174,6 +195,9 @@ func removeDuplicateOptions(options []FilterOption) []FilterOption {
 		}
 		names[o.name] = true
 		options2 = append(options2, o)
+	}
+	if n := len(options2); n > 0 && options2[n-1].kind == optionKindSeparator {
+		options2 = options2[:n-1]
 	}
 	return options2
 }
@@ -203,34 +227,37 @@ func (w *FilterChipCompact) updateSelectedFromOptions() {
 //
 // Invalid option names are ignored.
 func (w *FilterChipCompact) SetSelected(selected map[string]string) {
-	w.selected = sanitizeSelected(w.options, selected)
-	w.updateOn()
+	selected2 := sanitizeSelected(w.options, selected)
+	if maps.Equal(w.selected, selected2) {
+		return
+	}
+	w.selected = selected2
 	w.setMenu()
-	w.Refresh()
+	w.processChanged()
 }
 
+// sanitizeSelected returns a new selection with an entry for every option.
+// Unknown options are dropped and invalid choices are reset.
 func sanitizeSelected(options []FilterOption, selected map[string]string) map[string]string {
-	optionsMap := make(map[string]FilterOption)
+	selected2 := make(map[string]string)
 	for _, o := range options {
-		if o.kind != optionKindSeparator {
-			optionsMap[o.name] = o
-		}
-	}
-	selected2 := maps.Clone(selected)
-	for name, choice := range selected2 {
-		o, ok := optionsMap[name]
-		if !ok {
-			delete(selected2, name)
+		if o.kind == optionKindSeparator {
 			continue
 		}
+		choice := selected[o.name]
 		if !slices.Contains(o.choices, choice) {
-			selected2[name] = ""
+			choice = ""
 		}
+		selected2[o.name] = choice
 	}
 	return selected2
 }
 
 func (w *FilterChipCompact) setMenu() {
+	if len(w.options) == 0 {
+		w.menu.Items = nil
+		return
+	}
 	var items1 []*fyne.MenuItem
 
 	for _, o := range w.options {
@@ -257,16 +284,11 @@ func (w *FilterChipCompact) setMenu() {
 					it1.Icon = w.blankResource
 				}
 				w.processChanged()
-				w.menu.Refresh()
 			}
 
 		case optionKindMultiChoice:
 			var items2 []*fyne.MenuItem
-			choices := xslices.Deduplicate(o.choices)
-			choices = slices.DeleteFunc(choices, func(x string) bool {
-				return x == ""
-			})
-			slices.Sort(choices)
+			choices := o.choices
 
 			makeLabel := func(name string) string {
 				selected := w.selected[name]
@@ -306,7 +328,6 @@ func (w *FilterChipCompact) setMenu() {
 							}
 						}
 						w.processChanged()
-						w.menu.Refresh()
 					}
 					items2 = append(items2, it2)
 				}
@@ -329,7 +350,6 @@ func (w *FilterChipCompact) setMenu() {
 	items1 = append(items1, w.clearItem)
 
 	w.menu.Items = items1
-	w.menu.Refresh()
 }
 
 func (w *FilterChipCompact) processChanged() {
@@ -343,7 +363,7 @@ func (w *FilterChipCompact) processChanged() {
 
 func (w *FilterChipCompact) CreateRenderer() fyne.WidgetRenderer {
 	w.updateStyling()
-	p := theme.Padding()
+	p := w.Theme().Size(theme.SizeNamePadding)
 	return widget.NewSimpleRenderer(
 		container.NewStack(
 			w.background,
@@ -356,7 +376,6 @@ func (w *FilterChipCompact) Refresh() {
 	w.updateStyling()
 	w.background.Refresh()
 	w.icon.Refresh()
-	w.menu.Refresh()
 	w.BaseWidget.Refresh()
 }
 
@@ -380,16 +399,17 @@ func (w *FilterChipCompact) updateStyling() {
 		} else {
 			w.icon.SetResource(w.iconResource)
 		}
-		w.background.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+		w.background.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 		w.background.FillColor = color.Transparent
 	}
 
-	if w.focused {
+	if w.focused && !w.disabled {
 		w.background.StrokeColor = th.Color(theme.ColorNameFocus, v)
-		w.background.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
+		w.background.StrokeWidth = th.Size(theme.SizeNameInputBorder) * 2
 	} else {
-		w.background.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
+		w.background.StrokeWidth = th.Size(theme.SizeNameInputBorder)
 	}
+	w.background.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 }
 
 func (w *FilterChipCompact) Disabled() bool {
@@ -420,35 +440,20 @@ func (w *FilterChipCompact) Tapped(pe *fyne.PointEvent) {
 }
 
 func (w *FilterChipCompact) Cursor() desktop.Cursor {
-	if w.hovered {
+	if w.hovered && !w.disabled {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
 }
 
 func (w *FilterChipCompact) MouseIn(me *desktop.MouseEvent) {
-	w.MouseMoved(me)
+	w.hovered = true
 }
 
-func (w *FilterChipCompact) MouseMoved(me *desktop.MouseEvent) {
-	if w.disabled {
-		return
-	}
-	oldHovered := w.hovered
-	size := w.Size()
-	w.hovered = size.IsZero() ||
-		(me.Position.X <= size.Width && me.Position.Y <= size.Height)
-
-	if oldHovered != w.hovered {
-		w.Refresh()
-	}
-}
+func (w *FilterChipCompact) MouseMoved(me *desktop.MouseEvent) {}
 
 func (w *FilterChipCompact) MouseOut() {
-	if w.hovered {
-		w.hovered = false
-		w.Refresh()
-	}
+	w.hovered = false
 }
 
 // FocusGained is called when the Check has been given focus.
@@ -480,5 +485,8 @@ func (w *FilterChipCompact) TypedRune(r rune) {
 func (w *FilterChipCompact) TypedKey(key *fyne.KeyEvent) {}
 
 func (w *FilterChipCompact) showMenu() {
+	if len(w.options) == 0 {
+		return
+	}
 	ShowPopUpMenuBelowLeading(w, w.menu)
 }

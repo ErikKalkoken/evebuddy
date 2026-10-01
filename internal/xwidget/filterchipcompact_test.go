@@ -46,6 +46,75 @@ func TestFilterChipCompact_CanRender(t *testing.T) {
 
 }
 
+func TestFilterChipCompact_New(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should report all options as unselected", func(t *testing.T) {
+		// when
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+			xwidget.NewFilterOptionSeparator(),
+			xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one"}),
+		}, nil)
+
+		// then
+		assert.Equal(t, map[string]string{"Alpha": "", "Bravo": ""}, f.Selected())
+	})
+}
+
+func TestFilterChipCompact_Tap(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should show menu when there are options", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+		}, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+
+		test.Tap(f)
+
+		assert.NotNil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("should not show menu when created without options", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact(nil, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+
+		test.Tap(f)
+
+		assert.Nil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("should not show menu after options were removed", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+		}, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+		f.SetOptions()
+
+		test.Tap(f)
+
+		assert.Nil(t, w.Canvas().Overlays().Top())
+	})
+}
+
+func TestFilterChipCompact_UndefinedOption(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("constructor ignores zero-value option", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+				xwidget.NewFilterOptionToogle("Alpha"),
+				{},
+			}, nil)
+		})
+	})
+	t.Run("SetOptions ignores zero-value option", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact(nil, nil)
+		assert.NotPanics(t, func() {
+			f.SetOptions(xwidget.NewFilterOptionToogle("Alpha"), xwidget.FilterOption{})
+		})
+	})
+}
+
 func TestFilterChipCompact_SetOptions(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("can set options", func(t *testing.T) {
@@ -190,6 +259,74 @@ func TestFilterChipCompact_SetSelected(t *testing.T) {
 	}
 }
 
+func TestFilterChipCompact_OnChanged(t *testing.T) {
+	test.NewTempApp(t)
+	newChip := func() (*xwidget.FilterChipCompact, *int) {
+		var calls int
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+			xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one", "two"}),
+		}, func(map[string]string) {
+			calls++
+		})
+		return f, &calls
+	}
+	t.Run("SetSelected fires when selection changes", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("SetSelected does not fire when selection is unchanged", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("SetSelected does not fire when sanitized selection is unchanged", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "invalid", "Charlie": "x"})
+		assert.Equal(t, 0, *calls)
+	})
+	t.Run("Reset fires when something was selected", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		*calls = 0
+		f.Reset()
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("Reset does not fire when nothing was selected", func(t *testing.T) {
+		f, calls := newChip()
+		f.Reset()
+		assert.Equal(t, 0, *calls)
+	})
+	t.Run("SetOptions does not fire when it drops a selected option", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		*calls = 0
+		f.SetOptions(xwidget.NewFilterOptionToogle("Bravo"))
+		assert.Equal(t, 0, *calls)
+	})
+}
+
+func TestFilterChipCompact_SetSelectedNil(t *testing.T) {
+	test.NewTempApp(t)
+	// given
+	f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+		xwidget.NewFilterOptionToogle("Alpha"),
+	}, nil)
+
+	// when
+	f.SetSelected(nil)
+	f.SetOptions(
+		xwidget.NewFilterOptionToogle("Alpha"),
+		xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one"}),
+	)
+
+	// then
+	assert.Equal(t, map[string]string{"Alpha": "", "Bravo": ""}, f.Selected())
+	assert.False(t, f.IsOn())
+}
+
 func TestFilterChipCompact_Reset(t *testing.T) {
 	test.NewTempApp(t)
 	// given
@@ -209,9 +346,9 @@ func TestFilterChipCompact_Reset(t *testing.T) {
 			map[string]string{"Alpha": "", "Bravo": ""},
 		},
 		{
-			"emoty",
+			"empty",
 			map[string]string{},
-			map[string]string{},
+			map[string]string{"Alpha": "", "Bravo": ""},
 		},
 	}
 	for _, tc := range cases {
