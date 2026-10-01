@@ -116,6 +116,8 @@ func TestNormalizeOptions(t *testing.T) {
 		{"should collapse consecutive separators", []FilterOption{alpha, sep, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
 		{"should drop separator left over from removed duplicate", []FilterOption{alpha, sep, alpha}, []string{"Alpha"}},
 		{"should collapse separators around removed duplicate", []FilterOption{alpha, sep, alpha, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
+		{"should drop undefined options", []FilterOption{alpha, {}, bravo}, []string{"Alpha", "Bravo"}},
+		{"should not leave consecutive separators after dropping undefined option", []FilterOption{alpha, sep, {}, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
 		{"should return empty for separators only", []FilterOption{sep, sep}, []string{}},
 		{"should return empty for nil", nil, []string{}},
 	}

@@ -162,12 +162,15 @@ func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
 	w.setMenu()
 }
 
-// normalizeOptions removes duplicate options
+// normalizeOptions removes undefined and duplicate options
 // and separators which are leading, trailing or consecutive.
 func normalizeOptions(options []FilterOption) []FilterOption {
 	var options2 []FilterOption
 	names := make(map[string]bool)
 	for _, o := range options {
+		if o.kind == optionKindUndefined {
+			continue // e.g. zero-value FilterOption{}
+		}
 		if o.kind == optionKindSeparator {
 			if len(options2) == 0 || options2[len(options2)-1].kind == optionKindSeparator {
 				continue

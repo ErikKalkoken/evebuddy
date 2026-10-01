@@ -46,6 +46,24 @@ func TestFilterChipCompact_CanRender(t *testing.T) {
 
 }
 
+func TestFilterChipCompact_UndefinedOption(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("constructor ignores zero-value option", func(t *testing.T) {
+		assert.NotPanics(t, func() {
+			xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+				xwidget.NewFilterOptionToogle("Alpha"),
+				{},
+			}, nil)
+		})
+	})
+	t.Run("SetOptions ignores zero-value option", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact(nil, nil)
+		assert.NotPanics(t, func() {
+			f.SetOptions(xwidget.NewFilterOptionToogle("Alpha"), xwidget.FilterOption{})
+		})
+	})
+}
+
 func TestFilterChipCompact_SetOptions(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("can set options", func(t *testing.T) {
