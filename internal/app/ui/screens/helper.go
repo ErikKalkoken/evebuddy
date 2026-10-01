@@ -9,8 +9,13 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // runAsync runs f in a new goroutine.
@@ -65,4 +70,47 @@ func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, w
 		},
 		Window: w,
 	})
+}
+
+// showHelpPopUp shows a popUp with text as content
+// and it's position aligned to widget obj.
+func showHelpPopUp(text string, isMobile bool, obj fyne.CanvasObject) {
+	var pu *widget.PopUp
+	closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		pu.Hide()
+	})
+	title := widget.NewLabel("Help")
+	title.TextStyle.Bold = true
+	body := widget.NewLabel(text)
+	body.Wrapping = fyne.TextWrapWord
+
+	p := theme.Padding()
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(obj)
+	var spacerSize fyne.Size
+	if isMobile {
+		_, s := canvas.InteractiveArea()
+		spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
+	} else {
+		spacerSize = fyne.NewSize(300, 400)
+	}
+	spacer := xwidget.NewSpacer(spacerSize)
+	c := container.NewStack(spacer, container.NewBorder(
+		container.NewHBox(title, layout.NewSpacer(), closePopUp),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(container.NewPadded(body)),
+	))
+	pu = widget.NewPopUp(c, canvas)
+
+	if isMobile {
+		pos, s := canvas.InteractiveArea()
+		x := pos.X
+		y := pos.Y + s.Height/2
+		pu.ShowAtPosition(fyne.NewPos(x, y))
+	} else {
+		x := obj.MinSize().Width - pu.MinSize().Width
+		y := obj.MinSize().Height - pu.MinSize().Height + 2*p
+		pu.ShowAtRelativePosition(fyne.NewPos(x, y), obj)
+	}
 }

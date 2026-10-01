@@ -126,8 +126,42 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
+	showHelp          *xwidget.IconButton
 	sortChip          *kxwidget.SortChip
 	u                 baseUI
+}
+
+// coloniesHelpText returns the help text for the colonies screen.
+func coloniesHelpText(isMobile bool) string {
+	var layout, notWorking string
+	if isMobile {
+		layout = `Each colony shows:
+• Top: The planet the colony is on.
+• Extractor icon: The resources the extractors are set to extract, followed by the colony's status and the time until work ends.
+• Factory icon: The products the factories are set to produce.
+• Person icon: The character who owns the colony.`
+	} else {
+		layout = `Planet: The planet the colony is on.
+
+Extracting: The resources the extractors are set to extract.
+
+Producing: The products the factories are set to produce.
+
+Character: The character who owns the colony.`
+		notWorking = ` and "-" when it is not working`
+	}
+	return fmt.Sprintf(`%s
+
+Status: The estimated current status of the colony:
+• Extracting: At least one extractor is running.
+• Producing: No extractor is running, but at least one factory is producing.
+• Idle: Nothing is extracting or producing.
+• Needs Attention: An extractor has expired or stopped, or a storage is full.
+• Not Setup: A facility is not configured, e.g. a factory without a schematic or with an input or output not routed.
+
+Work ends: When the colony is estimated to stop working, e.g. when the last extractor expires or factories run out of inputs. Shows "%s" when the colony keeps working beyond that%s.
+
+NOTE: Status and work end are estimates. They are calculated from the last time the colony was updated in game, and can differ from the actual state.`, layout, colonyBeyondHorizonText, notWorking)
 }
 
 func NewColonies(u baseUI) *Colonies {
@@ -251,6 +285,11 @@ func NewColonies(u baseUI) *Colonies {
 		a.filterRowsAsync("")
 	})
 
+	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(coloniesHelpText(a.u.IsMobile()), a.u.IsMobile(), a.showHelp)
+	})
+	a.showHelp.SetToolTip("Show explanation for columns")
+
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 		a.Update(ctx)
@@ -304,7 +343,7 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		a.footer,
+		container.NewBorder(nil, nil, nil, a.showHelp, a.footer),
 		nil,
 		nil,
 		a.body,
