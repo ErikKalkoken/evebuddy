@@ -47,6 +47,23 @@ func TestFilterChipCompact_Menu(t *testing.T) {
 	})
 }
 
+func TestFilterChipCompact_ClearItem(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should reset selection and fire OnChanged once", func(t *testing.T) {
+		var got []map[string]string
+		f := NewFilterChipCompact([]FilterOption{NewFilterOptionToogle("Alpha")}, func(s map[string]string) {
+			got = append(got, s)
+		})
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		got = nil
+
+		f.clearItem.Action()
+
+		assert.Equal(t, []map[string]string{{"Alpha": ""}}, got)
+		assert.False(t, f.IsOn())
+	})
+}
+
 func TestFilterChipCompact_EmptyMenu(t *testing.T) {
 	test.NewTempApp(t)
 	alpha := NewFilterOptionToogle("Alpha")

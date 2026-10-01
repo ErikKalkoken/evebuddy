@@ -259,6 +259,55 @@ func TestFilterChipCompact_SetSelected(t *testing.T) {
 	}
 }
 
+func TestFilterChipCompact_OnChanged(t *testing.T) {
+	test.NewTempApp(t)
+	newChip := func() (*xwidget.FilterChipCompact, *int) {
+		var calls int
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+			xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one", "two"}),
+		}, func(map[string]string) {
+			calls++
+		})
+		return f, &calls
+	}
+	t.Run("SetSelected fires when selection changes", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("SetSelected does not fire when selection is unchanged", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		f.SetSelected(map[string]string{"Bravo": "one"})
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("SetSelected does not fire when sanitized selection is unchanged", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Bravo": "invalid", "Charlie": "x"})
+		assert.Equal(t, 0, *calls)
+	})
+	t.Run("Reset fires when something was selected", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		*calls = 0
+		f.Reset()
+		assert.Equal(t, 1, *calls)
+	})
+	t.Run("Reset does not fire when nothing was selected", func(t *testing.T) {
+		f, calls := newChip()
+		f.Reset()
+		assert.Equal(t, 0, *calls)
+	})
+	t.Run("SetOptions does not fire when it drops a selected option", func(t *testing.T) {
+		f, calls := newChip()
+		f.SetSelected(map[string]string{"Alpha": "Alpha"})
+		*calls = 0
+		f.SetOptions(xwidget.NewFilterOptionToogle("Bravo"))
+		assert.Equal(t, 0, *calls)
+	})
+}
+
 func TestFilterChipCompact_SetSelectedNil(t *testing.T) {
 	test.NewTempApp(t)
 	// given

@@ -65,7 +65,8 @@ func NewFilterOptionSeparator() FilterOption {
 type FilterChipCompact struct {
 	widget.BaseWidget
 
-	// OnChanged is a callback that is called when the selection state changed.
+	// OnChanged is a callback that is called when the selection changed,
+	// either by the user or through SetSelected or Reset.
 	// It passes the current selection.
 	OnChanged func(selected map[string]string)
 
@@ -133,6 +134,9 @@ func (w *FilterChipCompact) updateOn() {
 
 // Reset resets the selection.
 func (w *FilterChipCompact) Reset() {
+	if !w.isOn {
+		return
+	}
 	for name := range w.selected {
 		w.selected[name] = ""
 	}
@@ -154,6 +158,7 @@ func (w *FilterChipCompact) Selected() map[string]string {
 //
 // The order of filter options is preserved.
 // A selected choice is kept even when the option's new choices no longer contain it.
+// Does not call OnChanged, even when a selected option is removed.
 func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
 	w.options = normalizeOptions(options)
 	w.updateSelectedFromOptions()
@@ -215,10 +220,13 @@ func (w *FilterChipCompact) updateSelectedFromOptions() {
 //
 // Invalid option names are ignored.
 func (w *FilterChipCompact) SetSelected(selected map[string]string) {
-	w.selected = sanitizeSelected(w.options, selected)
-	w.updateOn()
+	selected2 := sanitizeSelected(w.options, selected)
+	if maps.Equal(w.selected, selected2) {
+		return
+	}
+	w.selected = selected2
 	w.setMenu()
-	w.Refresh()
+	w.processChanged()
 }
 
 // sanitizeSelected returns a new selection with an entry for every option.
