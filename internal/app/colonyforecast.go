@@ -10,13 +10,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
+// ColonyForecastHorizon is how far ahead a forecast looks for when a colony stops working.
+const ColonyForecastHorizon = 30 * 24 * time.Hour
+
 // ColonyForecast is the estimated state of a PI colony at a point in time,
 // simulated forward from the last ESI snapshot.
 type ColonyForecast struct {
-	Pins       map[int64]*PinForecast // by pin ID
-	Status     ColonyStatus
-	Time       time.Time                    // time of the forecast
-	WorkEndsAt optional.Optional[time.Time] // when the colony stops working, if within the forecast horizon
+	Pins               map[int64]*PinForecast // by pin ID
+	Status             ColonyStatus
+	Time               time.Time                    // time of the forecast
+	WorkEndsAt         optional.Optional[time.Time] // when the colony stops working, if within the horizon
+	WorksBeyondHorizon bool                         // colony is still working at the horizon
 }
 
 // PinForecast is the estimated state of a planet pin.

@@ -3,6 +3,7 @@ package colonysim
 import (
 	"cmp"
 	"container/heap"
+	"log/slog"
 	"maps"
 	"math"
 	"slices"
@@ -12,11 +13,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-const (
-	// DefaultHorizon is how far into the future Forecast looks for when the colony stops working.
-	DefaultHorizon = 30 * 24 * time.Hour
+const maxEvents = 1_000_000 // guard against runaway simulations
 
-	maxEvents = 1_000_000 // guard against runaway simulations
+// RunResult reports why a simulation run stopped.
+type RunResult uint
+
+const (
+	RunCompleted RunResult = iota // reached the given time
+	RunWorkEnded                  // the colony stopped working
+	RunAborted                    // exceeded the event limit
 )
 
 type route struct {
@@ -111,14 +116,14 @@ func (s *Simulation) RunUntil(t time.Time) bool {
 	if !t.After(s.simTime) {
 		return true
 	}
-	_, ok := s.run(t, false)
-	return ok
+	_, r := s.run(t, false)
+	return r != RunAborted
 }
 
 // RunUntilWorkEnds advances the simulation until the colony stops working
 // and returns the time when that happened.
-// It reports false when the colony is still working at the horizon.
-func (s *Simulation) RunUntilWorkEnds(horizon time.Time) (time.Time, bool) {
+// It returns [RunCompleted] when the colony is still working at the horizon.
+func (s *Simulation) RunUntilWorkEnds(horizon time.Time) (time.Time, RunResult) {
 	return s.run(horizon, true)
 }
 
@@ -150,24 +155,43 @@ func (s *Simulation) Forecast() *app.ColonyForecast {
 }
 
 // Forecast returns the estimated state of a colony at now
-// including when it will stop working within the default horizon.
+// including when it will stop working within [app.ColonyForecastHorizon].
 func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	s := New(cp)
-	s.RunUntil(now)
+	if !s.RunUntil(now) {
+		logAborted(cp, s.simTime)
+	}
 	f := s.Forecast()
-	t, ok := s.Clone().RunUntilWorkEnds(now.Add(DefaultHorizon))
-	if ok && t.After(now) {
-		f.WorkEndsAt = optional.New(t)
+	t, r := s.Clone().RunUntilWorkEnds(now.Add(app.ColonyForecastHorizon))
+	switch r {
+	case RunWorkEnded:
+		if t.After(now) {
+			f.WorkEndsAt = optional.New(t)
+		}
+	case RunCompleted:
+		f.WorksBeyondHorizon = true
+	case RunAborted:
+		logAborted(cp, t)
 	}
 	return f
 }
 
+// logAborted logs a simulation which exceeded the event limit, which indicates a bug.
+func logAborted(cp *app.CharacterPlanet, simTime time.Time) {
+	var planetID int64
+	if cp.EvePlanet != nil {
+		planetID = cp.EvePlanet.ID
+	}
+	slog.Warn("Colony simulation aborted after exceeding event limit",
+		"characterID", cp.CharacterID, "planetID", planetID, "simTime", simTime, "maxEvents", maxEvents)
+}
+
 // run runs the simulation until the given time or until the colony stops working.
-// It returns the simulation time at the end and reports whether it completed normally.
-func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, bool) {
+// It returns the simulation time at the end and why it stopped.
+func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, RunResult) {
 	if untilWorkEnds {
 		if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
-			return s.simTime, true
+			return s.simTime, RunWorkEnded
 		}
 	}
 	s.queue = eventQueue{}
@@ -180,7 +204,7 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, bool) 
 	var stopAt time.Time
 	for events := 0; s.queue.Len() > 0; events++ {
 		if events > maxEvents {
-			return s.simTime, false
+			return s.simTime, RunAborted
 		}
 		e := heap.Pop(&s.queue).(event)
 		if current, ok := s.scheduled[e.pinID]; !ok || current.seq != e.seq {
@@ -189,10 +213,10 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, bool) 
 		delete(s.scheduled, e.pinID)
 		if e.time.After(until) {
 			s.simTime = until
-			return until, !untilWorkEnds
+			return until, RunCompleted
 		}
 		if !stopAt.IsZero() && e.time.After(stopAt) {
-			return s.simTime, true
+			return s.simTime, RunWorkEnded
 		}
 		s.simTime = e.time
 		p := s.pins[e.pinID]
@@ -205,7 +229,7 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, bool) 
 			if !status.IsWorking() {
 				for _, ps := range pinStatuses {
 					if ps == app.PinStorageFull {
-						return s.simTime, true
+						return s.simTime, RunWorkEnded
 					}
 				}
 				stopAt = s.simTime // finish other pins at this instant
@@ -213,10 +237,10 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, bool) 
 		}
 	}
 	if untilWorkEnds {
-		return s.simTime, true
+		return s.simTime, RunWorkEnded
 	}
 	s.simTime = until
-	return until, true
+	return until, RunCompleted
 }
 
 func (s *Simulation) schedulePin(p *pin) {

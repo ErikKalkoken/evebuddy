@@ -115,6 +115,7 @@ func TestSimulation_ExtractorToStorage(t *testing.T) {
 		assert.InDelta(t, float64(2467+2086)*0.01, f.Pins[2].CapacityUsed, 0.0001)
 		assert.Equal(t, optional.New(12_000.0), f.Pins[2].Capacity)
 		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.WorkEndsAt)
+		assert.False(t, f.WorksBeyondHorizon)
 	})
 	t.Run("should forecast state after expiry", func(t *testing.T) {
 		f := Forecast(cp, t0.Add(5*time.Hour))
@@ -126,6 +127,52 @@ func TestSimulation_ExtractorToStorage(t *testing.T) {
 		}
 		assert.Equal(t, map[int64]int64{typeAqueousLiquids: total}, f.Pins[2].Contents)
 		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.False(t, f.WorksBeyondHorizon)
+	})
+}
+
+func TestSimulation_Horizon(t *testing.T) {
+	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
+				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
+			},
+			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+		}
+	}
+	t.Run("should report when colony works beyond the horizon", func(t *testing.T) {
+		f := Forecast(newPlanet(t0.Add(app.ColonyForecastHorizon+24*time.Hour)), t0)
+		assert.Equal(t, app.ColonyExtracting, f.Status)
+		assert.True(t, f.WorksBeyondHorizon)
+		assert.True(t, f.WorkEndsAt.IsEmpty())
+	})
+	t.Run("should report work end just before the horizon", func(t *testing.T) {
+		expiry := t0.Add(app.ColonyForecastHorizon - time.Hour)
+		f := Forecast(newPlanet(expiry), t0)
+		assert.False(t, f.WorksBeyondHorizon)
+		assert.Equal(t, optional.New(expiry), f.WorkEndsAt)
+	})
+	t.Run("should return completed when still working at the horizon", func(t *testing.T) {
+		s := New(newPlanet(t0.Add(48 * time.Hour)))
+		horizon := t0.Add(24 * time.Hour)
+		got, r := s.RunUntilWorkEnds(horizon)
+		assert.Equal(t, RunCompleted, r)
+		assert.Equal(t, horizon, got)
+	})
+	t.Run("should return work ended when colony stops before the horizon", func(t *testing.T) {
+		s := New(newPlanet(t0.Add(4 * time.Hour)))
+		got, r := s.RunUntilWorkEnds(t0.Add(24 * time.Hour))
+		assert.Equal(t, RunWorkEnded, r)
+		assert.Equal(t, t0.Add(4*time.Hour), got)
+	})
+	t.Run("should return work ended when colony is not working", func(t *testing.T) {
+		s := New(newPlanet(t0.Add(4 * time.Hour)))
+		s.RunUntil(t0.Add(5 * time.Hour))
+		got, r := s.RunUntilWorkEnds(t0.Add(24 * time.Hour))
+		assert.Equal(t, RunWorkEnded, r)
+		assert.Equal(t, t0.Add(5*time.Hour), got)
 	})
 }
 

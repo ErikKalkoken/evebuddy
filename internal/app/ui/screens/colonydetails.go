@@ -446,6 +446,8 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(
 			fmt.Sprintf(" • work ends in %s (%s)", ihumanize.Duration(v.Sub(now)), v.Format(app.DateTimeFormat)),
 		))
+	} else if f.WorksBeyondHorizon {
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • works "+colonyBeyondHorizonText))
 	}
 	typeNames := colonyTypeNames(cp)
 	var rows []colonyDetailsRow

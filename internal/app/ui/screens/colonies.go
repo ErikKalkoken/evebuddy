@@ -51,12 +51,37 @@ type colonyRow struct {
 	tags            set.Set[string]
 	titleDisplay    []widget.RichTextSegment
 	workEndsAt      optional.Optional[time.Time]
+	worksBeyond     bool // still working at the forecast horizon
 }
+
+// colonyBeyondHorizonText is shown for colonies which work beyond the forecast horizon.
+var colonyBeyondHorizonText = fmt.Sprintf("> %d days", int(app.ColonyForecastHorizon.Hours()/24))
 
 // setForecast updates the row with a new forecast for its colony.
 func (r *colonyRow) setForecast(f *app.ColonyForecast) {
 	r.status = f.Status
 	r.workEndsAt = f.WorkEndsAt
+	r.worksBeyond = f.WorksBeyondHorizon
+}
+
+// compareWorkEnds orders colonies by when they stop working:
+// not working first, then by work end, then working beyond the horizon.
+func (r colonyRow) compareWorkEnds(other colonyRow) int {
+	rank := func(x colonyRow) int {
+		switch {
+		case x.worksBeyond:
+			return 2
+		case x.workEndsAt.IsEmpty():
+			return 0
+		}
+		return 1
+	}
+	if c := cmp.Compare(rank(r), rank(other)); c != 0 {
+		return c
+	}
+	return optional.CompareFunc(r.workEndsAt, other.workEndsAt, func(x, y time.Time) int {
+		return x.Compare(y)
+	})
 }
 
 func (r colonyRow) needsAttention() bool {
@@ -70,6 +95,9 @@ func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 }
 
 func (r colonyRow) workEndsDisplay() string {
+	if r.worksBeyond {
+		return colonyBeyondHorizonText
+	}
 	return r.workEndsAt.StringFunc("-", func(v time.Time) string {
 		return v.Format(app.DateTimeFormat)
 	})
@@ -128,7 +156,7 @@ func NewColonies(u baseUI) *Colonies {
 			})
 		},
 	}, {
-		Label: "Status",
+		Label: "Status (est.)",
 		Width: 150,
 		Sort: func(a, b colonyRow) int {
 			return cmp.Compare(a.status, b.status)
@@ -137,12 +165,10 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		Label: "Work ends",
+		Label: "Work ends (est.)",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
-			return optional.CompareFunc(a.workEndsAt, b.workEndsAt, func(x, y time.Time) int {
-				return x.Compare(y)
-			})
+			return a.compareWorkEnds(b)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.workEndsDisplay())
@@ -386,6 +412,8 @@ func (w *colonyListItem) set(r colonyRow) {
 	status := r.statusDisplay()
 	if v, ok := r.workEndsAt.Value(); ok {
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • "+ihumanize.Duration(time.Until(v))))
+	} else if r.worksBeyond {
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • "+colonyBeyondHorizonText))
 	}
 	w.status.Set(status)
 }
@@ -489,7 +517,6 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		if attention > 0 {
 			footer += fmt.Sprintf(" • %d not working", attention)
 		}
-		footer += " • Status and work end are estimates"
 
 		fyne.Do(func() {
 			if !isLatest() {
