@@ -104,6 +104,7 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 		selected:             make(map[string]string),
 	}
 	w.options = normalizeOptions(options)
+	w.updateSelectedFromOptions()
 	w.icon = widget.NewIcon(w.iconResource)
 	w.background.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
 	w.clearItem = fyne.NewMenuItem(w.resetText, func() {
@@ -155,6 +156,7 @@ func (w *FilterChipCompact) Selected() map[string]string {
 // SetOptions sets new filter options.
 //
 // The order of filter options is preserved.
+// A selected choice is kept even when the option's new choices no longer contain it.
 func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
 	w.options = normalizeOptions(options)
 	w.updateSelectedFromOptions()

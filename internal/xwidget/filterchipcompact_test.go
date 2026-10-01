@@ -46,6 +46,21 @@ func TestFilterChipCompact_CanRender(t *testing.T) {
 
 }
 
+func TestFilterChipCompact_New(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should report all options as unselected", func(t *testing.T) {
+		// when
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+			xwidget.NewFilterOptionSeparator(),
+			xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one"}),
+		}, nil)
+
+		// then
+		assert.Equal(t, map[string]string{"Alpha": "", "Bravo": ""}, f.Selected())
+	})
+}
+
 func TestFilterChipCompact_UndefinedOption(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("constructor ignores zero-value option", func(t *testing.T) {
