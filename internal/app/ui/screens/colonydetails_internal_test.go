@@ -100,23 +100,44 @@ func TestColonyDetails(t *testing.T) {
 		assert.Equal(t, "Base Metals", r.output)
 		assert.Equal(t, expiry.Format(app.DateTimeFormat), r.info)
 		assert.NotEqual(t, app.PinExtracting.Display(), segmentsText(r.status))
+		assert.InDelta(t, 65.0/240.0, r.progress.MustValue(), 0.01, "elapsed share of the program")
 	})
 	t.Run("should show storage contents and fill", func(t *testing.T) {
 		r := rowByName(t, string(pinTypeStorage))
 		assert.Equal(t, "Base Metals 4,553", r.output)
 		assert.Equal(t, "46 / 12,000 m3", r.info)
 		assert.Equal(t, "0%", segmentsText(r.status))
+		assert.InDelta(t, 4553*0.01/12_000, r.progress.MustValue(), 0.0001, "fill level")
 	})
 	t.Run("should show factory status", func(t *testing.T) {
 		r := rowByName(t, string(pinTypeBasicProcessor))
 		assert.Equal(t, "Water", r.output)
 		assert.Equal(t, app.PinInputNotRouted.Display(), segmentsText(r.status))
+		assert.True(t, r.progress.IsEmpty(), "not producing")
 	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a.rows = nil
 		a.refreshForecast()
 		assert.Len(t, a.rows, 3)
 	})
+}
+
+func TestColonyProgress(t *testing.T) {
+	cases := []struct {
+		name           string
+		elapsed, total time.Duration
+		want           float64
+	}{
+		{"should return ratio", 15 * time.Minute, time.Hour, 0.25},
+		{"should clamp to 1", 2 * time.Hour, time.Hour, 1},
+		{"should clamp to 0", -time.Minute, time.Hour, 0},
+		{"should return 0 for no total", time.Minute, 0, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.InDelta(t, tc.want, colonyProgress(tc.elapsed, tc.total), 0.0001)
+		})
+	}
 }
 
 func TestColonyContentsDisplay(t *testing.T) {

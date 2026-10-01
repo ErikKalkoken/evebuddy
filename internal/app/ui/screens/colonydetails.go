@@ -41,6 +41,7 @@ type colonyDetailsRow struct {
 	output            string
 	pinID             int64
 	pinStatus         app.PinStatus
+	progress          optional.Optional[float64] // 0-1, shown in the symbol
 	searchTarget      string
 	status            []widget.RichTextSegment
 	symbolIconColor   fyne.ThemeColorName
@@ -574,6 +575,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 
 		var output, info string
 		var statusText string
+		var progress optional.Optional[float64]
 		statusColor := pf.Status.Color()
 		switch p.Type.Group.ID {
 		case app.EveGroupExtractorControlUnits:
@@ -588,6 +590,9 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			}
 			if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
 				statusText = ihumanize.Duration(v.Sub(now))
+				if install, ok := p.InstallTime.Value(); ok && v.After(install) {
+					progress = optional.New(colonyProgress(now.Sub(install), v.Sub(install))) // of the program
+				}
 			} else {
 				statusText = pf.Status.Display()
 			}
@@ -595,12 +600,16 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			if v, ok := p.Schematic.Value(); ok {
 				output = v.Name
 				searchTargets = append(searchTargets, strings.ToLower(v.Name))
+				if last, ok := pf.LastRunTime.Value(); ok && pf.IsActive && v.CycleTime > 0 {
+					progress = optional.New(colonyProgress(now.Sub(last), time.Duration(v.CycleTime)*time.Second)) // of the cycle
+				}
 			} else {
 				output = "-"
 			}
 			statusText = pf.Status.Display()
 		default:
 			if v, ok := pf.Capacity.Value(); ok && v > 0 {
+				progress = optional.New(min(max(pf.CapacityUsed/v, 0), 1))
 				info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
 				if pf.Status == app.PinStorageFull {
 					statusText = pf.Status.Display()
@@ -639,6 +648,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			output:            output,
 			pinID:             p.ID,
 			pinStatus:         pf.Status,
+			progress:          progress,
 			status:            status,
 			symbolIconColor:   iconColor,
 			symbolIconName:    iconName,
@@ -647,6 +657,14 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 		})
 	}
 	return status, rows
+}
+
+// colonyProgress returns the ratio of elapsed to total, clamped to 0-1.
+func colonyProgress(elapsed, total time.Duration) float64 {
+	if total <= 0 {
+		return 0
+	}
+	return min(max(float64(elapsed)/float64(total), 0), 1)
 }
 
 // pinSymbolStatusColor returns the color of the outer ring of a pin symbol.
@@ -754,7 +772,7 @@ func (w *colonyPinItem) Set(r colonyDetailsRow) {
 	w.name.SetText(r.name)
 	w.output.SetText(r.output)
 	w.status.Set(r.status)
-	w.symbol.Set(eveicon.FromName(r.symbolIconName), r.symbolIconColor, r.symbolStatusColor)
+	w.symbol.Set(eveicon.FromName(r.symbolIconName), r.symbolIconColor, r.symbolStatusColor, r.progress)
 	w.Refresh()
 }
 
@@ -765,6 +783,7 @@ type planetPinSymbol struct {
 
 	icon        fyne.Resource
 	iconColor   fyne.ThemeColorName
+	progress    optional.Optional[float64] // 0-1, shown as arc
 	statusColor fyne.ThemeColorName
 }
 
@@ -778,7 +797,7 @@ func newPlanetPinSymbol() *planetPinSymbol {
 	return w
 }
 
-func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName) {
+func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName, progress optional.Optional[float64]) {
 	key := icon.Name() + string(iconColor)
 	icon2, ok := planetPinSymbolCache.Load(key)
 	if !ok {
@@ -793,6 +812,7 @@ func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName,
 	}
 	w.icon = icon2
 	w.iconColor = iconColor
+	w.progress = progress
 	w.statusColor = statusColor
 	w.Refresh()
 }
@@ -805,17 +825,25 @@ func (w *planetPinSymbol) CreateRenderer() fyne.WidgetRenderer {
 	ic := canvas.NewImageFromResource(w.icon)
 	ic.FillMode = canvas.ImageFillContain
 
-	return &tripleCircleRenderer{
-		circles: []*canvas.Circle{c1, c2, c3},
-		icon:    ic,
-		widget:  w,
+	r := &tripleCircleRenderer{
+		circles:  []*canvas.Circle{c1, c2, c3},
+		icon:     ic,
+		progress: canvas.NewArc(0, 0, planetPinSymbolArcCutout, theme.Color(theme.ColorNameForeground)),
+		track:    canvas.NewArc(0, 360, planetPinSymbolArcCutout, theme.Color(theme.ColorNameSeparator)),
+		widget:   w,
 	}
+	r.Refresh()
+	return r
 }
 
+const planetPinSymbolArcCutout = 0.87 // thin ring
+
 type tripleCircleRenderer struct {
-	widget  *planetPinSymbol
-	circles []*canvas.Circle
-	icon    *canvas.Image
+	widget   *planetPinSymbol
+	circles  []*canvas.Circle
+	icon     *canvas.Image
+	progress *canvas.Arc
+	track    *canvas.Arc
 }
 
 func (r *tripleCircleRenderer) Layout(size fyne.Size) {
@@ -825,7 +853,7 @@ func (r *tripleCircleRenderer) Layout(size fyne.Size) {
 	diameters := []float32{
 		1.0 * diameter,
 		0.85 * diameter,
-		0.6 * diameter,
+		0.58 * diameter,
 	}
 
 	// Layout circles
@@ -837,6 +865,14 @@ func (r *tripleCircleRenderer) Layout(size fyne.Size) {
 			center.X-(currentDim/2),
 			center.Y-(currentDim/2),
 		))
+	}
+
+	// Layout the arcs in the gap between the middle and the inner circle.
+	// Despite canvas.Arc's doc, its position is the top-left of its bounding box like a circle.
+	arcDim := 0.72 * diameter
+	for _, arc := range []*canvas.Arc{r.track, r.progress} {
+		arc.Resize(fyne.NewSquareSize(arcDim))
+		arc.Move(center.Subtract(fyne.NewSquareOffsetPos(arcDim / 2)))
 	}
 
 	// Layout the Icon in the center of the smallest circle
@@ -857,13 +893,23 @@ func (r *tripleCircleRenderer) MinSize() fyne.Size {
 func (r *tripleCircleRenderer) Refresh() {
 	r.circles[0].FillColor = theme.Color(r.widget.statusColor)
 	r.circles[0].Refresh()
+	r.track.FillColor = theme.Color(theme.ColorNameSeparator)
+	r.track.Refresh()
+	if v, ok := r.widget.progress.Value(); ok && v > 0 {
+		r.progress.FillColor = theme.Color(theme.ColorNameForeground)
+		r.progress.EndAngle = float32(360 * min(v, 1))
+		r.progress.Show()
+		r.progress.Refresh()
+	} else {
+		r.progress.Hide()
+	}
 	r.icon.Resource = r.widget.icon
 	r.icon.Refresh()
 	canvas.Refresh(r.widget)
 }
 
 func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.circles[0], r.circles[1], r.circles[2], r.icon}
+	return []fyne.CanvasObject{r.circles[0], r.circles[1], r.track, r.progress, r.circles[2], r.icon}
 }
 
 func (r *tripleCircleRenderer) Destroy() {}
