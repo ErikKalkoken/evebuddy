@@ -159,6 +159,23 @@ func TestFilterChipCompact_DisableWhileInteracting(t *testing.T) {
 
 		assert.Equal(t, desktop.DefaultCursor, f.Cursor())
 	})
+	t.Run("should show pointer cursor when enabled while hovered", func(t *testing.T) {
+		f, _ := newChip(t)
+		f.Disable()
+		f.MouseIn(&desktop.MouseEvent{})
+
+		f.Enable()
+
+		assert.Equal(t, desktop.PointerCursor, f.Cursor())
+	})
+	t.Run("should show default cursor after mouse left", func(t *testing.T) {
+		f, _ := newChip(t)
+		f.MouseIn(&desktop.MouseEvent{})
+
+		f.MouseOut()
+
+		assert.Equal(t, desktop.DefaultCursor, f.Cursor())
+	})
 	t.Run("should not show focus border when disabled while focused", func(t *testing.T) {
 		f, w := newChip(t)
 		w.Canvas().Focus(f)
