@@ -209,23 +209,19 @@ func (w *FilterChipCompact) SetSelected(selected map[string]string) {
 	w.Refresh()
 }
 
+// sanitizeSelected returns a new selection with an entry for every option.
+// Unknown options are dropped and invalid choices are reset.
 func sanitizeSelected(options []FilterOption, selected map[string]string) map[string]string {
-	optionsMap := make(map[string]FilterOption)
+	selected2 := make(map[string]string)
 	for _, o := range options {
-		if o.kind != optionKindSeparator {
-			optionsMap[o.name] = o
-		}
-	}
-	selected2 := maps.Clone(selected)
-	for name, choice := range selected2 {
-		o, ok := optionsMap[name]
-		if !ok {
-			delete(selected2, name)
+		if o.kind == optionKindSeparator {
 			continue
 		}
+		choice := selected[o.name]
 		if !slices.Contains(o.choices, choice) {
-			selected2[name] = ""
+			choice = ""
 		}
+		selected2[o.name] = choice
 	}
 	return selected2
 }

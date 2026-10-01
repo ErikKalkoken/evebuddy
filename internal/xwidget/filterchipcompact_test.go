@@ -190,6 +190,25 @@ func TestFilterChipCompact_SetSelected(t *testing.T) {
 	}
 }
 
+func TestFilterChipCompact_SetSelectedNil(t *testing.T) {
+	test.NewTempApp(t)
+	// given
+	f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+		xwidget.NewFilterOptionToogle("Alpha"),
+	}, nil)
+
+	// when
+	f.SetSelected(nil)
+	f.SetOptions(
+		xwidget.NewFilterOptionToogle("Alpha"),
+		xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one"}),
+	)
+
+	// then
+	assert.Equal(t, map[string]string{"Alpha": "", "Bravo": ""}, f.Selected())
+	assert.False(t, f.IsOn())
+}
+
 func TestFilterChipCompact_Reset(t *testing.T) {
 	test.NewTempApp(t)
 	// given
@@ -209,9 +228,9 @@ func TestFilterChipCompact_Reset(t *testing.T) {
 			map[string]string{"Alpha": "", "Bravo": ""},
 		},
 		{
-			"emoty",
+			"empty",
 			map[string]string{},
-			map[string]string{},
+			map[string]string{"Alpha": "", "Bravo": ""},
 		},
 	}
 	for _, tc := range cases {
