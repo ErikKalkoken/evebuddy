@@ -177,4 +177,58 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		assert.Contains(t, content, p1.EvePlanet.Name)
 		assert.Contains(t, content, p2.EvePlanet.Name)
 	})
+	t.Run("should notify when restocked factory colony ran out of inputs", func(t *testing.T) {
+		reset()
+		lastUpdate := now.Add(-3 * time.Hour)
+		processorGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupProcessors})
+		spaceportGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupSpaceports})
+		storageType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID:  app.EveGroupStorageFacilities,
+			Capacity: optional.New(12_000.0),
+		})
+		processorType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: processorGroup.ID})
+		launchpadType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID:  spaceportGroup.ID,
+			Capacity: optional.New(10_000.0),
+		})
+		aqueousLiquids := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2268, Volume: optional.New(0.01)})
+		water := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3645, Volume: optional.New(0.38)})
+		schematic := factory.CreateEveSchematic(storage.CreateEveSchematicParams{ID: 121, Name: "Water"})
+		p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: lastUpdate})
+		// inputs for 3 cycles, factory idle at the snapshot
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: p.ID,
+			PinID:             1,
+			TypeID:            storageType.ID,
+			Contents:          map[int64]int64{aqueousLiquids.ID: 9000},
+		})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: p.ID,
+			PinID:             2,
+			TypeID:            processorType.ID,
+			SchematicID:       optional.New(schematic.ID),
+		})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: p.ID,
+			PinID:             3,
+			TypeID:            launchpadType.ID,
+		})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+			CharacterPlanetID: p.ID,
+			SourcePinID:       1,
+			DestinationPinID:  2,
+			ContentTypeID:     aqueousLiquids.ID,
+			Quantity:          3000,
+		})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+			CharacterPlanetID: p.ID,
+			SourcePinID:       2,
+			DestinationPinID:  3,
+			ContentTypeID:     water.ID,
+			Quantity:          20,
+		})
+		count, _, content := notify(t, p.CharacterID)
+		xassert.Equal(t, 1, count)
+		assert.Contains(t, content, p.EvePlanet.Name)
+	})
 }

@@ -209,6 +209,10 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 		assert.Empty(t, f.Pins[2].Contents)
 		assert.True(t, f.WorkEndsAt.IsEmpty())
 	})
+	t.Run("should forecast work end at the snapshot while factory is idle", func(t *testing.T) {
+		f := Forecast(cp, t0)
+		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.WorkEndsAt)
+	})
 	t.Run("should return work ended when colony stops within one cycle of the horizon", func(t *testing.T) {
 		s := New(cp)
 		s.RunUntil(t0.Add(45 * time.Minute))

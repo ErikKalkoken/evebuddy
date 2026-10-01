@@ -194,11 +194,6 @@ func logAborted(cp *app.CharacterPlanet, simTime time.Time) {
 // run runs the simulation until the given time or until the colony stops working.
 // It returns the simulation time at the end and why it stopped.
 func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, RunResult) {
-	if untilWorkEnds {
-		if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
-			return s.simTime, RunWorkEnded
-		}
-	}
 	s.queue = eventQueue{}
 	s.scheduled = make(map[int64]event)
 	for _, id := range s.pinIDs {
@@ -206,7 +201,6 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, RunRes
 			s.schedulePin(p)
 		}
 	}
-	var stopAt time.Time
 	for events := 0; s.queue.Len() > 0; events++ {
 		if events > maxEvents {
 			return s.simTime, RunAborted
@@ -216,29 +210,19 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, RunRes
 			continue // superseded
 		}
 		delete(s.scheduled, e.pinID)
-		if !stopAt.IsZero() && e.time.After(stopAt) {
-			return s.simTime, RunWorkEnded
+		// check once all events at the current time are done
+		if untilWorkEnds && e.time.After(s.simTime) {
+			if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
+				return s.simTime, RunWorkEnded
+			}
 		}
 		if e.time.After(until) {
 			s.simTime = until
 			return until, RunCompleted
 		}
 		s.simTime = e.time
-		p := s.pins[e.pinID]
-		if !p.canRun(until) {
-			continue
-		}
-		s.evaluatePin(p)
-		if untilWorkEnds && stopAt.IsZero() {
-			status, pinStatuses := s.colonyStatus(s.simTime)
-			if !status.IsWorking() {
-				for _, ps := range pinStatuses {
-					if ps == app.PinStorageFull {
-						return s.simTime, RunWorkEnded
-					}
-				}
-				stopAt = s.simTime // finish other pins at this instant
-			}
+		if p := s.pins[e.pinID]; p.canRun(until) {
+			s.evaluatePin(p)
 		}
 	}
 	if untilWorkEnds {
