@@ -29,6 +29,8 @@ const (
 	optionKindToggle
 )
 
+// FilterOption is an option for [FilterChipCompact].
+// Options can be created on any goroutine.
 type FilterOption struct {
 	kind    filterOptionKind
 	name    string
