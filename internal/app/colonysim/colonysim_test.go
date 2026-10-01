@@ -209,6 +209,13 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 		assert.Empty(t, f.Pins[2].Contents)
 		assert.True(t, f.WorkEndsAt.IsEmpty())
 	})
+	t.Run("should return work ended when colony stops within one cycle of the horizon", func(t *testing.T) {
+		s := New(cp)
+		s.RunUntil(t0.Add(45 * time.Minute))
+		got, r := s.RunUntilWorkEnds(t0.Add(100 * time.Minute))
+		assert.Equal(t, RunWorkEnded, r)
+		assert.Equal(t, t0.Add(90*time.Minute), got)
+	})
 }
 
 func TestSimulation_StorageFull(t *testing.T) {

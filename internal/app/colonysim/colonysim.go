@@ -216,12 +216,12 @@ func (s *Simulation) run(until time.Time, untilWorkEnds bool) (time.Time, RunRes
 			continue // superseded
 		}
 		delete(s.scheduled, e.pinID)
+		if !stopAt.IsZero() && e.time.After(stopAt) {
+			return s.simTime, RunWorkEnded
+		}
 		if e.time.After(until) {
 			s.simTime = until
 			return until, RunCompleted
-		}
-		if !stopAt.IsZero() && e.time.After(stopAt) {
-			return s.simTime, RunWorkEnded
 		}
 		s.simTime = e.time
 		p := s.pins[e.pinID]
