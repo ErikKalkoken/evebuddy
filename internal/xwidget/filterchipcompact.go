@@ -106,7 +106,6 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 	w.options = normalizeOptions(options)
 	w.updateSelectedFromOptions()
 	w.icon = widget.NewIcon(w.iconResource)
-	w.background.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
 	w.clearItem = fyne.NewMenuItem(w.resetText, func() {
 		w.Reset()
 	})
@@ -357,7 +356,7 @@ func (w *FilterChipCompact) processChanged() {
 
 func (w *FilterChipCompact) CreateRenderer() fyne.WidgetRenderer {
 	w.updateStyling()
-	p := theme.Padding()
+	p := w.Theme().Size(theme.SizeNamePadding)
 	return widget.NewSimpleRenderer(
 		container.NewStack(
 			w.background,
@@ -394,16 +393,17 @@ func (w *FilterChipCompact) updateStyling() {
 		} else {
 			w.icon.SetResource(w.iconResource)
 		}
-		w.background.StrokeColor = theme.Color(theme.ColorNameInputBorder)
+		w.background.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 		w.background.FillColor = color.Transparent
 	}
 
 	if w.focused && !w.disabled {
 		w.background.StrokeColor = th.Color(theme.ColorNameFocus, v)
-		w.background.StrokeWidth = theme.Size(theme.SizeNameInputBorder) * 2
+		w.background.StrokeWidth = th.Size(theme.SizeNameInputBorder) * 2
 	} else {
-		w.background.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
+		w.background.StrokeWidth = th.Size(theme.SizeNameInputBorder)
 	}
+	w.background.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 }
 
 func (w *FilterChipCompact) Disabled() bool {

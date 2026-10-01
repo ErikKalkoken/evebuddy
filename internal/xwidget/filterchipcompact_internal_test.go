@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
@@ -116,6 +117,45 @@ func TestFilterChipCompact_DisableWhileInteracting(t *testing.T) {
 
 		assert.Greater(t, f.background.StrokeWidth, theme.Size(theme.SizeNameInputBorder))
 	})
+}
+
+type filterChipOverrideTheme struct {
+	fyne.Theme
+}
+
+var filterChipOverrideBorder = color.NRGBA{R: 1, G: 2, B: 3, A: 255}
+
+func (th filterChipOverrideTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	if n == theme.ColorNameInputBorder {
+		return filterChipOverrideBorder
+	}
+	return th.Theme.Color(n, v)
+}
+
+func (th filterChipOverrideTheme) Size(n fyne.ThemeSizeName) float32 {
+	switch n {
+	case theme.SizeNameButtonRadius:
+		return 17
+	case theme.SizeNameInputBorder:
+		return 7
+	case theme.SizeNamePadding:
+		return 11
+	}
+	return th.Theme.Size(n)
+}
+
+func TestFilterChipCompact_ThemeOverride(t *testing.T) {
+	test.NewTempApp(t)
+	f := NewFilterChipCompact([]FilterOption{NewFilterOptionToogle("Alpha")}, nil)
+	w := test.NewWindow(container.NewThemeOverride(f, filterChipOverrideTheme{test.Theme()}))
+	defer w.Close()
+
+	f.Refresh()
+
+	assert.Equal(t, filterChipOverrideBorder, f.background.StrokeColor)
+	assert.Equal(t, float32(7), f.background.StrokeWidth)
+	assert.Equal(t, float32(17), f.background.CornerRadius)
+	assert.Equal(t, f.icon.MinSize().AddWidthHeight(4*11, 4*11), f.MinSize())
 }
 
 func TestFilterChipCompact_SetOptionsRestyles(t *testing.T) {
