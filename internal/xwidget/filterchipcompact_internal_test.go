@@ -43,6 +43,40 @@ func TestFilterChipCompact_Menu(t *testing.T) {
 	})
 }
 
+func TestFilterChipCompact_EmptyMenu(t *testing.T) {
+	test.NewTempApp(t)
+	alpha := NewFilterOptionToogle("Alpha")
+	cases := []struct {
+		name  string
+		build func() *FilterChipCompact
+	}{
+		{"constructor without options", func() *FilterChipCompact {
+			return NewFilterChipCompact(nil, nil)
+		}},
+		{"SetOptions without options", func() *FilterChipCompact {
+			f := NewFilterChipCompact(nil, nil)
+			f.SetOptions()
+			return f
+		}},
+		{"SetOptions with separator only", func() *FilterChipCompact {
+			f := NewFilterChipCompact(nil, nil)
+			f.SetOptions(NewFilterOptionSeparator())
+			return f
+		}},
+		{"SetOptions removes all options", func() *FilterChipCompact {
+			f := NewFilterChipCompact([]FilterOption{alpha}, nil)
+			f.SetOptions()
+			return f
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := tc.build()
+			assert.Empty(t, f.menu.Items)
+		})
+	}
+}
+
 func TestFilterChipCompact_SetOptionsRestyles(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("should clear active styling when selected option is removed", func(t *testing.T) {

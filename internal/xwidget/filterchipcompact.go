@@ -112,9 +112,7 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 	})
 	w.clearItem.Icon = theme.DeleteIcon()
 	w.ExtendBaseWidget(w)
-	if len(w.options) > 0 {
-		w.setMenu()
-	}
+	w.setMenu()
 	return w
 }
 
@@ -242,6 +240,11 @@ func sanitizeSelected(options []FilterOption, selected map[string]string) map[st
 }
 
 func (w *FilterChipCompact) setMenu() {
+	if len(w.options) == 0 {
+		w.menu.Items = nil
+		w.menu.Refresh()
+		return
+	}
 	var items1 []*fyne.MenuItem
 
 	for _, o := range w.options {
@@ -491,5 +494,8 @@ func (w *FilterChipCompact) TypedRune(r rune) {
 func (w *FilterChipCompact) TypedKey(key *fyne.KeyEvent) {}
 
 func (w *FilterChipCompact) showMenu() {
+	if len(w.options) == 0 {
+		return
+	}
 	ShowPopUpMenuBelowLeading(w, w.menu)
 }

@@ -61,6 +61,42 @@ func TestFilterChipCompact_New(t *testing.T) {
 	})
 }
 
+func TestFilterChipCompact_Tap(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should show menu when there are options", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+		}, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+
+		test.Tap(f)
+
+		assert.NotNil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("should not show menu when created without options", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact(nil, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+
+		test.Tap(f)
+
+		assert.Nil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("should not show menu after options were removed", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+		}, nil)
+		w := test.NewWindow(f)
+		defer w.Close()
+		f.SetOptions()
+
+		test.Tap(f)
+
+		assert.Nil(t, w.Canvas().Overlays().Top())
+	})
+}
+
 func TestFilterChipCompact_UndefinedOption(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("constructor ignores zero-value option", func(t *testing.T) {
