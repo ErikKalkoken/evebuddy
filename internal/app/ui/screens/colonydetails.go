@@ -454,6 +454,9 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	status, rows := a.makeRows(cp, time.Now())
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, ui.IconPixelSize, func(res fyne.Resource) {
 			a.icon.Resource = res
 			a.icon.Refresh()
@@ -474,9 +477,6 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		if !isLatest() {
-			return
-		}
 		a.status.Set(status)
 		a.rows = rows
 		a.rowsGen++
