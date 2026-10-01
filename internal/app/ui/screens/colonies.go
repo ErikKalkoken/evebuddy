@@ -239,7 +239,7 @@ func NewColonies(u baseUI) *Colonies {
 	}})
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, "Work ends", xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Work ends (est.)", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
