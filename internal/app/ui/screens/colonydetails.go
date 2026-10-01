@@ -55,6 +55,7 @@ type colonyDetails struct {
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
 	filterRun     latestRun
 	footer        *widget.Label
+	forecastRun   latestRun
 	icon          *canvas.Image
 	installations *widget.List
 	owner         *widget.Hyperlink
@@ -64,6 +65,7 @@ type colonyDetails struct {
 	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
+	rowsGen       int // incremented when Update replaces rows
 	rowsRun       latestRun
 	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
@@ -283,16 +285,18 @@ func (a *colonyDetails) setIssue(s string) {
 }
 
 // refreshForecast recalculates the forecast for the colony.
+// A refresh never discards rows from Update, but is discarded when Update replaced them.
 func (a *colonyDetails) refreshForecast() {
 	cp := a.colony
 	if cp == nil {
 		return
 	}
-	isLatest := a.rowsRun.start()
+	isLatest := a.forecastRun.start()
+	gen := a.rowsGen
 	runAsync(func() {
 		status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
-			if !isLatest() {
+			if !isLatest() || a.rowsGen != gen {
 				return
 			}
 			a.status.Set(status)
@@ -403,6 +407,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 		a.status.Set(status)
 		a.rows = rows
+		a.rowsGen++
 		a.filterRowsAsync()
 	})
 	return nil

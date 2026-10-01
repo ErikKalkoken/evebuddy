@@ -84,7 +84,9 @@ type Colonies struct {
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
 	filterRun         latestRun
 	footer            *widget.Label
+	forecastRun       latestRun
 	rows              []colonyRow
+	rowsGen           int // incremented when Update replaces rows
 	rowsRun           latestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
@@ -135,12 +137,6 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		Label: "Extracting",
-		Width: 200,
-		Update: func(r colonyRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.extractingText)
-		},
-	}, {
 		Label: "Work ends",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
@@ -150,6 +146,12 @@ func NewColonies(u baseUI) *Colonies {
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.workEndsDisplay())
+		},
+	}, {
+		Label: "Extracting",
+		Width: 200,
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(r.extractingText)
 		},
 	}, {
 		Label: "Producing",
@@ -529,14 +531,17 @@ func (a *Colonies) Update(ctx context.Context) {
 			return
 		}
 		a.rows = rows
+		a.rowsGen++
 		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})
 }
 
 // refreshForecasts recalculates the forecasts for all colonies.
+// A refresh never discards rows from Update, but is discarded when Update replaced them.
 func (a *Colonies) refreshForecasts() {
-	isLatest := a.rowsRun.start()
+	isLatest := a.forecastRun.start()
+	gen := a.rowsGen
 	rows := slices.Clone(a.rows)
 	runAsync(func() {
 		now := time.Now()
@@ -544,7 +549,7 @@ func (a *Colonies) refreshForecasts() {
 			rows[i].setForecast(a.u.Character().ForecastPlanet(rows[i].planet, now))
 		}
 		fyne.Do(func() {
-			if !isLatest() {
+			if !isLatest() || a.rowsGen != gen {
 				return
 			}
 			a.rows = rows
