@@ -21,6 +21,25 @@ func TestFilterChipCompact_Menu(t *testing.T) {
 		assert.Equal(t, "Alpha", it.Label)
 		assert.Equal(t, f.blankResource, it.Icon)
 	})
+	t.Run("should show separators", func(t *testing.T) {
+		// when
+		f := NewFilterChipCompact([]FilterOption{
+			NewFilterOptionToogle("Alpha"),
+			NewFilterOptionSeparator(),
+			NewFilterOptionMultiChoice("Bravo", nil),
+		}, nil)
+
+		// then
+		var got []string
+		for _, it := range f.menu.Items {
+			if it.IsSeparator {
+				got = append(got, "---")
+			} else {
+				got = append(got, it.Label)
+			}
+		}
+		assert.Equal(t, []string{"Alpha", "---", "Bravo (0)", "---", "Clear"}, got)
+	})
 }
 
 func TestSanitizeSelected(t *testing.T) {
@@ -77,6 +96,44 @@ func TestSanitizeSelected(t *testing.T) {
 
 			// then
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestNormalizeOptions(t *testing.T) {
+	alpha := NewFilterOptionToogle("Alpha")
+	bravo := NewFilterOptionMultiChoice("Bravo", []string{"one"})
+	sep := NewFilterOptionSeparator()
+	cases := []struct {
+		name    string
+		options []FilterOption
+		want    []string
+	}{
+		{"should keep separator between options", []FilterOption{alpha, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
+		{"should remove duplicate options", []FilterOption{alpha, bravo, alpha}, []string{"Alpha", "Bravo"}},
+		{"should drop leading separator", []FilterOption{sep, alpha, bravo}, []string{"Alpha", "Bravo"}},
+		{"should drop trailing separator", []FilterOption{alpha, bravo, sep}, []string{"Alpha", "Bravo"}},
+		{"should collapse consecutive separators", []FilterOption{alpha, sep, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
+		{"should drop separator left over from removed duplicate", []FilterOption{alpha, sep, alpha}, []string{"Alpha"}},
+		{"should collapse separators around removed duplicate", []FilterOption{alpha, sep, alpha, sep, bravo}, []string{"Alpha", "---", "Bravo"}},
+		{"should return empty for separators only", []FilterOption{sep, sep}, []string{}},
+		{"should return empty for nil", nil, []string{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// when
+			got := normalizeOptions(tc.options)
+
+			// then
+			names := []string{}
+			for _, o := range got {
+				if o.kind == optionKindSeparator {
+					names = append(names, "---")
+				} else {
+					names = append(names, o.name)
+				}
+			}
+			assert.Equal(t, tc.want, names)
 		})
 	}
 }

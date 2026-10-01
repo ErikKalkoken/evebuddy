@@ -103,7 +103,7 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 		resetText:            "Clear",
 		selected:             make(map[string]string),
 	}
-	w.options = removeDuplicateOptions(options)
+	w.options = normalizeOptions(options)
 	w.icon = widget.NewIcon(w.iconResource)
 	w.background.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
 	w.clearItem = fyne.NewMenuItem(w.resetText, func() {
@@ -156,17 +156,23 @@ func (w *FilterChipCompact) Selected() map[string]string {
 //
 // The order of filter options is preserved.
 func (w *FilterChipCompact) SetOptions(options ...FilterOption) {
-	w.options = removeDuplicateOptions(options)
+	w.options = normalizeOptions(options)
 	w.updateSelectedFromOptions()
 	w.updateOn()
 	w.setMenu()
 }
 
-func removeDuplicateOptions(options []FilterOption) []FilterOption {
+// normalizeOptions removes duplicate options
+// and separators which are leading, trailing or consecutive.
+func normalizeOptions(options []FilterOption) []FilterOption {
 	var options2 []FilterOption
 	names := make(map[string]bool)
 	for _, o := range options {
 		if o.kind == optionKindSeparator {
+			if len(options2) == 0 || options2[len(options2)-1].kind == optionKindSeparator {
+				continue
+			}
+			options2 = append(options2, o)
 			continue
 		}
 		if names[o.name] {
@@ -174,6 +180,9 @@ func removeDuplicateOptions(options []FilterOption) []FilterOption {
 		}
 		names[o.name] = true
 		options2 = append(options2, o)
+	}
+	if n := len(options2); n > 0 && options2[n-1].kind == optionKindSeparator {
+		options2 = options2[:n-1]
 	}
 	return options2
 }
