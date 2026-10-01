@@ -94,7 +94,7 @@ func newPin(pp *app.PlanetPin, lastUpdate time.Time) (*pin, bool) {
 		if v, ok := pp.ExtractorProductType.Value(); ok {
 			p.productTypeID = v.ID
 		}
-		p.isActive = !p.expiryTime.IsZero() && lastUpdate.Before(p.expiryTime) && !pp.LastCycleStart.IsEmpty()
+		p.isActive = p.isExtractorSetup() && lastUpdate.Before(p.expiryTime) && !pp.LastCycleStart.IsEmpty()
 	case kindFactory:
 		es, ok := pp.Schematic.Value()
 		if !ok {
@@ -139,6 +139,11 @@ func (p *pin) isStorage() bool {
 		return true
 	}
 	return false
+}
+
+// isExtractorSetup reports whether an extractor has a complete program.
+func (p *pin) isExtractorSetup() bool {
+	return !p.installTime.IsZero() && !p.expiryTime.IsZero() && p.cycleTime > 0 && p.baseValue > 0 && p.productTypeID != 0
 }
 
 func (p *pin) isFactory() bool {

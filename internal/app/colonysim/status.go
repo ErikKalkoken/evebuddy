@@ -43,8 +43,7 @@ func (s *Simulation) colonyStatus(now time.Time) (app.ColonyStatus, map[int64]ap
 func (s *Simulation) pinStatus(p *pin, now time.Time) app.PinStatus {
 	switch p.kind {
 	case kindExtractor:
-		isSetup := !p.installTime.IsZero() && !p.expiryTime.IsZero() && p.cycleTime > 0 && p.baseValue > 0 && p.productTypeID != 0
-		if !isSetup {
+		if !p.isExtractorSetup() {
 			return app.PinNotSetup
 		}
 		if !p.expiryTime.After(now) {

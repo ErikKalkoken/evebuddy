@@ -592,3 +592,7 @@ func TestSimulation_CloneWithFactory(t *testing.T) {
 	s.RunUntil(t0.Add(3 * time.Hour))
 	assert.Equal(t, s2.Forecast().Pins[3].Contents, s.Forecast().Pins[3].Contents)
 }
+
+func TestExtractorOutput_WithoutCycleTime(t *testing.T) {
+	assert.Equal(t, int64(0), extractorOutput(1081, t0, t0.Add(time.Hour), 0))
+}
