@@ -90,6 +90,7 @@ func (r colonyRow) needsAttention() bool {
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{
 		ColorName: r.status.Color(),
+		Inline:    true,
 	})
 }
 

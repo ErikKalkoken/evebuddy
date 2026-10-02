@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -67,6 +68,8 @@ type colonyDetails struct {
 	footer        *widget.Label
 	forecastRun   latestRun
 	icon          *canvas.Image
+	iconAttention *canvas.Image // shown over the planet icon when the colony has problems
+	iconStack     *fyne.Container
 	installations *widget.List
 	owner         *widget.Hyperlink
 	planet        *xwidget.TappableRichText
@@ -95,6 +98,7 @@ Symbols:
 • Icon: The type of installation.
 • Outer ring: Green when working, gray when idle or not producing anything, red when it needs attention.
 • Inner ring: The progress of the extractor program or the processor cycle, or how full a storage is.
+• Red symbol over the planet: The colony needs attention or is not set up.
 
 Extractor: The resource being extracted, the time left until the program ends and the date when it ends.
 
@@ -180,7 +184,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       ui.NewLabelWithTruncation(""),
-		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
+		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.LogoUnitSize)),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
@@ -194,6 +198,14 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 
 	a.characterID.Store(characterID)
 	a.planetID.Store(planetID)
+
+	a.icon.CornerRadius = theme.InputRadiusSize()
+	a.iconAttention = xwidget.NewImageFromResource(
+		theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError),
+		fyne.NewSquareSize(ui.LogoUnitSize*41/64), // same ratio as in game
+	)
+	a.iconAttention.Hide()
+	a.iconStack = container.NewStack(a.icon, container.NewCenter(a.iconAttention))
 
 	list := widget.NewList(
 		func() int {
@@ -272,14 +284,20 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 }
 
 func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
-	planet := container.NewBorder(nil, nil, a.icon, nil, a.planet)
-	infos := widget.NewForm(
-		widget.NewFormItem("Planet", planet),
-		widget.NewFormItem("Type", a.planetType),
-		widget.NewFormItem("Owner", a.owner),
-		widget.NewFormItem("Status", a.status),
+	p := theme.Padding()
+	header := container.NewBorder(
+		nil,
+		nil,
+		container.NewVBox(
+			// aligns the icon with the first text line, which has inner padding
+			container.New(
+				layout.NewCustomPaddedLayout(theme.InnerPadding(), 0, 0, 0),
+				a.iconStack,
+			),
+		),
+		nil,
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.planet, a.planetType, a.owner, a.status),
 	)
-	// infos.Orientation = widget.Adaptive
 
 	filter := container.NewBorder(
 		nil,
@@ -302,7 +320,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 	)
 
 	content := container.NewBorder(
-		infos,
+		header,
 		nil,
 		nil,
 		nil,
@@ -333,12 +351,12 @@ func (a *colonyDetails) refreshForecast() {
 	isLatest := a.forecastRun.start()
 	gen := a.rowsGen
 	runAsync(func() {
-		status, rows := a.makeRows(cp, time.Now())
+		colonyStatus, status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
 			}
-			a.status.Set(status)
+			a.setStatus(colonyStatus, status)
 			a.rows = rows
 			a.filterRowsAsync()
 		})
@@ -443,7 +461,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		return err
 	}
 	isLatest := a.rowsRun.start()
-	status, rows := a.makeRows(cp, time.Now())
+	colonyStatus, status, rows := a.makeRows(cp, time.Now())
 
 	fyne.Do(func() {
 		if !isLatest() {
@@ -469,7 +487,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		a.status.Set(status)
+		a.setStatus(colonyStatus, status)
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync()
@@ -477,18 +495,30 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	return nil
 }
 
-// makeRows returns the colony status and the rows for all pins of a colony forecasted at now.
-func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widget.RichTextSegment, []colonyDetailsRow) {
+// setStatus shows the status of the colony.
+func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment) {
+	a.status.Set(display)
+	if s == app.ColonyNeedsAttention || s == app.ColonyNotSetup {
+		a.iconAttention.Show()
+		a.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
+	} else {
+		a.iconAttention.Hide()
+	}
+}
+
+// makeRows returns the colony status, its display and the rows for all pins of a colony forecasted at now.
+func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.ColonyStatus, []widget.RichTextSegment, []colonyDetailsRow) {
 	f := a.u.Character().ForecastPlanet(cp, now)
 	status := xwidget.RichTextSegmentsFromText(f.Status.Display(), widget.RichTextStyle{
 		ColorName: f.Status.Color(),
+		Inline:    true,
 	})
 	if v, ok := f.WorkEndsAt.Value(); ok {
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(
-			fmt.Sprintf(" • work ends in %s (%s)", ihumanize.Duration(v.Sub(now)), v.Format(app.DateTimeFormat)),
+			fmt.Sprintf(" until %s (in %s)", v.Format(app.DateTimeFormat), ihumanize.Duration(v.Sub(now))),
 		))
 	} else if f.WorksBeyondHorizon {
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • works "+colonyBeyondHorizonText))
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" for "+colonyBeyondHorizonText))
 	}
 	typeNames := cp.TypeNames()
 	var rows []colonyDetailsRow
@@ -588,7 +618,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			searchTarget:      strings.Join(searchTargets, "~"),
 		})
 	}
-	return status, rows
+	return f.Status, status, rows
 }
 
 // colonyProgress returns the ratio of elapsed to total, clamped to 0-1.

@@ -115,7 +115,6 @@ type InfoViewer struct {
 const (
 	windowHeight        = 600
 	windowWidth         = 600
-	logoUnitSize        = 64
 	renderIconPixelSize = 256
 	renderIconUnitSize  = 128
 	zoomImagePixelSize  = 512
@@ -517,7 +516,7 @@ func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.TappableIcon {
 func (iw *InfoViewer) renderIconSize() fyne.Size {
 	var s float32
 	if iw.u.IsMobile() {
-		s = logoUnitSize
+		s = ui.LogoUnitSize
 	} else {
 		s = renderIconUnitSize
 	}
@@ -918,7 +917,7 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 }
 
 func makeInfoLogo() *canvas.Image {
-	logo := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
+	logo := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.LogoUnitSize))
 	return logo
 }
 

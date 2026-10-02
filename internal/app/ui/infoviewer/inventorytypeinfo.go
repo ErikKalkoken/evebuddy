@@ -49,7 +49,7 @@ type inventoryTypeInfo struct {
 func newInventoryTypeInfo(iw *InfoViewer, typeID, characterID int64) *inventoryTypeInfo {
 	typeIcon := xwidget.NewTappableImage(icons.BlankSvg, nil)
 	typeIcon.SetFillMode(canvas.ImageFillContain)
-	typeIcon.SetMinSize(fyne.NewSquareSize(logoUnitSize))
+	typeIcon.SetMinSize(fyne.NewSquareSize(ui.LogoUnitSize))
 	a := &inventoryTypeInfo{
 		characterIcon: xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		characterID:   characterID,
