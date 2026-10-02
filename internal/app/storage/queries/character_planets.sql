@@ -108,3 +108,28 @@ SET
     last_update = ?3,
     upgrade_level = ?4
 RETURNING id;
+
+-- name: HasCharacterPlanetsWithoutRoutes :one
+SELECT
+    EXISTS (
+        SELECT
+            1
+        FROM
+            character_planets cp
+            JOIN planet_pins pp ON pp.character_planet_id = cp.id
+        WHERE
+            cp.character_id = ?
+            AND (
+                pp.extractor_product_type_id IS NOT NULL
+                OR pp.schematic_id IS NOT NULL
+                OR pp.factory_schema_id IS NOT NULL
+            )
+            AND NOT EXISTS (
+                SELECT
+                    1
+                FROM
+                    planet_routes pr
+                WHERE
+                    pr.character_planet_id = cp.id
+            )
+    );

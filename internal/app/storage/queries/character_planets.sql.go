@@ -163,6 +163,39 @@ func (q *Queries) GetCharacterPlanet(ctx context.Context, arg GetCharacterPlanet
 	return i, err
 }
 
+const hasCharacterPlanetsWithoutRoutes = `-- name: HasCharacterPlanetsWithoutRoutes :one
+SELECT
+    EXISTS (
+        SELECT
+            1
+        FROM
+            character_planets cp
+            JOIN planet_pins pp ON pp.character_planet_id = cp.id
+        WHERE
+            cp.character_id = ?
+            AND (
+                pp.extractor_product_type_id IS NOT NULL
+                OR pp.schematic_id IS NOT NULL
+                OR pp.factory_schema_id IS NOT NULL
+            )
+            AND NOT EXISTS (
+                SELECT
+                    1
+                FROM
+                    planet_routes pr
+                WHERE
+                    pr.character_planet_id = cp.id
+            )
+    )
+`
+
+func (q *Queries) HasCharacterPlanetsWithoutRoutes(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, hasCharacterPlanetsWithoutRoutes, characterID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listAllCharacterPlanets = `-- name: ListAllCharacterPlanets :many
 SELECT
     cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,

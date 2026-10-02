@@ -68,6 +68,16 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int64, pl
 	return oo[0], nil
 }
 
+// HasCharacterPlanetsWithoutRoutes reports whether a character has colonies
+// with configured pins, but without any routes.
+func (st *Storage) HasCharacterPlanetsWithoutRoutes(ctx context.Context, characterID int64) (bool, error) {
+	v, err := st.qRO.HasCharacterPlanetsWithoutRoutes(ctx, characterID)
+	if err != nil {
+		return false, fmt.Errorf("has character planets without routes for character %d: %w", characterID, err)
+	}
+	return v == 1, nil
+}
+
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
 	rows, err := st.qRO.ListAllCharacterPlanets(ctx)
 	if err != nil {

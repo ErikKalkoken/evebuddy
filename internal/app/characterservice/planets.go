@@ -113,8 +113,13 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 	if arg.section != app.SectionCharacterPlanets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
+	// refetch colonies stored before routes were added, which the list of planets would not reveal
+	hasOldColonies, err := s.st.HasCharacterPlanetsWithoutRoutes(ctx, arg.characterID)
+	if err != nil {
+		return false, err
+	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, hasOldColonies,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanets")
 			planets, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanets(ctx, characterID).Execute()

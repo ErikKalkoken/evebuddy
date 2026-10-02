@@ -399,6 +399,95 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	})
 }
 
+func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	const planetID = 40023691
+	setup := func() (*app.Character, string) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: planetID})
+		productType := factory.CreateEveType()
+		pinType := factory.CreateEveType()
+		routeType := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"last_update":     "2016-11-28T16:42:51Z",
+					"num_pins":        1,
+					"owner_id":        c.ID,
+					"planet_id":       planetID,
+					"planet_type":     "plasma",
+					"solar_system_id": 30000379,
+					"upgrade_level":   3,
+				},
+			}))
+		detailURL := fmt.Sprintf("https://esi.evetech.net/characters/%d/planets/%d", c.ID, planetID)
+		httpmock.RegisterResponder(
+			"GET",
+			detailURL,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"links": []map[string]any{},
+				"pins": []map[string]any{
+					{
+						"extractor_details": map[string]any{
+							"heads":           []map[string]any{},
+							"product_type_id": productType.ID,
+						},
+						"latitude":  1.7196671962738037,
+						"longitude": 4.1244120597839355,
+						"pin_id":    1000000017021,
+						"type_id":   pinType.ID,
+					},
+				},
+				"routes": []map[string]any{
+					{
+						"content_type_id":    routeType.ID,
+						"destination_pin_id": 1000000017030,
+						"quantity":           20,
+						"route_id":           4,
+						"source_pin_id":      1000000017021,
+					},
+				},
+			}),
+		)
+		return c, "GET " + detailURL
+	}
+	update := func(t *testing.T, characterID int64) {
+		_, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: characterID,
+			section:     app.SectionCharacterPlanets,
+		})
+		require.NoError(t, err)
+	}
+	t.Run("should refetch colony without routes when planets are unchanged", func(t *testing.T) {
+		c, detail := setup()
+		update(t, c.ID)
+		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
+		require.NoError(t, err)
+		require.NoError(t, st.DeletePlanetRoutes(ctx, p.ID)) // as stored before routes were added
+		update(t, c.ID)
+		xassert.Equal(t, 2, httpmock.GetCallCountInfo()[detail])
+		p, err = st.GetCharacterPlanet(ctx, c.ID, planetID)
+		require.NoError(t, err)
+		assert.Len(t, p.Routes, 1)
+	})
+	t.Run("should not refetch colony with routes when planets are unchanged", func(t *testing.T) {
+		c, detail := setup()
+		update(t, c.ID)
+		update(t, c.ID)
+		xassert.Equal(t, 1, httpmock.GetCallCountInfo()[detail])
+	})
+}
+
 func TestGetPlanet(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
