@@ -584,6 +584,25 @@ func TestForecast(t *testing.T) {
 	})
 }
 
+func TestForecast_ExtractorOutputs(t *testing.T) {
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
+			newFactory(2, schematicWater),
+			newExtractor(3, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 1, water, 20),
+			newRoute(3, 3, 1, aqueousLiquids, 10_000),
+		},
+	}
+	f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
+	assert.Equal(t, []int64{2467, 2086, 2039, 1994, 2095, 2558, 2611, 2152}, f.Pins[3].ExtractorOutputs)
+	assert.Empty(t, f.Pins[2].ExtractorOutputs, "only for extractors")
+}
+
 func TestSimulation_ActivityAndLastRun(t *testing.T) {
 	t.Run("extractor", func(t *testing.T) {
 		cp := &app.CharacterPlanet{

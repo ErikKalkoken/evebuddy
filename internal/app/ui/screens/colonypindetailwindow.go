@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -390,6 +391,21 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			{label: "Cycle time", value: p.ExtractorCycleTime.StringFunc("-", ihumanize.Duration)},
 			{label: "Heads", value: p.ExtractorNumHeads.StringFunc("-", ihumanize.Comma)},
 			{label: "Base yield", value: p.ExtractorQtyPerCycle.StringFunc("-", ihumanize.Comma)},
+		}
+		install, ok1 := p.InstallTime.Value()
+		expiry, ok2 := p.ExpiryTime.Value()
+		cycle, ok3 := p.ExtractorCycleTime.Value()
+		if len(pf.ExtractorOutputs) > 0 && ok1 && ok2 && ok3 && cycle > 0 {
+			total := pf.ExtractorTotalOutput()
+			perHour := float64(total) / expiry.Sub(install).Hours()
+			current := pf.ExtractorCycleOutput(int(now.Sub(install) / cycle))
+			info.specific = append(info.specific,
+				colonyPinField{label: "Total output", value: ihumanize.Comma(total) + " units"},
+				colonyPinField{label: "Avg. per hour", value: ihumanize.Comma(int64(math.Round(perHour))) + " units"},
+				colonyPinField{label: "Current cycle output", value: current.StringFunc("-", func(v int64) string {
+					return ihumanize.Comma(v) + " units"
+				})},
+			)
 		}
 	case app.EveGroupProcessors:
 		es, ok := p.ProcessorSchematic()

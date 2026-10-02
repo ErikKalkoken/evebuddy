@@ -285,6 +285,19 @@ func (p *pin) removeCommodity(typeID, quantity int64) int64 {
 	return quantity
 }
 
+// extractorProgram returns the predicted output per cycle of an extractor program.
+func extractorProgram(baseValue int64, installTime, expiryTime time.Time, cycleTime time.Duration) []int64 {
+	if cycleTime <= 0 || installTime.IsZero() || !expiryTime.After(installTime) {
+		return nil
+	}
+	n := int(expiryTime.Sub(installTime) / cycleTime)
+	s := make([]int64, n)
+	for i := range n {
+		s[i] = extractorOutput(baseValue, installTime, installTime.Add(time.Duration(i+1)*cycleTime), cycleTime)
+	}
+	return s
+}
+
 // extractorOutput returns the amount extracted by the cycle of an extractor program ending at runTime.
 func extractorOutput(baseValue int64, installTime, runTime time.Time, cycleTime time.Duration) int64 {
 	const sec = 10_000_000 // ticks per second

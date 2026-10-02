@@ -38,16 +38,35 @@ func (f ColonyForecast) ProblemStatuses() []PinStatus {
 
 // PinForecast is the estimated state of a planet pin.
 type PinForecast struct {
-	Capacity       optional.Optional[float64] // m3, only for storage pins
-	CapacityUsed   float64                    // m3
-	Contents       map[int64]int64            // amount by type ID
-	Demands        map[int64]int64            // input quantity per cycle by type ID, only for factories
-	IsActive       bool
-	LastCycleStart optional.Optional[time.Time] // start of last production cycle, only for factories
-	LastRunTime    optional.Optional[time.Time] // for idle factories the last input check, not the last production
-	OutputQuantity int64                        // per cycle, only for factories
-	OutputTypeID   int64                        // only for factories
-	Status         PinStatus
+	Capacity         optional.Optional[float64] // m3, only for storage pins
+	CapacityUsed     float64                    // m3
+	Contents         map[int64]int64            // amount by type ID
+	Demands          map[int64]int64            // input quantity per cycle by type ID, only for factories
+	ExtractorOutputs []int64                    // predicted output per cycle of the program, only for extractors
+	IsActive         bool
+	LastCycleStart   optional.Optional[time.Time] // start of last production cycle, only for factories
+	LastRunTime      optional.Optional[time.Time] // for idle factories the last input check, not the last production
+	OutputQuantity   int64                        // per cycle, only for factories
+	OutputTypeID     int64                        // only for factories
+	Status           PinStatus
+}
+
+// ExtractorTotalOutput returns the predicted output of the whole extractor program.
+func (pf PinForecast) ExtractorTotalOutput() int64 {
+	var n int64
+	for _, v := range pf.ExtractorOutputs {
+		n += v
+	}
+	return n
+}
+
+// ExtractorCycleOutput returns the predicted output of cycle i of the extractor program
+// or nothing when i is outside the program.
+func (pf PinForecast) ExtractorCycleOutput(i int) optional.Optional[int64] {
+	if i < 0 || i >= len(pf.ExtractorOutputs) {
+		return optional.Optional[int64]{}
+	}
+	return optional.New(pf.ExtractorOutputs[i])
 }
 
 // ColonyStatus is the overall status of a PI colony.

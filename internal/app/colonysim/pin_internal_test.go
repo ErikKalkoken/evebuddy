@@ -74,3 +74,23 @@ func TestExtractorOutput(t *testing.T) {
 func TestExtractorOutput_WithoutCycleTime(t *testing.T) {
 	assert.Equal(t, int64(0), extractorOutput(1081, t0, t0.Add(time.Hour), 0))
 }
+
+func TestExtractorProgram(t *testing.T) {
+	t.Run("should return output of each cycle", func(t *testing.T) {
+		got := extractorProgram(1081, t0, t0.Add(4*time.Hour), 30*time.Minute)
+		assert.Len(t, got, 8)
+		for i, v := range got {
+			runTime := t0.Add(time.Duration(i+1) * 30 * time.Minute)
+			assert.Equal(t, extractorOutput(1081, t0, runTime, 30*time.Minute), v, "cycle %d", i)
+		}
+	})
+	t.Run("should ignore incomplete last cycle", func(t *testing.T) {
+		got := extractorProgram(1081, t0, t0.Add(100*time.Minute), 30*time.Minute)
+		assert.Len(t, got, 3)
+	})
+	t.Run("should return nothing for invalid programs", func(t *testing.T) {
+		assert.Empty(t, extractorProgram(1081, t0, t0.Add(4*time.Hour), 0))
+		assert.Empty(t, extractorProgram(1081, time.Time{}, t0.Add(4*time.Hour), 30*time.Minute))
+		assert.Empty(t, extractorProgram(1081, t0, t0, 30*time.Minute))
+	})
+}

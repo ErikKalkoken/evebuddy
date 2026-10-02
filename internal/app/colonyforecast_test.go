@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -171,5 +172,18 @@ func TestColonyForecastProblemStatuses(t *testing.T) {
 			1: {Status: app.PinProducing},
 		}}
 		assert.Empty(t, f.ProblemStatuses())
+	})
+}
+
+func TestPinForecastExtractorOutput(t *testing.T) {
+	pf := app.PinForecast{ExtractorOutputs: []int64{10, 20, 30}}
+	t.Run("should return total output", func(t *testing.T) {
+		xassert.Equal(t, 60, pf.ExtractorTotalOutput())
+		xassert.Equal(t, 0, app.PinForecast{}.ExtractorTotalOutput())
+	})
+	t.Run("should return output of cycle", func(t *testing.T) {
+		xassert.Equal(t, optional.New[int64](20), pf.ExtractorCycleOutput(1))
+		assert.True(t, pf.ExtractorCycleOutput(-1).IsEmpty())
+		assert.True(t, pf.ExtractorCycleOutput(3).IsEmpty())
 	})
 }

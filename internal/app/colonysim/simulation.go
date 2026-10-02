@@ -133,6 +133,9 @@ func (s *simulation) forecast() *app.ColonyForecast {
 			pf.Capacity = optional.New(p.capacity)
 			pf.CapacityUsed = s.usedVolume(p)
 		}
+		if p.kind == kindExtractor && p.productTypeID != 0 && p.baseValue > 0 {
+			pf.ExtractorOutputs = extractorProgram(p.baseValue, p.installTime, p.expiryTime, p.cycleTime)
+		}
 		if p.isFactory() && !p.lastCycleStartTime.IsZero() {
 			pf.LastCycleStart = optional.New(p.lastCycleStartTime)
 		}
