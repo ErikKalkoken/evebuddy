@@ -115,6 +115,27 @@ func TestColonyDetails(t *testing.T) {
 		assert.Equal(t, app.PinInputNotRouted.Display(), segmentsText(r.status))
 		assert.True(t, r.progress.IsEmpty(), "not producing")
 	})
+	t.Run("should show factory with schematic only in factory details", func(t *testing.T) {
+		cp2 := *a.colony
+		cp2.Pins = nil
+		for _, p := range a.colony.Pins {
+			if p.Type.Group.ID == app.EveGroupProcessors {
+				p2 := *p
+				p2.FactorySchematic, p2.Schematic = p.Schematic, optional.Optional[*app.EveSchematic]{}
+				p = &p2
+			}
+			cp2.Pins = append(cp2.Pins, p)
+		}
+		_, _, rows := a.makeRows(&cp2, time.Now())
+		var found bool
+		for _, r := range rows {
+			if r.name == string(pinTypeBasicProcessor) {
+				found = true
+				assert.Equal(t, "Water", r.output)
+			}
+		}
+		assert.True(t, found)
+	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a.rows = nil
 		a.refreshForecast()

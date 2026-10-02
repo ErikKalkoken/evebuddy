@@ -577,7 +577,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 				statusText = pf.Status.Display()
 			}
 		case app.EveGroupProcessors:
-			if v, ok := p.Schematic.Value(); ok {
+			if v, ok := p.ProcessorSchematic(); ok {
 				output = v.Name
 				searchTargets = append(searchTargets, strings.ToLower(v.Name))
 				if last, ok := pf.LastRunTime.Value(); ok && pf.IsActive && v.CycleTime > 0 {
