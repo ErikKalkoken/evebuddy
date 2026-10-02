@@ -444,6 +444,8 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
+			a.colony = nil // so a refresh can't bring it back
+			a.rowsGen++
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})

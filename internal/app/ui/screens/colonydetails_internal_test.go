@@ -126,6 +126,13 @@ func TestColonyDetails(t *testing.T) {
 		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // colony is not setup
 		assert.Equal(t, want, a.icon.Resource)
 	})
+	t.Run("should not restore colony on refresh after a failed update", func(t *testing.T) {
+		a.characterID.Store(0)
+		defer a.characterID.Store(character.ID)
+		require.NoError(t, a.Update(t.Context()))
+		a.refreshForecast()
+		assert.Empty(t, a.rows)
+	})
 }
 
 func TestColonyProgress(t *testing.T) {
