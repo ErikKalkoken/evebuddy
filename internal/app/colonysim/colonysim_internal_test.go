@@ -279,15 +279,6 @@ func TestSimulation(t *testing.T) {
 		s.RunUntil(t0.Add(-time.Hour))
 		assert.Equal(t, t0, s.Time())
 	})
-	t.Run("should not change original when running clone", func(t *testing.T) {
-		s := New(newPlanet())
-		s.RunUntil(t0.Add(time.Hour))
-		s2 := s.Clone()
-		s2.RunUntil(t0.Add(2 * time.Hour))
-		assert.Equal(t, t0.Add(time.Hour), s.Time())
-		assert.Equal(t, int64(2467+2086), s.Forecast().Pins[2].Contents[typeAqueousLiquids])
-		assert.Equal(t, int64(2467+2086+2039+1994), s2.Forecast().Pins[2].Contents[typeAqueousLiquids])
-	})
 	t.Run("should not change the source planet", func(t *testing.T) {
 		cp := newPlanet()
 		cp.Pins[1].Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 5}}
@@ -568,31 +559,118 @@ func TestSimulation_FactoryBeyondHorizon(t *testing.T) {
 	assert.True(t, f.WorkEndsAt.IsEmpty())
 }
 
-func TestSimulation_CloneWithFactory(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-			newFactory(2, schematicWater),
-			newStorage(3, app.EveGroupSpaceports, 10_000),
-		},
-		Routes: []*app.PlanetRoute{
-			newRoute(1, 1, 2, aqueousLiquids, 3000),
-			newRoute(2, 2, 3, water, 20),
-		},
-	}
-	s := New(cp)
-	s.RunUntil(t0.Add(45 * time.Minute))
-	s2 := s.Clone()
-	s2.RunUntil(t0.Add(3 * time.Hour))
-	assert.Equal(t, map[int64]int64{typeWater: 20}, s.Forecast().Pins[3].Contents)
-	assert.Equal(t, map[int64]int64{typeAqueousLiquids: 3000}, s.Forecast().Pins[2].Contents)
-	assert.Equal(t, map[int64]int64{typeWater: 60}, s2.Forecast().Pins[3].Contents)
-	// the original still runs the same after its clone ran
-	s.RunUntil(t0.Add(3 * time.Hour))
-	assert.Equal(t, s2.Forecast().Pins[3].Contents, s.Forecast().Pins[3].Contents)
-}
-
 func TestExtractorOutput_WithoutCycleTime(t *testing.T) {
 	assert.Equal(t, int64(0), extractorOutput(1081, t0, t0.Add(time.Hour), 0))
+}
+
+func TestSimulation_PinStatus(t *testing.T) {
+	expiry := t0.Add(4 * time.Hour)
+	toStorage := newRoute(1, 1, 2, aqueousLiquids, 10_000)
+	fromStorage := newRoute(1, 2, 1, aqueousLiquids, 3000)
+	toLaunchpad := newRoute(2, 1, 3, water, 20)
+	cases := []struct {
+		name   string
+		pin    func() *app.PlanetPin // pin 1, next to storage 2 and launchpad 3
+		routes []*app.PlanetRoute
+		want   app.PinStatus
+	}{
+		{
+			name: "extractor without product",
+			pin: func() *app.PlanetPin {
+				p := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry)
+				p.ExtractorProductType = optional.Optional[*app.EveType]{}
+				return p
+			},
+			routes: []*app.PlanetRoute{toStorage},
+			want:   app.PinNotSetup,
+		},
+		{
+			name:   "extractor without cycle time",
+			pin:    func() *app.PlanetPin { return newExtractor(1, aqueousLiquids, 1081, 0, t0, expiry) },
+			routes: []*app.PlanetRoute{toStorage},
+			want:   app.PinNotSetup,
+		},
+		{
+			name:   "extractor without quantity",
+			pin:    func() *app.PlanetPin { return newExtractor(1, aqueousLiquids, 0, 30*time.Minute, t0, expiry) },
+			routes: []*app.PlanetRoute{toStorage},
+			want:   app.PinNotSetup,
+		},
+		{
+			name: "extractor without program",
+			pin: func() *app.PlanetPin {
+				p := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry)
+				p.InstallTime = optional.Optional[time.Time]{}
+				p.ExpiryTime = optional.Optional[time.Time]{}
+				return p
+			},
+			routes: []*app.PlanetRoute{toStorage},
+			want:   app.PinNotSetup,
+		},
+		{
+			name:   "extractor with output not routed",
+			pin:    func() *app.PlanetPin { return newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry) },
+			routes: nil,
+			want:   app.PinOutputNotRouted,
+		},
+		{
+			name: "extractor without last cycle start",
+			pin: func() *app.PlanetPin {
+				p := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry)
+				p.LastCycleStart = optional.Optional[time.Time]{}
+				return p
+			},
+			routes: []*app.PlanetRoute{toStorage},
+			want:   app.PinExtractorInactive,
+		},
+		{
+			name: "factory without schematic",
+			pin: func() *app.PlanetPin {
+				p := newFactory(1, schematicWater)
+				p.Schematic = optional.Optional[*app.EveSchematic]{}
+				return p
+			},
+			routes: []*app.PlanetRoute{fromStorage, toLaunchpad},
+			want:   app.PinNotSetup,
+		},
+		{
+			name:   "factory with schematic unknown to the SDE",
+			pin:    func() *app.PlanetPin { return newFactory(1, 999_999) },
+			routes: []*app.PlanetRoute{fromStorage, toLaunchpad},
+			want:   app.PinNotSetup,
+		},
+		{
+			name: "factory with schematic from factory fallback",
+			pin: func() *app.PlanetPin {
+				p := newFactory(1, schematicWater)
+				p.Schematic = optional.Optional[*app.EveSchematic]{}
+				p.FactorySchematic = optional.New(&app.EveSchematic{ID: schematicWater})
+				return p
+			},
+			routes: []*app.PlanetRoute{fromStorage, toLaunchpad},
+			want:   app.PinFactoryIdle,
+		},
+		{
+			name:   "factory with output not routed",
+			pin:    func() *app.PlanetPin { return newFactory(1, schematicWater) },
+			routes: []*app.PlanetRoute{fromStorage},
+			want:   app.PinOutputNotRouted,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cp := &app.CharacterPlanet{
+				LastUpdate: t0,
+				Pins: []*app.PlanetPin{
+					tc.pin(),
+					newStorage(2, app.EveGroupStorageFacilities, 12_000),
+					newStorage(3, app.EveGroupSpaceports, 10_000),
+				},
+				Routes: tc.routes,
+			}
+			assert.True(t, New(cp).RunUntil(t0.Add(time.Minute)), "not aborted")
+			f := Forecast(cp, t0.Add(time.Minute))
+			assert.Equal(t, tc.want, f.Pins[1].Status)
+		})
+	}
 }

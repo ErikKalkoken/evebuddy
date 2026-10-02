@@ -1,3 +1,9 @@
+// Package colonysim estimates the current state of a PI colony
+// by simulating it forward in time from its last ESI snapshot.
+//
+// The simulation is a Go re-implementation of the colony simulation
+// in RIFT Intel Fusion Tool by Nohus (https://gitlab.com/rift-intel-fusion-tool/rift-intel-fusion-tool),
+// used with the author's permission.
 package colonysim
 
 import (
@@ -30,6 +36,12 @@ type route struct {
 	destinationID int64
 	typeID        int64
 	quantity      int64
+}
+
+type event struct {
+	time  time.Time
+	pinID int64
+	seq   uint64 // also breaks ties in insertion order
 }
 
 // Simulation is a simulation of a PI colony.
@@ -88,21 +100,6 @@ func New(cp *app.CharacterPlanet) *Simulation {
 		return cmp.Compare(a.id, b.id)
 	})
 	return s
-}
-
-// Clone returns a deep copy of a simulation.
-func (s *Simulation) Clone() *Simulation {
-	s2 := &Simulation{
-		pins:    make(map[int64]*pin, len(s.pins)),
-		pinIDs:  s.pinIDs,
-		routes:  s.routes,
-		simTime: s.simTime,
-		volumes: s.volumes,
-	}
-	for id, p := range s.pins {
-		s2.pins[id] = p.clone()
-	}
-	return s2
 }
 
 // Time returns the current simulation time.
@@ -167,7 +164,7 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 		logAborted(cp, s.simTime)
 	}
 	f := s.Forecast()
-	t, r := s.Clone().RunUntilWorkEnds(now.Add(app.ColonyForecastHorizon))
+	t, r := s.RunUntilWorkEnds(now.Add(app.ColonyForecastHorizon))
 	switch r {
 	case RunWorkEnded:
 		if t.After(now) {
@@ -416,28 +413,97 @@ func (s *Simulation) freeSpace(p *pin) float64 {
 	return p.capacity - s.usedVolume(p)
 }
 
-type event struct {
-	time  time.Time
-	pinID int64
-	seq   uint64 // also breaks ties in insertion order
-}
-
-// eventQueue is a priority queue of events ordered by time.
-type eventQueue []event
-
-func (q eventQueue) Len() int { return len(q) }
-func (q eventQueue) Less(i, j int) bool {
-	if c := q[i].time.Compare(q[j].time); c != 0 {
-		return c < 0
+// colonyStatus returns the status of the colony and of all its pins at now.
+func (s *Simulation) colonyStatus(now time.Time) (app.ColonyStatus, map[int64]app.PinStatus) {
+	pins := make(map[int64]app.PinStatus, len(s.pins))
+	var hasNotSetup, needsAttention, isExtracting, isProducing bool
+	for id, p := range s.pins {
+		ps := s.pinStatus(p, now)
+		pins[id] = ps
+		switch ps {
+		case app.PinNotSetup, app.PinInputNotRouted, app.PinOutputNotRouted:
+			hasNotSetup = true
+		case app.PinExtractorExpired, app.PinExtractorInactive, app.PinStorageFull:
+			needsAttention = true
+		case app.PinExtracting:
+			isExtracting = true
+		case app.PinProducing:
+			isProducing = true
+		}
 	}
-	return q[i].seq < q[j].seq
+	var status app.ColonyStatus
+	switch {
+	case hasNotSetup:
+		status = app.ColonyNotSetup
+	case needsAttention:
+		status = app.ColonyNeedsAttention
+	case isExtracting:
+		status = app.ColonyExtracting
+	case isProducing:
+		status = app.ColonyProducing
+	default:
+		status = app.ColonyIdle
+	}
+	return status, pins
 }
-func (q eventQueue) Swap(i, j int) { q[i], q[j] = q[j], q[i] }
-func (q *eventQueue) Push(x any)   { *q = append(*q, x.(event)) }
-func (q *eventQueue) Pop() any {
-	old := *q
-	n := len(old)
-	x := old[n-1]
-	*q = old[:n-1]
-	return x
+
+func (s *Simulation) pinStatus(p *pin, now time.Time) app.PinStatus {
+	switch p.kind {
+	case kindExtractor:
+		if !p.isExtractorSetup() {
+			return app.PinNotSetup
+		}
+		if !p.expiryTime.After(now) {
+			return app.PinExtractorExpired
+		}
+		if x := s.routingStatus(p); x != app.PinStatusUndefined {
+			return x
+		}
+		if p.isActive {
+			return app.PinExtracting
+		}
+		return app.PinExtractorInactive
+	case kindFactory:
+		if p.schematic == nil {
+			return app.PinNotSetup
+		}
+		if x := s.routingStatus(p); x != app.PinStatusUndefined {
+			return x
+		}
+		if p.isActive {
+			return app.PinProducing
+		}
+		return app.PinFactoryIdle
+	}
+	free := max(0, s.freeSpace(p))
+	for _, r := range s.routes {
+		if r.destinationID == p.id && s.volumes[r.typeID]*float64(r.quantity) > free {
+			return app.PinStorageFull
+		}
+	}
+	return app.PinStatic
+}
+
+// routingStatus returns a status when inputs or outputs of a pin are not routed.
+// Returns undefined when the pin is properly routed.
+func (s *Simulation) routingStatus(p *pin) app.PinStatus {
+	if p.isFactory() {
+		incoming := make(map[int64]bool)
+		for _, r := range s.routes {
+			if r.destinationID == p.id {
+				incoming[r.typeID] = true
+			}
+		}
+		for typeID := range p.demands {
+			if !incoming[typeID] {
+				return app.PinInputNotRouted
+			}
+		}
+	}
+	for _, r := range s.routes {
+		if r.sourceID == p.id {
+			return app.PinStatusUndefined
+		}
+	}
+	return app.PinOutputNotRouted
 }
