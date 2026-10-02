@@ -33,25 +33,38 @@ const (
 	pinTypeUnknown           colonyPinType = "???"
 )
 
-// iconAndColor returns the icon and its color for a pin type.
-func (pt colonyPinType) iconAndColor() (fyne.Resource, fyne.ThemeColorName) {
+// icon returns the icon for a pin type.
+func (pt colonyPinType) icon() fyne.Resource {
 	switch pt {
 	case pinTypeCommandCenter:
-		return eveicon.FromName(eveicon.PICommandCenter), theme.ColorNamePrimary
+		return eveicon.FromName(eveicon.PICommandCenter)
 	case pinTypeExtractor:
-		return eveicon.FromName(eveicon.PIExtractor), theme.ColorNameSuccess
+		return eveicon.FromName(eveicon.PIExtractor)
 	case pinTypeBasicProcessor:
-		return eveicon.FromName(eveicon.PIProcessor), theme.ColorNameWarning
+		return eveicon.FromName(eveicon.PIProcessor)
 	case pinTypeAdvancedProcessor:
-		return icons.PiprocessoradvancedPng, theme.ColorNameWarning
+		return icons.PiprocessoradvancedPng
 	case pinTypeHighTechProcessor:
-		return icons.PiprocessorhightechPng, theme.ColorNameWarning
+		return icons.PiprocessorhightechPng
 	case pinTypeSpacePort:
-		return eveicon.FromName(eveicon.PILaunchpad), theme.ColorNamePrimary
+		return eveicon.FromName(eveicon.PILaunchpad)
 	case pinTypeStorage:
-		return eveicon.FromName(eveicon.PIStorage), theme.ColorNamePrimary
+		return eveicon.FromName(eveicon.PIStorage)
 	}
-	return eveicon.FromName(eveicon.Undefined), theme.ColorNameDisabled
+	return eveicon.FromName(eveicon.Undefined)
+}
+
+// color returns the color of the icon for a pin type when shown in a pin symbol.
+func (pt colonyPinType) color() fyne.ThemeColorName {
+	switch pt {
+	case pinTypeCommandCenter, pinTypeSpacePort, pinTypeStorage:
+		return theme.ColorNamePrimary
+	case pinTypeExtractor:
+		return theme.ColorNameSuccess
+	case pinTypeBasicProcessor, pinTypeAdvancedProcessor, pinTypeHighTechProcessor:
+		return theme.ColorNameWarning
+	}
+	return theme.ColorNameDisabled
 }
 
 var installationShortNames = map[string]colonyPinType{
@@ -251,17 +264,16 @@ func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
 
 func (r *tripleCircleRenderer) Destroy() {}
 
-// colonyPinIcon shows an icon tinted in a theme color.
+// colonyPinIcon shows the icon of a pin type tinted in the foreground color.
 type colonyPinIcon struct {
 	widget.BaseWidget
 
-	color   fyne.ThemeColorName
 	icon    fyne.Resource
 	minSize fyne.Size
 }
 
-func newColonyPinIcon(icon fyne.Resource, color fyne.ThemeColorName, minSize fyne.Size) *colonyPinIcon {
-	w := &colonyPinIcon{color: color, icon: icon, minSize: minSize}
+func newColonyPinIcon(icon fyne.Resource, minSize fyne.Size) *colonyPinIcon {
+	w := &colonyPinIcon{icon: icon, minSize: minSize}
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -289,7 +301,7 @@ func (r *colonyPinIconRenderer) MinSize() fyne.Size {
 }
 
 func (r *colonyPinIconRenderer) Refresh() {
-	c := r.widget.Theme().Color(r.widget.color, fyne.CurrentApp().Settings().ThemeVariant())
+	c := r.widget.Theme().Color(theme.ColorNameForeground, fyne.CurrentApp().Settings().ThemeVariant())
 	r.image.Resource = r.tint.apply(r.widget.icon, c)
 	r.image.Refresh()
 }

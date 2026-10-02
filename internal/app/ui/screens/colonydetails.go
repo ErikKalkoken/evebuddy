@@ -535,7 +535,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		name := string(pinType)
 		searchTargets := []string{strings.ToLower(name)}
 
-		icon, iconColor := pinType.iconAndColor()
+		icon, iconColor := pinType.icon(), pinType.color()
 
 		pf := f.Pins[p.ID]
 		if pf == nil {

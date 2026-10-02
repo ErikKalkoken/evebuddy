@@ -416,8 +416,6 @@ func newColonyListItem() *colonyListItem {
 func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	iconSize := fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))
-	extractorIcon, extractorColor := pinTypeExtractor.iconAndColor()
-	processorIcon, processorColor := pinTypeBasicProcessor.iconAndColor()
 	c := container.New(layout.NewCustomPaddedVBoxLayout(-p),
 		w.title,
 		container.NewBorder(
@@ -425,7 +423,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(
 				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				newColonyPinIcon(extractorIcon, extractorColor, iconSize),
+				newColonyPinIcon(pinTypeExtractor.icon(), iconSize),
 			),
 			w.status,
 			w.extracting,
@@ -435,7 +433,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(
 				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				newColonyPinIcon(processorIcon, processorColor, iconSize),
+				newColonyPinIcon(pinTypeBasicProcessor.icon(), iconSize),
 			),
 			nil,
 			w.producing,
