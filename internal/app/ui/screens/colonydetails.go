@@ -438,14 +438,21 @@ func (a *colonyDetails) filterRowsAsync() {
 }
 
 func (a *colonyDetails) Update(ctx context.Context) error {
+	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
 	}
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text, a.footer.Importance = s, i
 			a.footer.Refresh()
 		})
@@ -468,7 +475,6 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
-	isLatest := a.rowsRun.start()
 	colonyStatus, status, rows := a.makeRows(cp, time.Now())
 
 	planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())

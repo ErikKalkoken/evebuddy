@@ -164,6 +164,7 @@ func (a *colonyPinDetails) setIssue(s string) {
 
 // Update reloads the colony and shows the installation.
 func (a *colonyPinDetails) Update(ctx context.Context) error {
+	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
 	c, err := a.u.Character().GetCharacter(ctx, a.characterID)
 	if err != nil {
 		return err
@@ -172,7 +173,6 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	isLatest := a.rowsRun.start()
 	ownerName := c.NameOrZero()
 	now := time.Now()
 	f := a.u.Character().ForecastPlanet(cp, now)
