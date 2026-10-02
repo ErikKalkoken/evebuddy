@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"image/color"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -125,8 +126,6 @@ func (w *colonyPinWidget) Set(r colonyDetailsRow) {
 	w.Refresh()
 }
 
-var planetPinSymbolCache xsync.Map[string, fyne.Resource]
-
 type planetPinSymbol struct {
 	widget.BaseWidget
 
@@ -138,7 +137,6 @@ type planetPinSymbol struct {
 
 func newPlanetPinSymbol() *planetPinSymbol {
 	w := &planetPinSymbol{
-		icon:        icons.BlankSvg,
 		iconColor:   theme.ColorNameForeground,
 		statusColor: theme.ColorNameDisabled,
 	}
@@ -147,7 +145,7 @@ func newPlanetPinSymbol() *planetPinSymbol {
 }
 
 func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName, statusColor fyne.ThemeColorName, progress optional.Optional[float64]) {
-	w.icon = colonyPinIconResource(icon, iconColor)
+	w.icon = icon
 	w.iconColor = iconColor
 	w.progress = progress
 	w.statusColor = statusColor
@@ -155,18 +153,13 @@ func (w *planetPinSymbol) Set(icon fyne.Resource, iconColor fyne.ThemeColorName,
 }
 
 func (w *planetPinSymbol) CreateRenderer() fyne.WidgetRenderer {
-	c1 := canvas.NewCircle(theme.Color(w.iconColor))               // Outer
-	c2 := canvas.NewCircle(theme.Color(theme.ColorNameBackground)) // Middle
-	c3 := canvas.NewCircle(theme.Color(theme.ColorNameSeparator))  // Inner
-
-	ic := canvas.NewImageFromResource(w.icon)
+	ic := canvas.NewImageFromResource(nil)
 	ic.FillMode = canvas.ImageFillContain
-
 	r := &tripleCircleRenderer{
-		circles:  []*canvas.Circle{c1, c2, c3},
+		circles:  []*canvas.Circle{canvas.NewCircle(nil), canvas.NewCircle(nil), canvas.NewCircle(nil)}, // outer, middle, inner
 		icon:     ic,
-		progress: canvas.NewArc(0, 0, planetPinSymbolArcCutout, theme.Color(theme.ColorNameForeground)),
-		track:    canvas.NewArc(0, 360, planetPinSymbolArcCutout, theme.Color(theme.ColorNameSeparator)),
+		progress: canvas.NewArc(0, 0, planetPinSymbolArcCutout, nil),
+		track:    canvas.NewArc(0, 360, planetPinSymbolArcCutout, nil),
 		widget:   w,
 	}
 	r.Refresh()
@@ -183,6 +176,7 @@ type tripleCircleRenderer struct {
 	circles  []*canvas.Circle
 	icon     *canvas.Image
 	progress *canvas.Arc
+	tint     iconTint
 	track    *canvas.Arc
 }
 
@@ -231,21 +225,24 @@ func (r *tripleCircleRenderer) MinSize() fyne.Size {
 }
 
 func (r *tripleCircleRenderer) Refresh() {
-	r.circles[0].FillColor = theme.Color(r.widget.statusColor)
-	r.circles[0].Refresh()
-	r.track.FillColor = theme.Color(theme.ColorNameSeparator)
+	th := r.widget.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	for i, name := range []fyne.ThemeColorName{r.widget.statusColor, theme.ColorNameBackground, theme.ColorNameSeparator} {
+		r.circles[i].FillColor = th.Color(name, v)
+		r.circles[i].Refresh()
+	}
+	r.track.FillColor = th.Color(theme.ColorNameSeparator, v)
 	r.track.Refresh()
-	if v, ok := r.widget.progress.Value(); ok && v > 0 {
-		r.progress.FillColor = theme.Color(theme.ColorNameForeground)
-		r.progress.EndAngle = float32(360 * min(v, 1))
+	if x, ok := r.widget.progress.Value(); ok && x > 0 {
+		r.progress.FillColor = th.Color(theme.ColorNameForeground, v)
+		r.progress.EndAngle = float32(360 * min(x, 1))
 		r.progress.Show()
 		r.progress.Refresh()
 	} else {
 		r.progress.Hide()
 	}
-	r.icon.Resource = r.widget.icon
+	r.icon.Resource = r.tint.apply(r.widget.icon, th.Color(r.widget.iconColor, v))
 	r.icon.Refresh()
-	canvas.Refresh(r.widget)
 }
 
 func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
@@ -254,17 +251,92 @@ func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
 
 func (r *tripleCircleRenderer) Destroy() {}
 
-// colonyPinIconResource returns icon tinted in color.
-func colonyPinIconResource(icon fyne.Resource, color fyne.ThemeColorName) fyne.Resource {
-	key := icon.Name() + string(color)
-	if r, ok := planetPinSymbolCache.Load(key); ok {
+// colonyPinIcon shows an icon tinted in a theme color.
+type colonyPinIcon struct {
+	widget.BaseWidget
+
+	color   fyne.ThemeColorName
+	icon    fyne.Resource
+	minSize fyne.Size
+}
+
+func newColonyPinIcon(icon fyne.Resource, color fyne.ThemeColorName, minSize fyne.Size) *colonyPinIcon {
+	w := &colonyPinIcon{color: color, icon: icon, minSize: minSize}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *colonyPinIcon) CreateRenderer() fyne.WidgetRenderer {
+	image := canvas.NewImageFromResource(nil)
+	image.FillMode = canvas.ImageFillContain
+	r := &colonyPinIconRenderer{image: image, widget: w}
+	r.Refresh()
+	return r
+}
+
+type colonyPinIconRenderer struct {
+	image  *canvas.Image
+	tint   iconTint
+	widget *colonyPinIcon
+}
+
+func (r *colonyPinIconRenderer) Layout(size fyne.Size) {
+	r.image.Resize(size)
+}
+
+func (r *colonyPinIconRenderer) MinSize() fyne.Size {
+	return r.widget.minSize
+}
+
+func (r *colonyPinIconRenderer) Refresh() {
+	c := r.widget.Theme().Color(r.widget.color, fyne.CurrentApp().Settings().ThemeVariant())
+	r.image.Resource = r.tint.apply(r.widget.icon, c)
+	r.image.Refresh()
+}
+
+func (r *colonyPinIconRenderer) Objects() []fyne.CanvasObject {
+	return []fyne.CanvasObject{r.image}
+}
+
+func (r *colonyPinIconRenderer) Destroy() {}
+
+// iconTint remembers the last tinted icon to skip the cache when nothing changed.
+type iconTint struct {
+	icon   fyne.Resource
+	color  color.NRGBA
+	result fyne.Resource
+}
+
+func (t *iconTint) apply(icon fyne.Resource, c color.Color) fyne.Resource {
+	if icon == nil {
+		return nil
+	}
+	nc := color.NRGBAModel.Convert(c).(color.NRGBA)
+	if t.result != nil && t.icon == icon && t.color == nc {
+		return t.result
+	}
+	t.icon, t.color, t.result = icon, nc, colonyTintedIcon(icon, nc)
+	return t.result
+}
+
+type tintedIconKey struct {
+	name  string
+	color color.NRGBA
+}
+
+var tintedIconCache xsync.Map[tintedIconKey, fyne.Resource]
+
+// colonyTintedIcon returns icon tinted in color.
+func colonyTintedIcon(icon fyne.Resource, c color.NRGBA) fyne.Resource {
+	key := tintedIconKey{name: icon.Name(), color: c}
+	if r, ok := tintedIconCache.Load(key); ok {
 		return r
 	}
-	r, err := fynetools.ThemedPNG(icon, theme.Color(color))
+	r, err := fynetools.ThemedPNG(icon, c)
 	if err != nil {
 		fyne.LogError("Failed theme PNG", err)
 		return icons.BlankSvg
 	}
-	planetPinSymbolCache.Store(key, r)
+	tintedIconCache.Store(key, r)
 	return r
 }

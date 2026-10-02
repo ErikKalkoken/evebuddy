@@ -56,12 +56,13 @@ func showColonyPinWindow(u baseUI, characterID, planetID, pinID int64, title, ow
 
 // colonyPinField is a labeled value shown for an installation.
 type colonyPinField struct {
-	label  string
-	value  string              // shown when there are no lines
-	color  fyne.ThemeColorName // optional
-	action func()              // optional, shows value as link
-	icon   fyne.Resource       // optional, shown in front of the value
-	lines  []colonyPinItemLine // optional, shown instead of value
+	label     string
+	value     string              // shown when there are no lines
+	color     fyne.ThemeColorName // optional
+	action    func()              // optional, shows value as link
+	icon      fyne.Resource       // optional, shown in front of the value
+	iconColor fyne.ThemeColorName // tint of the icon
+	lines     []colonyPinItemLine // optional, shown instead of value
 }
 
 // colonyPinItemLine is a line about an item, e.g. "Water" + "x 20".
@@ -263,7 +264,7 @@ func (a *colonyPinDetails) makeFieldWidget(x colonyPinField) fyne.CanvasObject {
 	if h, ok := w.(*widget.Hyperlink); ok {
 		h.Wrapping = fyne.TextWrapOff // would wrap every word in a HBox
 	}
-	icon := xwidget.NewImageFromResource(x.icon, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
+	icon := newColonyPinIcon(x.icon, x.iconColor, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	// no extra spacing, as the value already has inner padding
 	return container.New(layout.NewCustomPaddedHBoxLayout(0), icon, w)
 }
@@ -352,7 +353,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	pinType := colonyPinTypeOf(cp, p)
 	icon, iconColor := pinType.iconAndColor()
 	info.general = []colonyPinField{
-		{label: "Installation", value: string(pinType), icon: colonyPinIconResource(icon, iconColor), action: func() {
+		{label: "Installation", value: string(pinType), icon: icon, iconColor: iconColor, action: func() {
 			a.u.InfoViewer().ShowType(p.Type.ID, 0)
 		}},
 		{label: "Colony", value: cp.EvePlanet.Name, action: func() {

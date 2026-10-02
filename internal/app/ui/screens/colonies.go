@@ -20,7 +20,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -415,6 +414,9 @@ func newColonyListItem() *colonyListItem {
 
 func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
+	iconSize := fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))
+	extractorIcon, extractorColor := pinTypeExtractor.iconAndColor()
+	processorIcon, processorColor := pinTypeBasicProcessor.iconAndColor()
 	c := container.New(layout.NewCustomPaddedVBoxLayout(-p),
 		w.title,
 		container.NewBorder(
@@ -422,7 +424,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(
 				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				widget.NewIcon(eveicon.FromName(eveicon.PIExtractor)),
+				newColonyPinIcon(extractorIcon, extractorColor, iconSize),
 			),
 			w.status,
 			w.extracting,
@@ -432,7 +434,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 			nil,
 			container.NewHBox(
 				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				widget.NewIcon(eveicon.FromName(eveicon.PIProcessor)),
+				newColonyPinIcon(processorIcon, processorColor, iconSize),
 			),
 			nil,
 			w.producing,

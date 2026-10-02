@@ -89,7 +89,12 @@ type colonyDetails struct {
 var colonyDetailsHelpText = fmt.Sprintf(`Status: The estimated current status of the colony and when it will stop working.
 %s
 
-Installations: Each installation shows its estimated current state. The ring around the icon is green when working, yellow when idle, red when it needs attention and gray for storage.
+Installations: Each installation shows its estimated current state.
+
+Symbols:
+• Icon: The type of installation.
+• Outer ring: Green when working, gray when idle or not producing anything, red when it needs attention.
+• Inner ring: The progress of the extractor program or the processor cycle, or how full a storage is.
 
 Extractor: The resource being extracted, the time left until the program ends and the date when it ends.
 
