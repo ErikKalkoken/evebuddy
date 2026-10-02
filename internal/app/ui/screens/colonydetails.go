@@ -22,10 +22,13 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -56,6 +59,8 @@ const (
 	colonyDetailsFilterStatus    = "Status"
 	colonyDetailsFilterType      = "Type"
 )
+
+const colonyDetailsIconSize = 104 // matches the height of the header text
 
 type colonyDetails struct {
 	widget.BaseWidget
@@ -98,7 +103,7 @@ Symbols:
 • Icon: The type of installation.
 • Outer ring: Green when working, gray when idle or not producing anything, red when it needs attention.
 • Inner ring: The progress of the extractor program or the processor cycle, or how full a storage is.
-• Red symbol over the planet: The colony needs attention or is not set up.
+• Red symbol and grayed-out planet: The colony needs attention or is not set up.
 
 Extractor: The resource being extracted, the time left until the program ends and the date when it ends.
 
@@ -117,6 +122,8 @@ Problems:
 %s
 
 Processors which were set up shortly before the colony was last updated in game may show one batch of products, even if they never received any inputs.`, colonyStatusesHelpText, colonyEstimateHelpText("Status and contents"))
+
+var grayscalePlanetIconCache xsync.Map[int64, fyne.Resource] // by icon ID
 
 // showColonyDetailsWindow shows the details of a colony in a window.
 func showColonyDetailsWindow(u baseUI, r colonyRow) {
@@ -184,7 +191,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       ui.NewLabelWithTruncation(""),
-		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.LogoUnitSize)),
+		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(colonyDetailsIconSize)),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
@@ -202,7 +209,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.icon.CornerRadius = theme.InputRadiusSize()
 	a.iconAttention = xwidget.NewImageFromResource(
 		theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError),
-		fyne.NewSquareSize(ui.LogoUnitSize*41/64), // same ratio as in game
+		fyne.NewSquareSize(theme.IconInlineSize()*2),
 	)
 	a.iconAttention.Hide()
 	a.iconStack = container.NewStack(a.icon, container.NewCenter(a.iconAttention))
@@ -463,14 +470,14 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.start()
 	colonyStatus, status, rows := a.makeRows(cp, time.Now())
 
+	planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
+
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
-		a.u.EVEImage().InventoryTypeIconAsync(cp.EvePlanet.Type.ID, ui.IconPixelSize, func(res fyne.Resource) {
-			a.icon.Resource = res
-			a.icon.Refresh()
-		})
+		a.icon.Resource = planetIcon
+		a.icon.Refresh()
 		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
@@ -498,7 +505,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 // setStatus shows the status of the colony.
 func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment) {
 	a.status.Set(display)
-	if s == app.ColonyNeedsAttention || s == app.ColonyNotSetup {
+	if s.IsProblem() {
 		a.iconAttention.Show()
 		a.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
 	} else {
@@ -619,6 +626,24 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		})
 	}
 	return f.Status, status, rows
+}
+
+// colonyPlanetIcon returns the planet icon for iconID, in grayscale when the colony needs attention.
+func colonyPlanetIcon(iconID int64, needsAttention bool) fyne.Resource {
+	icon, _ := eveicon.FromID(iconID)
+	if !needsAttention {
+		return icon
+	}
+	if r, ok := grayscalePlanetIconCache.Load(iconID); ok {
+		return r
+	}
+	r, err := fynetools.ImageToGrayscale(icon)
+	if err != nil {
+		slog.Warn("Failed to convert planet icon to grayscale", "iconID", iconID, "error", err)
+		return icon
+	}
+	grayscalePlanetIconCache.Store(iconID, r)
+	return r
 }
 
 // colonyProgress returns the ratio of elapsed to total, clamped to 0-1.

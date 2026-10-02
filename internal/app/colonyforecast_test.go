@@ -59,6 +59,25 @@ func TestColonyStatusIsWorking(t *testing.T) {
 	}
 }
 
+func TestColonyStatusIsProblem(t *testing.T) {
+	cases := []struct {
+		s    app.ColonyStatus
+		want bool
+	}{
+		{app.ColonyStatusUndefined, false},
+		{app.ColonyNotSetup, true},
+		{app.ColonyNeedsAttention, true},
+		{app.ColonyIdle, false},
+		{app.ColonyProducing, false},
+		{app.ColonyExtracting, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.s.String(), func(t *testing.T) {
+			xassert.Equal(t, tc.want, tc.s.IsProblem())
+		})
+	}
+}
+
 func TestPinStatusString(t *testing.T) {
 	xassert.Equal(t, "input not routed", app.PinInputNotRouted.String())
 	xassert.Equal(t, "undefined", app.PinStatusUndefined.String())

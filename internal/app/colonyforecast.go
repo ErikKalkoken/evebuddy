@@ -83,13 +83,18 @@ func (s ColonyStatus) Display() string {
 }
 
 func (s ColonyStatus) Color() fyne.ThemeColorName {
-	switch s {
-	case ColonyNotSetup, ColonyNeedsAttention:
+	if s.IsProblem() {
 		return theme.ColorNameError
-	case ColonyIdle:
+	}
+	if s == ColonyIdle {
 		return theme.ColorNameWarning
 	}
 	return theme.ColorNameForeground
+}
+
+// IsProblem reports whether the colony needs the player's attention.
+func (s ColonyStatus) IsProblem() bool {
+	return s == ColonyNeedsAttention || s == ColonyNotSetup
 }
 
 // IsWorking reports whether the colony is extracting or producing.
