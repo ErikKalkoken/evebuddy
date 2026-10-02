@@ -1,5 +1,13 @@
 package colonysim
 
+import "time"
+
+type event struct {
+	time  time.Time
+	pinID int64
+	seq   uint64 // also breaks ties in insertion order
+}
+
 // eventQueue is a priority queue of events ordered by time.
 type eventQueue []event
 

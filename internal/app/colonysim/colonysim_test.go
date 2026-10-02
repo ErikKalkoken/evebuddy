@@ -11,71 +11,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+// fixtures shared with the internal tests
 const (
-	typeAqueousLiquids = 2268
-	typeWater          = 3645
-	schematicWater     = 121
+	typeAqueousLiquids = colonysim.TypeAqueousLiquids
+	typeWater          = colonysim.TypeWater
+	schematicWater     = colonysim.SchematicWater
 )
-
-var t0 = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-
-func newType(id, groupID int64, volume, capacity float64) *app.EveType {
-	et := &app.EveType{
-		ID:    id,
-		Group: &app.EveGroup{ID: groupID},
-	}
-	if volume > 0 {
-		et.Volume = optional.New(volume)
-	}
-	if capacity > 0 {
-		et.Capacity = optional.New(capacity)
-	}
-	return et
-}
 
 var (
-	aqueousLiquids = newType(typeAqueousLiquids, 1032, 0.01, 0)
-	water          = newType(typeWater, 1042, 0.38, 0)
+	t0             = colonysim.T0
+	aqueousLiquids = colonysim.AqueousLiquids
+	water          = colonysim.Water
+	newType        = colonysim.NewType
+	newExtractor   = colonysim.NewExtractor
+	newStorage     = colonysim.NewStorage
+	newFactory     = colonysim.NewFactory
+	newRoute       = colonysim.NewRoute
 )
-
-func newExtractor(id int64, product *app.EveType, baseValue int64, cycle time.Duration, install, expiry time.Time) *app.PlanetPin {
-	return &app.PlanetPin{
-		ID:                   id,
-		Type:                 newType(2848, app.EveGroupExtractorControlUnits, 0, 0),
-		ExtractorProductType: optional.New(product),
-		ExtractorQtyPerCycle: optional.New(baseValue),
-		ExtractorCycleTime:   optional.New(cycle),
-		InstallTime:          optional.New(install),
-		ExpiryTime:           optional.New(expiry),
-		LastCycleStart:       optional.New(install),
-	}
-}
-
-func newStorage(id int64, groupID int64, capacity float64, contents ...*app.PlanetPinContent) *app.PlanetPin {
-	return &app.PlanetPin{
-		ID:       id,
-		Type:     newType(2541, groupID, 0, capacity),
-		Contents: contents,
-	}
-}
-
-func newFactory(id int64, schematicID int64) *app.PlanetPin {
-	return &app.PlanetPin{
-		ID:        id,
-		Type:      newType(2473, app.EveGroupProcessors, 0, 0),
-		Schematic: optional.New(&app.EveSchematic{ID: schematicID}),
-	}
-}
-
-func newRoute(id, source, destination int64, et *app.EveType, quantity int64) *app.PlanetRoute {
-	return &app.PlanetRoute{
-		RouteID:          id,
-		SourcePinID:      source,
-		DestinationPinID: destination,
-		ContentType:      et,
-		Quantity:         quantity,
-	}
-}
 
 func TestSimulation_ExtractorToStorage(t *testing.T) {
 	cp := &app.CharacterPlanet{
@@ -133,26 +85,6 @@ func TestSimulation_Horizon(t *testing.T) {
 		assert.False(t, f.WorksBeyondHorizon)
 		assert.Equal(t, optional.New(expiry), f.WorkEndsAt)
 	})
-	t.Run("should return completed when still working at the horizon", func(t *testing.T) {
-		s := colonysim.New(newPlanet(t0.Add(48 * time.Hour)))
-		horizon := t0.Add(24 * time.Hour)
-		got, r := s.RunUntilWorkEnds(horizon)
-		assert.Equal(t, colonysim.RunCompleted, r)
-		assert.Equal(t, horizon, got)
-	})
-	t.Run("should return work ended when colony stops before the horizon", func(t *testing.T) {
-		s := colonysim.New(newPlanet(t0.Add(4 * time.Hour)))
-		got, r := s.RunUntilWorkEnds(t0.Add(24 * time.Hour))
-		assert.Equal(t, colonysim.RunWorkEnded, r)
-		assert.Equal(t, t0.Add(4*time.Hour), got)
-	})
-	t.Run("should return work ended when colony is not working", func(t *testing.T) {
-		s := colonysim.New(newPlanet(t0.Add(4 * time.Hour)))
-		s.RunUntil(t0.Add(5 * time.Hour))
-		got, r := s.RunUntilWorkEnds(t0.Add(24 * time.Hour))
-		assert.Equal(t, colonysim.RunWorkEnded, r)
-		assert.Equal(t, t0.Add(5*time.Hour), got)
-	})
 }
 
 func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
@@ -191,13 +123,6 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 	t.Run("should forecast work end at the snapshot while factory is idle", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0)
 		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.WorkEndsAt)
-	})
-	t.Run("should return work ended when colony stops within one cycle of the horizon", func(t *testing.T) {
-		s := colonysim.New(cp)
-		s.RunUntil(t0.Add(45 * time.Minute))
-		got, r := s.RunUntilWorkEnds(t0.Add(100 * time.Minute))
-		assert.Equal(t, colonysim.RunWorkEnded, r)
-		assert.Equal(t, t0.Add(90*time.Minute), got)
 	})
 }
 
@@ -252,11 +177,6 @@ func TestSimulation(t *testing.T) {
 		f := colonysim.Forecast(newPlanet(), t0.Add(time.Hour))
 		assert.Len(t, f.Pins, 2)
 		assert.Equal(t, app.ColonyExtracting, f.Status)
-	})
-	t.Run("should not go back in time", func(t *testing.T) {
-		s := colonysim.New(newPlanet())
-		s.RunUntil(t0.Add(-time.Hour))
-		assert.Equal(t, t0, s.Time())
 	})
 	t.Run("should not change the source planet", func(t *testing.T) {
 		cp := newPlanet()
@@ -643,14 +563,13 @@ func TestSimulation_PinStatus(t *testing.T) {
 				},
 				Routes: tc.routes,
 			}
-			assert.True(t, colonysim.New(cp).RunUntil(t0.Add(time.Minute)), "not aborted")
 			f := colonysim.Forecast(cp, t0.Add(time.Minute))
 			assert.Equal(t, tc.want, f.Pins[1].Status)
 		})
 	}
 }
 
-func TestSimulation_API(t *testing.T) {
+func TestForecast(t *testing.T) {
 	cp := &app.CharacterPlanet{
 		LastUpdate: t0,
 		Pins: []*app.PlanetPin{
@@ -659,43 +578,9 @@ func TestSimulation_API(t *testing.T) {
 		},
 		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
 	}
-	t.Run("should start at the snapshot", func(t *testing.T) {
-		s := colonysim.New(cp)
-		assert.Equal(t, t0, s.Time())
-		f := s.Forecast()
-		assert.Equal(t, t0, f.Time)
-		assert.Empty(t, f.Pins[2].Contents)
-	})
-	t.Run("should advance time when running", func(t *testing.T) {
-		s := colonysim.New(cp)
-		assert.True(t, s.RunUntil(t0.Add(65*time.Minute)))
-		assert.Equal(t, t0.Add(65*time.Minute), s.Time())
-		assert.Equal(t, t0.Add(65*time.Minute), s.Forecast().Time)
-	})
-	t.Run("should do nothing when running until current time", func(t *testing.T) {
-		s := colonysim.New(cp)
-		s.RunUntil(t0.Add(time.Hour))
-		assert.True(t, s.RunUntil(t0.Add(time.Hour)))
-		assert.Equal(t, t0.Add(time.Hour), s.Time())
-	})
-	t.Run("should continue from previous run", func(t *testing.T) {
-		s1 := colonysim.New(cp)
-		s1.RunUntil(t0.Add(time.Hour))
-		s1.RunUntil(t0.Add(2 * time.Hour))
-		s2 := colonysim.New(cp)
-		s2.RunUntil(t0.Add(2 * time.Hour))
-		assert.Equal(t, s2.Forecast(), s1.Forecast())
-	})
 	t.Run("should set time of forecast", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
 		assert.Equal(t, t0.Add(65*time.Minute), f.Time)
-	})
-	t.Run("should return snapshot not affected by later runs", func(t *testing.T) {
-		s := colonysim.New(cp)
-		s.RunUntil(t0.Add(time.Hour))
-		f := s.Forecast()
-		s.RunUntil(t0.Add(2 * time.Hour))
-		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 2467 + 2086}, f.Pins[2].Contents)
 	})
 }
 

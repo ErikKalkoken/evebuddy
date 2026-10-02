@@ -10,13 +10,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evesde"
 )
 
-const (
-	typeAqueousLiquids = 2268
-	schematicWater     = 121
-)
-
-var t0 = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-
 func TestPin_CanActivateFactory(t *testing.T) {
 	s, ok := evesde.PlanetSchematicByID(schematicWater)
 	require.True(t, ok)
