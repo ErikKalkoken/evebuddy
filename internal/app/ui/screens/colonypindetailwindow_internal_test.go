@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -121,6 +123,9 @@ func TestColonyPinDetails(t *testing.T) {
 		t.Fatalf("field not found: %s", label)
 		return colonyPinField{}
 	}
+	hasField := func(fields []colonyPinField, label string) bool {
+		return slices.ContainsFunc(fields, func(x colonyPinField) bool { return x.label == label })
+	}
 	// value returns the text of a field, with one line per item line.
 	value := func(t *testing.T, fields []colonyPinField, label string) string {
 		for _, x := range fields {
@@ -166,6 +171,44 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, int64(3645), field(t, info.specific, "Schematic").lines[0].typeID, "output links to its type")
 		assert.Equal(t, aqueousLiquids.ID, field(t, info.specific, "Inputs").lines[0].typeID)
 		assert.Equal(t, "Aqueous Liquids x 3,000 from Storage", value(t, info.routes, "Incoming routes"))
+	})
+	t.Run("should show last activity of producing processor", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		start := now.Add(-20 * time.Minute)
+		f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{3: {
+			IsActive:       true,
+			LastCycleStart: optional.New(start),
+			LastRunTime:    optional.New(start),
+		}}}
+		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		assert.Equal(t, start.Format(app.DateTimeFormat), value(t, info.general, "Last activity"))
+		assert.False(t, hasField(info.specific, "Idle for"))
+	})
+	t.Run("should show last production of idle processor", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		start := now.Add(-3 * time.Hour) // cycle time is 1 hour
+		f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{3: {
+			LastCycleStart: optional.New(start),
+			LastRunTime:    optional.New(now.Add(-10 * time.Minute)), // last check for inputs
+		}}}
+		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		assert.Equal(t, start.Add(time.Hour).Format(app.DateTimeFormat), value(t, info.general, "Last activity"))
+		assert.Equal(t, ihumanize.Duration(2*time.Hour), value(t, info.specific, "Idle for"))
+	})
+	t.Run("should show unknown activity of processor that never ran", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{3: {
+			LastRunTime: optional.New(now.Add(-10 * time.Minute)),
+		}}}
+		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		assert.Equal(t, "-", value(t, info.general, "Last activity"))
+		assert.False(t, hasField(info.specific, "Idle for"))
 	})
 	t.Run("should show name of unreferenced input from database", func(t *testing.T) {
 		info := makeInfo(t, 4)

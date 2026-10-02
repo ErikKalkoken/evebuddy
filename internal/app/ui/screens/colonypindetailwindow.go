@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -338,6 +339,17 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		status.value = pf.Status.Display()
 		status.color = pf.Status.Color()
 	}
+	lastActivity := pf.LastRunTime
+	var idleFor time.Duration
+	if es, ok := colonyPinSchematic(p); ok {
+		// an idle processor keeps checking for inputs, so show its last production instead
+		lastActivity = pf.LastCycleStart
+		if v, ok := pf.LastCycleStart.Value(); ok && !pf.IsActive {
+			end := v.Add(time.Duration(es.CycleTime) * time.Second)
+			lastActivity = optional.New(end)
+			idleFor = now.Sub(end)
+		}
+	}
 	pinType := colonyPinTypeOf(cp, p)
 	iconName, iconColor := colonyPinIconName(pinType)
 	info.general = []colonyPinField{
@@ -351,7 +363,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			a.u.InfoViewer().Show(&app.EveEntity{ID: cp.CharacterID, Name: ownerName, Category: app.EveEntityCharacter})
 		}},
 		status,
-		{label: "Last activity", value: pf.LastRunTime.StringFunc("-", formatTime)},
+		{label: "Last activity", value: lastActivity.StringFunc("-", formatTime)},
 		{label: "Data from", value: formatRelative(cp.LastUpdate)},
 	}
 
@@ -380,10 +392,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			{label: "Base quantity per cycle", value: p.ExtractorQtyPerCycle.StringFunc("-", ihumanize.Comma)},
 		}
 	case app.EveGroupProcessors:
-		es, ok := p.Schematic.Value()
-		if !ok {
-			es, ok = p.FactorySchematic.Value()
-		}
+		es, ok := colonyPinSchematic(p)
 		if !ok {
 			info.specific = []colonyPinField{{label: "Schematic", value: "-"}}
 			break
@@ -417,6 +426,9 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			{label: "Cycle time", value: ihumanize.Duration(cycle)},
 			{label: "Inputs", value: "-", lines: inputs},
 			{label: "Next output", value: nextOutput},
+		}
+		if idleFor > 0 {
+			info.specific = append(info.specific, colonyPinField{label: "Idle for", value: ihumanize.Duration(idleFor)})
 		}
 	default:
 		if p.Type.Group.ID == app.EveGroupCommandCenters {
@@ -521,4 +533,12 @@ func sortColonyPinItemLines(s []colonyPinItemLine) {
 	slices.SortFunc(s, func(a, b colonyPinItemLine) int {
 		return cmp.Or(strings.Compare(a.name, b.name), strings.Compare(a.detail, b.detail))
 	})
+}
+
+// colonyPinSchematic returns the schematic of a processor.
+func colonyPinSchematic(p *app.PlanetPin) (*app.EveSchematic, bool) {
+	if es, ok := p.Schematic.Value(); ok {
+		return es, true
+	}
+	return p.FactorySchematic.Value()
 }

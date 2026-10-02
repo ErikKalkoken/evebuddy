@@ -146,6 +146,9 @@ func (s *Simulation) Forecast() *app.ColonyForecast {
 			pf.Capacity = optional.New(p.capacity)
 			pf.CapacityUsed = s.usedVolume(p)
 		}
+		if p.isFactory() && !p.lastCycleStartTime.IsZero() {
+			pf.LastCycleStart = optional.New(p.lastCycleStartTime)
+		}
 		if p.schematic != nil {
 			pf.Demands = maps.Clone(p.demands)
 			pf.OutputQuantity = p.schematic.OutputQuantity

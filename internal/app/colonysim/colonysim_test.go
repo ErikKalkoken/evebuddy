@@ -712,6 +712,7 @@ func TestSimulation_ActivityAndLastRun(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
 		assert.True(t, f.Pins[1].IsActive)
 		assert.Equal(t, optional.New(t0.Add(time.Hour)), f.Pins[1].LastRunTime)
+		assert.True(t, f.Pins[1].LastCycleStart.IsEmpty(), "only for factories")
 		assert.False(t, f.Pins[2].IsActive)
 		assert.True(t, f.Pins[2].LastRunTime.IsEmpty())
 
@@ -735,10 +736,12 @@ func TestSimulation_ActivityAndLastRun(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(45*time.Minute))
 		assert.True(t, f.Pins[2].IsActive)
 		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastRunTime)
+		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastCycleStart)
 
 		f = colonysim.Forecast(cp, t0.Add(3*time.Hour))
 		assert.False(t, f.Pins[2].IsActive)
 		// an idle factory keeps checking for inputs every cycle (same as RIFT)
 		assert.Equal(t, optional.New(t0.Add(3*time.Hour)), f.Pins[2].LastRunTime)
+		assert.Equal(t, optional.New(t0.Add(60*time.Minute)), f.Pins[2].LastCycleStart, "start of last production cycle")
 	})
 }

@@ -43,9 +43,10 @@ type PinForecast struct {
 	Contents       map[int64]int64            // amount by type ID
 	Demands        map[int64]int64            // input quantity per cycle by type ID, only for factories
 	IsActive       bool
-	LastRunTime    optional.Optional[time.Time]
-	OutputQuantity int64 // per cycle, only for factories
-	OutputTypeID   int64 // only for factories
+	LastCycleStart optional.Optional[time.Time] // start of last production cycle, only for factories
+	LastRunTime    optional.Optional[time.Time] // for idle factories the last input check, not the last production
+	OutputQuantity int64                        // per cycle, only for factories
+	OutputTypeID   int64                        // only for factories
 	Status         PinStatus
 }
 
