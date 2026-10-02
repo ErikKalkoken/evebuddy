@@ -120,6 +120,12 @@ func TestColonyDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Len(t, a.rows, 3)
 	})
+	t.Run("should update planet icon on refresh", func(t *testing.T) {
+		a.icon.Resource = nil
+		a.refreshForecast()
+		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // colony is not setup
+		assert.Equal(t, want, a.icon.Resource)
+	})
 }
 
 func TestColonyProgress(t *testing.T) {

@@ -359,11 +359,12 @@ func (a *colonyDetails) refreshForecast() {
 	gen := a.rowsGen
 	runAsync(func() {
 		colonyStatus, status, rows := a.makeRows(cp, time.Now())
+		planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
 			}
-			a.setStatus(colonyStatus, status)
+			a.setStatus(colonyStatus, status, planetIcon)
 			a.rows = rows
 			a.filterRowsAsync()
 		})
@@ -476,8 +477,6 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		if !isLatest() {
 			return
 		}
-		a.icon.Resource = planetIcon
-		a.icon.Refresh()
 		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
@@ -494,7 +493,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		a.setStatus(colonyStatus, status)
+		a.setStatus(colonyStatus, status, planetIcon)
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync()
@@ -502,9 +501,13 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	return nil
 }
 
-// setStatus shows the status of the colony.
-func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment) {
+// setStatus shows the status of the colony and its planet icon.
+func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment, planetIcon fyne.Resource) {
 	a.status.Set(display)
+	if a.icon.Resource != planetIcon {
+		a.icon.Resource = planetIcon
+		a.icon.Refresh()
+	}
 	if s.IsProblem() {
 		a.iconAttention.Show()
 		a.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
