@@ -19,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -351,9 +350,9 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		}
 	}
 	pinType := colonyPinTypeOf(cp, p)
-	iconName, iconColor := pinType.nameAndColor()
+	icon, iconColor := pinType.iconAndColor()
 	info.general = []colonyPinField{
-		{label: "Installation", value: string(pinType), icon: colonyPinIconResource(eveicon.FromName(iconName), iconColor), action: func() {
+		{label: "Installation", value: string(pinType), icon: colonyPinIconResource(icon, iconColor), action: func() {
 			a.u.InfoViewer().ShowType(p.Type.ID, 0)
 		}},
 		{label: "Colony", value: cp.EvePlanet.Name, action: func() {

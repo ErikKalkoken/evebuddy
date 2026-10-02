@@ -140,11 +140,8 @@ func (s PinStatus) Display() string {
 }
 
 func (s PinStatus) Color() fyne.ThemeColorName {
-	switch {
-	case s.IsProblem():
+	if s.IsProblem() {
 		return theme.ColorNameError
-	case s == PinFactoryIdle:
-		return theme.ColorNameWarning
 	}
 	return theme.ColorNameForeground
 }
@@ -169,7 +166,9 @@ func (s PinStatus) IndicatorColor() fyne.ThemeColorName {
 	switch s {
 	case PinExtracting, PinProducing:
 		return theme.ColorNameSuccess
-	case PinStatic, PinStatusUndefined:
+	case PinFactoryIdle, PinStatic:
+		return theme.ColorNameDisabled
+	case PinStatusUndefined:
 		return theme.ColorNameButton
 	}
 	return s.Color()

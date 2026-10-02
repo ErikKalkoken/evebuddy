@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -33,25 +32,25 @@ const (
 	pinTypeUnknown           colonyPinType = "???"
 )
 
-// nameAndColor returns the icon and its color for a pin type.
-func (pt colonyPinType) nameAndColor() (eveicon.Name, fyne.ThemeColorName) {
+// iconAndColor returns the icon and its color for a pin type.
+func (pt colonyPinType) iconAndColor() (fyne.Resource, fyne.ThemeColorName) {
 	switch pt {
 	case pinTypeCommandCenter:
-		return eveicon.PICommandCenter, ui.ColorNameInfo
+		return eveicon.FromName(eveicon.PICommandCenter), theme.ColorNamePrimary
 	case pinTypeExtractor:
-		return eveicon.PIExtractor, ui.ColorNameSystem
+		return eveicon.FromName(eveicon.PIExtractor), theme.ColorNameSuccess
 	case pinTypeBasicProcessor:
-		return eveicon.PIProcessor, theme.ColorNameWarning
+		return eveicon.FromName(eveicon.PIProcessor), theme.ColorNameWarning
 	case pinTypeAdvancedProcessor:
-		return eveicon.PIProcessor, ui.ColorNameAttention
+		return icons.PiprocessoradvancedPng, theme.ColorNameWarning
 	case pinTypeHighTechProcessor:
-		return eveicon.PIProcessor, ui.ColorNameCreative
+		return icons.PiprocessorhightechPng, theme.ColorNameWarning
 	case pinTypeSpacePort:
-		return eveicon.PILaunchpad, theme.ColorNamePrimary
+		return eveicon.FromName(eveicon.PILaunchpad), theme.ColorNamePrimary
 	case pinTypeStorage:
-		return eveicon.PIStorage, theme.ColorNamePrimary
+		return eveicon.FromName(eveicon.PIStorage), theme.ColorNamePrimary
 	}
-	return eveicon.Undefined, theme.ColorNameDisabled
+	return eveicon.FromName(eveicon.Undefined), theme.ColorNameDisabled
 }
 
 var installationShortNames = map[string]colonyPinType{
@@ -122,7 +121,7 @@ func (w *colonyPinWidget) Set(r colonyDetailsRow) {
 	w.name.SetText(r.name)
 	w.output.SetText(r.output)
 	w.status.Set(r.status)
-	w.symbol.Set(eveicon.FromName(r.symbolIconName), r.symbolIconColor, r.symbolStatusColor, r.progress)
+	w.symbol.Set(r.symbolIcon, r.symbolIconColor, r.symbolStatusColor, r.progress)
 	w.Refresh()
 }
 

@@ -80,7 +80,7 @@ func TestPinStatusColor(t *testing.T) {
 		{app.PinNotSetup, theme.ColorNameError},
 		{app.PinOutputNotRouted, theme.ColorNameError},
 		{app.PinStorageFull, theme.ColorNameError},
-		{app.PinFactoryIdle, theme.ColorNameWarning},
+		{app.PinFactoryIdle, theme.ColorNameForeground},
 		{app.PinExtracting, theme.ColorNameForeground},
 		{app.PinProducing, theme.ColorNameForeground},
 		{app.PinStatic, theme.ColorNameForeground},
@@ -100,9 +100,9 @@ func TestPinStatusIndicatorColor(t *testing.T) {
 	}{
 		{app.PinExtracting, theme.ColorNameSuccess},
 		{app.PinProducing, theme.ColorNameSuccess},
-		{app.PinStatic, theme.ColorNameButton},
+		{app.PinStatic, theme.ColorNameDisabled},
 		{app.PinStatusUndefined, theme.ColorNameButton},
-		{app.PinFactoryIdle, theme.ColorNameWarning},
+		{app.PinFactoryIdle, theme.ColorNameDisabled},
 		{app.PinStorageFull, theme.ColorNameError},
 	}
 	for _, tc := range cases {

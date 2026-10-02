@@ -21,7 +21,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -41,8 +40,8 @@ type colonyDetailsRow struct {
 	progress          optional.Optional[float64] // 0-1, shown in the symbol
 	searchTarget      string
 	status            []widget.RichTextSegment
+	symbolIcon        fyne.Resource
 	symbolIconColor   fyne.ThemeColorName
-	symbolIconName    eveicon.Name
 	symbolStatusColor fyne.ThemeColorName
 }
 
@@ -494,7 +493,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 		name := string(pinType)
 		searchTargets := []string{strings.ToLower(name)}
 
-		iconName, iconColor := pinType.nameAndColor()
+		icon, iconColor := pinType.iconAndColor()
 
 		pf := f.Pins[p.ID]
 		if pf == nil {
@@ -578,8 +577,8 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) ([]widg
 			pinStatus:         pf.Status,
 			progress:          progress,
 			status:            status,
+			symbolIcon:        icon,
 			symbolIconColor:   iconColor,
-			symbolIconName:    iconName,
 			symbolStatusColor: pf.Status.IndicatorColor(),
 			searchTarget:      strings.Join(searchTargets, "~"),
 		})
