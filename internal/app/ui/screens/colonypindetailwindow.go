@@ -199,7 +199,7 @@ func (a *colonyPinDetails) fetchExtraTypeNames(ctx context.Context, cp *app.Char
 	if pf == nil {
 		return m
 	}
-	known := colonyTypeNames(cp)
+	known := cp.TypeNames()
 	for id := range pf.Demands {
 		if _, ok := known[id]; ok {
 			continue
@@ -313,7 +313,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	if pf == nil {
 		pf = &app.PinForecast{} // pin not simulated
 	}
-	typeNames := colonyTypeNames(cp)
+	typeNames := cp.TypeNames()
 	maps.Copy(typeNames, extraTypeNames)
 	typeName := func(id int64) string {
 		if n, ok := typeNames[id]; ok {
@@ -341,7 +341,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	}
 	lastActivity := pf.LastRunTime
 	var idleFor time.Duration
-	if es, ok := colonyPinSchematic(p); ok {
+	if es, ok := p.ProcessorSchematic(); ok {
 		// an idle processor keeps checking for inputs, so show its last production instead
 		lastActivity = pf.LastCycleStart
 		if v, ok := pf.LastCycleStart.Value(); ok && !pf.IsActive {
@@ -351,7 +351,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		}
 	}
 	pinType := colonyPinTypeOf(cp, p)
-	iconName, iconColor := colonyPinIconName(pinType)
+	iconName, iconColor := pinType.nameAndColor()
 	info.general = []colonyPinField{
 		{label: "Installation", value: string(pinType), icon: colonyPinIconResource(eveicon.FromName(iconName), iconColor), action: func() {
 			a.u.InfoViewer().ShowType(p.Type.ID, 0)
@@ -389,10 +389,10 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			{label: "Expires", value: expires},
 			{label: "Cycle time", value: p.ExtractorCycleTime.StringFunc("-", ihumanize.Duration)},
 			{label: "Heads", value: p.ExtractorNumHeads.StringFunc("-", ihumanize.Comma)},
-			{label: "Base quantity per cycle", value: p.ExtractorQtyPerCycle.StringFunc("-", ihumanize.Comma)},
+			{label: "Base yield", value: p.ExtractorQtyPerCycle.StringFunc("-", ihumanize.Comma)},
 		}
 	case app.EveGroupProcessors:
-		es, ok := colonyPinSchematic(p)
+		es, ok := p.ProcessorSchematic()
 		if !ok {
 			info.specific = []colonyPinField{{label: "Schematic", value: "-"}}
 			break
@@ -417,9 +417,11 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			inputs = append(inputs, colonyPinItemLine{name: typeName(id), typeID: id, detail: detail})
 		}
 		sortColonyPinItemLines(inputs)
-		nextOutput := "-"
-		if v, ok := pf.LastRunTime.Value(); ok && pf.IsActive {
-			nextOutput = formatRelative(v.Add(cycle))
+		nextOutput := "Waiting for inputs"
+		if pf.IsActive {
+			nextOutput = pf.LastRunTime.StringFunc("-", func(v time.Time) string {
+				return formatRelative(v.Add(cycle))
+			})
 		}
 		info.specific = []colonyPinField{
 			{label: "Schematic", lines: []colonyPinItemLine{output}},
@@ -445,7 +447,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 				),
 			})
 		}
-		volumes := colonyTypeVolumes(cp)
+		volumes := cp.TypeVolumes()
 		ids := slices.Collect(maps.Keys(pf.Contents))
 		slices.SortFunc(ids, func(a, b int64) int {
 			return cmp.Or(cmp.Compare(pf.Contents[b], pf.Contents[a]), strings.Compare(typeName(a), typeName(b)))
@@ -507,38 +509,8 @@ func colonyPinLabel(cp *app.CharacterPlanet, p *app.PlanetPin) string {
 	return s
 }
 
-// colonyTypeVolumes returns the volumes of all types known to a colony by type ID.
-func colonyTypeVolumes(cp *app.CharacterPlanet) map[int64]float64 {
-	m := make(map[int64]float64)
-	add := func(et *app.EveType) {
-		if et != nil {
-			m[et.ID] = et.Volume.ValueOrZero()
-		}
-	}
-	for _, p := range cp.Pins {
-		for _, c := range p.Contents {
-			add(c.Type)
-		}
-		if v, ok := p.ExtractorProductType.Value(); ok {
-			add(v)
-		}
-	}
-	for _, r := range cp.Routes {
-		add(r.ContentType)
-	}
-	return m
-}
-
 func sortColonyPinItemLines(s []colonyPinItemLine) {
 	slices.SortFunc(s, func(a, b colonyPinItemLine) int {
 		return cmp.Or(strings.Compare(a.name, b.name), strings.Compare(a.detail, b.detail))
 	})
-}
-
-// colonyPinSchematic returns the schematic of a processor.
-func colonyPinSchematic(p *app.PlanetPin) (*app.EveSchematic, bool) {
-	if es, ok := p.Schematic.Value(); ok {
-		return es, true
-	}
-	return p.FactorySchematic.Value()
 }

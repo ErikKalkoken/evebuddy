@@ -93,6 +93,25 @@ func TestPinStatusColor(t *testing.T) {
 	}
 }
 
+func TestPinStatusIndicatorColor(t *testing.T) {
+	cases := []struct {
+		s    app.PinStatus
+		want fyne.ThemeColorName
+	}{
+		{app.PinExtracting, theme.ColorNameSuccess},
+		{app.PinProducing, theme.ColorNameSuccess},
+		{app.PinStatic, theme.ColorNameButton},
+		{app.PinStatusUndefined, theme.ColorNameButton},
+		{app.PinFactoryIdle, theme.ColorNameWarning},
+		{app.PinStorageFull, theme.ColorNameError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.s.String(), func(t *testing.T) {
+			xassert.Equal(t, tc.want, tc.s.IndicatorColor())
+		})
+	}
+}
+
 func TestPinStatusIsProblem(t *testing.T) {
 	cases := []struct {
 		s    app.PinStatus

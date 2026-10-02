@@ -163,3 +163,14 @@ func (s PinStatus) IsProblem() bool {
 	}
 	return false
 }
+
+// IndicatorColor returns the color for indicating the status, e.g. in a symbol.
+func (s PinStatus) IndicatorColor() fyne.ThemeColorName {
+	switch s {
+	case PinExtracting, PinProducing:
+		return theme.ColorNameSuccess
+	case PinStatic, PinStatusUndefined:
+		return theme.ColorNameButton
+	}
+	return s.Color()
+}

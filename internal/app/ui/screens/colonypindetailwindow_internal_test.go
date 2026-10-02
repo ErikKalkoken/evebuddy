@@ -156,7 +156,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, "Aqueous Liquids", value(t, info.specific, "Product"))
 		assert.Contains(t, value(t, info.specific, "Expires"), "(in ")
 		assert.Equal(t, "10", value(t, info.specific, "Heads"))
-		assert.Equal(t, "1,081", value(t, info.specific, "Base quantity per cycle"))
+		assert.Equal(t, "1,081", value(t, info.specific, "Base yield"))
 		assert.Equal(t, "None", value(t, info.routes, "Incoming routes"))
 		assert.Equal(t, "Aqueous Liquids x 10,000 to Storage", value(t, info.routes, "Outgoing routes"))
 	})

@@ -3,16 +3,11 @@ package app
 import (
 	"iter"
 	"maps"
-	"slices"
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Character is an EVE Online character owned by the user.
@@ -251,98 +246,6 @@ type CharacterLoyaltyPointEntry struct {
 	Faction       optional.Optional[*EveEntity]
 	LoyaltyPoints int64
 }
-
-type CharacterPlanet struct {
-	ID           int64
-	CharacterID  int64
-	EvePlanet    *EvePlanet
-	LastUpdate   time.Time
-	LastNotified optional.Optional[time.Time] // last update of the snapshot that was last notified
-	Pins         []*PlanetPin
-	Routes       []*PlanetRoute
-	UpgradeLevel int64
-}
-
-func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
-	return slices.Concat(
-		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
-		xwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
-	)
-}
-
-// ExtractedTypes returns a list of unique types currently being extracted.
-func (cp CharacterPlanet) ExtractedTypes() []*EveType {
-	types := make(map[int64]*EveType)
-	for pp := range cp.ActiveExtractors() {
-		if v, ok := pp.ExtractorProductType.Value(); ok {
-			types[v.ID] = v
-		}
-	}
-	return slices.Collect(maps.Values(types))
-}
-
-func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
-	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
-		return o.IsExtracting()
-	})
-}
-
-func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
-	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
-		return o.IsProducing()
-	})
-}
-
-// ProducedSchematics returns a list of unique schematics currently in production.
-func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
-	schematics := make(map[int64]*EveSchematic)
-	for pp := range cp.ActiveProducers() {
-		if v, ok := pp.Schematic.Value(); ok {
-			schematics[v.ID] = v
-		}
-	}
-	return slices.Collect(maps.Values(schematics))
-}
-
-type PlanetPin struct {
-	ID                   int64
-	Contents             []*PlanetPinContent
-	ExpiryTime           optional.Optional[time.Time]
-	ExtractorCycleTime   optional.Optional[time.Duration]
-	ExtractorHeadRadius  optional.Optional[float64]
-	ExtractorNumHeads    optional.Optional[int64]
-	ExtractorProductType optional.Optional[*EveType]
-	ExtractorQtyPerCycle optional.Optional[int64]
-	FactorySchematic     optional.Optional[*EveSchematic]
-	InstallTime          optional.Optional[time.Time]
-	LastCycleStart       optional.Optional[time.Time]
-	Schematic            optional.Optional[*EveSchematic]
-	Type                 *EveType
-}
-
-func (pp PlanetPin) IsExtracting() bool {
-	return pp.Type.Group.ID == EveGroupExtractorControlUnits && !pp.ExtractorProductType.IsEmpty()
-}
-
-func (pp PlanetPin) IsProducing() bool {
-	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
-}
-
-// PlanetPinContent is a commodity stored in a planet pin.
-type PlanetPinContent struct {
-	Amount int64
-	Type   *EveType
-}
-
-// PlanetRoute is a route for moving commodities between two pins of a colony.
-type PlanetRoute struct {
-	ContentType      *EveType
-	DestinationPinID int64
-	Quantity         int64
-	RouteID          int64
-	SourcePinID      int64
-}
-
 type CharacterShipAbility struct {
 	Type   EntityShort
 	Group  EntityShort
