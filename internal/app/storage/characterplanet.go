@@ -173,32 +173,6 @@ func (st *Storage) UpdateCharacterPlanetLastNotified(ctx context.Context, arg Up
 	return nil
 }
 
-type UpdateOrCreateCharacterPlanetParams struct {
-	CharacterID  int64
-	EvePlanetID  int64
-	LastUpdate   time.Time
-	UpgradeLevel int64
-}
-
-func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreateCharacterPlanet: %+v: %w", arg, err)
-	}
-	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	id, err := st.qRW.UpdateOrCreateCharacterPlanet(ctx, queries.UpdateOrCreateCharacterPlanetParams{
-		CharacterID:  arg.CharacterID,
-		EvePlanetID:  arg.EvePlanetID,
-		LastUpdate:   arg.LastUpdate,
-		UpgradeLevel: arg.UpgradeLevel,
-	})
-	if err != nil {
-		return 0, wrapErr(err)
-	}
-	return id, nil
-}
-
 type ReplaceCharacterPlanetParams struct {
 	CharacterID  int64
 	EvePlanetID  int64

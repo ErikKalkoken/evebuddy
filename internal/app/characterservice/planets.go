@@ -209,25 +209,16 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 					if err != nil {
 						return err
 					}
-					characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, storage.UpdateOrCreateCharacterPlanetParams{
-						CharacterID:  characterID,
-						EvePlanetID:  o.PlanetId,
-						LastUpdate:   o.LastUpdate,
-						UpgradeLevel: o.UpgradeLevel,
-					})
-					if err != nil {
-						return err
-					}
 					planet, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId).Execute()
 					if err != nil {
 						return err
 					}
-					// replace planet pins and routes
-					if err := s.st.DeletePlanetPins(ctx, characterPlanetID); err != nil {
-						return err
-					}
-					if err := s.st.DeletePlanetRoutes(ctx, characterPlanetID); err != nil {
-						return err
+					// fetch everything first, so the colony can be written in one transaction
+					colony := storage.ReplaceCharacterPlanetParams{
+						CharacterID:  characterID,
+						EvePlanetID:  o.PlanetId,
+						LastUpdate:   o.LastUpdate,
+						UpgradeLevel: o.UpgradeLevel,
 					}
 					var recipeTypeIDs set.Set[int64] // of all schematics, so their names and volumes are known
 					addRecipeTypes := func(schematicID int64) {
@@ -244,12 +235,11 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 							return err
 						}
 						arg := storage.CreatePlanetPinParams{
-							CharacterPlanetID: characterPlanetID,
-							TypeID:            et.ID,
-							PinID:             pin.PinId,
-							ExpiryTime:        optional.FromPtr(pin.ExpiryTime),
-							InstallTime:       optional.FromPtr(pin.InstallTime),
-							LastCycleStart:    optional.FromPtr(pin.LastCycleStart),
+							TypeID:         et.ID,
+							PinID:          pin.PinId,
+							ExpiryTime:     optional.FromPtr(pin.ExpiryTime),
+							InstallTime:    optional.FromPtr(pin.InstallTime),
+							LastCycleStart: optional.FromPtr(pin.LastCycleStart),
 						}
 						if len(pin.Contents) > 0 {
 							arg.Contents = make(map[int64]int64)
@@ -292,9 +282,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 							arg.SchematicID = optional.New(es.ID)
 							addRecipeTypes(es.ID)
 						}
-						if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
-							return err
-						}
+						colony.Pins = append(colony.Pins, arg)
 					}
 					if err := s.eus.AddMissingTypes(ctx, recipeTypeIDs); err != nil {
 						return err
@@ -304,19 +292,16 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 						if err != nil {
 							return err
 						}
-						err = s.st.CreatePlanetRoute(ctx, storage.CreatePlanetRouteParams{
-							CharacterPlanetID: characterPlanetID,
-							ContentTypeID:     et.ID,
-							DestinationPinID:  r.DestinationPinId,
-							Quantity:          int64(math.Round(r.Quantity)),
-							RouteID:           r.RouteId,
-							SourcePinID:       r.SourcePinId,
+						colony.Routes = append(colony.Routes, storage.CreatePlanetRouteParams{
+							ContentTypeID:    et.ID,
+							DestinationPinID: r.DestinationPinId,
+							Quantity:         int64(math.Round(r.Quantity)),
+							RouteID:          r.RouteId,
+							SourcePinID:      r.SourcePinId,
 						})
-						if err != nil {
-							return err
-						}
 					}
-					return nil
+					_, err = s.st.ReplaceCharacterPlanet(ctx, colony)
+					return err
 				})
 			}
 			if err := g.Wait(); err != nil {

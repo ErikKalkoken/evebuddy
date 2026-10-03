@@ -20,61 +20,6 @@ func TestPlanet(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		lastUpdate := time.Now().UTC()
-		evePlanet := factory.CreateEvePlanet()
-		arg := storage.UpdateOrCreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   lastUpdate,
-			UpgradeLevel: 3,
-		}
-		// when
-		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
-		// then
-		require.NoError(t, err)
-		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, c.ID, i.CharacterID)
-		xassert.Equal(t, evePlanet, i.EvePlanet)
-		xassert.Equal(t, lastUpdate, i.LastUpdate)
-		xassert.Equal(t, 3, i.UpgradeLevel)
-	})
-	t.Run("can update existing", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		evePlanet := factory.CreateEvePlanet()
-		lastNotified := time.Now().Add(-5 * time.Minute).UTC()
-		factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   time.Now().Add(-1 * time.Hour).UTC(),
-			LastNotified: lastNotified,
-			UpgradeLevel: 2,
-		})
-		lastUpdate := time.Now().UTC()
-		arg := storage.UpdateOrCreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   lastUpdate,
-			UpgradeLevel: 3,
-		}
-		// when
-		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
-		// then
-		require.NoError(t, err)
-		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, c.ID, i.CharacterID)
-		xassert.Equal(t, evePlanet, i.EvePlanet)
-		xassert.Equal(t, lastUpdate, i.LastUpdate)
-		xassert.EqualOptional(t, lastNotified, i.LastNotified)
-		xassert.Equal(t, 3, i.UpgradeLevel)
-	})
 	t.Run("can list planets", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -352,6 +297,8 @@ func TestReplaceCharacterPlanet(t *testing.T) {
 		require.NoError(t, err)
 		p, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
 		require.NoError(t, err)
+		xassert.Equal(t, c.ID, p.CharacterID)
+		xassert.Equal(t, evePlanet, p.EvePlanet)
 		xassert.Equal(t, lastUpdate, p.LastUpdate)
 		xassert.Equal(t, 3, p.UpgradeLevel)
 		assert.ElementsMatch(t, []int64{1, 2}, pinIDs(p))
