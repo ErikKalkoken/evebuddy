@@ -620,6 +620,26 @@ func TestForecastPlanet(t *testing.T) {
 	})
 }
 
+func TestDeleteCharacter_ClearsForecasts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should clear cached forecasts when character is deleted", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		own := colonyKey{characterID: c.ID, planetID: 42}
+		other := colonyKey{characterID: c.ID + 1, planetID: 42}
+		s.forecasts.Store(own, forecastEntry{})
+		s.forecasts.Store(other, forecastEntry{})
+		_, err := s.DeleteCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		_, found := s.forecasts.Load(own)
+		assert.False(t, found)
+		_, found = s.forecasts.Load(other)
+		assert.True(t, found, "keeps forecasts of other characters")
+	})
+}
+
 func TestForecastPlanet_Cache(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
