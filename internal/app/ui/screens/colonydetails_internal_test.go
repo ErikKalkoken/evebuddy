@@ -165,10 +165,23 @@ func TestColonyDetails(t *testing.T) {
 	})
 	t.Run("should navigate between colony and installations in one window", func(t *testing.T) {
 		r := colonyRow{characterID: character.ID, planetID: cp.EvePlanet.ID, planetName: cp.EvePlanet.Name}
+		// listeners returns the number of listeners of the signals each page listens to.
+		listeners := func() []int {
+			sig := u.Signals()
+			return []int{sig.RefreshTickerExpired.Len(), sig.CharacterSectionChanged.Len(), sig.CharacterRemoved.Len()}
+		}
+		base := listeners()
+		assertPages := func(t *testing.T, n int, msg string) {
+			t.Helper()
+			var want []int
+			for _, x := range base {
+				want = append(want, x+n)
+			}
+			assert.Equal(t, want, listeners(), "listening pages %s", msg)
+		}
 		showColonyDetailsWindow(u, r)
 		w, created, _ := u.GetOrCreateWindowWithOnClosed(fmt.Sprintf("colony-%d-%d", character.ID, cp.EvePlanet.ID))
 		require.False(t, created)
-		defer w.Close()
 		nav := w.Content().(*xwidget.Navigator)
 		title := func() string {
 			return nav.Current().(*xwidget.AppBar).Title()
@@ -182,6 +195,7 @@ func TestColonyDetails(t *testing.T) {
 			}
 		}
 		require.NotNil(t, details)
+		assertPages(t, 1, "after open")
 		details.showPin(1, "Extractor")
 		assert.Equal(t, "Extractor", title())
 
@@ -194,13 +208,20 @@ func TestColonyDetails(t *testing.T) {
 		require.NotNil(t, pin)
 		pin.showPin(2, "Storage")
 		assert.Equal(t, "Storage", title())
+		assertPages(t, 3, "with two pins")
 
 		nav.Pop()
 		assert.Equal(t, "Extractor", title())
+		assertPages(t, 2, "after back")
 
 		showColonyDetailsWindow(u, r) // reopening shows the colony again
 		assert.Equal(t, root, title())
 		assert.True(t, nav.IsRoot())
+		assertPages(t, 1, "after reopening")
+
+		details.showPin(1, "Extractor")
+		w.Close()
+		assertPages(t, 0, "after close")
 	})
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
 		a.icon.Resource = nil
