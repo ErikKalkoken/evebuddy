@@ -107,12 +107,20 @@ func TestColonyPinDetails(t *testing.T) {
 		App:     test.NewTempApp(t),
 		Storage: st,
 	})
+	type shownPin struct {
+		pinID int64
+		title string
+	}
+	var shownPins []shownPin
 	makeInfo := func(t *testing.T, pinID int64) colonyPinInfo {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID)
+		a.showPin = func(pinID int64, title string) {
+			shownPins = append(shownPins, shownPin{pinID, title})
+		}
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		f := u.Character().ForecastPlanet(a.colony, now)
-		return a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		return a.makeInfo(a.colony, f, a.extraTypeNames, now)
 	}
 	item := func(t *testing.T, items []ui.AttributeItem, label string) ui.AttributeItem {
 		for _, x := range items {
@@ -148,11 +156,11 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show extractor", func(t *testing.T) {
 		info := makeInfo(t, 1)
 		require.True(t, info.found)
-		assert.Equal(t, "Extractor (Aqueous Liquids)", info.name)
+		assert.Equal(t, "Extractor", info.name)
+		assert.Equal(t, "Aqueous Liquids", info.product)
+		assert.NotNil(t, info.onProduct)
 		assert.Equal(t, pinTypeExtractor.icon(), info.symbolIcon)
 		assert.Equal(t, pinTypeExtractor, info.symbolType)
-		assert.Equal(t, cp.EvePlanet.Name, info.colony)
-		assert.Equal(t, character.EveCharacter.Name, info.owner)
 		assert.Equal(t, app.PinExtracting.Display(), statusText(info))
 		assert.True(t, info.progress.ValueOrZero() > 0)
 		assert.Equal(t, "Aqueous Liquids", value(t, info.main, "Product"))
@@ -163,7 +171,9 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.True(t, hasItem(info.main, "Data from"))
 		assert.Nil(t, info.storage)
 		assert.Equal(t, []string{"Aqueous Liquids x 10,000 to Storage"}, lines(info.routes))
-		assert.NotNil(t, info.routes[0].InfoAction, "opens connected installation")
+		shownPins = nil
+		info.routes[0].InfoAction()
+		assert.Equal(t, []shownPin{{2, string(pinTypeStorage) + " on " + cp.EvePlanet.Name}}, shownPins, "opens connected installation")
 	})
 	t.Run("should show extractor program", func(t *testing.T) {
 		info := makeInfo(t, 1)
@@ -193,12 +203,13 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show processor", func(t *testing.T) {
 		info := makeInfo(t, 3)
 		require.True(t, info.found)
+		assert.Equal(t, "Water", info.product)
 		assert.Equal(t, "Water x 20", value(t, info.main, "Schematic"))
 		assert.NotNil(t, item(t, info.main, "Schematic").InfoAction)
 		assert.Equal(t, "Inputs", info.storageTitle)
 		require.Len(t, info.storage, 1)
-		assert.Equal(t, "Aqueous Liquids", info.storage[0].Label)
-		assert.Contains(t, info.storage[0].Value, " / 3,000")
+		assert.Equal(t, "Aqueous Liquids x 3,000", info.storage[0].Label)
+		assert.Contains(t, info.storage[0].Value, " in stock")
 		assert.NotContains(t, info.storage[0].Value, "not routed")
 		assert.Equal(t, widget.MediumImportance, info.storage[0].Importance)
 		assert.Nil(t, info.program)
@@ -214,7 +225,7 @@ func TestColonyPinDetails(t *testing.T) {
 			LastCycleStart: optional.New(start),
 			LastRunTime:    optional.New(start),
 		}}}
-		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		info := a.makeInfo(a.colony, f, a.extraTypeNames, now)
 		assert.Equal(t, start.Format(app.DateTimeFormat), value(t, info.main, "Last activity"))
 		assert.False(t, hasItem(info.main, "Idle for"))
 	})
@@ -227,7 +238,7 @@ func TestColonyPinDetails(t *testing.T) {
 			LastCycleStart: optional.New(start),
 			LastRunTime:    optional.New(now.Add(-10 * time.Minute)), // last check for inputs
 		}}}
-		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		info := a.makeInfo(a.colony, f, a.extraTypeNames, now)
 		assert.Equal(t, start.Add(time.Hour).Format(app.DateTimeFormat), value(t, info.main, "Last activity"))
 		assert.Equal(t, ihumanize.Duration(2*time.Hour), value(t, info.main, "Idle for"))
 	})
@@ -238,33 +249,34 @@ func TestColonyPinDetails(t *testing.T) {
 		f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{3: {
 			LastRunTime: optional.New(now.Add(-10 * time.Minute)),
 		}}}
-		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
+		info := a.makeInfo(a.colony, f, a.extraTypeNames, now)
 		assert.Equal(t, "-", value(t, info.main, "Last activity"))
 		assert.False(t, hasItem(info.main, "Idle for"))
 	})
 	t.Run("should show name of unreferenced input from database", func(t *testing.T) {
 		info := makeInfo(t, 4)
 		require.True(t, info.found)
-		assert.Equal(t, []string{"Carbon Compounds 0 / 3,000 (not routed)"}, lines(info.storage))
+		assert.Equal(t, []string{"Carbon Compounds x 3,000 0 in stock (not routed)"}, lines(info.storage))
 		assert.Equal(t, widget.DangerImportance, info.storage[0].Importance)
 		assert.Equal(t, "Biofuels x 20", value(t, info.main, "Schematic"))
 	})
 	t.Run("should show fallback for input missing in database", func(t *testing.T) {
 		info := makeInfo(t, 5)
 		require.True(t, info.found)
-		assert.Equal(t, []string{"Type #2305 0 / 3,000 (not routed)"}, lines(info.storage))
+		assert.Equal(t, []string{"Type #2305 x 3,000 0 in stock (not routed)"}, lines(info.storage))
 		assert.NotNil(t, info.storage[0].InfoAction, "unknown types still link")
 	})
 	t.Run("should show storage", func(t *testing.T) {
 		info := makeInfo(t, 2)
 		require.True(t, info.found)
+		assert.Empty(t, info.product)
 		assert.Equal(t, "-", statusText(info))
 		assert.Contains(t, value(t, info.main, "Capacity"), " / 12,000 m3")
 		assert.Equal(t, "Storage", info.storageTitle)
 		require.Len(t, info.storage, 1)
-		assert.Equal(t, "Aqueous Liquids", info.storage[0].Label)
+		assert.Regexp(t, `^Aqueous Liquids x [\d,]+$`, info.storage[0].Label)
 		assert.NotNil(t, info.storage[0].InfoAction)
-		assert.Contains(t, info.storage[0].Value, " m3)")
+		assert.Regexp(t, `^[\d,.]+ m3$`, info.storage[0].Value)
 		assert.Equal(t, []string{
 			"Aqueous Liquids x 10,000 from Extractor (Aqueous Liquids)",
 			"Aqueous Liquids x 3,000 to Basic Processor (Water)",
@@ -303,5 +315,55 @@ func TestColonyPinDetails(t *testing.T) {
 		a.content.Objects = nil
 		a.refreshForecast()
 		assert.NotEmpty(t, a.content.Objects)
+	})
+}
+
+func TestGroupCycles(t *testing.T) {
+	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	makeCycles := func(phases ...colonyCyclePhase) []colonyCycle {
+		var s []colonyCycle
+		for i, p := range phases {
+			s = append(s, colonyCycle{index: i, output: int64(i + 1), phase: p, start: start.Add(time.Duration(i) * time.Hour)})
+		}
+		return s
+	}
+	t.Run("should keep cycles when below maximum", func(t *testing.T) {
+		cycles := makeCycles(cycleCompleted, cycleCurrent, cycleUpcoming)
+		assert.Equal(t, cycles, groupCycles(cycles, 3))
+	})
+	t.Run("should merge cycles into steps with average output", func(t *testing.T) {
+		cycles := makeCycles(cycleUpcoming, cycleUpcoming, cycleUpcoming, cycleUpcoming)
+		assert.Equal(t, []colonyCycle{
+			{index: 0, output: 2, phase: cycleUpcoming, start: start},                    // (1+2)/2 rounded
+			{index: 1, output: 4, phase: cycleUpcoming, start: start.Add(2 * time.Hour)}, // (3+4)/2 rounded
+		}, groupCycles(cycles, 2))
+	})
+	t.Run("should not merge cycles of different phases", func(t *testing.T) {
+		cycles := makeCycles(cycleCompleted, cycleCompleted, cycleCompleted, cycleCurrent, cycleUpcoming, cycleUpcoming)
+		got := groupCycles(cycles, 3)
+		var phases []colonyCyclePhase
+		var starts []time.Time
+		for i, c := range got {
+			assert.Equal(t, i, c.index)
+			phases = append(phases, c.phase)
+			starts = append(starts, c.start)
+		}
+		assert.Equal(t, []colonyCyclePhase{cycleCompleted, cycleCompleted, cycleCurrent, cycleUpcoming}, phases)
+		assert.Equal(t, []time.Time{start, start.Add(2 * time.Hour), start.Add(3 * time.Hour), start.Add(4 * time.Hour)}, starts)
+	})
+	t.Run("should limit steps for long programs", func(t *testing.T) {
+		phases := make([]colonyCyclePhase, 500)
+		for i := range phases {
+			switch {
+			case i < 200:
+				phases[i] = cycleCompleted
+			case i == 200:
+				phases[i] = cycleCurrent
+			default:
+				phases[i] = cycleUpcoming
+			}
+		}
+		got := groupCycles(makeCycles(phases...), colonyProgramMaxSteps)
+		assert.LessOrEqual(t, len(got), colonyProgramMaxSteps+3)
 	})
 }

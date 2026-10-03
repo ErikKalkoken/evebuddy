@@ -1,6 +1,8 @@
 package screens
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestColonyDetails(t *testing.T) {
@@ -74,10 +77,11 @@ func TestColonyDetails(t *testing.T) {
 		Quantity:          10_000,
 	})
 
-	a := newColonyDetails(testdouble.NewUIFake(testdouble.UIParams{
+	u := testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
 		Storage: st,
-	}), character.ID, cp.EvePlanet.ID)
+	})
+	a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
 	err := a.Update(t.Context())
 	require.NoError(t, err)
 
@@ -140,6 +144,58 @@ func TestColonyDetails(t *testing.T) {
 		a.rows = nil
 		a.refreshForecast()
 		assert.Len(t, a.rows, 3)
+	})
+	t.Run("should show installation when selected", func(t *testing.T) {
+		var pinID int64
+		var title string
+		a.showPin = func(id int64, s string) {
+			pinID, title = id, s
+		}
+		defer func() { a.showPin = nil }()
+		i := slices.IndexFunc(a.rowsFiltered, func(r colonyDetailsRow) bool { return r.name == string(pinTypeStorage) })
+		require.NotEqual(t, -1, i)
+		a.installations.Select(i)
+		assert.EqualValues(t, 2, pinID)
+		assert.Equal(t, string(pinTypeStorage)+" on "+cp.EvePlanet.Name, title)
+	})
+	t.Run("should navigate between colony and installations in one window", func(t *testing.T) {
+		r := colonyRow{characterID: character.ID, planetID: cp.EvePlanet.ID, planetName: cp.EvePlanet.Name}
+		showColonyDetailsWindow(u, r)
+		w, created, _ := u.GetOrCreateWindowWithOnClosed(fmt.Sprintf("colony-%d-%d", character.ID, cp.EvePlanet.ID))
+		require.False(t, created)
+		defer w.Close()
+		nav := w.Content().(*xwidget.Navigator)
+		title := func() string {
+			return nav.Current().(*xwidget.AppBar).Title()
+		}
+		root := title()
+
+		var details *colonyDetails
+		for _, o := range test.LaidOutObjects(w.Content()) {
+			if x, ok := o.(*colonyDetails); ok {
+				details = x
+			}
+		}
+		require.NotNil(t, details)
+		details.showPin(1, "Extractor")
+		assert.Equal(t, "Extractor", title())
+
+		var pin *colonyPinDetails
+		for _, o := range test.LaidOutObjects(nav.Current()) {
+			if x, ok := o.(*colonyPinDetails); ok {
+				pin = x
+			}
+		}
+		require.NotNil(t, pin)
+		pin.showPin(2, "Storage")
+		assert.Equal(t, "Storage", title())
+
+		nav.Pop()
+		assert.Equal(t, "Extractor", title())
+
+		showColonyDetailsWindow(u, r) // reopening shows the colony again
+		assert.Equal(t, root, title())
+		assert.True(t, nav.IsRoot())
 	})
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
 		a.icon.Resource = nil

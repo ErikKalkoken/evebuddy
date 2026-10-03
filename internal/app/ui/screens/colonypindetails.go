@@ -26,47 +26,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// showColonyPinWindow shows the details of an installation of a colony in a window.
-func showColonyPinWindow(u baseUI, characterID, planetID, pinID int64, title, ownerName string) {
-	windowID := fmt.Sprintf("colony-pin-%d-%d-%d", characterID, planetID, pinID)
-	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(windowID, title, ownerName)
-	if !ok {
-		w.Show()
-		return
-	}
-	a := newColonyPinDetails(u, characterID, planetID, pinID)
-	w.SetOnClosed(func() {
-		if onClosed != nil {
-			onClosed()
-		}
-		a.stop()
-	})
-	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-		Content: showWhenLoaded(a, func() {
-			if err := a.Update(context.Background()); err != nil {
-				slog.Error("Failed to show colony installation", "characterID", characterID, "planetID", planetID, "pinID", pinID, "error", err)
-				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-				})
-			}
-		}),
-		Title:  title,
-		Window: w,
-	})
-	w.Show()
-}
-
 // colonyPinInfo is the information shown for an installation.
 type colonyPinInfo struct {
 	found bool
 
 	// header
-	colony      string
 	name        string
-	onColony    func()
 	onName      func()
-	onOwner     func()
-	owner       string
+	onProduct   func()
+	product     string // empty when the installation has no product
 	progress    optional.Optional[float64]
 	status      []widget.RichTextSegment
 	symbolColor fyne.ThemeColorName
@@ -88,7 +56,6 @@ type colonyPinDetails struct {
 	body           fyne.CanvasObject
 	characterID    int64
 	colony         *app.CharacterPlanet
-	colonyLink     *widget.Hyperlink
 	content        *fyne.Container
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
@@ -96,16 +63,16 @@ type colonyPinDetails struct {
 	main           *ui.AttributeList
 	mainTab        *container.TabItem
 	name           *widget.Hyperlink
-	owner          *widget.Hyperlink
-	ownerName      string
 	pinID          int64
 	planetID       int64
+	product        *widget.Hyperlink
 	program        *fyneline.AreaChart[colonyProgramPoint]
 	programLegend  *seriesLegend
 	programTab     *container.TabItem
 	programTitle   *widget.Label
 	routes         *ui.AttributeList
 	routesTab      *container.TabItem
+	showPin        func(pinID int64, title string)
 	rowsGen        int // incremented when Update replaces the colony
 	rowsRun        latestRun
 	signalKey      string
@@ -128,13 +95,12 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64) *colonyPi
 	}
 	a := &colonyPinDetails{
 		characterID: characterID,
-		colonyLink:  makeHyperLink(),
 		content:     container.NewStack(),
 		footer:      ui.NewLabelWithTruncation(""),
 		main:        ui.NewAttributeList(),
 		name:        makeHyperLink(),
-		owner:       makeHyperLink(),
 		pinID:       pinID,
+		product:     makeHyperLink(),
 		planetID:    planetID,
 		program: fyneline.NewAreaChart(nil, fyneline.TimeAccessor(func(p colonyProgramPoint) time.Time {
 			return p.at
@@ -169,7 +135,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64) *colonyPi
 			container.NewVBox(a.symbol),
 		),
 		nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.name, a.colonyLink, a.owner, a.status),
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.name, a.product, a.status),
 	)
 	a.body = container.NewBorder(header, nil, nil, nil, a.tabs)
 
@@ -221,26 +187,20 @@ func (a *colonyPinDetails) setIssue(s string) {
 // Update reloads the colony and shows the installation.
 func (a *colonyPinDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
-	c, err := a.u.Character().GetCharacter(ctx, a.characterID)
-	if err != nil {
-		return err
-	}
 	cp, err := a.u.Character().GetPlanet(ctx, a.characterID, a.planetID)
 	if err != nil {
 		return err
 	}
-	ownerName := c.NameOrZero()
 	now := time.Now()
 	f := a.u.Character().ForecastPlanet(cp, now)
 	extraTypeNames := a.fetchExtraTypeNames(ctx, cp, f)
-	info := a.makeInfo(cp, f, ownerName, extraTypeNames, now)
+	info := a.makeInfo(cp, f, extraTypeNames, now)
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
 		a.colony = cp
 		a.extraTypeNames = extraTypeNames
-		a.ownerName = ownerName
 		a.rowsGen++
 		a.set(info)
 	})
@@ -277,14 +237,13 @@ func (a *colonyPinDetails) refreshForecast() {
 	if cp == nil {
 		return
 	}
-	ownerName := a.ownerName
 	extraTypeNames := a.extraTypeNames
 	isLatest := a.forecastRun.start()
 	gen := a.rowsGen
 	runAsync(func() {
 		now := time.Now()
 		f := a.u.Character().ForecastPlanet(cp, now)
-		info := a.makeInfo(cp, f, ownerName, extraTypeNames, now)
+		info := a.makeInfo(cp, f, extraTypeNames, now)
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
@@ -303,10 +262,13 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 	}
 	a.name.SetText(info.name)
 	a.name.OnTapped = info.onName
-	a.colonyLink.SetText(info.colony)
-	a.colonyLink.OnTapped = info.onColony
-	a.owner.SetText(info.owner)
-	a.owner.OnTapped = info.onOwner
+	a.product.SetText(info.product)
+	a.product.OnTapped = info.onProduct
+	if info.product != "" {
+		a.product.Show()
+	} else {
+		a.product.Hide()
+	}
 	a.status.Set(info.status)
 	a.symbol.Set(info.symbolIcon, info.symbolType.color(), info.symbolColor, info.progress)
 
@@ -367,6 +329,15 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 	a.programTitle.SetText(title)
 
 	// each cycle is a step from its start to the next point, so the last cycle needs an end point
+	var end time.Time
+	if n := len(cycles); n > 0 {
+		last := cycles[n-1]
+		end = last.start
+		if n > 1 {
+			end = end.Add(last.start.Sub(cycles[n-2].start))
+		}
+	}
+	cycles = groupCycles(cycles, colonyProgramMaxSteps)
 	var points []colonyProgramPoint
 	var completed int
 	var hasCurrent bool
@@ -381,14 +352,8 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 		}
 		maxOutput = max(maxOutput, c.output)
 	}
-	n := len(cycles)
-	if n > 0 {
-		last := cycles[n-1]
-		end := last.start
-		if n > 1 {
-			end = end.Add(last.start.Sub(cycles[n-2].start))
-		}
-		points = append(points, colonyProgramPoint{at: end, index: n, output: last.output})
+	if n := len(cycles); n > 0 {
+		points = append(points, colonyProgramPoint{at: end, index: n, output: cycles[n-1].output})
 	}
 
 	// neighboring phases share their boundary point, so the areas join
@@ -443,8 +408,40 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 	a.program.SetData(points)
 }
 
+// colonyProgramMaxSteps is the maximum number of steps in the program chart.
+// Each step is drawn with chart-sized shapes, so many steps make every repaint slow.
+const colonyProgramMaxSteps = 48
+
+// groupCycles returns cycles merged into at most about maxSteps steps with their average output.
+// Steps never span different phases.
+func groupCycles(cycles []colonyCycle, maxSteps int) []colonyCycle {
+	size := (len(cycles) + maxSteps - 1) / max(maxSteps, 1)
+	if size <= 1 {
+		return cycles
+	}
+	var steps []colonyCycle
+	for i := 0; i < len(cycles); {
+		j := i + 1
+		for j < len(cycles) && j-i < size && cycles[j].phase == cycles[i].phase {
+			j++
+		}
+		var total int64
+		for _, c := range cycles[i:j] {
+			total += c.output
+		}
+		steps = append(steps, colonyCycle{
+			index:  len(steps),
+			output: int64(math.Round(float64(total) / float64(j-i))),
+			phase:  cycles[i].phase,
+			start:  cycles[i].start,
+		})
+		i = j
+	}
+	return steps
+}
+
 // makeInfo returns the information for the installation from forecast f at now.
-func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForecast, ownerName string, extraTypeNames map[int64]string, now time.Time) colonyPinInfo {
+func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForecast, extraTypeNames map[int64]string, now time.Time) colonyPinInfo {
 	pins := make(map[int64]*app.PlanetPin)
 	for _, p := range cp.Pins {
 		pins[p.ID] = p
@@ -489,17 +486,9 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		statusColor = pf.Status.Color()
 	}
 	info := colonyPinInfo{
-		colony: cp.EvePlanet.Name,
-		found:  true,
-		name:   colonyPinLabel(cp, p),
-		onColony: func() {
-			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.ToEveEntity())
-		},
-		onName: showType(p.Type.ID),
-		onOwner: func() {
-			a.u.InfoViewer().Show(&app.EveEntity{ID: cp.CharacterID, Name: ownerName, Category: app.EveEntityCharacter})
-		},
-		owner:       ownerName,
+		found:       true,
+		name:        string(pinType),
+		onName:      showType(p.Type.ID),
 		progress:    colonyPinProgress(p, pf, now),
 		status:      xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{ColorName: statusColor}),
 		symbolColor: pf.Status.IndicatorColor(),
@@ -525,6 +514,8 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		if v, ok := p.ExtractorProductType.Value(); ok {
 			product.Value = v.Name
 			product.InfoAction = showType(v.ID)
+			info.product = v.Name
+			info.onProduct = showType(v.ID)
 		}
 		expires := ui.AttributeItem{Label: "Expires", Value: "-"}
 		if v, ok := p.ExpiryTime.Value(); ok {
@@ -580,6 +571,8 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			break
 		}
 		output := ui.AttributeItem{Label: "Schematic", Value: es.Name, InfoAction: showType(pf.OutputTypeID)}
+		info.product = es.Name
+		info.onProduct = showType(pf.OutputTypeID)
 		if pf.OutputQuantity > 0 {
 			output.Value += " x " + ihumanize.Comma(pf.OutputQuantity)
 		}
@@ -607,8 +600,8 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		}
 		for id, quantity := range pf.Demands {
 			it := ui.AttributeItem{
-				Label:      typeName(id),
-				Value:      fmt.Sprintf("%s / %s", ihumanize.Comma(pf.Contents[id]), ihumanize.Comma(quantity)),
+				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(quantity)),
+				Value:      ihumanize.Comma(pf.Contents[id]) + " in stock",
 				InfoAction: showType(id),
 			}
 			if !incoming[id] {
@@ -643,8 +636,8 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		for _, id := range ids {
 			amount := pf.Contents[id]
 			info.storage = append(info.storage, ui.AttributeItem{
-				Label:      typeName(id),
-				Value:      fmt.Sprintf("%s (%s m3)", ihumanize.Comma(amount), humanize.FormatFloat("#,###.##", volumes[id]*float64(amount))),
+				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(amount)),
+				Value:      humanize.FormatFloat("#,###.##", volumes[id]*float64(amount)) + " m3",
 				InfoAction: showType(id),
 			})
 		}
@@ -660,17 +653,19 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	// routes
 	makeRoute := func(r *app.PlanetRoute, direction string, otherID int64) ui.AttributeItem {
 		it := ui.AttributeItem{
-			Label: typeName(r.ContentType.ID),
-			Value: fmt.Sprintf("x %s %s Unknown installation", ihumanize.Comma(r.Quantity), direction),
+			Label: fmt.Sprintf("%s x %s", typeName(r.ContentType.ID), ihumanize.Comma(r.Quantity)),
+			Value: direction + " Unknown installation",
 		}
 		other, ok := pins[otherID]
 		if !ok {
 			return it
 		}
-		it.Value = fmt.Sprintf("x %s %s %s", ihumanize.Comma(r.Quantity), direction, colonyPinLabel(cp, other))
-		it.InfoAction = func() {
+		it.Value = direction + " " + colonyPinLabel(cp, other)
+		if a.showPin != nil {
 			title := fmt.Sprintf("%s on %s", colonyPinTypeOf(cp, other), cp.EvePlanet.Name)
-			showColonyPinWindow(a.u, a.characterID, a.planetID, otherID, title, ownerName)
+			it.InfoAction = func() {
+				a.showPin(otherID, title)
+			}
 		}
 		return it
 	}

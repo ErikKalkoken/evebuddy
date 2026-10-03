@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -88,6 +89,7 @@ type colonyDetails struct {
 	searchEntry   *xwidget.SearchEntry
 	security      *xwidget.RichText
 	showHelp      *xwidget.IconButton
+	showPin       func(pinID int64, title string)
 	signalKey     string
 	sortChip      *kxwidget.SortChip
 	status        *xwidget.RichText
@@ -126,33 +128,77 @@ Processors which were set up shortly before the colony was last updated in game 
 var grayscalePlanetIconCache xsync.Map[int64, fyne.Resource] // by icon ID
 
 // showColonyDetailsWindow shows the details of a colony in a window.
+// Installations are shown as pages in the same window.
 func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	title := fmt.Sprintf("Colony %s", r.planetName)
 	windowID := fmt.Sprintf("colony-%d-%d", r.characterID, r.planetID)
 	w, ok, onClosed := u.GetOrCreateWindowWithOnClosed(windowID, title, r.ownerName)
 	if !ok {
+		if nav, ok := w.Content().(*xwidget.Navigator); ok {
+			nav.PopAll()
+		}
 		w.Show()
 		return
 	}
 
+	makePage := func(title string, content fyne.CanvasObject, minSize fyne.Size) *xwidget.AppBar {
+		vs := container.NewVScroll(content)
+		if !u.IsMobile() {
+			vs.SetMinSize(minSize)
+		}
+		ab := xwidget.NewAppBar(title, vs)
+		ab.HideBackground = !u.IsMobile()
+		return ab
+	}
+
 	b := newColonyDetails(u, r.characterID, r.planetID)
+	nav := xwidget.NewNavigator(makePage(title, showWhenLoaded(b, func() {
+		if err := b.Update(context.Background()); err != nil {
+			slog.Error("Failed to show colony details", "characterID", r.characterID, "planetID", r.planetID, "error", err)
+		}
+	}), fyne.NewSize(600, 600)))
+
+	pins := make(map[fyne.CanvasObject]*colonyPinDetails) // shown pages
+	nav.OnPop = func(page fyne.CanvasObject) {
+		if a, ok := pins[page]; ok {
+			a.stop()
+			delete(pins, page)
+		}
+	}
+	var showPin func(pinID int64, title string)
+	showPin = func(pinID int64, title string) {
+		a := newColonyPinDetails(u, r.characterID, r.planetID, pinID)
+		a.showPin = showPin
+		page := makePage(title, showWhenLoaded(a, func() {
+			if err := a.Update(context.Background()); err != nil {
+				slog.Error("Failed to show colony installation", "characterID", r.characterID, "planetID", r.planetID, "pinID", pinID, "error", err)
+				fyne.Do(func() {
+					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
+				})
+			}
+		}), fyne.NewSize(600, 500))
+		pins[page] = a
+		nav.Push(page)
+	}
+	b.showPin = showPin
+
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
 		b.stop()
+		for _, a := range pins {
+			a.stop()
+		}
 	})
-
-	ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-		Content: showWhenLoaded(b, func() {
-			if err := b.Update(context.Background()); err != nil {
-				slog.Error("Failed to show colony details", "characterID", r.characterID, "planetID", r.planetID, "error", err)
+	if fyne.CurrentDevice().IsMobile() {
+		w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+			if ev.Name == mobile.KeyBack && nav.Pop() == nil {
+				w.Close()
 			}
-		}),
-		Title:   title,
-		Window:  w,
-		MinSize: fyne.NewSize(600, 600),
-	})
+		})
+	}
+	w.SetContent(nav)
 	w.Show()
 }
 
@@ -240,7 +286,9 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		if a.colony != nil {
 			title = fmt.Sprintf("%s on %s", r.name, a.colony.EvePlanet.Name)
 		}
-		showColonyPinWindow(a.u, a.characterID.Load(), a.planetID.Load(), r.pinID, title, a.owner.Text)
+		if a.showPin != nil {
+			a.showPin(r.pinID, title)
+		}
 	}
 	a.installations = list
 
