@@ -198,3 +198,60 @@ func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg Update
 	}
 	return id, nil
 }
+
+type ReplaceCharacterPlanetParams struct {
+	CharacterID  int64
+	EvePlanetID  int64
+	LastUpdate   time.Time
+	Pins         []CreatePlanetPinParams   // CharacterPlanetID is ignored
+	Routes       []CreatePlanetRouteParams // CharacterPlanetID is ignored
+	UpgradeLevel int64
+}
+
+// ReplaceCharacterPlanet creates or updates a colony and replaces its pins and routes in one transaction,
+// so readers never see a partially updated colony. It returns the ID of the colony.
+func (st *Storage) ReplaceCharacterPlanet(ctx context.Context, arg ReplaceCharacterPlanetParams) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ReplaceCharacterPlanet: %d %d: %w", arg.CharacterID, arg.EvePlanetID, err)
+	}
+	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	id, err := qtx.UpdateOrCreateCharacterPlanet(ctx, queries.UpdateOrCreateCharacterPlanetParams{
+		CharacterID:  arg.CharacterID,
+		EvePlanetID:  arg.EvePlanetID,
+		LastUpdate:   arg.LastUpdate,
+		UpgradeLevel: arg.UpgradeLevel,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := qtx.DeletePlanetPins(ctx, id); err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := qtx.DeletePlanetRoutes(ctx, id); err != nil {
+		return 0, wrapErr(err)
+	}
+	for _, p := range arg.Pins {
+		p.CharacterPlanetID = id
+		if err := createPlanetPin(ctx, qtx, p); err != nil {
+			return 0, wrapErr(fmt.Errorf("pin %+v: %w", p, err))
+		}
+	}
+	for _, r := range arg.Routes {
+		r.CharacterPlanetID = id
+		if err := createPlanetRoute(ctx, qtx, r); err != nil {
+			return 0, wrapErr(fmt.Errorf("route %+v: %w", r, err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
+}

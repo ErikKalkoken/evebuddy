@@ -19,13 +19,17 @@ type CreatePlanetRouteParams struct {
 }
 
 func (st *Storage) CreatePlanetRoute(ctx context.Context, arg CreatePlanetRouteParams) error {
-	wrapErr := func(err error) error {
+	if err := createPlanetRoute(ctx, st.qRW, arg); err != nil {
 		return fmt.Errorf("CreatePlanetRoute: %+v: %w", arg, err)
 	}
+	return nil
+}
+
+func createPlanetRoute(ctx context.Context, q *queries.Queries, arg CreatePlanetRouteParams) error {
 	if arg.CharacterPlanetID == 0 || arg.RouteID == 0 || arg.ContentTypeID == 0 || arg.SourcePinID == 0 || arg.DestinationPinID == 0 {
-		return wrapErr(app.ErrInvalid)
+		return app.ErrInvalid
 	}
-	err := st.qRW.CreatePlanetRoute(ctx, queries.CreatePlanetRouteParams{
+	return q.CreatePlanetRoute(ctx, queries.CreatePlanetRouteParams{
 		CharacterPlanetID: arg.CharacterPlanetID,
 		ContentTypeID:     arg.ContentTypeID,
 		DestinationPinID:  arg.DestinationPinID,
@@ -33,10 +37,6 @@ func (st *Storage) CreatePlanetRoute(ctx context.Context, arg CreatePlanetRouteP
 		RouteID:           arg.RouteID,
 		SourcePinID:       arg.SourcePinID,
 	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	return nil
 }
 
 func (st *Storage) DeletePlanetRoutes(ctx context.Context, characterPlanetID int64) error {

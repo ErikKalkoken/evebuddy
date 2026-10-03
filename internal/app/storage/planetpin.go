@@ -34,20 +34,30 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreatePlanetPin: %+v: %w", arg, err)
 	}
-	if arg.CharacterPlanetID == 0 || arg.PinID == 0 || arg.TypeID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	var cycleTime optional.Optional[int64]
-	if v, ok := arg.ExtractorCycleTime.Value(); ok {
-		cycleTime.Set(int64(v.Seconds()))
-	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return wrapErr(err)
 	}
 	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	id, err := qtx.CreatePlanetPin(ctx, queries.CreatePlanetPinParams{
+	if err := createPlanetPin(ctx, st.qRW.WithTx(tx), arg); err != nil {
+		return wrapErr(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+// createPlanetPin creates a pin with its contents. Must be called within a transaction.
+func createPlanetPin(ctx context.Context, q *queries.Queries, arg CreatePlanetPinParams) error {
+	if arg.CharacterPlanetID == 0 || arg.PinID == 0 || arg.TypeID == 0 {
+		return app.ErrInvalid
+	}
+	var cycleTime optional.Optional[int64]
+	if v, ok := arg.ExtractorCycleTime.Value(); ok {
+		cycleTime.Set(int64(v.Seconds()))
+	}
+	id, err := q.CreatePlanetPin(ctx, queries.CreatePlanetPinParams{
 		CharacterPlanetID:      arg.CharacterPlanetID,
 		ExpiryTime:             optional.ToNullTime(arg.ExpiryTime),
 		ExtractorCycleTime:     optional.ToNullInt64(cycleTime),
@@ -63,20 +73,17 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		TypeID:                 arg.TypeID,
 	})
 	if err != nil {
-		return wrapErr(err)
+		return err
 	}
 	for typeID, amount := range arg.Contents {
-		err := qtx.CreatePlanetPinContent(ctx, queries.CreatePlanetPinContentParams{
+		err := q.CreatePlanetPinContent(ctx, queries.CreatePlanetPinContentParams{
 			PlanetPinID: id,
 			TypeID:      typeID,
 			Amount:      amount,
 		})
 		if err != nil {
-			return wrapErr(err)
+			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return wrapErr(err)
 	}
 	return nil
 }
