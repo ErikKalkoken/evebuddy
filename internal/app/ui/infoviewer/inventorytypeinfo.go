@@ -695,9 +695,8 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			}
 			items = slices.Concat(items)
 
-			c := newAttributeList(a.iw, items...)
 			fyne.Do(func() {
-				marketTab.Content = c
+				marketTab.Content = newAttributeList(a.iw, items...)
 				a.tabs.Refresh()
 			})
 			select {
