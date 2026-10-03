@@ -571,6 +571,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		es, ok := p.ProcessorSchematic()
 		if !ok {
 			info.main = []ui.AttributeItem{{Label: "Schematic", Value: "-"}}
+			info.storage = []ui.AttributeItem{{Label: "No schematic"}}
 			break
 		}
 		output := ui.AttributeItem{Label: "Schematic", Value: es.Name, InfoAction: showType(pf.OutputTypeID)}

@@ -87,6 +87,11 @@ func TestColonyPinDetails(t *testing.T) {
 		TypeID:            processorType.ID,
 		SchematicID:       optional.New(proteins.ID),
 	})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID: cp.ID,
+		PinID:             6,
+		TypeID:            processorType.ID, // without schematic
+	})
 	factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
 		CharacterPlanetID: cp.ID,
 		RouteID:           1,
@@ -216,6 +221,13 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Nil(t, info.program)
 		assert.Equal(t, []string{"Incoming", "Aqueous Liquids x 3,000 Storage 31-111"}, lines(info.routes))
 	})
+	t.Run("should show processor without schematic", func(t *testing.T) {
+		info := makeInfo(t, 6)
+		require.True(t, info.found)
+		assert.Empty(t, info.product)
+		assert.Equal(t, "-", value(t, info.main, "Schematic"))
+		assert.Equal(t, []string{"No schematic"}, lines(info.storage))
+	})
 	t.Run("should show last activity of producing processor", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3, nil)
 		t.Cleanup(a.stop)
@@ -297,6 +309,7 @@ func TestColonyPinDetails(t *testing.T) {
 			1: {"Main", "Program", "Routes"},
 			2: {"Main", "Storage", "Routes"},
 			3: {"Main", "Inputs", "Routes"},
+			6: {"Main", "Inputs", "Routes"},
 		} {
 			a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID, nil)
 			t.Cleanup(a.stop)
