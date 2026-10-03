@@ -666,6 +666,16 @@ func TestForecastPlanet_Cache(t *testing.T) {
 		got := s.ForecastPlanet(&p2, t0.Add(66*time.Minute))
 		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
 	})
+	t.Run("should recompute forecast when colony data changed without new last update", func(t *testing.T) {
+		s.forecasts.Clear()
+		old := *p // as stored before routes were added
+		old.Routes = nil
+		first := s.ForecastPlanet(&old, t0.Add(65*time.Minute))
+		require.Empty(t, first.Pins[2].Contents)
+		got := s.ForecastPlanet(p, t0.Add(66*time.Minute))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+		assert.NotEmpty(t, got.Pins[2].Contents, "receives output along the route")
+	})
 	t.Run("should recompute forecast after max age", func(t *testing.T) {
 		s.forecasts.Clear()
 		now := t0.Add(5 * time.Hour) // extractor expired, so nothing changes anymore

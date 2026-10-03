@@ -1,8 +1,11 @@
 package app
 
 import (
+	"cmp"
+	"hash/maphash"
 	"iter"
 	"maps"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -101,6 +104,123 @@ func (cp CharacterPlanet) PinTypeName(p *PlanetPin) string {
 // PinName returns the name of a pin, e.g. "Extractor H6-3IS".
 func (cp CharacterPlanet) PinName(p *PlanetPin) string {
 	return cp.PinTypeName(p) + " " + p.Designator()
+}
+
+var fingerprintSeed = maphash.MakeSeed()
+
+// Fingerprint returns a hash of the colony data received from ESI.
+// Colonies with the same fingerprint have the same forecast. Only valid within the running process.
+func (cp CharacterPlanet) Fingerprint() uint64 {
+	var h maphash.Hash
+	h.SetSeed(fingerprintSeed)
+	w := func(v int64) {
+		maphash.WriteComparable(&h, v)
+	}
+	wTime := func(t time.Time) {
+		w(t.Unix()) // UnixNano is undefined for the zero time
+		w(int64(t.Nanosecond()))
+	}
+	wBool := func(b bool) {
+		if b {
+			w(1)
+		} else {
+			w(0)
+		}
+	}
+	// optional values are written with their presence, so missing and zero differ
+	wOptInt := func(o optional.Optional[int64]) {
+		v, ok := o.Value()
+		wBool(ok)
+		if ok {
+			w(v)
+		}
+	}
+	wOptTime := func(o optional.Optional[time.Time]) {
+		v, ok := o.Value()
+		wBool(ok)
+		if ok {
+			wTime(v)
+		}
+	}
+	typeID := func(et *EveType) int64 {
+		if et == nil {
+			return 0
+		}
+		return et.ID
+	}
+	wOptType := func(o optional.Optional[*EveType]) {
+		v, ok := o.Value()
+		wBool(ok)
+		if ok {
+			w(typeID(v))
+		}
+	}
+	wOptSchematic := func(o optional.Optional[*EveSchematic]) {
+		v, ok := o.Value()
+		wBool(ok && v != nil)
+		if ok && v != nil {
+			w(v.ID)
+		}
+	}
+
+	wTime(cp.LastUpdate)
+	w(cp.UpgradeLevel)
+	pins := sortedIfNeeded(cp.Pins, func(a, b *PlanetPin) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+	w(int64(len(pins)))
+	for _, p := range pins {
+		w(p.ID)
+		w(typeID(p.Type))
+		contents := sortedIfNeeded(p.Contents, func(a, b *PlanetPinContent) int {
+			return cmp.Or(cmp.Compare(typeID(a.Type), typeID(b.Type)), cmp.Compare(a.Amount, b.Amount))
+		})
+		w(int64(len(contents)))
+		for _, c := range contents {
+			w(typeID(c.Type))
+			w(c.Amount)
+		}
+		wOptTime(p.ExpiryTime)
+		cycle, ok := p.ExtractorCycleTime.Value()
+		wBool(ok)
+		if ok {
+			w(int64(cycle))
+		}
+		radius, ok := p.ExtractorHeadRadius.Value()
+		wBool(ok)
+		if ok {
+			w(int64(math.Float64bits(radius)))
+		}
+		wOptInt(p.ExtractorNumHeads)
+		wOptType(p.ExtractorProductType)
+		wOptInt(p.ExtractorQtyPerCycle)
+		wOptSchematic(p.FactorySchematic)
+		wOptTime(p.InstallTime)
+		wOptTime(p.LastCycleStart)
+		wOptSchematic(p.Schematic)
+	}
+	routes := sortedIfNeeded(cp.Routes, func(a, b *PlanetRoute) int {
+		return cmp.Compare(a.RouteID, b.RouteID)
+	})
+	w(int64(len(routes)))
+	for _, r := range routes {
+		w(r.RouteID)
+		w(r.SourcePinID)
+		w(r.DestinationPinID)
+		w(typeID(r.ContentType))
+		w(r.Quantity)
+	}
+	return h.Sum64()
+}
+
+// sortedIfNeeded returns s sorted, without copying when it is already sorted.
+func sortedIfNeeded[S ~[]E, E any](s S, cmp func(a, b E) int) S {
+	if slices.IsSortedFunc(s, cmp) {
+		return s
+	}
+	s2 := slices.Clone(s)
+	slices.SortFunc(s2, cmp)
+	return s2
 }
 
 // TypeNames returns the names of all types known to a colony by type ID.

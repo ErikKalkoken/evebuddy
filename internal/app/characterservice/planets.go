@@ -43,14 +43,14 @@ type colonyKey struct {
 }
 
 type forecastEntry struct {
-	forecast   *app.ColonyForecast
-	lastUpdate time.Time // of the colony snapshot
-	time       time.Time // of the forecast
+	fingerprint uint64 // of the colony data, see [app.CharacterPlanet.Fingerprint]
+	forecast    *app.ColonyForecast
+	time        time.Time // of the forecast, wall clock only
 }
 
-// isValid reports whether the cached forecast can be used for a colony snapshot at now.
-func (e forecastEntry) isValid(lastUpdate, now time.Time) bool {
-	if !e.lastUpdate.Equal(lastUpdate) || now.Before(e.time) || now.Sub(e.time) >= forecastMaxAge {
+// isValid reports whether the cached forecast can be used for colony data with fingerprint at now.
+func (e forecastEntry) isValid(fingerprint uint64, now time.Time) bool {
+	if e.fingerprint != fingerprint || now.Before(e.time) || now.Sub(e.time) >= forecastMaxAge {
 		return false
 	}
 	v, ok := e.forecast.ValidUntil.Value()
@@ -59,13 +59,15 @@ func (e forecastEntry) isValid(lastUpdate, now time.Time) bool {
 
 // ForecastPlanet returns the estimated state of a colony at now,
 // simulated forward from its last ESI snapshot.
-// Forecasts are cached while they stay the same. The returned forecast must not be modified.
+// Forecasts are reused while the colony data is unchanged and the forecast stays the same.
+// The returned forecast must not be modified.
 func (s *CharacterService) ForecastPlanet(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	key := colonyKey{characterID: cp.CharacterID, planetID: cp.EvePlanet.ID}
+	fingerprint := cp.Fingerprint()
 	e, ok := s.forecasts.Load(key)
-	if !ok || !e.isValid(cp.LastUpdate, now) {
+	if !ok || !e.isValid(fingerprint, now) {
 		// wall clock only: the monotonic clock stops while a device sleeps, which would extend the max age
-		e = forecastEntry{forecast: colonysim.Forecast(cp, now), lastUpdate: cp.LastUpdate, time: now.Round(0)}
+		e = forecastEntry{fingerprint: fingerprint, forecast: colonysim.Forecast(cp, now), time: now.Round(0)}
 		s.forecasts.Store(key, e)
 	}
 	f := *e.forecast
@@ -178,7 +180,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 			return planets, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			// pins and routes can change without a new last update, e.g. when refetching old colonies
+			// frees forecasts of replaced colonies
 			defer s.clearForecasts(characterID)
 			// remove obsolete planets
 			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
