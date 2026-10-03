@@ -598,6 +598,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 				incoming[r.ContentType.ID] = true
 			}
 		}
+		var inputs []quantityItem
 		for id, quantity := range pf.Demands {
 			it := ui.AttributeItem{
 				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(quantity)),
@@ -608,9 +609,9 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 				it.Value += " (not routed)"
 				it.Importance = widget.DangerImportance
 			}
-			info.storage = append(info.storage, it)
+			inputs = append(inputs, quantityItem{name: typeName(id), quantity: quantity, item: it})
 		}
-		sortAttributeItems(info.storage)
+		info.storage = sortByNameAndQuantity(inputs)
 	default:
 		if p.Type.Group.ID == app.EveGroupCommandCenters {
 			info.main = append(info.main, ui.AttributeItem{Label: "Upgrade level", Value: fmt.Sprint(cp.UpgradeLevel)})
@@ -627,20 +628,16 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			})
 		}
 		info.storageTitle = "Storage"
-		info.storage = []ui.AttributeItem{}
 		volumes := cp.TypeVolumes()
-		ids := slices.Collect(maps.Keys(pf.Contents))
-		slices.SortFunc(ids, func(a, b int64) int {
-			return cmp.Or(cmp.Compare(pf.Contents[b], pf.Contents[a]), strings.Compare(typeName(a), typeName(b)))
-		})
-		for _, id := range ids {
-			amount := pf.Contents[id]
-			info.storage = append(info.storage, ui.AttributeItem{
+		var contents []quantityItem
+		for id, amount := range pf.Contents {
+			contents = append(contents, quantityItem{name: typeName(id), quantity: amount, item: ui.AttributeItem{
 				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(amount)),
 				Value:      humanize.FormatFloat("#,###.##", volumes[id]*float64(amount)) + " m3",
 				InfoAction: showType(id),
-			})
+			}})
 		}
+		info.storage = sortByNameAndQuantity(contents)
 		if len(info.storage) == 0 {
 			info.storage = append(info.storage, ui.AttributeItem{Label: "Empty"})
 		}
@@ -651,26 +648,30 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	)
 
 	// routes
-	makeRoute := func(r *app.PlanetRoute, otherID int64) ui.AttributeItem {
+	makeRoute := func(r *app.PlanetRoute, otherID int64) quantityItem {
+		name := typeName(r.ContentType.ID)
 		it := ui.AttributeItem{
-			Label: fmt.Sprintf("%s x %s", typeName(r.ContentType.ID), ihumanize.Comma(r.Quantity)),
+			Label: fmt.Sprintf("%s x %s", name, ihumanize.Comma(r.Quantity)),
 			Value: "Unknown installation",
 		}
+		q := quantityItem{name: name, quantity: r.Quantity}
 		other, ok := pins[otherID]
 		if !ok {
-			return it
+			q.item = it
+			return q
 		}
-		name := cp.PinName(other)
-		it.Value = name
+		otherName := cp.PinName(other)
+		it.Value = otherName
 		if a.showPin != nil {
-			title := fmt.Sprintf("%s on %s", name, cp.EvePlanet.Name)
+			title := fmt.Sprintf("%s on %s", otherName, cp.EvePlanet.Name)
 			it.InfoAction = func() {
 				a.showPin(otherID, title)
 			}
 		}
-		return it
+		q.item = it
+		return q
 	}
-	var in, out []ui.AttributeItem
+	var in, out []quantityItem
 	for _, r := range cp.Routes {
 		if r.DestinationPinID == p.ID {
 			in = append(in, makeRoute(r, r.SourcePinID))
@@ -682,14 +683,13 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	info.routes = []ui.AttributeItem{}
 	for _, x := range []struct {
 		heading string
-		items   []ui.AttributeItem
+		items   []quantityItem
 	}{{"Incoming", in}, {"Outgoing", out}} {
 		if len(x.items) == 0 {
 			continue
 		}
-		sortAttributeItems(x.items)
 		info.routes = append(info.routes, ui.AttributeItem{Label: x.heading, IsHeading: true})
-		info.routes = append(info.routes, x.items...)
+		info.routes = append(info.routes, sortByNameAndQuantity(x.items)...)
 	}
 	if len(info.routes) == 0 {
 		info.routes = []ui.AttributeItem{{Label: "No routes"}}
@@ -697,8 +697,25 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	return info
 }
 
-func sortAttributeItems(s []ui.AttributeItem) {
-	slices.SortFunc(s, func(a, b ui.AttributeItem) int {
-		return cmp.Or(strings.Compare(a.Label, b.Label), strings.Compare(a.Value, b.Value))
+// quantityItem is a list item for a quantity of a type.
+type quantityItem struct {
+	name     string // of the type
+	quantity int64
+	item     ui.AttributeItem
+}
+
+// sortByNameAndQuantity returns the items ordered by name ascending, then by quantity descending.
+func sortByNameAndQuantity(s []quantityItem) []ui.AttributeItem {
+	slices.SortFunc(s, func(a, b quantityItem) int {
+		return cmp.Or(
+			strings.Compare(a.name, b.name),
+			cmp.Compare(b.quantity, a.quantity),
+			strings.Compare(a.item.Value, b.item.Value),
+		)
 	})
+	items := make([]ui.AttributeItem, 0, len(s))
+	for _, x := range s {
+		items = append(items, x.item)
+	}
+	return items
 }

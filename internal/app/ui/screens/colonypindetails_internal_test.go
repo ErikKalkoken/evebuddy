@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -369,4 +370,26 @@ func TestGroupCycles(t *testing.T) {
 		got := groupCycles(makeCycles(phases...), colonyProgramMaxSteps)
 		assert.LessOrEqual(t, len(got), colonyProgramMaxSteps+3)
 	})
+}
+
+func TestSortByNameAndQuantity(t *testing.T) {
+	item := func(name string, quantity int64, value string) quantityItem {
+		return quantityItem{name: name, quantity: quantity, item: ui.AttributeItem{Label: fmt.Sprintf("%s x %d", name, quantity), Value: value}}
+	}
+	got := sortByNameAndQuantity([]quantityItem{
+		item("Water", 20, "A"),
+		item("Base Metals", 3_000, "B"),
+		item("Base Metals", 10_000, "C"),
+		item("Base Metals", 3_000, "A"),
+	})
+	var labels []string
+	for _, x := range got {
+		labels = append(labels, x.Label+" "+x.Value)
+	}
+	assert.Equal(t, []string{
+		"Base Metals x 10000 C",
+		"Base Metals x 3000 A",
+		"Base Metals x 3000 B",
+		"Water x 20 A",
+	}, labels)
 }
