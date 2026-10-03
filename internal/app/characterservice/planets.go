@@ -33,10 +33,53 @@ func (s *CharacterService) ListPlanets(ctx context.Context, characterID int64) (
 	return s.st.ListCharacterPlanets(ctx, characterID)
 }
 
+// forecastMaxAge is the maximum age of a cached forecast.
+// Covers the forecast horizon, which moves with time and is not part of ValidUntil.
+const forecastMaxAge = time.Hour
+
+type colonyKey struct {
+	characterID int64
+	planetID    int64
+}
+
+type forecastEntry struct {
+	forecast   *app.ColonyForecast
+	lastUpdate time.Time // of the colony snapshot
+	time       time.Time // of the forecast
+}
+
+// isValid reports whether the cached forecast can be used for a colony snapshot at now.
+func (e forecastEntry) isValid(lastUpdate, now time.Time) bool {
+	if !e.lastUpdate.Equal(lastUpdate) || now.Before(e.time) || now.Sub(e.time) >= forecastMaxAge {
+		return false
+	}
+	v, ok := e.forecast.ValidUntil.Value()
+	return !ok || now.Before(v)
+}
+
 // ForecastPlanet returns the estimated state of a colony at now,
 // simulated forward from its last ESI snapshot.
+// Forecasts are cached while they stay the same. The returned forecast must not be modified.
 func (s *CharacterService) ForecastPlanet(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
-	return colonysim.Forecast(cp, now)
+	key := colonyKey{characterID: cp.CharacterID, planetID: cp.EvePlanet.ID}
+	e, ok := s.forecasts.Load(key)
+	if !ok || !e.isValid(cp.LastUpdate, now) {
+		e = forecastEntry{forecast: colonysim.Forecast(cp, now), lastUpdate: cp.LastUpdate, time: now}
+		s.forecasts.Store(key, e)
+	}
+	f := *e.forecast
+	f.Time = now
+	return &f
+}
+
+// clearForecasts removes all cached forecasts of a character.
+func (s *CharacterService) clearForecasts(characterID int64) {
+	s.forecasts.Range(func(k colonyKey, _ forecastEntry) bool {
+		if k.characterID == characterID {
+			s.forecasts.Delete(k)
+		}
+		return true
+	})
 }
 
 // NotifyStoppedColonies sends notifications for colonies of a character which stopped working.
@@ -134,6 +177,8 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 			return planets, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
+			// pins and routes can change without a new last update, e.g. when refetching old colonies
+			defer s.clearForecasts(characterID)
 			// remove obsolete planets
 			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
 			if err != nil {

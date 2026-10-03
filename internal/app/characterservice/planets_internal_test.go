@@ -3,6 +3,7 @@ package characterservice
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -480,6 +481,21 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, p.Routes, 1)
 	})
+	t.Run("should clear cached forecasts of character when refetching colony", func(t *testing.T) {
+		c, _ := setup()
+		update(t, c.ID)
+		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
+		require.NoError(t, err)
+		require.NoError(t, st.DeletePlanetRoutes(ctx, p.ID)) // as stored before routes were added
+		s.ForecastPlanet(p, time.Now())
+		other := colonyKey{characterID: c.ID + 1, planetID: planetID}
+		s.forecasts.Store(other, forecastEntry{})
+		update(t, c.ID)
+		_, found := s.forecasts.Load(colonyKey{characterID: c.ID, planetID: planetID})
+		assert.False(t, found)
+		_, found = s.forecasts.Load(other)
+		assert.True(t, found, "keeps forecasts of other characters")
+	})
 	t.Run("should not refetch colony with routes when planets are unchanged", func(t *testing.T) {
 		c, detail := setup()
 		update(t, c.ID)
@@ -584,5 +600,86 @@ func TestForecastPlanet(t *testing.T) {
 		assert.InDelta(t, float64(100+2467+2086)*0.01, got.Pins[2].CapacityUsed, 0.0001)
 		xassert.EqualOptional(t, 12_000.0, got.Pins[2].Capacity)
 		xassert.EqualOptional(t, t0.Add(4*time.Hour), got.WorkEndsAt)
+	})
+}
+
+func TestForecastPlanet_Cache(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t0 := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: t0})
+	ecuGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+	ecuType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: ecuGroup.ID})
+	storageGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupStorageFacilities})
+	storageType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: storageGroup.ID})
+	product := factory.CreateEveType(storage.CreateEveTypeParams{Volume: optional.New(0.01)})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID:      cp.ID,
+		PinID:                  1,
+		TypeID:                 ecuType.ID,
+		ExtractorProductTypeID: optional.New(product.ID),
+		ExtractorQtyPerCycle:   optional.New[int64](1081),
+		ExtractorCycleTime:     optional.New(30 * time.Minute),
+		InstallTime:            optional.New(t0),
+		ExpiryTime:             optional.New(t0.Add(4 * time.Hour)),
+		LastCycleStart:         optional.New(t0),
+	})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID: cp.ID,
+		PinID:             2,
+		TypeID:            storageType.ID,
+	})
+	factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+		CharacterPlanetID: cp.ID,
+		SourcePinID:       1,
+		DestinationPinID:  2,
+		ContentTypeID:     product.ID,
+		Quantity:          10_000,
+	})
+	p, err := s.GetPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+	require.NoError(t, err)
+	// the extractor cycles end every 30 minutes, so a forecast at 65m is valid until 90m
+	// isCached reports whether a forecast at now reuses the forecast at 65m.
+	isCached := func(t *testing.T, p *app.CharacterPlanet, now time.Time) bool {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		got := s.ForecastPlanet(p, now)
+		assert.Equal(t, now, got.Time)
+		return reflect.ValueOf(first.Pins).Pointer() == reflect.ValueOf(got.Pins).Pointer()
+	}
+	t.Run("should reuse forecast until it changes", func(t *testing.T) {
+		assert.True(t, isCached(t, p, t0.Add(89*time.Minute)))
+	})
+	t.Run("should recompute forecast when it changes", func(t *testing.T) {
+		assert.False(t, isCached(t, p, t0.Add(90*time.Minute)))
+	})
+	t.Run("should recompute forecast for an earlier time", func(t *testing.T) {
+		assert.False(t, isCached(t, p, t0.Add(64*time.Minute)))
+	})
+	t.Run("should recompute forecast for a new snapshot", func(t *testing.T) {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		p2 := *p
+		p2.LastUpdate = t0.Add(time.Minute)
+		got := s.ForecastPlanet(&p2, t0.Add(66*time.Minute))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+	})
+	t.Run("should recompute forecast after max age", func(t *testing.T) {
+		s.forecasts.Clear()
+		now := t0.Add(5 * time.Hour) // extractor expired, so nothing changes anymore
+		first := s.ForecastPlanet(p, now)
+		require.True(t, first.ValidUntil.IsEmpty())
+		got := s.ForecastPlanet(p, now.Add(forecastMaxAge-time.Second))
+		assert.Equal(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+		got = s.ForecastPlanet(p, now.Add(forecastMaxAge))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+	})
+	t.Run("should not change cached forecast when returning it", func(t *testing.T) {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		s.ForecastPlanet(p, t0.Add(70*time.Minute))
+		assert.Equal(t, t0.Add(65*time.Minute), first.Time)
 	})
 }
