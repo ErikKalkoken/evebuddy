@@ -111,6 +111,17 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		assert.Contains(t, content, p.EvePlanet.Name)
 		assert.Contains(t, content, "21-111: "+app.PinExtractorExpired.Display(), "names the pin") // pin ID 1
 	})
+	t.Run("should notify when colony stopped beyond the forecast horizon", func(t *testing.T) {
+		reset()
+		p := createColony(colonyParams{
+			lastUpdate: now.Add(-45 * 24 * time.Hour),
+			expiry:     now.Add(-5 * time.Hour),
+			capacity:   1_000_000,
+		})
+		count, _, content := notify(t, p.CharacterID)
+		xassert.Equal(t, 1, count)
+		assert.Contains(t, content, p.EvePlanet.Name)
+	})
 	t.Run("should notify when storage is full", func(t *testing.T) {
 		reset()
 		lastUpdate := now.Add(-4 * time.Hour)

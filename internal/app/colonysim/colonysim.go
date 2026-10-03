@@ -49,6 +49,27 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	return f
 }
 
+// WorkEndsAt returns when the colony stops working after its snapshot,
+// if it was working at the snapshot and stops before until.
+// Unlike [Forecast] it is not limited by [app.ColonyForecastHorizon].
+func WorkEndsAt(cp *app.CharacterPlanet, until time.Time) optional.Optional[time.Time] {
+	s := newSimulation(cp)
+	if !s.runUntil(cp.LastUpdate) {
+		logAborted(cp, s.simTime)
+		return optional.Optional[time.Time]{}
+	}
+	t, r := s.runUntilWorkEnds(until)
+	switch r {
+	case runWorkEnded:
+		if t.After(cp.LastUpdate) {
+			return optional.New(t)
+		}
+	case runAborted:
+		logAborted(cp, t)
+	}
+	return optional.Optional[time.Time]{}
+}
+
 // logAborted logs a simulation which exceeded the event limit, which indicates a bug.
 func logAborted(cp *app.CharacterPlanet, simTime time.Time) {
 	var planetID int64

@@ -109,12 +109,15 @@ func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterI
 			if p.LastNotified.ValueOrZero().Equal(p.LastUpdate) {
 				continue
 			}
-			// work end is only set when the colony was working at the snapshot
-			workEndsAt, ok := colonysim.Forecast(p, p.LastUpdate).WorkEndsAt.Value()
-			if !ok || workEndsAt.After(now) || workEndsAt.Before(earliest) {
+			f := s.ForecastPlanet(p, now)
+			if f.Status.IsWorking() {
 				continue
 			}
-			f := colonysim.Forecast(p, now)
+			// work end is only set when the colony was working at the snapshot
+			workEndsAt, ok := colonysim.WorkEndsAt(p, now).Value()
+			if !ok || workEndsAt.Before(earliest) {
+				continue
+			}
 			var reasons []string
 			for _, pin := range p.Pins {
 				if pf := f.Pins[pin.ID]; pf != nil && pf.Status.IsProblem() {

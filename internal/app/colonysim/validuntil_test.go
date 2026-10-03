@@ -182,6 +182,18 @@ func FuzzForecast_StableUntilValidUntil(f *testing.F) {
 	})
 }
 
+func FuzzWorkEndsAt_MatchesForecast(f *testing.F) {
+	for seed := range uint64(50) {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, seed uint64) {
+		cp, _ := randomColony(seed)
+		want := colonysim.Forecast(cp, cp.LastUpdate).WorkEndsAt
+		got := colonysim.WorkEndsAt(cp, cp.LastUpdate.Add(app.ColonyForecastHorizon))
+		assert.Equal(t, want, got)
+	})
+}
+
 // assertStableUntilValidUntil asserts that forecasts until ValidUntil equal the forecast at now.
 func assertStableUntilValidUntil(t *testing.T, cp *app.CharacterPlanet, now time.Time) {
 	t.Helper()

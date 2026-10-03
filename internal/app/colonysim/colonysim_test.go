@@ -87,6 +87,32 @@ func TestSimulation_Horizon(t *testing.T) {
 	})
 }
 
+func TestWorkEndsAt(t *testing.T) {
+	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
+				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
+			},
+			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+		}
+	}
+	t.Run("should report work end beyond the forecast horizon", func(t *testing.T) {
+		expiry := t0.Add(40 * 24 * time.Hour)
+		got := colonysim.WorkEndsAt(newPlanet(expiry), t0.Add(60*24*time.Hour))
+		assert.Equal(t, optional.New(expiry), got)
+	})
+	t.Run("should report nothing when colony was not working at the snapshot", func(t *testing.T) {
+		got := colonysim.WorkEndsAt(newPlanet(t0.Add(-time.Hour)), t0.Add(60*24*time.Hour))
+		assert.True(t, got.IsEmpty())
+	})
+	t.Run("should report nothing when colony is still working at until", func(t *testing.T) {
+		got := colonysim.WorkEndsAt(newPlanet(t0.Add(40*24*time.Hour)), t0.Add(20*24*time.Hour))
+		assert.True(t, got.IsEmpty())
+	})
+}
+
 func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 	cp := &app.CharacterPlanet{
 		LastUpdate: t0,
