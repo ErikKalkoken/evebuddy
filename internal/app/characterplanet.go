@@ -4,6 +4,7 @@ import (
 	"iter"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2/widget"
@@ -66,6 +67,42 @@ func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 	return slices.Collect(maps.Values(schematics))
 }
 
+// Short type names of planet pins.
+const (
+	PinTypeAdvancedProcessor = "Advanced Processor"
+	PinTypeBasicProcessor    = "Basic Processor"
+	PinTypeCommandCenter     = "Command Center"
+	PinTypeExtractor         = "Extractor"
+	PinTypeHighTechProcessor = "High-Tech Processor"
+	PinTypeLaunchpad         = "Launchpad"
+	PinTypeStorage           = "Storage"
+)
+
+var pinShortTypeNames = map[string]string{
+	"Advanced Industry Facility": PinTypeAdvancedProcessor,
+	"Basic Industry Facility":    PinTypeBasicProcessor,
+	"Command Center":             PinTypeCommandCenter,
+	"Extractor Control Unit":     PinTypeExtractor,
+	"High-Tech Production Plant": PinTypeHighTechProcessor,
+	"Launchpad":                  PinTypeLaunchpad,
+	"Storage Facility":           PinTypeStorage,
+}
+
+// PinTypeName returns the short type name of a pin, e.g. "Extractor".
+// Unknown types return their name without the planet type.
+func (cp CharacterPlanet) PinTypeName(p *PlanetPin) string {
+	n, _ := strings.CutPrefix(p.Type.Name, cp.EvePlanet.TypeDisplay()+" ")
+	if s, ok := pinShortTypeNames[n]; ok {
+		return s
+	}
+	return n
+}
+
+// PinName returns the name of a pin, e.g. "Extractor H6-3IS".
+func (cp CharacterPlanet) PinName(p *PlanetPin) string {
+	return cp.PinTypeName(p) + " " + p.Designator()
+}
+
 // TypeNames returns the names of all types known to a colony by type ID.
 func (cp CharacterPlanet) TypeNames() map[int64]string {
 	m := make(map[int64]string)
@@ -120,6 +157,23 @@ type PlanetPin struct {
 	LastCycleStart       optional.Optional[time.Time]
 	Schematic            optional.Optional[*EveSchematic]
 	Type                 *EveType
+}
+
+// Designator returns the designator of a pin as shown in game, e.g. "H6-3IS".
+// Same algorithm as RIFT (Nohus, used with permission).
+func (pp PlanetPin) Designator() string {
+	const characters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	const base = len(characters) - 1 // as in game, so Z is never used
+	var b strings.Builder
+	id := pp.ID
+	for i := range 5 {
+		b.WriteByte(characters[id%int64(base)])
+		id /= int64(base)
+		if i == 1 {
+			b.WriteByte('-')
+		}
+	}
+	return b.String()
 }
 
 func (pp PlanetPin) IsExtracting() bool {

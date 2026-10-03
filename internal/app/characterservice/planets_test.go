@@ -109,7 +109,7 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		xassert.Equal(t, 1, count)
 		assert.Contains(t, title, "1 planet(s)")
 		assert.Contains(t, content, p.EvePlanet.Name)
-		assert.Contains(t, content, app.PinExtractorExpired.Display())
+		assert.Contains(t, content, "21-111: "+app.PinExtractorExpired.Display(), "names the pin") // pin ID 1
 	})
 	t.Run("should notify when storage is full", func(t *testing.T) {
 		reset()
@@ -123,7 +123,7 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		})
 		count, _, content := notify(t, p.CharacterID)
 		xassert.Equal(t, 1, count)
-		assert.Contains(t, content, app.PinStorageFull.Display())
+		assert.Contains(t, content, "31-111: "+app.PinStorageFull.Display(), "names the pin") // pin ID 2
 	})
 	t.Run("should not notify while colony is working", func(t *testing.T) {
 		reset()

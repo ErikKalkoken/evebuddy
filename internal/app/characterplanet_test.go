@@ -188,3 +188,35 @@ func TestPlanetPin_ProcessorSchematic(t *testing.T) {
 		assert.False(t, ok)
 	})
 }
+
+func TestPlanetPin_Designator(t *testing.T) {
+	cases := []struct {
+		id   int64
+		want string
+	}{
+		{0, "11-111"},
+		{1, "21-111"},
+		{33, "Y1-111"}, // Z is never used
+		{34, "12-111"},
+		{1046793247463, "4V-PU5"}, // matches RIFT
+	}
+	for _, tc := range cases {
+		t.Run(tc.want, func(t *testing.T) {
+			assert.Equal(t, tc.want, app.PlanetPin{ID: tc.id}.Designator())
+		})
+	}
+}
+
+func TestCharacterPlanet_PinName(t *testing.T) {
+	cp := app.CharacterPlanet{EvePlanet: &app.EvePlanet{Type: &app.EveType{Name: "Planet (Barren)"}}}
+	t.Run("should return short type name with designator", func(t *testing.T) {
+		p := &app.PlanetPin{ID: 1, Type: &app.EveType{Name: "Barren Extractor Control Unit"}}
+		assert.Equal(t, app.PinTypeExtractor, cp.PinTypeName(p))
+		assert.Equal(t, "Extractor 21-111", cp.PinName(p))
+	})
+	t.Run("should return type name without planet type for unknown types", func(t *testing.T) {
+		p := &app.PlanetPin{ID: 1, Type: &app.EveType{Name: "Barren Something"}}
+		assert.Equal(t, "Something", cp.PinTypeName(p))
+		assert.Equal(t, "Something 21-111", cp.PinName(p))
+	})
+}

@@ -42,6 +42,7 @@ type colonyDetailsRow struct {
 	output            string
 	pinID             int64
 	pinStatus         app.PinStatus
+	pinType           colonyPinType
 	progress          optional.Optional[float64] // 0-1, shown in the symbol
 	searchTarget      string
 	status            []widget.RichTextSegment
@@ -436,7 +437,7 @@ func (a *colonyDetails) filterRowsAsync() {
 		}
 		if x := filter[colonyDetailsFilterType]; x != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
-				return r.name != x
+				return string(r.pinType) != x
 			})
 		}
 		if x := filter[colonyDetailsFilterStatus]; x != "" {
@@ -451,7 +452,7 @@ func (a *colonyDetails) filterRowsAsync() {
 		}
 
 		typeOptions := xslices.Map(rows, func(r colonyDetailsRow) string {
-			return r.name
+			return string(r.pinType)
 		})
 		var statusOptions []string
 		for _, r := range rows {
@@ -592,7 +593,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 	for _, p := range cp.Pins {
 		pinType := colonyPinTypeOf(cp, p)
 
-		name := string(pinType)
+		name := cp.PinName(p)
 		searchTargets := []string{strings.ToLower(name)}
 
 		icon, iconColor := pinType.icon(), pinType.color()
@@ -669,6 +670,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 			output:            output,
 			pinID:             p.ID,
 			pinStatus:         pf.Status,
+			pinType:           pinType,
 			progress:          colonyPinProgress(p, pf, now),
 			status:            status,
 			symbolIcon:        icon,

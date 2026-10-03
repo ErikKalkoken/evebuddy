@@ -85,13 +85,13 @@ func TestColonyDetails(t *testing.T) {
 	err := a.Update(t.Context())
 	require.NoError(t, err)
 
-	rowByName := func(t *testing.T, name string) colonyDetailsRow {
+	rowByType := func(t *testing.T, pt colonyPinType) colonyDetailsRow {
 		for _, r := range a.rows {
-			if r.name == name {
+			if r.pinType == pt {
 				return r
 			}
 		}
-		t.Fatalf("row not found: %s", name)
+		t.Fatalf("row not found: %s", pt)
 		return colonyDetailsRow{}
 	}
 
@@ -99,22 +99,27 @@ func TestColonyDetails(t *testing.T) {
 		// factory without input route makes the colony not setup
 		assert.Contains(t, a.status.String(), app.ColonyNotSetup.Display())
 	})
+	t.Run("should name pins with designator", func(t *testing.T) {
+		r := rowByType(t, pinTypeExtractor)
+		assert.Equal(t, "Extractor 21-111", r.name) // pin ID 1
+		assert.Contains(t, r.searchTarget, "21-111")
+	})
 	t.Run("should show extractor with remaining time", func(t *testing.T) {
-		r := rowByName(t, string(pinTypeExtractor))
+		r := rowByType(t, pinTypeExtractor)
 		assert.Equal(t, "Base Metals", r.output)
 		assert.Equal(t, expiry.Format(app.DateTimeFormat), r.info)
 		assert.NotEqual(t, app.PinExtracting.Display(), segmentsText(r.status))
 		assert.InDelta(t, 65.0/240.0, r.progress.MustValue(), 0.01, "elapsed share of the program")
 	})
 	t.Run("should show storage contents and fill", func(t *testing.T) {
-		r := rowByName(t, string(pinTypeStorage))
+		r := rowByType(t, pinTypeStorage)
 		assert.Equal(t, "Base Metals 4,553", r.output)
 		assert.Equal(t, "46 / 12,000 m3", r.info)
 		assert.Equal(t, "0%", segmentsText(r.status))
 		assert.InDelta(t, 4553*0.01/12_000, r.progress.MustValue(), 0.0001, "fill level")
 	})
 	t.Run("should show factory status", func(t *testing.T) {
-		r := rowByName(t, string(pinTypeBasicProcessor))
+		r := rowByType(t, pinTypeBasicProcessor)
 		assert.Equal(t, "Water", r.output)
 		assert.Equal(t, app.PinInputNotRouted.Display(), segmentsText(r.status))
 		assert.True(t, r.progress.IsEmpty(), "not producing")
@@ -133,7 +138,7 @@ func TestColonyDetails(t *testing.T) {
 		_, _, rows := a.makeRows(&cp2, time.Now())
 		var found bool
 		for _, r := range rows {
-			if r.name == string(pinTypeBasicProcessor) {
+			if r.pinType == pinTypeBasicProcessor {
 				found = true
 				assert.Equal(t, "Water", r.output)
 			}
@@ -152,11 +157,11 @@ func TestColonyDetails(t *testing.T) {
 			pinID, title = id, s
 		}
 		defer func() { a.showPin = nil }()
-		i := slices.IndexFunc(a.rowsFiltered, func(r colonyDetailsRow) bool { return r.name == string(pinTypeStorage) })
+		i := slices.IndexFunc(a.rowsFiltered, func(r colonyDetailsRow) bool { return r.pinType == pinTypeStorage })
 		require.NotEqual(t, -1, i)
 		a.installations.Select(i)
 		assert.EqualValues(t, 2, pinID)
-		assert.Equal(t, string(pinTypeStorage)+" on "+cp.EvePlanet.Name, title)
+		assert.Equal(t, "Storage 31-111 on "+cp.EvePlanet.Name, title) // pin ID 2
 	})
 	t.Run("should navigate between colony and installations in one window", func(t *testing.T) {
 		r := colonyRow{characterID: character.ID, planetID: cp.EvePlanet.ID, planetName: cp.EvePlanet.Name}

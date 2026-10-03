@@ -487,7 +487,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	}
 	info := colonyPinInfo{
 		found:       true,
-		name:        string(pinType),
+		name:        cp.PinName(p),
 		onName:      showType(p.Type.ID),
 		progress:    colonyPinProgress(p, pf, now),
 		status:      xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{ColorName: statusColor}),
@@ -660,9 +660,10 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		if !ok {
 			return it
 		}
-		it.Value = direction + " " + colonyPinLabel(cp, other)
+		name := cp.PinName(other)
+		it.Value = direction + " " + name
 		if a.showPin != nil {
-			title := fmt.Sprintf("%s on %s", colonyPinTypeOf(cp, other), cp.EvePlanet.Name)
+			title := fmt.Sprintf("%s on %s", name, cp.EvePlanet.Name)
 			it.InfoAction = func() {
 				a.showPin(otherID, title)
 			}
@@ -685,23 +686,6 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		info.routes = []ui.AttributeItem{{Label: "No routes"}}
 	}
 	return info
-}
-
-// colonyPinLabel returns a label for a pin which tells it apart from other pins of the same type,
-// e.g. "Basic Processor (Biofuels)".
-func colonyPinLabel(cp *app.CharacterPlanet, p *app.PlanetPin) string {
-	s := string(colonyPinTypeOf(cp, p))
-	if v, ok := p.ExtractorProductType.Value(); ok {
-		return fmt.Sprintf("%s (%s)", s, v.Name)
-	}
-	es, ok := p.Schematic.Value()
-	if !ok {
-		es, ok = p.FactorySchematic.Value()
-	}
-	if ok {
-		return fmt.Sprintf("%s (%s)", s, es.Name)
-	}
-	return s
 }
 
 func sortAttributeItems(s []ui.AttributeItem) {

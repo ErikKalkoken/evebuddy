@@ -2,7 +2,6 @@ package screens
 
 import (
 	"image/color"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -23,13 +22,13 @@ import (
 type colonyPinType string
 
 const (
-	pinTypeAdvancedProcessor colonyPinType = "Advanced Processor"
-	pinTypeBasicProcessor    colonyPinType = "Basic Processor"
-	pinTypeCommandCenter     colonyPinType = "Command Center"
-	pinTypeExtractor         colonyPinType = "Extractor"
-	pinTypeHighTechProcessor colonyPinType = "High-Tech Processor"
-	pinTypeSpacePort         colonyPinType = "Launchpad"
-	pinTypeStorage           colonyPinType = "Storage"
+	pinTypeAdvancedProcessor colonyPinType = app.PinTypeAdvancedProcessor
+	pinTypeBasicProcessor    colonyPinType = app.PinTypeBasicProcessor
+	pinTypeCommandCenter     colonyPinType = app.PinTypeCommandCenter
+	pinTypeExtractor         colonyPinType = app.PinTypeExtractor
+	pinTypeHighTechProcessor colonyPinType = app.PinTypeHighTechProcessor
+	pinTypeSpacePort         colonyPinType = app.PinTypeLaunchpad
+	pinTypeStorage           colonyPinType = app.PinTypeStorage
 	pinTypeUnknown           colonyPinType = "???"
 )
 
@@ -67,24 +66,14 @@ func (pt colonyPinType) color() fyne.ThemeColorName {
 	return theme.ColorNameDisabled
 }
 
-var installationShortNames = map[string]colonyPinType{
-	"Advanced Industry Facility": pinTypeAdvancedProcessor,
-	"Basic Industry Facility":    pinTypeBasicProcessor,
-	"Command Center":             pinTypeCommandCenter,
-	"Extractor Control Unit":     pinTypeExtractor,
-	"High-Tech Production Plant": pinTypeHighTechProcessor,
-	"Launchpad":                  pinTypeSpacePort,
-	"Storage Facility":           pinTypeStorage,
-}
-
 // colonyPinTypeOf returns the short type of a pin, e.g. "Extractor".
 func colonyPinTypeOf(cp *app.CharacterPlanet, p *app.PlanetPin) colonyPinType {
-	n, _ := strings.CutPrefix(p.Type.Name, cp.EvePlanet.TypeDisplay()+" ")
-	pinType, ok := installationShortNames[n]
-	if !ok {
-		return pinTypeUnknown
+	switch pt := colonyPinType(cp.PinTypeName(p)); pt {
+	case pinTypeAdvancedProcessor, pinTypeBasicProcessor, pinTypeCommandCenter, pinTypeExtractor,
+		pinTypeHighTechProcessor, pinTypeSpacePort, pinTypeStorage:
+		return pt
 	}
-	return pinType
+	return pinTypeUnknown
 }
 
 type colonyPinWidget struct {

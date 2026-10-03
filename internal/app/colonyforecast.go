@@ -1,7 +1,6 @@
 package app
 
 import (
-	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -22,18 +21,6 @@ type ColonyForecast struct {
 	Time               time.Time                    // time of the forecast
 	WorkEndsAt         optional.Optional[time.Time] // when the colony stops working, if within the horizon
 	WorksBeyondHorizon bool                         // colony is still working at the horizon
-}
-
-// ProblemStatuses returns the distinct problem statuses of all pins, ordered by status.
-func (f ColonyForecast) ProblemStatuses() []PinStatus {
-	var s []PinStatus
-	for _, p := range f.Pins {
-		if p.Status.IsProblem() && !slices.Contains(s, p.Status) {
-			s = append(s, p.Status)
-		}
-	}
-	slices.Sort(s)
-	return s
 }
 
 // PinForecast is the estimated state of a planet pin.

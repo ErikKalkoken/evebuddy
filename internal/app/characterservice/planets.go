@@ -68,10 +68,14 @@ func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterI
 			if !ok || workEndsAt.After(now) || workEndsAt.Before(earliest) {
 				continue
 			}
+			f := colonysim.Forecast(p, now)
 			var reasons []string
-			for _, x := range colonysim.Forecast(p, now).ProblemStatuses() {
-				reasons = append(reasons, x.Display())
+			for _, pin := range p.Pins {
+				if pf := f.Pins[pin.ID]; pf != nil && pf.Status.IsProblem() {
+					reasons = append(reasons, p.PinName(pin)+": "+pf.Status.Display())
+				}
 			}
+			slices.Sort(reasons)
 			if len(reasons) == 0 {
 				reasons = append(reasons, app.ColonyIdle.Display())
 			}

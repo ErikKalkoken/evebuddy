@@ -156,25 +156,6 @@ func TestPinStatusIsProblem(t *testing.T) {
 	}
 }
 
-func TestColonyForecastProblemStatuses(t *testing.T) {
-	t.Run("should return distinct problems ordered by status", func(t *testing.T) {
-		f := app.ColonyForecast{Pins: map[int64]*app.PinForecast{
-			1: {Status: app.PinStorageFull},
-			2: {Status: app.PinExtractorExpired},
-			3: {Status: app.PinStorageFull},
-			4: {Status: app.PinProducing},
-			5: {Status: app.PinFactoryIdle},
-		}}
-		xassert.Equal(t, []app.PinStatus{app.PinExtractorExpired, app.PinStorageFull}, f.ProblemStatuses())
-	})
-	t.Run("should return nothing when there are no problems", func(t *testing.T) {
-		f := app.ColonyForecast{Pins: map[int64]*app.PinForecast{
-			1: {Status: app.PinProducing},
-		}}
-		assert.Empty(t, f.ProblemStatuses())
-	})
-}
-
 func TestPinForecastExtractorOutput(t *testing.T) {
 	pf := app.PinForecast{ExtractorOutputs: []int64{10, 20, 30}}
 	t.Run("should return total output", func(t *testing.T) {
