@@ -359,8 +359,9 @@ func (s *simulation) canAccept(p *pin, typeID, quantity int64) int64 {
 
 func (s *simulation) usedVolume(p *pin) float64 {
 	var v float64
-	for typeID, amount := range p.contents {
-		v += s.volumes[typeID] * float64(amount)
+	// sorted, because the sum of floats depends on the order
+	for _, typeID := range slices.Sorted(maps.Keys(p.contents)) {
+		v += s.volumes[typeID] * float64(p.contents[typeID])
 	}
 	return v
 }
