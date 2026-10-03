@@ -15,23 +15,36 @@ import (
 )
 
 // Forecast returns the estimated state of a colony at now
-// including when it will stop working within [app.ColonyForecastHorizon].
+// including when it will stop working within [app.ColonyForecastHorizon]
+// and until when the forecast stays the same.
 func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	s := newSimulation(cp)
-	if !s.runUntil(now) {
+	ok := s.runUntil(now)
+	if !ok {
 		logAborted(cp, s.simTime)
 	}
 	f := s.forecast()
+	validUntil, hasChange := s.nextChange()
+	if !ok {
+		validUntil, hasChange = now, true // incomplete, so never reuse
+	}
 	t, r := s.runUntilWorkEnds(now.Add(app.ColonyForecastHorizon))
 	switch r {
 	case runWorkEnded:
 		if t.After(now) {
 			f.WorkEndsAt = optional.New(t)
+			// the work end is only reported while it is in the future
+			if !hasChange || t.Before(validUntil) {
+				validUntil, hasChange = t, true
+			}
 		}
 	case runCompleted:
 		f.WorksBeyondHorizon = true
 	case runAborted:
 		logAborted(cp, t)
+	}
+	if hasChange {
+		f.ValidUntil = optional.New(validUntil)
 	}
 	return f
 }

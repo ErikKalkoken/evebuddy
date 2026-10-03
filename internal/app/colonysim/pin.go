@@ -197,20 +197,22 @@ func (p *pin) nextRunTime() (time.Time, bool) {
 
 // canRun reports whether the pin can run until the given time.
 func (p *pin) canRun(until time.Time) bool {
-	switch p.kind {
-	case kindExtractor:
-		if !p.canActivate() {
-			return false
-		}
-	case kindFactory:
-		if !p.isActive && !p.canActivate() {
-			return false
-		}
-	default:
+	if !p.isRunnable() {
 		return false
 	}
 	t, ok := p.nextRunTime()
 	return !ok || !t.After(until)
+}
+
+// isRunnable reports whether the pin can run at all.
+func (p *pin) isRunnable() bool {
+	switch p.kind {
+	case kindExtractor:
+		return p.canActivate()
+	case kindFactory:
+		return p.isActive || p.canActivate()
+	}
+	return false
 }
 
 // run runs the pin at runTime and returns the produced commodities.

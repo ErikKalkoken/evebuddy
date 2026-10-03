@@ -19,6 +19,7 @@ type ColonyForecast struct {
 	Pins               map[int64]*PinForecast // by pin ID
 	Status             ColonyStatus
 	Time               time.Time                    // time of the forecast
+	ValidUntil         optional.Optional[time.Time] // forecast stays the same until then, except for the horizon; empty when nothing changes anymore
 	WorkEndsAt         optional.Optional[time.Time] // when the colony stops working, if within the horizon
 	WorksBeyondHorizon bool                         // colony is still working at the horizon
 }

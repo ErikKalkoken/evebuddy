@@ -149,6 +149,33 @@ func (s *simulation) forecast() *app.ColonyForecast {
 	return f
 }
 
+// nextChange returns the earliest time after the current simulation time when the state can change,
+// or false when it never changes. The time is conservative: it can be earlier, but never later.
+func (s *simulation) nextChange() (time.Time, bool) {
+	var next time.Time
+	update := func(t time.Time) {
+		if next.IsZero() || t.Before(next) {
+			next = t
+		}
+	}
+	for _, id := range s.pinIDs {
+		p := s.pins[id]
+		// pinStatus compares the expiry with the time of the forecast
+		if p.kind == kindExtractor && p.isExtractorSetup() && p.expiryTime.After(s.simTime) {
+			update(p.expiryTime)
+		}
+		if !p.isRunnable() {
+			continue
+		}
+		t, ok := p.nextRunTime()
+		if !ok || !t.After(s.simTime) {
+			t = s.simTime // runs right away, see schedulePin
+		}
+		update(t)
+	}
+	return next, !next.IsZero()
+}
+
 // run runs the simulation until the given time or until the colony stops working.
 // It returns the simulation time at the end and why it stopped.
 func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runResult) {
