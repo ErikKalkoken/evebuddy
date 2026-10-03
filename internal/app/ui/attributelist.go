@@ -13,11 +13,12 @@ import (
 
 // AttributeItem is a row in an [AttributeList].
 type AttributeItem struct {
-	Label      string
-	Value      string
+	Action     func() // called when the row is tapped
 	Importance widget.Importance
 	InfoAction func() // shows an info icon when set
-	Action     func() // called when the row is tapped
+	IsHeading  bool   // shows the label as section heading without value and icon
+	Label      string
+	Value      string
 }
 
 // AttributeList is a widget that shows a list of labeled values.
@@ -65,15 +66,23 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border := co.(*fyne.Container).Objects
 
-			border[1].(*widget.Label).SetText(it.Label)
+			label := border[1].(*widget.Label)
+			label.Text = it.Label
+			label.TextStyle.Bold = it.IsHeading
+			label.Refresh()
 
 			value := border[0].(*widget.Label)
-			value.Text = it.Value
-			value.Importance = it.Importance
-			value.Refresh()
+			if it.IsHeading {
+				value.Hide()
+			} else {
+				value.Text = it.Value
+				value.Importance = it.Importance
+				value.Show()
+				value.Refresh()
+			}
 
 			iconBox := border[2].(*fyne.Container)
-			if it.InfoAction != nil {
+			if it.InfoAction != nil && !it.IsHeading {
 				iconBox.Objects[1].(*xwidget.TappableIcon).OnTapped = it.InfoAction
 				iconBox.Show()
 			} else {
@@ -87,8 +96,8 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 		if id >= len(w.items) {
 			return
 		}
-		if f := w.items[id].Action; f != nil {
-			f()
+		if it := w.items[id]; !it.IsHeading && it.Action != nil {
+			it.Action()
 		}
 	}
 	return widget.NewSimpleRenderer(l)

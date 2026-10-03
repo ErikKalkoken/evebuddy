@@ -170,9 +170,10 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, "1,081", value(t, info.main, "Base yield"))
 		assert.True(t, hasItem(info.main, "Data from"))
 		assert.Nil(t, info.storage)
-		assert.Equal(t, []string{"Aqueous Liquids x 10,000 to Storage 31-111"}, lines(info.routes))
+		assert.Equal(t, []string{"Outgoing", "Aqueous Liquids x 10,000 Storage 31-111"}, lines(info.routes))
+		assert.True(t, info.routes[0].IsHeading)
 		shownPins = nil
-		info.routes[0].InfoAction()
+		info.routes[1].InfoAction()
 		assert.Equal(t, []shownPin{{2, "Storage 31-111 on " + cp.EvePlanet.Name}}, shownPins, "opens connected installation")
 	})
 	t.Run("should show extractor program", func(t *testing.T) {
@@ -213,7 +214,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.NotContains(t, info.storage[0].Value, "not routed")
 		assert.Equal(t, widget.MediumImportance, info.storage[0].Importance)
 		assert.Nil(t, info.program)
-		assert.Equal(t, []string{"Aqueous Liquids x 3,000 from Storage 31-111"}, lines(info.routes))
+		assert.Equal(t, []string{"Incoming", "Aqueous Liquids x 3,000 Storage 31-111"}, lines(info.routes))
 	})
 	t.Run("should show last activity of producing processor", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
@@ -278,8 +279,10 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.NotNil(t, info.storage[0].InfoAction)
 		assert.Regexp(t, `^[\d,.]+ m3$`, info.storage[0].Value)
 		assert.Equal(t, []string{
-			"Aqueous Liquids x 10,000 from Extractor 21-111",
-			"Aqueous Liquids x 3,000 to Basic Processor 41-111",
+			"Incoming",
+			"Aqueous Liquids x 10,000 Extractor 21-111",
+			"Outgoing",
+			"Aqueous Liquids x 3,000 Basic Processor 41-111",
 		}, lines(info.routes))
 	})
 	t.Run("should show tabs for installation type", func(t *testing.T) {

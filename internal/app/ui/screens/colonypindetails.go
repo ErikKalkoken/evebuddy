@@ -651,17 +651,17 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	)
 
 	// routes
-	makeRoute := func(r *app.PlanetRoute, direction string, otherID int64) ui.AttributeItem {
+	makeRoute := func(r *app.PlanetRoute, otherID int64) ui.AttributeItem {
 		it := ui.AttributeItem{
 			Label: fmt.Sprintf("%s x %s", typeName(r.ContentType.ID), ihumanize.Comma(r.Quantity)),
-			Value: direction + " Unknown installation",
+			Value: "Unknown installation",
 		}
 		other, ok := pins[otherID]
 		if !ok {
 			return it
 		}
 		name := cp.PinName(other)
-		it.Value = direction + " " + name
+		it.Value = name
 		if a.showPin != nil {
 			title := fmt.Sprintf("%s on %s", name, cp.EvePlanet.Name)
 			it.InfoAction = func() {
@@ -673,15 +673,24 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	var in, out []ui.AttributeItem
 	for _, r := range cp.Routes {
 		if r.DestinationPinID == p.ID {
-			in = append(in, makeRoute(r, "from", r.SourcePinID))
+			in = append(in, makeRoute(r, r.SourcePinID))
 		}
 		if r.SourcePinID == p.ID {
-			out = append(out, makeRoute(r, "to", r.DestinationPinID))
+			out = append(out, makeRoute(r, r.DestinationPinID))
 		}
 	}
-	sortAttributeItems(in)
-	sortAttributeItems(out)
-	info.routes = slices.Concat(in, out)
+	info.routes = []ui.AttributeItem{}
+	for _, x := range []struct {
+		heading string
+		items   []ui.AttributeItem
+	}{{"Incoming", in}, {"Outgoing", out}} {
+		if len(x.items) == 0 {
+			continue
+		}
+		sortAttributeItems(x.items)
+		info.routes = append(info.routes, ui.AttributeItem{Label: x.heading, IsHeading: true})
+		info.routes = append(info.routes, x.items...)
+	}
 	if len(info.routes) == 0 {
 		info.routes = []ui.AttributeItem{{Label: "No routes"}}
 	}
