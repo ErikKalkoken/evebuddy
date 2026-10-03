@@ -676,6 +676,13 @@ func TestForecastPlanet_Cache(t *testing.T) {
 		got = s.ForecastPlanet(p, now.Add(forecastMaxAge))
 		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
 	})
+	t.Run("should measure age of cached forecast with the wall clock", func(t *testing.T) {
+		s.forecasts.Clear()
+		s.ForecastPlanet(p, time.Now()) // includes a monotonic clock reading
+		e, ok := s.forecasts.Load(colonyKey{characterID: p.CharacterID, planetID: p.EvePlanet.ID})
+		require.True(t, ok)
+		assert.NotContains(t, e.time.String(), "m=", "has no monotonic clock reading")
+	})
 	t.Run("should not change cached forecast when returning it", func(t *testing.T) {
 		s.forecasts.Clear()
 		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))

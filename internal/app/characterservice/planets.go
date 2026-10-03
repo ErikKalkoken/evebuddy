@@ -64,7 +64,8 @@ func (s *CharacterService) ForecastPlanet(cp *app.CharacterPlanet, now time.Time
 	key := colonyKey{characterID: cp.CharacterID, planetID: cp.EvePlanet.ID}
 	e, ok := s.forecasts.Load(key)
 	if !ok || !e.isValid(cp.LastUpdate, now) {
-		e = forecastEntry{forecast: colonysim.Forecast(cp, now), lastUpdate: cp.LastUpdate, time: now}
+		// wall clock only: the monotonic clock stops while a device sleeps, which would extend the max age
+		e = forecastEntry{forecast: colonysim.Forecast(cp, now), lastUpdate: cp.LastUpdate, time: now.Round(0)}
 		s.forecasts.Store(key, e)
 	}
 	f := *e.forecast
