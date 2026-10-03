@@ -39,13 +39,6 @@ func createPlanetRoute(ctx context.Context, q *queries.Queries, arg CreatePlanet
 	})
 }
 
-func (st *Storage) DeletePlanetRoutes(ctx context.Context, characterPlanetID int64) error {
-	if err := st.qRW.DeletePlanetRoutes(ctx, characterPlanetID); err != nil {
-		return fmt.Errorf("delete planet routes for %d: %w", characterPlanetID, err)
-	}
-	return nil
-}
-
 func (st *Storage) ListPlanetRoutes(ctx context.Context, characterPlanetID int64) ([]*app.PlanetRoute, error) {
 	if characterPlanetID == 0 {
 		return nil, fmt.Errorf("ListPlanetRoutes: %d: %w", characterPlanetID, app.ErrInvalid)

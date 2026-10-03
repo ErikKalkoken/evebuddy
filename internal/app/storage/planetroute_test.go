@@ -54,25 +54,6 @@ func TestPlanetRoute(t *testing.T) {
 		// then
 		assert.Error(t, err)
 	})
-	t.Run("can delete routes", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		planet1 := factory.CreateCharacterPlanet()
-		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{CharacterPlanetID: planet1.ID})
-		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{CharacterPlanetID: planet1.ID})
-		planet2 := factory.CreateCharacterPlanet()
-		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{CharacterPlanetID: planet2.ID})
-		// when
-		err := st.DeletePlanetRoutes(ctx, planet1.ID)
-		// then
-		require.NoError(t, err)
-		oo1, err := st.ListPlanetRoutes(ctx, planet1.ID)
-		require.NoError(t, err)
-		assert.Len(t, oo1, 0)
-		oo2, err := st.ListPlanetRoutes(ctx, planet2.ID)
-		require.NoError(t, err)
-		assert.Len(t, oo2, 1)
-	})
 	t.Run("should load routes with character planet", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

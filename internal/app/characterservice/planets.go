@@ -157,19 +157,23 @@ func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterI
 	return err
 }
 
+// planetsDataVersion is part of the content hash. Bump it to refetch all colonies once,
+// e.g. after storing more colony data.
+const planetsDataVersion = 1
+
+type planetsData struct {
+	Planets []esi.CharactersCharacterIdPlanetsGetInner
+	Version int
+}
+
 // TODO: Improve update logic to only update changes to pins
 
 func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
 	if arg.section != app.SectionCharacterPlanets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	// refetch colonies stored before routes were added, which the list of planets would not reveal
-	hasOldColonies, err := s.st.HasCharacterPlanetsWithoutRoutes(ctx, arg.characterID)
-	if err != nil {
-		return false, err
-	}
 	return s.updateSectionIfChanged(
-		ctx, arg, hasOldColonies,
+		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdPlanets")
 			planets, _, err := s.esiClient.PlanetaryInteractionAPI.GetCharactersCharacterIdPlanets(ctx, characterID).Execute()
@@ -177,7 +181,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 				return false, err
 			}
 			slog.Debug("Received planets from ESI", "characterID", characterID, "count", len(planets))
-			return planets, nil
+			return planetsData{Planets: planets, Version: planetsDataVersion}, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			// frees forecasts of replaced colonies
@@ -191,7 +195,7 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 			for _, p := range pp {
 				existing.Add(p.EvePlanet.ID)
 			}
-			planets := data.([]esi.CharactersCharacterIdPlanetsGetInner)
+			planets := data.(planetsData).Planets
 			incoming := set.Of[int64]()
 			for _, p := range planets {
 				incoming.Add(p.PlanetId)

@@ -408,7 +408,7 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 	s := NewFake(Params{Storage: st})
 	ctx := context.Background()
 	const planetID = 40023691
-	setup := func() (*app.Character, string) {
+	setup := func(hasRoutes bool) (*app.Character, string) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacterFull()
@@ -417,6 +417,16 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 		productType := factory.CreateEveType()
 		pinType := factory.CreateEveType()
 		routeType := factory.CreateEveType()
+		routes := []map[string]any{}
+		if hasRoutes {
+			routes = append(routes, map[string]any{
+				"content_type_id":    routeType.ID,
+				"destination_pin_id": 1000000017030,
+				"quantity":           20,
+				"route_id":           4,
+				"source_pin_id":      1000000017021,
+			})
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
@@ -449,15 +459,7 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 						"type_id":   pinType.ID,
 					},
 				},
-				"routes": []map[string]any{
-					{
-						"content_type_id":    routeType.ID,
-						"destination_pin_id": 1000000017030,
-						"quantity":           20,
-						"route_id":           4,
-						"source_pin_id":      1000000017021,
-					},
-				},
+				"routes": routes,
 			}),
 		)
 		return c, "GET " + detailURL
@@ -469,24 +471,33 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	t.Run("should refetch colony without routes when planets are unchanged", func(t *testing.T) {
-		c, detail := setup()
-		update(t, c.ID)
-		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
+	// fakeUpgrade sets the content hash to one stored by an earlier version.
+	fakeUpgrade := func(t *testing.T, characterID int64) {
+		_, err := st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: characterID,
+			Section:     app.SectionCharacterPlanets,
+			ContentHash: new("hash-from-earlier-version"),
+		})
 		require.NoError(t, err)
-		require.NoError(t, st.DeletePlanetRoutes(ctx, p.ID)) // as stored before routes were added
+	}
+	t.Run("should refetch colonies once after upgrade", func(t *testing.T) {
+		c, detail := setup(true)
+		update(t, c.ID)
+		fakeUpgrade(t, c.ID)
 		update(t, c.ID)
 		xassert.Equal(t, 2, httpmock.GetCallCountInfo()[detail])
-		p, err = st.GetCharacterPlanet(ctx, c.ID, planetID)
+		update(t, c.ID)
+		xassert.Equal(t, 2, httpmock.GetCallCountInfo()[detail])
+		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
 		require.NoError(t, err)
 		assert.Len(t, p.Routes, 1)
 	})
-	t.Run("should clear cached forecasts of character when refetching colony", func(t *testing.T) {
-		c, _ := setup()
+	t.Run("should clear cached forecasts of character when refetching colonies", func(t *testing.T) {
+		c, _ := setup(true)
 		update(t, c.ID)
 		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
 		require.NoError(t, err)
-		require.NoError(t, st.DeletePlanetRoutes(ctx, p.ID)) // as stored before routes were added
+		fakeUpgrade(t, c.ID)
 		s.ForecastPlanet(p, time.Now())
 		other := colonyKey{characterID: c.ID + 1, planetID: planetID}
 		s.forecasts.Store(other, forecastEntry{})
@@ -497,7 +508,13 @@ func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
 		assert.True(t, found, "keeps forecasts of other characters")
 	})
 	t.Run("should not refetch colony with routes when planets are unchanged", func(t *testing.T) {
-		c, detail := setup()
+		c, detail := setup(true)
+		update(t, c.ID)
+		update(t, c.ID)
+		xassert.Equal(t, 1, httpmock.GetCallCountInfo()[detail])
+	})
+	t.Run("should not refetch colony without routes when planets are unchanged", func(t *testing.T) {
+		c, detail := setup(false)
 		update(t, c.ID)
 		update(t, c.ID)
 		xassert.Equal(t, 1, httpmock.GetCallCountInfo()[detail])
