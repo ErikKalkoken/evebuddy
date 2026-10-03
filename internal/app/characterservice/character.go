@@ -19,6 +19,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool,
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return false, err
 	}
+	s.clearForecasts(id)
 	s.scs.DeleteCharacter(id)
 	slog.Info("Character deleted", "characterID", id)
 	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {

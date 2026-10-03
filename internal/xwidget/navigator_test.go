@@ -73,6 +73,43 @@ func TestNavigator_PopAllRemovesEveryNonRootPage(t *testing.T) {
 	assert.Equal(t, fyne.CanvasObject(root), nav.Current())
 }
 
+func TestNavigator_OnPop(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	root := xwidget.NewAppBar("Root", widget.NewLabel("Root"))
+	nav := xwidget.NewNavigator(root)
+	w := test.NewWindow(nav)
+	defer w.Close()
+
+	var popped []fyne.CanvasObject
+	nav.OnPop = func(page fyne.CanvasObject) {
+		popped = append(popped, page)
+	}
+	second := xwidget.NewAppBar("Second", widget.NewLabel("Second"))
+	third := xwidget.NewAppBar("Third", widget.NewLabel("Third"))
+	fourth := xwidget.NewAppBar("Fourth", widget.NewLabel("Fourth"))
+	nav.Push(second)
+	nav.Push(third)
+
+	t.Run("should report page removed by Pop", func(t *testing.T) {
+		nav.Pop()
+		assert.Equal(t, []fyne.CanvasObject{third}, popped)
+	})
+	t.Run("should report each page removed by PopAll", func(t *testing.T) {
+		popped = nil
+		nav.Push(fourth)
+		nav.PopAll()
+		assert.Equal(t, []fyne.CanvasObject{fourth, second}, popped)
+	})
+	t.Run("should not report root page", func(t *testing.T) {
+		popped = nil
+		nav.Pop()
+		nav.PopAll()
+		assert.Empty(t, popped)
+	})
+}
+
 func TestNavigator_SetReplacesRootAndClearsStack(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())

@@ -16,6 +16,9 @@ type Navigator struct {
 
 	NavBar *NavBar // Current navbar. Required for hide feature.
 
+	// OnPop is called with each page removed by Pop or PopAll, e.g. to release its resources.
+	OnPop func(page fyne.CanvasObject)
+
 	pages      *fyne.Container // stack of pages. First object is the root page.
 	hideNavBar stack.Stack[bool]
 }
@@ -80,6 +83,7 @@ func (n *Navigator) Pop() fyne.CanvasObject {
 	n.hideNavBar.Pop()
 	n.Current().Show()
 	n.showNavBarWhenRequired()
+	n.popped(page)
 	return page
 }
 
@@ -89,12 +93,24 @@ func (n *Navigator) PopAll() {
 	if len(n.pages.Objects) == 0 {
 		return
 	}
+	var popped []fyne.CanvasObject
 	for len(n.pages.Objects) > 1 {
-		n.pages.Remove(n.Current())
+		page := n.Current()
+		n.pages.Remove(page)
 		n.hideNavBar.Pop()
+		popped = append(popped, page)
 	}
 	n.Current().Show()
 	n.showNavBarWhenRequired()
+	for _, page := range popped {
+		n.popped(page)
+	}
+}
+
+func (n *Navigator) popped(page fyne.CanvasObject) {
+	if n.OnPop != nil {
+		n.OnPop(page)
+	}
 }
 
 func (n *Navigator) showNavBarWhenRequired() {

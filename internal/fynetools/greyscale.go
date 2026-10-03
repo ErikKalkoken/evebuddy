@@ -12,10 +12,10 @@ import (
 	"github.com/anthonynsimon/bild/effect"
 )
 
-// ImageToGreyscale returns a copy of an image in greyscale.
+// ImageToGrayscale returns a copy of an image in grayscale.
 //
 // Will fail if the resource it not a PNG or JPEG image.
-func ImageToGreyscale(r fyne.Resource) (fyne.Resource, error) {
+func ImageToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 	j, format, err := image.Decode(bytes.NewReader(r.Content()))
 	if err != nil {
 		return nil, err

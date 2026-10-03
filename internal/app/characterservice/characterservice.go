@@ -73,6 +73,7 @@ type CharacterService struct {
 	ens                     EVENotificationService
 	esiClient               *esi.APIClient
 	eus                     *eveuniverseservice.EVEUniverseService
+	forecasts               xsync.Map[colonyKey, forecastEntry] // cached colony forecasts
 	httpClient              *http.Client
 	scs                     StatusCache
 	sendDesktopNotification func(title, content string) // Callback for sending a desktop notification via Fyne API

@@ -87,10 +87,8 @@ func (a *regionInfo) update(ctx context.Context) error {
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))
 			}
-			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-			attributesTab := container.NewTabItem("Attributes", attributeList)
 			fyne.Do(func() {
-				a.tabs.Append(attributesTab)
+				a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 			})
 		}
 		fyne.Do(func() {

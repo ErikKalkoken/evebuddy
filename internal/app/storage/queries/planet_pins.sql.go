@@ -11,11 +11,15 @@ import (
 	"strings"
 )
 
-const createPlanetPin = `-- name: CreatePlanetPin :exec
+const createPlanetPin = `-- name: CreatePlanetPin :one
 INSERT INTO
     planet_pins (
         character_planet_id,
+        extractor_cycle_time,
+        extractor_head_radius,
+        extractor_num_heads,
         extractor_product_type_id,
+        extractor_qty_per_cycle,
         factory_schema_id,
         schematic_id,
         type_id,
@@ -25,12 +29,16 @@ INSERT INTO
         pin_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
 `
 
 type CreatePlanetPinParams struct {
 	CharacterPlanetID      int64
+	ExtractorCycleTime     sql.NullInt64
+	ExtractorHeadRadius    sql.NullFloat64
+	ExtractorNumHeads      sql.NullInt64
 	ExtractorProductTypeID sql.NullInt64
+	ExtractorQtyPerCycle   sql.NullInt64
 	FactorySchemaID        sql.NullInt64
 	SchematicID            sql.NullInt64
 	TypeID                 int64
@@ -40,10 +48,14 @@ type CreatePlanetPinParams struct {
 	PinID                  int64
 }
 
-func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) error {
-	_, err := q.db.ExecContext(ctx, createPlanetPin,
+func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createPlanetPin,
 		arg.CharacterPlanetID,
+		arg.ExtractorCycleTime,
+		arg.ExtractorHeadRadius,
+		arg.ExtractorNumHeads,
 		arg.ExtractorProductTypeID,
+		arg.ExtractorQtyPerCycle,
 		arg.FactorySchemaID,
 		arg.SchematicID,
 		arg.TypeID,
@@ -52,7 +64,9 @@ func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams
 		arg.LastCycleStart,
 		arg.PinID,
 	)
-	return err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deletePlanetPins = `-- name: DeletePlanetPins :exec
@@ -69,7 +83,7 @@ func (q *Queries) DeletePlanetPins(ctx context.Context, characterPlanetID int64)
 
 const getPlanetPin = `-- name: GetPlanetPin :one
 SELECT
-    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id,
+    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id, pp.extractor_cycle_time, pp.extractor_head_radius, pp.extractor_num_heads, pp.extractor_qty_per_cycle,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
     ec.id, ec.name, ec.is_published,
@@ -119,6 +133,10 @@ func (q *Queries) GetPlanetPin(ctx context.Context, arg GetPlanetPinParams) (Get
 		&i.PlanetPin.PinID,
 		&i.PlanetPin.SchematicID,
 		&i.PlanetPin.TypeID,
+		&i.PlanetPin.ExtractorCycleTime,
+		&i.PlanetPin.ExtractorHeadRadius,
+		&i.PlanetPin.ExtractorNumHeads,
+		&i.PlanetPin.ExtractorQtyPerCycle,
 		&i.EveType.ID,
 		&i.EveType.EveGroupID,
 		&i.EveType.Capacity,
@@ -150,7 +168,7 @@ func (q *Queries) GetPlanetPin(ctx context.Context, arg GetPlanetPinParams) (Get
 
 const listPlanetPins = `-- name: ListPlanetPins :many
 SELECT
-    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id,
+    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id, pp.extractor_cycle_time, pp.extractor_head_radius, pp.extractor_num_heads, pp.extractor_qty_per_cycle,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
     ec.id, ec.name, ec.is_published,
@@ -200,6 +218,10 @@ func (q *Queries) ListPlanetPins(ctx context.Context, characterPlanetID int64) (
 			&i.PlanetPin.PinID,
 			&i.PlanetPin.SchematicID,
 			&i.PlanetPin.TypeID,
+			&i.PlanetPin.ExtractorCycleTime,
+			&i.PlanetPin.ExtractorHeadRadius,
+			&i.PlanetPin.ExtractorNumHeads,
+			&i.PlanetPin.ExtractorQtyPerCycle,
 			&i.EveType.ID,
 			&i.EveType.EveGroupID,
 			&i.EveType.Capacity,
@@ -241,7 +263,7 @@ func (q *Queries) ListPlanetPins(ctx context.Context, characterPlanetID int64) (
 
 const listPlanetPinsForCharacterPlanetIDs = `-- name: ListPlanetPinsForCharacterPlanetIDs :many
 SELECT
-    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id,
+    pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id, pp.extractor_cycle_time, pp.extractor_head_radius, pp.extractor_num_heads, pp.extractor_qty_per_cycle,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
     ec.id, ec.name, ec.is_published,
@@ -301,6 +323,10 @@ func (q *Queries) ListPlanetPinsForCharacterPlanetIDs(ctx context.Context, ids [
 			&i.PlanetPin.PinID,
 			&i.PlanetPin.SchematicID,
 			&i.PlanetPin.TypeID,
+			&i.PlanetPin.ExtractorCycleTime,
+			&i.PlanetPin.ExtractorHeadRadius,
+			&i.PlanetPin.ExtractorNumHeads,
+			&i.PlanetPin.ExtractorQtyPerCycle,
 			&i.EveType.ID,
 			&i.EveType.EveGroupID,
 			&i.EveType.Capacity,

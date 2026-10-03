@@ -20,61 +20,6 @@ func TestPlanet(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		lastUpdate := time.Now().UTC()
-		evePlanet := factory.CreateEvePlanet()
-		arg := storage.UpdateOrCreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   lastUpdate,
-			UpgradeLevel: 3,
-		}
-		// when
-		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
-		// then
-		require.NoError(t, err)
-		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, c.ID, i.CharacterID)
-		xassert.Equal(t, evePlanet, i.EvePlanet)
-		xassert.Equal(t, lastUpdate, i.LastUpdate)
-		xassert.Equal(t, 3, i.UpgradeLevel)
-	})
-	t.Run("can update existing", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		evePlanet := factory.CreateEvePlanet()
-		lastNotified := time.Now().Add(-5 * time.Minute).UTC()
-		factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   time.Now().Add(-1 * time.Hour).UTC(),
-			LastNotified: lastNotified,
-			UpgradeLevel: 2,
-		})
-		lastUpdate := time.Now().UTC()
-		arg := storage.UpdateOrCreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			EvePlanetID:  evePlanet.ID,
-			LastUpdate:   lastUpdate,
-			UpgradeLevel: 3,
-		}
-		// when
-		_, err := st.UpdateOrCreateCharacterPlanet(ctx, arg)
-		// then
-		require.NoError(t, err)
-		i, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, c.ID, i.CharacterID)
-		xassert.Equal(t, evePlanet, i.EvePlanet)
-		xassert.Equal(t, lastUpdate, i.LastUpdate)
-		xassert.EqualOptional(t, lastNotified, i.LastNotified)
-		xassert.Equal(t, 3, i.UpgradeLevel)
-	})
 	t.Run("can list planets", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -245,4 +190,111 @@ func pinIDsByPlanet(planets []*app.CharacterPlanet) map[int64]set.Set[int64] {
 		m[p.ID] = ids
 	}
 	return m
+}
+
+func TestReplaceCharacterPlanet(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	pinIDs := func(p *app.CharacterPlanet) []int64 {
+		var s []int64
+		for _, x := range p.Pins {
+			s = append(s, x.ID)
+		}
+		return s
+	}
+	routeIDs := func(p *app.CharacterPlanet) []int64 {
+		var s []int64
+		for _, x := range p.Routes {
+			s = append(s, x.RouteID)
+		}
+		return s
+	}
+	t.Run("should create new colony with pins and routes", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		evePlanet := factory.CreateEvePlanet()
+		pinType := factory.CreateEveType()
+		product := factory.CreateEveType()
+		lastUpdate := time.Now().UTC()
+		_, err := st.ReplaceCharacterPlanet(ctx, storage.ReplaceCharacterPlanetParams{
+			CharacterID:  c.ID,
+			EvePlanetID:  evePlanet.ID,
+			LastUpdate:   lastUpdate,
+			UpgradeLevel: 3,
+			Pins: []storage.CreatePlanetPinParams{
+				{PinID: 1, TypeID: pinType.ID, Contents: map[int64]int64{product.ID: 42}},
+				{PinID: 2, TypeID: pinType.ID},
+			},
+			Routes: []storage.CreatePlanetRouteParams{
+				{RouteID: 7, SourcePinID: 1, DestinationPinID: 2, ContentTypeID: product.ID, Quantity: 100},
+			},
+		})
+		require.NoError(t, err)
+		p, err := st.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, c.ID, p.CharacterID)
+		xassert.Equal(t, evePlanet, p.EvePlanet)
+		xassert.Equal(t, lastUpdate, p.LastUpdate)
+		xassert.Equal(t, 3, p.UpgradeLevel)
+		assert.ElementsMatch(t, []int64{1, 2}, pinIDs(p))
+		assert.Equal(t, []int64{7}, routeIDs(p))
+		for _, x := range p.Pins {
+			if x.ID == 1 {
+				require.Len(t, x.Contents, 1)
+				xassert.Equal(t, 42, x.Contents[0].Amount)
+			}
+		}
+	})
+	t.Run("should replace pins and routes of existing colony", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		lastNotified := time.Now().Add(-5 * time.Minute).UTC()
+		cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
+			LastUpdate:   time.Now().Add(-time.Hour).UTC(),
+			LastNotified: lastNotified,
+		})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: cp.ID, PinID: 1})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{CharacterPlanetID: cp.ID, RouteID: 1, SourcePinID: 1, DestinationPinID: 1})
+		pinType := factory.CreateEveType()
+		lastUpdate := time.Now().UTC()
+		id, err := st.ReplaceCharacterPlanet(ctx, storage.ReplaceCharacterPlanetParams{
+			CharacterID:  cp.CharacterID,
+			EvePlanetID:  cp.EvePlanet.ID,
+			LastUpdate:   lastUpdate,
+			UpgradeLevel: 4,
+			Pins:         []storage.CreatePlanetPinParams{{PinID: 2, TypeID: pinType.ID}},
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, cp.ID, id)
+		p, err := st.GetCharacterPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, lastUpdate, p.LastUpdate)
+		xassert.EqualOptional(t, lastNotified, p.LastNotified)
+		xassert.Equal(t, 4, p.UpgradeLevel)
+		assert.Equal(t, []int64{2}, pinIDs(p))
+		assert.Empty(t, p.Routes)
+	})
+	t.Run("should keep existing colony unchanged when replacing fails", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		oldUpdate := time.Now().Add(-time.Hour).UTC()
+		cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: oldUpdate})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: cp.ID, PinID: 1})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{CharacterPlanetID: cp.ID, RouteID: 1, SourcePinID: 1, DestinationPinID: 1})
+		pinType := factory.CreateEveType()
+		_, err := st.ReplaceCharacterPlanet(ctx, storage.ReplaceCharacterPlanetParams{
+			CharacterID: cp.CharacterID,
+			EvePlanetID: cp.EvePlanet.ID,
+			LastUpdate:  time.Now().UTC(),
+			Pins: []storage.CreatePlanetPinParams{
+				{PinID: 2, TypeID: pinType.ID},
+				{PinID: 3}, // invalid
+			},
+		})
+		require.ErrorIs(t, err, app.ErrInvalid)
+		p, err := st.GetCharacterPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, oldUpdate, p.LastUpdate)
+		assert.Equal(t, []int64{1}, pinIDs(p))
+		assert.Equal(t, []int64{1}, routeIDs(p))
+	})
 }

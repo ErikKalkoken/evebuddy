@@ -179,6 +179,26 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			}()
 			a.sb.Display("Started reloading notifications")
 		}),
+		fyne.NewMenuItem("Reload colonies for all characters", func() {
+			var characterIDs []int64
+			for _, x := range a.entities {
+				if x.category != sectionCharacter {
+					continue
+				}
+				characterIDs = append(characterIDs, x.id)
+			}
+			go func() {
+				for _, id := range characterIDs {
+					go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
+						context.Background(),
+						id,
+						app.SectionCharacterPlanets,
+						true,
+					)
+				}
+			}()
+			a.sb.Display("Started reloading colonies")
+		}),
 	}
 	if a.u.IsDeveloperMode() {
 		items = append(items,

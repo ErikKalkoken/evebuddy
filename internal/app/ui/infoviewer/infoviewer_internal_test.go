@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
@@ -123,3 +124,32 @@ func TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed(t *testin
 // 		test.RenderObjectToMarkup(a)
 // 	})
 // }
+
+func TestAttributeList(t *testing.T) {
+	a := test.NewTempApp(t)
+	iw := &InfoViewer{u: newUIServiceFake(a)}
+	texts := func(w fyne.CanvasObject) []string {
+		var s []string
+		for _, o := range test.LaidOutObjects(w) {
+			if x, ok := o.(*widget.Label); ok && x.Visible() {
+				s = append(s, x.Text)
+			}
+		}
+		return s
+	}
+	t.Run("should show items from constructor", func(t *testing.T) {
+		w := newAttributeList(iw, newAttributeItem("Alpha", "1"))
+		win := test.NewWindow(w)
+		defer win.Close()
+		win.Resize(fyne.NewSize(300, 200))
+		assert.Subset(t, texts(w), []string{"Alpha", "1"})
+	})
+	t.Run("should show items after set", func(t *testing.T) {
+		w := newAttributeList(iw)
+		win := test.NewWindow(w)
+		defer win.Close()
+		win.Resize(fyne.NewSize(300, 200))
+		w.set([]attributeItem{newAttributeItem("Bravo", "2")})
+		assert.Subset(t, texts(w), []string{"Bravo", "2"})
+	})
+}

@@ -3,16 +3,11 @@ package app
 import (
 	"iter"
 	"maps"
-	"slices"
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // Character is an EVE Online character owned by the user.
@@ -251,102 +246,6 @@ type CharacterLoyaltyPointEntry struct {
 	Faction       optional.Optional[*EveEntity]
 	LoyaltyPoints int64
 }
-
-type CharacterPlanet struct {
-	ID           int64
-	CharacterID  int64
-	EvePlanet    *EvePlanet
-	LastUpdate   time.Time
-	LastNotified optional.Optional[time.Time] // expiry time that was last notified
-	Pins         []*PlanetPin
-	UpgradeLevel int64
-}
-
-func (cp CharacterPlanet) NameRichText() []widget.RichTextSegment {
-	return slices.Concat(
-		cp.EvePlanet.SolarSystem.SecurityStatusRichText(),
-		xwidget.RichTextSegmentsFromText("  "+cp.EvePlanet.Name),
-	)
-}
-
-// ExtractedTypes returns a list of unique types currently being extracted.
-func (cp CharacterPlanet) ExtractedTypes() []*EveType {
-	types := make(map[int64]*EveType)
-	for pp := range cp.ActiveExtractors() {
-		if v, ok := pp.ExtractorProductType.Value(); ok {
-			types[v.ID] = v
-		}
-	}
-	return slices.Collect(maps.Values(types))
-}
-
-func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
-	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
-		return o.IsExtracting()
-	})
-}
-
-// ExtractionsEarliestExpiry returns the earliest expiry time of all extractions.
-// When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsEarliestExpiry() optional.Optional[time.Time] {
-	times := cp.ExtractionsExpiryTimes()
-	if len(times) == 0 {
-		return optional.Optional[time.Time]{}
-	}
-	earliest := slices.MinFunc(times, func(a, b time.Time) int {
-		return a.Compare(b)
-	})
-	return optional.New(earliest)
-}
-
-// ExtractionsExpiryTimes returns the expiry times for all extractions.
-// When no expiry data is found it will return empty.
-func (cp CharacterPlanet) ExtractionsExpiryTimes() []time.Time {
-	var s []time.Time
-	for pp := range cp.ActiveExtractors() {
-		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
-			s = append(s, v)
-		}
-	}
-	return s
-}
-
-func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
-	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
-		return o.IsProducing()
-	})
-}
-
-// ProducedSchematics returns a list of unique schematics currently in production.
-func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
-	schematics := make(map[int64]*EveSchematic)
-	for pp := range cp.ActiveProducers() {
-		if v, ok := pp.Schematic.Value(); ok {
-			schematics[v.ID] = v
-		}
-	}
-	return slices.Collect(maps.Values(schematics))
-}
-
-type PlanetPin struct {
-	ID                   int64
-	ExpiryTime           optional.Optional[time.Time]
-	ExtractorProductType optional.Optional[*EveType]
-	FactorySchematic     optional.Optional[*EveSchematic]
-	InstallTime          optional.Optional[time.Time]
-	LastCycleStart       optional.Optional[time.Time]
-	Schematic            optional.Optional[*EveSchematic]
-	Type                 *EveType
-}
-
-func (pp PlanetPin) IsExtracting() bool {
-	return pp.Type.Group.ID == EveGroupExtractorControlUnits && !pp.ExtractorProductType.IsEmpty()
-}
-
-func (pp PlanetPin) IsProducing() bool {
-	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
-}
-
 type CharacterShipAbility struct {
 	Type   EntityShort
 	Group  EntityShort
