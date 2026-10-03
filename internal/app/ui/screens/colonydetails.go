@@ -206,6 +206,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.characterID.Store(characterID)
 	a.planetID.Store(planetID)
 
+	a.status.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
 	a.icon.CornerRadius = theme.InputRadiusSize()
 	a.iconAttention = xwidget.NewImageFromResource(
 		theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError),
@@ -533,7 +534,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 	})
 	if v, ok := f.WorkEndsAt.Value(); ok {
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(
-			fmt.Sprintf(" until %s (in %s)", v.Format(app.DateTimeFormat), ihumanize.Duration(v.Sub(now))),
+			" until "+v.Format(app.DateTimeFormat),
 		))
 	} else if f.WorksBeyondHorizon {
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" for "+colonyBeyondHorizonText))
@@ -555,7 +556,6 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 
 		var output, info string
 		var statusText string
-		var progress optional.Optional[float64]
 		statusColor := pf.Status.Color()
 		switch p.Type.Group.ID {
 		case app.EveGroupExtractorControlUnits:
@@ -570,9 +570,6 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 			}
 			if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
 				statusText = ihumanize.Duration(v.Sub(now))
-				if install, ok := p.InstallTime.Value(); ok && v.After(install) {
-					progress = optional.New(colonyProgress(now.Sub(install), v.Sub(install))) // of the program
-				}
 			} else {
 				statusText = pf.Status.Display()
 			}
@@ -580,16 +577,12 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 			if v, ok := p.ProcessorSchematic(); ok {
 				output = v.Name
 				searchTargets = append(searchTargets, strings.ToLower(v.Name))
-				if last, ok := pf.LastRunTime.Value(); ok && pf.IsActive && v.CycleTime > 0 {
-					progress = optional.New(colonyProgress(now.Sub(last), time.Duration(v.CycleTime)*time.Second)) // of the cycle
-				}
 			} else {
 				output = "-"
 			}
 			statusText = pf.Status.Display()
 		default:
 			if v, ok := pf.Capacity.Value(); ok && v > 0 {
-				progress = optional.New(min(max(pf.CapacityUsed/v, 0), 1))
 				info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
 				if pf.Status == app.PinStorageFull {
 					statusText = pf.Status.Display()
@@ -628,7 +621,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 			output:            output,
 			pinID:             p.ID,
 			pinStatus:         pf.Status,
-			progress:          progress,
+			progress:          colonyPinProgress(p, pf, now),
 			status:            status,
 			symbolIcon:        icon,
 			symbolIconColor:   iconColor,
@@ -637,6 +630,30 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		})
 	}
 	return f.Status, status, rows
+}
+
+// colonyPinProgress returns the progress shown in the symbol of a pin:
+// of the program for extractors, of the cycle for processors and of the capacity otherwise.
+func colonyPinProgress(p *app.PlanetPin, pf *app.PinForecast, now time.Time) optional.Optional[float64] {
+	switch p.Type.Group.ID {
+	case app.EveGroupExtractorControlUnits:
+		expiry, ok1 := p.ExpiryTime.Value()
+		install, ok2 := p.InstallTime.Value()
+		if ok1 && ok2 && pf.Status == app.PinExtracting && expiry.After(install) {
+			return optional.New(colonyProgress(now.Sub(install), expiry.Sub(install)))
+		}
+	case app.EveGroupProcessors:
+		es, ok1 := p.ProcessorSchematic()
+		last, ok2 := pf.LastRunTime.Value()
+		if ok1 && ok2 && pf.IsActive && es.CycleTime > 0 {
+			return optional.New(colonyProgress(now.Sub(last), time.Duration(es.CycleTime)*time.Second))
+		}
+	default:
+		if v, ok := pf.Capacity.Value(); ok && v > 0 {
+			return optional.New(min(max(pf.CapacityUsed/v, 0), 1))
+		}
+	}
+	return optional.Optional[float64]{}
 }
 
 // colonyPlanetIcon returns the planet icon for iconID, in grayscale when the colony needs attention.

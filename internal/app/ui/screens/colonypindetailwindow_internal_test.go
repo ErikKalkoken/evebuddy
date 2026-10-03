@@ -114,63 +114,95 @@ func TestColonyPinDetails(t *testing.T) {
 		f := u.Character().ForecastPlanet(a.colony, now)
 		return a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
 	}
-	field := func(t *testing.T, fields []colonyPinField, label string) colonyPinField {
-		for _, x := range fields {
-			if x.label == label {
+	item := func(t *testing.T, items []ui.AttributeItem, label string) ui.AttributeItem {
+		for _, x := range items {
+			if x.Label == label {
 				return x
 			}
 		}
-		t.Fatalf("field not found: %s", label)
-		return colonyPinField{}
+		t.Fatalf("item not found: %s", label)
+		return ui.AttributeItem{}
 	}
-	hasField := func(fields []colonyPinField, label string) bool {
-		return slices.ContainsFunc(fields, func(x colonyPinField) bool { return x.label == label })
+	hasItem := func(items []ui.AttributeItem, label string) bool {
+		return slices.ContainsFunc(items, func(x ui.AttributeItem) bool { return x.Label == label })
 	}
-	// value returns the text of a field, with one line per item line.
-	value := func(t *testing.T, fields []colonyPinField, label string) string {
-		for _, x := range fields {
-			if x.label != label {
-				continue
-			}
-			if len(x.lines) == 0 {
-				return x.value
-			}
-			var lines []string
-			for _, l := range x.lines {
-				lines = append(lines, l.text())
-			}
-			return strings.Join(lines, "\n")
+	value := func(t *testing.T, items []ui.AttributeItem, label string) string {
+		return item(t, items, label).Value
+	}
+	// lines returns all items as "label value" lines.
+	lines := func(items []ui.AttributeItem) []string {
+		var s []string
+		for _, x := range items {
+			s = append(s, strings.TrimSpace(x.Label+" "+x.Value))
 		}
-		t.Fatalf("field not found: %s", label)
-		return ""
+		return s
+	}
+	statusText := func(info colonyPinInfo) string {
+		var s string
+		for _, x := range info.status {
+			s += x.Textual()
+		}
+		return s
 	}
 
 	t.Run("should show extractor", func(t *testing.T) {
 		info := makeInfo(t, 1)
 		require.True(t, info.found)
-		assert.Equal(t, string(pinTypeExtractor), value(t, info.general, "Installation"))
-		assert.NotNil(t, field(t, info.general, "Installation").icon)
-		assert.Equal(t, cp.EvePlanet.Name, value(t, info.general, "Colony"))
-		assert.Equal(t, character.EveCharacter.Name, value(t, info.general, "Owner"))
-		assert.Equal(t, app.PinExtracting.Display(), value(t, info.general, "Status"))
-		assert.Equal(t, "Aqueous Liquids", value(t, info.specific, "Product"))
-		assert.Contains(t, value(t, info.specific, "Expires"), "(in ")
-		assert.Equal(t, "10", value(t, info.specific, "Heads"))
-		assert.Equal(t, "1,081", value(t, info.specific, "Base yield"))
-		assert.Equal(t, "None", value(t, info.routes, "Incoming routes"))
-		assert.Equal(t, "Aqueous Liquids x 10,000 to Storage", value(t, info.routes, "Outgoing routes"))
+		assert.Equal(t, "Extractor (Aqueous Liquids)", info.name)
+		assert.Equal(t, pinTypeExtractor.icon(), info.symbolIcon)
+		assert.Equal(t, pinTypeExtractor, info.symbolType)
+		assert.Equal(t, cp.EvePlanet.Name, info.colony)
+		assert.Equal(t, character.EveCharacter.Name, info.owner)
+		assert.Equal(t, app.PinExtracting.Display(), statusText(info))
+		assert.True(t, info.progress.ValueOrZero() > 0)
+		assert.Equal(t, "Aqueous Liquids", value(t, info.main, "Product"))
+		assert.NotNil(t, item(t, info.main, "Product").InfoAction)
+		assert.Contains(t, value(t, info.main, "Expires"), "(in ")
+		assert.Equal(t, "10", value(t, info.main, "Heads"))
+		assert.Equal(t, "1,081", value(t, info.main, "Base yield"))
+		assert.True(t, hasItem(info.main, "Data from"))
+		assert.Nil(t, info.storage)
+		assert.Equal(t, []string{"Aqueous Liquids x 10,000 to Storage"}, lines(info.routes))
+		assert.NotNil(t, info.routes[0].InfoAction, "opens connected installation")
+	})
+	t.Run("should show extractor program", func(t *testing.T) {
+		info := makeInfo(t, 1)
+		require.Len(t, info.program, 8) // 4 hours with 30 minute cycles
+		var phases []colonyCyclePhase
+		for _, c := range info.program {
+			phases = append(phases, c.phase)
+		}
+		assert.Equal(t, []colonyCyclePhase{
+			cycleCompleted, cycleCompleted, cycleCurrent, cycleUpcoming,
+			cycleUpcoming, cycleUpcoming, cycleUpcoming, cycleUpcoming,
+		}, phases)
+		assert.Equal(t, lastUpdate, info.program[0].start)
+		assert.Equal(t, lastUpdate.Add(30*time.Minute), info.program[1].start)
+		assert.Positive(t, info.program[0].output)
+		assert.Contains(t, info.programTitle, "Total ")
+		assert.Contains(t, info.programTitle, "Current ")
+		assert.False(t, hasItem(info.main, "Total output"), "only shown in program")
+	})
+	t.Run("should show program chart", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		assert.Contains(t, a.programTitle.Text, "Total ")
+		assert.Len(t, a.programLegend.container.Objects, 3)
 	})
 	t.Run("should show processor", func(t *testing.T) {
 		info := makeInfo(t, 3)
 		require.True(t, info.found)
-		assert.Equal(t, "Water x 20", value(t, info.specific, "Schematic"))
-		inputs := value(t, info.specific, "Inputs")
-		assert.Contains(t, inputs, "Aqueous Liquids ")
-		assert.Contains(t, inputs, " / 3,000")
-		assert.NotContains(t, inputs, "not routed")
-		assert.Equal(t, int64(3645), field(t, info.specific, "Schematic").lines[0].typeID, "output links to its type")
-		assert.Equal(t, aqueousLiquids.ID, field(t, info.specific, "Inputs").lines[0].typeID)
-		assert.Equal(t, "Aqueous Liquids x 3,000 from Storage", value(t, info.routes, "Incoming routes"))
+		assert.Equal(t, "Water x 20", value(t, info.main, "Schematic"))
+		assert.NotNil(t, item(t, info.main, "Schematic").InfoAction)
+		assert.Equal(t, "Inputs", info.storageTitle)
+		require.Len(t, info.storage, 1)
+		assert.Equal(t, "Aqueous Liquids", info.storage[0].Label)
+		assert.Contains(t, info.storage[0].Value, " / 3,000")
+		assert.NotContains(t, info.storage[0].Value, "not routed")
+		assert.Equal(t, widget.MediumImportance, info.storage[0].Importance)
+		assert.Nil(t, info.program)
+		assert.Equal(t, []string{"Aqueous Liquids x 3,000 from Storage"}, lines(info.routes))
 	})
 	t.Run("should show last activity of producing processor", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
@@ -183,8 +215,8 @@ func TestColonyPinDetails(t *testing.T) {
 			LastRunTime:    optional.New(start),
 		}}}
 		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
-		assert.Equal(t, start.Format(app.DateTimeFormat), value(t, info.general, "Last activity"))
-		assert.False(t, hasField(info.specific, "Idle for"))
+		assert.Equal(t, start.Format(app.DateTimeFormat), value(t, info.main, "Last activity"))
+		assert.False(t, hasItem(info.main, "Idle for"))
 	})
 	t.Run("should show last production of idle processor", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
@@ -196,8 +228,8 @@ func TestColonyPinDetails(t *testing.T) {
 			LastRunTime:    optional.New(now.Add(-10 * time.Minute)), // last check for inputs
 		}}}
 		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
-		assert.Equal(t, start.Add(time.Hour).Format(app.DateTimeFormat), value(t, info.general, "Last activity"))
-		assert.Equal(t, ihumanize.Duration(2*time.Hour), value(t, info.specific, "Idle for"))
+		assert.Equal(t, start.Add(time.Hour).Format(app.DateTimeFormat), value(t, info.main, "Last activity"))
+		assert.Equal(t, ihumanize.Duration(2*time.Hour), value(t, info.main, "Idle for"))
 	})
 	t.Run("should show unknown activity of processor that never ran", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
@@ -207,32 +239,55 @@ func TestColonyPinDetails(t *testing.T) {
 			LastRunTime: optional.New(now.Add(-10 * time.Minute)),
 		}}}
 		info := a.makeInfo(a.colony, f, a.ownerName, a.extraTypeNames, now)
-		assert.Equal(t, "-", value(t, info.general, "Last activity"))
-		assert.False(t, hasField(info.specific, "Idle for"))
+		assert.Equal(t, "-", value(t, info.main, "Last activity"))
+		assert.False(t, hasItem(info.main, "Idle for"))
 	})
 	t.Run("should show name of unreferenced input from database", func(t *testing.T) {
 		info := makeInfo(t, 4)
 		require.True(t, info.found)
-		assert.Equal(t, "Carbon Compounds 0 / 3,000 (not routed)", value(t, info.specific, "Inputs"))
-		assert.Equal(t, "Biofuels x 20", value(t, info.specific, "Schematic"))
+		assert.Equal(t, []string{"Carbon Compounds 0 / 3,000 (not routed)"}, lines(info.storage))
+		assert.Equal(t, widget.DangerImportance, info.storage[0].Importance)
+		assert.Equal(t, "Biofuels x 20", value(t, info.main, "Schematic"))
 	})
 	t.Run("should show fallback for input missing in database", func(t *testing.T) {
 		info := makeInfo(t, 5)
 		require.True(t, info.found)
-		assert.Equal(t, "Type #2305 0 / 3,000 (not routed)", value(t, info.specific, "Inputs"))
-		assert.Equal(t, int64(2305), field(t, info.specific, "Inputs").lines[0].typeID, "unknown types still link")
+		assert.Equal(t, []string{"Type #2305 0 / 3,000 (not routed)"}, lines(info.storage))
+		assert.NotNil(t, info.storage[0].InfoAction, "unknown types still link")
 	})
 	t.Run("should show storage", func(t *testing.T) {
 		info := makeInfo(t, 2)
 		require.True(t, info.found)
-		assert.Equal(t, "-", value(t, info.general, "Status"))
-		assert.Contains(t, value(t, info.specific, "Capacity"), " / 12,000 m3")
-		contents := field(t, info.specific, "Contents")
-		require.Len(t, contents.lines, 1)
-		assert.Equal(t, "Aqueous Liquids", contents.lines[0].name)
-		assert.Equal(t, aqueousLiquids.ID, contents.lines[0].typeID)
-		assert.Contains(t, contents.lines[0].detail, " m3)")
-		assert.Equal(t, "Aqueous Liquids x 3,000 to Basic Processor (Water)", value(t, info.routes, "Outgoing routes"))
+		assert.Equal(t, "-", statusText(info))
+		assert.Contains(t, value(t, info.main, "Capacity"), " / 12,000 m3")
+		assert.Equal(t, "Storage", info.storageTitle)
+		require.Len(t, info.storage, 1)
+		assert.Equal(t, "Aqueous Liquids", info.storage[0].Label)
+		assert.NotNil(t, info.storage[0].InfoAction)
+		assert.Contains(t, info.storage[0].Value, " m3)")
+		assert.Equal(t, []string{
+			"Aqueous Liquids x 10,000 from Extractor (Aqueous Liquids)",
+			"Aqueous Liquids x 3,000 to Basic Processor (Water)",
+		}, lines(info.routes))
+	})
+	t.Run("should show tabs for installation type", func(t *testing.T) {
+		titles := func(a *colonyPinDetails) []string {
+			var s []string
+			for _, x := range a.tabs.Items {
+				s = append(s, x.Text)
+			}
+			return s
+		}
+		for pinID, want := range map[int64][]string{
+			1: {"Main", "Program", "Routes"},
+			2: {"Main", "Storage", "Routes"},
+			3: {"Main", "Inputs", "Routes"},
+		} {
+			a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID)
+			t.Cleanup(a.stop)
+			require.NoError(t, a.Update(t.Context()))
+			assert.Equal(t, want, titles(a), "pin %d", pinID)
+		}
 	})
 	t.Run("should report missing installation", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 99)
