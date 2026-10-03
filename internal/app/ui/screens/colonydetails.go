@@ -168,8 +168,7 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 	}
 	var showPin func(pinID int64, title string)
 	showPin = func(pinID int64, title string) {
-		a := newColonyPinDetails(u, r.characterID, r.planetID, pinID)
-		a.showPin = showPin
+		a := newColonyPinDetails(u, r.characterID, r.planetID, pinID, showPin)
 		page := makePage(title, showWhenLoaded(a, func() {
 			if err := a.Update(context.Background()); err != nil {
 				slog.Error("Failed to show colony installation", "characterID", r.characterID, "planetID", r.planetID, "pinID", pinID, "error", err)

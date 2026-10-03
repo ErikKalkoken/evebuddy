@@ -84,7 +84,9 @@ type colonyPinDetails struct {
 	u              baseUI
 }
 
-func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64) *colonyPinDetails {
+// newColonyPinDetails returns a new page for an installation.
+// showPin is called to show another installation and can be nil.
+func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin func(pinID int64, title string)) *colonyPinDetails {
 	if characterID == 0 || planetID == 0 || pinID == 0 {
 		panic(app.ErrInvalid)
 	}
@@ -100,6 +102,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64) *colonyPi
 		main:        ui.NewAttributeList(),
 		name:        makeHyperLink(),
 		pinID:       pinID,
+		showPin:     showPin, // set before listeners are added, which read it
 		product:     makeHyperLink(),
 		planetID:    planetID,
 		program: fyneline.NewAreaChart(nil, fyneline.TimeAccessor(func(p colonyProgramPoint) time.Time {

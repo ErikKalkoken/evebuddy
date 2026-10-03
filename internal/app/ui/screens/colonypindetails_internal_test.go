@@ -114,10 +114,9 @@ func TestColonyPinDetails(t *testing.T) {
 	}
 	var shownPins []shownPin
 	makeInfo := func(t *testing.T, pinID int64) colonyPinInfo {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID)
-		a.showPin = func(pinID int64, title string) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID, func(pinID int64, title string) {
 			shownPins = append(shownPins, shownPin{pinID, title})
-		}
+		})
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		f := u.Character().ForecastPlanet(a.colony, now)
@@ -196,7 +195,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.False(t, hasItem(info.main, "Total output"), "only shown in program")
 	})
 	t.Run("should show program chart", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		assert.Contains(t, a.programTitle.Text, "Total ")
@@ -218,7 +217,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, []string{"Incoming", "Aqueous Liquids x 3,000 Storage 31-111"}, lines(info.routes))
 	})
 	t.Run("should show last activity of producing processor", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		start := now.Add(-20 * time.Minute)
@@ -232,7 +231,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.False(t, hasItem(info.main, "Idle for"))
 	})
 	t.Run("should show last production of idle processor", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		start := now.Add(-3 * time.Hour) // cycle time is 1 hour
@@ -245,7 +244,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, ihumanize.Duration(2*time.Hour), value(t, info.main, "Idle for"))
 	})
 	t.Run("should show unknown activity of processor that never ran", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 3, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{3: {
@@ -299,21 +298,21 @@ func TestColonyPinDetails(t *testing.T) {
 			2: {"Main", "Storage", "Routes"},
 			3: {"Main", "Inputs", "Routes"},
 		} {
-			a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID)
+			a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, pinID, nil)
 			t.Cleanup(a.stop)
 			require.NoError(t, a.Update(t.Context()))
 			assert.Equal(t, want, titles(a), "pin %d", pinID)
 		}
 	})
 	t.Run("should report missing installation", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 99)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 99, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		require.Len(t, a.content.Objects, 1)
 		assert.Equal(t, "Installation no longer exists", a.content.Objects[0].(*widget.Label).Text)
 	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1)
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		a.content.Objects = nil
