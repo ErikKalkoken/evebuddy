@@ -304,7 +304,16 @@ func randomColony(seed uint64) (*app.CharacterPlanet, time.Time) {
 			}
 		}
 	}
-	return cp, t0.Add(duration(72 * time.Hour))
+	var now time.Time
+	switch pick(5) {
+	case 0:
+		now = t0.Add(-duration(2 * time.Hour)) // before the snapshot
+	case 1:
+		now = t0 // at the snapshot, before any pin ran
+	default:
+		now = t0.Add(duration(72 * time.Hour))
+	}
+	return cp, now
 }
 
 func containsType(s []*app.EveType, et *app.EveType) bool {
