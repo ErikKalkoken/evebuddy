@@ -35,7 +35,6 @@ import (
 
 type colonyDetailsRow struct {
 	expiryTime        optional.Optional[time.Time]
-	groupID           int64
 	groupName         string
 	info              string
 	name              string
@@ -82,13 +81,11 @@ type colonyDetails struct {
 	planet        *xwidget.TappableRichText
 	planetID      atomic.Int64
 	planetType    *widget.Hyperlink
-	region        *widget.Label
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
 	rowsGen       int // incremented when Update replaces rows
 	rowsRun       latestRun
 	searchEntry   *xwidget.SearchEntry
-	security      *xwidget.RichText
 	showHelp      *xwidget.IconButton
 	showPin       func(pinID int64, title string)
 	signalKey     string
@@ -241,8 +238,6 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
-		region:       widget.NewLabel(""),
-		security:     xwidget.NewRichText(),
 		signalKey:    u.Signals().UniqueKey(),
 		status:       xwidget.NewRichText(),
 		u:            u,
@@ -534,12 +529,10 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		if !isLatest() {
 			return
 		}
-		a.security.Set(cp.EvePlanet.SolarSystem.SecurityStatusRichText())
 		a.planet.Set(cp.NameRichText())
 		a.planet.OnTapped = func() {
 			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.ToEveEntity())
 		}
-		a.region.SetText(fmt.Sprintf("(%s)", cp.EvePlanet.SolarSystem.Constellation.Region.Name))
 		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
 		a.planetType.OnTapped = func() {
 			a.u.InfoViewer().Show(cp.EvePlanet.Type.ToEveEntity())
@@ -662,7 +655,6 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 
 		rows = append(rows, colonyDetailsRow{
 			expiryTime:        p.ExpiryTime,
-			groupID:           p.Type.Group.ID,
 			groupName:         p.Type.Group.Name,
 			info:              info,
 			name:              name,
