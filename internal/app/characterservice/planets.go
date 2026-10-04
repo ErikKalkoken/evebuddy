@@ -190,13 +190,9 @@ func (s *CharacterService) updatePlanetsESI(ctx context.Context, arg characterSe
 			// frees forecasts of replaced colonies
 			defer s.clearForecasts(characterID)
 			// remove obsolete planets
-			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
+			existing, err := s.st.ListCharacterPlanetIDs(ctx, characterID)
 			if err != nil {
 				return false, err
-			}
-			existing := set.Of[int64]()
-			for _, p := range pp {
-				existing.Add(p.EvePlanet.ID)
 			}
 			planets := data.(planetsData).Planets
 			incoming := set.Of[int64]()

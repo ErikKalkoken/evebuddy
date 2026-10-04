@@ -8,7 +8,9 @@ INSERT INTO
         upgrade_level
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5) RETURNING id;
+    (?1, ?2, ?3, ?4, ?5)
+RETURNING
+    id;
 
 -- name: DeleteCharacterPlanets :exec
 DELETE FROM character_planets
@@ -63,6 +65,14 @@ WHERE
 ORDER BY
     ep.name;
 
+-- name: ListCharacterPlanetIDs :many
+SELECT
+    eve_planet_id
+FROM
+    character_planets
+WHERE
+    character_id = ?;
+
 -- name: ListAllCharacterPlanets :many
 SELECT
     sqlc.embed(cp),
@@ -107,4 +117,5 @@ ON CONFLICT (character_id, eve_planet_id) DO UPDATE
 SET
     last_update = ?3,
     upgrade_level = ?4
-RETURNING id;
+RETURNING
+    id;

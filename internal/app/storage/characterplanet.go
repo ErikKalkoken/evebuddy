@@ -88,6 +88,15 @@ func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.Characte
 	return oo, nil
 }
 
+// ListCharacterPlanetIDs returns the EVE planet IDs of a character's colonies.
+func (st *Storage) ListCharacterPlanetIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCharacterPlanetIDs(ctx, characterID)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("ListCharacterPlanetIDs for character %d: %w", characterID, err)
+	}
+	return set.Collect(slices.Values(ids)), nil
+}
+
 func (st *Storage) ListCharacterPlanets(ctx context.Context, id int64) ([]*app.CharacterPlanet, error) {
 	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
 		rows, err := q.ListCharacterPlanets(ctx, id)

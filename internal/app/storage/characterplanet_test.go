@@ -194,6 +194,29 @@ func pinIDsByPlanet(planets []*app.CharacterPlanet) map[int64]set.Set[int64] {
 	return m
 }
 
+func TestListCharacterPlanetIDs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return EVE planet IDs of a character's colonies", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
+		factory.CreateCharacterPlanet() // other character
+		got, err := st.ListCharacterPlanetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(p1.EvePlanet.ID, p2.EvePlanet.ID), got)
+	})
+	t.Run("should return empty set for character without colonies", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		got, err := st.ListCharacterPlanetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, got.Size())
+	})
+}
+
 func TestReplaceCharacterPlanet(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
