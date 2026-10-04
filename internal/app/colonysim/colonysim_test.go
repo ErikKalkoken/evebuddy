@@ -676,6 +676,32 @@ func TestSimulation_ActivityAndLastRun(t *testing.T) {
 	})
 }
 
+func TestForecast_BeforeSnapshot(t *testing.T) {
+	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0.Add(-4*time.Hour), expiry),
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+			},
+			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+		}
+	}
+	t.Run("should report no work end for colony not working at the snapshot", func(t *testing.T) {
+		cp := newPlanet(t0.Add(-time.Hour))
+		got := colonysim.Forecast(cp, t0.Add(-time.Minute))
+		assert.Equal(t, app.ColonyNeedsAttention, got.Status)
+		assert.True(t, got.WorkEndsAt.IsEmpty())
+		assert.Equal(t, colonysim.Forecast(cp, t0), got)
+	})
+	t.Run("should report work end for colony working at the snapshot", func(t *testing.T) {
+		cp := newPlanet(t0.Add(2 * time.Hour))
+		got := colonysim.Forecast(cp, t0.Add(-time.Minute))
+		assert.Equal(t, optional.New(t0.Add(2*time.Hour)), got.WorkEndsAt)
+		assert.Equal(t, colonysim.Forecast(cp, t0), got)
+	})
+}
+
 func TestForecast_RoutingTieBreak(t *testing.T) {
 	// an active superconductor factory delivers to two factories with equally full buffers
 	newColony := func() *app.CharacterPlanet {

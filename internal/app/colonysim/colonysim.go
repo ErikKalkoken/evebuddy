@@ -18,6 +18,9 @@ import (
 // including when it will stop working within [app.ColonyForecastHorizon]
 // and until when the forecast stays the same.
 func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
+	if now.Before(cp.LastUpdate) {
+		now = cp.LastUpdate // nothing is known before the snapshot, e.g. when the local clock is behind
+	}
 	s := newSimulation(cp)
 	ok := s.runUntil(now)
 	if !ok {
