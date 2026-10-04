@@ -83,10 +83,8 @@ func (a *raceInfo) update(ctx context.Context) error {
 		items = append(items, x)
 	}
 	if len(items) > 0 {
-		attributeList := newAttributeList(a.iw, items...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
+			a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, items...)))
 		})
 	}
 	return nil

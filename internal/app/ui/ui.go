@@ -32,6 +32,7 @@ const (
 const (
 	IconPixelSize         = 64
 	IconUnitSize          = 28
+	LogoUnitSize          = 64 // for prominent icons, e.g. the main logo in an info window
 	FloatFormatISK        = "#,###.##"
 	FloatFormatISKRounded = "#,###."
 	fallbackWebsiteURL    = "https://github.com/ErikKalkoken/evebuddy"

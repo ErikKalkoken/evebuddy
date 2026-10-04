@@ -828,6 +828,49 @@ func (f Factory) CreatePlanetPinExtractor(args ...storage.CreatePlanetPinParams)
 	return f.CreatePlanetPin(arg)
 }
 
+func (f Factory) CreatePlanetRoute(args ...storage.CreatePlanetRouteParams) *app.PlanetRoute {
+	ctx := context.Background()
+	var arg storage.CreatePlanetRouteParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterPlanetID == 0 {
+		x := f.CreateCharacterPlanet()
+		arg.CharacterPlanetID = x.ID
+	}
+	if arg.RouteID == 0 {
+		arg.RouteID = f.calcNewID("planet_routes", "route_id", 1)
+	}
+	if arg.ContentTypeID == 0 {
+		x := f.CreateEveType()
+		arg.ContentTypeID = x.ID
+	}
+	if arg.SourcePinID == 0 {
+		x := f.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: arg.CharacterPlanetID})
+		arg.SourcePinID = x.ID
+	}
+	if arg.DestinationPinID == 0 {
+		x := f.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: arg.CharacterPlanetID})
+		arg.DestinationPinID = x.ID
+	}
+	if arg.Quantity == 0 {
+		arg.Quantity = rand.Int64N(1000) + 1
+	}
+	if err := f.st.CreatePlanetRoute(ctx, arg); err != nil {
+		panic(err)
+	}
+	routes, err := f.st.ListPlanetRoutes(ctx, arg.CharacterPlanetID)
+	if err != nil {
+		panic(err)
+	}
+	for _, r := range routes {
+		if r.RouteID == arg.RouteID {
+			return r
+		}
+	}
+	panic("created route not found")
+}
+
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterSkillParams
@@ -2671,6 +2714,9 @@ func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *a
 	}
 	if arg.Name == "" {
 		arg.Name = fake.ProductName()
+	}
+	if arg.CycleTime == 0 {
+		arg.CycleTime = 3600
 	}
 	r, err := f.st.CreateEveSchematic(ctx, arg)
 	if err != nil {

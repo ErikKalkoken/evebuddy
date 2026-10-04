@@ -7,10 +7,17 @@ import (
 	"log/slog"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // runAsync runs f in a new goroutine.
@@ -26,6 +33,45 @@ type latestRun struct{ n atomic.Int64 }
 func (l *latestRun) start() func() bool {
 	n := l.n.Add(1)
 	return func() bool { return l.n.Load() == n }
+}
+
+// showWhenLoaded hides content behind a delayed spinner until load returns
+// and returns the object to show in its place.
+func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
+	content.Hide()
+	spinner := kxwidget.NewSpinner()
+	spinner.Hide()
+	// needs Refresh after Show; Fyne won't repaint never-visible objects
+	body := container.NewStack(
+		content,
+		container.NewCenter(container.NewStack(
+			xwidget.NewSpacer(fyne.NewSquareSize(2*theme.IconInlineSize())),
+			spinner,
+		)),
+	)
+	var loaded bool
+	// delay avoids the spinner flickering when loading is fast
+	time.AfterFunc(100*time.Millisecond, func() {
+		fyne.Do(func() {
+			if loaded {
+				return
+			}
+			spinner.Show()
+			spinner.Start()
+			body.Refresh()
+		})
+	})
+	runAsync(func() {
+		load()
+		fyne.Do(func() {
+			loaded = true
+			spinner.Stop()
+			spinner.Hide()
+			content.Show()
+			body.Refresh()
+		})
+	})
+	return body
 }
 
 // copyRowsToClipboard copies rows from a data table to clipboard.
@@ -65,4 +111,47 @@ func exportRowsAsCSV[T any](u baseUI, topic string, filename string, rows []T, w
 		},
 		Window: w,
 	})
+}
+
+// showHelpPopUp shows a popUp with text as content
+// and it's position aligned to widget obj.
+func showHelpPopUp(text string, isMobile bool, obj fyne.CanvasObject) {
+	var pu *widget.PopUp
+	closePopUp := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		pu.Hide()
+	})
+	title := widget.NewLabel("Help")
+	title.TextStyle.Bold = true
+	body := widget.NewLabel(text)
+	body.Wrapping = fyne.TextWrapWord
+
+	p := theme.Padding()
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(obj)
+	var spacerSize fyne.Size
+	if isMobile {
+		_, s := canvas.InteractiveArea()
+		spacerSize = fyne.NewSize(s.Width-2*p, s.Height/2)
+	} else {
+		spacerSize = fyne.NewSize(300, 400)
+	}
+	spacer := xwidget.NewSpacer(spacerSize)
+	c := container.NewStack(spacer, container.NewBorder(
+		container.NewHBox(title, layout.NewSpacer(), closePopUp),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(container.NewPadded(body)),
+	))
+	pu = widget.NewPopUp(c, canvas)
+
+	if isMobile {
+		pos, s := canvas.InteractiveArea()
+		x := pos.X
+		y := pos.Y + s.Height/2
+		pu.ShowAtPosition(fyne.NewPos(x, y))
+	} else {
+		x := obj.MinSize().Width - pu.MinSize().Width
+		y := obj.MinSize().Height - pu.MinSize().Height + 2*p
+		pu.ShowAtRelativePosition(fyne.NewPos(x, y), obj)
+	}
 }

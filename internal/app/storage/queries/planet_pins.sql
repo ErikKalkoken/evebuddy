@@ -1,8 +1,12 @@
--- name: CreatePlanetPin :exec
+-- name: CreatePlanetPin :one
 INSERT INTO
     planet_pins (
         character_planet_id,
+        extractor_cycle_time,
+        extractor_head_radius,
+        extractor_num_heads,
         extractor_product_type_id,
+        extractor_qty_per_cycle,
         factory_schema_id,
         schematic_id,
         type_id,
@@ -12,7 +16,7 @@ INSERT INTO
         pin_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
 
 -- name: DeletePlanetPins :exec
 DELETE FROM

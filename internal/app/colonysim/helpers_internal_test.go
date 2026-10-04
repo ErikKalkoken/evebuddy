@@ -1,0 +1,307 @@
+package colonysim
+
+import (
+	"math/rand/v2"
+	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+)
+
+const (
+	typeAqueousLiquids = 2268
+	typeWater          = 3645
+	schematicWater     = 121
+)
+
+var t0 = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+
+func newType(id, groupID int64, volume, capacity float64) *app.EveType {
+	et := &app.EveType{
+		ID:    id,
+		Group: &app.EveGroup{ID: groupID},
+	}
+	if volume > 0 {
+		et.Volume = optional.New(volume)
+	}
+	if capacity > 0 {
+		et.Capacity = optional.New(capacity)
+	}
+	return et
+}
+
+var (
+	aqueousLiquids = newType(typeAqueousLiquids, 1032, 0.01, 0)
+	water          = newType(typeWater, 1042, 0.38, 0)
+)
+
+func newExtractor(id int64, product *app.EveType, baseValue int64, cycle time.Duration, install, expiry time.Time) *app.PlanetPin {
+	return &app.PlanetPin{
+		ID:                   id,
+		Type:                 newType(2848, app.EveGroupExtractorControlUnits, 0, 0),
+		ExtractorProductType: optional.New(product),
+		ExtractorQtyPerCycle: optional.New(baseValue),
+		ExtractorCycleTime:   optional.New(cycle),
+		InstallTime:          optional.New(install),
+		ExpiryTime:           optional.New(expiry),
+		LastCycleStart:       optional.New(install),
+	}
+}
+
+func newStorage(id int64, groupID int64, capacity float64, contents ...*app.PlanetPinContent) *app.PlanetPin {
+	return &app.PlanetPin{
+		ID:       id,
+		Type:     newType(2541, groupID, 0, capacity),
+		Contents: contents,
+	}
+}
+
+func newFactory(id int64, schematicID int64) *app.PlanetPin {
+	return &app.PlanetPin{
+		ID:        id,
+		Type:      newType(2473, app.EveGroupProcessors, 0, 0),
+		Schematic: optional.New(&app.EveSchematic{ID: schematicID}),
+	}
+}
+
+func newRoute(id, source, destination int64, et *app.EveType, quantity int64) *app.PlanetRoute {
+	return &app.PlanetRoute{
+		RouteID:          id,
+		SourcePinID:      source,
+		DestinationPinID: destination,
+		ContentType:      et,
+		Quantity:         quantity,
+	}
+}
+
+// newExtractorColony returns a colony with an extractor running from t0 until expiry
+// and a storage large enough to never fill up.
+func newExtractorColony(expiry time.Time) *app.CharacterPlanet {
+	return &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
+			newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
+		},
+		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+	}
+}
+
+// newFactoryColony returns a colony with an idle water factory
+// which gets inputs from a storage and delivers to a launchpad.
+func newFactoryColony(stored int64) *app.CharacterPlanet {
+	var contents []*app.PlanetPinContent
+	if stored > 0 {
+		contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
+	}
+	return &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
+			newFactory(2, schematicWater),
+			newStorage(3, app.EveGroupSpaceports, 10_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 3, water, 20),
+		},
+	}
+}
+
+const (
+	typeSuspendedPlasma      = 2308
+	typePlasmoids            = 2389
+	typeSuperconductors      = 9838
+	typeOxides               = 2317
+	typeBiocells             = 2329
+	typeGelMatrixBiopaste    = 2348
+	schematicPlasmoids       = 122
+	schematicSuperconductors = 65
+	schematicGelMatrix       = 95 // 3 inputs
+)
+
+var (
+	suspendedPlasma = newType(typeSuspendedPlasma, 1032, 0.01, 0)
+	plasmoids       = newType(typePlasmoids, 1042, 0.38, 0)
+	superconductors = newType(typeSuperconductors, 1034, 0.75, 0)
+	oxides          = newType(typeOxides, 1034, 0.75, 0)
+	biocells        = newType(typeBiocells, 1034, 0.75, 0)
+	gelMatrix       = newType(typeGelMatrixBiopaste, 1040, 3, 0)
+)
+
+// randomColony returns a random colony and time for a forecast from a seed.
+func randomColony(seed uint64) (*app.CharacterPlanet, time.Time) {
+	r := rand.New(rand.NewPCG(seed, 0))
+	pick := func(n int) int { return r.IntN(n) }
+	duration := func(maxValue time.Duration) time.Duration {
+		return time.Duration(r.Int64N(int64(maxValue))).Truncate(time.Second)
+	}
+	cp := &app.CharacterPlanet{LastUpdate: t0}
+	type info struct {
+		produces []*app.EveType // types the pin can send
+		accepts  []*app.EveType // types the pin can receive; nil means all
+		factory  bool
+	}
+	pins := make(map[int64]info)
+	var id int64
+	allTypes := []*app.EveType{aqueousLiquids, suspendedPlasma, water, plasmoids, superconductors, oxides, biocells, gelMatrix}
+
+	// extractors
+	for range pick(3) {
+		id++
+		product := []*app.EveType{aqueousLiquids, suspendedPlasma}[pick(2)]
+		cycle := []time.Duration{15 * time.Minute, 30 * time.Minute, time.Hour, 2 * time.Hour}[pick(4)]
+		install := t0.Add(-duration(48 * time.Hour))
+		expiry := install.Add(time.Duration(1+pick(60)) * cycle)
+		p := newExtractor(id, product, int64(500+pick(5000)), cycle, install, expiry)
+		if pick(4) > 0 {
+			n := max(0, min(int(t0.Sub(install)/cycle), int(expiry.Sub(install)/cycle)))
+			p.LastCycleStart = optional.New(install.Add(time.Duration(n) * cycle))
+		}
+		cp.Pins = append(cp.Pins, p)
+		pins[id] = info{produces: []*app.EveType{product}, accepts: []*app.EveType{}}
+	}
+	// storages
+	for range pick(3) {
+		id++
+		group := []int64{app.EveGroupStorageFacilities, app.EveGroupSpaceports, app.EveGroupCommandCenters}[pick(3)]
+		var contents []*app.PlanetPinContent
+		for _, et := range allTypes {
+			if pick(3) == 0 {
+				contents = append(contents, &app.PlanetPinContent{Type: et, Amount: int64(1 + pick(10_000))})
+			}
+		}
+		capacity := []float64{50, 500, 12_000}[pick(3)]
+		cp.Pins = append(cp.Pins, newStorage(id, group, capacity, contents...))
+		pins[id] = info{produces: allTypes}
+	}
+	// factories
+	schematics := []struct {
+		id     int64
+		inputs []*app.EveType
+		output *app.EveType
+		cycle  time.Duration
+	}{
+		{schematicWater, []*app.EveType{aqueousLiquids}, water, 30 * time.Minute},
+		{schematicPlasmoids, []*app.EveType{suspendedPlasma}, plasmoids, 30 * time.Minute},
+		{schematicSuperconductors, []*app.EveType{water, plasmoids}, superconductors, time.Hour},
+		{schematicGelMatrix, []*app.EveType{oxides, biocells, superconductors}, gelMatrix, time.Hour},
+	}
+	for range pick(4) {
+		id++
+		if pick(8) == 0 {
+			p := newFactory(id, 0)
+			p.Schematic = optional.Optional[*app.EveSchematic]{} // not setup
+			cp.Pins = append(cp.Pins, p)
+			pins[id] = info{accepts: []*app.EveType{}}
+			continue
+		}
+		s := schematics[pick(len(schematics))]
+		p := newFactory(id, s.id)
+		if pick(2) == 0 {
+			p.LastCycleStart = optional.New(t0.Add(-duration(2 * s.cycle)))
+		}
+		for _, et := range s.inputs {
+			if pick(3) == 0 {
+				p.Contents = append(p.Contents, &app.PlanetPinContent{Type: et, Amount: int64(1 + pick(6000))})
+			}
+		}
+		cp.Pins = append(cp.Pins, p)
+		pins[id] = info{produces: []*app.EveType{s.output}, accepts: s.inputs, factory: true}
+	}
+	// routes
+	var routeID int64
+	for source := int64(1); source <= id; source++ {
+		for destination := int64(1); destination <= id; destination++ {
+			if source == destination || pick(3) > 0 {
+				continue
+			}
+			for _, et := range pins[source].produces {
+				accepts := pins[destination].accepts
+				if accepts != nil && !containsType(accepts, et) {
+					continue
+				}
+				routeID++
+				cp.Routes = append(cp.Routes, newRoute(routeID, source, destination, et, int64(1+pick(5000))))
+				break
+			}
+		}
+	}
+	// chain where a factory pulls from a storage which only receives through another storage
+	if pick(4) == 0 {
+		cycle := []time.Duration{30 * time.Minute, time.Hour, 2 * time.Hour}[pick(3)]
+		install := t0.Add(-duration(4 * time.Hour))
+		expiry := install.Add(time.Duration(1+pick(8)) * cycle)
+		extractor, launchpad, storage, factory := id+1, id+2, id+3, id+4
+		id += 4
+		cp.Pins = append(cp.Pins,
+			newExtractor(extractor, aqueousLiquids, int64(100+pick(1000)), cycle, install, expiry),
+			newStorage(launchpad, app.EveGroupSpaceports, 10_000),
+			newStorage(storage, app.EveGroupStorageFacilities, 12_000),
+			newFactory(factory, schematicWater),
+		)
+		for _, r := range [][4]int64{
+			{extractor, launchpad, typeAqueousLiquids, 100_000},
+			{launchpad, storage, typeAqueousLiquids, 100_000},
+			{storage, factory, typeAqueousLiquids, 3000},
+			{factory, launchpad, typeWater, 20},
+		} {
+			routeID++
+			et := aqueousLiquids
+			if r[2] == typeWater {
+				et = water
+			}
+			cp.Routes = append(cp.Routes, newRoute(routeID, r[0], r[1], et, r[3]))
+		}
+	}
+	var now time.Time
+	switch pick(5) {
+	case 0:
+		now = t0.Add(-duration(2 * time.Hour)) // before the snapshot
+	case 1:
+		now = t0 // at the snapshot, before any pin ran
+	case 2:
+		now = t0.Add(duration(90 * 24 * time.Hour)) // long after the snapshot, so most colonies are at rest
+	default:
+		now = t0.Add(duration(72 * time.Hour))
+	}
+	return cp, now
+}
+
+func containsType(s []*app.EveType, et *app.EveType) bool {
+	for _, x := range s {
+		if x.ID == et.ID {
+			return true
+		}
+	}
+	return false
+}
+
+// exported for the external tests
+const (
+	TypeAqueousLiquids       = typeAqueousLiquids
+	TypeWater                = typeWater
+	SchematicWater           = schematicWater
+	SchematicPlasmoids       = schematicPlasmoids
+	SchematicSuperconductors = schematicSuperconductors
+	SchematicGelMatrix       = schematicGelMatrix
+)
+
+var (
+	T0                 = t0
+	AqueousLiquids     = aqueousLiquids
+	Water              = water
+	NewType            = newType
+	NewExtractor       = newExtractor
+	NewStorage         = newStorage
+	NewFactory         = newFactory
+	NewRoute           = newRoute
+	NewExtractorColony = newExtractorColony
+	NewFactoryColony   = newFactoryColony
+	RandomColony       = randomColony
+	SuspendedPlasma    = suspendedPlasma
+	Plasmoids          = plasmoids
+	Superconductors    = superconductors
+	Oxides             = oxides
+	Biocells           = biocells
+)

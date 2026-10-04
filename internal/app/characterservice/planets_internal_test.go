@@ -3,6 +3,7 @@ package characterservice
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -115,6 +117,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		contentType := factory.CreateEveType()
 		productType := factory.CreateEveType()
 		pinType := factory.CreateEveType()
+		routeType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 2393})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
@@ -212,6 +215,86 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		)
 		xassert.EqualOptional(t, productType, pin.ExtractorProductType)
 		xassert.Equal(t, pinType, pin.Type)
+		xassert.EqualOptional(t, 30*time.Minute, pin.ExtractorCycleTime)
+		xassert.EqualOptional(t, 0.013043995015323162, pin.ExtractorHeadRadius)
+		xassert.EqualOptional(t, 1, pin.ExtractorNumHeads)
+		xassert.EqualOptional(t, 1081, pin.ExtractorQtyPerCycle)
+		if assert.Len(t, pin.Contents, 1) {
+			xassert.Equal(t, contentType, pin.Contents[0].Type)
+			xassert.Equal(t, 42, pin.Contents[0].Amount)
+		}
+		if assert.Len(t, p.Routes, 1) {
+			r := p.Routes[0]
+			xassert.Equal(t, routeType, r.ContentType)
+			xassert.Equal(t, 1000000017030, r.DestinationPinID)
+			xassert.Equal(t, 20, r.Quantity)
+			xassert.Equal(t, 4, r.RouteID)
+			xassert.Equal(t, 1000000017029, r.SourcePinID)
+		}
+	})
+	t.Run("should load missing types of schematics", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40023691})
+		pinType := factory.CreateEveType()
+		factory.CreateEveSchematic(storage.CreateEveSchematicParams{ID: 121}) // Water
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 3645})          // output already known
+		group := factory.CreateEveGroup()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"last_update":     "2016-11-28T16:42:51Z",
+					"num_pins":        1,
+					"owner_id":        c.ID,
+					"planet_id":       40023691,
+					"planet_type":     "plasma",
+					"solar_system_id": 30000379,
+					"upgrade_level":   3,
+				},
+			}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets/40023691", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"links": []map[string]any{},
+				"pins": []map[string]any{
+					{
+						"latitude":     1.7196671962738037,
+						"longitude":    4.1244120597839355,
+						"pin_id":       1000000017021,
+						"schematic_id": 121,
+						"type_id":      pinType.ID,
+					},
+				},
+				"routes": []map[string]any{},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/universe/types/2268",
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "",
+				"group_id":    group.ID,
+				"name":        "Aqueous Liquids",
+				"published":   true,
+				"type_id":     2268,
+			}),
+		)
+		// when
+		_, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterPlanets,
+		})
+		// then
+		require.NoError(t, err)
+		et, err := st.GetEveType(ctx, 2268)
+		require.NoError(t, err)
+		xassert.Equal(t, "Aqueous Liquids", et.Name)
 	})
 	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
@@ -232,6 +315,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 		contentType := factory.CreateEveType()
 		productType := factory.CreateEveType()
 		pinType := factory.CreateEveType()
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2393})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
@@ -316,6 +400,127 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 	})
 }
 
+func TestUpdateCharacterPlanetsESI_RefetchOldColonies(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	const planetID = 40023691
+	setup := func(hasRoutes bool) (*app.Character, string) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: planetID})
+		productType := factory.CreateEveType()
+		pinType := factory.CreateEveType()
+		routeType := factory.CreateEveType()
+		routes := []map[string]any{}
+		if hasRoutes {
+			routes = append(routes, map[string]any{
+				"content_type_id":    routeType.ID,
+				"destination_pin_id": 1000000017030,
+				"quantity":           20,
+				"route_id":           4,
+				"source_pin_id":      1000000017021,
+			})
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/planets", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"last_update":     "2016-11-28T16:42:51Z",
+					"num_pins":        1,
+					"owner_id":        c.ID,
+					"planet_id":       planetID,
+					"planet_type":     "plasma",
+					"solar_system_id": 30000379,
+					"upgrade_level":   3,
+				},
+			}))
+		detailURL := fmt.Sprintf("https://esi.evetech.net/characters/%d/planets/%d", c.ID, planetID)
+		httpmock.RegisterResponder(
+			"GET",
+			detailURL,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"links": []map[string]any{},
+				"pins": []map[string]any{
+					{
+						"extractor_details": map[string]any{
+							"heads":           []map[string]any{},
+							"product_type_id": productType.ID,
+						},
+						"latitude":  1.7196671962738037,
+						"longitude": 4.1244120597839355,
+						"pin_id":    1000000017021,
+						"type_id":   pinType.ID,
+					},
+				},
+				"routes": routes,
+			}),
+		)
+		return c, "GET " + detailURL
+	}
+	update := func(t *testing.T, characterID int64) {
+		_, err := s.updatePlanetsESI(ctx, characterSectionUpdateParams{
+			characterID: characterID,
+			section:     app.SectionCharacterPlanets,
+		})
+		require.NoError(t, err)
+	}
+	// fakeUpgrade sets the content hash to one stored by an earlier version.
+	fakeUpgrade := func(t *testing.T, characterID int64) {
+		_, err := st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: characterID,
+			Section:     app.SectionCharacterPlanets,
+			ContentHash: new("hash-from-earlier-version"),
+		})
+		require.NoError(t, err)
+	}
+	t.Run("should refetch colonies once after upgrade", func(t *testing.T) {
+		c, detail := setup(true)
+		update(t, c.ID)
+		fakeUpgrade(t, c.ID)
+		update(t, c.ID)
+		xassert.Equal(t, 2, httpmock.GetCallCountInfo()[detail])
+		update(t, c.ID)
+		xassert.Equal(t, 2, httpmock.GetCallCountInfo()[detail])
+		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
+		require.NoError(t, err)
+		assert.Len(t, p.Routes, 1)
+	})
+	t.Run("should clear cached forecasts of character when refetching colonies", func(t *testing.T) {
+		c, _ := setup(true)
+		update(t, c.ID)
+		p, err := st.GetCharacterPlanet(ctx, c.ID, planetID)
+		require.NoError(t, err)
+		fakeUpgrade(t, c.ID)
+		s.ForecastPlanet(p, time.Now())
+		other := colonyKey{characterID: c.ID + 1, planetID: planetID}
+		s.forecasts.Store(other, forecastEntry{})
+		update(t, c.ID)
+		_, found := s.forecasts.Load(colonyKey{characterID: c.ID, planetID: planetID})
+		assert.False(t, found)
+		_, found = s.forecasts.Load(other)
+		assert.True(t, found, "keeps forecasts of other characters")
+	})
+	t.Run("should not refetch colony with routes when planets are unchanged", func(t *testing.T) {
+		c, detail := setup(true)
+		update(t, c.ID)
+		update(t, c.ID)
+		xassert.Equal(t, 1, httpmock.GetCallCountInfo()[detail])
+	})
+	t.Run("should not refetch colony without routes when planets are unchanged", func(t *testing.T) {
+		c, detail := setup(false)
+		update(t, c.ID)
+		update(t, c.ID)
+		xassert.Equal(t, 1, httpmock.GetCallCountInfo()[detail])
+	})
+}
+
 func TestGetPlanet(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -356,5 +561,179 @@ func TestListAllPlanets(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Len(t, got, 2)
+	})
+}
+
+func TestForecastPlanet(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should forecast colony loaded from storage", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		t0 := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+		cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: t0})
+		ecuGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+		ecuType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: ecuGroup.ID})
+		storageGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupStorageFacilities})
+		storageType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID:  storageGroup.ID,
+			Capacity: optional.New(12_000.0),
+		})
+		product := factory.CreateEveType(storage.CreateEveTypeParams{Volume: optional.New(0.01)})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID:      cp.ID,
+			PinID:                  1,
+			TypeID:                 ecuType.ID,
+			ExtractorProductTypeID: optional.New(product.ID),
+			ExtractorQtyPerCycle:   optional.New[int64](1081),
+			ExtractorCycleTime:     optional.New(30 * time.Minute),
+			InstallTime:            optional.New(t0),
+			ExpiryTime:             optional.New(t0.Add(4 * time.Hour)),
+			LastCycleStart:         optional.New(t0),
+		})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: cp.ID,
+			PinID:             2,
+			TypeID:            storageType.ID,
+			Contents:          map[int64]int64{product.ID: 100},
+		})
+		factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+			CharacterPlanetID: cp.ID,
+			SourcePinID:       1,
+			DestinationPinID:  2,
+			ContentTypeID:     product.ID,
+			Quantity:          10_000,
+		})
+		p, err := s.GetPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+		require.NoError(t, err)
+		// when
+		got := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		// then
+		assert.Equal(t, app.ColonyExtracting, got.Status)
+		assert.Equal(t, app.PinExtracting, got.Pins[1].Status)
+		assert.Equal(t, map[int64]int64{product.ID: 100 + 2467 + 2086}, got.Pins[2].Contents)
+		assert.InDelta(t, float64(100+2467+2086)*0.01, got.Pins[2].CapacityUsed, 0.0001)
+		xassert.EqualOptional(t, 12_000.0, got.Pins[2].Capacity)
+		xassert.EqualOptional(t, t0.Add(4*time.Hour), got.WorkEndsAt)
+	})
+}
+
+func TestDeleteCharacter_ClearsForecasts(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should clear cached forecasts when character is deleted", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		own := colonyKey{characterID: c.ID, planetID: 42}
+		other := colonyKey{characterID: c.ID + 1, planetID: 42}
+		s.forecasts.Store(own, forecastEntry{})
+		s.forecasts.Store(other, forecastEntry{})
+		_, err := s.DeleteCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		_, found := s.forecasts.Load(own)
+		assert.False(t, found)
+		_, found = s.forecasts.Load(other)
+		assert.True(t, found, "keeps forecasts of other characters")
+	})
+}
+
+func TestForecastPlanet_Cache(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t0 := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	cp := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{LastUpdate: t0})
+	ecuGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+	ecuType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: ecuGroup.ID})
+	storageGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupStorageFacilities})
+	storageType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: storageGroup.ID})
+	product := factory.CreateEveType(storage.CreateEveTypeParams{Volume: optional.New(0.01)})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID:      cp.ID,
+		PinID:                  1,
+		TypeID:                 ecuType.ID,
+		ExtractorProductTypeID: optional.New(product.ID),
+		ExtractorQtyPerCycle:   optional.New[int64](1081),
+		ExtractorCycleTime:     optional.New(30 * time.Minute),
+		InstallTime:            optional.New(t0),
+		ExpiryTime:             optional.New(t0.Add(4 * time.Hour)),
+		LastCycleStart:         optional.New(t0),
+	})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID: cp.ID,
+		PinID:             2,
+		TypeID:            storageType.ID,
+	})
+	factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
+		CharacterPlanetID: cp.ID,
+		SourcePinID:       1,
+		DestinationPinID:  2,
+		ContentTypeID:     product.ID,
+		Quantity:          10_000,
+	})
+	p, err := s.GetPlanet(ctx, cp.CharacterID, cp.EvePlanet.ID)
+	require.NoError(t, err)
+	// the extractor cycles end every 30 minutes, so a forecast at 65m is valid until 90m
+	// isCached reports whether a forecast at now reuses the forecast at 65m.
+	isCached := func(t *testing.T, p *app.CharacterPlanet, now time.Time) bool {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		got := s.ForecastPlanet(p, now)
+		assert.Equal(t, now, got.Time)
+		return reflect.ValueOf(first.Pins).Pointer() == reflect.ValueOf(got.Pins).Pointer()
+	}
+	t.Run("should reuse forecast until it changes", func(t *testing.T) {
+		assert.True(t, isCached(t, p, t0.Add(89*time.Minute)))
+	})
+	t.Run("should recompute forecast when it changes", func(t *testing.T) {
+		assert.False(t, isCached(t, p, t0.Add(90*time.Minute)))
+	})
+	t.Run("should recompute forecast for an earlier time", func(t *testing.T) {
+		assert.False(t, isCached(t, p, t0.Add(64*time.Minute)))
+	})
+	t.Run("should recompute forecast for a new snapshot", func(t *testing.T) {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		p2 := *p
+		p2.LastUpdate = t0.Add(time.Minute)
+		got := s.ForecastPlanet(&p2, t0.Add(66*time.Minute))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+	})
+	t.Run("should recompute forecast when colony data changed without new last update", func(t *testing.T) {
+		s.forecasts.Clear()
+		old := *p // as stored before routes were added
+		old.Routes = nil
+		first := s.ForecastPlanet(&old, t0.Add(65*time.Minute))
+		require.Empty(t, first.Pins[2].Contents)
+		got := s.ForecastPlanet(p, t0.Add(66*time.Minute))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+		assert.NotEmpty(t, got.Pins[2].Contents, "receives output along the route")
+	})
+	t.Run("should recompute forecast after max age", func(t *testing.T) {
+		s.forecasts.Clear()
+		now := t0.Add(5 * time.Hour) // extractor expired, so nothing changes anymore
+		first := s.ForecastPlanet(p, now)
+		require.True(t, first.ValidUntil.IsEmpty())
+		got := s.ForecastPlanet(p, now.Add(forecastMaxAge-time.Second))
+		assert.Equal(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+		got = s.ForecastPlanet(p, now.Add(forecastMaxAge))
+		assert.NotEqual(t, reflect.ValueOf(first.Pins).Pointer(), reflect.ValueOf(got.Pins).Pointer())
+	})
+	t.Run("should measure age of cached forecast with the wall clock", func(t *testing.T) {
+		s.forecasts.Clear()
+		s.ForecastPlanet(p, time.Now()) // includes a monotonic clock reading
+		e, ok := s.forecasts.Load(colonyKey{characterID: p.CharacterID, planetID: p.EvePlanet.ID})
+		require.True(t, ok)
+		assert.NotContains(t, e.time.String(), "m=", "has no monotonic clock reading")
+	})
+	t.Run("should not change cached forecast when returning it", func(t *testing.T) {
+		s.forecasts.Clear()
+		first := s.ForecastPlanet(p, t0.Add(65*time.Minute))
+		s.ForecastPlanet(p, t0.Add(70*time.Minute))
+		assert.Equal(t, t0.Add(65*time.Minute), first.Time)
 	})
 }

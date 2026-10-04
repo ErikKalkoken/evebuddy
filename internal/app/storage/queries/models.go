@@ -782,6 +782,27 @@ type PlanetPin struct {
 	PinID                  int64
 	SchematicID            sql.NullInt64
 	TypeID                 int64
+	ExtractorCycleTime     sql.NullInt64
+	ExtractorHeadRadius    sql.NullFloat64
+	ExtractorNumHeads      sql.NullInt64
+	ExtractorQtyPerCycle   sql.NullInt64
+}
+
+type PlanetPinContent struct {
+	ID          int64
+	PlanetPinID int64
+	TypeID      int64
+	Amount      int64
+}
+
+type PlanetRoute struct {
+	ID                int64
+	CharacterPlanetID int64
+	ContentTypeID     int64
+	DestinationPinID  int64
+	Quantity          int64
+	RouteID           int64
+	SourcePinID       int64
 }
 
 type Scope struct {

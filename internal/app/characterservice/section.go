@@ -242,7 +242,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 	case app.SectionCharacterPlanets:
 		if s.settings.NotifyPIEnabled() {
 			earliest := s.settings.NotifyPIEarliest()
-			if err := s.NotifyExpiredExtractions(ctx, characterID, earliest, s.sendDesktopNotification); err != nil {
+			if err := s.NotifyStoppedColonies(ctx, characterID, earliest, s.sendDesktopNotification); err != nil {
 				logErr(err)
 			}
 		}

@@ -57,62 +57,97 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int64, pl
 		CharacterID: characterID,
 		EvePlanetID: planetID,
 	}
-	r, err := st.qRO.GetCharacterPlanet(ctx, arg)
-	if err != nil {
-		return nil, convertGetError(err)
-	}
-	pins, err := st.listPlanetPinsByPlanet(ctx, []int64{r.CharacterPlanet.ID})
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		r, err := q.GetCharacterPlanet(ctx, arg)
+		if err != nil {
+			return nil, convertGetError(err)
+		}
+		return []queries.GetCharacterPlanetRow{r}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID]), nil
+	return oo[0], nil
 }
 
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
-	rows, err := st.qRO.ListAllCharacterPlanets(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list all planets: %w", err)
-	}
-	rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCharacterPlanetRow(r)
-	}
-	oo, err := st.characterPlanetsFromDBModels(ctx, rows2)
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		rows, err := q.ListAllCharacterPlanets(ctx)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCharacterPlanetRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list all planets: %w", err)
 	}
 	return oo, nil
+}
+
+// ListCharacterPlanetIDs returns the EVE planet IDs of a character's colonies.
+func (st *Storage) ListCharacterPlanetIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
+	ids, err := st.qRO.ListCharacterPlanetIDs(ctx, characterID)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("ListCharacterPlanetIDs for character %d: %w", characterID, err)
+	}
+	return set.Collect(slices.Values(ids)), nil
 }
 
 func (st *Storage) ListCharacterPlanets(ctx context.Context, id int64) ([]*app.CharacterPlanet, error) {
-	rows, err := st.qRO.ListCharacterPlanets(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
-	}
-	rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCharacterPlanetRow(r)
-	}
-	oo, err := st.characterPlanetsFromDBModels(ctx, rows2)
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		rows, err := q.ListCharacterPlanets(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCharacterPlanetRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
 	}
 	return oo, nil
 }
 
-// characterPlanetsFromDBModels converts rows to planets, batch loading their pins.
-func (st *Storage) characterPlanetsFromDBModels(ctx context.Context, rows []queries.GetCharacterPlanetRow) ([]*app.CharacterPlanet, error) {
-	ids := make([]int64, len(rows))
-	for i, r := range rows {
-		ids[i] = r.CharacterPlanet.ID
-	}
-	pins, err := st.listPlanetPinsByPlanet(ctx, ids)
+// readCharacterPlanets reads planets with their pins and routes in one transaction,
+// so concurrent writes can not mix old and new data.
+func (st *Storage) readCharacterPlanets(ctx context.Context, listRows func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error)) ([]*app.CharacterPlanet, error) {
+	tx, err := st.dbRO.Begin()
 	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := listRows(qtx)
+	if err != nil {
+		return nil, err
+	}
+	var ids set.Set[int64]
+	for _, r := range rows {
+		ids.Add(r.CharacterPlanet.ID)
+	}
+	pins, err := st.listPlanetPinsByPlanet(ctx, qtx, ids)
+	if err != nil {
+		return nil, err
+	}
+	routes, err := st.listPlanetRoutesByPlanet(ctx, qtx, ids)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	oo := make([]*app.CharacterPlanet, len(rows))
 	for i, r := range rows {
-		oo[i] = characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID])
+		o := characterPlanetFromDBModel(r, pins[r.CharacterPlanet.ID])
+		o.Routes = routes[r.CharacterPlanet.ID]
+		oo[i] = o
 	}
 	return oo, nil
 }
@@ -157,27 +192,58 @@ func (st *Storage) UpdateCharacterPlanetLastNotified(ctx context.Context, arg Up
 	return nil
 }
 
-type UpdateOrCreateCharacterPlanetParams struct {
+type ReplaceCharacterPlanetParams struct {
 	CharacterID  int64
 	EvePlanetID  int64
 	LastUpdate   time.Time
+	Pins         []CreatePlanetPinParams   // CharacterPlanetID is ignored
+	Routes       []CreatePlanetRouteParams // CharacterPlanetID is ignored
 	UpgradeLevel int64
 }
 
-func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
+// ReplaceCharacterPlanet creates or updates a colony and replaces its pins and routes in one transaction,
+// so readers never see a partially updated colony. It returns the ID of the colony.
+func (st *Storage) ReplaceCharacterPlanet(ctx context.Context, arg ReplaceCharacterPlanetParams) (int64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreateCharacterPlanet: %+v: %w", arg, err)
+		return fmt.Errorf("ReplaceCharacterPlanet: %d %d: %w", arg.CharacterID, arg.EvePlanetID, err)
 	}
 	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	id, err := st.qRW.UpdateOrCreateCharacterPlanet(ctx, queries.UpdateOrCreateCharacterPlanetParams{
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	id, err := qtx.UpdateOrCreateCharacterPlanet(ctx, queries.UpdateOrCreateCharacterPlanetParams{
 		CharacterID:  arg.CharacterID,
 		EvePlanetID:  arg.EvePlanetID,
 		LastUpdate:   arg.LastUpdate,
 		UpgradeLevel: arg.UpgradeLevel,
 	})
 	if err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := qtx.DeletePlanetPins(ctx, id); err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := qtx.DeletePlanetRoutes(ctx, id); err != nil {
+		return 0, wrapErr(err)
+	}
+	for _, p := range arg.Pins {
+		p.CharacterPlanetID = id
+		if err := createPlanetPin(ctx, qtx, p); err != nil {
+			return 0, wrapErr(fmt.Errorf("pin %+v: %w", p, err))
+		}
+	}
+	for _, r := range arg.Routes {
+		r.CharacterPlanetID = id
+		if err := createPlanetRoute(ctx, qtx, r); err != nil {
+			return 0, wrapErr(fmt.Errorf("route %+v: %w", r, err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return 0, wrapErr(err)
 	}
 	return id, nil

@@ -513,6 +513,20 @@ var OfficeBuildingSvg = &fyne.StaticResource{
 	StaticContent: OfficeBuildingSvgData,
 }
 
+//go:embed pi_processoradvanced.png
+var PiprocessoradvancedPngData []byte
+var PiprocessoradvancedPng = &fyne.StaticResource{
+	StaticName:    "pi_processoradvanced.png",
+	StaticContent: PiprocessoradvancedPngData,
+}
+
+//go:embed pi_processorhightech.png
+var PiprocessorhightechPngData []byte
+var PiprocessorhightechPng = &fyne.StaticResource{
+	StaticName:    "pi_processorhightech.png",
+	StaticContent: PiprocessorhightechPngData,
+}
+
 //go:embed plus-box.svg
 var PlusBoxSvgData []byte
 var PlusBoxSvg = &fyne.StaticResource{

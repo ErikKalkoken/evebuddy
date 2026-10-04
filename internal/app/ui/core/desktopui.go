@@ -179,10 +179,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		theme.NewThemedResource(icons.EarthSvg),
 		newContentPage("Colonies", u.colonies),
 	)
-	u.colonies.OnUpdate = func(_, expired int) {
+	u.colonies.OnUpdate = func(_, notWorking int) {
 		var s string
-		if expired > 0 {
-			s = fmt.Sprint(expired)
+		if notWorking > 0 {
+			s = fmt.Sprint(notWorking)
 		}
 		homeNav.SetItemBadge(overviewColonies, s)
 	}

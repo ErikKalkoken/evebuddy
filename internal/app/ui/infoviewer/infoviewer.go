@@ -115,7 +115,6 @@ type InfoViewer struct {
 const (
 	windowHeight        = 600
 	windowWidth         = 600
-	logoUnitSize        = 64
 	renderIconPixelSize = 256
 	renderIconUnitSize  = 128
 	zoomImagePixelSize  = 512
@@ -517,7 +516,7 @@ func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.TappableIcon {
 func (iw *InfoViewer) renderIconSize() fyne.Size {
 	var s float32
 	if iw.u.IsMobile() {
-		s = logoUnitSize
+		s = ui.LogoUnitSize
 	} else {
 		s = renderIconUnitSize
 	}
@@ -560,201 +559,158 @@ func newAttributeItem(label string, value any) attributeItem {
 }
 
 type attributeList struct {
-	widget.BaseWidget
+	ui.AttributeList
 
-	items   []attributeItem
 	iw      *InfoViewer
 	openURL func(*url.URL) error
 }
 
 func newAttributeList(iw *InfoViewer, items ...attributeItem) *attributeList {
 	w := &attributeList{
-		items:   items,
 		iw:      iw,
 		openURL: fyne.CurrentApp().OpenURL,
 	}
 	w.ExtendBaseWidget(w)
+	w.set(items)
 	return w
 }
 
 func (w *attributeList) set(items []attributeItem) {
-	w.items = items
-	w.Refresh()
+	w.AttributeList.Set(xslices.Map(items, w.toUIItem))
 }
 
-func (w *attributeList) CreateRenderer() fyne.WidgetRenderer {
-	supportedCategories := SupportedCategories()
-	l := widget.NewList(
-		func() int {
-			return len(w.items)
-		},
-		func() fyne.CanvasObject {
-			value := widget.NewLabel("Value")
-			value.Truncation = fyne.TextTruncateEllipsis
-			value.Alignment = fyne.TextAlignTrailing
-			label := widget.NewLabel("Label")
-			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
-			return container.NewBorder(
-				nil,
-				nil,
-				label,
-				container.NewVBox(layout.NewSpacer(), icon, layout.NewSpacer()),
-				value,
-			)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(w.items) {
-				return
-			}
-			it := w.items[id]
-			border := co.(*fyne.Container).Objects
-
-			label := border[1].(*widget.Label)
-			label.SetText(it.Label)
-
-			value := border[0].(*widget.Label)
-			var s string
-			var i widget.Importance
-			switch x := it.Value.(type) {
-			case *app.EveEntity:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.Name
-			case *app.EveFaction:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.Name
-			case *app.EveRace:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.Name
-			case *eveBloodlineShort:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.Name
-			case *app.EveLocation:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.DisplayName()
-			case *app.EveType:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.Name
-			case *url.URL:
-				if x == nil {
-					s = "?"
-					break
-				}
-				s = x.String()
-				i = widget.HighImportance
-			case float32:
-				s = fmt.Sprintf("%.1f %%", x*100)
-			case time.Time:
-				if x.IsZero() {
-					s = "-"
-				} else {
-					s = x.Format(app.DateTimeFormat)
-				}
-			case int:
-				s = humanize.Comma(int64(x))
-			case float64:
-				s = humanize.Ftoa(x)
-			case bool:
-				if x {
-					s = "yes"
-					i = widget.SuccessImportance
-				} else {
-					s = "no"
-					i = widget.DangerImportance
-				}
-			default:
-				s = fmt.Sprint(x)
-			}
-			value.Text = s
-			value.Importance = i
-			value.Refresh()
-
-			var f func()
-			switch x := it.Value.(type) {
-			case *app.EveEntity:
-				if x != nil && supportedCategories.Contains(x.Category) {
-					f = func() {
-						w.iw.Show(x)
-					}
-				}
-			case *app.EveLocation:
-				if x != nil {
-					f = func() {
-						w.iw.show(Location, x.ID)
-					}
-				}
-			case *eveBloodlineShort:
-				if x != nil {
-					f = func() {
-						w.iw.show(Bloodline, x.ID)
-					}
-				}
-
-			case *app.EveFaction:
-				if x != nil {
-					f = func() {
-						w.iw.show(Faction, x.ID)
-					}
-				}
-			case *app.EveRace:
-				if x != nil {
-					f = func() {
-						w.iw.show(Race, x.ID)
-					}
-				}
-			case *app.EveType:
-				if x != nil {
-					f = func() {
-						w.iw.show(Type, x.ID)
-					}
-				}
-			}
-			iconBox := border[2].(*fyne.Container)
-			if f != nil {
-				iconBox.Objects[1].(*xwidget.TappableIcon).OnTapped = f
-				iconBox.Show()
-			} else {
-				iconBox.Hide()
-			}
-		},
-	)
-	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
-		defer l.UnselectAll()
-		if id >= len(w.items) {
-			return
+func (w *attributeList) toUIItem(it attributeItem) ui.AttributeItem {
+	var s string
+	var i widget.Importance
+	switch x := it.Value.(type) {
+	case *app.EveEntity:
+		if x == nil {
+			s = "?"
+			break
 		}
-		it := w.items[id]
-		x, ok := it.Value.(*url.URL)
-		if ok && x != nil {
+		s = x.Name
+	case *app.EveFaction:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.Name
+	case *app.EveRace:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.Name
+	case *eveBloodlineShort:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.Name
+	case *app.EveLocation:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.DisplayName()
+	case *app.EveType:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.Name
+	case *url.URL:
+		if x == nil {
+			s = "?"
+			break
+		}
+		s = x.String()
+		i = widget.HighImportance
+	case float32:
+		s = fmt.Sprintf("%.1f %%", x*100)
+	case time.Time:
+		if x.IsZero() {
+			s = "-"
+		} else {
+			s = x.Format(app.DateTimeFormat)
+		}
+	case int:
+		s = humanize.Comma(int64(x))
+	case float64:
+		s = humanize.Ftoa(x)
+	case bool:
+		if x {
+			s = "yes"
+			i = widget.SuccessImportance
+		} else {
+			s = "no"
+			i = widget.DangerImportance
+		}
+	default:
+		s = fmt.Sprint(x)
+	}
+
+	var info func()
+	switch x := it.Value.(type) {
+	case *app.EveEntity:
+		if x != nil && SupportedCategories().Contains(x.Category) {
+			info = func() {
+				w.iw.Show(x)
+			}
+		}
+	case *app.EveLocation:
+		if x != nil {
+			info = func() {
+				w.iw.show(Location, x.ID)
+			}
+		}
+	case *eveBloodlineShort:
+		if x != nil {
+			info = func() {
+				w.iw.show(Bloodline, x.ID)
+			}
+		}
+
+	case *app.EveFaction:
+		if x != nil {
+			info = func() {
+				w.iw.show(Faction, x.ID)
+			}
+		}
+	case *app.EveRace:
+		if x != nil {
+			info = func() {
+				w.iw.show(Race, x.ID)
+			}
+		}
+	case *app.EveType:
+		if x != nil {
+			info = func() {
+				w.iw.show(Type, x.ID)
+			}
+		}
+	}
+
+	var action func()
+	if x, ok := it.Value.(*url.URL); ok && x != nil {
+		action = func() {
 			err := w.openURL(x)
 			if err != nil {
 				w.iw.sb.Display(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
 			}
-			return
 		}
-		if it.Action != nil {
+	} else if it.Action != nil {
+		action = func() {
 			it.Action(it.Value)
 		}
 	}
-	return widget.NewSimpleRenderer(l)
+	return ui.AttributeItem{
+		Label:      it.Label,
+		Value:      s,
+		Importance: i,
+		InfoAction: info,
+		Action:     action,
+	}
 }
 
 type entityItem struct {
@@ -918,7 +874,7 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) entityItem {
 }
 
 func makeInfoLogo() *canvas.Image {
-	logo := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(logoUnitSize))
+	logo := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.LogoUnitSize))
 	return logo
 }
 

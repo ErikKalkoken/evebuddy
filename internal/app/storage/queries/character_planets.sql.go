@@ -22,7 +22,9 @@ INSERT INTO
         upgrade_level
     )
 VALUES
-    (?1, ?2, ?3, ?4, ?5) RETURNING id
+    (?1, ?2, ?3, ?4, ?5)
+RETURNING
+    id
 `
 
 type CreateCharacterPlanetParams struct {
@@ -262,6 +264,38 @@ func (q *Queries) ListAllCharacterPlanets(ctx context.Context) ([]ListAllCharact
 	return items, nil
 }
 
+const listCharacterPlanetIDs = `-- name: ListCharacterPlanetIDs :many
+SELECT
+    eve_planet_id
+FROM
+    character_planets
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterPlanetIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterPlanetIDs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var eve_planet_id int64
+		if err := rows.Scan(&eve_planet_id); err != nil {
+			return nil, err
+		}
+		items = append(items, eve_planet_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterPlanets = `-- name: ListCharacterPlanets :many
 SELECT
     cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,
@@ -397,7 +431,8 @@ ON CONFLICT (character_id, eve_planet_id) DO UPDATE
 SET
     last_update = ?3,
     upgrade_level = ?4
-RETURNING id
+RETURNING
+    id
 `
 
 type UpdateOrCreateCharacterPlanetParams struct {

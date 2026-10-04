@@ -157,10 +157,8 @@ func (a *locationInfo) update(ctx context.Context) error {
 		x.Action = func(_ any) {
 			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
-		attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-		attributesTab := container.NewTabItem("Attributes", attributeList)
 		fyne.Do(func() {
-			a.tabs.Append(attributesTab)
+			a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 		})
 	}
 	fyne.Do(func() {
