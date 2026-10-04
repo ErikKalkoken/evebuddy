@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"maps"
 	"math"
@@ -369,11 +370,12 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 	phases := []struct {
 		name    string
 		color   fyne.ThemeColorName
+		opacity float32 // of the fill
 		defined func(i int) bool
 	}{
-		{"Completed", theme.ColorNameDisabled, func(i int) bool { return i <= completed }},
-		{"Current", theme.ColorNameSuccess, func(i int) bool { return hasCurrent && (i == completed || i == completed+1) }},
-		{"Upcoming", theme.ColorNamePrimary, func(i int) bool { return i >= upcomingFrom }},
+		{"Completed", theme.ColorNamePlaceHolder, 0.4, func(i int) bool { return i <= completed }}, // readable, but recedes
+		{"Current", theme.ColorNameSuccess, 1, func(i int) bool { return hasCurrent && (i == completed || i == completed+1) }},
+		{"Upcoming", theme.ColorNamePrimary, 1, func(i int) bool { return i >= upcomingFrom }},
 	}
 	var series []fyneline.AreaSeries[colonyProgramPoint]
 	var entries []*legendEntry
@@ -382,10 +384,12 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 		series = append(series, fyneline.NewOptionalAreaSeries(p.name, func(x colonyProgramPoint) (int64, bool) {
 			return x.output, p.defined(x.index)
 		}).WithStyle(fyneline.AreaStyle{
-			Fill:   fyneline.FillStyle{Color: c, Opacity: 1},
+			Fill:   fyneline.FillStyle{Color: c, Opacity: p.opacity},
 			Stroke: fyneline.StrokeStyle{Color: c, Width: 1},
 		}))
-		entries = append(entries, newLegendEntry(p.name, c))
+		swatch := color.NRGBAModel.Convert(c).(color.NRGBA)
+		swatch.A = uint8(float32(swatch.A) * p.opacity) // matches the fill
+		entries = append(entries, newLegendEntry(p.name, swatch))
 	}
 	a.programLegend.SetEntries(entries...)
 
@@ -393,13 +397,13 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 		start, end := points[0].at, points[len(points)-1].at
 		format := "15:04"
 		if end.Sub(start) > 24*time.Hour {
-			format = "01-02 15:04"
+			format = "Jan 02 15:04"
 		}
-		a.program.SetXAxis(fyneline.NewTimeAxis(format, nil).
+		a.program.SetXAxis(fyneline.NewTimeAxis(format, time.UTC).
 			WithDomain(float64(start.Unix()), float64(end.Unix())).
 			WithTickCount(4)) // fits on mobile
 		// room for the last label, which is centered on the right edge
-		w := fyne.MeasureText(end.Format(format), theme.CaptionTextSize(), fyne.TextStyle{}).Width
+		w := fyne.MeasureText(end.UTC().Format(format), theme.CaptionTextSize(), fyne.TextStyle{}).Width
 		a.program.SetPadding(fyneline.Insets{Right: w / 2})
 	}
 	axisMax, tickCount := niceAxisBounds(float64(maxOutput), 5)
