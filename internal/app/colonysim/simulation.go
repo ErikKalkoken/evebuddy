@@ -43,6 +43,7 @@ type simulation struct {
 	routes  []route // sorted by ID
 	simTime time.Time
 	volumes map[int64]float64 // m3 per unit by type ID
+	atRest  bool              // nothing can change anymore, see isAtRest
 
 	queue     eventQueue
 	scheduled map[int64]event // currently valid event by pin ID
@@ -164,7 +165,7 @@ func (s *simulation) nextChange() (time.Time, bool) {
 		if p.kind == kindExtractor && p.isExtractorSetup() && p.expiryTime.After(s.simTime) {
 			update(p.expiryTime)
 		}
-		if !p.isRunnable() {
+		if s.atRest || !p.isRunnable() {
 			continue
 		}
 		t, ok := p.nextRunTime()
@@ -179,6 +180,13 @@ func (s *simulation) nextChange() (time.Time, bool) {
 // run runs the simulation until the given time or until the colony stops working.
 // It returns the simulation time at the end and why it stopped.
 func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runResult) {
+	if s.atRest {
+		if untilWorkEnds {
+			return s.simTime, runWorkEnded
+		}
+		s.simTime = until
+		return until, runCompleted
+	}
 	s.queue = eventQueue{}
 	s.scheduled = make(map[int64]event)
 	for _, id := range s.pinIDs {
@@ -196,9 +204,17 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 		}
 		delete(s.scheduled, e.pinID)
 		// check once all events at the current time are done
-		if untilWorkEnds && e.time.After(s.simTime) {
-			if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
-				return s.simTime, runWorkEnded
+		if e.time.After(s.simTime) {
+			if untilWorkEnds {
+				if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
+					return s.simTime, runWorkEnded
+				}
+			}
+			// unlike RIFT, idle factories at rest do not run anymore, which keeps their last run time
+			if s.isAtRest() {
+				s.atRest = true
+				s.simTime = until
+				return until, runCompleted
 			}
 		}
 		if e.time.After(until) {
@@ -215,6 +231,29 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 	}
 	s.simTime = until
 	return until, runCompleted
+}
+
+// isAtRest reports whether the colony cannot change anymore:
+// No producer is active and no idle factory can receive inputs.
+// Inputs only come from active producers or are pulled by a factory when it runs,
+// so idle factories which pulled nothing in their last run will never pull anything again.
+func (s *simulation) isAtRest() bool {
+	for _, p := range s.pins {
+		switch p.kind {
+		case kindExtractor:
+			if p.isActive {
+				return false
+			}
+		case kindFactory:
+			if p.schematic == nil {
+				continue // can never run
+			}
+			if p.isActive || p.hasReceivedInputs || p.receivedInputsLastCycle {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (s *simulation) schedulePin(p *pin) {

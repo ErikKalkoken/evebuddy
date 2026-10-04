@@ -670,8 +670,128 @@ func TestSimulation_ActivityAndLastRun(t *testing.T) {
 
 		f = colonysim.Forecast(cp, t0.Add(3*time.Hour))
 		assert.False(t, f.Pins[2].IsActive)
-		// an idle factory keeps checking for inputs every cycle (same as RIFT)
-		assert.Equal(t, optional.New(t0.Add(3*time.Hour)), f.Pins[2].LastRunTime)
+		// unlike RIFT an idle factory stops checking for inputs once the colony is at rest
+		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.Pins[2].LastRunTime)
 		assert.Equal(t, optional.New(t0.Add(60*time.Minute)), f.Pins[2].LastCycleStart, "start of last production cycle")
 	})
+}
+
+func TestForecast_AtRest(t *testing.T) {
+	// newAbandonedColony returns a colony with an expired extractor and starving factories.
+	newAbandonedColony := func(extra ...*app.PlanetPin) *app.CharacterPlanet {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0.Add(-4*time.Hour), t0.Add(-time.Hour)),
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+				newFactory(3, schematicWater),
+				newFactory(4, schematicWater),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 10_000),
+				newRoute(2, 2, 3, aqueousLiquids, 3000),
+				newRoute(3, 2, 4, aqueousLiquids, 3000),
+				newRoute(4, 3, 2, water, 20),
+				newRoute(5, 4, 2, water, 20),
+			},
+		}
+		cp.Pins = append(cp.Pins, extra...)
+		return cp
+	}
+	t.Run("should forecast abandoned colony with old snapshot", func(t *testing.T) {
+		now := t0.Add(3 * 365 * 24 * time.Hour)
+		f := colonysim.Forecast(newAbandonedColony(), now)
+		assert.Equal(t, now, f.Time)
+		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
+		assert.Equal(t, app.PinExtractorExpired, f.Pins[1].Status)
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[3].Status)
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[4].Status)
+		assert.True(t, f.ValidUntil.IsEmpty(), "an aborted run would only be valid until now")
+		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.False(t, f.WorksBeyondHorizon)
+	})
+	t.Run("should come to rest with a factory without schematic", func(t *testing.T) {
+		unconfigured := newFactory(5, 0)
+		unconfigured.Schematic = optional.Optional[*app.EveSchematic]{}
+		f := colonysim.Forecast(newAbandonedColony(unconfigured), t0.Add(365*24*time.Hour))
+		assert.Equal(t, app.PinNotSetup, f.Pins[5].Status)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
+	t.Run("should produce restocked inputs before coming to rest", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
+				newFactory(2, schematicWater), // idle at the snapshot
+				newStorage(3, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20),
+			},
+		}
+		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), colonysim.WorkEndsAt(cp, t0.Add(365*24*time.Hour)))
+		f := colonysim.Forecast(cp, t0.Add(365*24*time.Hour))
+		assert.Equal(t, app.ColonyIdle, f.Status)
+		assert.Equal(t, map[int64]int64{typeWater: 60}, f.Pins[3].Contents)
+		assert.Empty(t, f.Pins[1].Contents)
+		assert.Empty(t, f.Pins[2].Contents)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
+	t.Run("should keep leftover inputs below the demand", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 1000}),
+				newFactory(2, schematicWater),
+				newStorage(3, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20),
+			},
+		}
+		f := colonysim.Forecast(cp, t0.Add(365*24*time.Hour))
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
+		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 1000}, f.Pins[2].Contents)
+		assert.Empty(t, f.Pins[1].Contents)
+		assert.Empty(t, f.Pins[3].Contents)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
+	t.Run("should still change status at expiry of inactive extractor", func(t *testing.T) {
+		extractor := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(10*time.Hour))
+		extractor.LastCycleStart = optional.Optional[time.Time]{} // never ran, so inactive
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				extractor,
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+			},
+			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+		}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, app.PinExtractorInactive, f.Pins[1].Status)
+		assert.Equal(t, optional.New(t0.Add(10*time.Hour)), f.ValidUntil)
+		f = colonysim.Forecast(cp, t0.Add(10*time.Hour))
+		assert.Equal(t, app.PinExtractorExpired, f.Pins[1].Status)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
+}
+
+func BenchmarkForecast_OldIdleColony(b *testing.B) {
+	cp := &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0.Add(-4*time.Hour), t0.Add(-time.Hour)),
+			newStorage(2, app.EveGroupStorageFacilities, 12_000),
+		},
+	}
+	for id := int64(3); id < 23; id++ {
+		cp.Pins = append(cp.Pins, newFactory(id, schematicWater))
+		cp.Routes = append(cp.Routes, newRoute(id, 2, id, aqueousLiquids, 3000))
+	}
+	now := t0.Add(365 * 24 * time.Hour)
+	for b.Loop() {
+		colonysim.Forecast(cp, now)
+	}
 }

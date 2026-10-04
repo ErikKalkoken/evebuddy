@@ -1,12 +1,16 @@
 package colonysim
 
 import (
+	"maps"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/evesde"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -134,4 +138,105 @@ func TestSimulation_IncompleteExtractorDoesNotAbort(t *testing.T) {
 			assert.True(t, newSimulation(cp).runUntil(t0.Add(time.Hour)))
 		})
 	}
+}
+
+func TestIsAtRest(t *testing.T) {
+	schematic := &evesde.PlanetSchematic{}
+	cases := []struct {
+		name string
+		pins []*pin
+		want bool
+	}{
+		{"no pins", nil, true},
+		{"active extractor", []*pin{{kind: kindExtractor, isActive: true}}, false},
+		{"active extractor past expiry", []*pin{{kind: kindExtractor, isActive: true, expiryTime: t0.Add(-time.Hour)}}, false},
+		{"inactive extractor", []*pin{{kind: kindExtractor}}, true},
+		{"active factory", []*pin{{kind: kindFactory, schematic: schematic, isActive: true}}, false},
+		{"factory received inputs last cycle", []*pin{{kind: kindFactory, schematic: schematic, receivedInputsLastCycle: true}}, false},
+		{"factory received inputs", []*pin{{kind: kindFactory, schematic: schematic, hasReceivedInputs: true}}, false},
+		{"idle factory", []*pin{{kind: kindFactory, schematic: schematic}}, true},
+		{"factory without schematic", []*pin{{kind: kindFactory, hasReceivedInputs: true, receivedInputsLastCycle: true}}, true},
+		{"storages", []*pin{
+			{kind: kindCommandCenter, contents: map[int64]int64{typeWater: 1}},
+			{kind: kindLaunchpad, contents: map[int64]int64{typeWater: 1}},
+			{kind: kindStorage, contents: map[int64]int64{typeWater: 1}},
+		}, true},
+		{"idle factory and active extractor", []*pin{
+			{kind: kindFactory, schematic: schematic},
+			{kind: kindExtractor, isActive: true},
+		}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &simulation{pins: make(map[int64]*pin)}
+			for i, p := range tc.pins {
+				p.id = int64(i + 1)
+				s.pins[p.id] = p
+			}
+			assert.Equal(t, tc.want, s.isAtRest())
+		})
+	}
+}
+
+// FuzzIsAtRest_WakeUpsChangeNothing verifies that pins of a colony at rest can no longer change it.
+func FuzzIsAtRest_WakeUpsChangeNothing(f *testing.F) {
+	for seed := range uint64(50) {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, seed uint64) {
+		cp, now := randomColony(seed)
+		s := newSimulation(cp)
+		s.runUntil(now)
+		if !s.atRest {
+			return
+		}
+		type pinState struct {
+			contents                map[int64]int64
+			isActive                bool
+			isRunnable              bool
+			hasReceivedInputs       bool
+			receivedInputsLastCycle bool
+			lastCycleStartTime      time.Time
+		}
+		// the status only depends on this state and the time
+		state := func() map[int64]pinState {
+			m := make(map[int64]pinState)
+			for id, p := range s.pins {
+				m[id] = pinState{
+					contents:                maps.Clone(p.contents),
+					isActive:                p.isActive,
+					isRunnable:              p.isRunnable(),
+					hasReceivedInputs:       p.hasReceivedInputs,
+					receivedInputsLastCycle: p.receivedInputsLastCycle,
+					lastCycleStartTime:      p.lastCycleStartTime,
+				}
+			}
+			return m
+		}
+		want := state()
+		for round := range 3 {
+			// wake up all pins which would still run, in order of their next run
+			var pins []*pin
+			for _, id := range s.pinIDs {
+				if p := s.pins[id]; p.isRunnable() {
+					pins = append(pins, p)
+				}
+			}
+			next := func(p *pin) time.Time {
+				t, ok := p.nextRunTime()
+				if !ok || t.Before(s.simTime) {
+					return s.simTime
+				}
+				return t
+			}
+			slices.SortStableFunc(pins, func(a, b *pin) int {
+				return next(a).Compare(next(b))
+			})
+			for _, p := range pins {
+				s.simTime = next(p)
+				s.evaluatePin(p)
+			}
+			require.Equal(t, want, state(), "state changed in round %d", round+1)
+		}
+	})
 }
