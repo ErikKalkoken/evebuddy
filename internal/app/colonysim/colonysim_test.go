@@ -212,6 +212,54 @@ func TestSimulation(t *testing.T) {
 	})
 }
 
+func TestSimulation_InvalidData(t *testing.T) {
+	newPlanet := func(extra ...*app.PlanetPin) *app.CharacterPlanet {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+			},
+		}
+		cp.Pins = append(cp.Pins, extra...)
+		return cp
+	}
+	t.Run("should move nothing along a route without quantity", func(t *testing.T) {
+		cp := newPlanet()
+		cp.Routes = []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 0)}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Empty(t, f.Pins[2].Contents)
+	})
+	t.Run("should deliver output routed to an extractor to the other routes", func(t *testing.T) {
+		cp := newPlanet(newExtractor(3, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)))
+		cp.Routes = []*app.PlanetRoute{
+			newRoute(1, 1, 3, aqueousLiquids, 10_000), // to extractor
+			newRoute(2, 1, 2, aqueousLiquids, 10_000),
+			newRoute(3, 3, 2, aqueousLiquids, 10_000),
+		}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 2 * (2467 + 2086)}, f.Pins[2].Contents)
+		assert.Empty(t, f.Pins[3].Contents)
+	})
+	t.Run("should ignore routes without content type", func(t *testing.T) {
+		cp := newPlanet()
+		cp.Routes = []*app.PlanetRoute{newRoute(1, 1, 2, nil, 10_000)}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Empty(t, f.Pins[2].Contents)
+		assert.Equal(t, app.PinOutputNotRouted, f.Pins[1].Status)
+	})
+	t.Run("should ignore pins without type or group", func(t *testing.T) {
+		cp := newPlanet(
+			&app.PlanetPin{ID: 3},
+			&app.PlanetPin{ID: 4, Type: &app.EveType{ID: 2541}},
+		)
+		cp.Routes = []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Len(t, f.Pins, 2)
+		assert.Equal(t, app.ColonyExtracting, f.Status)
+	})
+}
+
 func TestSimulation_ExtractorToStorageToFactory(t *testing.T) {
 	cp := &app.CharacterPlanet{
 		LastUpdate: t0,

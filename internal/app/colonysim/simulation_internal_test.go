@@ -62,6 +62,103 @@ func TestSimulation_Run(t *testing.T) {
 		s.runUntil(t0.Add(-time.Hour))
 		assert.Equal(t, t0, s.simTime)
 	})
+	t.Run("should advance time without changes when at rest", func(t *testing.T) {
+		// idle factory without inputs
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000),
+				newFactory(2, schematicWater),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 1, water, 20),
+			},
+		}
+		s := newSimulation(cp)
+		require.True(t, s.runUntil(t0.Add(3*time.Hour)))
+		require.True(t, s.atRest)
+		want := s.forecast()
+		assert.True(t, s.runUntil(t0.Add(10*time.Hour)))
+		assert.Equal(t, t0.Add(10*time.Hour), s.simTime)
+		got := s.forecast()
+		want.Time = got.Time
+		assert.Equal(t, want, got)
+		_, ok := s.nextChange()
+		assert.False(t, ok)
+	})
+}
+
+func TestSimulation_ColonyStatus(t *testing.T) {
+	// pins and their routes; the storage is always present
+	type part struct {
+		pin    func() *app.PlanetPin
+		routes []*app.PlanetRoute
+	}
+	activeExtractor := part{
+		pin: func() *app.PlanetPin {
+			return newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour))
+		},
+		routes: []*app.PlanetRoute{newRoute(1, 1, 10, aqueousLiquids, 10_000)},
+	}
+	expiredExtractor := part{
+		pin: func() *app.PlanetPin {
+			return newExtractor(2, aqueousLiquids, 1081, 30*time.Minute, t0.Add(-4*time.Hour), t0.Add(-time.Hour))
+		},
+		routes: []*app.PlanetRoute{newRoute(2, 2, 10, aqueousLiquids, 10_000)},
+	}
+	notSetupFactory := part{
+		pin: func() *app.PlanetPin {
+			p := newFactory(3, 0)
+			p.Schematic = optional.Optional[*app.EveSchematic]{}
+			return p
+		},
+	}
+	producingFactory := part{
+		pin: func() *app.PlanetPin {
+			p := newFactory(4, schematicWater)
+			p.LastCycleStart = optional.New(t0.Add(-10 * time.Minute))
+			return p
+		},
+		routes: []*app.PlanetRoute{newRoute(3, 10, 4, aqueousLiquids, 3000), newRoute(4, 4, 10, water, 20)},
+	}
+	idleFactory := part{
+		pin:    func() *app.PlanetPin { return newFactory(5, schematicWater) },
+		routes: []*app.PlanetRoute{newRoute(5, 10, 5, aqueousLiquids, 3000), newRoute(6, 5, 10, water, 20)},
+	}
+	fullStorage := part{
+		pin: func() *app.PlanetPin {
+			return newStorage(6, app.EveGroupCommandCenters, 500)
+		},
+		routes: []*app.PlanetRoute{newRoute(7, 1, 6, aqueousLiquids, 100_000)}, // 1000 m3
+	}
+	cases := []struct {
+		name  string
+		parts []part
+		want  app.ColonyStatus
+	}{
+		{"empty colony", nil, app.ColonyIdle},
+		{"not setup over needs attention", []part{notSetupFactory, expiredExtractor}, app.ColonyNotSetup},
+		{"needs attention over extracting", []part{expiredExtractor, activeExtractor}, app.ColonyNeedsAttention},
+		{"full storage needs attention", []part{activeExtractor, fullStorage}, app.ColonyNeedsAttention},
+		{"extracting over producing", []part{activeExtractor, producingFactory}, app.ColonyExtracting},
+		{"producing over idle", []part{producingFactory, idleFactory}, app.ColonyProducing},
+		{"idle", []part{idleFactory}, app.ColonyIdle},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cp := &app.CharacterPlanet{
+				LastUpdate: t0,
+				Pins:       []*app.PlanetPin{newStorage(10, app.EveGroupStorageFacilities, 12_000)},
+			}
+			for _, x := range tc.parts {
+				cp.Pins = append(cp.Pins, x.pin())
+				cp.Routes = append(cp.Routes, x.routes...)
+			}
+			got, _ := newSimulation(cp).colonyStatus(t0)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestSimulation_RunUntilWorkEnds(t *testing.T) {

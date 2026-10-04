@@ -12,7 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-const maxEvents = 1_000_000 // guard against runaway simulations
+var maxEvents = 1_000_000 // guard against runaway simulations; a variable for tests
 
 // runResult reports why a simulation run stopped.
 type runResult uint

@@ -142,3 +142,61 @@ func TestPin_InputBufferState(t *testing.T) {
 		}
 	})
 }
+
+func TestPin_ByKind(t *testing.T) {
+	s, ok := evesde.PlanetSchematicByID(schematicWater)
+	require.True(t, ok)
+	runTime := t0.Add(time.Hour)
+	t.Run("storage", func(t *testing.T) {
+		p := &pin{kind: kindStorage, isActive: true, contents: map[int64]int64{typeWater: 5}}
+		assert.Zero(t, p.cycle())
+		assert.False(t, p.canActivate())
+		assert.Empty(t, p.run(runTime))
+		assert.False(t, p.isActive)
+		assert.Equal(t, runTime, p.lastRunTime)
+		assert.Equal(t, map[int64]int64{typeWater: 5}, p.contents)
+	})
+	t.Run("extractor", func(t *testing.T) {
+		p := &pin{kind: kindExtractor, cycleTime: 30 * time.Minute}
+		assert.Equal(t, 30*time.Minute, p.cycle())
+	})
+	t.Run("extractor without product", func(t *testing.T) {
+		p := &pin{kind: kindExtractor, isActive: true, baseValue: 1081, cycleTime: 30 * time.Minute, installTime: t0}
+		assert.False(t, p.canActivate())
+		assert.Empty(t, p.run(runTime))
+		assert.Equal(t, runTime, p.lastRunTime)
+	})
+	t.Run("factory", func(t *testing.T) {
+		p := &pin{kind: kindFactory, schematic: &s}
+		assert.Equal(t, s.CycleTime, p.cycle())
+	})
+	t.Run("factory without schematic", func(t *testing.T) {
+		p := &pin{kind: kindFactory}
+		assert.Zero(t, p.cycle())
+	})
+}
+
+func TestPin_RemoveCommodity(t *testing.T) {
+	cases := []struct {
+		name     string
+		quantity int64
+		want     int64
+		contents map[int64]int64
+	}{
+		{"part", 3, 3, map[int64]int64{typeWater: 2}},
+		{"all", 5, 5, map[int64]int64{}},
+		{"more than stored", 8, 5, map[int64]int64{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &pin{contents: map[int64]int64{typeWater: 5}}
+			assert.Equal(t, tc.want, p.removeCommodity(typeWater, tc.quantity))
+			assert.Equal(t, tc.contents, p.contents)
+		})
+	}
+	t.Run("not stored", func(t *testing.T) {
+		p := &pin{contents: map[int64]int64{typeWater: 5}}
+		assert.Zero(t, p.removeCommodity(typeAqueousLiquids, 3))
+		assert.Equal(t, map[int64]int64{typeWater: 5}, p.contents)
+	})
+}
