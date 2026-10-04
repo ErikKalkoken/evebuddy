@@ -395,15 +395,11 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 
 	if len(points) > 1 {
 		start, end := points[0].at, points[len(points)-1].at
-		format := "15:04"
-		if end.Sub(start) > 24*time.Hour {
-			format = "Jan 02 15:04"
-		}
-		a.program.SetXAxis(fyneline.NewTimeAxis(format, time.UTC).
+		a.program.SetXAxis(fyneline.NewTimeAxis(colonyProgramDateFormat, time.UTC).
 			WithDomain(float64(start.Unix()), float64(end.Unix())).
 			WithTickCount(4)) // fits on mobile
 		// room for the last label, which is centered on the right edge
-		w := fyne.MeasureText(end.UTC().Format(format), theme.CaptionTextSize(), fyne.TextStyle{}).Width
+		w := fyne.MeasureText(end.UTC().Format(colonyProgramDateFormat), theme.CaptionTextSize(), fyne.TextStyle{}).Width
 		a.program.SetPadding(fyneline.Insets{Right: w / 2})
 	}
 	axisMax, tickCount := niceAxisBounds(float64(maxOutput), 5)
@@ -418,6 +414,10 @@ func (a *colonyPinDetails) setProgram(cycles []colonyCycle, title string) {
 // colonyProgramMaxSteps is the maximum number of steps in the program chart.
 // Each step is drawn with chart-sized shapes, so many steps make every repaint slow.
 const colonyProgramMaxSteps = 48
+
+// colonyProgramDateFormat is the format of the time axis in the program chart.
+// It includes the date, because a program can lie in the past.
+const colonyProgramDateFormat = "Jan 02 15:04"
 
 // groupCycles returns cycles merged into at most about maxSteps steps with their average output.
 // Steps never span different phases.
