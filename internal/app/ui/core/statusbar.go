@@ -189,6 +189,9 @@ func (a *statusBar) start() {
 	a.u.tasks.Go(func(ctx context.Context) {
 		xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
 			fyne.Do(func() {
+				if a.u.Signals().IsShuttingDown() {
+					return
+				}
 				a.eveClock.SetText(time.Now().UTC().Format("15:04"))
 			})
 		})
@@ -225,6 +228,9 @@ func (a *statusBar) start() {
 func (a *statusBar) updateEveStatus(ctx context.Context) {
 	set := func(status eveStatus, title string, errorMessage string) {
 		fyne.Do(func() {
+			if a.u.Signals().IsShuttingDown() {
+				return
+			}
 			a.setEveStatus(status, title, errorMessage)
 		})
 	}
