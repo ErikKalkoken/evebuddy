@@ -7,7 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/evesde"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestPin_CanActivateFactory(t *testing.T) {
@@ -92,5 +94,51 @@ func TestExtractorProgram(t *testing.T) {
 		assert.Empty(t, extractorProgram(1081, t0, t0.Add(4*time.Hour), 0))
 		assert.Empty(t, extractorProgram(1081, time.Time{}, t0.Add(4*time.Hour), 30*time.Minute))
 		assert.Empty(t, extractorProgram(1081, t0, t0, 30*time.Minute))
+	})
+}
+
+func TestPin_InputBufferState(t *testing.T) {
+	newGelMatrixFactory := func(contents map[int64]int64) *pin {
+		pp := newFactory(1, schematicGelMatrix) // needs 10 oxides, biocells and superconductors
+		for typeID, amount := range contents {
+			pp.Contents = append(pp.Contents, &app.PlanetPinContent{Type: &app.EveType{ID: typeID}, Amount: amount})
+		}
+		p, ok := newPin(pp, t0)
+		require.True(t, ok)
+		return p
+	}
+	t.Run("should be zero without schematic", func(t *testing.T) {
+		pp := newFactory(1, 0)
+		pp.Schematic = optional.Optional[*app.EveSchematic]{}
+		p, ok := newPin(pp, t0)
+		require.True(t, ok)
+		assert.Equal(t, 0.0, p.inputBufferState())
+	})
+	t.Run("should be highest for empty buffer", func(t *testing.T) {
+		p := newGelMatrixFactory(nil)
+		assert.InDelta(t, 1.0/3, p.inputBufferState(), 1e-12)
+	})
+	t.Run("should be lower for fuller buffers", func(t *testing.T) {
+		partly := newGelMatrixFactory(map[int64]int64{typeOxides: 1, typeBiocells: 1, typeSuperconductors: 4})
+		full := newGelMatrixFactory(map[int64]int64{typeOxides: 10, typeBiocells: 10, typeSuperconductors: 10})
+		above := newGelMatrixFactory(map[int64]int64{typeOxides: 20, typeBiocells: 10, typeSuperconductors: 10})
+		assert.InDelta(t, (1-0.6)/3, partly.inputBufferState(), 1e-12)
+		assert.InDelta(t, -2.0/3, full.inputBufferState(), 1e-12)
+		assert.Less(t, above.inputBufferState(), full.inputBufferState())
+	})
+	t.Run("should ignore types not needed", func(t *testing.T) {
+		a := newGelMatrixFactory(map[int64]int64{typeOxides: 1})
+		b := newGelMatrixFactory(map[int64]int64{typeOxides: 1, typeWater: 100})
+		assert.Equal(t, a.inputBufferState(), b.inputBufferState())
+	})
+	t.Run("should not depend on map order", func(t *testing.T) {
+		// the sum of these ratios depends on the order of adding them
+		p := newGelMatrixFactory(map[int64]int64{typeOxides: 1, typeBiocells: 1, typeSuperconductors: 4})
+		want := p.inputBufferState()
+		for range 200 {
+			if !assert.Equal(t, want, p.inputBufferState()) {
+				return
+			}
+		}
 	})
 }

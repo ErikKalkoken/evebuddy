@@ -78,14 +78,21 @@ const (
 	typeSuspendedPlasma      = 2308
 	typePlasmoids            = 2389
 	typeSuperconductors      = 9838
+	typeOxides               = 2317
+	typeBiocells             = 2329
+	typeGelMatrixBiopaste    = 2348
 	schematicPlasmoids       = 122
 	schematicSuperconductors = 65
+	schematicGelMatrix       = 95 // 3 inputs
 )
 
 var (
 	suspendedPlasma = newType(typeSuspendedPlasma, 1032, 0.01, 0)
 	plasmoids       = newType(typePlasmoids, 1042, 0.38, 0)
 	superconductors = newType(typeSuperconductors, 1034, 0.75, 0)
+	oxides          = newType(typeOxides, 1034, 0.75, 0)
+	biocells        = newType(typeBiocells, 1034, 0.75, 0)
+	gelMatrix       = newType(typeGelMatrixBiopaste, 1040, 3, 0)
 )
 
 // randomColony returns a random colony and time for a forecast from a seed.
@@ -103,7 +110,7 @@ func randomColony(seed uint64) (*app.CharacterPlanet, time.Time) {
 	}
 	pins := make(map[int64]info)
 	var id int64
-	allTypes := []*app.EveType{aqueousLiquids, suspendedPlasma, water, plasmoids, superconductors}
+	allTypes := []*app.EveType{aqueousLiquids, suspendedPlasma, water, plasmoids, superconductors, oxides, biocells, gelMatrix}
 
 	// extractors
 	for range pick(3) {
@@ -144,6 +151,7 @@ func randomColony(seed uint64) (*app.CharacterPlanet, time.Time) {
 		{schematicWater, []*app.EveType{aqueousLiquids}, water, 30 * time.Minute},
 		{schematicPlasmoids, []*app.EveType{suspendedPlasma}, plasmoids, 30 * time.Minute},
 		{schematicSuperconductors, []*app.EveType{water, plasmoids}, superconductors, time.Hour},
+		{schematicGelMatrix, []*app.EveType{oxides, biocells, superconductors}, gelMatrix, time.Hour},
 	}
 	for range pick(4) {
 		id++
@@ -242,6 +250,7 @@ const (
 	SchematicWater           = schematicWater
 	SchematicPlasmoids       = schematicPlasmoids
 	SchematicSuperconductors = schematicSuperconductors
+	SchematicGelMatrix       = schematicGelMatrix
 )
 
 var (
@@ -257,4 +266,6 @@ var (
 	SuspendedPlasma = suspendedPlasma
 	Plasmoids       = plasmoids
 	Superconductors = superconductors
+	Oxides          = oxides
+	Biocells        = biocells
 )

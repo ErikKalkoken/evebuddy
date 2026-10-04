@@ -676,6 +676,46 @@ func TestSimulation_ActivityAndLastRun(t *testing.T) {
 	})
 }
 
+func TestForecast_RoutingTieBreak(t *testing.T) {
+	// an active superconductor factory delivers to two factories with equally full buffers
+	newColony := func() *app.CharacterPlanet {
+		producer := newFactory(1, schematicSuperconductors)
+		producer.LastCycleStart = optional.New(t0.Add(-29 * time.Minute)) // delivers at t0+31m
+		newConsumer := func(id int64) *app.PlanetPin {
+			p := newFactory(id, schematicGelMatrix)
+			p.Contents = []*app.PlanetPinContent{
+				{Type: oxides, Amount: 1},
+				{Type: biocells, Amount: 1},
+				{Type: superconductors, Amount: 4}, // their sum of floats depends on the order of adding
+			}
+			return p
+		}
+		return &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins:       []*app.PlanetPin{producer, newConsumer(2), newConsumer(3)},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 3, superconductors, 5), // lower route ID to the higher pin ID
+				newRoute(2, 1, 2, superconductors, 5),
+			},
+		}
+	}
+	t.Run("should deliver to the factory with the lower route ID", func(t *testing.T) {
+		f := colonysim.Forecast(newColony(), t0.Add(31*time.Minute))
+		assert.Equal(t, int64(9), f.Pins[3].Contents[superconductors.ID])
+		assert.Equal(t, int64(4), f.Pins[2].Contents[superconductors.ID])
+	})
+	t.Run("should forecast the same each time", func(t *testing.T) {
+		cp := newColony()
+		want := colonysim.Forecast(cp, t0.Add(31*time.Minute))
+		for range 200 {
+			got := colonysim.Forecast(cp, t0.Add(31*time.Minute))
+			if !assert.Equal(t, want.Pins, got.Pins) {
+				return
+			}
+		}
+	})
+}
+
 func TestForecast_AtRest(t *testing.T) {
 	// newAbandonedColony returns a colony with an expired extractor and starving factories.
 	newAbandonedColony := func(extra ...*app.PlanetPin) *app.CharacterPlanet {

@@ -16,12 +16,15 @@ import (
 const (
 	schematicPlasmoids       = colonysim.SchematicPlasmoids
 	schematicSuperconductors = colonysim.SchematicSuperconductors
+	schematicGelMatrix       = colonysim.SchematicGelMatrix
 )
 
 var (
 	suspendedPlasma = colonysim.SuspendedPlasma
 	plasmoids       = colonysim.Plasmoids
 	superconductors = colonysim.Superconductors
+	oxides          = colonysim.Oxides
+	biocells        = colonysim.Biocells
 	randomColony    = colonysim.RandomColony
 )
 

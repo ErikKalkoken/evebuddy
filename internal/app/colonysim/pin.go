@@ -264,14 +264,15 @@ func (p *pin) hasEnoughInputs() bool {
 
 // inputBufferState returns the sort key for routing to factories. Fuller buffers have lower keys.
 func (p *pin) inputBufferState() float64 {
-	if len(p.demands) == 0 {
+	if p.schematic == nil || len(p.schematic.Inputs) == 0 {
 		return 0
 	}
 	var ratio float64
-	for typeID, quantity := range p.demands {
-		ratio += float64(p.contents[typeID]) / float64(quantity)
+	// in schematic order, because the sum of floats depends on the order
+	for _, x := range p.schematic.Inputs {
+		ratio += float64(p.contents[x.TypeID]) / float64(x.Quantity)
 	}
-	return (1 - ratio) / float64(len(p.demands))
+	return (1 - ratio) / float64(len(p.schematic.Inputs))
 }
 
 func (p *pin) removeCommodity(typeID, quantity int64) int64 {
