@@ -234,9 +234,8 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 }
 
 // isAtRest reports whether the colony cannot change anymore:
-// No producer is active and no idle factory can receive inputs.
-// Inputs only come from active producers or are pulled by a factory when it runs,
-// so idle factories which pulled nothing in their last run will never pull anything again.
+// No producer is active and no idle factory will start or pull inputs on its next run.
+// Storages only change through producers and pulls, so then every further run changes nothing.
 func (s *simulation) isAtRest() bool {
 	for _, p := range s.pins {
 		switch p.kind {
@@ -253,7 +252,30 @@ func (s *simulation) isAtRest() bool {
 			}
 		}
 	}
+	// checking routes is more expensive, so it comes last
+	for _, p := range s.pins {
+		if p.kind == kindFactory && p.schematic != nil && s.canPull(p) {
+			return false
+		}
+	}
 	return true
+}
+
+// canPull reports whether a factory would pull inputs from storages routed to it, see routeInput.
+func (s *simulation) canPull(destination *pin) bool {
+	for _, r := range s.routes {
+		if r.destinationID != destination.id {
+			continue
+		}
+		source := s.pins[r.sourceID]
+		if !source.isStorage() {
+			continue
+		}
+		if s.canAccept(destination, r.typeID, min(source.contents[r.typeID], r.quantity)) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *simulation) schedulePin(p *pin) {

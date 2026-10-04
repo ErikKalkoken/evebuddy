@@ -142,33 +142,68 @@ func TestSimulation_IncompleteExtractorDoesNotAbort(t *testing.T) {
 
 func TestIsAtRest(t *testing.T) {
 	schematic := &evesde.PlanetSchematic{}
+	// factory returns an idle factory which needs 40 water.
+	factory := func(water int64) *pin {
+		return &pin{kind: kindFactory, schematic: schematic, demands: map[int64]int64{typeWater: 40}, contents: map[int64]int64{typeWater: water}}
+	}
+	stock := func(kind pinKind, typeID, amount int64) *pin {
+		return &pin{kind: kind, contents: map[int64]int64{typeID: amount}}
+	}
 	cases := []struct {
-		name string
-		pins []*pin
-		want bool
+		name   string
+		pins   []*pin // with IDs from 1
+		routes []route
+		want   bool
 	}{
-		{"no pins", nil, true},
-		{"active extractor", []*pin{{kind: kindExtractor, isActive: true}}, false},
-		{"active extractor past expiry", []*pin{{kind: kindExtractor, isActive: true, expiryTime: t0.Add(-time.Hour)}}, false},
-		{"inactive extractor", []*pin{{kind: kindExtractor}}, true},
-		{"active factory", []*pin{{kind: kindFactory, schematic: schematic, isActive: true}}, false},
-		{"factory received inputs last cycle", []*pin{{kind: kindFactory, schematic: schematic, receivedInputsLastCycle: true}}, false},
-		{"factory received inputs", []*pin{{kind: kindFactory, schematic: schematic, hasReceivedInputs: true}}, false},
-		{"idle factory", []*pin{{kind: kindFactory, schematic: schematic}}, true},
-		{"factory without schematic", []*pin{{kind: kindFactory, hasReceivedInputs: true, receivedInputsLastCycle: true}}, true},
+		{"no pins", nil, nil, true},
+		{"active extractor", []*pin{{kind: kindExtractor, isActive: true}}, nil, false},
+		{"active extractor past expiry", []*pin{{kind: kindExtractor, isActive: true, expiryTime: t0.Add(-time.Hour)}}, nil, false},
+		{"inactive extractor", []*pin{{kind: kindExtractor}}, nil, true},
+		{"active factory", []*pin{{kind: kindFactory, schematic: schematic, isActive: true}}, nil, false},
+		{"factory received inputs last cycle", []*pin{{kind: kindFactory, schematic: schematic, receivedInputsLastCycle: true}}, nil, false},
+		{"factory received inputs", []*pin{{kind: kindFactory, schematic: schematic, hasReceivedInputs: true}}, nil, false},
+		{"idle factory", []*pin{{kind: kindFactory, schematic: schematic}}, nil, true},
+		{"factory without schematic", []*pin{{kind: kindFactory, hasReceivedInputs: true, receivedInputsLastCycle: true}}, nil, true},
 		{"storages", []*pin{
 			{kind: kindCommandCenter, contents: map[int64]int64{typeWater: 1}},
 			{kind: kindLaunchpad, contents: map[int64]int64{typeWater: 1}},
 			{kind: kindStorage, contents: map[int64]int64{typeWater: 1}},
-		}, true},
+		}, nil, true},
 		{"idle factory and active extractor", []*pin{
 			{kind: kindFactory, schematic: schematic},
 			{kind: kindExtractor, isActive: true},
-		}, false},
+		}, nil, false},
+		{"factory can pull from storage", []*pin{stock(kindStorage, typeWater, 100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, false},
+		{"factory can pull from launchpad", []*pin{stock(kindLaunchpad, typeWater, 100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, false},
+		{"factory can pull from command center", []*pin{stock(kindCommandCenter, typeWater, 100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, false},
+		{"factory can pull missing rest of input", []*pin{stock(kindStorage, typeWater, 100), factory(39)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, false},
+		{"factory can pull through one of several routes", []*pin{stock(kindStorage, typeWater, 0), stock(kindStorage, typeWater, 100), factory(0)},
+			[]route{
+				{id: 1, sourceID: 1, destinationID: 3, typeID: typeWater, quantity: 40},
+				{id: 2, sourceID: 2, destinationID: 3, typeID: typeWater, quantity: 40},
+			}, false},
+		{"stock not needed by factory", []*pin{stock(kindStorage, typePlasmoids, 100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typePlasmoids, quantity: 40}}, true},
+		{"factory full", []*pin{stock(kindStorage, typeWater, 100), factory(40)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, true},
+		{"route without quantity", []*pin{stock(kindStorage, typeWater, 100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 0}}, true},
+		{"stock routed to other factory", []*pin{stock(kindStorage, typeWater, 100), factory(40), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, true},
+		{"stock in factory", []*pin{factory(100), factory(0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, true},
+		{"stock routed to storage", []*pin{stock(kindStorage, typeWater, 100), stock(kindStorage, typeWater, 0)},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, true},
+		{"factory without schematic can pull", []*pin{stock(kindStorage, typeWater, 100), {kind: kindFactory, demands: map[int64]int64{typeWater: 40}}},
+			[]route{{id: 1, sourceID: 1, destinationID: 2, typeID: typeWater, quantity: 40}}, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := &simulation{pins: make(map[int64]*pin)}
+			s := &simulation{pins: make(map[int64]*pin), routes: tc.routes}
 			for i, p := range tc.pins {
 				p.id = int64(i + 1)
 				s.pins[p.id] = p

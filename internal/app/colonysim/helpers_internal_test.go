@@ -185,6 +185,33 @@ func randomColony(seed uint64) (*app.CharacterPlanet, time.Time) {
 			}
 		}
 	}
+	// chain where a factory pulls from a storage which only receives through another storage
+	if pick(4) == 0 {
+		cycle := []time.Duration{30 * time.Minute, time.Hour, 2 * time.Hour}[pick(3)]
+		install := t0.Add(-duration(4 * time.Hour))
+		expiry := install.Add(time.Duration(1+pick(8)) * cycle)
+		extractor, launchpad, storage, factory := id+1, id+2, id+3, id+4
+		id += 4
+		cp.Pins = append(cp.Pins,
+			newExtractor(extractor, aqueousLiquids, int64(100+pick(1000)), cycle, install, expiry),
+			newStorage(launchpad, app.EveGroupSpaceports, 10_000),
+			newStorage(storage, app.EveGroupStorageFacilities, 12_000),
+			newFactory(factory, schematicWater),
+		)
+		for _, r := range [][4]int64{
+			{extractor, launchpad, typeAqueousLiquids, 100_000},
+			{launchpad, storage, typeAqueousLiquids, 100_000},
+			{storage, factory, typeAqueousLiquids, 3000},
+			{factory, launchpad, typeWater, 20},
+		} {
+			routeID++
+			et := aqueousLiquids
+			if r[2] == typeWater {
+				et = water
+			}
+			cp.Routes = append(cp.Routes, newRoute(routeID, r[0], r[1], et, r[3]))
+		}
+	}
 	var now time.Time
 	switch pick(5) {
 	case 0:

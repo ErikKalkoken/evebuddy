@@ -758,6 +758,49 @@ func TestForecast_AtRest(t *testing.T) {
 		assert.Empty(t, f.Pins[3].Contents)
 		assert.True(t, f.ValidUntil.IsEmpty())
 	})
+	t.Run("should pull inputs a storage received through another storage before coming to rest", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 500, 2*time.Hour, t0.Add(-15*time.Minute), t0.Add(-15*time.Minute+4*time.Hour)),
+				newStorage(2, app.EveGroupSpaceports, 10_000),
+				newStorage(3, app.EveGroupStorageFacilities, 12_000),
+				newFactory(4, schematicWater),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 10_000),
+				newRoute(2, 2, 3, aqueousLiquids, 10_000), // forwarded without telling the factory
+				newRoute(3, 3, 4, aqueousLiquids, 3000),
+				newRoute(4, 4, 2, water, 20),
+			},
+		}
+		// from a simulation without stopping at rest
+		f := colonysim.Forecast(cp, t0.Add(48*time.Hour))
+		assert.Empty(t, f.Pins[3].Contents)
+		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 1312}, f.Pins[4].Contents)
+		assert.Equal(t, map[int64]int64{typeWater: 40}, f.Pins[2].Contents)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
+	t.Run("should pull available input of factory with missing input before coming to rest", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: water, Amount: 100}),
+				newFactory(2, schematicSuperconductors), // needs 40 water and 40 plasmoids
+				newStorage(3, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, water, 40),
+				newRoute(2, 1, 2, plasmoids, 40),
+				newRoute(3, 2, 3, superconductors, 5),
+			},
+		}
+		f := colonysim.Forecast(cp, t0.Add(48*time.Hour))
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
+		assert.Equal(t, map[int64]int64{typeWater: 40}, f.Pins[2].Contents)
+		assert.Equal(t, map[int64]int64{typeWater: 60}, f.Pins[1].Contents)
+		assert.True(t, f.ValidUntil.IsEmpty())
+	})
 	t.Run("should still change status at expiry of inactive extractor", func(t *testing.T) {
 		extractor := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(10*time.Hour))
 		extractor.LastCycleStart = optional.Optional[time.Time]{} // never ran, so inactive
