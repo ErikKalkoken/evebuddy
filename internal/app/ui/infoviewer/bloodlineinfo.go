@@ -86,9 +86,8 @@ func (a *bloodlineInfo) update(ctx context.Context) error {
 	if a.iw.u.IsDeveloperMode() {
 		attributes = append(attributes, newAttributeItem("EVE ID", fmt.Sprint(o.ID)))
 	}
-	attributesTab := container.NewTabItem("Attributes", newAttributeList(a.iw, attributes...))
 	fyne.Do(func() {
-		a.tabs.Append(attributesTab)
+		a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, attributes...)))
 	})
 
 	// 	if a.iw.u.IsDeveloperMode() {
