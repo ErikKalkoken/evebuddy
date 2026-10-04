@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
@@ -331,6 +332,20 @@ func TestColonyPinDetails(t *testing.T) {
 		a.content.Objects = nil
 		a.refreshForecast()
 		assert.NotEmpty(t, a.content.Objects)
+	})
+	t.Run("should stop forecasting when character is removed", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		a.content.Objects = nil
+		a.refreshForecast()
+		assert.Empty(t, a.content.Objects)
 	})
 }
 

@@ -327,6 +327,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
+				a.colony = nil // so a refresh can't forecast it again
 				a.setIssue("Character has been removed")
 			})
 		}

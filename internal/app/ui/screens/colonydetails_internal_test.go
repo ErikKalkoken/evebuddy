@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
@@ -233,6 +234,18 @@ func TestColonyDetails(t *testing.T) {
 		a.characterID.Store(0)
 		defer a.characterID.Store(character.ID)
 		require.NoError(t, a.Update(t.Context()))
+		a.refreshForecast()
+		assert.Empty(t, a.rows)
+	})
+	t.Run("should stop forecasting when character is removed", func(t *testing.T) {
+		require.NoError(t, a.Update(t.Context()))
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		a.rows = nil
 		a.refreshForecast()
 		assert.Empty(t, a.rows)
 	})
