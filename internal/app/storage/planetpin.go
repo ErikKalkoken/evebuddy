@@ -88,13 +88,6 @@ func createPlanetPin(ctx context.Context, q *queries.Queries, arg CreatePlanetPi
 	return nil
 }
 
-func (st *Storage) DeletePlanetPins(ctx context.Context, characterPlanetID int64) error {
-	if err := st.qRW.DeletePlanetPins(ctx, characterPlanetID); err != nil {
-		return fmt.Errorf("delete planet pins for %d: %w", characterPlanetID, err)
-	}
-	return nil
-}
-
 func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID int64) (*app.PlanetPin, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetPlanetPin: %d %d: %w", characterPlanetID, pinID, err)

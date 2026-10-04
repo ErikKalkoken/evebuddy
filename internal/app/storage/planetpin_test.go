@@ -116,45 +116,4 @@ func TestPlanetPin(t *testing.T) {
 		xassert.EqualOptional(t, product, got[x1.ID].ExtractorProductType)
 		assert.True(t, got[x2.ID].ExtractorProductType.IsEmpty())
 	})
-	t.Run("can delete pins", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		planet1 := factory.CreateCharacterPlanet()
-		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})
-		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})
-		planet2 := factory.CreateCharacterPlanet()
-		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet2.ID})
-		// when
-		err := st.DeletePlanetPins(ctx, planet1.ID)
-		// then
-		require.NoError(t, err)
-		oo1, err := st.ListPlanetPins(ctx, planet1.ID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		assert.Len(t, oo1, 0)
-		oo2, err := st.ListPlanetPins(ctx, planet2.ID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		assert.Len(t, oo2, 1)
-	})
-	t.Run("should delete contents with pins", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		planet := factory.CreateCharacterPlanet()
-		contentType := factory.CreateEveType()
-		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
-			CharacterPlanetID: planet.ID,
-			Contents:          map[int64]int64{contentType.ID: 42},
-		})
-		// when
-		err := st.DeletePlanetPins(ctx, planet.ID)
-		// then
-		require.NoError(t, err)
-		var n int
-		err = db.QueryRow("SELECT COUNT(*) FROM planet_pin_contents").Scan(&n)
-		require.NoError(t, err)
-		assert.Equal(t, 0, n)
-	})
 }
