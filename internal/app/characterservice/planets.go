@@ -87,7 +87,7 @@ func (s *CharacterService) clearForecasts(characterID int64) {
 
 // NotifyStoppedColonies sends notifications for colonies of a character which stopped working.
 // A colony is notified once per snapshot and only when it was working at the snapshot.
-// It will sent one notification covering all colonies which stopped working.
+// It will send one notification covering all colonies which stopped working.
 func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyStoppedColonies-%d", characterID), func() (any, error) {
 		planets, err := s.ListPlanets(ctx, characterID)

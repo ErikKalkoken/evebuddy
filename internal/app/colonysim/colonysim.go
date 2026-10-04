@@ -54,10 +54,6 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 // Unlike [Forecast] it is not limited by [app.ColonyForecastHorizon].
 func WorkEndsAt(cp *app.CharacterPlanet, until time.Time) optional.Optional[time.Time] {
 	s := newSimulation(cp)
-	if !s.runUntil(cp.LastUpdate) {
-		logAborted(cp, s.simTime)
-		return optional.Optional[time.Time]{}
-	}
 	t, r := s.runUntilWorkEnds(until)
 	switch r {
 	case runWorkEnded:
