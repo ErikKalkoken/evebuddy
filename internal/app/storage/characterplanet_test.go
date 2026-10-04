@@ -2,6 +2,8 @@ package storage_test
 
 import (
 	"context"
+	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -296,5 +298,167 @@ func TestReplaceCharacterPlanet(t *testing.T) {
 		xassert.Equal(t, oldUpdate, p.LastUpdate)
 		assert.Equal(t, []int64{1}, pinIDs(p))
 		assert.Equal(t, []int64{1}, routeIDs(p))
+	})
+}
+
+func TestCharacterPlanet_ConsistentReads(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return not found for missing colony", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		_, err := st.GetCharacterPlanet(ctx, c.ID, 42)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("should return empty list for character without colonies", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		oo, err := st.ListCharacterPlanets(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, oo)
+	})
+	t.Run("should never mix old and new data of a colony while it is written", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1 // one statement per pin, so a mixed read has more chances
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		pinType := factory.CreateEveType()
+		contentType := factory.CreateEveType()
+		t0 := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+		type version struct {
+			lastUpdate time.Time
+			pinIDs     set.Set[int64]
+			amount     int64
+			routeID    int64
+		}
+		versionA := version{lastUpdate: t0, pinIDs: set.Of[int64](1, 2), amount: 100, routeID: 1}
+		versionB := version{lastUpdate: t0.Add(time.Hour), pinIDs: set.Of[int64](3, 4), amount: 200, routeID: 2}
+		replace := func(characterID, planetID int64, v version) error {
+			arg := storage.ReplaceCharacterPlanetParams{
+				CharacterID:  characterID,
+				EvePlanetID:  planetID,
+				LastUpdate:   v.lastUpdate,
+				UpgradeLevel: 1,
+			}
+			for id := range v.pinIDs.All() {
+				arg.Pins = append(arg.Pins, storage.CreatePlanetPinParams{
+					PinID:    id,
+					TypeID:   pinType.ID,
+					Contents: map[int64]int64{contentType.ID: v.amount},
+				})
+			}
+			pins := slices.Sorted(v.pinIDs.All())
+			arg.Routes = append(arg.Routes, storage.CreatePlanetRouteParams{
+				ContentTypeID:    contentType.ID,
+				DestinationPinID: pins[1],
+				Quantity:         10,
+				RouteID:          v.routeID,
+				SourcePinID:      pins[0],
+			})
+			_, err := st.ReplaceCharacterPlanet(ctx, arg)
+			return err
+		}
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		p1 := factory.CreateEvePlanet().ID // changes
+		p2 := factory.CreateEvePlanet().ID // never changes
+		p3 := factory.CreateEvePlanet().ID // changes, other character
+		require.NoError(t, replace(c1.ID, p1, versionA))
+		require.NoError(t, replace(c1.ID, p2, versionA))
+		require.NoError(t, replace(c2.ID, p3, versionA))
+
+		// cycle the changing colonies through update, delete and re-create
+		done := make(chan struct{})
+		writerErr := make(chan error, 1)
+		go func() {
+			defer close(writerErr)
+			for {
+				for _, step := range []func(characterID, planetID int64) error{
+					func(c, p int64) error { return replace(c, p, versionB) },
+					func(c, p int64) error { return replace(c, p, versionA) },
+					func(c, p int64) error { return st.DeleteCharacterPlanet(ctx, c, set.Of(p)) },
+					func(c, p int64) error { return replace(c, p, versionA) },
+				} {
+					select {
+					case <-done:
+						return
+					default:
+					}
+					for _, x := range [][2]int64{{c1.ID, p1}, {c2.ID, p3}} {
+						if err := step(x[0], x[1]); err != nil {
+							writerErr <- err
+							return
+						}
+					}
+				}
+			}
+		}()
+
+		// assertConsistent reports whether all data of a colony belongs to one version.
+		assertConsistent := func(t *testing.T, p *app.CharacterPlanet) bool {
+			t.Helper()
+			var v version
+			switch {
+			case p.LastUpdate.Equal(versionA.lastUpdate):
+				v = versionA
+			case p.LastUpdate.Equal(versionB.lastUpdate):
+				v = versionB
+			default:
+				return assert.Fail(t, "unknown last update", "%v", p.LastUpdate)
+			}
+			var pinIDs set.Set[int64]
+			for _, pin := range p.Pins {
+				pinIDs.Add(pin.ID)
+				if !assert.Len(t, pin.Contents, 1, "pin %d", pin.ID) || !assert.Equal(t, v.amount, pin.Contents[0].Amount, "pin %d", pin.ID) {
+					return false
+				}
+			}
+			if !assert.True(t, v.pinIDs.Equal(pinIDs), "pins %v for last update %v", pinIDs, p.LastUpdate) {
+				return false
+			}
+			return assert.Len(t, p.Routes, 1) && assert.Equal(t, v.routeID, p.Routes[0].RouteID)
+		}
+		// check checks colonies of a list: the stable one must be present, the changing ones may be absent.
+		check := func(t *testing.T, oo []*app.CharacterPlanet, stable int64, changing ...int64) bool {
+			t.Helper()
+			var hasStable bool
+			for _, p := range oo {
+				if p.EvePlanet.ID == stable {
+					hasStable = true
+				} else if !slices.Contains(changing, p.EvePlanet.ID) {
+					continue
+				}
+				if !assertConsistent(t, p) {
+					return false
+				}
+			}
+			return assert.True(t, hasStable, "stable colony missing")
+		}
+		var seenA, seenB, seenDeleted bool
+		ok := true
+		for i := 0; ok && i < 300; i++ {
+			p, err := st.GetCharacterPlanet(ctx, c1.ID, p1)
+			if errors.Is(err, app.ErrNotFound) {
+				seenDeleted = true
+			} else if ok = assert.NoError(t, err) && assertConsistent(t, p); !ok {
+				break
+			} else if p.LastUpdate.Equal(versionA.lastUpdate) {
+				seenA = true
+			} else {
+				seenB = true
+			}
+			oo, err := st.ListCharacterPlanets(ctx, c1.ID)
+			if ok = assert.NoError(t, err) && check(t, oo, p2, p1); !ok {
+				break
+			}
+			oo, err = st.ListAllCharacterPlanets(ctx)
+			ok = assert.NoError(t, err) && check(t, oo, p2, p1, p3)
+		}
+		close(done)
+		assert.NoError(t, <-writerErr)
+		assert.True(t, seenA && seenB && seenDeleted, "reads overlapped all writes: A %v, B %v, deleted %v", seenA, seenB, seenDeleted)
 	})
 }

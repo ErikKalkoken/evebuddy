@@ -57,11 +57,13 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int64, pl
 		CharacterID: characterID,
 		EvePlanetID: planetID,
 	}
-	r, err := st.qRO.GetCharacterPlanet(ctx, arg)
-	if err != nil {
-		return nil, convertGetError(err)
-	}
-	oo, err := st.characterPlanetsFromDBModels(ctx, []queries.GetCharacterPlanetRow{r})
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		r, err := q.GetCharacterPlanet(ctx, arg)
+		if err != nil {
+			return nil, convertGetError(err)
+		}
+		return []queries.GetCharacterPlanetRow{r}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +71,17 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int64, pl
 }
 
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
-	rows, err := st.qRO.ListAllCharacterPlanets(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list all planets: %w", err)
-	}
-	rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCharacterPlanetRow(r)
-	}
-	oo, err := st.characterPlanetsFromDBModels(ctx, rows2)
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		rows, err := q.ListAllCharacterPlanets(ctx)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCharacterPlanetRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list all planets: %w", err)
 	}
@@ -85,33 +89,49 @@ func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.Characte
 }
 
 func (st *Storage) ListCharacterPlanets(ctx context.Context, id int64) ([]*app.CharacterPlanet, error) {
-	rows, err := st.qRO.ListCharacterPlanets(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
-	}
-	rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCharacterPlanetRow(r)
-	}
-	oo, err := st.characterPlanetsFromDBModels(ctx, rows2)
+	oo, err := st.readCharacterPlanets(ctx, func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error) {
+		rows, err := q.ListCharacterPlanets(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCharacterPlanetRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCharacterPlanetRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
 	}
 	return oo, nil
 }
 
-// characterPlanetsFromDBModels converts rows to planets, batch loading their pins and routes.
-func (st *Storage) characterPlanetsFromDBModels(ctx context.Context, rows []queries.GetCharacterPlanetRow) ([]*app.CharacterPlanet, error) {
-	ids := make([]int64, len(rows))
-	for i, r := range rows {
-		ids[i] = r.CharacterPlanet.ID
-	}
-	pins, err := st.listPlanetPinsByPlanet(ctx, ids)
+// readCharacterPlanets reads planets with their pins and routes in one transaction,
+// so concurrent writes can not mix old and new data.
+func (st *Storage) readCharacterPlanets(ctx context.Context, listRows func(q *queries.Queries) ([]queries.GetCharacterPlanetRow, error)) ([]*app.CharacterPlanet, error) {
+	tx, err := st.dbRO.Begin()
 	if err != nil {
 		return nil, err
 	}
-	routes, err := st.listPlanetRoutesByPlanet(ctx, ids)
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := listRows(qtx)
 	if err != nil {
+		return nil, err
+	}
+	var ids set.Set[int64]
+	for _, r := range rows {
+		ids.Add(r.CharacterPlanet.ID)
+	}
+	pins, err := st.listPlanetPinsByPlanet(ctx, qtx, ids)
+	if err != nil {
+		return nil, err
+	}
+	routes, err := st.listPlanetRoutesByPlanet(ctx, qtx, ids)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	oo := make([]*app.CharacterPlanet, len(rows))

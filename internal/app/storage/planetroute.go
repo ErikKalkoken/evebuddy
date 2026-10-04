@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
@@ -43,7 +45,7 @@ func (st *Storage) ListPlanetRoutes(ctx context.Context, characterPlanetID int64
 	if characterPlanetID == 0 {
 		return nil, fmt.Errorf("ListPlanetRoutes: %d: %w", characterPlanetID, app.ErrInvalid)
 	}
-	m, err := st.listPlanetRoutesByPlanet(ctx, []int64{characterPlanetID})
+	m, err := st.listPlanetRoutesByPlanet(ctx, st.qRO, set.Of(characterPlanetID))
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +53,10 @@ func (st *Storage) ListPlanetRoutes(ctx context.Context, characterPlanetID int64
 }
 
 // listPlanetRoutesByPlanet returns the routes for the given character planets, keyed by character planet ID.
-func (st *Storage) listPlanetRoutesByPlanet(ctx context.Context, characterPlanetIDs []int64) (map[int64][]*app.PlanetRoute, error) {
+func (st *Storage) listPlanetRoutesByPlanet(ctx context.Context, q *queries.Queries, characterPlanetIDs set.Set[int64]) (map[int64][]*app.PlanetRoute, error) {
 	m := make(map[int64][]*app.PlanetRoute)
-	for idsChunk := range slices.Chunk(characterPlanetIDs, st.MaxIDsPerQuery) {
-		rows, err := st.qRO.ListPlanetRoutesForCharacterPlanetIDs(ctx, idsChunk)
+	for idsChunk := range slices.Chunk(slices.Collect(characterPlanetIDs.All()), st.MaxIDsPerQuery) {
+		rows, err := q.ListPlanetRoutesForCharacterPlanetIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list planet routes for %d character planets: %w", len(idsChunk), err)
 		}

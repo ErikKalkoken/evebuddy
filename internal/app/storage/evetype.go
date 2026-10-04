@@ -72,12 +72,24 @@ func (st *Storage) GetEveType(ctx context.Context, id int64) (*app.EveType, erro
 //
 // Returns an error if at least one object can not be found.
 func (st *Storage) ListEveTypesForIDs(ctx context.Context, ids []int64) ([]*app.EveType, error) {
-	if len(ids) == 0 {
-		return []*app.EveType{}, nil
+	m, err := st.listEveTypesForIDs(ctx, st.qRO, set.Of(ids...))
+	if err != nil {
+		return nil, err
 	}
+	oo := make([]*app.EveType, 0, len(ids))
+	for _, id := range ids {
+		oo = append(oo, m[id])
+	}
+	return oo, nil
+}
+
+// listEveTypesForIDs returns EveTypes by ID.
+//
+// Returns an error if at least one object can not be found.
+func (st *Storage) listEveTypesForIDs(ctx context.Context, q *queries.Queries, ids set.Set[int64]) (map[int64]*app.EveType, error) {
 	m := make(map[int64]*app.EveType)
-	for idsChunk := range slices.Chunk(ids, st.MaxIDsPerQuery) {
-		rows, err := st.qRO.ListEveTypesForIDs(ctx, idsChunk)
+	for idsChunk := range slices.Chunk(slices.Collect(ids.All()), st.MaxIDsPerQuery) {
+		rows, err := q.ListEveTypesForIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list eve types for %d ids: %w", len(idsChunk), err)
 		}
@@ -85,15 +97,12 @@ func (st *Storage) ListEveTypesForIDs(ctx context.Context, ids []int64) ([]*app.
 			m[r.EveType.ID] = eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory)
 		}
 	}
-	oo := make([]*app.EveType, 0, len(ids))
-	for _, id := range ids {
-		o, found := m[id]
-		if !found {
+	for id := range ids.All() {
+		if _, found := m[id]; !found {
 			return nil, fmt.Errorf("list eve types: id %d: %w", id, app.ErrNotFound)
 		}
-		oo = append(oo, o)
 	}
-	return oo, nil
+	return m, nil
 }
 
 func getEveType(ctx context.Context, q *queries.Queries, id int64) (*app.EveType, error) {

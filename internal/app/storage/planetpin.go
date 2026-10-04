@@ -109,7 +109,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	oo, err := st.planetPinsFromDBModels(ctx, []queries.GetPlanetPinRow{r})
+	oo, err := st.planetPinsFromDBModels(ctx, st.qRO, []queries.GetPlanetPinRow{r})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -134,7 +134,7 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	for i, r := range rows {
 		rows2[i] = queries.GetPlanetPinRow(r)
 	}
-	oo, err := st.planetPinsFromDBModels(ctx, rows2)
+	oo, err := st.planetPinsFromDBModels(ctx, st.qRO, rows2)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -142,10 +142,10 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 }
 
 // listPlanetPinsByPlanet returns the pins for the given character planets, keyed by character planet ID.
-func (st *Storage) listPlanetPinsByPlanet(ctx context.Context, characterPlanetIDs []int64) (map[int64][]*app.PlanetPin, error) {
+func (st *Storage) listPlanetPinsByPlanet(ctx context.Context, q *queries.Queries, characterPlanetIDs set.Set[int64]) (map[int64][]*app.PlanetPin, error) {
 	var rows []queries.GetPlanetPinRow
-	for idsChunk := range slices.Chunk(characterPlanetIDs, st.MaxIDsPerQuery) {
-		r, err := st.qRO.ListPlanetPinsForCharacterPlanetIDs(ctx, idsChunk)
+	for idsChunk := range slices.Chunk(slices.Collect(characterPlanetIDs.All()), st.MaxIDsPerQuery) {
+		r, err := q.ListPlanetPinsForCharacterPlanetIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list planet pins for %d character planets: %w", len(idsChunk), err)
 		}
@@ -153,7 +153,7 @@ func (st *Storage) listPlanetPinsByPlanet(ctx context.Context, characterPlanetID
 			rows = append(rows, queries.GetPlanetPinRow(x))
 		}
 	}
-	pins, err := st.planetPinsFromDBModels(ctx, rows)
+	pins, err := st.planetPinsFromDBModels(ctx, q, rows)
 	if err != nil {
 		return nil, err
 	}
@@ -166,24 +166,19 @@ func (st *Storage) listPlanetPinsByPlanet(ctx context.Context, characterPlanetID
 }
 
 // planetPinsFromDBModels converts rows to pins, batch loading extractor product types and contents.
-func (st *Storage) planetPinsFromDBModels(ctx context.Context, rows []queries.GetPlanetPinRow) ([]*app.PlanetPin, error) {
-	var typeIDs set.Set[int64]
-	pinIDs := make([]int64, len(rows))
-	for i, r := range rows {
+func (st *Storage) planetPinsFromDBModels(ctx context.Context, q *queries.Queries, rows []queries.GetPlanetPinRow) ([]*app.PlanetPin, error) {
+	var typeIDs, pinIDs set.Set[int64]
+	for _, r := range rows {
 		if r.PlanetPin.ExtractorProductTypeID.Valid {
 			typeIDs.Add(r.PlanetPin.ExtractorProductTypeID.Int64)
 		}
-		pinIDs[i] = r.PlanetPin.ID
+		pinIDs.Add(r.PlanetPin.ID)
 	}
-	types, err := st.ListEveTypesForIDs(ctx, slices.Collect(typeIDs.All()))
+	typeMap, err := st.listEveTypesForIDs(ctx, q, typeIDs)
 	if err != nil {
 		return nil, err
 	}
-	typeMap := make(map[int64]*app.EveType, len(types))
-	for _, o := range types {
-		typeMap[o.ID] = o
-	}
-	contents, err := st.listPlanetPinContentsByPin(ctx, pinIDs)
+	contents, err := st.listPlanetPinContentsByPin(ctx, q, pinIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -197,10 +192,10 @@ func (st *Storage) planetPinsFromDBModels(ctx context.Context, rows []queries.Ge
 }
 
 // listPlanetPinContentsByPin returns the contents for the given planet pins, keyed by planet pin row ID.
-func (st *Storage) listPlanetPinContentsByPin(ctx context.Context, planetPinIDs []int64) (map[int64][]*app.PlanetPinContent, error) {
+func (st *Storage) listPlanetPinContentsByPin(ctx context.Context, q *queries.Queries, planetPinIDs set.Set[int64]) (map[int64][]*app.PlanetPinContent, error) {
 	m := make(map[int64][]*app.PlanetPinContent)
-	for idsChunk := range slices.Chunk(planetPinIDs, st.MaxIDsPerQuery) {
-		rows, err := st.qRO.ListPlanetPinContentsForPlanetPinIDs(ctx, idsChunk)
+	for idsChunk := range slices.Chunk(slices.Collect(planetPinIDs.All()), st.MaxIDsPerQuery) {
+		rows, err := q.ListPlanetPinContentsForPlanetPinIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list planet pin contents for %d pins: %w", len(idsChunk), err)
 		}
