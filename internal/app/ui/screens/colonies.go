@@ -106,7 +106,7 @@ func (r colonyRow) workEndsDisplay() string {
 type Colonies struct {
 	widget.BaseWidget
 
-	OnUpdate func(total, expired int)
+	OnUpdate func(total, notWorking int)
 
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[colonyRow]

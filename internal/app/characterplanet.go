@@ -63,7 +63,7 @@ func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
 func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 	schematics := make(map[int64]*EveSchematic)
 	for pp := range cp.ActiveProducers() {
-		if v, ok := pp.Schematic.Value(); ok {
+		if v, ok := pp.ProcessorSchematic(); ok {
 			schematics[v.ID] = v
 		}
 	}
@@ -301,7 +301,8 @@ func (pp PlanetPin) IsExtracting() bool {
 }
 
 func (pp PlanetPin) IsProducing() bool {
-	return pp.Type.Group.ID == EveGroupProcessors && !pp.Schematic.IsEmpty()
+	_, ok := pp.ProcessorSchematic()
+	return pp.Type.Group.ID == EveGroupProcessors && ok
 }
 
 // ProcessorSchematic returns the schematic of a processor.

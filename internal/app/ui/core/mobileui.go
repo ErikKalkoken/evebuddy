@@ -822,8 +822,8 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	u.colonies.OnUpdate = func(_, expired int) {
-		navItemColonies2.Supporting = fmt.Sprintf("%d expired", expired)
+	u.colonies.OnUpdate = func(_, notWorking int) {
+		navItemColonies2.Supporting = fmt.Sprintf("%d not working", notWorking)
 		navItemColonies2.Refresh()
 	}
 

@@ -118,6 +118,21 @@ func TestCharacterPlanet_ProducedSchematics(t *testing.T) {
 		// then
 		assert.Len(t, x, 0)
 	})
+	t.Run("should return schematic from factory details", func(t *testing.T) {
+		// given
+		schematic3 := &app.EveSchematic{ID: 3}
+		pin := &app.PlanetPin{
+			Type:             processorType,
+			FactorySchematic: optional.New(schematic3),
+		}
+		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{pin}}
+		// when
+		x := cp.ProducedSchematics()
+		// then
+		if assert.Len(t, x, 1) {
+			assert.Equal(t, schematic3.ID, x[0].ID)
+		}
+	})
 	t.Run("should return empty when producer, but no schematic", func(t *testing.T) {
 		// given
 		pin := &app.PlanetPin{
