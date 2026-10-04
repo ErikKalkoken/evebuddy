@@ -29,26 +29,8 @@ var (
 )
 
 func TestForecast_ValidUntil(t *testing.T) {
-	extractorToStorage := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-			newStorage(2, app.EveGroupStorageFacilities, 12_000),
-		},
-		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-	}
-	storageToFactory := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-			newFactory(2, schematicWater),
-			newStorage(3, app.EveGroupSpaceports, 10_000),
-		},
-		Routes: []*app.PlanetRoute{
-			newRoute(1, 1, 2, aqueousLiquids, 3000),
-			newRoute(2, 2, 3, water, 20),
-		},
-	}
+	extractorToStorage := newExtractorColony(t0.Add(4 * time.Hour))
+	storageToFactory := newFactoryColony(9000)
 	t.Run("should be valid until the next extractor cycle", func(t *testing.T) {
 		f := colonysim.Forecast(extractorToStorage, t0.Add(65*time.Minute))
 		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.ValidUntil)
@@ -91,26 +73,8 @@ func TestForecast_ValidUntil(t *testing.T) {
 
 func TestForecast_StableUntilValidUntil(t *testing.T) {
 	colonies := map[string]*app.CharacterPlanet{
-		"extractor to storage": {
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-				newStorage(2, app.EveGroupStorageFacilities, 12_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		},
-		"storage to factory to launchpad": {
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-				newFactory(2, schematicWater),
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		},
+		"extractor to storage":            newExtractorColony(t0.Add(4 * time.Hour)),
+		"storage to factory to launchpad": newFactoryColony(9000),
 		"storage full": {
 			LastUpdate: t0,
 			Pins: []*app.PlanetPin{
@@ -153,14 +117,7 @@ func TestForecast_StableUntilValidUntil(t *testing.T) {
 				newRoute(5, 4, 5, superconductors, 5),
 			},
 		},
-		"beyond horizon": {
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(app.ColonyForecastHorizon+24*time.Hour)),
-				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		},
+		"beyond horizon": newExtractorColony(t0.Add(app.ColonyForecastHorizon + 24*time.Hour)),
 	}
 	offsets := []time.Duration{0, 10 * time.Minute, 45 * time.Minute, 65 * time.Minute, 3 * time.Hour, 5 * time.Hour, 40 * time.Hour}
 	for name, cp := range colonies {

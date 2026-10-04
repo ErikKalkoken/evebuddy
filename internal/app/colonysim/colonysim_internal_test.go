@@ -55,14 +55,7 @@ func TestForecast_Aborted(t *testing.T) {
 		t.Cleanup(func() { maxEvents = old })
 	}
 	// extractor runs every 30 minutes for 20 days
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(20*24*time.Hour)),
-			newStorage(2, app.EveGroupStorageFacilities, 12_000),
-		},
-		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-	}
+	cp := newExtractorColony(t0.Add(20 * 24 * time.Hour))
 	t.Run("should never reuse forecast when aborted before now", func(t *testing.T) {
 		setMaxEvents(t, 10)
 		buf := captureLog(t)

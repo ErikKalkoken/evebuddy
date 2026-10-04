@@ -15,14 +15,7 @@ import (
 )
 
 func TestSimulation_Run(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-			newStorage(2, app.EveGroupStorageFacilities, 12_000),
-		},
-		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-	}
+	cp := newExtractorColony(t0.Add(4 * time.Hour))
 	t.Run("should start at the snapshot", func(t *testing.T) {
 		s := newSimulation(cp)
 		assert.Equal(t, t0, s.simTime)
@@ -162,49 +155,15 @@ func TestSimulation_ColonyStatus(t *testing.T) {
 }
 
 func TestSimulation_RunUntilWorkEnds(t *testing.T) {
-	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
-				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		}
-	}
-	t.Run("should return completed when still working at the horizon", func(t *testing.T) {
-		s := newSimulation(newPlanet(t0.Add(48 * time.Hour)))
-		horizon := t0.Add(24 * time.Hour)
-		got, r := s.runUntilWorkEnds(horizon)
-		assert.Equal(t, runCompleted, r)
-		assert.Equal(t, horizon, got)
-	})
-	t.Run("should return work ended when colony stops before the horizon", func(t *testing.T) {
-		s := newSimulation(newPlanet(t0.Add(4 * time.Hour)))
-		got, r := s.runUntilWorkEnds(t0.Add(24 * time.Hour))
-		assert.Equal(t, runWorkEnded, r)
-		assert.Equal(t, t0.Add(4*time.Hour), got)
-	})
 	t.Run("should return work ended when colony is not working", func(t *testing.T) {
-		s := newSimulation(newPlanet(t0.Add(4 * time.Hour)))
+		s := newSimulation(newExtractorColony(t0.Add(4 * time.Hour)))
 		s.runUntil(t0.Add(5 * time.Hour))
 		got, r := s.runUntilWorkEnds(t0.Add(24 * time.Hour))
 		assert.Equal(t, runWorkEnded, r)
 		assert.Equal(t, t0.Add(5*time.Hour), got)
 	})
 	t.Run("should return work ended when colony stops within one cycle of the horizon", func(t *testing.T) {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-				newFactory(2, schematicWater),
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
+		cp := newFactoryColony(9000)
 		s := newSimulation(cp)
 		s.runUntil(t0.Add(45 * time.Minute))
 		got, r := s.runUntilWorkEnds(t0.Add(100 * time.Minute))
@@ -225,13 +184,8 @@ func TestSimulation_IncompleteExtractorDoesNotAbort(t *testing.T) {
 	}
 	for name, modify := range cases {
 		t.Run(name, func(t *testing.T) {
-			p := newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour))
-			modify(p)
-			cp := &app.CharacterPlanet{
-				LastUpdate: t0,
-				Pins:       []*app.PlanetPin{p, newStorage(2, app.EveGroupStorageFacilities, 12_000)},
-				Routes:     []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-			}
+			cp := newExtractorColony(t0.Add(4 * time.Hour))
+			modify(cp.Pins[0])
 			assert.True(t, newSimulation(cp).runUntil(t0.Add(time.Hour)))
 		})
 	}

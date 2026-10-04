@@ -63,18 +63,19 @@ func TestExtractorOutput(t *testing.T) {
 		{30, 15 * time.Minute, []int64{42, 41, 39, 35, 32, 30, 29, 30}},
 	}
 	install := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-	for _, tc := range cases {
-		var got []int64
-		for i := range len(tc.want) {
-			runTime := install.Add(time.Duration(i+1) * tc.cycleTime)
-			got = append(got, extractorOutput(tc.baseValue, install, runTime, tc.cycleTime))
+	t.Run("should match reference values", func(t *testing.T) {
+		for _, tc := range cases {
+			var got []int64
+			for i := range len(tc.want) {
+				runTime := install.Add(time.Duration(i+1) * tc.cycleTime)
+				got = append(got, extractorOutput(tc.baseValue, install, runTime, tc.cycleTime))
+			}
+			assert.Equal(t, tc.want, got, "base %d", tc.baseValue)
 		}
-		assert.Equal(t, tc.want, got, "base %d", tc.baseValue)
-	}
-}
-
-func TestExtractorOutput_WithoutCycleTime(t *testing.T) {
-	assert.Equal(t, int64(0), extractorOutput(1081, t0, t0.Add(time.Hour), 0))
+	})
+	t.Run("should return zero without cycle time", func(t *testing.T) {
+		assert.Equal(t, int64(0), extractorOutput(1081, t0, t0.Add(time.Hour), 0))
+	})
 }
 
 func TestExtractorProgram(t *testing.T) {

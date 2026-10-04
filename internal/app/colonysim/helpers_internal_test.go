@@ -74,6 +74,40 @@ func newRoute(id, source, destination int64, et *app.EveType, quantity int64) *a
 	}
 }
 
+// newExtractorColony returns a colony with an extractor running from t0 until expiry
+// and a storage large enough to never fill up.
+func newExtractorColony(expiry time.Time) *app.CharacterPlanet {
+	return &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
+			newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
+		},
+		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+	}
+}
+
+// newFactoryColony returns a colony with an idle water factory
+// which gets inputs from a storage and delivers to a launchpad.
+func newFactoryColony(stored int64) *app.CharacterPlanet {
+	var contents []*app.PlanetPinContent
+	if stored > 0 {
+		contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
+	}
+	return &app.CharacterPlanet{
+		LastUpdate: t0,
+		Pins: []*app.PlanetPin{
+			newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
+			newFactory(2, schematicWater),
+			newStorage(3, app.EveGroupSpaceports, 10_000),
+		},
+		Routes: []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 3000),
+			newRoute(2, 2, 3, water, 20),
+		},
+	}
+}
+
 const (
 	typeSuspendedPlasma      = 2308
 	typePlasmoids            = 2389
@@ -254,18 +288,20 @@ const (
 )
 
 var (
-	T0              = t0
-	AqueousLiquids  = aqueousLiquids
-	Water           = water
-	NewType         = newType
-	NewExtractor    = newExtractor
-	NewStorage      = newStorage
-	NewFactory      = newFactory
-	NewRoute        = newRoute
-	RandomColony    = randomColony
-	SuspendedPlasma = suspendedPlasma
-	Plasmoids       = plasmoids
-	Superconductors = superconductors
-	Oxides          = oxides
-	Biocells        = biocells
+	T0                 = t0
+	AqueousLiquids     = aqueousLiquids
+	Water              = water
+	NewType            = newType
+	NewExtractor       = newExtractor
+	NewStorage         = newStorage
+	NewFactory         = newFactory
+	NewRoute           = newRoute
+	NewExtractorColony = newExtractorColony
+	NewFactoryColony   = newFactoryColony
+	RandomColony       = randomColony
+	SuspendedPlasma    = suspendedPlasma
+	Plasmoids          = plasmoids
+	Superconductors    = superconductors
+	Oxides             = oxides
+	Biocells           = biocells
 )

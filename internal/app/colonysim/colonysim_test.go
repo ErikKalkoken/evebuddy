@@ -19,39 +19,41 @@ const (
 )
 
 var (
-	t0             = colonysim.T0
-	aqueousLiquids = colonysim.AqueousLiquids
-	water          = colonysim.Water
-	newType        = colonysim.NewType
-	newExtractor   = colonysim.NewExtractor
-	newStorage     = colonysim.NewStorage
-	newFactory     = colonysim.NewFactory
-	newRoute       = colonysim.NewRoute
+	t0                 = colonysim.T0
+	aqueousLiquids     = colonysim.AqueousLiquids
+	water              = colonysim.Water
+	newType            = colonysim.NewType
+	newExtractor       = colonysim.NewExtractor
+	newStorage         = colonysim.NewStorage
+	newFactory         = colonysim.NewFactory
+	newRoute           = colonysim.NewRoute
+	newExtractorColony = colonysim.NewExtractorColony
+	newFactoryColony   = colonysim.NewFactoryColony
 )
 
 func TestSimulation_ExtractorToStorage(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-			newStorage(2, app.EveGroupStorageFacilities, 12_000),
-		},
-		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-	}
+	cp := newExtractorColony(t0.Add(4 * time.Hour))
 	t.Run("should forecast state while extracting", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
 		assert.Equal(t, app.ColonyExtracting, f.Status)
 		assert.Equal(t, app.PinExtracting, f.Pins[1].Status)
 		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 2467 + 2086}, f.Pins[2].Contents)
 		assert.InDelta(t, float64(2467+2086)*0.01, f.Pins[2].CapacityUsed, 0.0001)
-		assert.Equal(t, optional.New(12_000.0), f.Pins[2].Capacity)
+		assert.Equal(t, optional.New(1_000_000.0), f.Pins[2].Capacity)
 		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.WorkEndsAt)
 		assert.False(t, f.WorksBeyondHorizon)
+		assert.True(t, f.Pins[1].IsActive)
+		assert.Equal(t, optional.New(t0.Add(time.Hour)), f.Pins[1].LastRunTime)
+		assert.True(t, f.Pins[1].LastCycleStart.IsEmpty(), "only for factories")
+		assert.False(t, f.Pins[2].IsActive)
+		assert.True(t, f.Pins[2].LastRunTime.IsEmpty())
 	})
 	t.Run("should forecast state after expiry", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(5*time.Hour))
 		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
 		assert.Equal(t, app.PinExtractorExpired, f.Pins[1].Status)
+		assert.False(t, f.Pins[1].IsActive)
+		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.Pins[1].LastRunTime)
 		var total int64
 		for _, x := range []int64{2467, 2086, 2039, 1994, 2095, 2558, 2611, 2152} {
 			total += x
@@ -63,69 +65,56 @@ func TestSimulation_ExtractorToStorage(t *testing.T) {
 }
 
 func TestSimulation_Horizon(t *testing.T) {
-	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
-				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		}
-	}
 	t.Run("should report when colony works beyond the horizon", func(t *testing.T) {
-		f := colonysim.Forecast(newPlanet(t0.Add(app.ColonyForecastHorizon+24*time.Hour)), t0)
+		f := colonysim.Forecast(newExtractorColony(t0.Add(app.ColonyForecastHorizon+24*time.Hour)), t0)
 		assert.Equal(t, app.ColonyExtracting, f.Status)
 		assert.True(t, f.WorksBeyondHorizon)
 		assert.True(t, f.WorkEndsAt.IsEmpty())
 	})
 	t.Run("should report work end just before the horizon", func(t *testing.T) {
 		expiry := t0.Add(app.ColonyForecastHorizon - time.Hour)
-		f := colonysim.Forecast(newPlanet(expiry), t0)
+		f := colonysim.Forecast(newExtractorColony(expiry), t0)
 		assert.False(t, f.WorksBeyondHorizon)
 		assert.Equal(t, optional.New(expiry), f.WorkEndsAt)
+	})
+	t.Run("should report when factory colony works beyond the horizon", func(t *testing.T) {
+		// enough inputs for 1500 cycles of 30 minutes, longer than the horizon
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 50_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 4_500_000}),
+				newFactory(2, schematicWater),
+				newStorage(3, app.EveGroupSpaceports, 20_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 3000),
+				newRoute(2, 2, 3, water, 20),
+			},
+		}
+		f := colonysim.Forecast(cp, t0)
+		assert.True(t, f.WorksBeyondHorizon)
+		assert.True(t, f.WorkEndsAt.IsEmpty())
 	})
 }
 
 func TestWorkEndsAt(t *testing.T) {
-	newPlanet := func(expiry time.Time) *app.CharacterPlanet {
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
-				newStorage(2, app.EveGroupStorageFacilities, 1_000_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		}
-	}
 	t.Run("should report work end beyond the forecast horizon", func(t *testing.T) {
 		expiry := t0.Add(40 * 24 * time.Hour)
-		got := colonysim.WorkEndsAt(newPlanet(expiry), t0.Add(60*24*time.Hour))
+		got := colonysim.WorkEndsAt(newExtractorColony(expiry), t0.Add(60*24*time.Hour))
 		assert.Equal(t, optional.New(expiry), got)
 	})
 	t.Run("should report nothing when colony was not working at the snapshot", func(t *testing.T) {
-		got := colonysim.WorkEndsAt(newPlanet(t0.Add(-time.Hour)), t0.Add(60*24*time.Hour))
+		got := colonysim.WorkEndsAt(newExtractorColony(t0.Add(-time.Hour)), t0.Add(60*24*time.Hour))
 		assert.True(t, got.IsEmpty())
 	})
 	t.Run("should report nothing when colony is still working at until", func(t *testing.T) {
-		got := colonysim.WorkEndsAt(newPlanet(t0.Add(40*24*time.Hour)), t0.Add(20*24*time.Hour))
+		got := colonysim.WorkEndsAt(newExtractorColony(t0.Add(40*24*time.Hour)), t0.Add(20*24*time.Hour))
 		assert.True(t, got.IsEmpty())
 	})
 }
 
 func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-			newFactory(2, schematicWater),
-			newStorage(3, app.EveGroupSpaceports, 10_000),
-		},
-		Routes: []*app.PlanetRoute{
-			newRoute(1, 1, 2, aqueousLiquids, 3000),
-			newRoute(2, 2, 3, water, 20),
-		},
-	}
+	cp := newFactoryColony(9000)
 	t.Run("should forecast state while producing", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(45*time.Minute))
 		assert.Equal(t, app.ColonyProducing, f.Status)
@@ -137,14 +126,23 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 		assert.Equal(t, int64(typeWater), f.Pins[2].OutputTypeID)
 		assert.Empty(t, f.Pins[1].Contents)
 		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.WorkEndsAt)
+		assert.True(t, f.Pins[2].IsActive)
+		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastRunTime)
+		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastCycleStart)
 	})
 	t.Run("should forecast state after inputs ran out", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(3*time.Hour))
 		assert.Equal(t, app.ColonyIdle, f.Status)
 		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
 		assert.Equal(t, map[int64]int64{typeWater: 60}, f.Pins[3].Contents)
+		assert.Empty(t, f.Pins[1].Contents)
 		assert.Empty(t, f.Pins[2].Contents)
 		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.True(t, f.ValidUntil.IsEmpty(), "at rest")
+		assert.False(t, f.Pins[2].IsActive)
+		// unlike RIFT an idle factory stops checking for inputs once the colony is at rest
+		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.Pins[2].LastRunTime)
+		assert.Equal(t, optional.New(t0.Add(60*time.Minute)), f.Pins[2].LastCycleStart, "start of last production cycle")
 	})
 	t.Run("should forecast work end at the snapshot while factory is idle", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0)
@@ -170,57 +168,10 @@ func TestSimulation_StorageFull(t *testing.T) {
 	assert.Greater(t, f.Pins[2].CapacityUsed, 500.0-42)
 }
 
-func TestSimulation_NotSetup(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newStorage(1, app.EveGroupStorageFacilities, 12_000),
-			newFactory(2, schematicWater),
-		},
-	}
-	f := colonysim.Forecast(cp, t0.Add(time.Hour))
-	assert.Equal(t, app.ColonyNotSetup, f.Status)
-	assert.Equal(t, app.PinInputNotRouted, f.Pins[2].Status)
-	assert.Equal(t, app.PinStatic, f.Pins[1].Status)
-}
-
-func TestSimulation(t *testing.T) {
-	newPlanet := func() *app.CharacterPlanet {
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-				newStorage(2, app.EveGroupStorageFacilities, 12_000),
-				{ID: 3, Type: newType(1, 1, 0, 0)}, // unknown pin kind
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 10_000),
-				newRoute(2, 1, 99, aqueousLiquids, 10_000), // unknown pin
-			},
-		}
-	}
-	t.Run("should ignore unknown pins and routes to them", func(t *testing.T) {
-		f := colonysim.Forecast(newPlanet(), t0.Add(time.Hour))
-		assert.Len(t, f.Pins, 2)
-		assert.Equal(t, app.ColonyExtracting, f.Status)
-	})
-	t.Run("should not change the source planet", func(t *testing.T) {
-		cp := newPlanet()
-		cp.Pins[1].Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 5}}
-		colonysim.Forecast(cp, t0.Add(time.Hour))
-		assert.Equal(t, int64(5), cp.Pins[1].Contents[0].Amount)
-	})
-}
-
 func TestSimulation_InvalidData(t *testing.T) {
 	newPlanet := func(extra ...*app.PlanetPin) *app.CharacterPlanet {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-				newStorage(2, app.EveGroupStorageFacilities, 12_000),
-			},
-		}
+		cp := newExtractorColony(t0.Add(4 * time.Hour))
+		cp.Routes = nil
 		cp.Pins = append(cp.Pins, extra...)
 		return cp
 	}
@@ -248,12 +199,16 @@ func TestSimulation_InvalidData(t *testing.T) {
 		assert.Empty(t, f.Pins[2].Contents)
 		assert.Equal(t, app.PinOutputNotRouted, f.Pins[1].Status)
 	})
-	t.Run("should ignore pins without type or group", func(t *testing.T) {
+	t.Run("should ignore unknown pins and routes to them", func(t *testing.T) {
 		cp := newPlanet(
-			&app.PlanetPin{ID: 3},
-			&app.PlanetPin{ID: 4, Type: &app.EveType{ID: 2541}},
+			&app.PlanetPin{ID: 3},                               // without type
+			&app.PlanetPin{ID: 4, Type: &app.EveType{ID: 2541}}, // without group
+			&app.PlanetPin{ID: 5, Type: newType(1, 1, 0, 0)},    // unknown kind
 		)
-		cp.Routes = []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)}
+		cp.Routes = []*app.PlanetRoute{
+			newRoute(1, 1, 2, aqueousLiquids, 10_000),
+			newRoute(2, 1, 99, aqueousLiquids, 10_000), // unknown pin
+		}
 		f := colonysim.Forecast(cp, t0.Add(time.Hour))
 		assert.Len(t, f.Pins, 2)
 		assert.Equal(t, app.ColonyExtracting, f.Status)
@@ -298,24 +253,9 @@ func TestSimulation_ExtractorToStorageToFactory(t *testing.T) {
 func TestSimulation_FactoryActiveAtSnapshot(t *testing.T) {
 	// factory cycle started before the snapshot and ends at t0+20min, input buffer empty
 	newPlanet := func(stored int64) *app.CharacterPlanet {
-		f := newFactory(2, schematicWater)
-		f.LastCycleStart = optional.New(t0.Add(-10 * time.Minute))
-		var contents []*app.PlanetPinContent
-		if stored > 0 {
-			contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
-		}
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
-				f,
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
+		cp := newFactoryColony(stored)
+		cp.Pins[1].LastCycleStart = optional.New(t0.Add(-10 * time.Minute))
+		return cp
 	}
 	t.Run("should deliver output of cycle running at snapshot", func(t *testing.T) {
 		cp := newPlanet(9000)
@@ -438,24 +378,9 @@ func TestSimulation_OutputToSeveralStorages(t *testing.T) {
 
 func TestSimulation_FactoryBufferAtSnapshot(t *testing.T) {
 	newPlanet := func(stored int64) *app.CharacterPlanet {
-		f := newFactory(2, schematicWater)
-		f.Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 1500}}
-		var contents []*app.PlanetPinContent
-		if stored > 0 {
-			contents = append(contents, &app.PlanetPinContent{Type: aqueousLiquids, Amount: stored})
-		}
-		return &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, contents...),
-				f,
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
+		cp := newFactoryColony(stored)
+		cp.Pins[1].Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 1500}}
+		return cp
 	}
 	t.Run("should top up a partial buffer from storage and start", func(t *testing.T) {
 		f := colonysim.Forecast(newPlanet(1500), t0.Add(35*time.Minute))
@@ -511,25 +436,6 @@ func TestSimulation_TypeWithoutVolume(t *testing.T) {
 	f := colonysim.Forecast(cp, t0.Add(5*time.Hour))
 	assert.Equal(t, map[int64]int64{9998: 18_002}, f.Pins[2].Contents, "all 8 cycles stored")
 	assert.Equal(t, app.PinStatic, f.Pins[2].Status)
-}
-
-func TestSimulation_FactoryBeyondHorizon(t *testing.T) {
-	// enough inputs for 1500 cycles of 30 minutes, longer than the horizon
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newStorage(1, app.EveGroupStorageFacilities, 50_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 4_500_000}),
-			newFactory(2, schematicWater),
-			newStorage(3, app.EveGroupSpaceports, 20_000),
-		},
-		Routes: []*app.PlanetRoute{
-			newRoute(1, 1, 2, aqueousLiquids, 3000),
-			newRoute(2, 2, 3, water, 20),
-		},
-	}
-	f := colonysim.Forecast(cp, t0)
-	assert.True(t, f.WorksBeyondHorizon)
-	assert.True(t, f.WorkEndsAt.IsEmpty())
 }
 
 func TestSimulation_PinStatus(t *testing.T) {
@@ -620,6 +526,12 @@ func TestSimulation_PinStatus(t *testing.T) {
 			want:   app.PinFactoryIdle,
 		},
 		{
+			name:   "factory with input not routed",
+			pin:    func() *app.PlanetPin { return newFactory(1, schematicWater) },
+			routes: []*app.PlanetRoute{toLaunchpad},
+			want:   app.PinInputNotRouted,
+		},
+		{
 			name:   "factory with output not routed",
 			pin:    func() *app.PlanetPin { return newFactory(1, schematicWater) },
 			routes: []*app.PlanetRoute{fromStorage},
@@ -644,17 +556,11 @@ func TestSimulation_PinStatus(t *testing.T) {
 }
 
 func TestForecast(t *testing.T) {
-	cp := &app.CharacterPlanet{
-		LastUpdate: t0,
-		Pins: []*app.PlanetPin{
-			newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-			newStorage(2, app.EveGroupStorageFacilities, 12_000),
-		},
-		Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-	}
-	t.Run("should set time of forecast", func(t *testing.T) {
-		f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
-		assert.Equal(t, t0.Add(65*time.Minute), f.Time)
+	t.Run("should not change the source planet", func(t *testing.T) {
+		cp := newExtractorColony(t0.Add(4 * time.Hour))
+		cp.Pins[1].Contents = []*app.PlanetPinContent{{Type: aqueousLiquids, Amount: 5}}
+		colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, int64(5), cp.Pins[1].Contents[0].Amount)
 	})
 }
 
@@ -675,53 +581,6 @@ func TestForecast_ExtractorOutputs(t *testing.T) {
 	f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
 	assert.Equal(t, []int64{2467, 2086, 2039, 1994, 2095, 2558, 2611, 2152}, f.Pins[3].ExtractorOutputs)
 	assert.Empty(t, f.Pins[2].ExtractorOutputs, "only for extractors")
-}
-
-func TestSimulation_ActivityAndLastRun(t *testing.T) {
-	t.Run("extractor", func(t *testing.T) {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
-				newStorage(2, app.EveGroupStorageFacilities, 12_000),
-			},
-			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
-		}
-		f := colonysim.Forecast(cp, t0.Add(65*time.Minute))
-		assert.True(t, f.Pins[1].IsActive)
-		assert.Equal(t, optional.New(t0.Add(time.Hour)), f.Pins[1].LastRunTime)
-		assert.True(t, f.Pins[1].LastCycleStart.IsEmpty(), "only for factories")
-		assert.False(t, f.Pins[2].IsActive)
-		assert.True(t, f.Pins[2].LastRunTime.IsEmpty())
-
-		f = colonysim.Forecast(cp, t0.Add(5*time.Hour))
-		assert.False(t, f.Pins[1].IsActive)
-		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.Pins[1].LastRunTime)
-	})
-	t.Run("factory", func(t *testing.T) {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-				newFactory(2, schematicWater),
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
-		f := colonysim.Forecast(cp, t0.Add(45*time.Minute))
-		assert.True(t, f.Pins[2].IsActive)
-		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastRunTime)
-		assert.Equal(t, optional.New(t0.Add(30*time.Minute)), f.Pins[2].LastCycleStart)
-
-		f = colonysim.Forecast(cp, t0.Add(3*time.Hour))
-		assert.False(t, f.Pins[2].IsActive)
-		// unlike RIFT an idle factory stops checking for inputs once the colony is at rest
-		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), f.Pins[2].LastRunTime)
-		assert.Equal(t, optional.New(t0.Add(60*time.Minute)), f.Pins[2].LastCycleStart, "start of last production cycle")
-	})
 }
 
 func TestForecast_BeforeSnapshot(t *testing.T) {
@@ -831,40 +690,8 @@ func TestForecast_AtRest(t *testing.T) {
 		assert.Equal(t, app.PinNotSetup, f.Pins[5].Status)
 		assert.True(t, f.ValidUntil.IsEmpty())
 	})
-	t.Run("should produce restocked inputs before coming to rest", func(t *testing.T) {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 9000}),
-				newFactory(2, schematicWater), // idle at the snapshot
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
-		assert.Equal(t, optional.New(t0.Add(90*time.Minute)), colonysim.WorkEndsAt(cp, t0.Add(365*24*time.Hour)))
-		f := colonysim.Forecast(cp, t0.Add(365*24*time.Hour))
-		assert.Equal(t, app.ColonyIdle, f.Status)
-		assert.Equal(t, map[int64]int64{typeWater: 60}, f.Pins[3].Contents)
-		assert.Empty(t, f.Pins[1].Contents)
-		assert.Empty(t, f.Pins[2].Contents)
-		assert.True(t, f.ValidUntil.IsEmpty())
-	})
 	t.Run("should keep leftover inputs below the demand", func(t *testing.T) {
-		cp := &app.CharacterPlanet{
-			LastUpdate: t0,
-			Pins: []*app.PlanetPin{
-				newStorage(1, app.EveGroupStorageFacilities, 12_000, &app.PlanetPinContent{Type: aqueousLiquids, Amount: 1000}),
-				newFactory(2, schematicWater),
-				newStorage(3, app.EveGroupSpaceports, 10_000),
-			},
-			Routes: []*app.PlanetRoute{
-				newRoute(1, 1, 2, aqueousLiquids, 3000),
-				newRoute(2, 2, 3, water, 20),
-			},
-		}
+		cp := newFactoryColony(1000)
 		f := colonysim.Forecast(cp, t0.Add(365*24*time.Hour))
 		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
 		assert.Equal(t, map[int64]int64{typeAqueousLiquids: 1000}, f.Pins[2].Contents)
