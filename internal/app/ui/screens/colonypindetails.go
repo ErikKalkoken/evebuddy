@@ -3,6 +3,7 @@ package screens
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -200,6 +201,21 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
 	cp, err := a.u.Character().GetPlanet(ctx, a.characterID, a.planetID)
 	if err != nil {
+		notFound := errors.Is(err, app.ErrNotFound)
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.colony = nil // so a refresh can't forecast it again
+			a.rowsGen++
+			if notFound {
+				a.set(colonyPinInfo{}) // shows that the installation no longer exists
+				a.clearIssue()
+			}
+		})
+		if notFound {
+			return nil
+		}
 		return err
 	}
 	now := time.Now()

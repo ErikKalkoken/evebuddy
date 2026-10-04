@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -332,6 +333,28 @@ func TestColonyPinDetails(t *testing.T) {
 		require.NoError(t, a.Update(t.Context()))
 		assert.Empty(t, a.footer.Text)
 		assert.Equal(t, widget.MediumImportance, a.footer.Importance)
+	})
+	t.Run("should stop forecasting when colony no longer exists", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		a.planetID = 42 // a colony which does not exist
+		require.NoError(t, a.Update(t.Context()))
+		assert.Nil(t, a.colony)
+		require.Len(t, a.content.Objects, 1)
+		assert.Equal(t, "Installation no longer exists", a.content.Objects[0].(*widget.Label).Text)
+		a.content.Objects = nil
+		a.refreshForecast()
+		assert.Empty(t, a.content.Objects)
+	})
+	t.Run("should stop forecasting when colony can not be loaded", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		require.Error(t, a.Update(ctx))
+		assert.Nil(t, a.colony)
 	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
