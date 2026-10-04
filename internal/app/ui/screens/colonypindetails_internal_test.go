@@ -325,6 +325,14 @@ func TestColonyPinDetails(t *testing.T) {
 		require.Len(t, a.content.Objects, 1)
 		assert.Equal(t, "Installation no longer exists", a.content.Objects[0].(*widget.Label).Text)
 	})
+	t.Run("should clear issue after successful update", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		a.setIssue("ERROR: failed")
+		require.NoError(t, a.Update(t.Context()))
+		assert.Empty(t, a.footer.Text)
+		assert.Equal(t, widget.MediumImportance, a.footer.Importance)
+	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)

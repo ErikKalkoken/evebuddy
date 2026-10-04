@@ -189,6 +189,12 @@ func (a *colonyPinDetails) setIssue(s string) {
 	a.footer.Refresh()
 }
 
+func (a *colonyPinDetails) clearIssue() {
+	a.footer.Text = ""
+	a.footer.Importance = widget.MediumImportance
+	a.footer.Refresh()
+}
+
 // Update reloads the colony and shows the installation.
 func (a *colonyPinDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
@@ -208,6 +214,7 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 		a.extraTypeNames = extraTypeNames
 		a.rowsGen++
 		a.set(info)
+		a.clearIssue()
 	})
 	return nil
 }
