@@ -43,6 +43,12 @@ func TestColonyDetails(t *testing.T) {
 		Name:     prefix + "Storage Facility",
 		Capacity: optional.New(12_000.0),
 	})
+	commandCenterGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupCommandCenters})
+	commandCenterType := factory.CreateEveType(storage.CreateEveTypeParams{
+		GroupID:  commandCenterGroup.ID,
+		Name:     prefix + "Command Center",
+		Capacity: optional.New(500.0),
+	})
 	processorGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupProcessors})
 	processorType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: processorGroup.ID, Name: prefix + "Basic Industry Facility"})
 	product := factory.CreateEveType(storage.CreateEveTypeParams{Name: "Base Metals", Volume: optional.New(0.01)})
@@ -69,6 +75,11 @@ func TestColonyDetails(t *testing.T) {
 		PinID:             3,
 		TypeID:            processorType.ID,
 		SchematicID:       optional.New(schematic.ID),
+	})
+	factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+		CharacterPlanetID: cp.ID,
+		PinID:             4,
+		TypeID:            commandCenterType.ID,
 	})
 	factory.CreatePlanetRoute(storage.CreatePlanetRouteParams{
 		CharacterPlanetID: cp.ID,
@@ -114,10 +125,15 @@ func TestColonyDetails(t *testing.T) {
 	})
 	t.Run("should show storage contents and fill", func(t *testing.T) {
 		r := rowByType(t, pinTypeStorage)
-		assert.Equal(t, "Base Metals 4,553", r.output)
+		assert.Equal(t, "Base Metals", r.output)
 		assert.Equal(t, "46 / 12,000 m3", r.info)
 		assert.Equal(t, "0%", segmentsText(r.status))
 		assert.InDelta(t, 4553*0.01/12_000, r.progress.MustValue(), 0.0001, "fill level")
+	})
+	t.Run("should show command center like storage without level", func(t *testing.T) {
+		r := rowByType(t, pinTypeCommandCenter)
+		assert.Equal(t, "-", r.output)
+		assert.Equal(t, "0 / 500 m3", r.info)
 	})
 	t.Run("should show factory status", func(t *testing.T) {
 		r := rowByType(t, pinTypeBasicProcessor)
@@ -149,7 +165,7 @@ func TestColonyDetails(t *testing.T) {
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a.rows = nil
 		a.refreshForecast()
-		assert.Len(t, a.rows, 3)
+		assert.Len(t, a.rows, 4)
 	})
 	t.Run("should show installation when selected", func(t *testing.T) {
 		var pinID int64
@@ -271,19 +287,24 @@ func TestColonyProgress(t *testing.T) {
 
 func TestColonyContentsDisplay(t *testing.T) {
 	names := map[int64]string{1: "Alpha", 2: "Bravo", 3: "Charlie", 4: "Delta"}
+	volumes := map[int64]float64{1: 1, 2: 1, 3: 1, 4: 100}
 	cases := []struct {
 		name     string
 		contents map[int64]int64
 		want     string
 	}{
 		{"empty", map[int64]int64{}, ""},
-		{"sorted by amount", map[int64]int64{1: 5, 2: 1_000}, "Bravo 1,000, Alpha 5"},
-		{"limited", map[int64]int64{1: 4, 2: 3, 3: 2, 4: 1}, "Alpha 4, Bravo 3, Charlie 2, +1 more"},
-		{"unknown type", map[int64]int64{99: 1}, "Type #99 1"},
+		{"single", map[int64]int64{1: 5}, "Alpha"},
+		{"largest first", map[int64]int64{1: 5, 2: 1_000}, "Bravo, +1 more"},
+		{"limited", map[int64]int64{1: 4, 2: 3, 3: 2}, "Alpha, +2 more"},
+		{"largest volume first", map[int64]int64{1: 50, 4: 1}, "Delta, +1 more"},
+		{"tie in volume sorted by amount", map[int64]int64{98: 1, 99: 5}, "Type #99, +1 more"},
+		{"tie sorted by name", map[int64]int64{2: 7, 1: 7}, "Alpha, +1 more"},
+		{"unknown type", map[int64]int64{99: 1}, "Type #99"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, colonyContentsDisplay(tc.contents, names))
+			assert.Equal(t, tc.want, colonyContentsDisplay(tc.contents, names, volumes))
 		})
 	}
 }

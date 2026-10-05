@@ -109,7 +109,7 @@ Extractor: The resource being extracted, the time left until the program ends an
 
 Processors: The product being produced and whether the processor is producing or idle, e.g. because it is waiting for inputs.
 
-Storage Facility, Launchpad, Command Center: The largest contents, how full it is in percent and the used and total capacity. The Command Center also shows its upgrade level.
+Storage Facility, Launchpad, Command Center: The largest item stored, how full it is in percent and the used and total capacity.
 
 Problems:
 • Expired: The extractor program has ended.
@@ -582,6 +582,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" for "+colonyBeyondHorizonText))
 	}
 	typeNames := cp.TypeNames()
+	typeVolumes := cp.TypeVolumes()
 	var rows []colonyDetailsRow
 	for _, p := range cp.Pins {
 		pinType := colonyPinTypeOf(cp, p)
@@ -632,17 +633,9 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 					statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
 				}
 			}
-			contents := colonyContentsDisplay(pf.Contents, typeNames)
-			if p.Type.Group.ID == app.EveGroupCommandCenters {
-				output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
-				if contents != "" {
-					output += " • " + contents
-				}
-			} else {
-				output = contents
-			}
+			output = colonyContentsDisplay(pf.Contents, typeNames, typeVolumes)
 			if output == "" {
-				output = "Empty"
+				output = "-"
 			}
 			for id := range pf.Contents {
 				if n, ok := typeNames[id]; ok {
@@ -724,12 +717,13 @@ func colonyProgress(elapsed, total time.Duration) float64 {
 	return min(max(float64(elapsed)/float64(total), 0), 1)
 }
 
-// colonyContentsDisplay returns a short summary of the largest contents of a pin.
-func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string) string {
-	const maxItems = 3
+// colonyContentsDisplay returns a short summary of the contents of a pin which take up the most volume.
+func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string, typeVolumes map[int64]float64) string {
+	const maxItems = 1
 	type item struct {
 		name   string
 		amount int64
+		volume float64
 	}
 	var items []item
 	for id, amount := range contents {
@@ -737,10 +731,10 @@ func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string)
 		if !ok {
 			n = fmt.Sprintf("Type #%d", id)
 		}
-		items = append(items, item{n, amount})
+		items = append(items, item{n, amount, typeVolumes[id] * float64(amount)})
 	}
 	slices.SortFunc(items, func(a, b item) int {
-		return cmp.Or(cmp.Compare(b.amount, a.amount), strings.Compare(a.name, b.name))
+		return cmp.Or(cmp.Compare(b.volume, a.volume), cmp.Compare(b.amount, a.amount), strings.Compare(a.name, b.name))
 	})
 	var parts []string
 	for i, x := range items {
@@ -748,7 +742,7 @@ func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string)
 			parts = append(parts, fmt.Sprintf("+%d more", len(items)-maxItems))
 			break
 		}
-		parts = append(parts, fmt.Sprintf("%s %s", x.name, ihumanize.Comma(x.amount)))
+		parts = append(parts, x.name)
 	}
 	return strings.Join(parts, ", ")
 }
