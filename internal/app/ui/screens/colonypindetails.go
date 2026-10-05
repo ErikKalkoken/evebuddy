@@ -1,7 +1,6 @@
 package screens
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"maps"
 	"math"
 	"slices"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -49,7 +47,7 @@ type colonyPinInfo struct {
 	main         []ui.AttributeItem
 	program      []colonyCycle // only for extractors, nil otherwise
 	programTitle string
-	routes       []ui.AttributeItem
+	routes       []colonyRouteItem
 	storage      []colonyStorageItem // only for pins with storage, nil otherwise
 }
 
@@ -75,7 +73,7 @@ type colonyPinDetails struct {
 	programLegend  *seriesLegend
 	programTab     *container.TabItem
 	programTitle   *widget.Label
-	routes         *ui.AttributeList
+	routes         *colonyRouteList
 	routesTab      *container.TabItem
 	showPin        func(pinID int64, title string)
 	rowsGen        int // incremented when Update replaces the colony
@@ -116,7 +114,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		})),
 		programLegend: newSeriesLegend(),
 		programTitle:  newChartTitleLabel(),
-		routes:        ui.NewAttributeList(),
+		routes:        newColonyRouteList(u),
 		signalKey:     u.Signals().UniqueKey(),
 		status:        xwidget.NewRichText(),
 		storage:       newColonyStorageList(u),
@@ -311,7 +309,7 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 	}
 	a.inputs.set(info.inputs, info.inputsEmpty)
 	a.storage.set(info.storage)
-	a.routes.Set(info.routes)
+	a.routes.set(info.routes)
 
 	tabs := []*container.TabItem{a.mainTab}
 	if info.program != nil {
@@ -678,74 +676,34 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 	)
 
 	// routes
-	makeRoute := func(r *app.PlanetRoute, otherID int64) quantityItem {
-		name := typeName(r.ContentType.ID)
-		it := ui.AttributeItem{
-			Label: fmt.Sprintf("%s x %s", name, ihumanize.Comma(r.Quantity)),
-			Value: "Unknown installation",
+	makeRoute := func(r *app.PlanetRoute, otherID int64, isIncoming bool) colonyRouteItem {
+		x := colonyRouteItem{
+			isIncoming: isIncoming,
+			name:       typeName(r.ContentType.ID),
+			quantity:   r.Quantity,
+			typeID:     r.ContentType.ID,
 		}
-		q := quantityItem{name: name, quantity: r.Quantity}
 		other, ok := pins[otherID]
 		if !ok {
-			q.item = it
-			return q
+			return x
 		}
-		otherName := cp.PinName(other)
-		it.Value = otherName
+		x.otherName = cp.PinName(other)
 		if a.showPin != nil {
-			title := fmt.Sprintf("%s on %s", otherName, cp.EvePlanet.Name)
-			it.InfoAction = func() {
+			title := fmt.Sprintf("%s on %s", x.otherName, cp.EvePlanet.Name)
+			x.onSelected = func() {
 				a.showPin(otherID, title)
 			}
 		}
-		q.item = it
-		return q
+		return x
 	}
-	var in, out []quantityItem
+	info.routes = []colonyRouteItem{}
 	for _, r := range cp.Routes {
 		if r.DestinationPinID == p.ID {
-			in = append(in, makeRoute(r, r.SourcePinID))
+			info.routes = append(info.routes, makeRoute(r, r.SourcePinID, true))
 		}
 		if r.SourcePinID == p.ID {
-			out = append(out, makeRoute(r, r.DestinationPinID))
+			info.routes = append(info.routes, makeRoute(r, r.DestinationPinID, false))
 		}
-	}
-	info.routes = []ui.AttributeItem{}
-	for _, x := range []struct {
-		heading string
-		items   []quantityItem
-	}{{"Incoming", in}, {"Outgoing", out}} {
-		if len(x.items) == 0 {
-			continue
-		}
-		info.routes = append(info.routes, ui.AttributeItem{Label: x.heading, IsHeading: true})
-		info.routes = append(info.routes, sortByNameAndQuantity(x.items)...)
-	}
-	if len(info.routes) == 0 {
-		info.routes = []ui.AttributeItem{{Label: "No routes"}}
 	}
 	return info
-}
-
-// quantityItem is a list item for a quantity of a type.
-type quantityItem struct {
-	name     string // of the type
-	quantity int64
-	item     ui.AttributeItem
-}
-
-// sortByNameAndQuantity returns the items ordered by name ascending, then by quantity descending.
-func sortByNameAndQuantity(s []quantityItem) []ui.AttributeItem {
-	slices.SortFunc(s, func(a, b quantityItem) int {
-		return cmp.Or(
-			strings.Compare(a.name, b.name),
-			cmp.Compare(b.quantity, a.quantity),
-			strings.Compare(a.item.Value, b.item.Value),
-		)
-	})
-	items := make([]ui.AttributeItem, 0, len(s))
-	for _, x := range s {
-		items = append(items, x.item)
-	}
-	return items
 }

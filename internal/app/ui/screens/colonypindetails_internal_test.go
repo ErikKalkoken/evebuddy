@@ -2,9 +2,7 @@ package screens
 
 import (
 	"context"
-	"fmt"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -144,11 +142,11 @@ func TestColonyPinDetails(t *testing.T) {
 	value := func(t *testing.T, items []ui.AttributeItem, label string) string {
 		return item(t, items, label).Value
 	}
-	// lines returns all items as "label value" lines.
-	lines := func(items []ui.AttributeItem) []string {
+	// routeLines returns all routes as "type: details" lines.
+	routeLines := func(items []colonyRouteItem) []string {
 		var s []string
 		for _, x := range items {
-			s = append(s, strings.TrimSpace(x.Label+" "+x.Value))
+			s = append(s, x.name+": "+colonyRouteItemDetails(x))
 		}
 		return s
 	}
@@ -178,10 +176,9 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.True(t, hasItem(info.main, "Data from"))
 		assert.Nil(t, info.storage)
 		assert.Nil(t, info.inputs)
-		assert.Equal(t, []string{"Outgoing", "Aqueous Liquids x 10,000 Storage 31-111"}, lines(info.routes))
-		assert.True(t, info.routes[0].IsHeading)
+		assert.Equal(t, []string{"Aqueous Liquids: 10,000 units to Storage 31-111"}, routeLines(info.routes))
 		shownPins = nil
-		info.routes[1].InfoAction()
+		info.routes[0].onSelected()
 		assert.Equal(t, []shownPin{{2, "Storage 31-111 on " + cp.EvePlanet.Name}}, shownPins, "opens connected installation")
 	})
 	t.Run("should show extractor program", func(t *testing.T) {
@@ -223,7 +220,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.EqualValues(t, 3_000, x.demand)
 		assert.True(t, x.isRouted)
 		assert.Nil(t, info.program)
-		assert.Equal(t, []string{"Incoming", "Aqueous Liquids x 3,000 Storage 31-111"}, lines(info.routes))
+		assert.Equal(t, []string{"Aqueous Liquids: 3,000 units from Storage 31-111"}, routeLines(info.routes))
 	})
 	t.Run("should show processor without schematic", func(t *testing.T) {
 		info := makeInfo(t, 6)
@@ -297,12 +294,10 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.Equal(t, aqueousLiquids.Group.Name, x.group)
 		assert.Positive(t, x.quantity)
 		assert.InDelta(t, float64(x.quantity)*0.01, x.volume, 0.0001)
-		assert.Equal(t, []string{
-			"Incoming",
-			"Aqueous Liquids x 10,000 Extractor 21-111",
-			"Outgoing",
-			"Aqueous Liquids x 3,000 Basic Processor 41-111",
-		}, lines(info.routes))
+		assert.ElementsMatch(t, []string{
+			"Aqueous Liquids: 10,000 units from Extractor 21-111",
+			"Aqueous Liquids: 3,000 units to Basic Processor 41-111",
+		}, routeLines(info.routes))
 	})
 	t.Run("should show tabs for installation type", func(t *testing.T) {
 		titles := func(a *colonyPinDetails) []string {
@@ -433,26 +428,4 @@ func TestGroupCycles(t *testing.T) {
 		got := groupCycles(makeCycles(phases...), colonyProgramMaxSteps)
 		assert.LessOrEqual(t, len(got), colonyProgramMaxSteps+3)
 	})
-}
-
-func TestSortByNameAndQuantity(t *testing.T) {
-	item := func(name string, quantity int64, value string) quantityItem {
-		return quantityItem{name: name, quantity: quantity, item: ui.AttributeItem{Label: fmt.Sprintf("%s x %d", name, quantity), Value: value}}
-	}
-	got := sortByNameAndQuantity([]quantityItem{
-		item("Water", 20, "A"),
-		item("Base Metals", 3_000, "B"),
-		item("Base Metals", 10_000, "C"),
-		item("Base Metals", 3_000, "A"),
-	})
-	var labels []string
-	for _, x := range got {
-		labels = append(labels, x.Label+" "+x.Value)
-	}
-	assert.Equal(t, []string{
-		"Base Metals x 10000 C",
-		"Base Metals x 3000 A",
-		"Base Metals x 3000 B",
-		"Water x 20 A",
-	}, labels)
 }
