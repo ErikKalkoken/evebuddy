@@ -7,17 +7,13 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -109,13 +105,14 @@ func (a *colonyStorageList) makeList() *widget.List {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			return newColonyStorageItemWidget(a.u.EVEImage().InventoryTypeIconAsync)
+			return newColonyTypeItemWidget(a.u.EVEImage().InventoryTypeIconAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.rowsFiltered) {
 				return
 			}
-			co.(*colonyStorageItemWidget).set(a.rowsFiltered[id])
+			r := a.rowsFiltered[id]
+			co.(*colonyTypeItemWidget).set(r.typeID, r.name, colonyStorageItemDetails(r), widget.MediumImportance)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -171,47 +168,6 @@ func (a *colonyStorageList) filterRows() {
 	}
 	a.rowsFiltered = rows
 	a.list.Refresh()
-}
-
-// colonyStorageItemWidget shows a stored type with its icon, name, quantity and volume.
-type colonyStorageItemWidget struct {
-	widget.BaseWidget
-
-	details  *widget.Label
-	icon     *canvas.Image
-	loadIcon func(id int64, size int, setter func(r fyne.Resource))
-	name     *widget.Label
-}
-
-func newColonyStorageItemWidget(loadIcon func(id int64, size int, setter func(r fyne.Resource))) *colonyStorageItemWidget {
-	w := &colonyStorageItemWidget{
-		details:  widget.NewLabel(""),
-		icon:     xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
-		loadIcon: loadIcon,
-		name:     widget.NewLabel(""),
-	}
-	w.details.Truncation = fyne.TextTruncateEllipsis
-	w.name.Truncation = fyne.TextTruncateEllipsis
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *colonyStorageItemWidget) set(r colonyStorageItem) {
-	w.name.SetText(r.name)
-	w.details.SetText(colonyStorageItemDetails(r))
-	w.loadIcon(r.typeID, ui.IconPixelSize, func(res fyne.Resource) {
-		w.icon.Resource = res
-		w.icon.Refresh()
-	})
-}
-
-func (w *colonyStorageItemWidget) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	first := container.New(layout.NewCustomPaddedLayout(0, -2*p, 0, 0), w.name)
-	second := container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.details)
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
-	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
-	return widget.NewSimpleRenderer(c)
 }
 
 // colonyStorageItemDetails returns the second line of a stored type.

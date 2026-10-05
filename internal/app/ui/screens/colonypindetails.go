@@ -44,7 +44,8 @@ type colonyPinInfo struct {
 	symbolType  colonyPinType
 
 	// tabs
-	inputs       []ui.AttributeItem // only for processors, nil otherwise
+	inputs       []colonyInputItem // only for processors, nil otherwise
+	inputsEmpty  string            // shown when a processor has no inputs
 	main         []ui.AttributeItem
 	program      []colonyCycle // only for extractors, nil otherwise
 	programTitle string
@@ -62,7 +63,7 @@ type colonyPinDetails struct {
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
 	forecastRun    latestRun
-	inputs         *ui.AttributeList
+	inputs         *colonyInputList
 	inputsTab      *container.TabItem
 	main           *ui.AttributeList
 	mainTab        *container.TabItem
@@ -103,7 +104,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		characterID: characterID,
 		content:     container.NewStack(),
 		footer:      ui.NewLabelWithTruncation(""),
-		inputs:      ui.NewAttributeList(),
+		inputs:      newColonyInputList(u),
 		main:        ui.NewAttributeList(),
 		name:        makeHyperLink(),
 		pinID:       pinID,
@@ -308,7 +309,7 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 	if info.program != nil {
 		a.setProgram(info.program, info.programTitle)
 	}
-	a.inputs.Set(info.inputs)
+	a.inputs.set(info.inputs, info.inputsEmpty)
 	a.storage.set(info.storage)
 	a.routes.Set(info.routes)
 
@@ -598,11 +599,12 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			}
 		}
 	case app.EveGroupProcessors:
-		info.inputs = []ui.AttributeItem{}
+		info.inputs = []colonyInputItem{}
+		info.inputsEmpty = "No inputs"
 		es, ok := p.ProcessorSchematic()
 		if !ok {
 			info.main = []ui.AttributeItem{{Label: "Schematic", Value: "-"}}
-			info.inputs = []ui.AttributeItem{{Label: "No schematic"}}
+			info.inputsEmpty = "No schematic"
 			break
 		}
 		output := ui.AttributeItem{Label: "Schematic", Value: es.Name, InfoAction: showType(pf.OutputTypeID)}
@@ -633,20 +635,15 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 				incoming[r.ContentType.ID] = true
 			}
 		}
-		var inputs []quantityItem
 		for id, quantity := range pf.Demands {
-			it := ui.AttributeItem{
-				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(quantity)),
-				Value:      ihumanize.Comma(pf.Contents[id]) + " in stock",
-				InfoAction: showType(id),
-			}
-			if !incoming[id] {
-				it.Value += " (not routed)"
-				it.Importance = widget.DangerImportance
-			}
-			inputs = append(inputs, quantityItem{name: typeName(id), quantity: quantity, item: it})
+			info.inputs = append(info.inputs, colonyInputItem{
+				demand:   quantity,
+				inStock:  pf.Contents[id],
+				isRouted: incoming[id],
+				name:     typeName(id),
+				typeID:   id,
+			})
 		}
-		info.inputs = sortByNameAndQuantity(inputs)
 	default:
 		if p.Type.Group.ID == app.EveGroupCommandCenters {
 			info.main = append(info.main, ui.AttributeItem{Label: "Upgrade level", Value: fmt.Sprint(cp.UpgradeLevel)})
