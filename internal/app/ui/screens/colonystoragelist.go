@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
@@ -112,7 +113,7 @@ func (a *colonyStorageList) makeList() *widget.List {
 				return
 			}
 			r := a.rowsFiltered[id]
-			co.(*colonyTypeItemWidget).set(r.typeID, r.name, colonyStorageItemDetails(r), widget.MediumImportance)
+			co.(*colonyTypeItemWidget).set(r.typeID, r.name, colonyStorageItemDetails(r), theme.ColorNamePlaceHolder)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {

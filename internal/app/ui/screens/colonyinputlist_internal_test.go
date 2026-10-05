@@ -3,7 +3,9 @@ package screens
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
@@ -24,6 +26,10 @@ func TestColonyInputList(t *testing.T) {
 		a.list.UpdateItem(id, co)
 		return co.(*colonyTypeItemWidget)
 	}
+	// detailsColor returns the color of the details line of a row.
+	detailsColor := func(w *colonyTypeItemWidget) fyne.ThemeColorName {
+		return w.details.Segments[0].(*widget.TextSegment).Style.ColorName
+	}
 
 	t.Run("should sort inputs by name", func(t *testing.T) {
 		a := newColonyInputList(u)
@@ -40,15 +46,16 @@ func TestColonyInputList(t *testing.T) {
 		a.set([]colonyInputItem{{typeID: 1, name: "Alpha", demand: 3_000, inStock: 1_200, isRouted: true}}, "No inputs")
 		w := row(a, 0)
 		assert.Equal(t, "Alpha", w.name.Text)
-		assert.Equal(t, "Needs 3,000 • 1,200 in stock", w.details.Text)
-		assert.Equal(t, widget.MediumImportance, w.details.Importance)
+		assert.True(t, w.name.TextStyle.Bold)
+		assert.Equal(t, "Needs 3,000 • 1,200 in stock", w.details.String())
+		assert.Equal(t, theme.ColorNamePlaceHolder, detailsColor(w))
 	})
 	t.Run("should show unrouted input as danger", func(t *testing.T) {
 		a := newColonyInputList(u)
 		a.set([]colonyInputItem{{typeID: 1, name: "Alpha", demand: 3_000}}, "No inputs")
 		w := row(a, 0)
-		assert.Equal(t, "Needs 3,000 • 0 in stock • not routed", w.details.Text)
-		assert.Equal(t, widget.DangerImportance, w.details.Importance)
+		assert.Equal(t, "Needs 3,000 • 0 in stock • not routed", w.details.String())
+		assert.Equal(t, theme.ColorNameError, detailsColor(w))
 	})
 	t.Run("should show empty text when there are no inputs", func(t *testing.T) {
 		a := newColonyInputList(u)

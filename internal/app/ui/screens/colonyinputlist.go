@@ -58,11 +58,11 @@ func newColonyInputList(u baseUI) *colonyInputList {
 				return
 			}
 			r := a.items[id]
-			importance := widget.MediumImportance
+			color := theme.ColorNamePlaceHolder
 			if !r.isRouted {
-				importance = widget.DangerImportance
+				color = theme.ColorNameError
 			}
-			co.(*colonyTypeItemWidget).set(r.typeID, r.name, colonyInputItemDetails(r), importance)
+			co.(*colonyTypeItemWidget).set(r.typeID, r.name, colonyInputItemDetails(r), color)
 		},
 	)
 	a.list.OnSelected = func(id widget.ListItemID) {
@@ -104,11 +104,11 @@ func colonyInputItemDetails(r colonyInputItem) string {
 	return s
 }
 
-// colonyTypeItemWidget shows a type with its icon, name and a line of details.
+// colonyTypeItemWidget shows a type with its icon, its name in bold and a line of details.
 type colonyTypeItemWidget struct {
 	widget.BaseWidget
 
-	details  *widget.Label
+	details  *xwidget.RichText
 	icon     *canvas.Image
 	loadIcon func(id int64, size int, setter func(r fyne.Resource))
 	name     *widget.Label
@@ -116,22 +116,21 @@ type colonyTypeItemWidget struct {
 
 func newColonyTypeItemWidget(loadIcon func(id int64, size int, setter func(r fyne.Resource))) *colonyTypeItemWidget {
 	w := &colonyTypeItemWidget{
-		details:  widget.NewLabel(""),
+		details:  xwidget.NewRichText(),
 		icon:     xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize)),
 		loadIcon: loadIcon,
 		name:     widget.NewLabel(""),
 	}
 	w.details.Truncation = fyne.TextTruncateEllipsis
+	w.name.TextStyle.Bold = true
 	w.name.Truncation = fyne.TextTruncateEllipsis
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *colonyTypeItemWidget) set(typeID int64, name, details string, importance widget.Importance) {
+func (w *colonyTypeItemWidget) set(typeID int64, name, details string, color fyne.ThemeColorName) {
 	w.name.SetText(name)
-	w.details.Text = details
-	w.details.Importance = importance
-	w.details.Refresh()
+	w.details.SetWithText(details, widget.RichTextStyle{ColorName: color})
 	w.loadIcon(typeID, ui.IconPixelSize, func(res fyne.Resource) {
 		w.icon.Resource = res
 		w.icon.Refresh()
