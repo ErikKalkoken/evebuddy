@@ -209,7 +209,7 @@ func (a *statusBar) start() {
 		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
 			v, err := a.u.availableUpdate(ctx)
 			if err != nil {
-				if !app.IsCanceled(ctx, err) {
+				if !app.IsContextCanceled(ctx, err) {
 					slog.Error("fetch latest github version for download hint", "err", err)
 				}
 				return
@@ -250,7 +250,7 @@ func (a *statusBar) updateEveStatus(ctx context.Context) {
 	}
 
 	status, err := a.u.ess.Fetch(ctx)
-	if app.IsCanceled(ctx, err) {
+	if app.IsContextCanceled(ctx, err) {
 		return
 	}
 	if err != nil {

@@ -28,14 +28,14 @@ func (s *CharacterService) Start(d time.Duration) {
 	err := s.tasks.Run(
 		func(ctx context.Context) {
 			xsync.RunEvery(ctx, d, func(ctx context.Context) {
-				if err := s.notifyCharactersIfNeeded(ctx); err != nil && !app.IsCanceled(ctx, err) {
+				if err := s.notifyCharactersIfNeeded(ctx); err != nil && !app.IsContextCanceled(ctx, err) {
 					slog.Error("Failed to notify characters", "error", err)
 				}
 			})
 		},
 		func(ctx context.Context) {
 			xsync.RunEvery(ctx, d, func(ctx context.Context) {
-				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil && !app.IsCanceled(ctx, err) {
+				if err := s.UpdateCharactersIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
 					slog.Error("Failed to update characters", "error", err)
 				}
 			})
@@ -170,7 +170,7 @@ func (s *CharacterService) UpdateCharacterAndRefreshIfNeeded(ctx context.Context
 func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int64, section app.CharacterSection, forceUpdate bool) {
 	logErr := func(err error) {
 		var level slog.Level
-		if app.IsCanceled(ctx, err) {
+		if app.IsContextCanceled(ctx, err) {
 			level = slog.LevelDebug
 		} else {
 			level = slog.LevelError
@@ -215,7 +215,7 @@ func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.
 				s.signals.CharacterRemoved.RemoveListener(key)
 			}()
 			_, err := s.DownloadMissingMailBodies(ctx, characterID)
-			if err != nil && !app.IsCanceled(ctx, err) {
+			if err != nil && !app.IsContextCanceled(ctx, err) {
 				slog.Warn("DownloadMissingMailBodies", "characterID", characterID, "error", err)
 			}
 		})
@@ -477,7 +477,7 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 }
 
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
-	if app.IsCanceled(ctx, err) {
+	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section, "error", err)
 		// Clear StartedAt so the section doesn't show as running after a restart.
 		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterSectionStatusParams{

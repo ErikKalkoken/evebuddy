@@ -26,7 +26,7 @@ import (
 func (s *CorporationService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
-			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsCanceled(ctx, err) {
+			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
 				slog.Error("Failed to update corporations", "error", err)
 			}
 		})
@@ -113,7 +113,7 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 	)
 	if err != nil {
 		logErr := slog.Error
-		if app.IsCanceled(ctx, err) {
+		if app.IsContextCanceled(ctx, err) {
 			logErr = slog.Debug
 		}
 		logErr("Failed to update corporation section", "corporationID", corporationID, "section", section, "err", err)
@@ -347,7 +347,7 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 }
 
 func (s *CorporationService) recordUpdateFailed(ctx context.Context, arg corporationSectionUpdateParams, err error) {
-	if app.IsCanceled(ctx, err) {
+	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section, "error", err)
 		// Clear StartedAt so the section doesn't show as running after a restart.
 		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCorporationSectionStatusParams{

@@ -159,7 +159,7 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 				groupID := int64(o.Value)
 				s.tasks.Go(func(ctx context.Context) {
 					_, err := s.GetOrCreateGroupESI(ctx, groupID)
-					if err != nil && !app.IsCanceled(ctx, err) {
+					if err != nil && !app.IsContextCanceled(ctx, err) {
 						slog.Error("Failed to fetch eve group", "ID", groupID, "err", err)
 					}
 				})
@@ -167,7 +167,7 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 				typeID := int64(o.Value)
 				s.tasks.Go(func(ctx context.Context) {
 					_, err := s.GetOrCreateTypeESI(ctx, typeID)
-					if err != nil && !app.IsCanceled(ctx, err) {
+					if err != nil && !app.IsContextCanceled(ctx, err) {
 						slog.Error("Failed to fetch eve type", "ID", typeID, "err", err)
 					}
 				})
@@ -366,7 +366,7 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 		if err != nil {
 			go func() {
 				_, err := args.getOrCreateDogmaAttributeESI(ctx, int64(v))
-				if err != nil && !app.IsCanceled(ctx, err) {
+				if err != nil && !app.IsContextCanceled(ctx, err) {
 					slog.Error("Failed to fetch dogma attribute from ESI", "ID", v, "err", err)
 				}
 			}()
@@ -415,7 +415,7 @@ func formatDogmaValue(ctx context.Context, args formatDogmaValueParams) (string,
 		if err != nil {
 			go func() {
 				_, err := args.getOrCreateTypeESI(ctx, int64(v))
-				if err != nil && !app.IsCanceled(ctx, err) {
+				if err != nil && !app.IsContextCanceled(ctx, err) {
 					slog.Error("Failed to fetch type from ESI", "typeID", v, "err", err)
 				}
 			}()

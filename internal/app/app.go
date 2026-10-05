@@ -58,8 +58,8 @@ var (
 	ErrNotFound      = errors.New("object not found")
 )
 
-// IsCanceled reports whether err is from a canceled operation or the context is canceled.
-func IsCanceled(ctx context.Context, err error) bool {
+// IsContextCanceled reports whether the context is canceled or err is from a canceled operation.
+func IsContextCanceled(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}

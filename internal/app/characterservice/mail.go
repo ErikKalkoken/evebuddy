@@ -293,7 +293,7 @@ func (s *CharacterService) updateMailBodyESI(ctx context.Context, characterID in
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				err2 := s.st.DeleteCharacterMail(ctx, characterID, mailID)
-				if app.IsCanceled(ctx, err2) {
+				if app.IsContextCanceled(ctx, err2) {
 					slog.Debug("Failed to delete mail that no longer exists on the server", "characterID", characterID, "mailID", mailID, "error", err2)
 				} else if err2 != nil {
 					slog.Error("Failed to delete mail that no longer exists on the server", "characterID", characterID, "mailID", mailID, "error", err2)

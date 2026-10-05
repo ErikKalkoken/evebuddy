@@ -510,7 +510,7 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 		} else {
 			total, missing, err = a.ma.u.Character().AllDownloadedBodiesPercentage(ctx)
 		}
-		if app.IsCanceled(ctx, err) {
+		if app.IsContextCanceled(ctx, err) {
 			canceled = true
 			return
 		}
