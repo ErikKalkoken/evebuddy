@@ -44,12 +44,12 @@ type colonyPinInfo struct {
 	symbolType  colonyPinType
 
 	// tabs
+	inputs       []ui.AttributeItem // only for processors, nil otherwise
 	main         []ui.AttributeItem
 	program      []colonyCycle // only for extractors, nil otherwise
 	programTitle string
 	routes       []ui.AttributeItem
-	storage      []ui.AttributeItem // only for pins with contents
-	storageTitle string
+	storage      []colonyStorageItem // only for pins with storage, nil otherwise
 }
 
 type colonyPinDetails struct {
@@ -62,6 +62,8 @@ type colonyPinDetails struct {
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
 	forecastRun    latestRun
+	inputs         *ui.AttributeList
+	inputsTab      *container.TabItem
 	main           *ui.AttributeList
 	mainTab        *container.TabItem
 	name           *widget.Hyperlink
@@ -79,7 +81,7 @@ type colonyPinDetails struct {
 	rowsRun        latestRun
 	signalKey      string
 	status         *xwidget.RichText
-	storage        *ui.AttributeList
+	storage        *colonyStorageList
 	storageTab     *container.TabItem
 	symbol         *planetPinSymbol
 	tabs           *container.AppTabs
@@ -101,6 +103,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		characterID: characterID,
 		content:     container.NewStack(),
 		footer:      ui.NewLabelWithTruncation(""),
+		inputs:      ui.NewAttributeList(),
 		main:        ui.NewAttributeList(),
 		name:        makeHyperLink(),
 		pinID:       pinID,
@@ -115,7 +118,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		routes:        ui.NewAttributeList(),
 		signalKey:     u.Signals().UniqueKey(),
 		status:        xwidget.NewRichText(),
-		storage:       ui.NewAttributeList(),
+		storage:       newColonyStorageList(u),
 		symbol:        newPlanetPinSymbol(),
 		u:             u,
 	}
@@ -124,6 +127,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 
 	a.mainTab = container.NewTabItem("Main", a.main)
 	a.programTab = container.NewTabItem("Program", newChartCard(a.programTitle, a.programLegend, a.program))
+	a.inputsTab = container.NewTabItem("Inputs", a.inputs)
 	a.storageTab = container.NewTabItem("Storage", a.storage)
 	a.routesTab = container.NewTabItem("Routes", a.routes)
 
@@ -304,12 +308,16 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 	if info.program != nil {
 		a.setProgram(info.program, info.programTitle)
 	}
-	a.storage.Set(info.storage)
+	a.inputs.Set(info.inputs)
+	a.storage.set(info.storage)
 	a.routes.Set(info.routes)
 
 	tabs := []*container.TabItem{a.mainTab}
 	if info.program != nil {
 		tabs = append(tabs, a.programTab)
+	}
+	if info.inputs != nil {
+		tabs = append(tabs, a.inputsTab)
 	}
 	if info.storage != nil {
 		tabs = append(tabs, a.storageTab)
@@ -317,10 +325,6 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 	tabs = append(tabs, a.routesTab)
 	if !slices.Equal(tabs, a.tabs.Items) {
 		a.tabs.SetItems(tabs) // only changes when the installation type changes
-	}
-	if a.storageTab.Text != info.storageTitle && info.storageTitle != "" {
-		a.storageTab.Text = info.storageTitle
-		a.tabs.Refresh()
 	}
 
 	if len(a.content.Objects) != 1 || a.content.Objects[0] != a.body {
@@ -594,12 +598,11 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			}
 		}
 	case app.EveGroupProcessors:
-		info.storageTitle = "Inputs"
-		info.storage = []ui.AttributeItem{}
+		info.inputs = []ui.AttributeItem{}
 		es, ok := p.ProcessorSchematic()
 		if !ok {
 			info.main = []ui.AttributeItem{{Label: "Schematic", Value: "-"}}
-			info.storage = []ui.AttributeItem{{Label: "No schematic"}}
+			info.inputs = []ui.AttributeItem{{Label: "No schematic"}}
 			break
 		}
 		output := ui.AttributeItem{Label: "Schematic", Value: es.Name, InfoAction: showType(pf.OutputTypeID)}
@@ -643,7 +646,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			}
 			inputs = append(inputs, quantityItem{name: typeName(id), quantity: quantity, item: it})
 		}
-		info.storage = sortByNameAndQuantity(inputs)
+		info.inputs = sortByNameAndQuantity(inputs)
 	default:
 		if p.Type.Group.ID == app.EveGroupCommandCenters {
 			info.main = append(info.main, ui.AttributeItem{Label: "Upgrade level", Value: fmt.Sprint(cp.UpgradeLevel)})
@@ -659,19 +662,17 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 				),
 			})
 		}
-		info.storageTitle = "Storage"
 		volumes := cp.TypeVolumes()
-		var contents []quantityItem
+		groups := cp.TypeGroupNames()
+		info.storage = []colonyStorageItem{}
 		for id, amount := range pf.Contents {
-			contents = append(contents, quantityItem{name: typeName(id), quantity: amount, item: ui.AttributeItem{
-				Label:      fmt.Sprintf("%s x %s", typeName(id), ihumanize.Comma(amount)),
-				Value:      humanize.FormatFloat("#,###.##", volumes[id]*float64(amount)) + " m3",
-				InfoAction: showType(id),
-			}})
-		}
-		info.storage = sortByNameAndQuantity(contents)
-		if len(info.storage) == 0 {
-			info.storage = append(info.storage, ui.AttributeItem{Label: "Empty"})
+			info.storage = append(info.storage, colonyStorageItem{
+				group:    groups[id],
+				name:     typeName(id),
+				quantity: amount,
+				typeID:   id,
+				volume:   volumes[id] * float64(amount),
+			})
 		}
 	}
 	info.main = append(info.main,
