@@ -79,9 +79,9 @@ func colonyPinTypeOf(cp *app.CharacterPlanet, p *app.PlanetPin) colonyPinType {
 type colonyPinWidget struct {
 	widget.BaseWidget
 
-	info   *widget.Label
+	info   *xwidget.RichText
 	name   *widget.Label
-	output *widget.Label
+	output *xwidget.RichText
 	status *xwidget.RichText
 	symbol *planetPinSymbol
 }
@@ -90,11 +90,11 @@ func newColonyPinWidget() *colonyPinWidget {
 	status := xwidget.NewRichText()
 	name := widget.NewLabel("")
 	name.TextStyle.Bold = true
-	name.Truncation = fyne.TextTruncateClip
-	output := widget.NewLabel("")
+	name.Truncation = fyne.TextTruncateEllipsis
+	output := xwidget.NewRichText()
 	output.Truncation = fyne.TextTruncateClip
 	w := &colonyPinWidget{
-		info:   widget.NewLabel(""),
+		info:   xwidget.NewRichText(),
 		name:   name,
 		output: output,
 		status: status,
@@ -120,9 +120,10 @@ func (w *colonyPinWidget) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *colonyPinWidget) Set(r colonyDetailsRow) {
-	w.info.SetText(r.info)
+	muted := widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder}
+	w.info.SetWithText(r.info, muted)
 	w.name.SetText(r.name)
-	w.output.SetText(r.output)
+	w.output.SetWithText(r.output, muted)
 	w.status.Set(r.status)
 	w.symbol.Set(r.symbolIcon, r.symbolIconColor, r.symbolStatusColor, r.progress)
 	w.Refresh()
