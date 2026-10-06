@@ -35,6 +35,29 @@ const (
 	trainingStatusInActive = "Inactive"
 )
 
+// Names of the training filters, used as labels on desktop and as option names on mobile.
+const (
+	trainingFilterStatus = "Status"
+	trainingFilterTag    = "Tag"
+)
+
+// trainingFilter is the selected value of each training filter. Empty means not filtered.
+type trainingFilter struct {
+	status string
+	tag    string
+}
+
+// match reports whether row r passes all filters.
+func (f trainingFilter) match(r trainingRow) bool {
+	switch {
+	case f.status == trainingStatusActive && !r.isActive,
+		f.status == trainingStatusInActive && r.isActive,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type trainingRow struct {
 	characterID                int64
 	characterName              string
@@ -119,6 +142,7 @@ type Training struct {
 	OnUpdate func(expired int)
 
 	exportButton *xwidget.ContextMenuButton
+	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    latestRun
 	footer       *widget.Label
 	columnSorter *xwidget.ColumnSorter[trainingRow]
@@ -126,7 +150,7 @@ type Training struct {
 	rows         []trainingRow
 	rowsFiltered []trainingRow
 	searchEntry  *xwidget.SearchEntry
-	selectStatus *kxwidget.FilterChipSelect
+	selectStatus *kxwidget.FilterChipSelect // select chips only on desktop
 	selectTag    *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
 	u            baseUI
@@ -243,7 +267,11 @@ func NewTraining(u baseUI) *Training {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.searchEntry = xwidget.NewSearchEntry("Search characters", func(_ string) {
+	placeholder := "Search characters"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -265,18 +293,24 @@ func NewTraining(u baseUI) *Training {
 			},
 		)
 	}
-	a.selectStatus = kxwidget.NewFilterChipSelect(
-		"Status",
-		[]string{
-			trainingStatusActive,
-			trainingStatusInActive,
-		}, func(string) {
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
-		},
-	)
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+		})
+	} else {
+		a.selectStatus = kxwidget.NewFilterChipSelect(
+			trainingFilterStatus,
+			[]string{
+				trainingStatusActive,
+				trainingStatusInActive,
+			}, func(string) {
+				a.filterRowsAsync("")
+			},
+		)
+		a.selectTag = kxwidget.NewFilterChipSelect(trainingFilterTag, []string{}, func(string) {
+			a.filterRowsAsync("")
+		})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -312,17 +346,11 @@ func NewTraining(u baseUI) *Training {
 }
 
 func (a *Training) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectStatus, a.selectTag)
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
-	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(
-			a.searchEntry,
-			container.NewHScroll(filter),
-		)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
+		filter := container.NewHBox(a.selectStatus, a.selectTag)
 		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
@@ -472,33 +500,34 @@ func writeTrainingRowsToCSV(w io.Writer, rows []trainingRow) error {
 	return cw.Error()
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *Training) currentFilter() trainingFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return trainingFilter{
+			status: s[trainingFilterStatus],
+			tag:    s[trainingFilterTag],
+		}
+	}
+	return trainingFilter{
+		status: a.selectStatus.Selected,
+		tag:    a.selectTag.Selected,
+	}
+}
+
 func (a *Training) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	selectStatus := a.selectStatus.Selected
-	selectTag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
-		if selectStatus != "" {
-			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
-				switch selectStatus {
-				case trainingStatusActive:
-					return !r.isActive
-				case trainingStatusInActive:
-					return r.isActive
-				}
-				return true
-			})
-		}
-		if selectTag != "" {
-			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
-				return !r.tags.Contains(selectTag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
+			return !filter.match(r)
+		})
 		// search filter
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
@@ -520,7 +549,14 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(trainingFilterStatus, []string{trainingStatusActive, trainingStatusInActive}),
+					xwidget.NewFilterOptionMultiChoice(trainingFilterTag, tagOptions),
+				)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
