@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
@@ -26,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -73,14 +71,13 @@ type colonyDetails struct {
 	filterRun     latestRun
 	footer        *widget.Label
 	forecastRun   latestRun
-	icon          *canvas.Image
-	iconAttention *canvas.Image // shown over the planet icon when the colony has problems
-	iconStack     *fyne.Container
+	icon          *colonyPlanetSymbol
 	installations *widget.List
 	owner         *widget.Hyperlink
 	planet        *xwidget.TappableRichText
 	planetID      atomic.Int64
 	planetType    *widget.Hyperlink
+	root          *fyne.Container // content of the renderer
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
 	rowsGen       int // incremented when Update replaces rows
@@ -109,7 +106,7 @@ Extractor: The resource being extracted, the time left until the program ends an
 
 Processors: The product being produced and whether the processor is producing or idle, e.g. because it is waiting for inputs.
 
-Storage Facility, Launchpad, Command Center: The largest contents, how full it is in percent and the used and total capacity. The Command Center also shows its upgrade level.
+Storage Facility, Launchpad, Command Center: The largest item stored, how full it is in percent and the used and total capacity.
 
 Problems:
 • Expired: The extractor program has ended.
@@ -234,7 +231,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       ui.NewLabelWithTruncation(""),
-		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(colonyDetailsIconSize)),
+		icon:         newColonyPlanetSymbol(colonyDetailsIconSize, 2),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
@@ -248,13 +245,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.planetID.Store(planetID)
 
 	a.status.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
-	a.icon.CornerRadius = theme.InputRadiusSize()
-	a.iconAttention = xwidget.NewImageFromResource(
-		theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError),
-		fyne.NewSquareSize(theme.IconInlineSize()*2),
-	)
-	a.iconAttention.Hide()
-	a.iconStack = container.NewStack(a.icon, container.NewCenter(a.iconAttention))
+	a.icon.icon.CornerRadius = theme.InputRadiusSize()
 
 	list := widget.NewList(
 		func() int {
@@ -295,7 +286,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		a.filterRowsAsync()
 	})
 
-	a.searchEntry = xwidget.NewSearchEntry("Search pins and products", func(_ string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search installations and items", func(_ string) {
 		a.filterRowsAsync()
 	})
 
@@ -344,7 +335,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			// aligns the icon with the first text line, which has inner padding
 			container.New(
 				layout.NewCustomPaddedLayout(theme.InnerPadding(), 0, 0, 0),
-				a.iconStack,
+				a.icon,
 			),
 		),
 		nil,
@@ -371,14 +362,23 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 		a.installations,
 	)
 
-	content := container.NewBorder(
+	a.root = container.NewBorder(
 		header,
 		nil,
 		nil,
 		nil,
 		installations,
 	)
-	return widget.NewSimpleRenderer(content)
+	return widget.NewSimpleRenderer(a.root)
+}
+
+func (a *colonyDetails) Resize(size fyne.Size) {
+	widthChanged := size.Width != a.Size().Width
+	a.BaseWidget.Resize(size)
+	if widthChanged && a.root != nil {
+		// wrapped header texts only know their height after being resized, so lay out again
+		a.root.Layout.Layout(a.root.Objects, a.root.Size())
+	}
 }
 
 func (a *colonyDetails) stop() {
@@ -404,12 +404,11 @@ func (a *colonyDetails) refreshForecast() {
 	gen := a.rowsGen
 	runAsync(func() {
 		colonyStatus, status, rows := a.makeRows(cp, time.Now())
-		planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
 			}
-			a.setStatus(colonyStatus, status, planetIcon)
+			a.setStatus(cp, colonyStatus, status)
 			a.rows = rows
 			a.filterRowsAsync()
 		})
@@ -524,8 +523,6 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	}
 	colonyStatus, status, rows := a.makeRows(cp, time.Now())
 
-	planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
-
 	fyne.Do(func() {
 		if !isLatest() {
 			return
@@ -544,7 +541,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		a.setStatus(colonyStatus, status, planetIcon)
+		a.setStatus(cp, colonyStatus, status)
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync()
@@ -553,23 +550,17 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 }
 
 // setStatus shows the status of the colony and its planet icon.
-func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment, planetIcon fyne.Resource) {
+func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, s app.ColonyStatus, display []widget.RichTextSegment) {
 	a.status.Set(display)
-	if a.icon.Resource != planetIcon {
-		a.icon.Resource = planetIcon
-		a.icon.Refresh()
-	}
-	if s.IsProblem() {
-		a.iconAttention.Show()
-		a.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
-	} else {
-		a.iconAttention.Hide()
-	}
+	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), s.IsProblem())
 }
 
 // makeRows returns the colony status, its display and the rows for all pins of a colony forecasted at now.
 func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.ColonyStatus, []widget.RichTextSegment, []colonyDetailsRow) {
 	f := a.u.Character().ForecastPlanet(cp, now)
+	if f.Status.IsProblem() {
+		colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // fill cache off the main thread
+	}
 	status := xwidget.RichTextSegmentsFromText(f.Status.Display(), widget.RichTextStyle{
 		ColorName: f.Status.Color(),
 		Inline:    true,
@@ -582,96 +573,93 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" for "+colonyBeyondHorizonText))
 	}
 	typeNames := cp.TypeNames()
+	typeVolumes := cp.TypeVolumes()
 	var rows []colonyDetailsRow
 	for _, p := range cp.Pins {
-		pinType := colonyPinTypeOf(cp, p)
-
-		name := cp.PinName(p)
-		searchTargets := []string{strings.ToLower(name)}
-
-		icon, iconColor := pinType.icon(), pinType.color()
-
 		pf := f.Pins[p.ID]
 		if pf == nil {
 			pf = &app.PinForecast{} // pin not simulated
 		}
-
-		var output, info string
-		var statusText string
-		statusColor := pf.Status.Color()
-		switch p.Type.Group.ID {
-		case app.EveGroupExtractorControlUnits:
-			if v, ok := p.ExtractorProductType.Value(); ok {
-				output = v.Name
-				searchTargets = append(searchTargets, strings.ToLower(v.Name))
-			} else {
-				output = "-"
-			}
-			if v, ok := p.ExpiryTime.Value(); ok {
-				info = v.Format(app.DateTimeFormat)
-			}
-			if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
-				statusText = ihumanize.Duration(v.Sub(now))
-			} else {
-				statusText = pf.Status.Display()
-			}
-		case app.EveGroupProcessors:
-			if v, ok := p.ProcessorSchematic(); ok {
-				output = v.Name
-				searchTargets = append(searchTargets, strings.ToLower(v.Name))
-			} else {
-				output = "-"
-			}
-			statusText = pf.Status.Display()
-		default:
-			if v, ok := pf.Capacity.Value(); ok && v > 0 {
-				info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
-				if pf.Status == app.PinStorageFull {
-					statusText = pf.Status.Display()
-				} else {
-					statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
-				}
-			}
-			contents := colonyContentsDisplay(pf.Contents, typeNames)
-			if p.Type.Group.ID == app.EveGroupCommandCenters {
-				output = fmt.Sprintf("Level %d", cp.UpgradeLevel)
-				if contents != "" {
-					output += " • " + contents
-				}
-			} else {
-				output = contents
-			}
-			if output == "" {
-				output = "Empty"
-			}
-			for id := range pf.Contents {
-				if n, ok := typeNames[id]; ok {
-					searchTargets = append(searchTargets, strings.ToLower(n))
-				}
-			}
-		}
-		status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
-			ColorName: statusColor,
-		})
-
-		rows = append(rows, colonyDetailsRow{
-			expiryTime:        p.ExpiryTime,
-			groupName:         p.Type.Group.Name,
-			info:              info,
-			name:              name,
-			output:            output,
-			pinID:             p.ID,
-			pinStatus:         pf.Status,
-			pinType:           pinType,
-			progress:          colonyPinProgress(p, pf, now),
-			status:            status,
-			symbolIcon:        icon,
-			symbolIconColor:   iconColor,
-			symbolStatusColor: pf.Status.IndicatorColor(),
-			searchTarget:      strings.Join(searchTargets, "~"),
-		})
+		rows = append(rows, makeColonyDetailsRow(cp, p, pf, typeNames, typeVolumes, now))
 	}
 	return f.Status, status, rows
+}
+
+// makeColonyDetailsRow returns the summary of an installation, as shown in the list and on its details page.
+func makeColonyDetailsRow(cp *app.CharacterPlanet, p *app.PlanetPin, pf *app.PinForecast, typeNames map[int64]string, typeVolumes map[int64]float64, now time.Time) colonyDetailsRow {
+	pinType := colonyPinTypeOf(cp, p)
+
+	name := cp.PinName(p)
+	searchTargets := []string{strings.ToLower(name)}
+
+	icon, iconColor := pinType.icon(), pinType.color()
+
+	var output, info string
+	var statusText string
+	statusColor := pf.Status.Color()
+	switch p.Type.Group.ID {
+	case app.EveGroupExtractorControlUnits:
+		if v, ok := p.ExtractorProductType.Value(); ok {
+			output = v.Name
+			searchTargets = append(searchTargets, strings.ToLower(v.Name))
+		} else {
+			output = "-"
+		}
+		if v, ok := p.ExpiryTime.Value(); ok {
+			info = v.Format(app.DateTimeFormat)
+		}
+		if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
+			statusText = ihumanize.Duration(v.Sub(now))
+		} else {
+			statusText = pf.Status.Display()
+		}
+	case app.EveGroupProcessors:
+		if v, ok := p.ProcessorSchematic(); ok {
+			output = v.Name
+			searchTargets = append(searchTargets, strings.ToLower(v.Name))
+		} else {
+			output = "-"
+		}
+		statusText = pf.Status.Display()
+	default:
+		if v, ok := pf.Capacity.Value(); ok && v > 0 {
+			info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
+			if pf.Status == app.PinStorageFull {
+				statusText = pf.Status.Display()
+			} else {
+				statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
+			}
+		}
+		output = colonyContentsDisplay(pf.Contents, typeNames, typeVolumes)
+		if output == "" {
+			output = "-"
+		}
+		for id := range pf.Contents {
+			if n, ok := typeNames[id]; ok {
+				searchTargets = append(searchTargets, strings.ToLower(n))
+			}
+		}
+	}
+	status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
+		ColorName: statusColor,
+	})
+
+	return colonyDetailsRow{
+		expiryTime:        p.ExpiryTime,
+		groupName:         p.Type.Group.Name,
+		info:              info,
+		name:              name,
+		output:            output,
+		pinID:             p.ID,
+		pinStatus:         pf.Status,
+		pinType:           pinType,
+		progress:          colonyPinProgress(p, pf, now),
+		status:            status,
+		symbolIcon:        icon,
+		symbolIconColor:   iconColor,
+		symbolStatusColor: pf.Status.IndicatorColor(),
+		searchTarget:      strings.Join(searchTargets, "~"),
+	}
 }
 
 // colonyPinProgress returns the progress shown in the symbol of a pin:
@@ -724,12 +712,13 @@ func colonyProgress(elapsed, total time.Duration) float64 {
 	return min(max(float64(elapsed)/float64(total), 0), 1)
 }
 
-// colonyContentsDisplay returns a short summary of the largest contents of a pin.
-func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string) string {
-	const maxItems = 3
+// colonyContentsDisplay returns a short summary of the contents of a pin which take up the most volume.
+func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string, typeVolumes map[int64]float64) string {
+	const maxItems = 1
 	type item struct {
 		name   string
 		amount int64
+		volume float64
 	}
 	var items []item
 	for id, amount := range contents {
@@ -737,10 +726,10 @@ func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string)
 		if !ok {
 			n = fmt.Sprintf("Type #%d", id)
 		}
-		items = append(items, item{n, amount})
+		items = append(items, item{n, amount, typeVolumes[id] * float64(amount)})
 	}
 	slices.SortFunc(items, func(a, b item) int {
-		return cmp.Or(cmp.Compare(b.amount, a.amount), strings.Compare(a.name, b.name))
+		return cmp.Or(cmp.Compare(b.volume, a.volume), cmp.Compare(b.amount, a.amount), strings.Compare(a.name, b.name))
 	})
 	var parts []string
 	for i, x := range items {
@@ -748,7 +737,7 @@ func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string)
 			parts = append(parts, fmt.Sprintf("+%d more", len(items)-maxItems))
 			break
 		}
-		parts = append(parts, fmt.Sprintf("%s %s", x.name, ihumanize.Comma(x.amount)))
+		parts = append(parts, x.name)
 	}
 	return strings.Join(parts, ", ")
 }

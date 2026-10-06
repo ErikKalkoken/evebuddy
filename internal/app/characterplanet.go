@@ -241,6 +241,18 @@ func (cp CharacterPlanet) TypeVolumes() map[int64]float64 {
 	return m
 }
 
+// TypeGroupNames returns the group names of all types known to a colony by type ID.
+// Types without a group are omitted.
+func (cp CharacterPlanet) TypeGroupNames() map[int64]string {
+	m := make(map[int64]string)
+	for et := range cp.types() {
+		if et.Group != nil {
+			m[et.ID] = et.Group.Name
+		}
+	}
+	return m
+}
+
 // types returns all types known to a colony. Types can repeat.
 func (cp CharacterPlanet) types() iter.Seq[*EveType] {
 	return func(yield func(*EveType) bool) {

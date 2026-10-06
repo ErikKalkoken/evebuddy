@@ -186,6 +186,26 @@ func TestCharacterPlanet_TypeVolumes(t *testing.T) {
 	})
 }
 
+func TestCharacterPlanet_TypeGroupNames(t *testing.T) {
+	t.Run("should return group names from contents, extractors and routes", func(t *testing.T) {
+		cp := app.CharacterPlanet{
+			Pins: []*app.PlanetPin{
+				{Contents: []*app.PlanetPinContent{{Type: &app.EveType{ID: 1, Group: &app.EveGroup{Name: "Alpha"}}}}},
+				{ExtractorProductType: optional.New(&app.EveType{ID: 2, Group: &app.EveGroup{Name: "Bravo"}})},
+			},
+			Routes: []*app.PlanetRoute{{ContentType: &app.EveType{ID: 3}}}, // no group
+		}
+		assert.Equal(t, map[int64]string{1: "Alpha", 2: "Bravo"}, cp.TypeGroupNames())
+	})
+	t.Run("should ignore missing types", func(t *testing.T) {
+		cp := app.CharacterPlanet{
+			Pins:   []*app.PlanetPin{{Contents: []*app.PlanetPinContent{{}}}},
+			Routes: []*app.PlanetRoute{{}},
+		}
+		assert.Empty(t, cp.TypeGroupNames())
+	})
+}
+
 func TestPlanetPin_ProcessorSchematic(t *testing.T) {
 	schematic := &app.EveSchematic{ID: 1}
 	factorySchematic := &app.EveSchematic{ID: 2}

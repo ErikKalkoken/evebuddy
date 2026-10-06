@@ -4,7 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -79,6 +82,7 @@ func TestColonies(t *testing.T) {
 		for _, r := range rows {
 			if r.planetID == cp.EvePlanet.ID {
 				assert.True(t, r.workEndsAt.MustValue().Equal(expiry))
+				assert.Equal(t, cp.EvePlanet.Type.IconID.ValueOrZero(), r.planetIconID)
 			} else {
 				assert.Equal(t, app.ColonyIdle, r.status)
 				assert.True(t, r.workEndsAt.IsEmpty())
@@ -116,6 +120,19 @@ func TestColonies(t *testing.T) {
 		assert.Len(t, a.rows, 2)
 		assert.Len(t, a.rowsFiltered, 2)
 	})
+	t.Run("can filter by status on mobile", func(t *testing.T) {
+		a := NewColonies(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		a.Update(t.Context())
+		require.Len(t, a.rowsFiltered, 2)
+		a.filterChip.SetSelected(map[string]string{colonyFilterStatus: app.ColonyExtracting.Display()})
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
+		}
+	})
 	t.Run("can filter by status", func(t *testing.T) {
 		a := newColonies(t)
 		a.Update(t.Context())
@@ -123,5 +140,142 @@ func TestColonies(t *testing.T) {
 		if assert.Len(t, a.rowsFiltered, 1) {
 			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
 		}
+	})
+}
+
+func TestColonyRow_StatusShort(t *testing.T) {
+	now := time.Now()
+	for _, tc := range []struct {
+		name  string
+		row   colonyRow
+		want  string
+		color fyne.ThemeColorName
+	}{
+		{
+			"working shows remaining time",
+			colonyRow{status: app.ColonyExtracting, workEndsAt: optional.New(now.Add(3 * time.Hour))},
+			"3h 0m",
+			"",
+		},
+		{
+			"working beyond horizon",
+			colonyRow{status: app.ColonyProducing, worksBeyond: true},
+			colonyBeyondHorizonText,
+			"",
+		},
+		{
+			"working without end shows status",
+			colonyRow{status: app.ColonyExtracting},
+			app.ColonyExtracting.Display(),
+			app.ColonyExtracting.Color(),
+		},
+		{
+			"idle shows status",
+			colonyRow{status: app.ColonyIdle},
+			app.ColonyIdle.Display(),
+			app.ColonyIdle.Color(),
+		},
+		{
+			"needs attention shows status",
+			colonyRow{status: app.ColonyNeedsAttention},
+			app.ColonyNeedsAttention.Display(),
+			app.ColonyNeedsAttention.Color(),
+		},
+		{
+			"not setup shows status",
+			colonyRow{status: app.ColonyNotSetup},
+			app.ColonyNotSetup.Display(),
+			app.ColonyNotSetup.Color(),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.row.statusShort(now)
+			require.Len(t, got, 1)
+			seg := got[0].(*widget.TextSegment)
+			assert.Equal(t, tc.want, seg.Text)
+			assert.Equal(t, tc.color, seg.Style.ColorName)
+		})
+	}
+}
+
+func TestColonyListItem(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should show attention icon only for colonies with problems", func(t *testing.T) {
+		w := newColonyListItem()
+		win := test.NewWindow(w)
+		t.Cleanup(win.Close)
+		w.set(colonyRow{status: app.ColonyNeedsAttention})
+		assert.True(t, w.planet.attention.Visible())
+		w.set(colonyRow{status: app.ColonyExtracting}) // row is recycled
+		assert.False(t, w.planet.attention.Visible())
+		w.set(colonyRow{status: app.ColonyIdle})
+		assert.False(t, w.planet.attention.Visible())
+	})
+}
+
+func TestColonyFilter_Match(t *testing.T) {
+	r := colonyRow{
+		extracting:      set.Of("Aqueous Liquids"),
+		ownerName:       "Bruce",
+		planetTypeName:  "Barren",
+		producing:       set.Of("Water"),
+		regionName:      "The Forge",
+		solarSystemName: "Jita",
+		status:          app.ColonyExtracting,
+		tags:            set.Of("Main"),
+	}
+	for _, tc := range []struct {
+		name   string
+		filter colonyFilter
+		want   bool
+	}{
+		{"no filter", colonyFilter{}, true},
+		{"all filters match", colonyFilter{
+			extracted:   "Aqueous Liquids",
+			owner:       "Bruce",
+			planetType:  "Barren",
+			produced:    "Water",
+			region:      "The Forge",
+			solarSystem: "Jita",
+			status:      app.ColonyExtracting.Display(),
+			tag:         "Main",
+		}, true},
+		{"attention", colonyFilter{attention: true}, false},
+		{"extracted", colonyFilter{extracted: "Base Metals"}, false},
+		{"owner", colonyFilter{owner: "Alice"}, false},
+		{"planet type", colonyFilter{planetType: "Lava"}, false},
+		{"produced", colonyFilter{produced: "Oxygen"}, false},
+		{"region", colonyFilter{region: "Domain"}, false},
+		{"solar system", colonyFilter{solarSystem: "Amarr"}, false},
+		{"status", colonyFilter{status: app.ColonyIdle.Display()}, false},
+		{"tag", colonyFilter{tag: "Alt"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.filter.match(r))
+		})
+	}
+	t.Run("attention matches colonies with problems", func(t *testing.T) {
+		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup} {
+			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}), s.Display())
+		}
+		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyIdle}))
+	})
+}
+
+func TestColonyRow_SetForecast(t *testing.T) {
+	const iconID = 1047
+	t.Run("should cache grayscale planet icon for problems", func(t *testing.T) {
+		grayscalePlanetIconCache.Delete(iconID)
+		r := colonyRow{planetIconID: iconID}
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyNeedsAttention})
+		_, ok := grayscalePlanetIconCache.Load(iconID)
+		assert.True(t, ok)
+	})
+	t.Run("should not cache grayscale planet icon when working", func(t *testing.T) {
+		grayscalePlanetIconCache.Delete(iconID)
+		r := colonyRow{planetIconID: iconID}
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyExtracting})
+		_, ok := grayscalePlanetIconCache.Load(iconID)
+		assert.False(t, ok)
 	})
 }
