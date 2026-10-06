@@ -85,19 +85,16 @@ func (w *destination) Refresh() {
 	w.badge.FillColor = c
 	if w.isActive {
 		w.label.Color = th.Color(colorPrimary, v)
-		w.label.TextStyle.Bold = true
 		w.icon.Resource = w.iconActive
 		w.indicator.FillColor = th.Color(colorIndicator, v)
 		w.indicator.Show()
 		w.indicator.Refresh()
 	} else if w.Disabled() {
 		w.label.Color = th.Color(theme.ColorNameDisabled, v)
-		w.label.TextStyle.Bold = false
 		w.icon.Resource = w.iconDisabled
 		w.indicator.Hide()
 	} else {
 		w.label.Color = th.Color(colorForeground, v)
-		w.label.TextStyle.Bold = false
 		w.icon.Resource = w.iconInactive
 		w.indicator.Hide()
 	}
@@ -123,9 +120,7 @@ func (w *destination) activate(showAnimation bool) {
 		w.tapAnim.Start()
 	} else {
 		// set to animation end state
-		s := w.indicatorSize()
-		w.indicator.Resize(s)
-		w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+		w.placeIndicator(w.indicatorSize())
 	}
 	w.Refresh()
 }
@@ -151,6 +146,12 @@ func (w *destination) indicatorSize() fyne.Size {
 	return fyne.NewSize(2.85*v, 1.3*v)
 }
 
+// placeIndicator centers the indicator. Its 1x1 parent is centered at (W-1)/2, hence the +0.5.
+func (w *destination) placeIndicator(s fyne.Size) {
+	w.indicator.Resize(s)
+	w.indicator.Move(fyne.NewPos(-s.Width/2+0.5, -s.Height/2+0.5))
+}
+
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 	s := w.indicatorSize()
 	w.tapAnim = canvas.NewSizeAnimation(
@@ -158,8 +159,7 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 		s,
 		defaultAnimationDuration,
 		func(s fyne.Size) {
-			w.indicator.Resize(s)
-			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2+0.5))
+			w.placeIndicator(s)
 		},
 	)
 	w.tapAnim.Curve = fyne.AnimationEaseOut

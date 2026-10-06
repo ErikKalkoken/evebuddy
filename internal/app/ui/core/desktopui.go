@@ -751,14 +751,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	return u
 }
 
-func formatISKValueShort(value optional.Optional[float64]) string {
-	v, ok := value.Value()
-	if !ok {
-		return "?"
-	}
-	return ihumanize.NumberF(v, 1)
-}
-
 // quit stops signals before Fyne closes its queue, so listeners can't call fyne.Do into a closed channel.
 func (u *DesktopUI) quit() {
 	u.signals.BeginShutdown()
@@ -931,6 +923,14 @@ func (u *DesktopUI) showUserDataDialog() {
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	xdesktop.DisableShortcutsForDialog(d, u.MainWindow())
 	d.Show()
+}
+
+func formatISKValueShort(value optional.Optional[float64]) string {
+	v, ok := value.Value()
+	if !ok {
+		return "?"
+	}
+	return ihumanize.NumberF(v, 1)
 }
 
 // contentPage is a widget that is used produce a consistent appearance for each page.

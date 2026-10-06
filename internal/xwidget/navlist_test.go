@@ -46,7 +46,7 @@ func TestNavListItem_TapWhileDisabledDoesNothing(t *testing.T) {
 	it := xwidget.NewNavListItem("Headline", theme.HomeIcon(), func() {
 		tapped = true
 	})
-	it.IsDisabled = true
+	it.Disable()
 	w := test.NewWindow(it)
 	defer w.Close()
 
@@ -66,7 +66,7 @@ func TestNavListItem_RefreshAfterFieldChanges(t *testing.T) {
 	it.Supporting = "Supporting text"
 	it.Leading = theme.CancelIcon()
 	it.Trailing = theme.CancelIcon()
-	it.IsDisabled = true
+	it.Disable()
 
 	assert.NotPanics(t, it.Refresh)
 }

@@ -223,7 +223,7 @@ func TestIsCanceled(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			xassert.Equal(t, tc.want, app.IsCanceled(tc.ctx, tc.err))
+			xassert.Equal(t, tc.want, app.IsContextCanceled(tc.ctx, tc.err))
 		})
 	}
 }

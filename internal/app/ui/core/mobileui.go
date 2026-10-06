@@ -517,35 +517,21 @@ func NewMobileUI(params UIParams) *MobileUI {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()
 		}
+		setEnabled := func(it *xwidget.NavListItem, enabled bool) {
+			if enabled {
+				it.Enable()
+			} else {
+				it.Disable()
+			}
+		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationAssets) {
-				corpAssetBrowserNav.IsDisabled = false
-			} else {
-				corpAssetBrowserNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationIndustryJobs) {
-				corpIndustryNav.IsDisabled = false
-			} else {
-				corpIndustryNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationContracts) {
-				corpContractsNav.IsDisabled = false
-			} else {
-				corpContractsNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWalletNav.IsDisabled = false
-			} else {
-				corpWalletNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationAssets) &&
+			setEnabled(corpAssetBrowserNav, sections.Contains(app.SectionCorporationAssets))
+			setEnabled(corpIndustryNav, sections.Contains(app.SectionCorporationIndustryJobs))
+			setEnabled(corpContractsNav, sections.Contains(app.SectionCorporationContracts))
+			setEnabled(corpWalletNav, sections.Contains(app.SectionCorporationWalletBalances))
+			setEnabled(corpWealthNav, sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
-				sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWealthNav.IsDisabled = false
-			} else {
-				corpWealthNav.IsDisabled = true
-			}
-			corpList.Refresh()
+				sections.Contains(app.SectionCorporationWalletBalances))
 		})
 	}
 
@@ -698,6 +684,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			fyne.Do(func() {
 				refreshMoreBadge()
 				navItemUpdateStatus.Supporting = full
+				navItemUpdateStatus.SupportingImportance = i
 				navItemUpdateStatus.Trailing = icon
 				navItemUpdateStatus.Refresh()
 				updateStatus.SetTextAndImportance(short, i)
@@ -709,7 +696,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			set(
 				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
 				"OFF",
-				widget.MediumImportance,
+				widget.WarningImportance,
 				theme.NewWarningThemedResource(theme.WarningIcon()),
 			)
 			return
@@ -765,6 +752,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 							fyne.Do(func() {
 								refreshMoreBadge()
 								navItemAbout.Supporting = "Update available"
+								navItemAbout.SupportingImportance = widget.HighImportance
 								navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
 								navItemAbout.Refresh()
 							})
@@ -773,6 +761,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 							fyne.Do(func() {
 								refreshMoreBadge()
 								navItemAbout.Supporting = ""
+								navItemAbout.SupportingImportance = widget.MediumImportance
 								navItemAbout.Trailing = nil
 								navItemAbout.Refresh()
 							})
@@ -823,8 +812,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.colonies.OnUpdate = func(_, notWorking int) {
-		navItemColonies2.Supporting = fmt.Sprintf("%d not working", notWorking)
-		navItemColonies2.Refresh()
+		setNavItemSupportingWarning(navItemColonies2, notWorking, "not working")
 	}
 
 	navItemIndustry := xwidget.NewNavListItem(
@@ -1039,8 +1027,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.training.OnUpdate = func(expired int) {
-		navItemSkills.Supporting = fmt.Sprintf("%d expired", expired)
-		navItemSkills.Refresh()
+		setNavItemSupportingWarning(navItemSkills, expired, "expired")
 	}
 
 	homeList = xwidget.NewNavList(
@@ -1090,6 +1077,19 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	})
 	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList, status))
 	return homeNav, status
+}
+
+func setNavItemSupportingWarning(item *xwidget.NavListItem, count int, label string) {
+	if count > 0 {
+		item.Supporting = fmt.Sprintf("%d %s", count, label)
+		item.SupportingImportance = widget.WarningImportance
+		item.Trailing = theme.NewWarningThemedResource(theme.WarningIcon())
+	} else {
+		item.Supporting = ""
+		item.SupportingImportance = widget.MediumImportance
+		item.Trailing = nil
+	}
+	item.Refresh()
 }
 
 func formatISKValueLong(value optional.Optional[float64], format string) string {
