@@ -476,3 +476,21 @@ func TestFilterChipCompact_Search(t *testing.T) {
 		assert.Equal(t, map[string]string{"Alpha": ""}, f.Selected())
 	})
 }
+
+func TestFilterChipCompact_ResetSilentUpdatesMenu(t *testing.T) {
+	test.NewTempApp(t)
+	f := NewFilterChipCompact([]FilterOption{
+		NewFilterOptionToogle("Alpha"),
+		NewFilterOptionMultiChoice("Bravo", []string{"one"}),
+	}, nil)
+	w := test.NewWindow(f)
+	defer w.Close()
+	f.SetSelected(map[string]string{"Alpha": "Alpha", "Bravo": "one"})
+
+	f.ResetSilent()
+
+	assert.Equal(t, f.blankResource, f.menu.Items[0].Icon)
+	assert.Equal(t, "Bravo (1)", f.menu.Items[1].Label)
+	assert.True(t, f.clearItem.Disabled)
+	assert.Equal(t, color.Transparent, f.background.FillColor)
+}

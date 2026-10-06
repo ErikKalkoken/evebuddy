@@ -165,6 +165,19 @@ func (w *FilterChipCompact) Reset() {
 	w.processChanged()
 }
 
+// ResetSilent resets the selection without calling OnChanged.
+func (w *FilterChipCompact) ResetSilent() {
+	if !w.isOn {
+		return
+	}
+	for name := range w.selected {
+		w.selected[name] = ""
+	}
+	w.updateOn()
+	w.setMenu()
+	w.Refresh()
+}
+
 // Selected returns the current selection.
 //
 // The selection is a map of option names and choices.

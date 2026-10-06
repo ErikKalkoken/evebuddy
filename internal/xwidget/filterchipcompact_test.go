@@ -364,3 +364,34 @@ func TestFilterChipCompact_Reset(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterChipCompact_ResetSilent(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should reset selection without calling OnChanged", func(t *testing.T) {
+		var calls int
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+			xwidget.NewFilterOptionMultiChoice("Bravo", []string{"one", "two"}),
+		}, func(map[string]string) {
+			calls++
+		})
+		f.SetSelected(map[string]string{"Alpha": "Alpha", "Bravo": "one"})
+		calls = 0
+
+		f.ResetSilent()
+
+		assert.Equal(t, map[string]string{"Alpha": "", "Bravo": ""}, f.Selected())
+		assert.False(t, f.IsOn())
+		assert.Zero(t, calls)
+	})
+	t.Run("should do nothing when nothing is selected", func(t *testing.T) {
+		f := xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+			xwidget.NewFilterOptionToogle("Alpha"),
+		}, nil)
+
+		f.ResetSilent()
+
+		assert.Equal(t, map[string]string{"Alpha": ""}, f.Selected())
+		assert.False(t, f.IsOn())
+	})
+}
