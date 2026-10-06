@@ -29,6 +29,28 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Names of the corporation overview filters, used as labels on desktop and as option names on mobile.
+const (
+	corporationOverviewFilterAlliance = "Alliance"
+	corporationOverviewFilterFaction  = "Faction"
+)
+
+// corporationOverviewFilter is the selected value of each corporation overview filter. Empty means not filtered.
+type corporationOverviewFilter struct {
+	alliance string
+	faction  string
+}
+
+// match reports whether row r passes all filters.
+func (f corporationOverviewFilter) match(r corporationOverviewRow) bool {
+	switch {
+	case f.alliance != "" && r.allianceName() != f.alliance,
+		f.faction != "" && r.factionName() != f.faction:
+		return false
+	}
+	return true
+}
+
 type corporationOverviewRow struct {
 	activeContracts      optional.Optional[int64]
 	activeIndustryJobs   optional.Optional[int64]
@@ -60,6 +82,7 @@ type CorporationOverview struct {
 
 	OnUpdate func(corporations int)
 
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
 	footer         *widget.Label
 	columnSorter   *xwidget.ColumnSorter[corporationOverviewRow]
@@ -68,7 +91,7 @@ type CorporationOverview struct {
 	rows           []corporationOverviewRow
 	rowsFiltered   []corporationOverviewRow
 	searchEntry    *xwidget.SearchEntry
-	selectAlliance *kxwidget.FilterChipSelect
+	selectAlliance *kxwidget.FilterChipSelect // select chips only on desktop
 	selectFaction  *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
 	u              baseUI
@@ -128,7 +151,11 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(_ string) {
+	placeholder := "Search corporations"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -138,12 +165,19 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 		a.main = a.makeList()
 	}
 
-	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectAlliance = makeSelect(corporationOverviewFilterAlliance)
+		a.selectFaction = makeSelect(corporationOverviewFilterFaction)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -195,15 +229,15 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 }
 
 func (a *CorporationOverview) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectAlliance,
-		a.selectFaction,
-		a.sortChip,
-	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
+		filter := container.NewHBox(
+			a.selectAlliance,
+			a.selectFaction,
+			a.sortChip,
+		)
 		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
@@ -284,26 +318,34 @@ func (a *CorporationOverview) makeList() *widget.List {
 	return l
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *CorporationOverview) currentFilter() corporationOverviewFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return corporationOverviewFilter{
+			alliance: s[corporationOverviewFilterAlliance],
+			faction:  s[corporationOverviewFilterFaction],
+		}
+	}
+	return corporationOverviewFilter{
+		alliance: a.selectAlliance.Selected,
+		faction:  a.selectFaction.Selected,
+	}
+}
+
 func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
-	alliance := a.selectAlliance.Selected
-	faction := a.selectFaction.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		if alliance != "" {
-			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
-				return r.allianceName() != alliance
-			})
-		}
-		if faction != "" {
-			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
-				return r.factionName() != faction
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r corporationOverviewRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -327,8 +369,15 @@ func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectAlliance.SetOptions(allianceOptions)
-			a.selectFaction.SetOptions(factionOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(corporationOverviewFilterAlliance, allianceOptions),
+					xwidget.NewFilterOptionMultiChoice(corporationOverviewFilterFaction, factionOptions),
+				)
+			} else {
+				a.selectAlliance.SetOptions(allianceOptions)
+				a.selectFaction.SetOptions(factionOptions)
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
