@@ -59,6 +59,9 @@ func (r *colonyRow) setForecast(f *app.ColonyForecast) {
 	r.status = f.Status
 	r.workEndsAt = f.WorkEndsAt
 	r.worksBeyond = f.WorksBeyondHorizon
+	if r.status.IsProblem() {
+		colonyPlanetIcon(r.planetIconID, true) // fill cache off the main thread
+	}
 }
 
 // compareWorkEnds orders colonies by when they stop working:

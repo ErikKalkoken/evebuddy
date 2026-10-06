@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/layout"
@@ -26,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -73,9 +71,7 @@ type colonyDetails struct {
 	filterRun     latestRun
 	footer        *widget.Label
 	forecastRun   latestRun
-	icon          *canvas.Image
-	iconAttention *canvas.Image // shown over the planet icon when the colony has problems
-	iconStack     *fyne.Container
+	icon          *colonyPlanetSymbol
 	installations *widget.List
 	owner         *widget.Hyperlink
 	planet        *xwidget.TappableRichText
@@ -235,7 +231,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a := &colonyDetails{
 		columnSorter: columnSorter,
 		footer:       ui.NewLabelWithTruncation(""),
-		icon:         xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(colonyDetailsIconSize)),
+		icon:         newColonyPlanetSymbol(colonyDetailsIconSize, 2),
 		owner:        makeHyperLink(),
 		planet:       planet,
 		planetType:   makeHyperLink(),
@@ -249,13 +245,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.planetID.Store(planetID)
 
 	a.status.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
-	a.icon.CornerRadius = theme.InputRadiusSize()
-	a.iconAttention = xwidget.NewImageFromResource(
-		theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError),
-		fyne.NewSquareSize(theme.IconInlineSize()*2),
-	)
-	a.iconAttention.Hide()
-	a.iconStack = container.NewStack(a.icon, container.NewCenter(a.iconAttention))
+	a.icon.icon.CornerRadius = theme.InputRadiusSize()
 
 	list := widget.NewList(
 		func() int {
@@ -345,7 +335,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			// aligns the icon with the first text line, which has inner padding
 			container.New(
 				layout.NewCustomPaddedLayout(theme.InnerPadding(), 0, 0, 0),
-				a.iconStack,
+				a.icon,
 			),
 		),
 		nil,
@@ -414,12 +404,11 @@ func (a *colonyDetails) refreshForecast() {
 	gen := a.rowsGen
 	runAsync(func() {
 		colonyStatus, status, rows := a.makeRows(cp, time.Now())
-		planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
 			}
-			a.setStatus(colonyStatus, status, planetIcon)
+			a.setStatus(cp, colonyStatus, status)
 			a.rows = rows
 			a.filterRowsAsync()
 		})
@@ -534,8 +523,6 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	}
 	colonyStatus, status, rows := a.makeRows(cp, time.Now())
 
-	planetIcon := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), colonyStatus.IsProblem())
-
 	fyne.Do(func() {
 		if !isLatest() {
 			return
@@ -554,7 +541,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		a.setStatus(colonyStatus, status, planetIcon)
+		a.setStatus(cp, colonyStatus, status)
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync()
@@ -563,23 +550,17 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 }
 
 // setStatus shows the status of the colony and its planet icon.
-func (a *colonyDetails) setStatus(s app.ColonyStatus, display []widget.RichTextSegment, planetIcon fyne.Resource) {
+func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, s app.ColonyStatus, display []widget.RichTextSegment) {
 	a.status.Set(display)
-	if a.icon.Resource != planetIcon {
-		a.icon.Resource = planetIcon
-		a.icon.Refresh()
-	}
-	if s.IsProblem() {
-		a.iconAttention.Show()
-		a.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
-	} else {
-		a.iconAttention.Hide()
-	}
+	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), s.IsProblem())
 }
 
 // makeRows returns the colony status, its display and the rows for all pins of a colony forecasted at now.
 func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.ColonyStatus, []widget.RichTextSegment, []colonyDetailsRow) {
 	f := a.u.Character().ForecastPlanet(cp, now)
+	if f.Status.IsProblem() {
+		colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // fill cache off the main thread
+	}
 	status := xwidget.RichTextSegmentsFromText(f.Status.Display(), widget.RichTextStyle{
 		ColorName: f.Status.Color(),
 		Inline:    true,

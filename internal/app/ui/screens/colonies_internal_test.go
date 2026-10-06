@@ -261,3 +261,21 @@ func TestColonyFilter_Match(t *testing.T) {
 		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyIdle}))
 	})
 }
+
+func TestColonyRow_SetForecast(t *testing.T) {
+	const iconID = 1047
+	t.Run("should cache grayscale planet icon for problems", func(t *testing.T) {
+		grayscalePlanetIconCache.Delete(iconID)
+		r := colonyRow{planetIconID: iconID}
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyNeedsAttention})
+		_, ok := grayscalePlanetIconCache.Load(iconID)
+		assert.True(t, ok)
+	})
+	t.Run("should not cache grayscale planet icon when working", func(t *testing.T) {
+		grayscalePlanetIconCache.Delete(iconID)
+		r := colonyRow{planetIconID: iconID}
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyExtracting})
+		_, ok := grayscalePlanetIconCache.Load(iconID)
+		assert.False(t, ok)
+	})
+}

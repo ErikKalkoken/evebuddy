@@ -253,10 +253,11 @@ func TestColonyDetails(t *testing.T) {
 		assertPages(t, 0, "after close")
 	})
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
-		a.icon.Resource = nil
+		a.icon.icon.Resource = nil
 		a.refreshForecast()
 		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // colony is not setup
-		assert.Equal(t, want, a.icon.Resource)
+		assert.Equal(t, want, a.icon.icon.Resource)
+		assert.True(t, a.icon.attention.Visible())
 	})
 	t.Run("should not restore colony on refresh after a failed update", func(t *testing.T) {
 		a.characterID.Store(0)
