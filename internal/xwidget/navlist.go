@@ -40,12 +40,13 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 type NavListItem struct {
 	widget.BaseWidget
 
-	Headline   string
-	IsDisabled bool
-	Leading    fyne.Resource
-	OnTapped   func()
-	Supporting string
-	Trailing   fyne.Resource
+	Headline             string
+	IsDisabled           bool
+	Leading              fyne.Resource
+	OnTapped             func()
+	Supporting           string
+	SupportingImportance widget.Importance // Medium and Low render muted (default)
+	Trailing             fyne.Resource
 
 	backgroundRectangle *canvas.Rectangle
 	headlineText        *canvas.Text
@@ -161,7 +162,20 @@ func (w *NavListItem) updateStyle() {
 		}
 	} else {
 		w.headlineText.Color = th.Color(navListItemHeadlineColor, v)
-		w.supportingText.Color = th.Color(navListItemSupportingColor, v)
+		var supportingColor fyne.ThemeColorName
+		switch w.SupportingImportance {
+		case widget.DangerImportance:
+			supportingColor = theme.ColorNameError
+		case widget.HighImportance:
+			supportingColor = theme.ColorNamePrimary
+		case widget.SuccessImportance:
+			supportingColor = theme.ColorNameSuccess
+		case widget.WarningImportance:
+			supportingColor = theme.ColorNameWarning
+		default:
+			supportingColor = navListItemSupportingColor
+		}
+		w.supportingText.Color = th.Color(supportingColor, v)
 		if w.Leading != nil {
 			w.leadingImage.Resource = w.Leading
 		}

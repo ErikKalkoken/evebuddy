@@ -698,6 +698,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			fyne.Do(func() {
 				refreshMoreBadge()
 				navItemUpdateStatus.Supporting = full
+				navItemUpdateStatus.SupportingImportance = i
 				navItemUpdateStatus.Trailing = icon
 				navItemUpdateStatus.Refresh()
 				updateStatus.SetTextAndImportance(short, i)
@@ -709,7 +710,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			set(
 				fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
 				"OFF",
-				widget.MediumImportance,
+				widget.WarningImportance,
 				theme.NewWarningThemedResource(theme.WarningIcon()),
 			)
 			return
@@ -765,6 +766,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 							fyne.Do(func() {
 								refreshMoreBadge()
 								navItemAbout.Supporting = "Update available"
+								navItemAbout.SupportingImportance = widget.HighImportance
 								navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
 								navItemAbout.Refresh()
 							})
@@ -773,6 +775,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 							fyne.Do(func() {
 								refreshMoreBadge()
 								navItemAbout.Supporting = ""
+								navItemAbout.SupportingImportance = widget.MediumImportance
 								navItemAbout.Trailing = nil
 								navItemAbout.Refresh()
 							})
@@ -823,8 +826,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.colonies.OnUpdate = func(_, notWorking int) {
-		navItemColonies2.Supporting = fmt.Sprintf("%d not working", notWorking)
-		navItemColonies2.Refresh()
+		setNavItemSupportingWarning(navItemColonies2, notWorking, "not working")
 	}
 
 	navItemIndustry := xwidget.NewNavListItem(
@@ -1039,8 +1041,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.training.OnUpdate = func(expired int) {
-		navItemSkills.Supporting = fmt.Sprintf("%d expired", expired)
-		navItemSkills.Refresh()
+		setNavItemSupportingWarning(navItemSkills, expired, "expired")
 	}
 
 	homeList = xwidget.NewNavList(
@@ -1090,6 +1091,19 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	})
 	homeNav = xwidget.NewNavigator(xwidget.NewAppBar("Home", homeList, status))
 	return homeNav, status
+}
+
+func setNavItemSupportingWarning(item *xwidget.NavListItem, count int, label string) {
+	if count > 0 {
+		item.Supporting = fmt.Sprintf("%d %s", count, label)
+		item.SupportingImportance = widget.WarningImportance
+		item.Trailing = theme.NewWarningThemedResource(theme.WarningIcon())
+	} else {
+		item.Supporting = ""
+		item.SupportingImportance = widget.MediumImportance
+		item.Trailing = nil
+	}
+	item.Refresh()
 }
 
 func formatISKValueLong(value optional.Optional[float64], format string) string {

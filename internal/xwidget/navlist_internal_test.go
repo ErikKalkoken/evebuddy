@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,6 +48,32 @@ func TestNavListItem_Style(t *testing.T) {
 		assert.Equal(t, color(it, theme.ColorNameForeground), it.headlineText.Color)
 		assert.Equal(t, color(it, theme.ColorNamePlaceHolder), it.supportingText.Color)
 		assert.IsType(t, &theme.ThemedResource{}, it.leadingImage.Resource)
+	})
+	t.Run("should color supporting text by importance", func(t *testing.T) {
+		cases := []struct {
+			importance widget.Importance
+			want       fyne.ThemeColorName
+		}{
+			{widget.MediumImportance, theme.ColorNamePlaceHolder},
+			{widget.LowImportance, theme.ColorNamePlaceHolder},
+			{widget.HighImportance, theme.ColorNamePrimary},
+			{widget.SuccessImportance, theme.ColorNameSuccess},
+			{widget.WarningImportance, theme.ColorNameWarning},
+			{widget.DangerImportance, theme.ColorNameError},
+		}
+		for _, tc := range cases {
+			it := makeItem(t)
+			it.SupportingImportance = tc.importance
+			it.Refresh()
+			assert.Equal(t, color(it, tc.want), it.supportingText.Color, "importance %d", tc.importance)
+		}
+	})
+	t.Run("should show disabled color regardless of importance", func(t *testing.T) {
+		it := makeItem(t)
+		it.SupportingImportance = widget.WarningImportance
+		it.IsDisabled = true
+		it.Refresh()
+		assert.Equal(t, color(it, theme.ColorNameDisabled), it.supportingText.Color)
 	})
 	t.Run("should apply style when refreshed before first render", func(t *testing.T) {
 		it := NewNavListItem("Headline", theme.HomeIcon(), nil)
