@@ -41,6 +41,51 @@ const (
 	assetSearchTotalNo  = "Has no total"
 )
 
+// Names of the asset search filters, used as labels on desktop and as option names on mobile.
+const (
+	assetSearchFilterCategory = "Category"
+	assetSearchFilterGroup    = "Group"
+	assetSearchFilterLocation = "Location"
+	assetSearchFilterOwner    = "Owner"
+	assetSearchFilterRegion   = "Region"
+	assetSearchFilterState    = "State"
+	assetSearchFilterTag      = "Tag"
+	assetSearchFilterTotal    = "Total"
+)
+
+// assetSearchFilter is the selected value of each asset search filter. Empty means not filtered.
+type assetSearchFilter struct {
+	category string
+	group    string
+	location string
+	owner    string
+	region   string
+	state    string
+	tag      string
+	total    string
+}
+
+// match reports whether row r passes all filters.
+func (f assetSearchFilter) match(r assetRow) bool {
+	switch {
+	case f.category != "" && r.categoryName != f.category,
+		f.group != "" && r.groupName != f.group,
+		f.location != "" && r.locationName != f.location,
+		f.owner != "" && r.owner.Name != f.owner,
+		f.region != "" && r.regionName != f.region,
+		f.state != "" && r.state != f.state,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	switch f.total {
+	case assetSearchTotalYes:
+		return !r.total.IsEmpty()
+	case assetSearchTotalNo:
+		return r.total.IsEmpty()
+	}
+	return true
+}
+
 type assetRow struct {
 	categoryID      int64
 	categoryName    string
@@ -220,13 +265,14 @@ type AssetSearch struct {
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
 	rowsFiltered   []assetRow
 	searchEntry    *xwidget.SearchEntry
-	selectCategory *kxwidget.FilterChipSelect
+	selectCategory *kxwidget.FilterChipSelect // select chips only on desktop
 	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
@@ -381,40 +427,39 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	}
 
 	// filters
-	a.searchEntry = xwidget.NewSearchEntry("Search items", func(_ string) {
+	placeholder := "Search items"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
-	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectOwner = kxwidget.NewFilterChipSelectWithSearch("Owner", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch("Location", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTotal = kxwidget.NewFilterChipSelect("Total",
-		[]string{
-			assetSearchTotalYes,
-			assetSearchTotalNo,
-		},
-		func(_ string) {
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
-		},
-	)
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		makeSelectWithSearch := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelectWithSearch(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			}, a.u.MainWindow())
+		}
+		a.selectCategory = makeSelectWithSearch(assetSearchFilterCategory)
+		a.selectGroup = makeSelectWithSearch(assetSearchFilterGroup)
+		a.selectOwner = makeSelectWithSearch(assetSearchFilterOwner)
+		a.selectRegion = makeSelectWithSearch(assetSearchFilterRegion)
+		a.selectLocation = makeSelectWithSearch(assetSearchFilterLocation)
+		a.selectState = makeSelect(assetSearchFilterState)
+		a.selectTotal = makeSelect(assetSearchFilterTotal)
+		a.selectTotal.SetOptions([]string{assetSearchTotalYes, assetSearchTotalNo})
+		a.selectTag = makeSelect(assetSearchFilterTag)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -429,6 +474,10 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
+				if a.filterChip != nil {
+					a.filterChip.ResetSilent()
+					return
+				}
 				a.selectCategory.Selected = ""
 				a.selectGroup.Selected = ""
 				a.selectLocation.Selected = ""
@@ -479,28 +528,54 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 }
 
 func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(
-		a.selectCategory,
-		a.selectGroup,
-		a.selectRegion,
-		a.selectLocation,
-		a.selectState,
-		a.selectTotal,
-	)
-	if !a.forCorporation {
-		filters.Add(a.selectTag)
-		filters.Add(a.selectOwner)
-	}
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		filters.Add(a.sortChip)
-		topBox.Add(a.searchEntry)
-		topBox.Add(container.NewHScroll(filters))
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
+		filters := container.NewHBox(
+			a.selectCategory,
+			a.selectGroup,
+			a.selectRegion,
+			a.selectLocation,
+			a.selectState,
+			a.selectTotal,
+		)
+		if !a.forCorporation {
+			filters.Add(a.selectTag)
+			filters.Add(a.selectOwner)
+		}
 		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
 	}
 	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *AssetSearch) currentFilter() assetSearchFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return assetSearchFilter{
+			category: s[assetSearchFilterCategory],
+			group:    s[assetSearchFilterGroup],
+			location: s[assetSearchFilterLocation],
+			owner:    s[assetSearchFilterOwner],
+			region:   s[assetSearchFilterRegion],
+			state:    s[assetSearchFilterState],
+			tag:      s[assetSearchFilterTag],
+			total:    s[assetSearchFilterTotal],
+		}
+	}
+	return assetSearchFilter{
+		category: a.selectCategory.Selected,
+		group:    a.selectGroup.Selected,
+		location: a.selectLocation.Selected,
+		owner:    a.selectOwner.Selected,
+		region:   a.selectRegion.Selected,
+		state:    a.selectState.Selected,
+		tag:      a.selectTag.Selected,
+		total:    a.selectTotal.Selected,
+	}
 }
 
 func (a *AssetSearch) makeDataList() *xwidget.StripedList {
@@ -683,64 +758,14 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	category := a.selectCategory.Selected
-	group := a.selectGroup.Selected
-	location := a.selectLocation.Selected
-	owner := a.selectOwner.Selected
-	region := a.selectRegion.Selected
-	state := a.selectState.Selected
-	tag := a.selectTag.Selected
-	total := a.selectTotal.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		if state != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.state != state
-			})
-		}
-		if category != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.categoryName != category
-			})
-		}
-		if group != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.groupName != group
-			})
-		}
-		if owner != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.owner.Name != owner
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.regionName != region
-			})
-		}
-		if location != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return r.locationName != location
-			})
-		}
-		if total != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				switch total {
-				case assetSearchTotalYes:
-					return r.total.IsEmpty()
-				case assetSearchTotalNo:
-					return !r.total.IsEmpty()
-				}
-				return true
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r assetRow) bool {
+			return !filter.match(r)
+		})
 		// search filter
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r assetRow) bool {
@@ -787,13 +812,31 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCategory.SetOptions(categoryOptions)
-			a.selectGroup.SetOptions(groupOptions)
-			a.selectLocation.SetOptions(locationOptions)
-			a.selectOwner.SetOptions(ownerOptions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectState.SetOptions(stateOptions)
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				options := []xwidget.FilterOption{
+					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterCategory, categoryOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterGroup, groupOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterLocation, locationOptions),
+					xwidget.NewFilterOptionMultiChoice(assetSearchFilterState, stateOptions),
+					xwidget.NewFilterOptionMultiChoice(assetSearchFilterTotal, []string{assetSearchTotalYes, assetSearchTotalNo}),
+				}
+				if !a.forCorporation {
+					options = append(options,
+						xwidget.NewFilterOptionMultiChoice(assetSearchFilterTag, tagOptions),
+						xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterOwner, ownerOptions),
+					)
+				}
+				a.filterChip.SetOptions(options...)
+			} else {
+				a.selectCategory.SetOptions(categoryOptions)
+				a.selectGroup.SetOptions(groupOptions)
+				a.selectLocation.SetOptions(locationOptions)
+				a.selectOwner.SetOptions(ownerOptions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectState.SetOptions(stateOptions)
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 			switch x := a.body.(type) {
