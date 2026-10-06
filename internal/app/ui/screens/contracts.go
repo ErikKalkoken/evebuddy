@@ -34,6 +34,47 @@ const (
 	contractStatusHistory     = "History"
 )
 
+// Names of the contract filters, used as labels on desktop and as option names on mobile.
+const (
+	contractsFilterAssignee = "Assignee"
+	contractsFilterIssuer   = "Issuer"
+	contractsFilterTag      = "Tag"
+	contractsFilterType     = "Type"
+)
+
+// contractsFilter is the selected value of each contract filter. Empty means not filtered.
+type contractsFilter struct {
+	assignee string
+	issuer   string
+	status   string
+	tag      string
+	typeName string
+}
+
+// match reports whether row r passes all filters.
+func (f contractsFilter) match(r contractRow) bool {
+	switch {
+	case f.assignee != "" && r.assigneeName != f.assignee,
+		f.issuer != "" && r.issuerName != f.issuer,
+		f.tag != "" && !r.tags.Contains(f.tag),
+		f.typeName != "" && r.typeName != f.typeName:
+		return false
+	}
+	switch f.status {
+	case contractStatusAllActive:
+		return r.isActive
+	case contractStatusOutstanding:
+		return r.status == app.ContractStatusOutstanding
+	case contractStatusInProgress:
+		return r.status == app.ContractStatusInProgress
+	case contractStatusHasIssue:
+		return r.hasIssue
+	case contractStatusHistory:
+		return r.isHistory
+	}
+	return true
+}
+
 type contractRow struct {
 	acceptor           optional.Optional[*app.EveEntity]
 	assignee           optional.Optional[*app.EveEntity]
@@ -195,15 +236,16 @@ type Contracts struct {
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
 	searchEntry    *xwidget.SearchEntry
-	selectAssignee *kxwidget.FilterChipSelect
+	selectAssignee *kxwidget.FilterChipSelect // select chips only on desktop
 	selectIssuer   *kxwidget.FilterChipSelect
-	selectStatus   *kxwidget.FilterChipSelect
+	selectStatus   *kxwidget.FilterChipSelect // mode chip on all platforms
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
@@ -327,15 +369,26 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		a.filterRowsAsync("")
 	})
 
-	a.selectAssignee = kxwidget.NewFilterChipSelectWithSearch("Assignee", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectIssuer = kxwidget.NewFilterChipSelectWithSearch("Issuer", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelectWithSearch := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelectWithSearch(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			}, a.u.MainWindow())
+		}
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectAssignee = makeSelectWithSearch(contractsFilterAssignee)
+		a.selectIssuer = makeSelectWithSearch(contractsFilterIssuer)
+		a.selectType = makeSelect(contractsFilterType)
+		a.selectTag = makeSelect(contractsFilterTag)
+	}
 
 	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
 		contractStatusAllActive,
@@ -348,9 +401,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	})
 	a.selectStatus.Selected = contractStatusAllActive
 	a.selectStatus.SortDisabled = true
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -394,22 +444,19 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 }
 
 func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectType,
-		a.selectIssuer,
-		a.selectAssignee,
-		a.selectStatus,
-	)
-	if !a.forCorporation {
-		filter.Add(a.selectTag)
-	}
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
-	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
+		topBox = container.NewVBox(a.searchEntry, container.NewHBox(a.selectStatus, a.filterChip, a.sortChip))
 	} else {
+		filter := container.NewHBox(
+			a.selectStatus,
+			a.selectType,
+			a.selectIssuer,
+			a.selectAssignee,
+		)
+		if !a.forCorporation {
+			filter.Add(a.selectTag)
+		}
 		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 
@@ -421,6 +468,28 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop. Status comes from its mode chip on both.
+func (a *Contracts) currentFilter() contractsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return contractsFilter{
+			assignee: s[contractsFilterAssignee],
+			issuer:   s[contractsFilterIssuer],
+			status:   a.selectStatus.Selected,
+			tag:      s[contractsFilterTag],
+			typeName: s[contractsFilterType],
+		}
+	}
+	return contractsFilter{
+		assignee: a.selectAssignee.Selected,
+		issuer:   a.selectIssuer.Selected,
+		status:   a.selectStatus.Selected,
+		tag:      a.selectTag.Selected,
+		typeName: a.selectType.Selected,
+	}
 }
 
 func (a *Contracts) makeDataList() *xwidget.StripedList {
@@ -489,50 +558,14 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	issuer := a.selectIssuer.Selected
-	assignee := a.selectAssignee.Selected
-	et := a.selectType.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
 		rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-			switch a.selectStatus.Selected {
-			case contractStatusAllActive:
-				return !r.isActive
-			case contractStatusOutstanding:
-				return r.status != app.ContractStatusOutstanding
-			case contractStatusInProgress:
-				return r.status != app.ContractStatusInProgress
-			case contractStatusHasIssue:
-				return !r.hasIssue
-			case contractStatusHistory:
-				return !r.isHistory
-			}
-			return true
+			return !filter.match(r)
 		})
-		if issuer != "" {
-			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return r.issuerName != issuer
-			})
-		}
-		if assignee != "" {
-			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return r.assigneeName != assignee
-			})
-		}
-		if et != "" {
-			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return r.typeName != et
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r contractRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -562,10 +595,22 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
-			a.selectIssuer.SetOptions(issueOptions)
-			a.selectAssignee.SetOptions(assigneeOptions)
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				options := []xwidget.FilterOption{
+					xwidget.NewFilterOptionMultiChoice(contractsFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterIssuer, issueOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterAssignee, assigneeOptions),
+				}
+				if !a.forCorporation {
+					options = append(options, xwidget.NewFilterOptionMultiChoice(contractsFilterTag, tagOptions))
+				}
+				a.filterChip.SetOptions(options...)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+				a.selectIssuer.SetOptions(issueOptions)
+				a.selectAssignee.SetOptions(assigneeOptions)
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
