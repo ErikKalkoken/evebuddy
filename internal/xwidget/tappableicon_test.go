@@ -35,6 +35,33 @@ func TestTappableIcon_CanTap(t *testing.T) {
 	assert.True(t, tapped)
 }
 
+func TestTappableIcon_Disable(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	var tapped bool
+	icon := xwidget.NewTappableIcon(theme.HomeIcon(), func() {
+		tapped = true
+	})
+	w := test.NewWindow(icon)
+	defer w.Close()
+
+	t.Run("should ignore tap when disabled", func(t *testing.T) {
+		tapped = false
+		icon.Disable()
+		test.Tap(icon)
+		assert.True(t, icon.Disabled())
+		assert.False(t, tapped)
+	})
+	t.Run("should accept tap when enabled again", func(t *testing.T) {
+		tapped = false
+		icon.Disable()
+		icon.Enable()
+		test.Tap(icon)
+		assert.False(t, icon.Disabled())
+		assert.True(t, tapped)
+	})
+}
+
 func TestTappableIcon_IgnoreTapWhenNoCallback(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())

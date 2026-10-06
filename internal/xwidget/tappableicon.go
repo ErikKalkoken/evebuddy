@@ -22,6 +22,7 @@ type TappableIcon struct {
 	resource fyne.Resource
 }
 
+var _ fyne.Disableable = (*TappableIcon)(nil)
 var _ fyne.Tappable = (*TappableIcon)(nil)
 var _ desktop.Hoverable = (*TappableIcon)(nil)
 
@@ -62,6 +63,10 @@ func (w *TappableIcon) Enable() {
 	w.disabled = false
 	w.SetResource(w.resource)
 	w.Refresh()
+}
+
+func (w *TappableIcon) Disabled() bool {
+	return w.disabled
 }
 
 // SetMenuItems replaces the menu items.
