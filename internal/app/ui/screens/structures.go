@@ -31,6 +31,44 @@ const (
 	structuresPowerHigh = "High Power"
 )
 
+// Names of the structure filters, used as labels on desktop and as option names on mobile.
+const (
+	structuresFilterOwner   = "Owner"
+	structuresFilterPower   = "Power"
+	structuresFilterRegion  = "Region"
+	structuresFilterService = "Service"
+	structuresFilterState   = "State"
+	structuresFilterSystem  = "System"
+	structuresFilterType    = "Type"
+)
+
+// structuresFilter is the selected value of each structure filter. Empty means not filtered.
+type structuresFilter struct {
+	owner       string
+	power       string
+	region      string
+	service     string
+	solarSystem string
+	state       string
+	typeName    string
+}
+
+// match reports whether row r passes all filters.
+func (f structuresFilter) match(r structureRow) bool {
+	switch {
+	case f.owner != "" && r.corporationName != f.owner,
+		f.power == structuresPowerHigh && !r.isFullPower,
+		f.power == structuresPowerLow && r.isFullPower,
+		f.region != "" && r.regionName != f.region,
+		f.service != "" && !r.services.Contains(f.service),
+		f.solarSystem != "" && r.solarSystemName != f.solarSystem,
+		f.state != "" && r.stateDisplay != f.state,
+		f.typeName != "" && r.typeName != f.typeName:
+		return false
+	}
+	return true
+}
+
 type structureRow struct {
 	corporationID      int64
 	corporationName    string
@@ -40,6 +78,7 @@ type structureRow struct {
 	isReinforced       bool
 	regionID           int64
 	regionName         string
+	searchTarget       string
 	services           set.Set[string]
 	servicesText       string
 	solarSystemDisplay []widget.RichTextSegment
@@ -69,6 +108,11 @@ func (r structureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 	})
 }
 
+// setSearchTarget sets the text the search entry matches against.
+func (r *structureRow) setSearchTarget() {
+	r.searchTarget = strings.ToLower(r.structureName + "\n" + r.solarSystemName) // separator prevents matches across names
+}
+
 type Structures struct {
 	widget.BaseWidget
 
@@ -76,13 +120,15 @@ type Structures struct {
 
 	columnSorter      *xwidget.ColumnSorter[structureRow]
 	corporation       atomic.Pointer[app.Corporation]
+	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
 	forCorporation    bool
 	main              fyne.CanvasObject
 	rows              []structureRow
 	rowsFiltered      []structureRow
-	selectPower       *kxwidget.FilterChipSelect
+	searchEntry       *xwidget.SearchEntry
+	selectPower       *kxwidget.FilterChipSelect // select chips only on desktop
 	selectRegion      *kxwidget.FilterChipSelect
 	selectService     *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
@@ -210,31 +256,33 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 	}
 
 	// filter
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
+	placeholder := "Search structures and systems"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
-	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectService = kxwidget.NewFilterChipSelect("Service", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectState = kxwidget.NewFilterChipSelect("State", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectType = kxwidget.NewFilterChipSelect("Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectOwner = makeSelect(structuresFilterOwner)
+		a.selectRegion = makeSelect(structuresFilterRegion)
+		a.selectService = makeSelect(structuresFilterService)
+		a.selectSolarSystem = makeSelect(structuresFilterSystem)
+		a.selectState = makeSelect(structuresFilterState)
+		a.selectType = makeSelect(structuresFilterType)
+		a.selectPower = makeSelect(structuresFilterPower)
+		a.selectPower.SetOptions([]string{structuresPowerHigh, structuresPowerLow})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
-		a.filterRowsAsync("")
-	})
-	a.selectPower = kxwidget.NewFilterChipSelect("Power", []string{
-		structuresPowerHigh,
-		structuresPowerLow,
-	}, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -278,72 +326,61 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 }
 
 func (a *Structures) CreateRenderer() fyne.WidgetRenderer {
-	objs := []fyne.CanvasObject{a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower}
-	if !a.forCorporation {
-		objs = slices.Insert(objs, 4, fyne.CanvasObject(a.selectOwner))
-	}
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		objs = append(objs, a.sortChip)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+	} else {
+		objs := []fyne.CanvasObject{a.selectType, a.selectState, a.selectSolarSystem, a.selectRegion, a.selectService, a.selectPower}
+		if !a.forCorporation {
+			objs = slices.Insert(objs, 4, fyne.CanvasObject(a.selectOwner))
+		}
+		top = container.NewBorder(nil, nil, container.NewHBox(objs...), nil, a.searchEntry)
 	}
-	filter := container.NewHBox(objs...)
-	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.main)
+	c := container.NewBorder(top, a.footer, nil, nil, a.main)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *Structures) currentFilter() structuresFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return structuresFilter{
+			owner:       s[structuresFilterOwner],
+			power:       s[structuresFilterPower],
+			region:      s[structuresFilterRegion],
+			service:     s[structuresFilterService],
+			solarSystem: s[structuresFilterSystem],
+			state:       s[structuresFilterState],
+			typeName:    s[structuresFilterType],
+		}
+	}
+	return structuresFilter{
+		owner:       a.selectOwner.Selected,
+		power:       a.selectPower.Selected,
+		region:      a.selectRegion.Selected,
+		service:     a.selectService.Selected,
+		solarSystem: a.selectSolarSystem.Selected,
+		state:       a.selectState.Selected,
+		typeName:    a.selectType.Selected,
+	}
 }
 
 func (a *Structures) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	owner := a.selectOwner.Selected
-	region := a.selectRegion.Selected
-	solarSystem := a.selectSolarSystem.Selected
-	state := a.selectState.Selected
-	service := a.selectService.Selected
-	et := a.selectType.Selected
-	power := a.selectPower.Selected
+	filter := a.currentFilter()
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
-		if owner != "" {
+		rows = slices.DeleteFunc(rows, func(r structureRow) bool {
+			return !filter.match(r)
+		})
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.corporationName != owner
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.regionName != region
-			})
-		}
-		if solarSystem != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.solarSystemName != solarSystem
-			})
-		}
-		if state != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.stateDisplay != state
-			})
-		}
-		if service != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return !r.services.Contains(service)
-			})
-		}
-		if et != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				return r.typeName != et
-			})
-		}
-		if power != "" {
-			rows = slices.DeleteFunc(rows, func(r structureRow) bool {
-				switch power {
-				case structuresPowerHigh:
-					return !r.isFullPower
-				case structuresPowerLow:
-					return r.isFullPower
-				}
-				return true
+				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
@@ -376,12 +413,29 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectOwner.SetOptions(ownerOptions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectSolarSystem.SetOptions(solarSystemOptions)
-			a.selectState.SetOptions(stateOptions)
-			a.selectService.SetOptions(servicesOptions)
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				options := []xwidget.FilterOption{
+					xwidget.NewFilterOptionMultiChoice(structuresFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoice(structuresFilterState, stateOptions),
+					xwidget.NewFilterOptionMultiChoice(structuresFilterSystem, solarSystemOptions),
+					xwidget.NewFilterOptionMultiChoice(structuresFilterRegion, regionOptions),
+				}
+				if !a.forCorporation {
+					options = append(options, xwidget.NewFilterOptionMultiChoice(structuresFilterOwner, ownerOptions))
+				}
+				options = append(options,
+					xwidget.NewFilterOptionMultiChoice(structuresFilterService, servicesOptions),
+					xwidget.NewFilterOptionMultiChoice(structuresFilterPower, []string{structuresPowerHigh, structuresPowerLow}),
+				)
+				a.filterChip.SetOptions(options...)
+			} else {
+				a.selectOwner.SetOptions(ownerOptions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectSolarSystem.SetOptions(solarSystemOptions)
+				a.selectState.SetOptions(stateOptions)
+				a.selectService.SetOptions(servicesOptions)
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
@@ -490,6 +544,7 @@ func (a *Structures) fetchData(ctx context.Context) ([]structureRow, error) {
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
 		}
+		rows[i].setSearchTarget()
 	}
 	return rows, nil
 }
