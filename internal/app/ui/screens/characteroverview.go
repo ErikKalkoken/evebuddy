@@ -164,9 +164,9 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
-	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
+	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
 		a.filterRowsAsync("")
-	}, a.u.MainWindow())
+	})
 	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterRowsAsync("")
 	})
