@@ -256,53 +256,29 @@ func (r *tripleCircleRenderer) Destroy() {}
 
 // colonyPinIcon shows the icon of a pin type tinted in the given theme color.
 type colonyPinIcon struct {
-	widget.BaseWidget
+	widget.Icon
 
-	color   fyne.ThemeColorName
-	icon    fyne.Resource
-	minSize fyne.Size
+	color fyne.ThemeColorName
+	icon  fyne.Resource
+	tint  iconTint
 }
 
-func newColonyPinIcon(icon fyne.Resource, minSize fyne.Size, color fyne.ThemeColorName) *colonyPinIcon {
-	w := &colonyPinIcon{color: color, icon: icon, minSize: minSize}
+func newColonyPinIcon(icon fyne.Resource, color fyne.ThemeColorName) *colonyPinIcon {
+	w := &colonyPinIcon{color: color, icon: icon}
 	w.ExtendBaseWidget(w)
+	w.updateResource()
 	return w
 }
 
-func (w *colonyPinIcon) CreateRenderer() fyne.WidgetRenderer {
-	image := canvas.NewImageFromResource(nil)
-	image.FillMode = canvas.ImageFillContain
-	r := &colonyPinIconRenderer{image: image, widget: w}
-	r.Refresh()
-	return r
+func (w *colonyPinIcon) Refresh() {
+	w.updateResource() // the theme may have changed
+	w.Icon.Refresh()
 }
 
-type colonyPinIconRenderer struct {
-	image  *canvas.Image
-	tint   iconTint
-	widget *colonyPinIcon
+func (w *colonyPinIcon) updateResource() {
+	c := w.Theme().Color(w.color, fyne.CurrentApp().Settings().ThemeVariant())
+	w.Resource = w.tint.apply(w.icon, c)
 }
-
-func (r *colonyPinIconRenderer) Layout(size fyne.Size) {
-	r.image.Resize(size)
-}
-
-func (r *colonyPinIconRenderer) MinSize() fyne.Size {
-	return r.widget.minSize
-}
-
-func (r *colonyPinIconRenderer) Refresh() {
-	v := fyne.CurrentApp().Settings().ThemeVariant()
-	c := r.widget.Theme().Color(r.widget.color, v)
-	r.image.Resource = r.tint.apply(r.widget.icon, c)
-	r.image.Refresh()
-}
-
-func (r *colonyPinIconRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.image}
-}
-
-func (r *colonyPinIconRenderer) Destroy() {}
 
 // iconTint remembers the last tinted icon to skip the cache when nothing changed.
 type iconTint struct {

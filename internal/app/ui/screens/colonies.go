@@ -440,7 +440,6 @@ func newColonyListItem() *colonyListItem {
 
 func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	iconSize := fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))
 	detail := func(icon fyne.CanvasObject, text *xwidget.RichText) fyne.CanvasObject {
 		return container.NewBorder(
 			nil,
@@ -457,8 +456,8 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-3*p), // same spacing as character cards
 			container.New(layout.NewCustomPaddedLayout(0, p, 0, 0), container.NewBorder(nil, nil, nil, w.status, w.title)),
-			detail(newColonyPinIcon(pinTypeExtractor.icon(), iconSize, colonyListMutedColor), w.extracting),
-			detail(newColonyPinIcon(pinTypeBasicProcessor.icon(), iconSize, colonyListMutedColor), w.producing),
+			detail(newColonyPinIcon(pinTypeExtractor.icon(), colonyListMutedColor), w.extracting),
+			detail(newColonyPinIcon(pinTypeBasicProcessor.icon(), colonyListMutedColor), w.producing),
 			detail(widget.NewIcon(theme.NewColoredResource(theme.AccountIcon(), colonyListMutedColor)), w.character),
 		),
 	)
