@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -119,6 +120,19 @@ func TestColonies(t *testing.T) {
 		assert.Len(t, a.rows, 2)
 		assert.Len(t, a.rowsFiltered, 2)
 	})
+	t.Run("can filter by status on mobile", func(t *testing.T) {
+		a := NewColonies(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		a.Update(t.Context())
+		require.Len(t, a.rowsFiltered, 2)
+		a.filterChip.SetSelected(map[string]string{colonyFilterStatus: app.ColonyExtracting.Display()})
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
+		}
+	})
 	t.Run("can filter by status", func(t *testing.T) {
 		a := newColonies(t)
 		a.Update(t.Context())
@@ -196,5 +210,54 @@ func TestColonyListItem(t *testing.T) {
 		assert.False(t, w.planet.attention.Visible())
 		w.set(colonyRow{status: app.ColonyIdle})
 		assert.False(t, w.planet.attention.Visible())
+	})
+}
+
+func TestColonyFilter_Match(t *testing.T) {
+	r := colonyRow{
+		extracting:      set.Of("Aqueous Liquids"),
+		ownerName:       "Bruce",
+		planetTypeName:  "Barren",
+		producing:       set.Of("Water"),
+		regionName:      "The Forge",
+		solarSystemName: "Jita",
+		status:          app.ColonyExtracting,
+		tags:            set.Of("Main"),
+	}
+	for _, tc := range []struct {
+		name   string
+		filter colonyFilter
+		want   bool
+	}{
+		{"no filter", colonyFilter{}, true},
+		{"all filters match", colonyFilter{
+			extracted:   "Aqueous Liquids",
+			owner:       "Bruce",
+			planetType:  "Barren",
+			produced:    "Water",
+			region:      "The Forge",
+			solarSystem: "Jita",
+			status:      app.ColonyExtracting.Display(),
+			tag:         "Main",
+		}, true},
+		{"attention", colonyFilter{attention: true}, false},
+		{"extracted", colonyFilter{extracted: "Base Metals"}, false},
+		{"owner", colonyFilter{owner: "Alice"}, false},
+		{"planet type", colonyFilter{planetType: "Lava"}, false},
+		{"produced", colonyFilter{produced: "Oxygen"}, false},
+		{"region", colonyFilter{region: "Domain"}, false},
+		{"solar system", colonyFilter{solarSystem: "Amarr"}, false},
+		{"status", colonyFilter{status: app.ColonyIdle.Display()}, false},
+		{"tag", colonyFilter{tag: "Alt"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.filter.match(r))
+		})
+	}
+	t.Run("attention matches colonies with problems", func(t *testing.T) {
+		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup} {
+			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}), s.Display())
+		}
+		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyIdle}))
 	})
 }

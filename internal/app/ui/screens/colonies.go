@@ -115,6 +115,49 @@ func (r colonyRow) workEndsDisplay() string {
 	})
 }
 
+// Names of the colony filters, used as labels on desktop and as option names on mobile.
+const (
+	colonyFilterAttention  = "Needs attention"
+	colonyFilterExtracted  = "Extracted"
+	colonyFilterOwner      = "Owner"
+	colonyFilterPlanetType = "Planet Type"
+	colonyFilterProduced   = "Produced"
+	colonyFilterRegion     = "Region"
+	colonyFilterStatus     = "Status"
+	colonyFilterSystem     = "System"
+	colonyFilterTag        = "Tag"
+)
+
+// colonyFilter is the selected value of each colony filter. Empty means not filtered.
+type colonyFilter struct {
+	attention   bool // only colonies with problems
+	extracted   string
+	owner       string
+	planetType  string
+	produced    string
+	region      string
+	solarSystem string
+	status      string
+	tag         string
+}
+
+// match reports whether the row passes all selected filters.
+func (f colonyFilter) match(r colonyRow) bool {
+	switch {
+	case f.attention && !r.status.IsProblem(),
+		f.extracted != "" && !r.extracting.Contains(f.extracted),
+		f.owner != "" && r.ownerName != f.owner,
+		f.planetType != "" && r.planetTypeName != f.planetType,
+		f.produced != "" && !r.producing.Contains(f.produced),
+		f.region != "" && r.regionName != f.region,
+		f.solarSystem != "" && r.solarSystemName != f.solarSystem,
+		f.status != "" && r.status.Display() != f.status,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type Colonies struct {
 	widget.BaseWidget
 
@@ -122,6 +165,7 @@ type Colonies struct {
 
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
+	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
 	forecastRun       latestRun
@@ -130,7 +174,7 @@ type Colonies struct {
 	rowsRun           latestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
-	selectExtracting  *kxwidget.FilterChipSelect
+	selectExtracting  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectOwner       *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
 	selectProducing   *kxwidget.FilterChipSelect
@@ -160,8 +204,9 @@ func coloniesHelpText(isMobile bool) string {
 	var layout, notWorking string
 	if isMobile {
 		layout = `Each colony shows:
-• Top: The planet the colony is on.
-• Extractor icon: The resources the extractors are set to extract, followed by the colony's status and the time until work ends.
+• Planet icon: The type of planet. Grayed out with a red symbol when the colony needs attention or is not set up.
+• Top: The planet the colony is on and the time until work ends, or otherwise the colony's status.
+• Extractor icon: The resources the extractors are set to extract.
 • Factory icon: The products the factories are set to produce.
 • Person icon: The character who owns the colony.`
 	} else {
@@ -202,7 +247,7 @@ func NewColonies(u baseUI) *Colonies {
 			border[1].(*colonyPlanetSymbol).set(r.planetIconID, r.status.IsProblem())
 		},
 	}, {
-		Label: "Status (est.)",
+		Label: "Status",
 		Width: 150,
 		Sort: func(a, b colonyRow) int {
 			return cmp.Compare(a.status, b.status)
@@ -211,7 +256,7 @@ func NewColonies(u baseUI) *Colonies {
 			co.(*xwidget.RichText).Set(r.statusDisplay())
 		},
 	}, {
-		Label: "Work ends (est.)",
+		Label: "Work ends",
 		Width: ui.ColumnWidthDateTime,
 		Sort: func(a, b colonyRow) int {
 			return a.compareWorkEnds(b)
@@ -243,7 +288,7 @@ func NewColonies(u baseUI) *Colonies {
 	}})
 	a := &Colonies{
 		footer:       ui.NewLabelWithTruncation(""),
-		columnSorter: xwidget.NewColumnSorter(columns, "Work ends (est.)", xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "Work ends", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -265,35 +310,34 @@ func NewColonies(u baseUI) *Colonies {
 			})
 	}
 
-	a.selectExtracting = kxwidget.NewFilterChipSelectWithSearch("Extracted", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectProducing = kxwidget.NewFilterChipSelectWithSearch("Produced", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectStatus = kxwidget.NewFilterChipSelect("Status", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectPlanetType = kxwidget.NewFilterChipSelect("Planet Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectExtracting = makeSelect(colonyFilterExtracted)
+		a.selectOwner = makeSelect(colonyFilterOwner)
+		a.selectProducing = makeSelect(colonyFilterProduced)
+		a.selectRegion = makeSelect(colonyFilterRegion)
+		a.selectSolarSystem = makeSelect(colonyFilterSystem)
+		a.selectStatus = makeSelect(colonyFilterStatus)
+		a.selectPlanetType = makeSelect(colonyFilterPlanetType)
+		a.selectTag = makeSelect(colonyFilterTag)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
 
-	a.searchEntry = xwidget.NewSearchEntry("Search systems & output", func(_ string) {
+	placeholder := "Search systems & output"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -331,26 +375,20 @@ func NewColonies(u baseUI) *Colonies {
 }
 
 func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectSolarSystem,
-		a.selectPlanetType,
-		a.selectExtracting,
-		a.selectStatus,
-		a.selectProducing,
-		a.selectRegion,
-		a.selectOwner,
-		a.selectTag,
-	)
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
-	}
 	var top *fyne.Container
 	if a.u.IsMobile() {
-		top = container.NewVBox(
-			a.searchEntry,
-			container.NewHScroll(filter),
-		)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
+		filter := container.NewHBox(
+			a.selectSolarSystem,
+			a.selectPlanetType,
+			a.selectExtracting,
+			a.selectStatus,
+			a.selectProducing,
+			a.selectRegion,
+			a.selectOwner,
+			a.selectTag,
+		)
 		top = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
@@ -458,62 +496,47 @@ func (w *colonyListItem) set(r colonyRow) {
 	w.title.Set(r.titleDisplay)
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *Colonies) currentFilter() colonyFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return colonyFilter{
+			attention:   s[colonyFilterAttention] != "",
+			extracted:   s[colonyFilterExtracted],
+			owner:       s[colonyFilterOwner],
+			planetType:  s[colonyFilterPlanetType],
+			produced:    s[colonyFilterProduced],
+			region:      s[colonyFilterRegion],
+			solarSystem: s[colonyFilterSystem],
+			status:      s[colonyFilterStatus],
+			tag:         s[colonyFilterTag],
+		}
+	}
+	return colonyFilter{
+		extracted:   a.selectExtracting.Selected,
+		owner:       a.selectOwner.Selected,
+		planetType:  a.selectPlanetType.Selected,
+		produced:    a.selectProducing.Selected,
+		region:      a.selectRegion.Selected,
+		solarSystem: a.selectSolarSystem.Selected,
+		status:      a.selectStatus.Selected,
+		tag:         a.selectTag.Selected,
+	}
+}
+
 func (a *Colonies) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	extracting := a.selectExtracting.Selected
-	owner := a.selectOwner.Selected
-	producing := a.selectProducing.Selected
-	region := a.selectRegion.Selected
-	solarSystem := a.selectSolarSystem.Selected
-	status := a.selectStatus.Selected
-	planetType := a.selectPlanetType.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		if extracting != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return !r.extracting.Contains(extracting)
-			})
-		}
-		if owner != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return r.ownerName != owner
-			})
-		}
-		if producing != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return !r.producing.Contains(producing)
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return r.regionName != region
-			})
-		}
-		if solarSystem != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return r.solarSystemName != solarSystem
-			})
-		}
-		if status != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return r.status.Display() != status
-			})
-		}
-		if planetType != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return r.planetTypeName != planetType
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -565,14 +588,29 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
-			a.selectOwner.SetOptions(ownerOptions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectSolarSystem.SetOptions(solarSystemOptions)
-			a.selectPlanetType.SetOptions(planetTypeOptions)
-			a.selectStatus.SetOptions(statusOptions)
-			a.selectExtracting.SetOptions(extractingOptions)
-			a.selectProducing.SetOptions(producingOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionToogle(colonyFilterAttention),
+					xwidget.NewFilterOptionSeparator(),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterSystem, solarSystemOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterPlanetType, planetTypeOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterExtracted, extractingOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterStatus, statusOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterProduced, producingOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterOwner, ownerOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterTag, tagOptions),
+				)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+				a.selectOwner.SetOptions(ownerOptions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectSolarSystem.SetOptions(solarSystemOptions)
+				a.selectPlanetType.SetOptions(planetTypeOptions)
+				a.selectStatus.SetOptions(statusOptions)
+				a.selectExtracting.SetOptions(extractingOptions)
+				a.selectProducing.SetOptions(producingOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
