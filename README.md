@@ -83,7 +83,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Overviews**: Keep track of and get unique insights about all your characters and corporations with consolidated views:
   - Assets: Search assets across all characters, and export items to clipboard (e.g. for Janice) or CSV
   - Clones: Overview of all current clones and search nearest available jump clones across all characters
-  - Colonies: Browse PI colonies across all characters
+  - Colonies: Browse PI colonies across all characters with a forecast of when each colony stops working (up to 30 days ahead), and see which colonies need attention at a glance. Filter by status, owner, planet type, products, location and tags
   - Communications: A unified communications browser for all characters
   - Contracts: Browse contracts of all characters
   - Industry: Browse industry jobs for all characters and related corporations
@@ -112,7 +112,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates:
   - Training queue became empty
   - Contract status changed
-  - PI extraction went offline
+  - PI colony stopped working
   - New EVE communication received (e.g. structure attacked)
   - New EVE mail received
 
@@ -131,6 +131,11 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Regions
   - Systems
   - Types
+
+- **Colony details**: Inspect each of your PI colonies in detail:
+  - Status, extracted and produced goods and when the colony stops working
+  - All installations with their current state, progress and storage fill level
+  - Installation pages with contents, incoming and outgoing routes, and predicted extractor output
 
 - **Mail client**: Full mail client for receiving and sending EVE mails
 
