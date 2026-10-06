@@ -65,6 +65,20 @@ func TestInfoViewer_show2_UsesMainWindowAsFallbackWhenInfoWindowClosed(t *testin
 	})
 }
 
+func TestInfoViewer_dialogParent(t *testing.T) {
+	a := test.NewTempApp(t)
+	u := newUIServiceFake(a)
+	t.Run("should return main window when no info window is open", func(t *testing.T) {
+		iw := &InfoViewer{u: u}
+		assert.Same(t, u.MainWindow(), iw.dialogParent())
+	})
+	t.Run("should return info window when open", func(t *testing.T) {
+		w := a.NewWindow("Information")
+		iw := &InfoViewer{u: u, w: w}
+		assert.Same(t, w, iw.dialogParent())
+	})
+}
+
 // FIXME
 
 // func TestInfoWindow_CanRenderLocationInfo(t *testing.T) {

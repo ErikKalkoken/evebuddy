@@ -143,13 +143,8 @@ func (iw *InfoViewer) Show(o *app.EveEntity) {
 // The characterID is used to fetch a token when trying to show a structure location.
 func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 	slog.Debug("Showing info window", "typeID", typeID, "itemID", itemID)
-	w := iw.w
-	if w == nil {
-		w = iw.u.MainWindow()
-	}
-
 	showError := func(err error) {
-		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), w)
+		ui.ShowErrorAndLog("Can't show info window", err, iw.u.IsDeveloperMode(), iw.dialogParent())
 	}
 
 	if typeID == 0 {
@@ -259,12 +254,7 @@ type showParams struct {
 }
 
 func (iw *InfoViewer) show2(arg showParams) {
-	// iw.w is nil after an info window has been closed; fall back to the main window
-	// so that error/informational dialogs always have a valid parent.
-	parentW := iw.w
-	if parentW == nil {
-		parentW = iw.u.MainWindow()
-	}
+	parentW := iw.dialogParent()
 
 	if arg.entityID == 0 {
 		ui.ShowErrorAndLog("Can't show info window", fmt.Errorf("no ID provided"), iw.u.IsDeveloperMode(), parentW)
@@ -412,6 +402,21 @@ func (iw *InfoViewer) show2(arg showParams) {
 			})
 		}
 	}()
+}
+
+// dialogParent returns the window error dialogs should attach to.
+// On mobile only the most recently created window is shown, so dialogs go there.
+func (iw *InfoViewer) dialogParent() fyne.Window {
+	if fyne.CurrentDevice().IsMobile() {
+		if ws := fyne.CurrentApp().Driver().AllWindows(); len(ws) > 0 {
+			return ws[len(ws)-1]
+		}
+	}
+	// iw.w is nil after the info window was closed
+	if iw.w != nil {
+		return iw.w
+	}
+	return iw.u.MainWindow()
 }
 
 func (iw *InfoViewer) showZoomWindow(title string, id int64, load func(int64, int, func(fyne.Resource)), w fyne.Window) {
