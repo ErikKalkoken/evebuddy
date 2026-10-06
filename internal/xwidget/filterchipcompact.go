@@ -70,7 +70,7 @@ func NewFilterOptionSeparator() FilterOption {
 // FilterChipCompact represents a filter chip widget that allows the user to select
 // and de-select multiple options and has a compact design.
 type FilterChipCompact struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
 	// OnChanged is a callback that is called when the selection changed,
 	// either by the user or through SetSelected or Reset.
@@ -80,7 +80,6 @@ type FilterChipCompact struct {
 	background           *canvas.Rectangle
 	blankResource        fyne.Resource
 	clearItem            *fyne.MenuItem
-	disabled             bool
 	focused              bool
 	hovered              bool
 	icon                 *widget.Icon
@@ -384,7 +383,7 @@ func (w *FilterChipCompact) updateStyling() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
 	if w.isOn {
-		if w.disabled {
+		if w.Disabled() {
 			w.icon.SetResource(theme.NewDisabledResource(w.iconResource))
 			w.background.FillColor = th.Color(theme.ColorNameDisabledButton, v)
 			w.background.StrokeColor = th.Color(theme.ColorNameDisabledButton, v)
@@ -394,7 +393,7 @@ func (w *FilterChipCompact) updateStyling() {
 			w.background.StrokeColor = th.Color(theme.ColorNameSelection, v)
 		}
 	} else {
-		if w.disabled {
+		if w.Disabled() {
 			w.icon.SetResource(theme.NewDisabledResource(w.iconResource))
 		} else {
 			w.icon.SetResource(w.iconResource)
@@ -403,7 +402,7 @@ func (w *FilterChipCompact) updateStyling() {
 		w.background.FillColor = color.Transparent
 	}
 
-	if w.focused && !w.disabled {
+	if w.focused && !w.Disabled() {
 		w.background.StrokeColor = th.Color(theme.ColorNameFocus, v)
 		w.background.StrokeWidth = th.Size(theme.SizeNameInputBorder) * 2
 	} else {
@@ -412,35 +411,15 @@ func (w *FilterChipCompact) updateStyling() {
 	w.background.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 }
 
-func (w *FilterChipCompact) Disabled() bool {
-	return w.disabled
-}
-
-func (w *FilterChipCompact) Disable() {
-	if w.disabled {
-		return
-	}
-	w.disabled = true
-	w.Refresh()
-}
-
-func (w *FilterChipCompact) Enable() {
-	if !w.disabled {
-		return
-	}
-	w.disabled = false
-	w.Refresh()
-}
-
 func (w *FilterChipCompact) Tapped(pe *fyne.PointEvent) {
-	if w.disabled {
+	if w.Disabled() {
 		return
 	}
 	w.showMenu()
 }
 
 func (w *FilterChipCompact) Cursor() desktop.Cursor {
-	if w.hovered && !w.disabled {
+	if w.hovered && !w.Disabled() {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
@@ -458,7 +437,7 @@ func (w *FilterChipCompact) MouseOut() {
 
 // FocusGained is called when the Check has been given focus.
 func (w *FilterChipCompact) FocusGained() {
-	if w.disabled {
+	if w.Disabled() {
 		return
 	}
 	w.focused = true
@@ -473,7 +452,7 @@ func (w *FilterChipCompact) FocusLost() {
 
 // TypedRune receives text input events when the Check is focused.
 func (w *FilterChipCompact) TypedRune(r rune) {
-	if w.disabled {
+	if w.Disabled() {
 		return
 	}
 	if r == ' ' {
