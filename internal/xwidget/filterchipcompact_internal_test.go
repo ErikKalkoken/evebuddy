@@ -355,3 +355,124 @@ func TestNormalizeOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterChipCompact_Search(t *testing.T) {
+	test.NewTempApp(t)
+	newChip := func(t *testing.T, choices []string) (*FilterChipCompact, *[]map[string]string) {
+		var got []map[string]string
+		f := NewFilterChipCompact([]FilterOption{
+			NewFilterOptionMultiChoiceWithSearch("Bravo", choices),
+		}, func(s map[string]string) {
+			got = append(got, s)
+		})
+		w := test.NewWindow(f)
+		w.Resize(fyne.NewSize(800, 600))
+		t.Cleanup(w.Close)
+		return f, &got
+	}
+	t.Run("should open search dialog instead of sub menu", func(t *testing.T) {
+		f, _ := newChip(t, []string{"a", "b"})
+		it := f.menu.Items[0]
+		assert.Equal(t, "Bravo (2)", it.Label)
+		assert.Equal(t, f.searchResource, it.Icon)
+		assert.Nil(t, it.ChildMenu)
+		assert.False(t, it.Disabled)
+
+		it.Action()
+
+		c := fyne.CurrentApp().Driver().CanvasForObject(f)
+		assert.NotNil(t, c.Overlays().Top())
+	})
+	t.Run("should disable option without choices", func(t *testing.T) {
+		f, _ := newChip(t, nil)
+		it := f.menu.Items[0]
+		assert.True(t, it.Disabled)
+		assert.Nil(t, it.ChildMenu)
+	})
+	t.Run("should select choice and close dialog", func(t *testing.T) {
+		f, got := newChip(t, []string{"a", "b"})
+		p := f.showSearch(f.options[0])
+
+		p.list.Select(1)
+
+		assert.False(t, p.popUp.Visible())
+		assert.Equal(t, []map[string]string{{"Bravo": "b"}}, *got)
+		assert.Equal(t, "Bravo (2): b", f.menu.Items[0].Label)
+		assert.True(t, f.IsOn())
+	})
+	t.Run("should deselect when selected choice is picked again", func(t *testing.T) {
+		f, got := newChip(t, []string{"a", "b"})
+		f.SetSelected(map[string]string{"Bravo": "b"})
+		*got = nil
+		p := f.showSearch(f.options[0])
+
+		p.list.Select(1)
+
+		assert.Equal(t, []map[string]string{{"Bravo": ""}}, *got)
+		assert.False(t, f.IsOn())
+	})
+	t.Run("should clear selection", func(t *testing.T) {
+		f, got := newChip(t, []string{"a", "b"})
+		f.SetSelected(map[string]string{"Bravo": "a"})
+		*got = nil
+		p := f.showSearch(f.options[0])
+		assert.True(t, p.clear.Visible())
+
+		test.Tap(p.clear)
+
+		assert.False(t, p.popUp.Visible())
+		assert.Equal(t, []map[string]string{{"Bravo": ""}}, *got)
+	})
+	t.Run("should hide clear when nothing selected", func(t *testing.T) {
+		f, _ := newChip(t, []string{"a", "b"})
+		p := f.showSearch(f.options[0])
+		assert.False(t, p.clear.Visible())
+	})
+	t.Run("should close without change on cancel", func(t *testing.T) {
+		f, got := newChip(t, []string{"a", "b"})
+		p := f.showSearch(f.options[0])
+
+		test.Tap(p.cancel)
+
+		assert.False(t, p.popUp.Visible())
+		assert.Empty(t, *got)
+	})
+	t.Run("should filter choices by search", func(t *testing.T) {
+		f, got := newChip(t, []string{"Amarr", "Jita", "Jitaa", "Dodixie"})
+		p := f.showSearch(f.options[0])
+
+		test.Type(p.entry, "JIT")
+
+		assert.Equal(t, []string{"Jita", "Jitaa"}, p.filtered)
+		assert.False(t, p.noMatch.Visible())
+		p.list.Select(1)
+		assert.Equal(t, []map[string]string{{"Bravo": "Jitaa"}}, *got)
+	})
+	t.Run("should show all choices for short search", func(t *testing.T) {
+		f, _ := newChip(t, []string{"Amarr", "Jita"})
+		p := f.showSearch(f.options[0])
+
+		test.Type(p.entry, "j")
+
+		assert.Equal(t, []string{"Amarr", "Jita"}, p.filtered)
+	})
+	t.Run("should report no matches", func(t *testing.T) {
+		f, _ := newChip(t, []string{"Amarr", "Jita"})
+		p := f.showSearch(f.options[0])
+
+		test.Type(p.entry, "xyz")
+
+		assert.Empty(t, p.filtered)
+		assert.True(t, p.noMatch.Visible())
+	})
+	t.Run("should ignore pick when option was removed while open", func(t *testing.T) {
+		f, got := newChip(t, []string{"a", "b"})
+		p := f.showSearch(f.options[0])
+		f.SetOptions(NewFilterOptionToogle("Alpha"))
+
+		p.list.Select(0)
+
+		assert.Empty(t, *got)
+		assert.Equal(t, map[string]string{"Alpha": ""}, f.Selected())
+	})
+}

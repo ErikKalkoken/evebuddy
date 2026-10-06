@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -32,9 +33,10 @@ const (
 // FilterOption is an option for [FilterChipCompact].
 // Options can be created on any goroutine.
 type FilterOption struct {
-	kind    filterOptionKind
-	name    string
-	choices []string
+	kind      filterOptionKind
+	name      string
+	choices   []string
+	hasSearch bool
 }
 
 // NewFilterOptionToogle creates a toogle option for [FilterChipCompact].
@@ -60,6 +62,17 @@ func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
 		name:    name,
 		choices: choices2,
 	}
+}
+
+// NewFilterOptionMultiChoiceWithSearch creates a multi-choice option for [FilterChipCompact],
+// which lets the user pick a choice in a search dialog instead of a sub menu.
+// Its menu item has a search icon.
+// Use it for options with many choices.
+// Choices are processed the same as for [NewFilterOptionMultiChoice].
+func NewFilterOptionMultiChoiceWithSearch(name string, choices []string) FilterOption {
+	o := NewFilterOptionMultiChoice(name, choices)
+	o.hasSearch = true
+	return o
 }
 
 // NewFilterOptionSeparator creates a separator for [FilterChipCompact].
@@ -89,6 +102,7 @@ type FilterChipCompact struct {
 	menu                 *fyne.Menu
 	options              []FilterOption
 	resetText            string
+	searchResource       fyne.Resource
 	selected             map[string]string
 }
 
@@ -108,6 +122,7 @@ func NewFilterChipCompact(options []FilterOption, changed func(map[string]string
 		menu:                 fyne.NewMenu(""),
 		OnChanged:            changed,
 		resetText:            "Clear",
+		searchResource:       theme.SearchIcon(),
 		selected:             make(map[string]string),
 	}
 	w.options = normalizeOptions(options)
@@ -303,7 +318,11 @@ func (w *FilterChipCompact) setMenu() {
 				}
 				return fmt.Sprintf("%s: %s", title, selected)
 			}
-			if len(choices) > 0 {
+			if len(choices) > 0 && o.hasSearch {
+				it1.Action = func() {
+					w.showSearch(o)
+				}
+			} else if len(choices) > 0 {
 				it1.Disabled = false
 				for _, c := range choices {
 					it2 := fyne.NewMenuItem(c, nil)
@@ -333,9 +352,13 @@ func (w *FilterChipCompact) setMenu() {
 			} else {
 				it1.Disabled = true
 			}
-			it1.Icon = w.blankResource
 			it1.Label = makeLabel(o.name)
-			it1.ChildMenu = fyne.NewMenu("", items2...)
+			if o.hasSearch {
+				it1.Icon = w.searchResource
+			} else {
+				it1.Icon = w.blankResource
+				it1.ChildMenu = fyne.NewMenu("", items2...)
+			}
 
 		default:
 			panic("unreachable")
@@ -349,6 +372,24 @@ func (w *FilterChipCompact) setMenu() {
 	items1 = append(items1, w.clearItem)
 
 	w.menu.Items = items1
+}
+
+// showSearch shows a search dialog for picking a choice of option o.
+func (w *FilterChipCompact) showSearch(o FilterOption) *filterSearchPopUp {
+	c := fyne.CurrentApp().Driver().CanvasForObject(w)
+	if c == nil {
+		return nil
+	}
+	p := newFilterSearchPopUp(c, o.name, o.choices, w.selected[o.name], func(choice string) {
+		if v, found := w.selected[o.name]; !found || v == choice {
+			return // option removed or unchanged while the dialog was open
+		}
+		w.selected[o.name] = choice
+		w.setMenu()
+		w.processChanged()
+	})
+	p.show()
+	return p
 }
 
 func (w *FilterChipCompact) processChanged() {
@@ -468,4 +509,124 @@ func (w *FilterChipCompact) showMenu() {
 		return
 	}
 	ShowPopUpMenuBelowLeading(w, w.menu)
+}
+
+// filterSearchPopUp is a modal dialog for picking a choice from many by searching.
+type filterSearchPopUp struct {
+	cancel   *widget.Button
+	canvas   fyne.Canvas
+	choices  []string
+	clear    *widget.Button
+	entry    *SearchEntry
+	filtered []string
+	list     *widget.List
+	noMatch  *widget.Label
+	popUp    *widget.PopUp
+	selected string
+}
+
+func newFilterSearchPopUp(c fyne.Canvas, name string, choices []string, selected string, onSelected func(string)) *filterSearchPopUp {
+	p := &filterSearchPopUp{
+		canvas:   c,
+		choices:  choices,
+		filtered: choices,
+		selected: selected,
+	}
+	pick := func(choice string) {
+		p.popUp.Hide()
+		onSelected(choice)
+	}
+	p.list = widget.NewList(
+		func() int {
+			return len(p.filtered)
+		},
+		func() fyne.CanvasObject {
+			return container.NewBorder(nil, nil, widget.NewIcon(iconBlankSvg), nil, widget.NewLabel(""))
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id < 0 || id >= len(p.filtered) {
+				return
+			}
+			s := p.filtered[id]
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.Label).SetText(s)
+			if s == p.selected {
+				border[1].(*widget.Icon).SetResource(theme.ConfirmIcon())
+			} else {
+				border[1].(*widget.Icon).SetResource(iconBlankSvg)
+			}
+		},
+	)
+	p.list.HideSeparators = true
+	p.list.OnSelected = func(id widget.ListItemID) {
+		if id < 0 || id >= len(p.filtered) {
+			return
+		}
+		choice := p.filtered[id]
+		if choice == p.selected {
+			choice = "" // same toggle behavior as the sub menu
+		}
+		pick(choice)
+	}
+	p.noMatch = widget.NewLabel("No matches")
+	p.noMatch.Importance = widget.LowImportance
+	p.noMatch.Hide()
+	p.entry = NewSearchEntry("Type to start searching...", func(search string) {
+		p.applySearch(search)
+	})
+	p.clear = widget.NewButton("Clear", func() {
+		pick("")
+	})
+	if selected == "" {
+		p.clear.Hide()
+	}
+	p.cancel = widget.NewButton("Cancel", func() {
+		p.popUp.Hide()
+	})
+	title := widget.NewLabel("Filter by " + name)
+	title.TextStyle.Bold = true
+	title.Truncation = fyne.TextTruncateEllipsis
+	content := container.NewBorder(
+		container.NewVBox(title, p.entry),
+		container.NewHBox(layout.NewSpacer(), p.clear, p.cancel),
+		nil,
+		nil,
+		container.NewStack(p.list, container.NewCenter(p.noMatch)),
+	)
+	p.popUp = widget.NewModalPopUp(content, c)
+	return p
+}
+
+// applySearch filters the choices by a case-insensitive search.
+// Short searches show all choices.
+func (p *filterSearchPopUp) applySearch(search string) {
+	if len(search) < 2 {
+		p.filtered = p.choices
+	} else {
+		search = strings.ToLower(search)
+		p.filtered = slices.DeleteFunc(slices.Clone(p.choices), func(s string) bool {
+			return !strings.Contains(strings.ToLower(s), search)
+		})
+	}
+	if len(p.filtered) == 0 {
+		p.noMatch.Show()
+	} else {
+		p.noMatch.Hide()
+	}
+	p.list.UnselectAll()
+	p.list.ScrollToOffset(0)
+	p.list.Refresh()
+}
+
+func (p *filterSearchPopUp) show() {
+	_, s := p.canvas.InteractiveArea()
+	isMobile := fyne.CurrentDevice().IsMobile()
+	if !isMobile {
+		s = fyne.NewSize(min(600, s.Width), min(max(400, s.Height*0.8), s.Height))
+	}
+	p.popUp.Resize(s)
+	p.popUp.Show()
+	if !isMobile {
+		p.canvas.Focus(p.entry) // on mobile this would cover the list with the keyboard
+	}
 }
