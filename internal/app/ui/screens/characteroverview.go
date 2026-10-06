@@ -31,6 +31,37 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Names of the character overview filters, used as labels on desktop and as option names on mobile.
+const (
+	characterOverviewFilterAlliance    = "Alliance"
+	characterOverviewFilterCorporation = "Corporation"
+	characterOverviewFilterRegion      = "Region"
+	characterOverviewFilterSystem      = "System"
+	characterOverviewFilterTag         = "Tag"
+)
+
+// characterOverviewFilter is the selected value of each character overview filter. Empty means not filtered.
+type characterOverviewFilter struct {
+	alliance    string
+	corporation string
+	region      string
+	solarSystem string
+	tag         string
+}
+
+// match reports whether row r passes all filters.
+func (f characterOverviewFilter) match(r characterOverviewRow) bool {
+	switch {
+	case f.alliance != "" && r.allianceName() != f.alliance,
+		f.corporation != "" && r.corporationName() != f.corporation,
+		f.region != "" && r.regionName != f.region,
+		f.solarSystem != "" && r.solarSystemName != f.solarSystem,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type characterOverviewRow struct {
 	alliance        optional.Optional[*app.EveEntity]
 	characterID     int64
@@ -74,6 +105,7 @@ type CharacterOverview struct {
 
 	OnUpdate func(characters int)
 
+	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
 	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
@@ -82,7 +114,7 @@ type CharacterOverview struct {
 	rows              []characterOverviewRow
 	rowsFiltered      []characterOverviewRow
 	searchEntry       *xwidget.SearchEntry
-	selectAlliance    *kxwidget.FilterChipSelect
+	selectAlliance    *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCorporation *kxwidget.FilterChipSelect
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
@@ -145,7 +177,11 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.searchEntry = xwidget.NewSearchEntry("Search characters and systems", func(_ string) {
+	placeholder := "Search characters and systems"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -155,21 +191,22 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 		a.main = a.makeList()
 	}
 
-	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectSolarSystem = kxwidget.NewFilterChipSelect("System", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectAlliance = makeSelect(characterOverviewFilterAlliance)
+		a.selectCorporation = makeSelect(characterOverviewFilterCorporation)
+		a.selectRegion = makeSelect(characterOverviewFilterRegion)
+		a.selectSolarSystem = makeSelect(characterOverviewFilterSystem)
+		a.selectTag = makeSelect(characterOverviewFilterTag)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -222,18 +259,18 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 }
 
 func (a *CharacterOverview) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectAlliance,
-		a.selectCorporation,
-		a.selectRegion,
-		a.selectSolarSystem,
-		a.selectTag,
-		a.sortChip,
-	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHScroll(filter))
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
+		filter := container.NewHBox(
+			a.selectAlliance,
+			a.selectCorporation,
+			a.selectRegion,
+			a.selectSolarSystem,
+			a.selectTag,
+			a.sortChip,
+		)
 		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
@@ -314,45 +351,40 @@ func (a *CharacterOverview) makeList() *widget.List {
 	return l
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *CharacterOverview) currentFilter() characterOverviewFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return characterOverviewFilter{
+			alliance:    s[characterOverviewFilterAlliance],
+			corporation: s[characterOverviewFilterCorporation],
+			region:      s[characterOverviewFilterRegion],
+			solarSystem: s[characterOverviewFilterSystem],
+			tag:         s[characterOverviewFilterTag],
+		}
+	}
+	return characterOverviewFilter{
+		alliance:    a.selectAlliance.Selected,
+		corporation: a.selectCorporation.Selected,
+		region:      a.selectRegion.Selected,
+		solarSystem: a.selectSolarSystem.Selected,
+		tag:         a.selectTag.Selected,
+	}
+}
+
 func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
-	alliance := a.selectAlliance.Selected
-	corporation := a.selectCorporation.Selected
-	region := a.selectRegion.Selected
-	solarSystem := a.selectSolarSystem.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
-		if alliance != "" {
-			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-				return r.allianceName() != alliance
-			})
-		}
-		if corporation != "" {
-			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-				return r.corporationName() != corporation
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-				return r.regionName != region
-			})
-		}
-		if solarSystem != "" {
-			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-				return r.solarSystemName != solarSystem
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -385,11 +417,21 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectAlliance.SetOptions(allianceOptions)
-			a.selectCorporation.SetOptions(corporationOptions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectSolarSystem.SetOptions(solarSystemOptions)
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterAlliance, allianceOptions),
+					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterCorporation, corporationOptions),
+					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterSystem, solarSystemOptions),
+					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterTag, tagOptions),
+				)
+			} else {
+				a.selectAlliance.SetOptions(allianceOptions)
+				a.selectCorporation.SetOptions(corporationOptions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectSolarSystem.SetOptions(solarSystemOptions)
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})
