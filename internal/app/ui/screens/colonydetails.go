@@ -585,86 +585,90 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 	typeVolumes := cp.TypeVolumes()
 	var rows []colonyDetailsRow
 	for _, p := range cp.Pins {
-		pinType := colonyPinTypeOf(cp, p)
-
-		name := cp.PinName(p)
-		searchTargets := []string{strings.ToLower(name)}
-
-		icon, iconColor := pinType.icon(), pinType.color()
-
 		pf := f.Pins[p.ID]
 		if pf == nil {
 			pf = &app.PinForecast{} // pin not simulated
 		}
-
-		var output, info string
-		var statusText string
-		statusColor := pf.Status.Color()
-		switch p.Type.Group.ID {
-		case app.EveGroupExtractorControlUnits:
-			if v, ok := p.ExtractorProductType.Value(); ok {
-				output = v.Name
-				searchTargets = append(searchTargets, strings.ToLower(v.Name))
-			} else {
-				output = "-"
-			}
-			if v, ok := p.ExpiryTime.Value(); ok {
-				info = v.Format(app.DateTimeFormat)
-			}
-			if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
-				statusText = ihumanize.Duration(v.Sub(now))
-			} else {
-				statusText = pf.Status.Display()
-			}
-		case app.EveGroupProcessors:
-			if v, ok := p.ProcessorSchematic(); ok {
-				output = v.Name
-				searchTargets = append(searchTargets, strings.ToLower(v.Name))
-			} else {
-				output = "-"
-			}
-			statusText = pf.Status.Display()
-		default:
-			if v, ok := pf.Capacity.Value(); ok && v > 0 {
-				info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
-				if pf.Status == app.PinStorageFull {
-					statusText = pf.Status.Display()
-				} else {
-					statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
-				}
-			}
-			output = colonyContentsDisplay(pf.Contents, typeNames, typeVolumes)
-			if output == "" {
-				output = "-"
-			}
-			for id := range pf.Contents {
-				if n, ok := typeNames[id]; ok {
-					searchTargets = append(searchTargets, strings.ToLower(n))
-				}
-			}
-		}
-		status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
-			ColorName: statusColor,
-		})
-
-		rows = append(rows, colonyDetailsRow{
-			expiryTime:        p.ExpiryTime,
-			groupName:         p.Type.Group.Name,
-			info:              info,
-			name:              name,
-			output:            output,
-			pinID:             p.ID,
-			pinStatus:         pf.Status,
-			pinType:           pinType,
-			progress:          colonyPinProgress(p, pf, now),
-			status:            status,
-			symbolIcon:        icon,
-			symbolIconColor:   iconColor,
-			symbolStatusColor: pf.Status.IndicatorColor(),
-			searchTarget:      strings.Join(searchTargets, "~"),
-		})
+		rows = append(rows, makeColonyDetailsRow(cp, p, pf, typeNames, typeVolumes, now))
 	}
 	return f.Status, status, rows
+}
+
+// makeColonyDetailsRow returns the summary of an installation, as shown in the list and on its details page.
+func makeColonyDetailsRow(cp *app.CharacterPlanet, p *app.PlanetPin, pf *app.PinForecast, typeNames map[int64]string, typeVolumes map[int64]float64, now time.Time) colonyDetailsRow {
+	pinType := colonyPinTypeOf(cp, p)
+
+	name := cp.PinName(p)
+	searchTargets := []string{strings.ToLower(name)}
+
+	icon, iconColor := pinType.icon(), pinType.color()
+
+	var output, info string
+	var statusText string
+	statusColor := pf.Status.Color()
+	switch p.Type.Group.ID {
+	case app.EveGroupExtractorControlUnits:
+		if v, ok := p.ExtractorProductType.Value(); ok {
+			output = v.Name
+			searchTargets = append(searchTargets, strings.ToLower(v.Name))
+		} else {
+			output = "-"
+		}
+		if v, ok := p.ExpiryTime.Value(); ok {
+			info = v.Format(app.DateTimeFormat)
+		}
+		if v, ok := p.ExpiryTime.Value(); ok && pf.Status == app.PinExtracting {
+			statusText = ihumanize.Duration(v.Sub(now))
+		} else {
+			statusText = pf.Status.Display()
+		}
+	case app.EveGroupProcessors:
+		if v, ok := p.ProcessorSchematic(); ok {
+			output = v.Name
+			searchTargets = append(searchTargets, strings.ToLower(v.Name))
+		} else {
+			output = "-"
+		}
+		statusText = pf.Status.Display()
+	default:
+		if v, ok := pf.Capacity.Value(); ok && v > 0 {
+			info = fmt.Sprintf("%s / %s m3", ihumanize.Comma(int64(math.Round(pf.CapacityUsed))), ihumanize.Comma(int64(v)))
+			if pf.Status == app.PinStorageFull {
+				statusText = pf.Status.Display()
+			} else {
+				statusText = fmt.Sprintf("%.0f%%", pf.CapacityUsed/v*100)
+			}
+		}
+		output = colonyContentsDisplay(pf.Contents, typeNames, typeVolumes)
+		if output == "" {
+			output = "-"
+		}
+		for id := range pf.Contents {
+			if n, ok := typeNames[id]; ok {
+				searchTargets = append(searchTargets, strings.ToLower(n))
+			}
+		}
+	}
+	status := xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{
+		ColorName: statusColor,
+	})
+
+	return colonyDetailsRow{
+		expiryTime:        p.ExpiryTime,
+		groupName:         p.Type.Group.Name,
+		info:              info,
+		name:              name,
+		output:            output,
+		pinID:             p.ID,
+		pinStatus:         pf.Status,
+		pinType:           pinType,
+		progress:          colonyPinProgress(p, pf, now),
+		status:            status,
+		symbolIcon:        icon,
+		symbolIconColor:   iconColor,
+		symbolStatusColor: pf.Status.IndicatorColor(),
+		searchTarget:      strings.Join(searchTargets, "~"),
+	}
 }
 
 // colonyPinProgress returns the progress shown in the symbol of a pin:

@@ -13,7 +13,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -23,23 +22,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // colonyPinInfo is the information shown for an installation.
 type colonyPinInfo struct {
 	found bool
 
-	// header
-	name        string
-	onName      func()
-	onProduct   func()
-	product     string // empty when the installation has no product
-	progress    optional.Optional[float64]
-	status      []widget.RichTextSegment
-	symbolColor fyne.ThemeColorName
-	symbolIcon  fyne.Resource
-	symbolType  colonyPinType
+	header colonyDetailsRow
 
 	// tabs
 	inputs       []colonyInputItem // only for processors, nil otherwise
@@ -61,14 +50,13 @@ type colonyPinDetails struct {
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
 	forecastRun    latestRun
+	header         *colonyPinWidget
 	inputs         *colonyInputList
 	inputsTab      *container.TabItem
 	main           *ui.AttributeList
 	mainTab        *container.TabItem
-	name           *widget.Hyperlink
 	pinID          int64
 	planetID       int64
-	product        *widget.Hyperlink
 	program        *fyneline.AreaChart[colonyProgramPoint]
 	programLegend  *seriesLegend
 	programTab     *container.TabItem
@@ -79,10 +67,8 @@ type colonyPinDetails struct {
 	rowsGen        int // incremented when Update replaces the colony
 	rowsRun        latestRun
 	signalKey      string
-	status         *xwidget.RichText
 	storage        *colonyStorageList
 	storageTab     *container.TabItem
-	symbol         *planetPinSymbol
 	tabs           *container.AppTabs
 	u              baseUI
 }
@@ -93,21 +79,15 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 	if characterID == 0 || planetID == 0 || pinID == 0 {
 		panic(app.ErrInvalid)
 	}
-	makeHyperLink := func() *widget.Hyperlink {
-		x := widget.NewHyperlink("", nil)
-		x.Wrapping = fyne.TextWrapWord
-		return x
-	}
 	a := &colonyPinDetails{
 		characterID: characterID,
 		content:     container.NewStack(),
 		footer:      ui.NewLabelWithTruncation(""),
+		header:      newColonyPinWidget(),
 		inputs:      newColonyInputList(u),
 		main:        ui.NewAttributeList(),
-		name:        makeHyperLink(),
 		pinID:       pinID,
 		showPin:     showPin, // set before listeners are added, which read it
-		product:     makeHyperLink(),
 		planetID:    planetID,
 		program: fyneline.NewAreaChart(nil, fyneline.TimeAccessor(func(p colonyProgramPoint) time.Time {
 			return p.at
@@ -116,14 +96,10 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		programTitle:  newChartTitleLabel(),
 		routes:        newColonyRouteList(u),
 		signalKey:     u.Signals().UniqueKey(),
-		status:        xwidget.NewRichText(),
 		storage:       newColonyStorageList(u),
-		symbol:        newPlanetPinSymbol(),
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
-	a.name.TextStyle.Bold = true
-
 	a.mainTab = container.NewTabItem("Main", a.main)
 	a.programTab = container.NewTabItem("Program", newChartCard(a.programTitle, a.programLegend, a.program))
 	a.inputsTab = container.NewTabItem("Inputs", a.inputs)
@@ -133,19 +109,7 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 	a.program.SetCurve(fyneline.CurveStepBefore) // output is constant until the next cycle
 	a.tabs = container.NewAppTabs(a.mainTab, a.routesTab)
 
-	p := theme.Padding()
-	header := container.NewBorder(
-		nil,
-		nil,
-		// aligns the symbol with the first text line, which has inner padding
-		container.New(
-			layout.NewCustomPaddedLayout(theme.InnerPadding(), 0, 0, 0),
-			container.NewVBox(a.symbol),
-		),
-		nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.name, a.product, a.status),
-	)
-	a.body = container.NewBorder(header, nil, nil, nil, a.tabs)
+	a.body = container.NewBorder(a.header, nil, nil, nil, a.tabs)
 
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
@@ -291,17 +255,7 @@ func (a *colonyPinDetails) set(info colonyPinInfo) {
 		a.content.Refresh()
 		return
 	}
-	a.name.SetText(info.name)
-	a.name.OnTapped = info.onName
-	a.product.SetText(info.product)
-	a.product.OnTapped = info.onProduct
-	if info.product != "" {
-		a.product.Show()
-	} else {
-		a.product.Hide()
-	}
-	a.status.Set(info.status)
-	a.symbol.Set(info.symbolIcon, info.symbolType.color(), info.symbolColor, info.progress)
+	a.header.Set(info.header)
 
 	a.main.Set(info.main)
 	if info.program != nil {
@@ -511,26 +465,27 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		return fmt.Sprintf("%s (%s ago)", formatTime(t), ihumanize.Duration(now.Sub(t)))
 	}
 
-	// header
-	pinType := colonyPinTypeOf(cp, p)
-	statusText := "-"
-	var statusColor fyne.ThemeColorName
-	if pf.Status != app.PinStatic && pf.Status != app.PinStatusUndefined {
-		statusText = pf.Status.Display()
-		statusColor = pf.Status.Color()
-	}
 	info := colonyPinInfo{
-		found:       true,
-		name:        cp.PinName(p),
-		onName:      showType(p.Type.ID),
-		progress:    colonyPinProgress(p, pf, now),
-		status:      xwidget.RichTextSegmentsFromText(statusText, widget.RichTextStyle{ColorName: statusColor}),
-		symbolColor: pf.Status.IndicatorColor(),
-		symbolIcon:  pinType.icon(),
-		symbolType:  pinType,
+		found:  true,
+		header: makeColonyDetailsRow(cp, p, pf, typeNames, cp.TypeVolumes(), now),
 	}
 
 	// main
+	status := ui.AttributeItem{Label: "Status"}
+	switch {
+	case pf.Status == app.PinStatusUndefined:
+		status.Value = "-"
+	case pf.Status != app.PinStatic:
+		status.Value = pf.Status.Display()
+	case len(pf.Contents) == 0:
+		status.Value = "Empty"
+	default:
+		status.Value = "Has space" // all incoming routes fit
+	}
+	top := []ui.AttributeItem{
+		{Label: "Type", Value: p.Type.Name, InfoAction: showType(p.Type.ID)},
+		status,
+	}
 	lastActivity := pf.LastRunTime
 	var idleFor time.Duration
 	if es, ok := p.ProcessorSchematic(); ok {
@@ -548,8 +503,6 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		if v, ok := p.ExtractorProductType.Value(); ok {
 			product.Value = v.Name
 			product.InfoAction = showType(v.ID)
-			info.product = v.Name
-			info.onProduct = showType(v.ID)
 		}
 		expires := ui.AttributeItem{Label: "Expires", Value: "-"}
 		if v, ok := p.ExpiryTime.Value(); ok {
@@ -606,8 +559,6 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			break
 		}
 		output := ui.AttributeItem{Label: "Schematic", Value: es.Name, InfoAction: showType(pf.OutputTypeID)}
-		info.product = es.Name
-		info.onProduct = showType(pf.OutputTypeID)
 		if pf.OutputQuantity > 0 {
 			output.Value += " x " + ihumanize.Comma(pf.OutputQuantity)
 		}
@@ -670,6 +621,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 			})
 		}
 	}
+	info.main = slices.Concat(top, info.main)
 	info.main = append(info.main,
 		ui.AttributeItem{Label: "Last activity", Value: lastActivity.StringFunc("-", formatTime)},
 		ui.AttributeItem{Label: "Data from", Value: formatRelative(cp.LastUpdate)},

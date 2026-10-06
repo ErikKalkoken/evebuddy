@@ -150,24 +150,22 @@ func TestColonyPinDetails(t *testing.T) {
 		}
 		return s
 	}
-	statusText := func(info colonyPinInfo) string {
-		var s string
-		for _, x := range info.status {
-			s += x.Textual()
-		}
-		return s
-	}
 
 	t.Run("should show extractor", func(t *testing.T) {
 		info := makeInfo(t, 1)
 		require.True(t, info.found)
-		assert.Equal(t, "Extractor 21-111", info.name) // pin ID 1
-		assert.Equal(t, "Aqueous Liquids", info.product)
-		assert.NotNil(t, info.onProduct)
-		assert.Equal(t, pinTypeExtractor.icon(), info.symbolIcon)
-		assert.Equal(t, pinTypeExtractor, info.symbolType)
-		assert.Equal(t, app.PinExtracting.Display(), statusText(info))
-		assert.True(t, info.progress.ValueOrZero() > 0)
+		assert.Equal(t, "Extractor 21-111", info.header.name) // pin ID 1
+		assert.Equal(t, "Aqueous Liquids", info.header.output)
+		assert.Equal(t, pinTypeExtractor.icon(), info.header.symbolIcon)
+		assert.Equal(t, pinTypeExtractor, info.header.pinType)
+		assert.NotEmpty(t, info.header.info, "shows expiry")
+		assert.NotEqual(t, app.PinExtracting.Display(), segmentsText(info.header.status), "shows remaining time")
+		assert.True(t, info.header.progress.ValueOrZero() > 0)
+		require.GreaterOrEqual(t, len(info.main), 2)
+		assert.Equal(t, []string{"Type", "Status"}, []string{info.main[0].Label, info.main[1].Label}, "shown first")
+		assert.NotEmpty(t, info.main[0].Value)
+		assert.NotNil(t, info.main[0].InfoAction)
+		assert.Equal(t, app.PinExtracting.Display(), value(t, info.main, "Status"))
 		assert.Equal(t, "Aqueous Liquids", value(t, info.main, "Product"))
 		assert.NotNil(t, item(t, info.main, "Product").InfoAction)
 		assert.Contains(t, value(t, info.main, "Expires"), "(in ")
@@ -209,7 +207,8 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show processor", func(t *testing.T) {
 		info := makeInfo(t, 3)
 		require.True(t, info.found)
-		assert.Equal(t, "Water", info.product)
+		assert.Equal(t, "Water", info.header.output)
+		assert.Equal(t, pinTypeBasicProcessor, info.header.pinType)
 		assert.Equal(t, "Water x 20", value(t, info.main, "Schematic"))
 		assert.NotNil(t, item(t, info.main, "Schematic").InfoAction)
 		assert.Nil(t, info.storage)
@@ -225,7 +224,7 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show processor without schematic", func(t *testing.T) {
 		info := makeInfo(t, 6)
 		require.True(t, info.found)
-		assert.Empty(t, info.product)
+		assert.Equal(t, "-", info.header.output)
 		assert.Equal(t, "-", value(t, info.main, "Schematic"))
 		assert.Empty(t, info.inputs)
 		assert.NotNil(t, info.inputs, "shows inputs tab")
@@ -283,8 +282,9 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show storage", func(t *testing.T) {
 		info := makeInfo(t, 2)
 		require.True(t, info.found)
-		assert.Empty(t, info.product)
-		assert.Equal(t, "-", statusText(info))
+		assert.Equal(t, "Aqueous Liquids", info.header.output, "shows largest item")
+		assert.Contains(t, info.header.info, " / 12,000 m3")
+		assert.Equal(t, "Has space", value(t, info.main, "Status"))
 		assert.Contains(t, value(t, info.main, "Capacity"), " / 12,000 m3")
 		assert.Nil(t, info.inputs)
 		require.Len(t, info.storage, 1)
@@ -298,6 +298,27 @@ func TestColonyPinDetails(t *testing.T) {
 			"Aqueous Liquids: 10,000 units from Extractor 21-111",
 			"Aqueous Liquids: 3,000 units to Basic Processor 41-111",
 		}, routeLines(info.routes))
+	})
+	t.Run("should show status of storage", func(t *testing.T) {
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 2, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		for _, tc := range []struct {
+			name string
+			pf   *app.PinForecast
+			want string
+		}{
+			{"empty", &app.PinForecast{Status: app.PinStatic}, "Empty"},
+			{"has space", &app.PinForecast{Status: app.PinStatic, Contents: map[int64]int64{aqueousLiquids.ID: 1}}, "Has space"},
+			{"full", &app.PinForecast{Status: app.PinStorageFull, Contents: map[int64]int64{aqueousLiquids.ID: 1}}, app.PinStorageFull.Display()},
+			{"not simulated", &app.PinForecast{}, "-"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				f := &app.ColonyForecast{Pins: map[int64]*app.PinForecast{2: tc.pf}}
+				info := a.makeInfo(a.colony, f, a.extraTypeNames, now)
+				assert.Equal(t, tc.want, value(t, info.main, "Status"))
+			})
+		}
 	})
 	t.Run("should show tabs for installation type", func(t *testing.T) {
 		titles := func(a *colonyPinDetails) []string {
@@ -361,8 +382,12 @@ func TestColonyPinDetails(t *testing.T) {
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		a.content.Objects = nil
+		a.header.status.Set(nil)
+		a.header.output.Set(nil)
 		a.refreshForecast()
 		assert.NotEmpty(t, a.content.Objects)
+		assert.NotEmpty(t, a.header.status.String(), "updates header")
+		assert.Equal(t, "Aqueous Liquids", a.header.output.String())
 	})
 	t.Run("should stop forecasting when character is removed", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
