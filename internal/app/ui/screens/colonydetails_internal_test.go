@@ -107,6 +107,18 @@ func TestColonyDetails(t *testing.T) {
 		return colonyDetailsRow{}
 	}
 
+	t.Run("should lay out header without gaps after width changed", func(t *testing.T) {
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		w := test.NewWindow(a)
+		t.Cleanup(w.Close)
+		w.Resize(fyne.NewSize(160, 640)) // narrow, so the header texts wrap
+		require.NoError(t, a.Update(t.Context()))
+		w.Resize(fyne.NewSize(360, 640))
+		for _, o := range []fyne.CanvasObject{a.planet, a.planetType, a.owner, a.status} {
+			assert.Equal(t, o.MinSize().Height, o.Size().Height)
+		}
+	})
 	t.Run("should show colony status", func(t *testing.T) {
 		// factory without input route makes the colony not setup
 		assert.Contains(t, a.status.String(), app.ColonyNotSetup.Display())

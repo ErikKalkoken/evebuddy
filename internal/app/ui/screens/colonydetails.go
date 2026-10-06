@@ -81,6 +81,7 @@ type colonyDetails struct {
 	planet        *xwidget.TappableRichText
 	planetID      atomic.Int64
 	planetType    *widget.Hyperlink
+	root          *fyne.Container // content of the renderer
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
 	rowsGen       int // incremented when Update replaces rows
@@ -371,14 +372,23 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 		a.installations,
 	)
 
-	content := container.NewBorder(
+	a.root = container.NewBorder(
 		header,
 		nil,
 		nil,
 		nil,
 		installations,
 	)
-	return widget.NewSimpleRenderer(content)
+	return widget.NewSimpleRenderer(a.root)
+}
+
+func (a *colonyDetails) Resize(size fyne.Size) {
+	widthChanged := size.Width != a.Size().Width
+	a.BaseWidget.Resize(size)
+	if widthChanged && a.root != nil {
+		// wrapped header texts only know their height after being resized, so lay out again
+		a.root.Layout.Layout(a.root.Objects, a.root.Size())
+	}
 }
 
 func (a *colonyDetails) stop() {
