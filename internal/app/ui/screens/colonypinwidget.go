@@ -254,16 +254,17 @@ func (r *tripleCircleRenderer) Objects() []fyne.CanvasObject {
 
 func (r *tripleCircleRenderer) Destroy() {}
 
-// colonyPinIcon shows the icon of a pin type tinted in the foreground color.
+// colonyPinIcon shows the icon of a pin type tinted in the given theme color.
 type colonyPinIcon struct {
 	widget.BaseWidget
 
+	color   fyne.ThemeColorName
 	icon    fyne.Resource
 	minSize fyne.Size
 }
 
-func newColonyPinIcon(icon fyne.Resource, minSize fyne.Size) *colonyPinIcon {
-	w := &colonyPinIcon{icon: icon, minSize: minSize}
+func newColonyPinIcon(icon fyne.Resource, minSize fyne.Size, color fyne.ThemeColorName) *colonyPinIcon {
+	w := &colonyPinIcon{color: color, icon: icon, minSize: minSize}
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -291,7 +292,8 @@ func (r *colonyPinIconRenderer) MinSize() fyne.Size {
 }
 
 func (r *colonyPinIconRenderer) Refresh() {
-	c := r.widget.Theme().Color(theme.ColorNameForeground, fyne.CurrentApp().Settings().ThemeVariant())
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	c := r.widget.Theme().Color(r.widget.color, v)
 	r.image.Resource = r.tint.apply(r.widget.icon, c)
 	r.image.Refresh()
 }

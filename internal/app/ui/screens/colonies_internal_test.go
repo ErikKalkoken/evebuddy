@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -79,6 +81,7 @@ func TestColonies(t *testing.T) {
 		for _, r := range rows {
 			if r.planetID == cp.EvePlanet.ID {
 				assert.True(t, r.workEndsAt.MustValue().Equal(expiry))
+				assert.Equal(t, cp.EvePlanet.Type.IconID.ValueOrZero(), r.planetIconID)
 			} else {
 				assert.Equal(t, app.ColonyIdle, r.status)
 				assert.True(t, r.workEndsAt.IsEmpty())
@@ -123,5 +126,75 @@ func TestColonies(t *testing.T) {
 		if assert.Len(t, a.rowsFiltered, 1) {
 			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
 		}
+	})
+}
+
+func TestColonyRow_StatusShort(t *testing.T) {
+	now := time.Now()
+	for _, tc := range []struct {
+		name  string
+		row   colonyRow
+		want  string
+		color fyne.ThemeColorName
+	}{
+		{
+			"working shows remaining time",
+			colonyRow{status: app.ColonyExtracting, workEndsAt: optional.New(now.Add(3 * time.Hour))},
+			"3h 0m",
+			"",
+		},
+		{
+			"working beyond horizon",
+			colonyRow{status: app.ColonyProducing, worksBeyond: true},
+			colonyBeyondHorizonText,
+			"",
+		},
+		{
+			"working without end shows status",
+			colonyRow{status: app.ColonyExtracting},
+			app.ColonyExtracting.Display(),
+			app.ColonyExtracting.Color(),
+		},
+		{
+			"idle shows status",
+			colonyRow{status: app.ColonyIdle},
+			app.ColonyIdle.Display(),
+			app.ColonyIdle.Color(),
+		},
+		{
+			"needs attention shows status",
+			colonyRow{status: app.ColonyNeedsAttention},
+			app.ColonyNeedsAttention.Display(),
+			app.ColonyNeedsAttention.Color(),
+		},
+		{
+			"not setup shows status",
+			colonyRow{status: app.ColonyNotSetup},
+			app.ColonyNotSetup.Display(),
+			app.ColonyNotSetup.Color(),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.row.statusShort(now)
+			require.Len(t, got, 1)
+			seg := got[0].(*widget.TextSegment)
+			assert.Equal(t, tc.want, seg.Text)
+			assert.Equal(t, tc.color, seg.Style.ColorName)
+		})
+	}
+}
+
+func TestColonyListItem(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("should show attention icon only for colonies with problems", func(t *testing.T) {
+		w := newColonyListItem()
+		win := test.NewWindow(w)
+		t.Cleanup(win.Close)
+		w.set(colonyRow{status: app.ColonyNeedsAttention})
+		assert.True(t, w.attention.Visible())
+		w.set(colonyRow{status: app.ColonyExtracting}) // row is recycled
+		assert.False(t, w.attention.Visible())
+		w.set(colonyRow{status: app.ColonyIdle})
+		assert.False(t, w.attention.Visible())
 	})
 }

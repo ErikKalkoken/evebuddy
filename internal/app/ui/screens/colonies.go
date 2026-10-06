@@ -37,6 +37,7 @@ type colonyRow struct {
 	nameDisplay     []widget.RichTextSegment
 	ownerName       string
 	planet          *app.CharacterPlanet
+	planetIconID    int64
 	planetID        int64
 	planetName      string
 	planetTypeID    int64
@@ -92,6 +93,20 @@ func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 		ColorName: r.status.Color(),
 		Inline:    true,
 	})
+}
+
+// statusShort returns a short status, which fits next to the colony name on mobile:
+// the remaining time for working colonies and the status otherwise.
+func (r colonyRow) statusShort(now time.Time) []widget.RichTextSegment {
+	if r.status.IsWorking() {
+		if v, ok := r.workEndsAt.Value(); ok {
+			return xwidget.RichTextSegmentsFromText(ihumanize.Duration(v.Sub(now)))
+		}
+		if r.worksBeyond {
+			return xwidget.RichTextSegmentsFromText(colonyBeyondHorizonText)
+		}
+	}
+	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{ColorName: r.status.Color()})
 }
 
 func (r colonyRow) workEndsDisplay() string {
@@ -384,86 +399,87 @@ func (a *Colonies) makeDataList() *xwidget.StripedList {
 	return l
 }
 
+// colonyListMutedColor is the color of the details and their icons in the mobile colony list.
+const colonyListMutedColor = theme.ColorNamePlaceHolder
+
 type colonyListItem struct {
 	widget.BaseWidget
 
-	character  *widget.Label
-	extracting *widget.Label
-	producing  *widget.Label
+	attention  *widget.Icon // shown over the planet icon when the colony has problems
+	character  *xwidget.RichText
+	extracting *xwidget.RichText
+	icon       *canvas.Image
+	iconStack  *fyne.Container
+	producing  *xwidget.RichText
 	status     *xwidget.RichText
 	title      *xwidget.RichText
 }
 
 func newColonyListItem() *colonyListItem {
-	character := widget.NewLabel("Template")
-	character.Truncation = fyne.TextTruncateClip
-	extracting := widget.NewLabel("Template")
-	extracting.Truncation = fyne.TextTruncateClip
-	producing := widget.NewLabel("Template")
-	producing.Truncation = fyne.TextTruncateClip
-	status := xwidget.NewRichText()
+	makeDetail := func() *xwidget.RichText {
+		x := xwidget.NewRichText()
+		x.Truncation = fyne.TextTruncateClip
+		return x
+	}
+	title := xwidget.NewRichText()
+	title.Truncation = fyne.TextTruncateEllipsis
 	w := &colonyListItem{
-		character:  character,
-		extracting: extracting,
-		producing:  producing,
-		status:     status,
-		title:      xwidget.NewRichText(),
+		attention:  widget.NewIcon(theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError)),
+		character:  makeDetail(),
+		extracting: makeDetail(),
+		icon:       xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(planetPinMinSize)),
+		producing:  makeDetail(),
+		status:     xwidget.NewRichText(),
+		title:      title,
 	}
 	w.ExtendBaseWidget(w)
+	w.attention.Hide()
+	w.iconStack = container.NewStack(w.icon, container.NewCenter(w.attention))
 	return w
 }
 
 func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	iconSize := fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))
-	c := container.New(layout.NewCustomPaddedVBoxLayout(-p),
-		w.title,
-		container.NewBorder(
+	detail := func(icon fyne.CanvasObject, text *xwidget.RichText) fyne.CanvasObject {
+		return container.NewBorder(
 			nil,
 			nil,
-			container.NewHBox(
-				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				newColonyPinIcon(pinTypeExtractor.icon(), iconSize),
-			),
-			w.status,
-			w.extracting,
-		),
-		container.NewBorder(
+			container.NewHBox(xwidget.NewSpacer(fyne.NewSize(p/2, 1)), icon),
 			nil,
-			nil,
-			container.NewHBox(
-				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				newColonyPinIcon(pinTypeBasicProcessor.icon(), iconSize),
-			),
-			nil,
-			w.producing,
-		),
-		container.NewBorder(
-			nil,
-			nil,
-			container.NewHBox(
-				xwidget.NewSpacer(fyne.NewSize(p/2, 1)),
-				widget.NewIcon(theme.AccountIcon()),
-			),
-			nil,
-			w.character,
+			text,
+		)
+	}
+	c := container.NewBorder(
+		nil,
+		nil,
+		container.NewCenter(container.NewPadded(w.iconStack)),
+		nil,
+		container.New(layout.NewCustomPaddedVBoxLayout(-3*p), // same spacing as character cards
+			container.New(layout.NewCustomPaddedLayout(0, p, 0, 0), container.NewBorder(nil, nil, nil, w.status, w.title)),
+			detail(newColonyPinIcon(pinTypeExtractor.icon(), iconSize, colonyListMutedColor), w.extracting),
+			detail(newColonyPinIcon(pinTypeBasicProcessor.icon(), iconSize, colonyListMutedColor), w.producing),
+			detail(widget.NewIcon(theme.NewColoredResource(theme.AccountIcon(), colonyListMutedColor)), w.character),
 		),
 	)
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
 func (w *colonyListItem) set(r colonyRow) {
-	w.character.SetText(r.ownerName)
-	w.extracting.SetText(r.extractingText)
-	w.title.Set(r.titleDisplay)
-	w.producing.SetText(r.producingText)
-	status := r.statusDisplay()
-	if v, ok := r.workEndsAt.Value(); ok {
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • "+ihumanize.Duration(time.Until(v))))
-	} else if r.worksBeyond {
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" • "+colonyBeyondHorizonText))
+	muted := widget.RichTextStyle{ColorName: colonyListMutedColor}
+	w.character.SetWithText(r.ownerName, muted)
+	w.extracting.SetWithText(r.extractingText, muted)
+	w.icon.Resource = colonyPlanetIcon(r.planetIconID, r.status.IsProblem())
+	w.icon.Refresh()
+	if r.status.IsProblem() {
+		w.attention.Show()
+		w.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
+	} else {
+		w.attention.Hide()
 	}
-	w.status.Set(status)
+	w.producing.SetWithText(r.producingText, muted)
+	w.status.Set(r.statusShort(time.Now()))
+	w.title.Set(r.titleDisplay)
 }
 
 func (a *Colonies) filterRowsAsync(sortCol string) {
@@ -665,7 +681,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			return x.Name
 		}))
 		titleDisplay := xwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
-			x.SizeName = theme.SizeNameSubHeadingText
+			x.TextStyle.Bold = true
 		})
 		name := p.EvePlanet.Name
 		searchTargets := slices.Collect(xiter.Map(set.Union(set.Of(name), extracting, producing).All(), strings.ToLower))
@@ -676,6 +692,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			nameDisplay:     p.NameRichText(),
 			ownerName:       characters[p.CharacterID],
 			planet:          p,
+			planetIconID:    p.EvePlanet.Type.IconID.ValueOrZero(),
 			planetID:        p.EvePlanet.ID,
 			planetName:      p.EvePlanet.Name,
 			producing:       producing,
