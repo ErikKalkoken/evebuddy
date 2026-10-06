@@ -365,7 +365,11 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		)
 	}
 
-	a.searchEntry = xwidget.NewSearchEntry("Search items and descriptions", func(_ string) {
+	placeholder := "Search items and descriptions"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -446,7 +450,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(a.searchEntry, container.NewHBox(a.selectStatus, a.filterChip, a.sortChip))
+		topBox = container.NewVBox(
+			container.NewHBox(a.selectStatus),
+			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
+		)
 	} else {
 		filter := container.NewHBox(
 			a.selectStatus,
