@@ -37,11 +37,14 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+var _ fyne.Disableable = (*NavListItem)(nil)
+var _ fyne.Tappable = (*NavListItem)(nil)
+var _ fyne.Widget = (*NavListItem)(nil)
+
 type NavListItem struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
 	Headline             string
-	IsDisabled           bool
 	Leading              fyne.Resource
 	OnTapped             func()
 	Supporting           string
@@ -153,7 +156,7 @@ func (w *NavListItem) updateStyle() {
 	w.supportingText.TextSize = th.Size(theme.SizeNameText)
 	w.tapBGRectangle.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 
-	if w.IsDisabled {
+	if w.Disabled() {
 		c := th.Color(navListItemDisabledColor, v)
 		w.headlineText.Color = c
 		w.supportingText.Color = c
@@ -211,7 +214,7 @@ func (w *NavListItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *NavListItem) Tapped(_ *fyne.PointEvent) {
-	if w.IsDisabled {
+	if w.Disabled() {
 		return
 	}
 	w.tapAnim.Stop()

@@ -517,35 +517,21 @@ func NewMobileUI(params UIParams) *MobileUI {
 			slog.Error("Failed to enable corporation tab", "error", err)
 			sections.Clear()
 		}
+		setEnabled := func(it *xwidget.NavListItem, enabled bool) {
+			if enabled {
+				it.Enable()
+			} else {
+				it.Disable()
+			}
+		}
 		fyne.Do(func() {
-			if sections.Contains(app.SectionCorporationAssets) {
-				corpAssetBrowserNav.IsDisabled = false
-			} else {
-				corpAssetBrowserNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationIndustryJobs) {
-				corpIndustryNav.IsDisabled = false
-			} else {
-				corpIndustryNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationContracts) {
-				corpContractsNav.IsDisabled = false
-			} else {
-				corpContractsNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWalletNav.IsDisabled = false
-			} else {
-				corpWalletNav.IsDisabled = true
-			}
-			if sections.Contains(app.SectionCorporationAssets) &&
+			setEnabled(corpAssetBrowserNav, sections.Contains(app.SectionCorporationAssets))
+			setEnabled(corpIndustryNav, sections.Contains(app.SectionCorporationIndustryJobs))
+			setEnabled(corpContractsNav, sections.Contains(app.SectionCorporationContracts))
+			setEnabled(corpWalletNav, sections.Contains(app.SectionCorporationWalletBalances))
+			setEnabled(corpWealthNav, sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
-				sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWealthNav.IsDisabled = false
-			} else {
-				corpWealthNav.IsDisabled = true
-			}
-			corpList.Refresh()
+				sections.Contains(app.SectionCorporationWalletBalances))
 		})
 	}
 

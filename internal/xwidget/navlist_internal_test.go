@@ -33,18 +33,15 @@ func TestNavListItem_Style(t *testing.T) {
 	})
 	t.Run("should show disabled item in disabled color", func(t *testing.T) {
 		it := makeItem(t)
-		it.IsDisabled = true
-		it.Refresh()
+		it.Disable()
 		assert.Equal(t, color(it, theme.ColorNameDisabled), it.headlineText.Color)
 		assert.Equal(t, color(it, theme.ColorNameDisabled), it.supportingText.Color)
 		assert.IsType(t, &theme.DisabledResource{}, it.leadingImage.Resource)
 	})
 	t.Run("should restore style when enabled again", func(t *testing.T) {
 		it := makeItem(t)
-		it.IsDisabled = true
-		it.Refresh()
-		it.IsDisabled = false
-		it.Refresh()
+		it.Disable()
+		it.Enable()
 		assert.Equal(t, color(it, theme.ColorNameForeground), it.headlineText.Color)
 		assert.Equal(t, color(it, theme.ColorNamePlaceHolder), it.supportingText.Color)
 		assert.IsType(t, &theme.ThemedResource{}, it.leadingImage.Resource)
@@ -71,14 +68,12 @@ func TestNavListItem_Style(t *testing.T) {
 	t.Run("should show disabled color regardless of importance", func(t *testing.T) {
 		it := makeItem(t)
 		it.SupportingImportance = widget.WarningImportance
-		it.IsDisabled = true
-		it.Refresh()
+		it.Disable()
 		assert.Equal(t, color(it, theme.ColorNameDisabled), it.supportingText.Color)
 	})
-	t.Run("should apply style when refreshed before first render", func(t *testing.T) {
+	t.Run("should apply style when disabled before first render", func(t *testing.T) {
 		it := NewNavListItem("Headline", theme.HomeIcon(), nil)
-		it.IsDisabled = true
-		it.Refresh()
+		it.Disable()
 		w := test.NewWindow(it)
 		defer w.Close()
 		assert.Equal(t, color(it, theme.ColorNameDisabled), it.headlineText.Color)
