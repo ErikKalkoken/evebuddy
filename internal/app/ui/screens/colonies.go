@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -21,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -40,7 +38,6 @@ type colonyRow struct {
 	planetIconID    int64
 	planetID        int64
 	planetName      string
-	planetTypeID    int64
 	planetTypeName  string
 	producing       set.Set[string]
 	producingText   string
@@ -195,22 +192,14 @@ func NewColonies(u baseUI) *Colonies {
 			return strings.Compare(a.name, b.name)
 		},
 		Create: func() fyne.CanvasObject {
-			icon := xwidget.NewImageFromResource(
-				icons.BlankSvg,
-				fyne.NewSquareSize(ui.IconUnitSize),
-			)
 			name := xwidget.NewRichText()
 			name.Truncation = fyne.TextTruncateClip
-			return container.NewBorder(nil, nil, icon, nil, name)
+			return container.NewBorder(nil, nil, newColonyPlanetSymbol(ui.IconUnitSize, 1), nil, name)
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			border[0].(*xwidget.RichText).Set(r.nameDisplay)
-			x := border[1].(*canvas.Image)
-			u.EVEImage().InventoryTypeIconAsync(r.planetTypeID, ui.IconPixelSize, func(r fyne.Resource) {
-				x.Resource = r
-				x.Refresh()
-			})
+			border[1].(*colonyPlanetSymbol).set(r.planetIconID, r.status.IsProblem())
 		},
 	}, {
 		Label: "Status (est.)",
@@ -405,11 +394,9 @@ const colonyListMutedColor = theme.ColorNamePlaceHolder
 type colonyListItem struct {
 	widget.BaseWidget
 
-	attention  *widget.Icon // shown over the planet icon when the colony has problems
 	character  *xwidget.RichText
 	extracting *xwidget.RichText
-	icon       *canvas.Image
-	iconStack  *fyne.Container
+	planet     *colonyPlanetSymbol
 	producing  *xwidget.RichText
 	status     *xwidget.RichText
 	title      *xwidget.RichText
@@ -424,17 +411,14 @@ func newColonyListItem() *colonyListItem {
 	title := xwidget.NewRichText()
 	title.Truncation = fyne.TextTruncateEllipsis
 	w := &colonyListItem{
-		attention:  widget.NewIcon(theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError)),
 		character:  makeDetail(),
 		extracting: makeDetail(),
-		icon:       xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(planetPinMinSize)),
+		planet:     newColonyPlanetSymbol(planetPinMinSize, 1),
 		producing:  makeDetail(),
 		status:     xwidget.NewRichText(),
 		title:      title,
 	}
 	w.ExtendBaseWidget(w)
-	w.attention.Hide()
-	w.iconStack = container.NewStack(w.icon, container.NewCenter(w.attention))
 	return w
 }
 
@@ -452,7 +436,7 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		nil,
 		nil,
-		container.NewCenter(container.NewPadded(w.iconStack)),
+		container.NewCenter(container.NewPadded(w.planet)),
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-3*p), // same spacing as character cards
 			container.New(layout.NewCustomPaddedLayout(0, p, 0, 0), container.NewBorder(nil, nil, nil, w.status, w.title)),
@@ -468,14 +452,7 @@ func (w *colonyListItem) set(r colonyRow) {
 	muted := widget.RichTextStyle{ColorName: colonyListMutedColor}
 	w.character.SetWithText(r.ownerName, muted)
 	w.extracting.SetWithText(r.extractingText, muted)
-	w.icon.Resource = colonyPlanetIcon(r.planetIconID, r.status.IsProblem())
-	w.icon.Refresh()
-	if r.status.IsProblem() {
-		w.attention.Show()
-		w.iconStack.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
-	} else {
-		w.attention.Hide()
-	}
+	w.planet.set(r.planetIconID, r.status.IsProblem())
 	w.producing.SetWithText(r.producingText, muted)
 	w.status.Set(r.statusShort(time.Now()))
 	w.title.Set(r.titleDisplay)
@@ -698,7 +675,6 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
 			solarSystemName: p.EvePlanet.SolarSystem.Name,
 			planetTypeName:  p.EvePlanet.TypeDisplay(),
-			planetTypeID:    p.EvePlanet.Type.ID,
 			titleDisplay:    titleDisplay,
 			searchTarget:    strings.Join(searchTargets, "~"),
 		}

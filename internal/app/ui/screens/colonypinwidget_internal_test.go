@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestColonyPinIcon(t *testing.T) {
@@ -31,5 +32,39 @@ func TestColonyPinIcon(t *testing.T) {
 		w.Refresh()
 		assert.Equal(t, tinted(w), w.Resource)
 		assert.NotEqual(t, before, w.Resource)
+	})
+}
+
+func TestColonyPlanetSymbol(t *testing.T) {
+	test.NewTempApp(t)
+	const iconID = 1047
+	t.Run("should show planet in color without attention icon", func(t *testing.T) {
+		w := newColonyPlanetSymbol(28, 1)
+		w.set(iconID, false)
+		assert.Equal(t, colonyPlanetIcon(iconID, false), w.icon.Resource)
+		assert.False(t, w.attention.Visible())
+	})
+	t.Run("should show grayed out planet with attention icon for problems", func(t *testing.T) {
+		w := newColonyPlanetSymbol(28, 1)
+		w.set(iconID, true)
+		require.NotEqual(t, colonyPlanetIcon(iconID, false), colonyPlanetIcon(iconID, true), "test icon has grayscale variant")
+		assert.Equal(t, colonyPlanetIcon(iconID, true), w.icon.Resource)
+		assert.True(t, w.attention.Visible())
+	})
+	t.Run("should restore planet when recycled for colony without problems", func(t *testing.T) {
+		w := newColonyPlanetSymbol(28, 1)
+		w.set(iconID, true)
+		w.set(iconID, false)
+		assert.Equal(t, colonyPlanetIcon(iconID, false), w.icon.Resource)
+		assert.False(t, w.attention.Visible())
+	})
+	t.Run("should size attention icon in inline icon sizes", func(t *testing.T) {
+		for _, scale := range []float32{1, 2} {
+			w := newColonyPlanetSymbol(104, scale)
+			win := test.NewWindow(w)
+			w.set(iconID, true)
+			assert.Equal(t, fyne.NewSquareSize(scale*theme.IconInlineSize()), w.attention.MinSize())
+			win.Close()
+		}
 	})
 }

@@ -296,7 +296,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		a.filterRowsAsync()
 	})
 
-	a.searchEntry = xwidget.NewSearchEntry("Search pins and products", func(_ string) {
+	a.searchEntry = xwidget.NewSearchEntry("Search installations and items", func(_ string) {
 		a.filterRowsAsync()
 	})
 

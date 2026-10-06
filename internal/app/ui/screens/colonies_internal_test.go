@@ -191,10 +191,10 @@ func TestColonyListItem(t *testing.T) {
 		win := test.NewWindow(w)
 		t.Cleanup(win.Close)
 		w.set(colonyRow{status: app.ColonyNeedsAttention})
-		assert.True(t, w.attention.Visible())
+		assert.True(t, w.planet.attention.Visible())
 		w.set(colonyRow{status: app.ColonyExtracting}) // row is recycled
-		assert.False(t, w.attention.Visible())
+		assert.False(t, w.planet.attention.Visible())
 		w.set(colonyRow{status: app.ColonyIdle})
-		assert.False(t, w.attention.Visible())
+		assert.False(t, w.planet.attention.Visible())
 	})
 }

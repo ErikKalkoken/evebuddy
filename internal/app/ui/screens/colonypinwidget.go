@@ -129,6 +129,60 @@ func (w *colonyPinWidget) Set(r colonyDetailsRow) {
 	w.Refresh()
 }
 
+// colonyPlanetSymbol shows the planet icon of a colony,
+// grayed out and with an attention icon on top when the colony has problems.
+type colonyPlanetSymbol struct {
+	widget.BaseWidget
+
+	attention      *canvas.Image
+	attentionScale float32 // size of the attention icon in inline icon sizes
+	icon           *canvas.Image
+}
+
+func newColonyPlanetSymbol(size, attentionScale float32) *colonyPlanetSymbol {
+	attention := canvas.NewImageFromResource(theme.NewColoredResource(icons.CancelSvg, theme.ColorNameError))
+	attention.FillMode = canvas.ImageFillContain
+	attention.Hide()
+	w := &colonyPlanetSymbol{
+		attention:      attention,
+		attentionScale: attentionScale,
+		icon:           xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(size)),
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *colonyPlanetSymbol) CreateRenderer() fyne.WidgetRenderer {
+	w.updateAttentionSize()
+	return widget.NewSimpleRenderer(container.NewStack(w.icon, container.NewCenter(w.attention)))
+}
+
+func (w *colonyPlanetSymbol) Refresh() {
+	w.updateAttentionSize() // the theme may have changed
+	w.BaseWidget.Refresh()
+}
+
+func (w *colonyPlanetSymbol) updateAttentionSize() {
+	w.attention.SetMinSize(fyne.NewSquareSize(w.attentionScale * w.Theme().Size(theme.SizeNameInlineIcon)))
+}
+
+// set shows the planet icon with iconID and whether the colony has problems.
+func (w *colonyPlanetSymbol) set(iconID int64, hasProblem bool) {
+	if icon := colonyPlanetIcon(iconID, hasProblem); w.icon.Resource != icon {
+		w.icon.Resource = icon
+		w.icon.Refresh()
+	}
+	if hasProblem == w.attention.Visible() {
+		return
+	}
+	if hasProblem {
+		w.attention.Show()
+		w.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
+	} else {
+		w.attention.Hide()
+	}
+}
+
 type planetPinSymbol struct {
 	widget.BaseWidget
 
