@@ -50,6 +50,74 @@ const (
 	industryStatusReady              = "Ready for delivery"
 )
 
+// Names of the industry job filters, used as labels on desktop and as option names on mobile.
+const (
+	industryJobsFilterActivity  = "Activity"
+	industryJobsFilterInstaller = "Installer"
+	industryJobsFilterOwner     = "Owner"
+	industryJobsFilterTag       = "Tag"
+)
+
+// industryJobsFilter is the selected value of each industry job filter. Empty means not filtered.
+type industryJobsFilter struct {
+	activity  string
+	installer string
+	owner     string
+	status    string
+	tag       string
+}
+
+// match reports whether row r passes all filters.
+func (f industryJobsFilter) match(r industryJobRow) bool {
+	switch {
+	case f.installer == industryInstallerMe && !r.isInstallerMe,
+		f.installer == industryInstallerCorpmates && r.isInstallerMe,
+		f.owner == industryOwnerMe && !r.isOwnerMe,
+		f.owner == industryOwnerCorp && r.isOwnerMe,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	switch f.activity {
+	case industryActivityCopying:
+		if r.activity != app.Copying {
+			return false
+		}
+	case industryActivityInvention:
+		if r.activity != app.Invention {
+			return false
+		}
+	case industryActivityManufacturing:
+		if r.activity != app.Manufacturing {
+			return false
+		}
+	case industryActivityMaterialResearch:
+		if r.activity != app.MaterialEfficiencyResearch {
+			return false
+		}
+	case industryActivityReaction:
+		if r.activity != app.Reactions1 && r.activity != app.Reactions2 {
+			return false
+		}
+	case industryActivityTimeResearch:
+		if r.activity != app.TimeEfficiencyResearch {
+			return false
+		}
+	}
+	switch status := r.statusCalculated(); f.status {
+	case industryStatusActive:
+		return status.IsActive()
+	case industryStatusInProgress:
+		return status == app.JobActive
+	case industryStatusReady:
+		return status == app.JobReady
+	case industryStatusHalted:
+		return status == app.JobPaused
+	case industryStatusHistory:
+		return !status.IsActive()
+	}
+	return true
+}
+
 // industryJobRow represents a job row in the list widgets.
 // It combines character and corporation jobs and has precalculated fields for filters.
 type industryJobRow struct {
@@ -109,6 +177,7 @@ type IndustryJobs struct {
 	OnUpdate func(count int)
 
 	body            fyne.CanvasObject
+	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
 	footer          *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
@@ -117,10 +186,10 @@ type IndustryJobs struct {
 	rows            []industryJobRow
 	rowsFiltered    []industryJobRow
 	searchEntry     *xwidget.SearchEntry
-	selectActivity  *kxwidget.FilterChipSelect
+	selectActivity  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectInstaller *kxwidget.FilterChipSelect
 	selectOwner     *kxwidget.FilterChipSelect
-	selectStatus    *kxwidget.FilterChipSelect
+	selectStatus    *kxwidget.FilterChipSelect // mode chip on all platforms
 	selectTag       *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	u               baseUI
@@ -265,17 +334,11 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			})
 	}
 
-	a.searchEntry = xwidget.NewSearchEntry("Search blueprints", func(_ string) {
-		a.filterRowsAsync("")
-	})
-
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{
-		industryOwnerMe,
-		industryOwnerCorp,
-	}, func(_ string) {
+	placeholder := "Search blueprints"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -291,25 +354,23 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 	a.selectStatus.Selected = industryStatusActive
 	a.selectStatus.SortDisabled = true
 
-	a.selectActivity = kxwidget.NewFilterChipSelect("Activity", []string{
-		industryActivityManufacturing,
-		industryActivityMaterialResearch,
-		industryActivityTimeResearch,
-		industryActivityCopying,
-		industryActivityInvention,
-		industryActivityReaction,
-	}, func(_ string) {
-		a.filterRowsAsync("")
-	})
-
-	a.selectInstaller = kxwidget.NewFilterChipSelect("Installer", []string{
-		industryInstallerMe,
-		industryInstallerCorpmates,
-	}, func(_ string) {
-		a.filterRowsAsync("")
-	})
-	if !forCorporation {
-		a.selectInstaller.Selected = industryInstallerMe
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string, options ...string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, options, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectTag = makeSelect(industryJobsFilterTag)
+		a.selectOwner = makeSelect(industryJobsFilterOwner, industryJobsOwnerOptions()...)
+		a.selectActivity = makeSelect(industryJobsFilterActivity, industryJobsActivityOptions()...)
+		a.selectInstaller = makeSelect(industryJobsFilterInstaller, industryJobsInstallerOptions()...)
+		if !forCorporation {
+			a.selectInstaller.Selected = industryInstallerMe // hidden filter outside corporation mode
+		}
 	}
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -322,10 +383,15 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
+				a.selectStatus.Selected = industryStatusActive
+				a.selectStatus.Refresh()
+				if a.filterChip != nil {
+					a.filterChip.ResetSilent()
+					return
+				}
 				a.selectActivity.Selected = ""
 				a.selectInstaller.Selected = ""
 				a.selectOwner.Selected = ""
-				a.selectStatus.Selected = ""
 				a.selectTag.Selected = ""
 			})
 			a.update(ctx)
@@ -371,22 +437,19 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 }
 
 func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
-	var filter *fyne.Container
-	if a.forCorporation {
-		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectInstaller)
-	} else {
-		filter = container.NewHBox(a.selectOwner, a.selectStatus, a.selectActivity, a.selectTag)
-	}
-	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
-	}
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
 		topBox = container.NewVBox(
-			a.searchEntry,
-			container.NewHScroll(filter),
+			container.NewHBox(a.selectStatus),
+			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
 		)
 	} else {
+		filter := container.NewHBox(a.selectStatus, a.selectOwner, a.selectActivity)
+		if a.forCorporation {
+			filter.Add(a.selectInstaller)
+		} else {
+			filter.Add(a.selectTag)
+		}
 		topBox = container.NewBorder(
 			nil,
 			nil,
@@ -403,6 +466,51 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func industryJobsActivityOptions() []string {
+	return []string{
+		industryActivityManufacturing,
+		industryActivityMaterialResearch,
+		industryActivityTimeResearch,
+		industryActivityCopying,
+		industryActivityInvention,
+		industryActivityReaction,
+	}
+}
+
+func industryJobsInstallerOptions() []string {
+	return []string{industryInstallerMe, industryInstallerCorpmates}
+}
+
+func industryJobsOwnerOptions() []string {
+	return []string{industryOwnerMe, industryOwnerCorp}
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop. Status comes from its mode chip on both.
+func (a *IndustryJobs) currentFilter() industryJobsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		installer := s[industryJobsFilterInstaller]
+		if !a.forCorporation {
+			installer = industryInstallerMe // hidden filter outside corporation mode, as on desktop
+		}
+		return industryJobsFilter{
+			activity:  s[industryJobsFilterActivity],
+			installer: installer,
+			owner:     s[industryJobsFilterOwner],
+			status:    a.selectStatus.Selected,
+			tag:       s[industryJobsFilterTag],
+		}
+	}
+	return industryJobsFilter{
+		activity:  a.selectActivity.Selected,
+		installer: a.selectInstaller.Selected,
+		owner:     a.selectOwner.Selected,
+		status:    a.selectStatus.Selected,
+		tag:       a.selectTag.Selected,
+	}
 }
 
 func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
@@ -509,77 +617,14 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	installer := a.selectInstaller.Selected
-	activity := a.selectActivity.Selected
-	owner := a.selectOwner.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := a.searchEntry.Text
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
 		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
-			status := r.statusCalculated()
-			switch a.selectStatus.Selected {
-			case industryStatusActive:
-				return !status.IsActive()
-			case industryStatusInProgress:
-				return status != app.JobActive
-			case industryStatusReady:
-				return status != app.JobReady
-			case industryStatusHalted:
-				return status != app.JobPaused
-			case industryStatusHistory:
-				return status.IsActive()
-			}
-			return true
+			return !filter.match(r)
 		})
-		if installer != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch installer {
-				case industryInstallerMe:
-					return !r.isInstallerMe
-				case industryInstallerCorpmates:
-					return r.isInstallerMe
-				}
-				return true
-			})
-		}
-		if activity != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch activity {
-				case industryActivityCopying:
-					return r.activity != app.Copying
-				case industryActivityInvention:
-					return r.activity != app.Invention
-				case industryActivityManufacturing:
-					return r.activity != app.Manufacturing
-				case industryActivityMaterialResearch:
-					return r.activity != app.MaterialEfficiencyResearch
-				case industryActivityReaction:
-					return r.activity != app.Reactions1 && r.activity != app.Reactions2
-				case industryActivityTimeResearch:
-					return r.activity != app.TimeEfficiencyResearch
-				}
-				return true
-			})
-		}
-		if owner != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				switch owner {
-				case industryOwnerCorp:
-					return r.isOwnerMe
-				case industryOwnerMe:
-					return !r.isOwnerMe
-				}
-				return true
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r industryJobRow) bool {
 				return !strings.Contains(strings.ToLower(r.blueprintType.Name), strings.ToLower(search))
@@ -600,7 +645,20 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				options := []xwidget.FilterOption{
+					xwidget.NewFilterOptionMultiChoice(industryJobsFilterOwner, industryJobsOwnerOptions()),
+					xwidget.NewFilterOptionMultiChoice(industryJobsFilterActivity, industryJobsActivityOptions()),
+				}
+				if a.forCorporation {
+					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterInstaller, industryJobsInstallerOptions()))
+				} else {
+					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterTag, tagOptions))
+				}
+				a.filterChip.SetOptions(options...)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 			switch x := a.body.(type) {
