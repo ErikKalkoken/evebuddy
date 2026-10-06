@@ -47,16 +47,16 @@ type NavListItem struct {
 	Supporting string
 	Trailing   fyne.Resource
 
-	background      *canvas.Rectangle
-	tapBG           *canvas.Rectangle
-	headline        *canvas.Text
-	leading         *canvas.Image
-	leadingWrapped  *fyne.Container
-	supporting      *canvas.Text
-	trailing        *canvas.Image
-	trailingWrapped *fyne.Container
-	tapAnim         *fyne.Animation
-	isAnimating     bool
+	backgroundRectangle *canvas.Rectangle
+	headlineText        *canvas.Text
+	isAnimating         bool
+	leadingImage        *canvas.Image
+	leadingWrapped      *fyne.Container
+	supportingText      *canvas.Text
+	tapAnim             *fyne.Animation
+	tapBGRectangle      *canvas.Rectangle
+	trailingImage       *canvas.Image
+	trailingWrapped     *fyne.Container
 }
 
 func NewNavListItem(headline string, leading fyne.Resource, action func()) *NavListItem {
@@ -66,114 +66,112 @@ func NewNavListItem(headline string, leading fyne.Resource, action func()) *NavL
 const (
 	navListItemBackgroundColor = theme.ColorNameInputBackground
 	navListItemDisabledColor   = theme.ColorNameDisabled
-	navListItemTextColor       = theme.ColorNameForeground
+	navListItemHeadlineColor   = theme.ColorNameForeground
+	navListItemSupportingColor = theme.ColorNamePlaceHolder
 )
 
 func newNavListItem(leading, trailing fyne.Resource, headline, supporting string, action func()) *NavListItem {
-	if leading == nil {
-		leading = iconBlankSvg
-	}
-	if trailing == nil {
-		trailing = iconBlankSvg
-	}
-
-	h := canvas.NewText(headline, theme.Color(navListItemTextColor))
-	h.TextSize = theme.Size(theme.SizeNameText)
-	h.TextStyle.Bold = true
-
-	t := canvas.NewText(supporting, theme.Color(navListItemTextColor))
-	t.TextSize = theme.Size(theme.SizeNameText)
-
-	p := theme.Padding()
-	background := canvas.NewRectangle(theme.Color(navListItemBackgroundColor))
-	background.CornerRadius = 10
-	background.SetMinSize(fyne.NewSize(1, 14*p))
-
 	w := &NavListItem{
-		background: background,
-		headline:   h,
-		Headline:   headline,
-		leading:    NewImageFromResource(leading, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))),
-		Leading:    leading,
-		OnTapped:   action,
-		Supporting: supporting,
-		supporting: t,
-		trailing:   NewImageFromResource(trailing, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))),
-		Trailing:   trailing,
-		tapBG:      canvas.NewRectangle(color.Transparent),
+		backgroundRectangle: canvas.NewRectangle(theme.Color(navListItemBackgroundColor)),
+		Headline:            headline,
+		headlineText:        canvas.NewText(headline, theme.Color(navListItemHeadlineColor)),
+		Leading:             leading,
+		leadingImage:        NewImageFromResource(leading, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))),
+		OnTapped:            action,
+		Supporting:          supporting,
+		supportingText:      canvas.NewText(supporting, theme.Color(navListItemSupportingColor)),
+		tapBGRectangle:      canvas.NewRectangle(color.Transparent),
+		Trailing:            trailing,
+		trailingImage:       NewImageFromResource(trailing, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon))),
 	}
 	w.ExtendBaseWidget(w)
 
-	w.tapAnim = newButtonTapAnimation(w.tapBG, w, w.Theme())
+	p := theme.Padding()
+	w.backgroundRectangle.SetMinSize(fyne.NewSize(1, 14*p))
+	w.headlineText.TextStyle.Bold = true
+
+	w.tapAnim = newButtonTapAnimation(w.tapBGRectangle, w, w.Theme())
 	w.tapAnim.Curve = fyne.AnimationEaseOut
 
 	w.leadingWrapped = container.NewCenter(container.New(
 		layout.NewCustomPaddedLayout(0, 0, p, 2*p),
-		w.leading,
+		w.leadingImage,
 	))
 	w.trailingWrapped = container.NewCenter(container.New(
 		layout.NewCustomPaddedLayout(0, 0, p, p),
-		w.trailing,
+		w.trailingImage,
 	))
-	w.updateVisibility(leading, trailing, supporting)
 	return w
 }
 
-func (w *NavListItem) updateVisibility(leading fyne.Resource, trailing fyne.Resource, supporting string) {
-	if supporting == "" {
-		w.supporting.Hide()
+func (w *NavListItem) Refresh() {
+	w.updateValues()
+	w.updateVisibility()
+	w.updateStyle()
+
+	w.backgroundRectangle.Refresh()
+	w.leadingImage.Refresh()
+	w.trailingImage.Refresh()
+	w.headlineText.Refresh()
+	w.supportingText.Refresh()
+	w.BaseWidget.Refresh()
+}
+
+func (w *NavListItem) updateValues() {
+	w.leadingImage.Resource = w.Leading
+	w.trailingImage.Resource = w.Trailing
+	w.headlineText.Text = w.Headline
+	w.supportingText.Text = w.Supporting
+}
+
+func (w *NavListItem) updateVisibility() {
+	if w.Supporting == "" {
+		w.supportingText.Hide()
 	} else {
-		w.supporting.Show()
+		w.supportingText.Show()
 	}
-	if leading == nil {
+	if w.Leading == nil {
 		w.leadingWrapped.Hide()
 	} else {
 		w.leadingWrapped.Show()
 	}
-	if trailing == nil {
+	if w.Trailing == nil {
 		w.trailingWrapped.Hide()
 	} else {
 		w.trailingWrapped.Show()
 	}
 }
 
-func (w *NavListItem) Refresh() {
+func (w *NavListItem) updateStyle() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
-	w.leading.Resource = w.Leading
-	w.trailing.Resource = w.Trailing
-	w.headline.Text = w.Headline
-	w.supporting.Text = w.Supporting
-	w.updateVisibility(w.Leading, w.Trailing, w.Supporting)
+	w.backgroundRectangle.CornerRadius = th.Size(theme.SizeNameButtonRadius)
+	w.backgroundRectangle.FillColor = th.Color(navListItemBackgroundColor, v)
+	w.headlineText.TextSize = th.Size(theme.SizeNameText)
+	w.supportingText.TextSize = th.Size(theme.SizeNameText)
+	w.tapBGRectangle.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 
 	if w.IsDisabled {
 		c := th.Color(navListItemDisabledColor, v)
-		w.headline.Color = c
-		w.supporting.Color = c
-		if w.leading != nil {
-			w.leading.Resource = theme.NewDisabledResource(w.leading.Resource)
+		w.headlineText.Color = c
+		w.supportingText.Color = c
+		if w.Leading != nil {
+			w.leadingImage.Resource = theme.NewDisabledResource(w.Leading)
 		}
 	} else {
-		c := th.Color(navListItemTextColor, v)
-		w.headline.Color = c
-		w.supporting.Color = c
-		if w.leading != nil {
-			w.leading.Resource = theme.NewThemedResource(w.leading.Resource)
+		w.headlineText.Color = th.Color(navListItemHeadlineColor, v)
+		w.supportingText.Color = th.Color(navListItemSupportingColor, v)
+		if w.Leading != nil {
+			w.leadingImage.Resource = w.Leading
 		}
 	}
-
-	w.background.FillColor = th.Color(navListItemBackgroundColor, v)
-
-	w.background.Refresh()
-	w.leading.Refresh()
-	w.trailing.Refresh()
-	w.headline.Refresh()
-	w.supporting.Refresh()
-	w.BaseWidget.Refresh()
 }
 
 func (w *NavListItem) CreateRenderer() fyne.WidgetRenderer {
+	w.updateValues()
+	w.updateVisibility()
+	w.updateStyle()
 	c := container.NewBorder(
 		nil,
 		nil,
@@ -183,16 +181,16 @@ func (w *NavListItem) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewSpacer(),
 			container.New(
 				layout.NewCustomPaddedVBoxLayout(0),
-				w.headline,
-				w.supporting,
+				w.headlineText,
+				w.supportingText,
 			),
 			layout.NewSpacer(),
 		),
 	)
 	p := theme.Padding()
 	c2 := container.NewStack(
-		w.background,
-		w.tapBG,
+		w.backgroundRectangle,
+		w.tapBGRectangle,
 		container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 2*p, 2*p), c),
 	)
 	return widget.NewSimpleRenderer(c2)
