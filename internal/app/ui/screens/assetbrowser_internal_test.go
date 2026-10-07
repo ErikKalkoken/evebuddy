@@ -1190,3 +1190,102 @@ func TestAssetBrowser_FilterRegion(t *testing.T) {
 		})
 	}
 }
+
+func TestLocationType(t *testing.T) {
+	cases := []struct {
+		name string
+		id   int64
+		want string
+	}{
+		{"station", 60003760, locationTypeStation},
+		{"structure", 1035466617946, locationTypeStructure},
+		{"solar system", 30000142, ""},
+		{"asset safety", 2004, ""},
+		{"unknown", app.UnknownLocationID, ""},
+	}
+	var locations []*app.EveLocation
+	var assets []*app.CharacterAsset
+	for _, tc := range cases {
+		locations = append(locations, &app.EveLocation{ID: tc.id, Name: tc.name})
+		assets = append(assets, createCharacterAsset(assetParams{LocationID: tc.id}))
+	}
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	td := generateTreeData(ac.Locations(), assetNoFilter, false)
+	got := make(map[string]string)
+	for _, n := range td.Children(nil) {
+		got[n.String()] = locationType(n)
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := got[tc.name]
+			require.True(t, ok)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
+func TestAssetBrowser_FilterLocationType(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		stationID   = 60000001
+		structureID = 1000000000001
+		systemID    = 30000001
+	)
+	locations := []*app.EveLocation{
+		{ID: stationID, Name: "Station"},
+		{ID: structureID, Name: "Structure"},
+		{ID: systemID, Name: "System"},
+		{ID: app.UnknownLocationID, Name: "Unknown"},
+	}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{
+		createCharacterAsset(assetParams{LocationID: stationID}),
+		createCharacterAsset(assetParams{IsSingleton: true, LocationID: stationID, Type: shipType()}),
+		createCharacterAsset(assetParams{LocationID: structureID}),
+		createCharacterAsset(assetParams{IsSingleton: true, LocationID: systemID, LocationType: app.TypeSolarSystem, Type: customsOfficeType()}),
+		createCharacterAsset(assetParams{LocationID: app.UnknownLocationID}),
+	}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("shows all locations without location type mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			assert.ElementsMatch(t, []string{"Station", "Structure", "System", "Unknown"}, topLocations(a))
+		})
+		for _, tc := range []struct {
+			choice string
+			want   string
+		}{
+			{locationTypeStation, "Station"},
+			{locationTypeStructure, "Structure"},
+		} {
+			t.Run(fmt.Sprintf("can filter %s mobile=%v", tc.choice, isMobile), func(t *testing.T) {
+				a := newBrowser(t, isMobile)
+				a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterLocationType: tc.choice})
+				assert.ElementsMatch(t, []string{tc.want}, topLocations(a))
+			})
+		}
+		t.Run(fmt.Sprintf("can combine with has ships mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterLocationType: locationTypeStructure,
+				assetBrowserFilterHasShips:     assetBrowserFilterHasShips,
+			})
+			assert.Empty(t, topLocations(a))
+		})
+	}
+}

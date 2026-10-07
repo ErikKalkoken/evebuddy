@@ -202,11 +202,21 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 
 // Names of the asset browser filters.
 const (
-	assetBrowserFilterCategory = "Category"
-	assetBrowserFilterHasShips = "Has ships"
-	assetBrowserFilterRegion   = "Region"
-	assetBrowserFilterSecurity = "Security"
+	assetBrowserFilterCategory     = "Category"
+	assetBrowserFilterHasShips     = "Has ships"
+	assetBrowserFilterLocationType = "Location type"
+	assetBrowserFilterRegion       = "Region"
+	assetBrowserFilterSecurity     = "Security"
 )
+
+const (
+	locationTypeStation   = "NPC station"
+	locationTypeStructure = "Structure"
+)
+
+func assetBrowserLocationTypeOptions() []string {
+	return []string{locationTypeStation, locationTypeStructure}
+}
 
 const (
 	securityHighSec  = "High-sec"
@@ -361,6 +371,7 @@ func (a *browserNavigation) filterOptions(regions []string) []xwidget.FilterOpti
 		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
 		xwidget.NewFilterOptionSeparator(),
 		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, a.categories),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterLocationType, assetBrowserLocationTypeOptions()),
 		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
 		xwidget.NewFilterOptionMultiChoiceWithSearch(assetBrowserFilterRegion, regions),
 	}
@@ -571,6 +582,22 @@ func locationSecurityBand(n *containerNode) string {
 	return securityNullSec
 }
 
+// locationType returns the type of a location
+// or an empty string for other locations, e.g. solar systems or unknown locations.
+func locationType(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	switch el.Variant() {
+	case app.EveLocationStation:
+		return locationTypeStation
+	case app.EveLocationStructure:
+		return locationTypeStructure
+	}
+	return ""
+}
+
 // locationRegion returns the region name of a location
 // or an empty string when its region is not known.
 func locationRegion(n *containerNode) string {
@@ -649,6 +676,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	hasShips := selected[assetBrowserFilterHasShips] != ""
 	security := selected[assetBrowserFilterSecurity]
 	region := selected[assetBrowserFilterRegion]
+	locType := selected[assetBrowserFilterLocationType]
 	ft := a.filteredTrees[filter]
 	if ft.td == nil {
 		return // assets not loaded yet
@@ -658,7 +686,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 
 	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
-		if len(search) > 1 || hasShips || security != "" || region != "" {
+		if len(search) > 1 || hasShips || security != "" || region != "" || locType != "" {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
 				if len(search) > 1 && !strings.Contains(n.searchText, search) {
@@ -668,6 +696,9 @@ func (a *browserNavigation) filterLocationsAsync() {
 					return true
 				}
 				if region != "" && locationRegion(n) != region {
+					return true
+				}
+				if locType != "" && locationType(n) != locType {
 					return true
 				}
 				return hasShips && !ft.withShips.Contains(n)
