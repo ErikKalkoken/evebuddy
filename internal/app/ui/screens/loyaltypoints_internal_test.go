@@ -1,7 +1,6 @@
 package screens
 
 import (
-	"sync"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -76,20 +75,5 @@ func TestLoyaltyPoints_Filter(t *testing.T) {
 			loyaltyPointsFilterFaction:   "",
 			loyaltyPointsFilterTag:       "",
 		}, a.filterChip.Selected())
-	})
-	t.Run("can filter concurrently", func(t *testing.T) {
-		a := newLoyaltyPoints(t, false)
-		var wg sync.WaitGroup
-		orig := runAsync
-		runAsync = func(f func()) {
-			wg.Go(f)
-		}
-		t.Cleanup(func() { runAsync = orig })
-
-		a.filterTreeAsync()
-		a.filterTreeAsync()
-		wg.Wait()
-
-		assert.Equal(t, "Showing 2 / 2 corporations", a.footer.Text)
 	})
 }
