@@ -25,6 +25,33 @@ const (
 	industrySlotsFreeNone = "No free slots"
 )
 
+func industrySlotsFreeSlotsOptions() []string {
+	return []string{industrySlotsFreeSome, industrySlotsFreeNone}
+}
+
+// Names of the industry slot filters, used as labels on desktop and as option names on mobile.
+const (
+	industrySlotsFilterFreeSlots = "Free slots"
+	industrySlotsFilterTag       = "Tag"
+)
+
+// industrySlotsFilter is the selected value of each industry slot filter. Empty means not filtered.
+type industrySlotsFilter struct {
+	freeSlots string
+	tag       string
+}
+
+// match reports whether row r passes all filters.
+func (f industrySlotsFilter) match(r industrySlotRow) bool {
+	switch {
+	case f.freeSlots == industrySlotsFreeSome && r.free == 0,
+		f.freeSlots == industrySlotsFreeNone && r.free > 0,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type industrySlotRow struct {
 	characterID   int64
 	characterName string
@@ -88,12 +115,13 @@ type IndustrySlots struct {
 	widget.BaseWidget
 
 	body            fyne.CanvasObject
+	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
 	footer          *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industrySlotRow]
 	rows            []industrySlotRow
 	rowsFiltered    []industrySlotRow
-	selectFreeSlots *kxwidget.FilterChipSelect
+	selectFreeSlots *kxwidget.FilterChipSelect // select chips only on desktop
 	selectTag       *kxwidget.FilterChipSelect
 	slotType        app.IndustryJobType
 	sortChip        *kxwidget.SortChip
@@ -230,15 +258,18 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 		)
 	}
 
-	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
-		industrySlotsFreeSome,
-		industrySlotsFreeNone,
-	}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		a.selectFreeSlots = kxwidget.NewFilterChipSelect(industrySlotsFilterFreeSlots, industrySlotsFreeSlotsOptions(), func(string) {
+			a.filterRowsAsync("")
+		})
+		a.selectTag = kxwidget.NewFilterChipSelect(industrySlotsFilterTag, []string{}, func(string) {
+			a.filterRowsAsync("")
+		})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -271,12 +302,30 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 }
 
 func (a *IndustrySlots) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectFreeSlots, a.selectTag)
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+		top = container.NewHBox(a.filterChip, a.sortChip)
+	} else {
+		top = container.NewHScroll(container.NewHBox(a.selectFreeSlots, a.selectTag))
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.body)
+	c := container.NewBorder(top, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *IndustrySlots) currentFilter() industrySlotsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return industrySlotsFilter{
+			freeSlots: s[industrySlotsFilterFreeSlots],
+			tag:       s[industrySlotsFilterTag],
+		}
+	}
+	return industrySlotsFilter{
+		freeSlots: a.selectFreeSlots.Selected,
+		tag:       a.selectTag.Selected,
+	}
 }
 
 func (a *IndustrySlots) makeDataTable(headers xwidget.DataColumns[industrySlotRow], makeCell func(col int, r industrySlotRow) []widget.RichTextSegment) *widget.Table {
@@ -320,29 +369,14 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	freeSlots := a.selectFreeSlots.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
 		rows := slices.Clone(rows)
-		// filter
-		if freeSlots != "" {
-			rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
-				switch freeSlots {
-				case industrySlotsFreeSome:
-					return r.free == 0
-				case industrySlotsFreeNone:
-					return r.free > 0
-				}
-				return true
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
+			return !filter.match(r)
+		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
@@ -374,7 +408,14 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(industrySlotsFilterFreeSlots, industrySlotsFreeSlotsOptions()),
+					xwidget.NewFilterOptionMultiChoice(industrySlotsFilterTag, tagOptions),
+				)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
