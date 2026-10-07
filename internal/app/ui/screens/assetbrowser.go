@@ -204,6 +204,7 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 const (
 	assetBrowserFilterCategory = "Category"
 	assetBrowserFilterHasShips = "Has ships"
+	assetBrowserFilterRegion   = "Region"
 	assetBrowserFilterSecurity = "Security"
 )
 
@@ -260,6 +261,7 @@ type browserNavigation struct {
 	OnSelected func()
 
 	b             *AssetBrowser
+	categories    []string
 	collapseAll   *ttwidget.Button
 	filterChip    *xwidget.FilterChipCompact
 	filteredTrees map[assetFilter]filteredTree
@@ -299,7 +301,6 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			a.locations.UnselectAll()
 		}
 	}
-	var categories []string
 	if a.b.forCorporation {
 		a.filters = []assetFilter{
 			assetOffice,
@@ -310,7 +311,7 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetCorpOther,
 			assetNoFilter,
 		}
-		categories = []string{
+		a.categories = []string{
 			categoryOffice,
 			categoryImpounded,
 			categoryDeliveries,
@@ -326,19 +327,14 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetSafety,
 			assetNoFilter,
 		}
-		categories = []string{
+		a.categories = []string{
 			categoryPersonal,
 			categoryDeliveries,
 			categoryInSpace,
 			categorySafety,
 		}
 	}
-	a.filterChip = xwidget.NewFilterChipCompact([]xwidget.FilterOption{
-		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
-		xwidget.NewFilterOptionSeparator(),
-		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, categories),
-		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
-	}, func(map[string]string) {
+	a.filterChip = xwidget.NewFilterChipCompact(a.filterOptions(nil), func(map[string]string) {
 		a.filterLocationsAsync()
 	})
 	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
@@ -357,6 +353,17 @@ func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.locations,
 	))
+}
+
+// filterOptions returns all options for the filter chip.
+func (a *browserNavigation) filterOptions(regions []string) []xwidget.FilterOption {
+	return []xwidget.FilterOption{
+		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
+		xwidget.NewFilterOptionSeparator(),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, a.categories),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
+		xwidget.NewFilterOptionMultiChoiceWithSearch(assetBrowserFilterRegion, regions),
+	}
 }
 
 // resetFilters clears the search and the category without filtering again.
@@ -564,6 +571,31 @@ func locationSecurityBand(n *containerNode) string {
 	return securityNullSec
 }
 
+// locationRegion returns the region name of a location
+// or an empty string when its region is not known.
+func locationRegion(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	es, ok := el.SolarSystem.Value()
+	if !ok || es == nil || es.Constellation == nil || es.Constellation.Region == nil {
+		return ""
+	}
+	return es.Constellation.Region.Name
+}
+
+// locationRegions returns the known regions of the top level locations.
+func locationRegions(td *xwidget.TreeData[containerNode]) []string {
+	var regions set.Set[string]
+	for _, n := range td.Children(nil) {
+		if r := locationRegion(n); r != "" {
+			regions.Add(r)
+		}
+	}
+	return slices.Collect(regions.All())
+}
+
 func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
@@ -616,6 +648,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	filter := assetFilterLookup[selected[assetBrowserFilterCategory]]
 	hasShips := selected[assetBrowserFilterHasShips] != ""
 	security := selected[assetBrowserFilterSecurity]
+	region := selected[assetBrowserFilterRegion]
 	ft := a.filteredTrees[filter]
 	if ft.td == nil {
 		return // assets not loaded yet
@@ -625,7 +658,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 
 	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
-		if len(search) > 1 || hasShips || security != "" {
+		if len(search) > 1 || hasShips || security != "" || region != "" {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
 				if len(search) > 1 && !strings.Contains(n.searchText, search) {
@@ -634,15 +667,20 @@ func (a *browserNavigation) filterLocationsAsync() {
 				if security != "" && locationSecurityBand(n) != security {
 					return true
 				}
+				if region != "" && locationRegion(n) != region {
+					return true
+				}
 				return hasShips && !ft.withShips.Contains(n)
 			})
 		} else {
 			td = ft.td
 		}
+		regions := locationRegions(td)
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
+			a.filterChip.SetOptions(a.filterOptions(regions)...)
 			footer := fmt.Sprintf("%s / %s locations", ihumanize.Comma(td.ChildrenCount(nil)), totalItems)
 			a.setFooter(footer, widget.MediumImportance)
 			a.locations.UnselectAll()

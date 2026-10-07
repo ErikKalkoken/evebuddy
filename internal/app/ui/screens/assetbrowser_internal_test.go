@@ -1051,3 +1051,142 @@ func TestAssetBrowser_FilterSecurity(t *testing.T) {
 		})
 	}
 }
+
+func TestLocationRegion(t *testing.T) {
+	region := &app.EveRegion{ID: 10000002, Name: "The Forge"}
+	cases := []struct {
+		name   string
+		system optional.Optional[*app.EveSolarSystem]
+		want   string
+	}{
+		{"known region", optional.New(&app.EveSolarSystem{ID: 30000142, Constellation: &app.EveConstellation{Region: region}}), "The Forge"},
+		{"no solar system", optional.Optional[*app.EveSolarSystem]{}, ""},
+		{"no constellation", optional.New(&app.EveSolarSystem{ID: 30000143}), ""},
+		{"no region", optional.New(&app.EveSolarSystem{ID: 30000144, Constellation: &app.EveConstellation{}}), ""},
+	}
+	var locations []*app.EveLocation
+	var assets []*app.CharacterAsset
+	for i, tc := range cases {
+		id := int64(60000001 + i)
+		locations = append(locations, &app.EveLocation{ID: id, Name: tc.name, SolarSystem: tc.system})
+		assets = append(assets, createCharacterAsset(assetParams{LocationID: id}))
+	}
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	td := generateTreeData(ac.Locations(), assetNoFilter, false)
+	got := make(map[string]string)
+	for _, n := range td.Children(nil) {
+		got[n.String()] = locationRegion(n)
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := got[tc.name]
+			require.True(t, ok)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
+// regionTestLocations returns assets and locations in two regions plus one location with an unknown region.
+// Bravo in Domain only has assets in asset safety.
+func regionTestLocations() ([]*app.CharacterAsset, []*app.EveLocation) {
+	const (
+		alphaID   = 60000001
+		bravoID   = 60000002
+		charlieID = 60000003
+		deltaID   = 60000004
+	)
+	system := func(id int64, region *app.EveRegion) optional.Optional[*app.EveSolarSystem] {
+		return optional.New(&app.EveSolarSystem{ID: id, Constellation: &app.EveConstellation{Region: region}})
+	}
+	forge := &app.EveRegion{ID: 10000002, Name: "The Forge"}
+	domain := &app.EveRegion{ID: 10000043, Name: "Domain"}
+	locations := []*app.EveLocation{
+		{ID: alphaID, Name: "Alpha", SolarSystem: system(30000001, forge)},
+		{ID: bravoID, Name: "Bravo", SolarSystem: system(30000002, domain)},
+		{ID: charlieID, Name: "Charlie", SolarSystem: system(30000003, forge)},
+		{ID: deltaID, Name: "Delta"},
+	}
+	safetyWrap := createCharacterAsset(assetParams{
+		IsSingleton:  true,
+		LocationID:   bravoID,
+		LocationFlag: app.FlagAssetSafety,
+		LocationType: app.TypeStation,
+		Type:         assetSafetyWrapType(),
+	})
+	assets := []*app.CharacterAsset{
+		createCharacterAsset(assetParams{LocationID: alphaID}),
+		safetyWrap,
+		createCharacterAsset(assetParams{LocationID: safetyWrap.ItemID}),
+		createCharacterAsset(assetParams{LocationID: charlieID}),
+		createCharacterAsset(assetParams{LocationID: deltaID}),
+	}
+	return assets, locations
+}
+
+func TestLocationRegions(t *testing.T) {
+	assets, locations := regionTestLocations()
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	t.Run("returns known regions of all locations", func(t *testing.T) {
+		td := generateTreeData(ac.Locations(), assetNoFilter, false)
+		assert.ElementsMatch(t, []string{"Domain", "The Forge"}, locationRegions(td))
+	})
+	t.Run("returns only regions of locations in category", func(t *testing.T) {
+		td := generateTreeData(ac.Locations(), assetSafety, false)
+		assert.ElementsMatch(t, []string{"Domain"}, locationRegions(td))
+	})
+}
+
+func TestAssetBrowser_FilterRegion(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	assets, locations := regionTestLocations()
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can filter by region mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterRegion:   "Domain",
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.ElementsMatch(t, []string{"Bravo"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps region when category has no locations in it mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterRegion:   "The Forge",
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.Equal(t, "The Forge", a.Navigation.filterChip.Selected()[assetBrowserFilterRegion])
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps selected region when filtering mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			a.Navigation.searchEntry.SetText("alpha")
+			assert.Equal(t, "The Forge", a.Navigation.filterChip.Selected()[assetBrowserFilterRegion])
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+	}
+}
