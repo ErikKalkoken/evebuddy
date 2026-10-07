@@ -130,26 +130,46 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			assert.False(t, a.Navigation.filterChip.IsOn())
 		})
 	}
-	t.Run("wallet journal of character", func(t *testing.T) {
-		u := newUI(t, false)
-		a := NewCharacterWalletJournal(u)
-		a.selectType.SetOptions([]string{"Bounty"})
-		a.selectType.SetSelected("Bounty")
+	for _, isMobile := range []bool{false, true} {
+		t.Run(fmt.Sprintf("wallet journal of character mobile=%v", isMobile), func(t *testing.T) {
+			u := newUI(t, isMobile)
+			a := NewCharacterWalletJournal(u)
+			a.searchEntry.SetText("bounty")
+			if isMobile {
+				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
+				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
+			} else {
+				a.selectType.SetOptions([]string{"Bounty"})
+				a.selectType.SetSelected("Bounty")
+			}
+			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
 
-		switchCharacter(t, u)
+			switchCharacter(t, u)
 
-		assert.Empty(t, a.selectType.Selected)
-	})
-	t.Run("wallet journal of corporation", func(t *testing.T) {
-		u := newUI(t, false)
-		a := NewCorporationWalletJournal(u, app.Division1)
-		a.selectType.SetOptions([]string{"Bounty"})
-		a.selectType.SetSelected("Bounty")
+			assert.Empty(t, a.searchEntry.Text)
+			assert.Equal(t, walletJournalFilter{}, a.currentFilter())
+		})
+	}
+	for _, isMobile := range []bool{false, true} {
+		t.Run(fmt.Sprintf("wallet journal of corporation mobile=%v", isMobile), func(t *testing.T) {
+			u := newUI(t, isMobile)
+			a := NewCorporationWalletJournal(u, app.Division1)
+			a.searchEntry.SetText("bounty")
+			if isMobile {
+				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
+				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
+			} else {
+				a.selectType.SetOptions([]string{"Bounty"})
+				a.selectType.SetSelected("Bounty")
+			}
+			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
 
-		switchCorporation(t, u)
+			switchCorporation(t, u)
 
-		assert.Empty(t, a.selectType.Selected)
-	})
+			assert.Empty(t, a.searchEntry.Text)
+			assert.Equal(t, walletJournalFilter{}, a.currentFilter())
+		})
+	}
 	t.Run("communications of character", func(t *testing.T) {
 		u := newUI(t, true)
 		a := NewCommunicationsForCharacter(u)
