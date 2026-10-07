@@ -132,9 +132,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 				newCharacterAppBar(
 					"Skills",
 					container.NewAppTabs(
-						container.NewTabItem("Catalogue", u.characterSkillCatalogue),
-						container.NewTabItem("Training", u.characterSkillQueue),
-						container.NewTabItem("Ships", u.characterShips),
+						ui.NewTabItem("Catalogue", u.characterSkillCatalogue),
+						ui.NewTabItem("Training", u.characterSkillQueue),
+						ui.NewTabItem("Ships", u.characterShips),
 					),
 				))
 		},
@@ -158,12 +158,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 					newCharacterAppBar(
 						"Character",
 						container.NewAppTabs(
-							container.NewTabItem("Character", u.characterSheet),
-							container.NewTabItem("Corporation", u.characterCorporation),
-							container.NewTabItem("Augmentations", u.characterAugmentations),
-							container.NewTabItem("Clones", u.characterJumpClones),
-							container.NewTabItem("Attributes", u.characterAttributes),
-							container.NewTabItem("Bio", u.characterBiography),
+							ui.NewTabItem("Character", u.characterSheet),
+							ui.NewTabItem("Corporation", u.characterCorporation),
+							ui.NewTabItem("Augmentations", u.characterAugmentations),
+							ui.NewTabItem("Clones", u.characterJumpClones),
+							ui.NewTabItem("Attributes", u.characterAttributes),
+							ui.NewTabItem("Bio", u.characterBiography),
 						),
 					))
 			},
@@ -341,8 +341,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 				newCorpAppBar(
 					"Corporation",
 					container.NewAppTabs(
-						container.NewTabItem("Corporation", u.corporationSheet),
-						container.NewTabItem("Members", u.corporationMember),
+						ui.NewTabItem("Corporation", u.corporationSheet),
+						ui.NewTabItem("Members", u.corporationMember),
 					),
 				))
 		},
@@ -821,11 +821,11 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		func() {
 			homeNav.Push(xwidget.NewAppBar("Industry",
 				container.NewAppTabs(
-					container.NewTabItem("Jobs", u.industryJobs),
-					container.NewTabItem("Slots", container.NewAppTabs(
-						container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
-						container.NewTabItem("Science", u.industrySlotsResearch),
-						container.NewTabItem("Reactions", u.industrySlotsReactions),
+					ui.NewTabItem("Jobs", u.industryJobs),
+					ui.NewTabItem("Slots", container.NewAppTabs(
+						ui.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+						ui.NewTabItem("Science", u.industrySlotsResearch),
+						ui.NewTabItem("Reactions", u.industrySlotsReactions),
 					)),
 				),
 			))
@@ -846,10 +846,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		func() {
 			homeNav.Push(xwidget.NewAppBar("Contracts",
 				container.NewAppTabs(
-					container.NewTabItem("Contracts", u.contractList),
-					container.NewTabItem("Slots", container.NewAppTabs(
-						container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
-						container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+					ui.NewTabItem("Contracts", u.contractList),
+					ui.NewTabItem("Slots", container.NewAppTabs(
+						ui.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+						ui.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
 					)),
 				),
 			))
@@ -1018,8 +1018,8 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		theme.NewThemedResource(icons.SchoolSvg),
 		func() {
 			homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
-				container.NewTabItem("Training", u.training),
-				container.NewTabItem("Search", u.skillSearch),
+				ui.NewTabItem("Training", u.training),
+				ui.NewTabItem("Search", u.skillSearch),
 			), kxwidget.NewIconButtonWithMenu(
 				theme.MoreHorizontalIcon(),
 				fyne.NewMenu("", u.training.MoreItems()...),
@@ -1039,8 +1039,8 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			func() {
 				homeNav.Push(xwidget.NewAppBar("Clones", container.NewAppTabs(
-					container.NewTabItem("Augmentations", u.augmentations),
-					container.NewTabItem("Jump Clones", u.clones),
+					ui.NewTabItem("Augmentations", u.augmentations),
+					ui.NewTabItem("Jump Clones", u.clones),
 				)))
 			},
 		),
@@ -1062,8 +1062,8 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			func() {
 				homeNav.Push(xwidget.NewAppBar("Market Orders",
 					container.NewAppTabs(
-						container.NewTabItem("Buy", u.marketOrdersBuy),
-						container.NewTabItem("Sell", u.marketOrdersSell),
+						ui.NewTabItem("Buy", u.marketOrdersBuy),
+						ui.NewTabItem("Sell", u.marketOrdersSell),
 					),
 				))
 			},

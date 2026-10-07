@@ -159,10 +159,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Contracts",
 		theme.NewThemedResource(icons.FileSignSvg),
 		newContentPage("Contracts", container.NewAppTabs(
-			container.NewTabItem("Contracts", u.contractList),
-			container.NewTabItem("Slots", container.NewAppTabs(
-				container.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
-				container.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
+			ui.NewTabItem("Contracts", u.contractList),
+			ui.NewTabItem("Slots", container.NewAppTabs(
+				ui.NewTabItem("Personal Contracts", u.contractSlotsPersonal),
+				ui.NewTabItem("Corporation Contracts", u.contractSlotsCorporation),
 			)),
 		)),
 	)
@@ -191,11 +191,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Industry",
 		theme.NewThemedResource(icons.FactorySvg),
 		newContentPage("Industry", container.NewAppTabs(
-			container.NewTabItem("Jobs", u.industryJobs),
-			container.NewTabItem("Slots", container.NewAppTabs(
-				container.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
-				container.NewTabItem("Science", u.industrySlotsResearch),
-				container.NewTabItem("Reactions", u.industrySlotsReactions),
+			ui.NewTabItem("Jobs", u.industryJobs),
+			ui.NewTabItem("Slots", container.NewAppTabs(
+				ui.NewTabItem("Manufacturing", u.industrySlotsManufacturing),
+				ui.NewTabItem("Science", u.industrySlotsResearch),
+				ui.NewTabItem("Reactions", u.industrySlotsReactions),
 			))),
 		),
 	)
@@ -211,8 +211,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Market Orders",
 		theme.NewThemedResource(icons.ChartAreasplineSvg),
 		newContentPage("Market Orders", container.NewAppTabs(
-			container.NewTabItem("Buy", u.marketOrdersBuy),
-			container.NewTabItem("Sell", u.marketOrdersSell),
+			ui.NewTabItem("Buy", u.marketOrdersBuy),
+			ui.NewTabItem("Sell", u.marketOrdersSell),
 		)),
 	)
 
@@ -225,8 +225,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Skills",
 		theme.NewThemedResource(icons.SchoolSvg),
 		newContentPage("Skills", container.NewAppTabs(
-			container.NewTabItem("Training", u.training),
-			container.NewTabItem("Search", u.skillSearch),
+			ui.NewTabItem("Training", u.training),
+			ui.NewTabItem("Search", u.skillSearch),
 		), trainingMore),
 	)
 	u.training.OnUpdate = func(expired int) {
@@ -245,8 +245,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			"Clones",
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
 			newContentPage("Clones", container.NewAppTabs(
-				container.NewTabItem("Augmentations", u.augmentations),
-				container.NewTabItem("Jump Clones", u.clones),
+				ui.NewTabItem("Augmentations", u.augmentations),
+				ui.NewTabItem("Jump Clones", u.clones),
 			)),
 		),
 		unifiedCommunications,
@@ -307,9 +307,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage(
 			"Skills",
 			container.NewAppTabs(
-				container.NewTabItem("Catalogue", u.characterSkillCatalogue),
-				container.NewTabItem("Training", u.characterSkillQueue),
-				container.NewTabItem("Ships", u.characterShips),
+				ui.NewTabItem("Catalogue", u.characterSkillCatalogue),
+				ui.NewTabItem("Training", u.characterSkillQueue),
+				ui.NewTabItem("Ships", u.characterShips),
 			),
 		),
 	)
@@ -332,12 +332,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			"Character",
 			theme.NewThemedResource(icons.PortraitSvg),
 			newContentPage("Character", container.NewAppTabs(
-				container.NewTabItem("Character", u.characterSheet),
-				container.NewTabItem("Corporation", u.characterCorporation),
-				container.NewTabItem("Augmentations", u.characterAugmentations),
-				container.NewTabItem("Jump Clones", u.characterJumpClones),
-				container.NewTabItem("Attributes", u.characterAttributes),
-				container.NewTabItem("Biography", u.characterBiography),
+				ui.NewTabItem("Character", u.characterSheet),
+				ui.NewTabItem("Corporation", u.characterCorporation),
+				ui.NewTabItem("Augmentations", u.characterAugmentations),
+				ui.NewTabItem("Jump Clones", u.characterJumpClones),
+				ui.NewTabItem("Attributes", u.characterAttributes),
+				ui.NewTabItem("Biography", u.characterBiography),
 			)),
 		),
 		characterAssetsNav,
@@ -361,8 +361,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		newContentPage("Assets", container.NewAppTabs(
-			container.NewTabItem("Browse", u.corporationAssetBrowser),
-			container.NewTabItem("Search", u.corporationAssetSearch),
+			ui.NewTabItem("Browse", u.corporationAssetBrowser),
+			ui.NewTabItem("Search", u.corporationAssetSearch),
 		), xwidget.NewIconButtonWithMenu(
 			theme.MoreHorizontalIcon(),
 			fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
@@ -428,8 +428,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Corporation",
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		newContentPage("Corporation", container.NewAppTabs(
-			container.NewTabItem("Corporation", u.corporationSheet),
-			container.NewTabItem("Members", u.corporationMember),
+			ui.NewTabItem("Corporation", u.corporationSheet),
+			ui.NewTabItem("Members", u.corporationMember),
 		)),
 	)
 

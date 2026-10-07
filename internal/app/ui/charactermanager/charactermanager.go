@@ -94,9 +94,9 @@ func newManageCharacters(u baseUI, w fyne.Window) *manageCharacters {
 
 func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewAppTabs(
-		container.NewTabItem("Characters", a.characterAdmin),
-		container.NewTabItem("Tags", a.characterTags),
-		container.NewTabItem("Training", a.characterTraining),
+		ui.NewTabItem("Characters", a.characterAdmin),
+		ui.NewTabItem("Tags", a.characterTags),
+		ui.NewTabItem("Training", a.characterTraining),
 	)
 	c.SetTabLocation(container.TabLocationLeading)
 	return widget.NewSimpleRenderer(c)

@@ -81,7 +81,7 @@ func newInventoryTypeInfo(iw *InfoViewer, typeID, characterID int64) *inventoryT
 	a.janice = container.NewStack(canvas.NewRectangle(color.White), janice)
 	a.janice.Hide()
 
-	a.tabs = container.NewAppTabs(container.NewTabItem("Description", container.NewVScroll(a.description)))
+	a.tabs = container.NewAppTabs(ui.NewTabItem("Description", container.NewVScroll(a.description)))
 	return a
 }
 
@@ -287,7 +287,7 @@ func (a *inventoryTypeInfo) makeAttributeTab(ctx context.Context, dogmaAttribute
 			r.action(r.value)
 		}
 	}
-	return container.NewTabItem("Attributes", list)
+	return ui.NewTabItem("Attributes", list)
 }
 
 // attributeGroup represents a group of dogma attributes.
@@ -574,7 +574,7 @@ func (a *inventoryTypeInfo) makeFittingTab(ctx context.Context, dogmaAttributes 
 	list.OnSelected = func(_ widget.ListItemID) {
 		list.UnselectAll()
 	}
-	return container.NewTabItem("Fittings", list)
+	return ui.NewTabItem("Fittings", list)
 }
 
 func (a *inventoryTypeInfo) calcFittingData(ctx context.Context, dogmaAttributes map[int64]*app.EveTypeDogmaAttribute) []typeAttributeRow {
@@ -646,7 +646,7 @@ func (a *inventoryTypeInfo) makeRequirementsTab(requiredSkills []requiredSkill) 
 		r := requiredSkills[id]
 		a.iw.show(Type, r.typeID)
 	}
-	return container.NewTabItem("Requirements", list)
+	return ui.NewTabItem("Requirements", list)
 }
 
 const (
@@ -660,7 +660,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	a.iw.onClosedFuncs.Push(cancel)
-	marketTab := container.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
+	marketTab := ui.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
 	go func() {
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
@@ -696,7 +696,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			items = slices.Concat(items)
 
 			fyne.Do(func() {
-				marketTab.Content = newAttributeList(a.iw, items...)
+				marketTab.Content = ui.PadTabContent(newAttributeList(a.iw, items...))
 				a.tabs.Refresh()
 			})
 			select {

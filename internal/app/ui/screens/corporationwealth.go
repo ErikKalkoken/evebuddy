@@ -109,9 +109,9 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 
 func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Overview", a.categorySplitCard),
-		container.NewTabItem("Wallets", a.walletsCard),
-		container.NewTabItem("Assets", a.assetsCard),
+		ui.NewTabItem("Overview", a.categorySplitCard),
+		ui.NewTabItem("Wallets", a.walletsCard),
+		ui.NewTabItem("Assets", a.assetsCard),
 	)
 	var c fyne.CanvasObject
 	if !a.u.IsMobile() {

@@ -54,14 +54,14 @@ func newCorporationInfo(iw *InfoViewer, id int64) *corporationInfo {
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.allianceHistory = newEntityListFromItems(a.iw.show)
-	attributes := container.NewTabItem("Attributes", a.attributes)
+	attributes := ui.NewTabItem("Attributes", a.attributes)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 		attributes,
 	)
 	ee := app.EveEntity{ID: id, Category: app.EveEntityCorporation}
 	if !ee.IsNPC().ValueOrZero() {
-		a.tabs.Append(container.NewTabItem("Alliance History", a.allianceHistory))
+		a.tabs.Append(ui.NewTabItem("Alliance History", a.allianceHistory))
 	}
 	a.tabs.Select(attributes)
 	p := theme.Padding()

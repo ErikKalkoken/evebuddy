@@ -69,8 +69,8 @@ func (a *CorporationWallet) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		container.NewAppTabs(
-			container.NewTabItem("Transactions", a.journal),
-			container.NewTabItem("Market Transactions", a.transactions),
+			ui.NewTabItem("Transactions", a.journal),
+			ui.NewTabItem("Market Transactions", a.transactions),
 		),
 	)
 	return widget.NewSimpleRenderer(c)

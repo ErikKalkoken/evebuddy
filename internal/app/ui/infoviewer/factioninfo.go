@@ -37,7 +37,7 @@ func newFactionInfo(iw *InfoViewer, id int64) *factionInfo {
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 	)
 	return a
 }
@@ -96,7 +96,7 @@ func (a *factionInfo) update(ctx context.Context) error {
 		items = append(items, x)
 	}
 	fyne.Do(func() {
-		a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, items...)))
+		a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, items...)))
 	})
 	return nil
 }

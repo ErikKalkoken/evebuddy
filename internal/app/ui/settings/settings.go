@@ -106,12 +106,12 @@ func (a *settings) CreateRenderer() fyne.WidgetRenderer {
 	generalContent, generalActions := a.makeGeneralPage()
 	notificationContent, notificationActions := a.makeNotificationPage()
 	tabs := container.NewAppTabs(
-		container.NewTabItem("General", makeSettingsPage(
+		ui.NewTabItem("General", makeSettingsPage(
 			"General",
 			generalContent,
 			generalActions,
 		)),
-		container.NewTabItem("Notifications", makeSettingsPage(
+		ui.NewTabItem("Notifications", makeSettingsPage(
 			"Notifications",
 			notificationContent,
 			notificationActions,
