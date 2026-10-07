@@ -1,6 +1,8 @@
 package screens
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -169,12 +171,25 @@ func TestSkillSearch_Filter(t *testing.T) {
 			assert.EqualValues(t, 1, a.rowsFiltered[0].typeID)
 		}
 	})
-	t.Run("can combine skill mode and filter on mobile", func(t *testing.T) {
+	t.Run("can combine skill choice and filter on mobile", func(t *testing.T) {
 		a := newSkillSearch(t, true)
-		a.selectSkill.SetSelected(searchSkillAll)
+		a.segmentSkill.SetSelected(slices.Index(searchSkillChoices, searchSkillAll))
 		a.filterChip.SetSelected(map[string]string{skillSearchFilterGroup: "Gunnery"})
 		assert.Len(t, a.rowsFiltered, 2)
 	})
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can switch skill choice mobile=%v", isMobile), func(t *testing.T) {
+			a := newSkillSearch(t, isMobile)
+			assert.Equal(t, searchSkillActive, a.currentFilter().skill)
+			if isMobile {
+				a.segmentSkill.SetSelected(slices.Index(searchSkillChoices, searchSkillAll))
+			} else {
+				a.selectSkill.SetSelected(searchSkillChipLabels[searchSkillAll])
+			}
+			assert.Equal(t, searchSkillAll, a.currentFilter().skill)
+			assert.Len(t, a.rowsFiltered, 3)
+		})
+	}
 	t.Run("shows all filters on mobile", func(t *testing.T) {
 		a := newSkillSearch(t, true)
 		assert.Equal(t, map[string]string{
