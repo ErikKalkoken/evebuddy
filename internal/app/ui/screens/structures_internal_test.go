@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -164,4 +165,24 @@ func TestStructures_Filter(t *testing.T) {
 		assert.Empty(t, a.currentFilter())
 		assert.Empty(t, a.searchEntry.Text)
 	})
+}
+
+func TestStructures_RefreshTicker(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	c := factory.CreateCorporation()
+	factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
+	a := NewStructuresForCorporation(u)
+	a.corporation.Store(c)
+
+	u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+
+	assert.Len(t, a.rows, 1)
 }

@@ -318,9 +318,7 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 			a.update(ctx)
 		})
 		a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-			fyne.Do(func() {
-				a.update(ctx)
-			})
+			a.update(ctx)
 		})
 	} else {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {

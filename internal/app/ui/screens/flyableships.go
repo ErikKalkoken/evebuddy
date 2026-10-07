@@ -438,7 +438,7 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 		w.image.Refresh()
 		return
 	}
-	go func() {
+	runAsync(func() {
 		j, err := func() (image.Image, error) {
 			r, err := w.renderType(typeID, 256)
 			if err != nil {
@@ -473,7 +473,7 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 			w.image.Image = img
 			w.image.Refresh()
 		})
-	}()
+	})
 }
 
 func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {
