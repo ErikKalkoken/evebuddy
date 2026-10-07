@@ -371,8 +371,8 @@ func (a *browserNavigation) filterOptions(regions []string) []xwidget.FilterOpti
 		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
 		xwidget.NewFilterOptionSeparator(),
 		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, a.categories),
-		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterLocationType, assetBrowserLocationTypeOptions()),
-		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
+		xwidget.NewFilterOptionMultiChoiceOrdered(assetBrowserFilterLocationType, assetBrowserLocationTypeOptions()),
+		xwidget.NewFilterOptionMultiChoiceOrdered(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
 		xwidget.NewFilterOptionMultiChoiceWithSearch(assetBrowserFilterRegion, regions),
 	}
 }

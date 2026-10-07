@@ -48,7 +48,7 @@ const (
 )
 
 func augmentationsImplantsOptions() []string {
-	return []string{augmentationsImplantsNone, augmentationsImplantsSome}
+	return []string{augmentationsImplantsSome, augmentationsImplantsNone}
 }
 
 // Names of the augmentations filters, used as labels on desktop and as option names on mobile.
@@ -103,6 +103,7 @@ func NewAugmentations(u baseUI) *Augmentations {
 		a.selectImplants = kxwidget.NewFilterChipSelect(augmentationsFilterImplants, augmentationsImplantsOptions(), func(string) {
 			a.filterTreeAsync()
 		})
+		a.selectImplants.SortDisabled = true
 		a.selectTag = kxwidget.NewFilterChipSelect(augmentationsFilterTag, []string{}, func(string) {
 			a.filterTreeAsync()
 		})
@@ -221,7 +222,7 @@ func (a *Augmentations) filterTreeAsync() {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(augmentationsFilterImplants, augmentationsImplantsOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(augmentationsFilterImplants, augmentationsImplantsOptions()),
 					xwidget.NewFilterOptionMultiChoice(augmentationsFilterTag, tagOptions),
 				)
 			} else {

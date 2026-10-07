@@ -366,8 +366,11 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		}
 		a.selectTag = makeSelect(industryJobsFilterTag)
 		a.selectOwner = makeSelect(industryJobsFilterOwner, industryJobsOwnerOptions()...)
+		a.selectOwner.SortDisabled = true
 		a.selectActivity = makeSelect(industryJobsFilterActivity, industryJobsActivityOptions()...)
+		a.selectActivity.SortDisabled = true
 		a.selectInstaller = makeSelect(industryJobsFilterInstaller, industryJobsInstallerOptions()...)
+		a.selectInstaller.SortDisabled = true
 		if !forCorporation {
 			a.selectInstaller.Selected = industryInstallerMe // hidden filter outside corporation mode
 		}
@@ -644,11 +647,11 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
-					xwidget.NewFilterOptionMultiChoice(industryJobsFilterOwner, industryJobsOwnerOptions()),
-					xwidget.NewFilterOptionMultiChoice(industryJobsFilterActivity, industryJobsActivityOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterOwner, industryJobsOwnerOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterActivity, industryJobsActivityOptions()),
 				}
 				if a.forCorporation {
-					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterInstaller, industryJobsInstallerOptions()))
+					options = append(options, xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterInstaller, industryJobsInstallerOptions()))
 				} else {
 					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterTag, tagOptions))
 				}

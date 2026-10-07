@@ -462,6 +462,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 		a.selectState = makeSelect(assetSearchFilterState)
 		a.selectTotal = makeSelect(assetSearchFilterTotal)
 		a.selectTotal.SetOptions(assetSearchTotalOptions())
+		a.selectTotal.SortDisabled = true
 		a.selectTag = makeSelect(assetSearchFilterTag)
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -825,7 +826,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterRegion, regionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterLocation, locationOptions),
 					xwidget.NewFilterOptionMultiChoice(assetSearchFilterState, stateOptions),
-					xwidget.NewFilterOptionMultiChoice(assetSearchFilterTotal, assetSearchTotalOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(assetSearchFilterTotal, assetSearchTotalOptions()),
 				}
 				if !a.forCorporation {
 					options = append(options,

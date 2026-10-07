@@ -266,6 +266,7 @@ func NewIndustrySlots(u baseUI, slotType app.IndustryJobType) *IndustrySlots {
 		a.selectFreeSlots = kxwidget.NewFilterChipSelect(industrySlotsFilterFreeSlots, industrySlotsFreeSlotsOptions(), func(string) {
 			a.filterRowsAsync("")
 		})
+		a.selectFreeSlots.SortDisabled = true
 		a.selectTag = kxwidget.NewFilterChipSelect(industrySlotsFilterTag, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
@@ -410,7 +411,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(industrySlotsFilterFreeSlots, industrySlotsFreeSlotsOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industrySlotsFilterFreeSlots, industrySlotsFreeSlotsOptions()),
 					xwidget.NewFilterOptionMultiChoice(industrySlotsFilterTag, tagOptions),
 				)
 			} else {
