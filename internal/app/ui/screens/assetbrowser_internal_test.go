@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -761,6 +762,184 @@ func TestAssetBrowser_FilterCategory(t *testing.T) {
 			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryPersonal})
 			assert.Equal(t, "alpha", a.Navigation.searchEntry.Text)
 			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+	}
+}
+
+func TestLocationsWithDockedShips(t *testing.T) {
+	const (
+		alphaID   = 60000001
+		bravoID   = 30000001
+		charlieID = 60000002
+		deltaID   = 60000003
+	)
+	locations := []*app.EveLocation{
+		{ID: alphaID, Name: "Alpha"},
+		{ID: bravoID, Name: "Bravo"},
+		{ID: charlieID, Name: "Charlie"},
+		{ID: deltaID, Name: "Delta"},
+	}
+	names := func(s set.Set[*containerNode]) []string {
+		var names []string
+		for n := range s.All() {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	t.Run("character", func(t *testing.T) {
+		assembledShip := createCharacterAsset(assetParams{
+			IsSingleton: true,
+			LocationID:  alphaID,
+			Type:        shipType(),
+		})
+		deliveryItem := createCharacterAsset(assetParams{
+			LocationID:   alphaID,
+			LocationFlag: app.FlagCapsuleerDeliveries,
+			LocationType: app.TypeStation,
+		})
+		shipInSpace := createCharacterAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   bravoID,
+			LocationType: app.TypeSolarSystem,
+			Type:         shipType(),
+		})
+		packagedShip := createCharacterAsset(assetParams{
+			LocationID: charlieID,
+			Type:       shipType(),
+		})
+		safetyWrap := createCharacterAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   deltaID,
+			LocationFlag: app.FlagAssetSafety,
+			LocationType: app.TypeStation,
+			Type:         assetSafetyWrapType(),
+		})
+		shipInSafety := createCharacterAsset(assetParams{
+			IsSingleton: true,
+			LocationID:  safetyWrap.ItemID,
+			Type:        shipType(),
+		})
+		ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{
+			assembledShip, deliveryItem, shipInSpace, packagedShip, safetyWrap, shipInSafety,
+		}, locations)
+
+		for _, tc := range []struct {
+			filter assetFilter
+			want   []string
+		}{
+			{assetNoFilter, []string{"Alpha"}},
+			{assetPersonalAssets, []string{"Alpha"}},
+			{assetDeliveries, nil},
+			{assetInSpace, nil},
+			{assetSafety, nil},
+		} {
+			td := generateTreeData(ac.Locations(), tc.filter, false)
+			assert.ElementsMatch(t, tc.want, names(locationsWithDockedShips(td)), "filter %d", tc.filter)
+		}
+	})
+	t.Run("corporation", func(t *testing.T) {
+		office := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   alphaID,
+			LocationFlag: app.FlagOfficeFolder,
+			LocationType: app.TypeStation,
+			Type:         officeType(),
+		})
+		shipInOffice := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   office.ItemID,
+			LocationFlag: app.FlagCorpSAG1,
+			Type:         shipType(),
+		})
+		impounded := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   charlieID,
+			LocationFlag: app.FlagImpounded,
+			LocationType: app.TypeStation,
+			Type:         officeType(),
+		})
+		shipImpounded := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   impounded.ItemID,
+			LocationFlag: app.FlagCorpSAG1,
+			Type:         shipType(),
+		})
+		ac := asset.NewFromCorporationAssets([]*app.CorporationAsset{
+			office, shipInOffice, impounded, shipImpounded,
+		}, locations)
+
+		for _, tc := range []struct {
+			filter assetFilter
+			want   []string
+		}{
+			{assetNoFilter, []string{"Alpha"}},
+			{assetOffice, []string{"Alpha"}},
+			{assetImpounded, nil},
+		} {
+			td := generateTreeData(ac.Locations(), tc.filter, true)
+			assert.ElementsMatch(t, tc.want, names(locationsWithDockedShips(td)), "filter %d", tc.filter)
+		}
+	})
+}
+
+func TestAssetBrowser_FilterHasShips(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		alphaID   = 60000001
+		charlieID = 60000002
+	)
+	ship := createCharacterAsset(assetParams{
+		IsSingleton: true,
+		LocationID:  alphaID,
+		Type:        shipType(),
+	})
+	item := createCharacterAsset(assetParams{
+		LocationID: charlieID,
+	})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}, {ID: charlieID, Name: "Charlie"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{ship, item}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can filter locations with ships mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterHasShips: assetBrowserFilterHasShips,
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with search mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			a.Navigation.searchEntry.SetText("charlie")
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("shows all locations again when turned off mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: ""})
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
 		})
 	}
 }

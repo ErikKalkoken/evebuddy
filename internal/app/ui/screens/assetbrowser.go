@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -199,7 +200,11 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 	a.Navigation.update(ctx, at.Locations())
 }
 
-const assetBrowserFilterCategory = "Category"
+// Names of the asset browser filters.
+const (
+	assetBrowserFilterCategory = "Category"
+	assetBrowserFilterHasShips = "Has ships"
+)
 
 const (
 	categoryDeliveries = "Deliveries"
@@ -234,6 +239,7 @@ func (n containerNode) UID() widget.TreeNodeID {
 type filteredTree struct {
 	td         *xwidget.TreeData[containerNode]
 	nodeLookup map[*asset.Node]*containerNode
+	withShips  set.Set[*containerNode] // locations with docked ships
 }
 
 type browserNavigation struct {
@@ -316,6 +322,8 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 		}
 	}
 	a.filterChip = xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
+		xwidget.NewFilterOptionSeparator(),
 		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, categories),
 	}, func(map[string]string) {
 		a.filterLocationsAsync()
@@ -363,6 +371,7 @@ func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 		filteredTrees[f] = filteredTree{
 			td:         td,
 			nodeLookup: lookup,
+			withShips:  locationsWithDockedShips(td),
 		}
 	}
 	fyne.Do(func() {
@@ -496,6 +505,29 @@ func addNodes(td *xwidget.TreeData[containerNode], parent *containerNode, nodes 
 	}
 }
 
+// locationsWithDockedShips returns the top level locations which have assembled ships docked,
+// e.g. ships in space or in asset safety are not docked.
+func locationsWithDockedShips(td *xwidget.TreeData[containerNode]) set.Set[*containerNode] {
+	var hasShip func(n *containerNode) bool
+	hasShip = func(n *containerNode) bool {
+		switch n.node.Category() {
+		case asset.NodeInSpace, asset.NodeAssetSafetyCharacter, asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
+			return false
+		}
+		if n.node.IsShip() {
+			return true
+		}
+		return slices.ContainsFunc(td.Children(n), hasShip)
+	}
+	var locations set.Set[*containerNode]
+	for _, n := range td.Children(nil) {
+		if slices.ContainsFunc(td.Children(n), hasShip) {
+			locations.Add(n)
+		}
+	}
+	return locations
+}
+
 func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
@@ -544,7 +576,9 @@ var assetFilterLookup = map[string]assetFilter{
 
 func (a *browserNavigation) filterLocationsAsync() {
 	isLatest := a.filterRun.start()
-	filter := assetFilterLookup[a.filterChip.Selected()[assetBrowserFilterCategory]]
+	selected := a.filterChip.Selected()
+	filter := assetFilterLookup[selected[assetBrowserFilterCategory]]
+	hasShips := selected[assetBrowserFilterHasShips] != ""
 	ft := a.filteredTrees[filter]
 	if ft.td == nil {
 		return // assets not loaded yet
@@ -554,10 +588,13 @@ func (a *browserNavigation) filterLocationsAsync() {
 
 	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
-		if len(search) > 1 {
+		if len(search) > 1 || hasShips {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
-				return !strings.Contains(n.searchText, search)
+				if len(search) > 1 && !strings.Contains(n.searchText, search) {
+					return true
+				}
+				return hasShips && !ft.withShips.Contains(n)
 			})
 		} else {
 			td = ft.td
