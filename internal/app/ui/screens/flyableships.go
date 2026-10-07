@@ -31,6 +31,29 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
+// Names of the flyable ships filters, used as labels on desktop and as option names on mobile.
+const (
+	flyableShipsFilterClass   = "Class"
+	flyableShipsFilterFlyable = "Flyable"
+)
+
+// flyableShipsFilter is the selected value of each flyable ships filter. Empty means not filtered.
+type flyableShipsFilter struct {
+	class   string
+	flyable string
+}
+
+// match reports whether row r passes all filters.
+func (f flyableShipsFilter) match(r flyableShipRow) bool {
+	switch {
+	case f.class != "" && r.groupName != f.class,
+		f.flyable == flyableCan && !r.canFly,
+		f.flyable == flyableCanNot && r.canFly:
+		return false
+	}
+	return true
+}
+
 type flyableShipRow struct {
 	canFly      bool
 	characterID int64
@@ -46,6 +69,7 @@ type FlyableShips struct {
 
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
+	filterChip    *xwidget.FilterChipCompact // only on mobile
 	filterRun     latestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
@@ -53,7 +77,7 @@ type FlyableShips struct {
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
 	searchEntry   *xwidget.SearchEntry
-	selectFlyable *kxwidget.FilterChipSelect
+	selectFlyable *kxwidget.FilterChipSelect // select chips only on desktop
 	selectGroup   *kxwidget.FilterChipSelect
 	sortChip      *kxwidget.SortChip
 	top           *widget.Label
@@ -83,17 +107,26 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 	}
 	a.ExtendBaseWidget(a)
 
-	a.searchEntry = xwidget.NewSearchEntry("Search type and class names", func(_ string) {
+	placeholder := "Search type and class names"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync()
 	})
 
-	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Class", []string{}, func(_ string) {
-		a.filterRowsAsync()
-	}, a.u.MainWindow())
-
-	a.selectFlyable = kxwidget.NewFilterChipSelect("Flyable", []string{}, func(_ string) {
-		a.filterRowsAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync()
+		})
+	} else {
+		a.selectGroup = kxwidget.NewFilterChipSelectWithSearch(flyableShipsFilterClass, []string{}, func(_ string) {
+			a.filterRowsAsync()
+		}, a.u.MainWindow())
+		a.selectFlyable = kxwidget.NewFilterChipSelect(flyableShipsFilterFlyable, []string{}, func(_ string) {
+			a.filterRowsAsync()
+		})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
@@ -105,8 +138,11 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 			a.character.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
-				a.selectFlyable.Selected = ""
-				a.selectGroup.Selected = ""
+				if a.filterChip != nil {
+					a.filterChip.ResetSilent()
+					return
+				}
+				clearSelectsSilent(a.selectFlyable, a.selectGroup)
 			})
 			a.update(ctx)
 		},
@@ -133,12 +169,11 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 }
 
 func (a *FlyableShips) CreateRenderer() fyne.WidgetRenderer {
-	buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortChip)
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		topBox.Add(a.searchEntry)
-		topBox.Add(container.NewHScroll(buttons))
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
+		buttons := container.NewHBox(a.selectGroup, a.selectFlyable, a.sortChip)
 		topBox.Add(container.NewBorder(nil, nil, buttons, nil, a.searchEntry))
 	}
 	c := container.NewBorder(
@@ -182,32 +217,34 @@ func (a *FlyableShips) makeShipsGrid() *widget.GridWrap {
 	return g
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *FlyableShips) currentFilter() flyableShipsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return flyableShipsFilter{
+			class:   s[flyableShipsFilterClass],
+			flyable: s[flyableShipsFilterFlyable],
+		}
+	}
+	return flyableShipsFilter{
+		class:   a.selectGroup.Selected,
+		flyable: a.selectFlyable.Selected,
+	}
+}
+
 func (a *FlyableShips) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
-	group := a.selectGroup.Selected
-	flyable := a.selectFlyable.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	runAsync(func() {
-		if group != "" {
-			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
-				return r.groupName != group
-			})
-		}
-		if flyable != "" {
-			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
-				switch flyable {
-				case flyableCan:
-					return !r.canFly
-				case flyableCanNot:
-					return r.canFly
-				}
-				return false
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
 				return !strings.Contains(r.searchText, search)
@@ -232,8 +269,15 @@ func (a *FlyableShips) filterRowsAsync() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectGroup.SetOptions(groupOptions)
-			a.selectFlyable.SetOptions(flyableOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoiceWithSearch(flyableShipsFilterClass, groupOptions),
+					xwidget.NewFilterOptionMultiChoice(flyableShipsFilterFlyable, flyableOptions),
+				)
+			} else {
+				a.selectGroup.SetOptions(groupOptions)
+				a.selectFlyable.SetOptions(flyableOptions)
+			}
 			a.rowsFiltered = rows
 			a.grid.Refresh()
 			a.grid.ScrollToTop()
@@ -247,8 +291,12 @@ func (a *FlyableShips) update(ctx context.Context) {
 			xslices.Clear(&a.rows)
 			a.searchEntry.Disable()
 			a.searchEntry.SetText("")
-			a.selectGroup.SetOptions([]string{})
-			a.selectFlyable.SetOptions([]string{})
+			if a.filterChip != nil {
+				a.filterChip.SetOptions()
+			} else {
+				a.selectGroup.SetOptions([]string{})
+				a.selectFlyable.SetOptions([]string{})
+			}
 			a.filterRowsAsync()
 		})
 	}
@@ -390,7 +438,7 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 		w.image.Refresh()
 		return
 	}
-	go func() {
+	runAsync(func() {
 		j, err := func() (image.Image, error) {
 			r, err := w.renderType(typeID, 256)
 			if err != nil {
@@ -425,7 +473,7 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 			w.image.Image = img
 			w.image.Refresh()
 		})
-	}()
+	})
 }
 
 func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {

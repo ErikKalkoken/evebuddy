@@ -42,7 +42,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -test.short -coverprofile=coverage.txt -tags migrated_fynedo ./...
+        run: go test -coverprofile=coverage.txt -tags migrated_fynedo ./...
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5

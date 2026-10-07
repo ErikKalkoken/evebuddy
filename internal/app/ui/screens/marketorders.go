@@ -33,6 +33,41 @@ const (
 	marketOrderStateHistory = "History"
 )
 
+// Names of the market order filters, used as labels on desktop and as option names on mobile.
+const (
+	marketOrdersFilterOwner  = "Owner"
+	marketOrdersFilterRegion = "Region"
+	marketOrdersFilterTag    = "Tag"
+	marketOrdersFilterType   = "Type"
+)
+
+// marketOrdersFilter is the selected value of each market order filter. Empty means not filtered.
+type marketOrdersFilter struct {
+	owner    string
+	region   string
+	state    string
+	tag      string
+	typeName string
+}
+
+// match reports whether row r passes all filters.
+func (f marketOrdersFilter) match(r marketOrderRow) bool {
+	switch {
+	case f.owner != "" && r.ownerName != f.owner,
+		f.region != "" && r.regionName != f.region,
+		f.tag != "" && !r.tags.Contains(f.tag),
+		f.typeName != "" && r.typeName != f.typeName:
+		return false
+	}
+	switch s := r.stateCorrected(); f.state {
+	case marketOrderStateActive:
+		return s == app.OrderOpen
+	case marketOrderStateHistory:
+		return s == app.OrderCancelled || s == app.OrderExpired
+	}
+	return true
+}
+
 type marketOrderRow struct {
 	characterID   int64
 	characterName string
@@ -123,15 +158,16 @@ type MarketOrders struct {
 	widget.BaseWidget
 
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
+	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    latestRun
 	footer       *widget.Label
 	isBuyOrders  bool
 	main         fyne.CanvasObject
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
-	selectOwner  *kxwidget.FilterChipSelect
+	selectOwner  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectRegion *kxwidget.FilterChipSelect
-	selectState  *kxwidget.FilterChipSelect
+	selectState  *kxwidget.FilterChipSelect // mode chip on all platforms
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
@@ -237,12 +273,23 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		a.main = a.makeDataList()
 	}
 
-	a.selectRegion = kxwidget.NewFilterChipSelect("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectOwner = kxwidget.NewFilterChipSelect("Owner", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectRegion = makeSelect(marketOrdersFilterRegion)
+		a.selectOwner = makeSelect(marketOrdersFilterOwner)
+		a.selectType = kxwidget.NewFilterChipSelectWithSearch(marketOrdersFilterType, []string{}, func(string) {
+			a.filterRowsAsync("")
+		}, a.u.MainWindow())
+		a.selectTag = makeSelect(marketOrdersFilterTag)
+	}
 	a.selectState = kxwidget.NewFilterChipSelect("", []string{
 		marketOrderStateActive,
 		marketOrderStateHistory,
@@ -251,12 +298,6 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	})
 	a.selectState.Selected = marketOrderStateActive
 	a.selectState.SortDisabled = true
-	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -289,13 +330,15 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 }
 
 func (a *MarketOrders) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectType, a.selectState, a.selectRegion, a.selectOwner, a.selectTag)
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+		top = container.NewHBox(a.selectState, a.filterChip, a.sortChip)
+	} else {
+		top = container.NewHScroll(container.NewHBox(a.selectState, a.selectType, a.selectRegion, a.selectOwner, a.selectTag))
 	}
 	p := theme.Padding()
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		top,
 		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.footer),
 		nil,
 		nil,
@@ -365,48 +408,39 @@ func (a *MarketOrders) makeDataList() *xwidget.StripedList {
 	return l
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop. State comes from its mode chip on both.
+func (a *MarketOrders) currentFilter() marketOrdersFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return marketOrdersFilter{
+			owner:    s[marketOrdersFilterOwner],
+			region:   s[marketOrdersFilterRegion],
+			state:    a.selectState.Selected,
+			tag:      s[marketOrdersFilterTag],
+			typeName: s[marketOrdersFilterType],
+		}
+	}
+	return marketOrdersFilter{
+		owner:    a.selectOwner.Selected,
+		region:   a.selectRegion.Selected,
+		state:    a.selectState.Selected,
+		tag:      a.selectTag.Selected,
+		typeName: a.selectType.Selected,
+	}
+}
+
 func (a *MarketOrders) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	region := a.selectRegion.Selected
-	owner := a.selectOwner.Selected
-	et := a.selectType.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
 		rows := slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-			s := r.stateCorrected()
-			switch a.selectState.Selected {
-			case marketOrderStateActive:
-				return s != app.OrderOpen
-			case marketOrderStateHistory:
-				return s != app.OrderCancelled && s != app.OrderExpired
-			}
-			return true
+			return !filter.match(r)
 		})
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return r.regionName != region
-			})
-		}
-		if owner != "" {
-			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return r.characterName != owner
-			})
-		}
-		if et != "" {
-			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return r.typeName != et
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r marketOrderRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		regionOptions := xslices.Map(rows, func(r marketOrderRow) string {
@@ -438,10 +472,19 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectOwner.SetOptions(ownerOptions)
-			a.selectTag.SetOptions(tagOptions)
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoiceWithSearch(marketOrdersFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoice(marketOrdersFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoice(marketOrdersFilterOwner, ownerOptions),
+					xwidget.NewFilterOptionMultiChoice(marketOrdersFilterTag, tagOptions),
+				)
+			} else {
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectOwner.SetOptions(ownerOptions)
+				a.selectTag.SetOptions(tagOptions)
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.main.Refresh()
 		})

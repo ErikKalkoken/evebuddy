@@ -25,6 +25,19 @@ import (
 // Tests replace it to run f synchronously.
 var runAsync = func(f func()) { go f() }
 
+// runAfter runs f in a new goroutine after d.
+//
+// Tests replace it to never run f.
+var runAfter = func(d time.Duration, f func()) { time.AfterFunc(d, f) }
+
+// clearSelectsSilent clears the selection of filter chips without calling their OnChanged.
+func clearSelectsSilent(chips ...*kxwidget.FilterChipSelect) {
+	for _, c := range chips {
+		c.Selected = ""
+		c.Refresh()
+	}
+}
+
 // latestRun identifies the newest of overlapping async runs,
 // so results from older runs can be discarded.
 type latestRun struct{ n atomic.Int64 }
@@ -51,7 +64,7 @@ func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
 	)
 	var loaded bool
 	// delay avoids the spinner flickering when loading is fast
-	time.AfterFunc(100*time.Millisecond, func() {
+	runAfter(100*time.Millisecond, func() {
 		fyne.Do(func() {
 			if loaded {
 				return

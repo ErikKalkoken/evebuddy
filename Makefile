@@ -57,7 +57,10 @@ ratelimitdoc:
 	go run ./tools/genratelimit/ -f md  > ratelimits.md ;
 
 test:
-	go test -test.short ./... ;
+	go test ./... ;
+
+test_race:
+	GORACE="halt_on_error=1" go test -race --tags migrated_fynedo ./... ;
 
 deadcode:
 	deadcode -test ./...

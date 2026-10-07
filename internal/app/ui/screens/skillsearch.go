@@ -30,6 +30,38 @@ const (
 	searchSkillAll        = "All skills"
 )
 
+// Names of the skill search filters, used as labels on desktop and as option names on mobile.
+const (
+	skillSearchFilterCharacter = "Character"
+	skillSearchFilterGroup     = "Group"
+	skillSearchFilterType      = "Type"
+)
+
+// skillSearchFilter is the selected value of each skill search filter. Empty means not filtered.
+type skillSearchFilter struct {
+	character string
+	group     string
+	skill     string
+	typeName  string
+}
+
+// match reports whether row r passes all filters.
+func (f skillSearchFilter) match(r skillSearchRow) bool {
+	switch {
+	case f.character != "" && r.characterName != f.character,
+		f.group != "" && r.groupName != f.group,
+		f.typeName != "" && r.typeName != f.typeName:
+		return false
+	}
+	switch f.skill {
+	case searchSkillActive:
+		return r.activeLevel > 0
+	case searchSkillRestricted:
+		return r.activeLevel < r.trainedLevel
+	}
+	return true
+}
+
 type skillSearchRow struct {
 	activeLevel        int64
 	activeLevelRoman   string
@@ -64,14 +96,15 @@ type SkillSearch struct {
 
 	body            fyne.CanvasObject
 	columnSorter    *xwidget.ColumnSorter[skillSearchRow]
+	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
 	footer          *widget.Label
 	rows            []skillSearchRow
 	rowsFiltered    []skillSearchRow
 	searchEntry     *xwidget.SearchEntry
-	selectCharacter *kxwidget.FilterChipSelect
+	selectCharacter *kxwidget.FilterChipSelect // select chips only on desktop
 	selectGroup     *kxwidget.FilterChipSelect
-	selectSkill     *kxwidget.FilterChipSelect
+	selectSkill     *kxwidget.FilterChipSelect // mode chip on all platforms
 	selectType      *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	top             *widget.Label
@@ -173,7 +206,11 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 	}
 
 	// filters
-	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
+	placeholder := "Search skills"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
 
@@ -187,15 +224,22 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 	a.selectSkill.Selected = searchSkillActive
 	a.selectSkill.SortDisabled = true
 
-	a.selectGroup = kxwidget.NewFilterChipSelectWithSearch("Group", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelectWithSearch := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelectWithSearch(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			}, a.u.MainWindow())
+		}
+		a.selectGroup = makeSelectWithSearch(skillSearchFilterGroup)
+		a.selectCharacter = kxwidget.NewFilterChipSelect(skillSearchFilterCharacter, []string{}, func(string) {
+			a.filterRowsAsync("")
+		})
+		a.selectType = makeSelectWithSearch(skillSearchFilterType)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -220,22 +264,41 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 }
 
 func (a *SkillSearch) CreateRenderer() fyne.WidgetRenderer {
-	filters := container.NewHBox(
-		a.selectGroup,
-		a.selectType,
-		a.selectSkill,
-		a.selectCharacter,
-	)
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		filters.Add(a.sortChip)
-		topBox.Add(a.searchEntry)
-		topBox.Add(container.NewHScroll(filters))
+		topBox.Add(container.NewHBox(a.selectSkill))
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
+		filters := container.NewHBox(
+			a.selectSkill,
+			a.selectGroup,
+			a.selectType,
+			a.selectCharacter,
+		)
 		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
 	}
 	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop. Skill comes from its mode chip on both.
+func (a *SkillSearch) currentFilter() skillSearchFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return skillSearchFilter{
+			character: s[skillSearchFilterCharacter],
+			group:     s[skillSearchFilterGroup],
+			skill:     a.selectSkill.Selected,
+			typeName:  s[skillSearchFilterType],
+		}
+	}
+	return skillSearchFilter{
+		character: a.selectCharacter.Selected,
+		group:     a.selectGroup.Selected,
+		skill:     a.selectSkill.Selected,
+		typeName:  a.selectType.Selected,
+	}
 }
 
 func (a *SkillSearch) makeDataList() *xwidget.StripedList {
@@ -274,40 +337,14 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	group := a.selectGroup.Selected
-	character := a.selectCharacter.Selected
-	type_ := a.selectType.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
 		rows := slices.DeleteFunc(rows, func(r skillSearchRow) bool {
-			switch a.selectSkill.Selected {
-			case searchSkillActive:
-				return r.activeLevel == 0
-			case searchSkillRestricted:
-				return r.activeLevel >= r.trainedLevel
-			case searchSkillAll:
-				return false
-			}
-			return true
+			return !filter.match(r)
 		})
-		if character != "" {
-			rows = slices.DeleteFunc(rows, func(r skillSearchRow) bool {
-				return r.characterName != character
-			})
-		}
-		if group != "" {
-			rows = slices.DeleteFunc(rows, func(r skillSearchRow) bool {
-				return r.groupName != group
-			})
-		}
-		if type_ != "" {
-			rows = slices.DeleteFunc(rows, func(r skillSearchRow) bool {
-				return r.typeName != type_
-			})
-		}
 
 		// search
 		if len(search) > 1 {
@@ -337,9 +374,17 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCharacter.SetOptions(characterOptions)
-			a.selectGroup.SetOptions(groupOptions)
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoiceWithSearch(skillSearchFilterGroup, groupOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(skillSearchFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoice(skillSearchFilterCharacter, characterOptions),
+				)
+			} else {
+				a.selectCharacter.SetOptions(characterOptions)
+				a.selectGroup.SetOptions(groupOptions)
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 			switch x := a.body.(type) {

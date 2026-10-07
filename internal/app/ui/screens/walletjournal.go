@@ -28,6 +28,39 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+const (
+	walletJournalDirectionInflow  = "Inflow"
+	walletJournalDirectionOutflow = "Outflow"
+)
+
+func walletJournalDirectionOptions() []string {
+	return []string{walletJournalDirectionInflow, walletJournalDirectionOutflow}
+}
+
+// Names of the wallet journal filters, used as labels on desktop and as option names on mobile.
+const (
+	walletJournalFilterDirection = "Direction"
+	walletJournalFilterType      = "Type"
+)
+
+// walletJournalFilter is the selected value of each wallet journal filter. Empty means not filtered.
+type walletJournalFilter struct {
+	direction string
+	refType   string
+}
+
+// match reports whether row r passes all filters.
+func (f walletJournalFilter) match(r walletJournalRow) bool {
+	amount := r.amount.ValueOrZero()
+	switch {
+	case f.direction == walletJournalDirectionInflow && amount <= 0,
+		f.direction == walletJournalDirectionOutflow && amount >= 0,
+		f.refType != "" && r.refTypeDisplay != f.refType:
+		return false
+	}
+	return true
+}
+
 type walletJournalRow struct {
 	amount           optional.Optional[float64]
 	amountDisplay    []widget.RichTextSegment
@@ -45,6 +78,12 @@ type walletJournalRow struct {
 	refID            int64
 	refType          string
 	refTypeDisplay   string
+	searchTarget     string
+}
+
+// setSearchTarget sets the text the search entry matches against.
+func (r *walletJournalRow) setSearchTarget() {
+	r.searchTarget = strings.ToLower(r.description + "\n" + r.reason.ValueOrZero()) // separator prevents matches across texts
 }
 
 func (r walletJournalRow) descriptionWithReason() string {
@@ -58,25 +97,31 @@ func (r walletJournalRow) descriptionWithReason() string {
 type WalletJournal struct {
 	widget.BaseWidget
 
-	body         fyne.CanvasObject
-	character    atomic.Pointer[app.Character]
-	columnSorter *xwidget.ColumnSorter[walletJournalRow]
-	corporation  atomic.Pointer[app.Corporation]
-	division     app.Division
-	filterRun    latestRun
-	footer       *widget.Label
-	rows         []walletJournalRow
-	rowsFiltered []walletJournalRow
-	selectType   *kxwidget.FilterChipSelect
-	sortChip     *kxwidget.SortChip
-	top          *widget.Label
-	u            baseUI
+	body            fyne.CanvasObject
+	character       atomic.Pointer[app.Character]
+	columnSorter    *xwidget.ColumnSorter[walletJournalRow]
+	corporation     atomic.Pointer[app.Corporation]
+	division        app.Division
+	filterChip      *xwidget.FilterChipCompact // only on mobile
+	filterRun       latestRun
+	footer          *widget.Label
+	rows            []walletJournalRow
+	rowsFiltered    []walletJournalRow
+	searchEntry     *xwidget.SearchEntry
+	selectDirection *kxwidget.FilterChipSelect // select chips only on desktop
+	selectType      *kxwidget.FilterChipSelect
+	sortChip        *kxwidget.SortChip
+	top             *widget.Label
+	u               baseUI
 }
 
 func NewCharacterWalletJournal(u baseUI) *WalletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.resetFilters()
+		})
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -95,6 +140,9 @@ func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 	a.u.Signals().CurrentCorporationExchanged.AddListener(
 		func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				a.resetFilters()
+			})
 			a.Update(ctx)
 		},
 	)
@@ -186,9 +234,26 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			},
 		)
 	}
-	a.selectType = kxwidget.NewFilterChipSelectWithSearch("Type", []string{}, func(string) {
+	placeholder := "Search descriptions"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
-	}, a.u.MainWindow())
+	})
+
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		a.selectDirection = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
+			a.filterRowsAsync("")
+		})
+		a.selectType = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
+			a.filterRowsAsync("")
+		}, a.u.MainWindow())
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -196,12 +261,15 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 }
 
 func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectType)
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+	} else {
+		filter := container.NewHBox(a.selectDirection, a.selectType)
+		top = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		top,
 		a.footer,
 		nil,
 		nil,
@@ -209,6 +277,33 @@ func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	)
 	return widget.NewSimpleRenderer(c)
 }
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chip on desktop.
+func (a *WalletJournal) currentFilter() walletJournalFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return walletJournalFilter{
+			direction: s[walletJournalFilterDirection],
+			refType:   s[walletJournalFilterType],
+		}
+	}
+	return walletJournalFilter{
+		direction: a.selectDirection.Selected,
+		refType:   a.selectType.Selected,
+	}
+}
+
+// resetFilters clears search and filters without filtering again.
+func (a *WalletJournal) resetFilters() {
+	a.searchEntry.ClearSilent()
+	if a.filterChip != nil {
+		a.filterChip.ResetSilent()
+		return
+	}
+	clearSelectsSilent(a.selectDirection, a.selectType)
+}
+
 func (a *WalletJournal) isCorporation() bool {
 	return a.division != app.DivisionZero
 }
@@ -277,13 +372,17 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	et := a.selectType.Selected
+	filter := a.currentFilter()
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		if et != "" {
+		rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
+			return !filter.match(r)
+		})
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
-				return r.refTypeDisplay != et
+				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
@@ -299,7 +398,14 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(walletJournalFilterDirection, walletJournalDirectionOptions()),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, typeOptions),
+				)
+			} else {
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
@@ -389,6 +495,7 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.C
 				ColorName: colorISKAmount(o.Amount),
 			},
 		)
+		r.setSearchTarget()
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -472,6 +579,7 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *a
 				ColorName: colorISKAmount(o.Amount),
 			},
 		)
+		r.setSearchTarget()
 		rows = append(rows, r)
 	}
 	return rows, nil

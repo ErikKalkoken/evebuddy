@@ -32,6 +32,45 @@ const (
 	marketTransactionActivitySell = "Sell"
 )
 
+func walletTransactionActivityOptions() []string {
+	return []string{marketTransactionActivityBuy, marketTransactionActivitySell}
+}
+
+// Names of the wallet transaction filters, used as labels on desktop and as option names on mobile.
+const (
+	walletTransactionFilterActivity = "Activity"
+	walletTransactionFilterCategory = "Category"
+	walletTransactionFilterClient   = "Client"
+	walletTransactionFilterLocation = "Location"
+	walletTransactionFilterRegion   = "Region"
+	walletTransactionFilterType     = "Type"
+)
+
+// walletTransactionFilter is the selected value of each wallet transaction filter. Empty means not filtered.
+type walletTransactionFilter struct {
+	activity string
+	category string
+	client   string
+	location string
+	region   string
+	typeName string
+}
+
+// match reports whether row r passes all filters.
+func (f walletTransactionFilter) match(r walletTransactionRow) bool {
+	switch {
+	case f.activity == marketTransactionActivityBuy && !r.isBuy,
+		f.activity == marketTransactionActivitySell && r.isBuy,
+		f.category != "" && r.categoryName != f.category,
+		f.client != "" && r.clientName != f.client,
+		f.location != "" && r.locationName != f.location,
+		f.region != "" && r.regionName != f.region,
+		f.typeName != "" && r.typeName != f.typeName:
+		return false
+	}
+	return true
+}
+
 type walletTransactionRow struct {
 	categoryName     string
 	ownerID          int64
@@ -49,6 +88,7 @@ type walletTransactionRow struct {
 	quantity         int
 	quantityDisplay  string
 	regionName       string
+	searchTarget     string
 	total            float64
 	totalColor       fyne.ThemeColorName
 	totalFormatted   string
@@ -58,6 +98,11 @@ type walletTransactionRow struct {
 	typeName         string
 	unitPrice        float64
 	unitPriceDisplay string
+}
+
+// setSearchTarget sets the text the search entry matches against.
+func (r *walletTransactionRow) setSearchTarget() {
+	r.searchTarget = strings.ToLower(r.clientName + "\n" + r.typeName) // separator prevents matches across names
 }
 
 type WalletTransactions struct {
@@ -70,9 +115,11 @@ type WalletTransactions struct {
 	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
 	division       app.Division
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	rows           []walletTransactionRow
 	rowsFiltered   []walletTransactionRow
-	selectActivity *kxwidget.FilterChipSelect
+	searchEntry    *xwidget.SearchEntry
+	selectActivity *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCategory *kxwidget.FilterChipSelect
 	selectClient   *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
@@ -86,6 +133,7 @@ func NewCharacterWalletTransaction(u baseUI) *WalletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(a.resetFilters)
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -103,6 +151,7 @@ func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransacti
 	a := newWalletTransaction(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
+		fyne.Do(a.resetFilters)
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -217,45 +266,33 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		a.body = a.makeDataList()
 	}
 
-	a.selectActivity = kxwidget.NewFilterChipSelect("Activity", []string{
-		marketTransactionActivityBuy,
-		marketTransactionActivitySell,
-	}, func(_ string) {
+	placeholder := "Search clients and types"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync("")
 	})
-	a.selectCategory = kxwidget.NewFilterChipSelectWithSearch("Category", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-	a.selectClient = kxwidget.NewFilterChipSelectWithSearch(
-		"Client",
-		[]string{},
-		func(_ string) {
+
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
-		},
-		a.u.MainWindow(),
-	)
-	a.selectLocation = kxwidget.NewFilterChipSelectWithSearch(
-		"Location",
-		[]string{},
-		func(_ string) {
+		})
+	} else {
+		makeSelectWithSearch := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelectWithSearch(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			}, a.u.MainWindow())
+		}
+		a.selectActivity = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, walletTransactionActivityOptions(), func(_ string) {
 			a.filterRowsAsync("")
-		},
-		a.u.MainWindow(),
-	)
-	a.selectType = kxwidget.NewFilterChipSelectWithSearch(
-		"Type",
-		[]string{},
-		func(_ string) {
-			a.filterRowsAsync("")
-		},
-		a.u.MainWindow(),
-	)
-	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region",
-		[]string{}, func(string) {
-			a.filterRowsAsync("")
-		},
-		a.u.MainWindow(),
-	)
+		})
+		a.selectCategory = makeSelectWithSearch(walletTransactionFilterCategory)
+		a.selectClient = makeSelectWithSearch(walletTransactionFilterClient)
+		a.selectLocation = makeSelectWithSearch(walletTransactionFilterLocation)
+		a.selectType = makeSelectWithSearch(walletTransactionFilterType)
+		a.selectRegion = makeSelectWithSearch(walletTransactionFilterRegion)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -263,18 +300,69 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 }
 
 func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectActivity, a.selectCategory, a.selectType, a.selectClient, a.selectRegion, a.selectLocation)
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+	} else {
+		filter := container.NewHBox(
+			a.selectActivity,
+			a.selectCategory,
+			a.selectType,
+			a.selectClient,
+			a.selectRegion,
+			a.selectLocation,
+		)
+		top = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
 	}
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		top,
 		a.footer,
 		nil,
 		nil,
 		a.body,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *WalletTransactions) currentFilter() walletTransactionFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return walletTransactionFilter{
+			activity: s[walletTransactionFilterActivity],
+			category: s[walletTransactionFilterCategory],
+			client:   s[walletTransactionFilterClient],
+			location: s[walletTransactionFilterLocation],
+			region:   s[walletTransactionFilterRegion],
+			typeName: s[walletTransactionFilterType],
+		}
+	}
+	return walletTransactionFilter{
+		activity: a.selectActivity.Selected,
+		category: a.selectCategory.Selected,
+		client:   a.selectClient.Selected,
+		location: a.selectLocation.Selected,
+		region:   a.selectRegion.Selected,
+		typeName: a.selectType.Selected,
+	}
+}
+
+// resetFilters clears search and filters without filtering again.
+func (a *WalletTransactions) resetFilters() {
+	a.searchEntry.ClearSilent()
+	if a.filterChip != nil {
+		a.filterChip.ResetSilent()
+		return
+	}
+	clearSelectsSilent(
+		a.selectActivity,
+		a.selectCategory,
+		a.selectClient,
+		a.selectLocation,
+		a.selectRegion,
+		a.selectType,
+	)
 }
 
 func (a *WalletTransactions) isCorporation() bool {
@@ -345,49 +433,17 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	category := a.selectCategory.Selected
-	client := a.selectClient.Selected
-	location := a.selectLocation.Selected
-	region := a.selectRegion.Selected
-	et := a.selectType.Selected
+	filter := a.currentFilter()
+	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
-		if activity := a.selectActivity.Selected; activity != "" {
+		rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
+			return !filter.match(r)
+		})
+		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				switch activity {
-				case marketTransactionActivityBuy:
-					return !r.isBuy
-				case marketTransactionActivitySell:
-					return r.isBuy
-				}
-				return true
-			})
-		}
-		if category != "" {
-			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.categoryName != category
-			})
-		}
-		if client != "" {
-			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.clientName != client
-			})
-		}
-		if location != "" {
-			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.locationName != location
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.regionName != region
-			})
-		}
-		if et != "" {
-			rows = slices.DeleteFunc(rows, func(r walletTransactionRow) bool {
-				return r.typeName != et
+				return !strings.Contains(r.searchTarget, search)
 			})
 		}
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
@@ -416,11 +472,22 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCategory.SetOptions(categoryOptions)
-			a.selectClient.SetOptions(clientOptions)
-			a.selectLocation.SetOptions(locationOPtions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectType.SetOptions(typeOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, walletTransactionActivityOptions()),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterCategory, categoryOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterLocation, locationOPtions),
+				)
+			} else {
+				a.selectCategory.SetOptions(categoryOptions)
+				a.selectClient.SetOptions(clientOptions)
+				a.selectLocation.SetOptions(locationOPtions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectType.SetOptions(typeOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
@@ -517,6 +584,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
+		r.setSearchTarget()
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -605,6 +673,7 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
+		r.setSearchTarget()
 		rows = append(rows, r)
 	}
 	return rows, nil

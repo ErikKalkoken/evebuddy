@@ -119,6 +119,9 @@ func (w *Tree[T]) Set(data *TreeData[T]) {
 		fyne.LogError("Tree.Set: nil object", ErrInvalid)
 		return
 	}
+	if data == nil {
+		data = NewTreeData[T]() // nil data would break the tree's callbacks
+	}
 	w.UnselectAll()
 	w.CloseAllBranches()
 	w.td = data

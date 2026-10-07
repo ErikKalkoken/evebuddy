@@ -95,9 +95,7 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		a.Update(ctx)
 	}, a.signalKey)
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.Update(ctx)
-		})
+		a.Update(ctx)
 	}, a.signalKey)
 	return a
 }

@@ -3,11 +3,14 @@ package screens
 import (
 	"testing"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -304,4 +307,51 @@ func TestWealthEmptyText(t *testing.T) {
 			xassert.Equal(t, tt.want, wealthEmptyText(tt.isFiltered, tt.filteredCount, tt.chartCount))
 		})
 	}
+}
+
+func TestCharacterWealth_Filter(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	rows := []characterWealthRow{
+		{characterID: 1, characterName: "Alpha", corporation: &app.EveEntity{ID: 1, Name: "Corp A"}},
+		{characterID: 2, characterName: "Bravo", corporation: &app.EveEntity{ID: 2, Name: "Corp B"}},
+	}
+	newCharacterWealth := func(t *testing.T, isMobile bool) *CharacterWealth {
+		a := NewCharacterWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.rows = rows
+		a.filterRowsAsync()
+		require.Len(t, a.details.rowsFiltered, 3) // incl. totals row
+		return a
+	}
+	characterIDs := func(a *CharacterWealth) []int64 {
+		var ids []int64
+		for _, r := range a.details.rowsFiltered {
+			if !r.isTotal {
+				ids = append(ids, r.characterID)
+			}
+		}
+		return ids
+	}
+	t.Run("can filter on mobile", func(t *testing.T) {
+		a := newCharacterWealth(t, true)
+		a.filterChip.SetSelected(map[string]string{characterWealthFilterCorporation: "Corp B"})
+		assert.ElementsMatch(t, []int64{2}, characterIDs(a))
+	})
+	t.Run("can filter on desktop", func(t *testing.T) {
+		a := newCharacterWealth(t, false)
+		a.selectCorporation.SetSelected("Corp B")
+		assert.ElementsMatch(t, []int64{2}, characterIDs(a))
+	})
+	t.Run("shows all filters on mobile", func(t *testing.T) {
+		a := newCharacterWealth(t, true)
+		assert.Equal(t, map[string]string{
+			characterWealthFilterAlliance:    "",
+			characterWealthFilterCorporation: "",
+			characterWealthFilterTag:         "",
+		}, a.filterChip.Selected())
+	})
 }

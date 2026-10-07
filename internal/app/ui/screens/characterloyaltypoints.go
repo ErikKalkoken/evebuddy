@@ -22,6 +22,21 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Names of the character loyalty points filters, used as labels on desktop and as option names on mobile.
+const (
+	characterLoyaltyPointsFilterFaction = "Faction"
+)
+
+// characterLoyaltyPointsFilter is the selected value of each filter. Empty means not filtered.
+type characterLoyaltyPointsFilter struct {
+	faction string
+}
+
+// match reports whether row r passes all filters.
+func (f characterLoyaltyPointsFilter) match(r characterLoyaltyPointsRow) bool {
+	return f.faction == "" || r.factionName == f.faction
+}
+
 type characterLoyaltyPointsRow struct {
 	characterID     int64
 	corporationID   int64
@@ -35,6 +50,7 @@ type characterLoyaltyPointsRow struct {
 type CharacterLoyaltyPoints struct {
 	widget.BaseWidget
 
+	filterChip    *xwidget.FilterChipCompact // only on mobile
 	filterRun     latestRun
 	footer        *widget.Label
 	character     atomic.Pointer[app.Character]
@@ -43,7 +59,7 @@ type CharacterLoyaltyPoints struct {
 	rows          []characterLoyaltyPointsRow
 	rowsFiltered  []characterLoyaltyPointsRow
 	searchEntry   *xwidget.SearchEntry
-	selectFaction *kxwidget.FilterChipSelect
+	selectFaction *kxwidget.FilterChipSelect // only on desktop
 	sortChip      *kxwidget.SortChip
 	u             baseUI
 }
@@ -72,7 +88,11 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	a.ExtendBaseWidget(a)
 
 	// filters
-	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(s string) {
+	placeholder := "Search corporations"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(s string) {
 		if len(s) == 1 {
 			return
 		}
@@ -80,9 +100,15 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 		a.list.ScrollToTop()
 	})
 
-	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync()
+		})
+	} else {
+		a.selectFaction = kxwidget.NewFilterChipSelect(characterLoyaltyPointsFilterFaction, []string{}, func(string) {
+			a.filterRowsAsync()
+		})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
@@ -92,7 +118,11 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 		a.character.Store(c)
 		fyne.Do(func() {
 			a.searchEntry.ClearSilent()
-			a.selectFaction.Selected = ""
+			if a.filterChip != nil {
+				a.filterChip.ResetSilent()
+				return
+			}
+			clearSelectsSilent(a.selectFaction)
 		})
 		a.Update(ctx)
 	},
@@ -112,10 +142,7 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(
-			container.NewHBox(a.selectFaction, a.sortChip),
-			a.searchEntry,
-		)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
 		topBox = container.NewBorder(
 			nil,
@@ -166,20 +193,31 @@ func (a *CharacterLoyaltyPoints) makeList() *widget.List {
 	return l
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chip on desktop.
+func (a *CharacterLoyaltyPoints) currentFilter() characterLoyaltyPointsFilter {
+	if a.filterChip != nil {
+		return characterLoyaltyPointsFilter{
+			faction: a.filterChip.Selected()[characterLoyaltyPointsFilterFaction],
+		}
+	}
+	return characterLoyaltyPointsFilter{
+		faction: a.selectFaction.Selected,
+	}
+}
+
 func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
-	faction := a.selectFaction.Selected
+	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	runAsync(func() {
-		if faction != "" {
-			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
-				return r.factionName != faction
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -199,7 +237,11 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectFaction.SetOptions(factionOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(characterLoyaltyPointsFilterFaction, factionOptions))
+			} else {
+				a.selectFaction.SetOptions(factionOptions)
+			}
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})

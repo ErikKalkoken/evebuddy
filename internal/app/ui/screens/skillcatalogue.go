@@ -30,12 +30,50 @@ import (
 )
 
 const (
-	skillCatalogueAllSkill          = "All skills"
-	skillCatalogueMySkill           = "My skills"
+	skillCatalogueTrained           = "Trained"
 	skillCatalogueHavePrerequisites = "Have prerequisites for"
 	skillCatalogueQueued            = "Queued"
 	skillCatalogueFullyTrained      = "Fully trained"
 )
+
+func skillCatalogueTrainingOptions() []string {
+	return []string{
+		skillCatalogueTrained,
+		skillCatalogueFullyTrained,
+		skillCatalogueQueued,
+		skillCatalogueHavePrerequisites,
+	}
+}
+
+// Names of the skill catalogue filters, used as labels on desktop and as option names on mobile.
+const (
+	skillCatalogueFilterGroup    = "Group"
+	skillCatalogueFilterTraining = "Training"
+)
+
+// skillCatalogueFilter is the selected value of each skill catalogue filter. Empty means not filtered.
+type skillCatalogueFilter struct {
+	group    string
+	training string
+}
+
+// match reports whether row r passes all filters.
+func (f skillCatalogueFilter) match(r skillCatalogueRow) bool {
+	if f.group != "" && r.groupName != f.group {
+		return false
+	}
+	switch f.training {
+	case skillCatalogueTrained:
+		return r.levelTrained > 0
+	case skillCatalogueHavePrerequisites:
+		return r.hasPrerequisites && r.levelActive != 5
+	case skillCatalogueQueued:
+		return r.levelQueued > 0
+	case skillCatalogueFullyTrained:
+		return r.levelActive >= 5
+	}
+	return true
+}
 
 type skillCatalogueRow struct {
 	description      string
@@ -57,6 +95,7 @@ type SkillCatalogue struct {
 
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[skillCatalogueRow]
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
@@ -66,8 +105,8 @@ type SkillCatalogue struct {
 	rows           []skillCatalogueRow
 	rowsFiltered   []skillCatalogueRow
 	searchEntry    *xwidget.SearchEntry
-	selectGroup    *kxwidget.FilterChipSelect
-	selectMain     *kxwidget.FilterChipSelect
+	selectGroup    *kxwidget.FilterChipSelect // only on desktop
+	selectTraining *kxwidget.FilterChipSelect // only on desktop
 	skills         fyne.CanvasObject
 	sortChip       *kxwidget.SortChip
 	top            *widget.Label
@@ -106,24 +145,26 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 	a.ExtendBaseWidget(a)
 	a.skills = a.makeSkillsGrid()
 
-	a.searchEntry = xwidget.NewSearchEntry("Search skills", func(_ string) {
+	placeholder := "Search skills"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(_ string) {
 		a.filterRowsAsync()
 	})
 
-	a.selectGroup = kxwidget.NewFilterChipSelect("Group", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectMain = kxwidget.NewFilterChipSelect("", []string{
-		skillCatalogueAllSkill,
-		skillCatalogueMySkill,
-		skillCatalogueHavePrerequisites,
-		skillCatalogueQueued,
-		skillCatalogueFullyTrained,
-	}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectMain.Selected = skillCatalogueAllSkill
-	a.selectMain.SortDisabled = true
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(a.filterOptions(nil), func(map[string]string) {
+			a.filterRowsAsync()
+		})
+	} else {
+		a.selectTraining = kxwidget.NewFilterChipSelect(skillCatalogueFilterTraining, skillCatalogueTrainingOptions(), func(string) {
+			a.filterRowsAsync()
+		})
+		a.selectGroup = kxwidget.NewFilterChipSelect(skillCatalogueFilterGroup, []string{}, func(string) {
+			a.filterRowsAsync()
+		})
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
@@ -143,6 +184,14 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.searchEntry.ClearSilent()
+			if a.filterChip != nil {
+				a.filterChip.ResetSilent()
+				return
+			}
+			clearSelectsSilent(a.selectTraining, a.selectGroup)
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -166,13 +215,12 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 }
 
 func (a *SkillCatalogue) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectGroup, a.selectMain, a.sortChip)
 	topBox := container.NewVBox()
 	if a.u.IsMobile() {
 		topBox.Add(container.NewBorder(nil, nil, nil, a.moreButton, a.top))
-		topBox.Add(a.searchEntry)
-		topBox.Add(container.NewHScroll(filter))
+		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
+		filter := container.NewHBox(a.selectTraining, a.selectGroup, a.sortChip)
 		topAligned := container.NewVBox(layout.NewSpacer(), a.top, layout.NewSpacer())
 		topBox.Add(container.NewBorder(nil, nil, nil, a.moreButton, topAligned))
 		topBox.Add(container.NewBorder(nil, nil, filter, nil, a.searchEntry))
@@ -247,39 +295,43 @@ func (a *SkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
 }
 
+// filterOptions returns the options of the compact filter chip.
+func (a *SkillCatalogue) filterOptions(groups []string) []xwidget.FilterOption {
+	return []xwidget.FilterOption{
+		xwidget.NewFilterOptionMultiChoice(skillCatalogueFilterTraining, skillCatalogueTrainingOptions()),
+		xwidget.NewFilterOptionSeparator(),
+		xwidget.NewFilterOptionMultiChoice(skillCatalogueFilterGroup, groups),
+	}
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *SkillCatalogue) currentFilter() skillCatalogueFilter {
+	if a.filterChip != nil {
+		selected := a.filterChip.Selected()
+		return skillCatalogueFilter{
+			group:    selected[skillCatalogueFilterGroup],
+			training: selected[skillCatalogueFilterTraining],
+		}
+	}
+	return skillCatalogueFilter{
+		group:    a.selectGroup.Selected,
+		training: a.selectTraining.Selected,
+	}
+}
+
 func (a *SkillCatalogue) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	total := len(a.rows)
 	rows := slices.Clone(a.rows)
-	group := a.selectGroup.Selected
-	main := a.selectMain.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
 	runAsync(func() {
-		switch main {
-		case skillCatalogueMySkill:
-			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
-				return r.levelTrained == 0
-			})
-		case skillCatalogueHavePrerequisites:
-			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
-				return !r.hasPrerequisites || r.levelActive == 5
-			})
-		case skillCatalogueQueued:
-			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
-				return r.levelQueued == 0
-			})
-		case skillCatalogueFullyTrained:
-			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
-				return r.levelActive < 5
-			})
-		}
-		if group != "" {
-			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
-				return r.groupName != group
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r skillCatalogueRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -301,7 +353,11 @@ func (a *SkillCatalogue) filterRowsAsync() {
 				return
 			}
 			a.footer.SetText(footer)
-			a.selectGroup.SetOptions(groupOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(a.filterOptions(groupOptions)...)
+			} else {
+				a.selectGroup.SetOptions(groupOptions)
+			}
 			a.rowsFiltered = rows
 			a.skills.Refresh()
 		})

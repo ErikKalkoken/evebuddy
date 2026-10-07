@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -19,7 +20,6 @@ import (
 )
 
 func TestTraining_Filter(t *testing.T) {
-	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
 	now := time.Now().UTC()
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -138,4 +138,75 @@ func TestTraining_MakeTrainingCSVString(t *testing.T) {
 		"Alpha,logistics;pilot,Gunnery V,N/A,3,N/A,10000000,1000000,11000000\n" +
 		"Bravo,,N/A,N/A,,N/A,5000000,0,5000000\n"
 	assert.Equal(t, want, got)
+}
+
+func TestTrainingFilter_Match(t *testing.T) {
+	r := trainingRow{isActive: true, tags: set.Of("alpha")}
+	inactive := r
+	inactive.isActive = false
+	for _, tc := range []struct {
+		name   string
+		filter trainingFilter
+		row    trainingRow
+		want   bool
+	}{
+		{"no filter", trainingFilter{}, r, true},
+		{"active matches", trainingFilter{status: trainingStatusActive}, r, true},
+		{"active but inactive", trainingFilter{status: trainingStatusActive}, inactive, false},
+		{"inactive matches", trainingFilter{status: trainingStatusInActive}, inactive, true},
+		{"inactive but active", trainingFilter{status: trainingStatusInActive}, r, false},
+		{"tag matches", trainingFilter{tag: "alpha"}, r, true},
+		{"tag missing", trainingFilter{tag: "bravo"}, r, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.filter.match(tc.row))
+		})
+	}
+}
+
+func TestTraining_FilterWidgets(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	rows := []trainingRow{
+		{characterID: 1, isActive: true, searchTarget: "bruce"},
+		{characterID: 2, isActive: false, searchTarget: "alice"},
+	}
+	newTraining := func(t *testing.T, isMobile bool) *Training {
+		a := NewTraining(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.rows = rows
+		a.filterRowsAsync("")
+		require.Len(t, a.rowsFiltered, 2)
+		return a
+	}
+	characterIDs := func(a *Training) []int64 {
+		return xslices.Map(a.rowsFiltered, func(r trainingRow) int64 {
+			return r.characterID
+		})
+	}
+	t.Run("can filter on mobile", func(t *testing.T) {
+		a := newTraining(t, true)
+		a.filterChip.SetSelected(map[string]string{trainingFilterStatus: trainingStatusInActive})
+		assert.ElementsMatch(t, []int64{2}, characterIDs(a))
+	})
+	t.Run("can filter on desktop", func(t *testing.T) {
+		a := newTraining(t, false)
+		a.selectStatus.SetSelected(trainingStatusInActive)
+		assert.ElementsMatch(t, []int64{2}, characterIDs(a))
+	})
+	t.Run("can search on mobile", func(t *testing.T) {
+		a := newTraining(t, true)
+		a.searchEntry.SetText("bru")
+		assert.ElementsMatch(t, []int64{1}, characterIDs(a))
+	})
+	t.Run("shows all filters on mobile", func(t *testing.T) {
+		a := newTraining(t, true)
+		assert.Equal(t, map[string]string{
+			trainingFilterStatus: "",
+			trainingFilterTag:    "",
+		}, a.filterChip.Selected())
+	})
 }

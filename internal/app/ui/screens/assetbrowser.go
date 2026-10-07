@@ -15,10 +15,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
-
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
@@ -82,6 +81,7 @@ func newBrowser(u baseUI, forCorporation bool) *AssetBrowser {
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(a.Navigation.resetFilters)
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -95,6 +95,7 @@ func newBrowser(u baseUI, forCorporation bool) *AssetBrowser {
 	} else {
 		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
+			fyne.Do(a.Navigation.resetFilters)
 			a.Update(ctx)
 		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -199,8 +200,36 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 	a.Navigation.update(ctx, at.Locations())
 }
 
+// Names of the asset browser filters.
 const (
-	categoryAll        = "All"
+	assetBrowserFilterCategory     = "Category"
+	assetBrowserFilterHasShips     = "Has ships"
+	assetBrowserFilterLocationType = "Location type"
+	assetBrowserFilterRegion       = "Region"
+	assetBrowserFilterSecurity     = "Security"
+)
+
+const (
+	locationTypeStation   = "NPC station"
+	locationTypeStructure = "Structure"
+)
+
+func assetBrowserLocationTypeOptions() []string {
+	return []string{locationTypeStation, locationTypeStructure}
+}
+
+const (
+	securityHighSec  = "High-sec"
+	securityLowSec   = "Low-sec"
+	securityNullSec  = "Null-sec"
+	securityWormhole = "W-space"
+)
+
+func assetBrowserSecurityOptions() []string {
+	return []string{securityHighSec, securityLowSec, securityNullSec, securityWormhole}
+}
+
+const (
 	categoryDeliveries = "Deliveries"
 	categoryImpounded  = "Impounded"
 	categoryInSpace    = "In Space"
@@ -233,6 +262,7 @@ func (n containerNode) UID() widget.TreeNodeID {
 type filteredTree struct {
 	td         *xwidget.TreeData[containerNode]
 	nodeLookup map[*asset.Node]*containerNode
+	withShips  set.Set[*containerNode] // locations with docked ships
 }
 
 type browserNavigation struct {
@@ -240,15 +270,16 @@ type browserNavigation struct {
 
 	OnSelected func()
 
-	b              *AssetBrowser
-	collapseAll    *ttwidget.Button
-	filteredTrees  map[assetFilter]filteredTree
-	filterRun      latestRun
-	filters        []assetFilter
-	locations      *xwidget.Tree[containerNode]
-	searchEntry    *xwidget.SearchEntry
-	selectCategory *kxwidget.FilterChipSelect
-	footer         *widget.Label
+	b             *AssetBrowser
+	categories    []string
+	collapseAll   *ttwidget.Button
+	filterChip    *xwidget.FilterChipCompact
+	filteredTrees map[assetFilter]filteredTree
+	filterRun     latestRun
+	filters       []assetFilter
+	locations     *xwidget.Tree[containerNode]
+	searchEntry   *xwidget.SearchEntry
+	footer        *widget.Label
 }
 
 func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
@@ -290,20 +321,14 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetCorpOther,
 			assetNoFilter,
 		}
-		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+		a.categories = []string{
 			categoryOffice,
 			categoryImpounded,
 			categoryDeliveries,
 			categoryInSpace,
 			categorySafety,
 			categoryOther,
-			categoryAll,
-		}, func(string) {
-			a.searchEntry.ClearSilent()
-			a.filterLocationsAsync()
-		})
-		a.selectCategory.Selected = categoryOffice
-		a.selectCategory.SortDisabled = true
+		}
 	} else {
 		a.filters = []assetFilter{
 			assetPersonalAssets,
@@ -312,19 +337,16 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetSafety,
 			assetNoFilter,
 		}
-		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+		a.categories = []string{
 			categoryPersonal,
 			categoryDeliveries,
 			categoryInSpace,
 			categorySafety,
-			categoryAll,
-		}, func(string) {
-			a.searchEntry.ClearSilent()
-			a.filterLocationsAsync()
-		})
-		a.selectCategory.Selected = categoryPersonal
-		a.selectCategory.SortDisabled = true
+		}
 	}
+	a.filterChip = xwidget.NewFilterChipCompact(a.filterOptions(nil), func(map[string]string) {
+		a.filterLocationsAsync()
+	})
 	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.locations.CloseAllBranches()
 	})
@@ -335,18 +357,30 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 
 func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
-		container.NewBorder(
-			container.NewHBox(a.selectCategory, layout.NewSpacer(), a.collapseAll),
-			nil,
-			nil,
-			nil,
-			a.searchEntry,
-		),
+		container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.collapseAll), a.searchEntry),
 		a.footer,
 		nil,
 		nil,
 		a.locations,
 	))
+}
+
+// filterOptions returns all options for the filter chip.
+func (a *browserNavigation) filterOptions(regions []string) []xwidget.FilterOption {
+	return []xwidget.FilterOption{
+		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
+		xwidget.NewFilterOptionSeparator(),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, a.categories),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterLocationType, assetBrowserLocationTypeOptions()),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
+		xwidget.NewFilterOptionMultiChoiceWithSearch(assetBrowserFilterRegion, regions),
+	}
+}
+
+// resetFilters clears the search and the category without filtering again.
+func (a *browserNavigation) resetFilters() {
+	a.searchEntry.ClearSilent()
+	a.filterChip.ResetSilent()
 }
 
 func (a *browserNavigation) clear() {
@@ -368,6 +402,7 @@ func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 		filteredTrees[f] = filteredTree{
 			td:         td,
 			nodeLookup: lookup,
+			withShips:  locationsWithDockedShips(td),
 		}
 	}
 	fyne.Do(func() {
@@ -501,6 +536,93 @@ func addNodes(td *xwidget.TreeData[containerNode], parent *containerNode, nodes 
 	}
 }
 
+// locationsWithDockedShips returns the top level locations which have assembled ships docked,
+// e.g. ships in space or in asset safety are not docked.
+func locationsWithDockedShips(td *xwidget.TreeData[containerNode]) set.Set[*containerNode] {
+	var hasShip func(n *containerNode) bool
+	hasShip = func(n *containerNode) bool {
+		switch n.node.Category() {
+		case asset.NodeInSpace, asset.NodeAssetSafetyCharacter, asset.NodeAssetSafetyCorporation, asset.NodeImpounded:
+			return false
+		}
+		if n.node.IsShip() {
+			return true
+		}
+		return slices.ContainsFunc(td.Children(n), hasShip)
+	}
+	var locations set.Set[*containerNode]
+	for _, n := range td.Children(nil) {
+		if slices.ContainsFunc(td.Children(n), hasShip) {
+			locations.Add(n)
+		}
+	}
+	return locations
+}
+
+// locationSecurityBand returns the security band of a location
+// or an empty string when its solar system is not known.
+func locationSecurityBand(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	es, ok := el.SolarSystem.Value()
+	if !ok || es == nil {
+		return ""
+	}
+	if es.IsWormholeSpace() {
+		return securityWormhole
+	}
+	switch es.SecurityType() {
+	case app.HighSec, app.SuperHighSec:
+		return securityHighSec
+	case app.LowSec:
+		return securityLowSec
+	}
+	return securityNullSec
+}
+
+// locationType returns the type of a location
+// or an empty string for other locations, e.g. solar systems or unknown locations.
+func locationType(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	switch el.Variant() {
+	case app.EveLocationStation:
+		return locationTypeStation
+	case app.EveLocationStructure:
+		return locationTypeStructure
+	}
+	return ""
+}
+
+// locationRegion returns the region name of a location
+// or an empty string when its region is not known.
+func locationRegion(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	es, ok := el.SolarSystem.Value()
+	if !ok || es == nil || es.Constellation == nil || es.Constellation.Region == nil {
+		return ""
+	}
+	return es.Constellation.Region.Name
+}
+
+// locationRegions returns the known regions of the top level locations.
+func locationRegions(td *xwidget.TreeData[containerNode]) []string {
+	var regions set.Set[string]
+	for _, n := range td.Children(nil) {
+		if r := locationRegion(n); r != "" {
+			regions.Add(r)
+		}
+	}
+	return slices.Collect(regions.All())
+}
+
 func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
@@ -535,8 +657,9 @@ func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	}
 }
 
+// assetFilterLookup maps categories to filters. No category means all assets.
 var assetFilterLookup = map[string]assetFilter{
-	categoryAll:        assetNoFilter,
+	"":                 assetNoFilter,
 	categoryDeliveries: assetDeliveries,
 	categoryImpounded:  assetImpounded,
 	categoryInSpace:    assetInSpace,
@@ -548,25 +671,47 @@ var assetFilterLookup = map[string]assetFilter{
 
 func (a *browserNavigation) filterLocationsAsync() {
 	isLatest := a.filterRun.start()
-	filter := assetFilterLookup[a.selectCategory.Selected]
+	selected := a.filterChip.Selected()
+	filter := assetFilterLookup[selected[assetBrowserFilterCategory]]
+	hasShips := selected[assetBrowserFilterHasShips] != ""
+	security := selected[assetBrowserFilterSecurity]
+	region := selected[assetBrowserFilterRegion]
+	locType := selected[assetBrowserFilterLocationType]
 	ft := a.filteredTrees[filter]
+	if ft.td == nil {
+		return // assets not loaded yet
+	}
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.searchEntry.Text)
 
 	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
-		if len(search) > 1 {
+		if len(search) > 1 || hasShips || security != "" || region != "" || locType != "" {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
-				return !strings.Contains(n.searchText, search)
+				if len(search) > 1 && !strings.Contains(n.searchText, search) {
+					return true
+				}
+				if security != "" && locationSecurityBand(n) != security {
+					return true
+				}
+				if region != "" && locationRegion(n) != region {
+					return true
+				}
+				if locType != "" && locationType(n) != locType {
+					return true
+				}
+				return hasShips && !ft.withShips.Contains(n)
 			})
 		} else {
 			td = ft.td
 		}
+		regions := locationRegions(td)
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
+			a.filterChip.SetOptions(a.filterOptions(regions)...)
 			footer := fmt.Sprintf("%s / %s locations", ihumanize.Comma(td.ChildrenCount(nil)), totalItems)
 			a.setFooter(footer, widget.MediumImportance)
 			a.locations.UnselectAll()
@@ -577,7 +722,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 }
 
 func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
-	filter := assetFilterLookup[a.selectCategory.Selected]
+	filter := assetFilterLookup[a.filterChip.Selected()[assetBrowserFilterCategory]]
 	ft, ok := a.filteredTrees[filter]
 	if !ok {
 		ft = a.filteredTrees[assetNoFilter]

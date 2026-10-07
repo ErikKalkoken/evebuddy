@@ -23,6 +23,35 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Names of the loyalty points filters, used as labels on desktop and as option names on mobile.
+const (
+	loyaltyPointsFilterCharacter = "Character"
+	loyaltyPointsFilterFaction   = "Faction"
+	loyaltyPointsFilterTag       = "Tag"
+)
+
+// loyaltyPointsFilter is the selected value of each loyalty points filter. Empty means not filtered.
+type loyaltyPointsFilter struct {
+	character string
+	faction   string
+	tag       string
+}
+
+// matchCorporation reports whether corporation node c passes the corporation filters.
+func (f loyaltyPointsFilter) matchCorporation(c *loyaltyPointsNode) bool {
+	return f.faction == "" || c.factionName == f.faction
+}
+
+// matchCharacter reports whether character node o passes the character filters.
+func (f loyaltyPointsFilter) matchCharacter(o *loyaltyPointsNode) bool {
+	switch {
+	case f.character != "" && o.characterName != f.character,
+		f.tag != "" && !o.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type loyaltyPointsNode struct {
 	characterID     int64
 	characterName   string
@@ -44,13 +73,14 @@ func (n loyaltyPointsNode) UID() widget.TreeNodeID {
 type LoyaltyPoints struct {
 	widget.BaseWidget
 
+	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
 	data             map[*loyaltyPointsNode][]*loyaltyPointsNode
 	searchEntry      *xwidget.SearchEntry
-	selectCharacter  *kxwidget.FilterChipSelect
+	selectCharacter  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
 	sortChip         *kxwidget.SortChip
@@ -84,12 +114,20 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
-	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(_ string) {
-		a.filterTreeAsync()
-	})
-	a.selectFaction = kxwidget.NewFilterChipSelect("Faction", []string{}, func(_ string) {
-		a.filterTreeAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterTreeAsync()
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterTreeAsync()
+			})
+		}
+		a.selectCharacter = makeSelect(loyaltyPointsFilterCharacter)
+		a.selectFaction = makeSelect(loyaltyPointsFilterFaction)
+		a.selectTag = makeSelect(loyaltyPointsFilterTag)
+	}
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
@@ -98,14 +136,14 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 		a.filterTreeAsync()
 	})
 
-	a.searchEntry = xwidget.NewSearchEntry("Search corporations", func(s string) {
+	placeholder := "Search corporations"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(s string) {
 		if len(s) == 1 {
 			return
 		}
-		a.filterTreeAsync()
-	})
-
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
 		a.filterTreeAsync()
 	})
 
@@ -132,14 +170,19 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 }
 
 func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHScroll(container.NewHBox(
-		a.selectFaction,
-		a.selectCharacter,
-		a.selectTag,
-		a.sortChip,
-	))
+	var top *fyne.Container
+	if a.u.IsMobile() {
+		top = container.NewVBox(
+			a.top,
+			container.NewBorder(nil, nil, nil, container.NewHBox(a.collapseBranches, a.filterChip, a.sortChip), a.searchEntry),
+		)
+	} else {
+		leading := container.NewHBox(a.selectFaction, a.selectCharacter, a.selectTag)
+		trailing := container.NewHBox(a.sortChip, a.collapseBranches)
+		top = container.NewBorder(nil, nil, leading, trailing, a.searchEntry)
+	}
 	c := container.NewBorder(
-		container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchEntry)),
+		top,
 		a.footer,
 		nil,
 		nil,
@@ -184,12 +227,28 @@ func (a *LoyaltyPoints) makeTree() *xwidget.Tree[loyaltyPointsNode] {
 	return t
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *LoyaltyPoints) currentFilter() loyaltyPointsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return loyaltyPointsFilter{
+			character: s[loyaltyPointsFilterCharacter],
+			faction:   s[loyaltyPointsFilterFaction],
+			tag:       s[loyaltyPointsFilterTag],
+		}
+	}
+	return loyaltyPointsFilter{
+		character: a.selectCharacter.Selected,
+		faction:   a.selectFaction.Selected,
+		tag:       a.selectTag.Selected,
+	}
+}
+
 func (a *LoyaltyPoints) filterTreeAsync() {
 	isLatest := a.filterRun.start()
 	data := maps.Clone(a.data)
-	character := a.selectCharacter.Selected
-	faction := a.selectFaction.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
@@ -197,7 +256,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 		// filter data
 		data2 := make(map[*loyaltyPointsNode][]*loyaltyPointsNode)
 		for c := range data {
-			if faction != "" && faction != c.factionName {
+			if !filter.matchCorporation(c) {
 				continue
 			}
 			if len(search) > 1 && !strings.Contains(c.searchTarget, search) {
@@ -205,28 +264,19 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 			}
 
 			var characters []*loyaltyPointsNode
+			var total int64
 			for _, o := range data[c] {
-				if character != "" {
-					if o.characterName != character {
-						continue
-					}
+				if filter.matchCharacter(o) {
+					characters = append(characters, o)
+					total += o.points
 				}
-				if tag != "" {
-					if !o.tags.Contains(tag) {
-						continue
-					}
-				}
-				characters = append(characters, o)
 			}
 			if len(characters) == 0 {
 				continue
 			}
-
-			c.totalPoints = 0
-			for _, character := range characters {
-				data2[c] = append(data2[c], character)
-				c.totalPoints += character.points
-			}
+			c2 := *c // the tree on screen still holds c
+			c2.totalPoints = total
+			data2[&c2] = characters
 		}
 
 		// sort corporations
@@ -267,9 +317,17 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 			a.footer.Text = bottom
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCharacter.SetOptions(characterOptions)
-			a.selectFaction.SetOptions(factionOptions)
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(loyaltyPointsFilterFaction, factionOptions),
+					xwidget.NewFilterOptionMultiChoice(loyaltyPointsFilterCharacter, characterOptions),
+					xwidget.NewFilterOptionMultiChoice(loyaltyPointsFilterTag, tagOptions),
+				)
+			} else {
+				a.selectCharacter.SetOptions(characterOptions)
+				a.selectFaction.SetOptions(factionOptions)
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.tree.Set(td)
 		})
 	})

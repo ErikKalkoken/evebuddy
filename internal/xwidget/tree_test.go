@@ -126,6 +126,24 @@ func TestTree_CanClear(t *testing.T) {
 	assert.True(t, got.IsEmpty())
 }
 
+func TestTree_SetNil(t *testing.T) {
+	test.NewTempApp(t)
+	tree := xwidget.NewTree(
+		func(isBranch bool) fyne.CanvasObject {
+			return widget.NewLabel("Template")
+		},
+		func(n *Node, isBranch bool, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(n.Text)
+		},
+	)
+	w := test.NewWindow(tree)
+	defer w.Close()
+
+	tree.Set(nil)
+
+	assert.True(t, tree.Data().IsEmpty())
+}
+
 func TestTree_OnSelectedNode(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())

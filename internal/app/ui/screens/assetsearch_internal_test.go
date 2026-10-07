@@ -4,9 +4,14 @@ import (
 	"bytes"
 	"testing"
 
+	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/go-set"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
@@ -119,5 +124,131 @@ func TestMakeCSVFromRows(t *testing.T) {
 		got := b.String()
 		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n"
 		xassert.Equal(t, want, got)
+	})
+}
+
+func TestAssetSearchFilter_Match(t *testing.T) {
+	r := assetRow{
+		categoryName: "Ship",
+		groupName:    "Frigate",
+		locationName: "Jita IV - Moon 4",
+		owner:        &app.EveEntity{Name: "Bruce"},
+		regionName:   "The Forge",
+		state:        "In space",
+		tags:         set.Of("alpha"),
+		total:        optional.New(1.5),
+	}
+	noTotal := r
+	noTotal.total = optional.Optional[float64]{}
+	for _, tc := range []struct {
+		name   string
+		filter assetSearchFilter
+		row    assetRow
+		want   bool
+	}{
+		{"no filter", assetSearchFilter{}, r, true},
+		{"category matches", assetSearchFilter{category: "Ship"}, r, true},
+		{"category differs", assetSearchFilter{category: "Module"}, r, false},
+		{"group differs", assetSearchFilter{group: "Cruiser"}, r, false},
+		{"location differs", assetSearchFilter{location: "Amarr"}, r, false},
+		{"owner differs", assetSearchFilter{owner: "Alice"}, r, false},
+		{"region differs", assetSearchFilter{region: "Domain"}, r, false},
+		{"state differs", assetSearchFilter{state: "In hangar"}, r, false},
+		{"tag matches", assetSearchFilter{tag: "alpha"}, r, true},
+		{"tag missing", assetSearchFilter{tag: "bravo"}, r, false},
+		{"has total", assetSearchFilter{total: assetSearchTotalYes}, r, true},
+		{"has total but none", assetSearchFilter{total: assetSearchTotalYes}, noTotal, false},
+		{"has no total", assetSearchFilter{total: assetSearchTotalNo}, noTotal, true},
+		{"has no total but has", assetSearchFilter{total: assetSearchTotalNo}, r, false},
+		{"all match", assetSearchFilter{category: "Ship", group: "Frigate", region: "The Forge", tag: "alpha", total: assetSearchTotalYes}, r, true},
+		{"one of many differs", assetSearchFilter{category: "Ship", group: "Cruiser"}, r, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.filter.match(tc.row))
+		})
+	}
+}
+
+func TestAssetSearch_Filter(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	rows := []assetRow{
+		{itemID: 1, categoryName: "Ship", owner: &app.EveEntity{Name: "Bruce"}},
+		{itemID: 2, categoryName: "Module", owner: &app.EveEntity{Name: "Bruce"}},
+	}
+	newAssetSearchWith := func(t *testing.T, isMobile, forCorporation bool) *AssetSearch {
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		})
+		var a *AssetSearch
+		if forCorporation {
+			a = NewAssetSearchForCorporation(u)
+		} else {
+			a = NewAssetSearchForAll(u)
+		}
+		a.rows = rows
+		a.filterRowsAsync("")
+		require.Len(t, a.rowsFiltered, 2)
+		return a
+	}
+	newAssetSearch := func(t *testing.T, isMobile bool) *AssetSearch {
+		return newAssetSearchWith(t, isMobile, false)
+	}
+	t.Run("can filter on mobile", func(t *testing.T) {
+		a := newAssetSearch(t, true)
+		a.filterChip.SetSelected(map[string]string{assetSearchFilterCategory: "Ship"})
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.EqualValues(t, 1, a.rowsFiltered[0].itemID)
+		}
+	})
+	t.Run("can filter on desktop", func(t *testing.T) {
+		a := newAssetSearch(t, false)
+		a.selectCategory.SetSelected("Ship")
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.EqualValues(t, 1, a.rowsFiltered[0].itemID)
+		}
+	})
+	t.Run("shows all filters on mobile", func(t *testing.T) {
+		a := newAssetSearch(t, true)
+		assert.Equal(t, map[string]string{
+			assetSearchFilterCategory: "",
+			assetSearchFilterGroup:    "",
+			assetSearchFilterLocation: "",
+			assetSearchFilterOwner:    "",
+			assetSearchFilterRegion:   "",
+			assetSearchFilterState:    "",
+			assetSearchFilterTag:      "",
+			assetSearchFilterTotal:    "",
+		}, a.filterChip.Selected())
+	})
+	t.Run("hides tag and owner filters for corporation on mobile", func(t *testing.T) {
+		a := newAssetSearchWith(t, true, true)
+		assert.Equal(t, map[string]string{
+			assetSearchFilterCategory: "",
+			assetSearchFilterGroup:    "",
+			assetSearchFilterLocation: "",
+			assetSearchFilterRegion:   "",
+			assetSearchFilterState:    "",
+			assetSearchFilterTotal:    "",
+		}, a.filterChip.Selected())
+	})
+	t.Run("resets filters when corporation changes on mobile", func(t *testing.T) {
+		a := newAssetSearchWith(t, true, true)
+		a.filterChip.SetSelected(map[string]string{assetSearchFilterCategory: "Ship"})
+		require.True(t, a.filterChip.IsOn())
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+
+		assert.False(t, a.filterChip.IsOn())
+	})
+	t.Run("resets filters when corporation changes on desktop", func(t *testing.T) {
+		a := newAssetSearchWith(t, false, true)
+		a.selectCategory.SetSelected("Ship")
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+
+		assert.Empty(t, a.currentFilter())
 	})
 }

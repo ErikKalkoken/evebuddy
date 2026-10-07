@@ -27,6 +27,36 @@ const (
 	contractSlotsFreeNone = "No free slots"
 )
 
+func contractSlotsFreeSlotsOptions() []string {
+	return []string{contractSlotsFreeSome, contractSlotsFreeNone}
+}
+
+// Names of the contract slot filters, used as labels on desktop and as option names on mobile.
+const (
+	contractSlotsFilterCorporation = "Corporation"
+	contractSlotsFilterFreeSlots   = "Free slots"
+	contractSlotsFilterTag         = "Tag"
+)
+
+// contractSlotsFilter is the selected value of each contract slot filter. Empty means not filtered.
+type contractSlotsFilter struct {
+	corporation string
+	freeSlots   string
+	tag         string
+}
+
+// match reports whether row r passes all filters.
+func (f contractSlotsFilter) match(r contractSlotRow) bool {
+	switch {
+	case f.corporation != "" && r.corporationName != f.corporation,
+		f.freeSlots == contractSlotsFreeSome && r.free == 0,
+		f.freeSlots == contractSlotsFreeNone && r.free > 0,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type contractSlotRow struct {
 	characterID     int64
 	characterName   string
@@ -81,11 +111,12 @@ type ContractSlots struct {
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[contractSlotRow]
 	corporationSlots  bool
+	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
 	rows              []contractSlotRow
 	rowsFiltered      []contractSlotRow
-	selectCorporation *kxwidget.FilterChipSelect
+	selectCorporation *kxwidget.FilterChipSelect // select chips only on desktop
 	selectFreeSlots   *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	sortChip          *kxwidget.SortChip
@@ -202,18 +233,20 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 		)
 	}
 
-	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectFreeSlots = kxwidget.NewFilterChipSelect("Free slots", []string{
-		contractSlotsFreeSome,
-		contractSlotsFreeNone,
-	}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string, options ...string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, options, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		a.selectCorporation = makeSelect(contractSlotsFilterCorporation)
+		a.selectFreeSlots = makeSelect(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()...)
+		a.selectTag = makeSelect(contractSlotsFilterTag)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -241,12 +274,32 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 }
 
 func (a *ContractSlots) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(a.selectCorporation, a.selectFreeSlots, a.selectTag)
+	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		filter.Add(a.sortChip)
+		top = container.NewHBox(a.filterChip, a.sortChip)
+	} else {
+		top = container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectFreeSlots, a.selectTag))
 	}
-	c := container.NewBorder(container.NewHScroll(filter), a.footer, nil, nil, a.body)
+	c := container.NewBorder(top, a.footer, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *ContractSlots) currentFilter() contractSlotsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return contractSlotsFilter{
+			corporation: s[contractSlotsFilterCorporation],
+			freeSlots:   s[contractSlotsFilterFreeSlots],
+			tag:         s[contractSlotsFilterTag],
+		}
+	}
+	return contractSlotsFilter{
+		corporation: a.selectCorporation.Selected,
+		freeSlots:   a.selectFreeSlots.Selected,
+		tag:         a.selectTag.Selected,
+	}
 }
 
 func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRow], makeCell func(col int, r contractSlotRow) []widget.RichTextSegment) *widget.Table {
@@ -290,35 +343,14 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	corporation := a.selectCorporation.Selected
-	freeSlots := a.selectFreeSlots.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
 		rows := slices.Clone(rows)
-		// filter
-		if freeSlots != "" {
-			rows = slices.DeleteFunc(rows, func(r contractSlotRow) bool {
-				switch freeSlots {
-				case contractSlotsFreeSome:
-					return r.free == 0
-				case contractSlotsFreeNone:
-					return r.free > 0
-				}
-				return true
-			})
-		}
-		if x := corporation; x != "" {
-			rows = slices.DeleteFunc(rows, func(r contractSlotRow) bool {
-				return r.corporationName != x
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r contractSlotRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r contractSlotRow) bool {
+			return !filter.match(r)
+		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 
 		footer := fmt.Sprintf("Showing %d / %d characters", len(rows), totalRows)
@@ -351,8 +383,16 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCorporation.SetOptions(corporationOptions)
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterCorporation, corporationOptions),
+					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()),
+					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterTag, tagOptions),
+				)
+			} else {
+				a.selectCorporation.SetOptions(corporationOptions)
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})

@@ -30,6 +30,40 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Names of the contact filters, used as labels on desktop and as option names on mobile.
+const (
+	characterContactsFilterBlocked  = "Blocked"
+	characterContactsFilterCategory = "Category"
+	characterContactsFilterLabel    = "Label"
+	characterContactsFilterNPC      = "NPC"
+	characterContactsFilterStanding = "Standing"
+	characterContactsFilterWatched  = "Watched"
+)
+
+// characterContactsFilter is the selected value of each contact filter. Empty means not filtered.
+type characterContactsFilter struct {
+	blocked  string
+	category string
+	label    string
+	npc      string
+	standing string
+	watched  string
+}
+
+// match reports whether row r passes all filters.
+func (f characterContactsFilter) match(r characterContactRow) bool {
+	switch {
+	case f.blocked != "" && r.blockedSelect != f.blocked,
+		f.category != "" && r.category != f.category,
+		f.label != "" && !r.labels.Contains(f.label),
+		f.npc != "" && r.npcSelect != f.npc,
+		f.standing != "" && r.standingCategory.String() != f.standing,
+		f.watched != "" && r.watchedSelect != f.watched:
+		return false
+	}
+	return true
+}
+
 type characterContactRow struct {
 	blockedSelect    string
 	category         string
@@ -51,13 +85,14 @@ type CharacterContacts struct {
 
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[characterContactRow]
+	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
 	footer         *widget.Label
 	list           fyne.CanvasObject
 	rows           []characterContactRow
 	rowsFiltered   []characterContactRow
 	searchEntry    *xwidget.SearchEntry
-	selectBlocked  *kxwidget.FilterChipSelect
+	selectBlocked  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCategory *kxwidget.FilterChipSelect
 	selectLabel    *kxwidget.FilterChipSelect
 	selectNPC      *kxwidget.FilterChipSelect
@@ -91,7 +126,11 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 	a.ExtendBaseWidget(a)
 
 	// filters
-	a.searchEntry = xwidget.NewSearchEntry("Search contacts", func(s string) {
+	placeholder := "Search contacts"
+	if a.u.IsMobile() {
+		placeholder = "Search" // shares the row with the chips
+	}
+	a.searchEntry = xwidget.NewSearchEntry(placeholder, func(s string) {
 		if len(s) == 1 {
 			return
 		}
@@ -103,24 +142,25 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 			x.ScrollToTop()
 		}
 	})
-	a.selectBlocked = kxwidget.NewFilterChipSelect("Blocked", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectCategory = kxwidget.NewFilterChipSelect("Category", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectLabel = kxwidget.NewFilterChipSelectWithSearch("Label", []string{}, func(string) {
-		a.filterRowsAsync()
-	}, a.u.MainWindow())
-	a.selectNPC = kxwidget.NewFilterChipSelect("NPC", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectStanding = kxwidget.NewFilterChipSelect("Standing", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectWatched = kxwidget.NewFilterChipSelect("Watched", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync()
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync()
+			})
+		}
+		a.selectBlocked = makeSelect(characterContactsFilterBlocked)
+		a.selectCategory = makeSelect(characterContactsFilterCategory)
+		a.selectLabel = kxwidget.NewFilterChipSelectWithSearch(characterContactsFilterLabel, []string{}, func(string) {
+			a.filterRowsAsync()
+		}, a.u.MainWindow())
+		a.selectNPC = makeSelect(characterContactsFilterNPC)
+		a.selectStanding = makeSelect(characterContactsFilterStanding)
+		a.selectWatched = makeSelect(characterContactsFilterWatched)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
@@ -130,12 +170,18 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 		a.character.Store(c)
 		fyne.Do(func() {
 			a.searchEntry.ClearSilent()
-			a.selectBlocked.Selected = ""
-			a.selectCategory.Selected = ""
-			a.selectLabel.Selected = ""
-			a.selectNPC.Selected = ""
-			a.selectStanding.Selected = ""
-			a.selectWatched.Selected = ""
+			if a.filterChip != nil {
+				a.filterChip.ResetSilent()
+				return
+			}
+			clearSelectsSilent(
+				a.selectBlocked,
+				a.selectCategory,
+				a.selectLabel,
+				a.selectNPC,
+				a.selectStanding,
+				a.selectWatched,
+			)
 		})
 		a.update(ctx)
 	})
@@ -152,22 +198,19 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 }
 
 func (a *CharacterContacts) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectCategory,
-		a.selectStanding,
-		a.selectBlocked,
-		a.selectWatched,
-		a.selectLabel,
-		a.selectNPC,
-		a.sortChip,
-	)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(
-			container.NewHScroll(filter),
-			a.searchEntry,
-		)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
+		filter := container.NewHBox(
+			a.selectCategory,
+			a.selectStanding,
+			a.selectBlocked,
+			a.selectWatched,
+			a.selectLabel,
+			a.selectNPC,
+			a.sortChip,
+		)
 		topBox = container.NewBorder(
 			nil,
 			nil,
@@ -184,6 +227,30 @@ func (a *CharacterContacts) CreateRenderer() fyne.WidgetRenderer {
 		a.list,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *CharacterContacts) currentFilter() characterContactsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return characterContactsFilter{
+			blocked:  s[characterContactsFilterBlocked],
+			category: s[characterContactsFilterCategory],
+			label:    s[characterContactsFilterLabel],
+			npc:      s[characterContactsFilterNPC],
+			standing: s[characterContactsFilterStanding],
+			watched:  s[characterContactsFilterWatched],
+		}
+	}
+	return characterContactsFilter{
+		blocked:  a.selectBlocked.Selected,
+		category: a.selectCategory.Selected,
+		label:    a.selectLabel.Selected,
+		npc:      a.selectNPC.Selected,
+		standing: a.selectStanding.Selected,
+		watched:  a.selectWatched.Selected,
+	}
 }
 
 func (a *CharacterContacts) makeList() fyne.CanvasObject {
@@ -243,12 +310,7 @@ func (a *CharacterContacts) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	blocked := a.selectBlocked.Selected
-	category := a.selectCategory.Selected
-	label := a.selectLabel.Selected
-	npc := a.selectNPC.Selected
-	standing := a.selectStanding.Selected
-	watched := a.selectWatched.Selected
+	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
@@ -281,36 +343,9 @@ func (a *CharacterContacts) filterRowsAsync() {
 				break
 			}
 		}
-		if blocked != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.blockedSelect != blocked
-			})
-		}
-		if category != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.category != category
-			})
-		}
-		if label != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return !r.labels.Contains(label)
-			})
-		}
-		if npc != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.npcSelect != npc
-			})
-		}
-		if standing != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.standingCategory.String() != standing
-			})
-		}
-		if watched != "" {
-			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
-				return r.watchedSelect != watched
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
+			return !filter.match(r)
+		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterContactRow) bool {
 				return !strings.Contains(r.searchTarget, search)
@@ -350,31 +385,49 @@ func (a *CharacterContacts) filterRowsAsync() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectCategory.SetOptions(categoryOptions)
-			a.selectStanding.SetOptions(standingOptions)
-			if !hasLabels {
-				a.selectLabel.Disable()
+			if a.filterChip != nil {
+				// options without choices are shown as disabled
+				orNone := func(has bool, options []string) []string {
+					if !has {
+						return nil
+					}
+					return options
+				}
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(characterContactsFilterCategory, categoryOptions),
+					xwidget.NewFilterOptionMultiChoice(characterContactsFilterStanding, standingOptions),
+					xwidget.NewFilterOptionMultiChoice(characterContactsFilterBlocked, orNone(hasBlocked, blockedOptions)),
+					xwidget.NewFilterOptionMultiChoice(characterContactsFilterWatched, orNone(hasWatched, watchedOptions)),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(characterContactsFilterLabel, orNone(hasLabels, labelOptions)),
+					xwidget.NewFilterOptionMultiChoice(characterContactsFilterNPC, orNone(hasNPC, npcOptions)),
+				)
 			} else {
-				a.selectLabel.Enable()
-				a.selectLabel.SetOptions(labelOptions)
-			}
-			if !hasBlocked {
-				a.selectBlocked.Disable()
-			} else {
-				a.selectBlocked.Enable()
-				a.selectBlocked.SetOptions(blockedOptions)
-			}
-			if !hasNPC {
-				a.selectNPC.Disable()
-			} else {
-				a.selectNPC.Enable()
-				a.selectNPC.SetOptions(npcOptions)
-			}
-			if !hasWatched {
-				a.selectWatched.Disable()
-			} else {
-				a.selectWatched.Enable()
-				a.selectWatched.SetOptions(watchedOptions)
+				a.selectCategory.SetOptions(categoryOptions)
+				a.selectStanding.SetOptions(standingOptions)
+				if !hasLabels {
+					a.selectLabel.Disable()
+				} else {
+					a.selectLabel.Enable()
+					a.selectLabel.SetOptions(labelOptions)
+				}
+				if !hasBlocked {
+					a.selectBlocked.Disable()
+				} else {
+					a.selectBlocked.Enable()
+					a.selectBlocked.SetOptions(blockedOptions)
+				}
+				if !hasNPC {
+					a.selectNPC.Disable()
+				} else {
+					a.selectNPC.Enable()
+					a.selectNPC.SetOptions(npcOptions)
+				}
+				if !hasWatched {
+					a.selectWatched.Disable()
+				} else {
+					a.selectWatched.Enable()
+					a.selectWatched.SetOptions(watchedOptions)
+				}
 			}
 			a.rowsFiltered = rows
 			a.list.Refresh()

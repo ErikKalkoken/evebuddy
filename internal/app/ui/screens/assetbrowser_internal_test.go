@@ -1,13 +1,22 @@
 package screens
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
+
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -669,4 +678,614 @@ func allPaths(td *xwidget.TreeData[containerNode]) [][]string {
 	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
 	})
+}
+
+func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newBrowser := func(t *testing.T) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.Navigation.setFooter("Waiting for data to be loaded...", widget.WarningImportance)
+		return a
+	}
+	t.Run("should not crash when searching", func(t *testing.T) {
+		a := newBrowser(t)
+
+		a.Navigation.searchEntry.SetText("jita")
+
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+	})
+	t.Run("should not crash when changing category", func(t *testing.T) {
+		a := newBrowser(t)
+
+		a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
+
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+	})
+}
+
+func TestAssetBrowser_FilterCategory(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		alphaID   = 60000001
+		charlieID = 60000002
+	)
+	item := createCharacterAsset(assetParams{
+		Quantity:   1,
+		LocationID: alphaID,
+	})
+	safetyWrap := createCharacterAsset(assetParams{
+		IsSingleton:  true,
+		Quantity:     1,
+		LocationID:   charlieID,
+		LocationFlag: app.FlagAssetSafety,
+		LocationType: app.TypeStation,
+		Type:         assetSafetyWrapType(),
+	})
+	safetyItem := createCharacterAsset(assetParams{
+		Quantity:   1,
+		LocationID: safetyWrap.ItemID,
+	})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}, {ID: charlieID, Name: "Charlie"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{item, safetyWrap, safetyItem}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("shows all locations by default mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			assert.False(t, a.Navigation.filterChip.IsOn())
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can filter by category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categorySafety})
+			assert.ElementsMatch(t, []string{"Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps search when category changes mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.searchEntry.SetText("alpha")
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryPersonal})
+			assert.Equal(t, "alpha", a.Navigation.searchEntry.Text)
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+	}
+}
+
+func TestLocationsWithDockedShips(t *testing.T) {
+	const (
+		alphaID   = 60000001
+		bravoID   = 30000001
+		charlieID = 60000002
+		deltaID   = 60000003
+	)
+	locations := []*app.EveLocation{
+		{ID: alphaID, Name: "Alpha"},
+		{ID: bravoID, Name: "Bravo"},
+		{ID: charlieID, Name: "Charlie"},
+		{ID: deltaID, Name: "Delta"},
+	}
+	names := func(s set.Set[*containerNode]) []string {
+		var names []string
+		for n := range s.All() {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	t.Run("character", func(t *testing.T) {
+		assembledShip := createCharacterAsset(assetParams{
+			IsSingleton: true,
+			LocationID:  alphaID,
+			Type:        shipType(),
+		})
+		deliveryItem := createCharacterAsset(assetParams{
+			LocationID:   alphaID,
+			LocationFlag: app.FlagCapsuleerDeliveries,
+			LocationType: app.TypeStation,
+		})
+		shipInSpace := createCharacterAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   bravoID,
+			LocationType: app.TypeSolarSystem,
+			Type:         shipType(),
+		})
+		packagedShip := createCharacterAsset(assetParams{
+			LocationID: charlieID,
+			Type:       shipType(),
+		})
+		safetyWrap := createCharacterAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   deltaID,
+			LocationFlag: app.FlagAssetSafety,
+			LocationType: app.TypeStation,
+			Type:         assetSafetyWrapType(),
+		})
+		shipInSafety := createCharacterAsset(assetParams{
+			IsSingleton: true,
+			LocationID:  safetyWrap.ItemID,
+			Type:        shipType(),
+		})
+		ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{
+			assembledShip, deliveryItem, shipInSpace, packagedShip, safetyWrap, shipInSafety,
+		}, locations)
+
+		for _, tc := range []struct {
+			filter assetFilter
+			want   []string
+		}{
+			{assetNoFilter, []string{"Alpha"}},
+			{assetPersonalAssets, []string{"Alpha"}},
+			{assetDeliveries, nil},
+			{assetInSpace, nil},
+			{assetSafety, nil},
+		} {
+			td := generateTreeData(ac.Locations(), tc.filter, false)
+			assert.ElementsMatch(t, tc.want, names(locationsWithDockedShips(td)), "filter %d", tc.filter)
+		}
+	})
+	t.Run("corporation", func(t *testing.T) {
+		office := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   alphaID,
+			LocationFlag: app.FlagOfficeFolder,
+			LocationType: app.TypeStation,
+			Type:         officeType(),
+		})
+		shipInOffice := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   office.ItemID,
+			LocationFlag: app.FlagCorpSAG1,
+			Type:         shipType(),
+		})
+		impounded := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   charlieID,
+			LocationFlag: app.FlagImpounded,
+			LocationType: app.TypeStation,
+			Type:         officeType(),
+		})
+		shipImpounded := createCorporationAsset(assetParams{
+			IsSingleton:  true,
+			LocationID:   impounded.ItemID,
+			LocationFlag: app.FlagCorpSAG1,
+			Type:         shipType(),
+		})
+		ac := asset.NewFromCorporationAssets([]*app.CorporationAsset{
+			office, shipInOffice, impounded, shipImpounded,
+		}, locations)
+
+		for _, tc := range []struct {
+			filter assetFilter
+			want   []string
+		}{
+			{assetNoFilter, []string{"Alpha"}},
+			{assetOffice, []string{"Alpha"}},
+			{assetImpounded, nil},
+		} {
+			td := generateTreeData(ac.Locations(), tc.filter, true)
+			assert.ElementsMatch(t, tc.want, names(locationsWithDockedShips(td)), "filter %d", tc.filter)
+		}
+	})
+}
+
+func TestAssetBrowser_FilterHasShips(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		alphaID   = 60000001
+		charlieID = 60000002
+	)
+	ship := createCharacterAsset(assetParams{
+		IsSingleton: true,
+		LocationID:  alphaID,
+		Type:        shipType(),
+	})
+	item := createCharacterAsset(assetParams{
+		LocationID: charlieID,
+	})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}, {ID: charlieID, Name: "Charlie"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{ship, item}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can filter locations with ships mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterHasShips: assetBrowserFilterHasShips,
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with search mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			a.Navigation.searchEntry.SetText("charlie")
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("shows all locations again when turned off mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: assetBrowserFilterHasShips})
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterHasShips: ""})
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
+		})
+	}
+}
+
+func TestLocationSecurityBand(t *testing.T) {
+	system := func(id int64, security float32) optional.Optional[*app.EveSolarSystem] {
+		return optional.New(&app.EveSolarSystem{ID: id, Name: fmt.Sprintf("System %d", id), SecurityStatus: security})
+	}
+	cases := []struct {
+		name   string
+		system optional.Optional[*app.EveSolarSystem]
+		want   string
+	}{
+		{"1.0", system(30000001, 1.0), securityHighSec},
+		{"0.5", system(30000002, 0.5), securityHighSec},
+		{"0.45", system(30000003, 0.45), securityHighSec},
+		{"0.4", system(30000004, 0.4), securityLowSec},
+		{"0.1", system(30000005, 0.1), securityLowSec},
+		{"0.0", system(30000006, 0.0), securityNullSec},
+		{"-0.5", system(30000007, -0.5), securityNullSec},
+		{"wormhole", system(31000001, -1.0), securityWormhole},
+		{"unknown", optional.Optional[*app.EveSolarSystem]{}, ""},
+	}
+	var locations []*app.EveLocation
+	var assets []*app.CharacterAsset
+	for i, tc := range cases {
+		id := int64(60000001 + i)
+		locations = append(locations, &app.EveLocation{ID: id, Name: tc.name, SolarSystem: tc.system})
+		assets = append(assets, createCharacterAsset(assetParams{LocationID: id}))
+	}
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	td := generateTreeData(ac.Locations(), assetNoFilter, false)
+	got := make(map[string]string)
+	for _, n := range td.Children(nil) {
+		got[n.String()] = locationSecurityBand(n)
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := got[tc.name]
+			require.True(t, ok)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
+func TestAssetBrowser_FilterSecurity(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		alphaID   = 60000001
+		bravoID   = 60000002
+		charlieID = 60000003
+		deltaID   = 60000004
+	)
+	locations := []*app.EveLocation{
+		{ID: alphaID, Name: "Alpha", SolarSystem: optional.New(&app.EveSolarSystem{ID: 30000001, SecurityStatus: 0.9})},
+		{ID: bravoID, Name: "Bravo", SolarSystem: optional.New(&app.EveSolarSystem{ID: 30000002, SecurityStatus: 0.3})},
+		{ID: charlieID, Name: "Charlie", SolarSystem: optional.New(&app.EveSolarSystem{ID: 31000001, SecurityStatus: -1.0})},
+		{ID: deltaID, Name: "Delta"},
+	}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{
+		createCharacterAsset(assetParams{LocationID: alphaID}),
+		createCharacterAsset(assetParams{IsSingleton: true, LocationID: alphaID, Type: shipType()}),
+		createCharacterAsset(assetParams{LocationID: bravoID}),
+		createCharacterAsset(assetParams{LocationID: charlieID}),
+		createCharacterAsset(assetParams{LocationID: deltaID}),
+	}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("shows all locations without security filter mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			assert.ElementsMatch(t, []string{"Alpha", "Bravo", "Charlie", "Delta"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can filter by security band mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterSecurity: securityWormhole})
+			assert.ElementsMatch(t, []string{"Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with has ships mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterSecurity: securityHighSec,
+				assetBrowserFilterHasShips: assetBrowserFilterHasShips,
+			})
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterSecurity: securityLowSec,
+				assetBrowserFilterHasShips: assetBrowserFilterHasShips,
+			})
+			assert.Empty(t, topLocations(a))
+		})
+	}
+}
+
+func TestLocationRegion(t *testing.T) {
+	region := &app.EveRegion{ID: 10000002, Name: "The Forge"}
+	cases := []struct {
+		name   string
+		system optional.Optional[*app.EveSolarSystem]
+		want   string
+	}{
+		{"known region", optional.New(&app.EveSolarSystem{ID: 30000142, Constellation: &app.EveConstellation{Region: region}}), "The Forge"},
+		{"no solar system", optional.Optional[*app.EveSolarSystem]{}, ""},
+		{"no constellation", optional.New(&app.EveSolarSystem{ID: 30000143}), ""},
+		{"no region", optional.New(&app.EveSolarSystem{ID: 30000144, Constellation: &app.EveConstellation{}}), ""},
+	}
+	var locations []*app.EveLocation
+	var assets []*app.CharacterAsset
+	for i, tc := range cases {
+		id := int64(60000001 + i)
+		locations = append(locations, &app.EveLocation{ID: id, Name: tc.name, SolarSystem: tc.system})
+		assets = append(assets, createCharacterAsset(assetParams{LocationID: id}))
+	}
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	td := generateTreeData(ac.Locations(), assetNoFilter, false)
+	got := make(map[string]string)
+	for _, n := range td.Children(nil) {
+		got[n.String()] = locationRegion(n)
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := got[tc.name]
+			require.True(t, ok)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
+// regionTestLocations returns assets and locations in two regions plus one location with an unknown region.
+// Bravo in Domain only has assets in asset safety.
+func regionTestLocations() ([]*app.CharacterAsset, []*app.EveLocation) {
+	const (
+		alphaID   = 60000001
+		bravoID   = 60000002
+		charlieID = 60000003
+		deltaID   = 60000004
+	)
+	system := func(id int64, region *app.EveRegion) optional.Optional[*app.EveSolarSystem] {
+		return optional.New(&app.EveSolarSystem{ID: id, Constellation: &app.EveConstellation{Region: region}})
+	}
+	forge := &app.EveRegion{ID: 10000002, Name: "The Forge"}
+	domain := &app.EveRegion{ID: 10000043, Name: "Domain"}
+	locations := []*app.EveLocation{
+		{ID: alphaID, Name: "Alpha", SolarSystem: system(30000001, forge)},
+		{ID: bravoID, Name: "Bravo", SolarSystem: system(30000002, domain)},
+		{ID: charlieID, Name: "Charlie", SolarSystem: system(30000003, forge)},
+		{ID: deltaID, Name: "Delta"},
+	}
+	safetyWrap := createCharacterAsset(assetParams{
+		IsSingleton:  true,
+		LocationID:   bravoID,
+		LocationFlag: app.FlagAssetSafety,
+		LocationType: app.TypeStation,
+		Type:         assetSafetyWrapType(),
+	})
+	assets := []*app.CharacterAsset{
+		createCharacterAsset(assetParams{LocationID: alphaID}),
+		safetyWrap,
+		createCharacterAsset(assetParams{LocationID: safetyWrap.ItemID}),
+		createCharacterAsset(assetParams{LocationID: charlieID}),
+		createCharacterAsset(assetParams{LocationID: deltaID}),
+	}
+	return assets, locations
+}
+
+func TestLocationRegions(t *testing.T) {
+	assets, locations := regionTestLocations()
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	t.Run("returns known regions of all locations", func(t *testing.T) {
+		td := generateTreeData(ac.Locations(), assetNoFilter, false)
+		assert.ElementsMatch(t, []string{"Domain", "The Forge"}, locationRegions(td))
+	})
+	t.Run("returns only regions of locations in category", func(t *testing.T) {
+		td := generateTreeData(ac.Locations(), assetSafety, false)
+		assert.ElementsMatch(t, []string{"Domain"}, locationRegions(td))
+	})
+}
+
+func TestAssetBrowser_FilterRegion(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	assets, locations := regionTestLocations()
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can filter by region mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can combine with category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterRegion:   "Domain",
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.ElementsMatch(t, []string{"Bravo"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps region when category has no locations in it mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterRegion:   "The Forge",
+				assetBrowserFilterCategory: categorySafety,
+			})
+			assert.Equal(t, "The Forge", a.Navigation.filterChip.Selected()[assetBrowserFilterRegion])
+			assert.Empty(t, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps selected region when filtering mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterRegion: "The Forge"})
+			a.Navigation.searchEntry.SetText("alpha")
+			assert.Equal(t, "The Forge", a.Navigation.filterChip.Selected()[assetBrowserFilterRegion])
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+	}
+}
+
+func TestLocationType(t *testing.T) {
+	cases := []struct {
+		name string
+		id   int64
+		want string
+	}{
+		{"station", 60003760, locationTypeStation},
+		{"structure", 1035466617946, locationTypeStructure},
+		{"solar system", 30000142, ""},
+		{"asset safety", 2004, ""},
+		{"unknown", app.UnknownLocationID, ""},
+	}
+	var locations []*app.EveLocation
+	var assets []*app.CharacterAsset
+	for _, tc := range cases {
+		locations = append(locations, &app.EveLocation{ID: tc.id, Name: tc.name})
+		assets = append(assets, createCharacterAsset(assetParams{LocationID: tc.id}))
+	}
+	ac := asset.NewFromCharacterAssets(assets, locations)
+	td := generateTreeData(ac.Locations(), assetNoFilter, false)
+	got := make(map[string]string)
+	for _, n := range td.Children(nil) {
+		got[n.String()] = locationType(n)
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := got[tc.name]
+			require.True(t, ok)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
+func TestAssetBrowser_FilterLocationType(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		stationID   = 60000001
+		structureID = 1000000000001
+		systemID    = 30000001
+	)
+	locations := []*app.EveLocation{
+		{ID: stationID, Name: "Station"},
+		{ID: structureID, Name: "Structure"},
+		{ID: systemID, Name: "System"},
+		{ID: app.UnknownLocationID, Name: "Unknown"},
+	}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{
+		createCharacterAsset(assetParams{LocationID: stationID}),
+		createCharacterAsset(assetParams{IsSingleton: true, LocationID: stationID, Type: shipType()}),
+		createCharacterAsset(assetParams{LocationID: structureID}),
+		createCharacterAsset(assetParams{IsSingleton: true, LocationID: systemID, LocationType: app.TypeSolarSystem, Type: customsOfficeType()}),
+		createCharacterAsset(assetParams{LocationID: app.UnknownLocationID}),
+	}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("shows all locations without location type mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			assert.ElementsMatch(t, []string{"Station", "Structure", "System", "Unknown"}, topLocations(a))
+		})
+		for _, tc := range []struct {
+			choice string
+			want   string
+		}{
+			{locationTypeStation, "Station"},
+			{locationTypeStructure, "Structure"},
+		} {
+			t.Run(fmt.Sprintf("can filter %s mobile=%v", tc.choice, isMobile), func(t *testing.T) {
+				a := newBrowser(t, isMobile)
+				a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterLocationType: tc.choice})
+				assert.ElementsMatch(t, []string{tc.want}, topLocations(a))
+			})
+		}
+		t.Run(fmt.Sprintf("can combine with has ships mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{
+				assetBrowserFilterLocationType: locationTypeStructure,
+				assetBrowserFilterHasShips:     assetBrowserFilterHasShips,
+			})
+			assert.Empty(t, topLocations(a))
+		})
+	}
 }

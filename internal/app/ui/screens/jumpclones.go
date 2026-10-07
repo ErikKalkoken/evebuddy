@@ -14,13 +14,43 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
+
+// Names of the jump clone filters, used as labels on desktop and as option names on mobile.
+const (
+	jumpClonesFilterCharacter = "Character"
+	jumpClonesFilterRegion    = "Region"
+	jumpClonesFilterSystem    = "System"
+	jumpClonesFilterTag       = "Tag"
+)
+
+// jumpClonesFilter is the selected value of each jump clone filter. Empty means not filtered.
+type jumpClonesFilter struct {
+	character   string
+	region      string
+	solarSystem string
+	tag         string
+}
+
+// match reports whether row r passes all filters.
+func (f jumpClonesFilter) match(r jumpCloneRow) bool {
+	switch {
+	case f.character != "" && r.jc.Character.Name != f.character,
+		f.region != "" && r.jc.Location.RegionName() != f.region,
+		f.solarSystem != "" && r.jc.Location.SolarSystemName() != f.solarSystem,
+		f.tag != "" && !r.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
 
 type jumpCloneRow struct {
 	jc    *app.CharacterJumpClone2
@@ -56,17 +86,19 @@ type JumpClones struct {
 	widget.BaseWidget
 
 	body              fyne.CanvasObject
+	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
-	changeOrigin      *widget.Button
+	changeOrigin      *ttwidget.Button
 	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
 	origin            *app.EveSolarSystem
-	originLabel       *xwidget.RichText
+	originLabel       *widget.Label
+	originSecurity    *xwidget.RichText
 	routeCancel       context.CancelFunc
 	routePref         app.EveRoutePreference
 	rows              []jumpCloneRow
 	rowsFiltered      []jumpCloneRow
-	selectCharacter   *kxwidget.FilterChipSelect
+	selectCharacter   *kxwidget.FilterChipSelect // select chips only on desktop
 	selectRegion      *kxwidget.FilterChipSelect
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
@@ -128,16 +160,18 @@ func NewJumpClones(u baseUI) *JumpClones {
 		},
 	}})
 	a := &JumpClones{
-		columnSorter: xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
-		originLabel:  xwidget.NewRichTextWithText("(not set)"),
-		footer:       ui.NewLabelWithTruncation(""),
-		u:            u,
+		columnSorter:   xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
+		originLabel:    ui.NewLabelWithTruncation("(not set)"),
+		originSecurity: xwidget.NewRichText(),
+		footer:         ui.NewLabelWithTruncation(""),
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.originLabel.Truncation = fyne.TextTruncateClip
-	a.changeOrigin = widget.NewButton("Origin", func() {
+	a.originSecurity.Hide()
+	a.changeOrigin = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.MapMarkerSvg), func() {
 		a.setOrigin(a.u.MainWindow())
 	})
+	a.changeOrigin.SetToolTip("Change origin")
 	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
@@ -179,20 +213,26 @@ func NewJumpClones(u baseUI) *JumpClones {
 		)
 	}
 
-	a.selectRegion = kxwidget.NewFilterChipSelectWithSearch("Region", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-
-	a.selectSolarSystem = kxwidget.NewFilterChipSelectWithSearch("System", []string{}, func(string) {
-		a.filterRowsAsync("")
-	}, a.u.MainWindow())
-
-	a.selectCharacter = kxwidget.NewFilterChipSelect("Character", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync("")
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync("")
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			})
+		}
+		makeSelectWithSearch := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelectWithSearch(label, []string{}, func(string) {
+				a.filterRowsAsync("")
+			}, a.u.MainWindow())
+		}
+		a.selectRegion = makeSelectWithSearch(jumpClonesFilterRegion)
+		a.selectSolarSystem = makeSelectWithSearch(jumpClonesFilterSystem)
+		a.selectCharacter = makeSelect(jumpClonesFilterCharacter)
+		a.selectTag = makeSelect(jumpClonesFilterTag)
+	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -220,26 +260,24 @@ func NewJumpClones(u baseUI) *JumpClones {
 }
 
 func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
-	origin := container.NewBorder(
-		nil,
-		nil,
-		a.changeOrigin,
-		nil,
-		a.originLabel,
-	)
-	filters := container.NewHBox(
-		a.selectRegion,
-		a.selectSolarSystem,
-		a.selectCharacter,
-		a.selectTag,
-	)
-	if a.u.IsMobile() {
-		filters.Add(a.sortChip)
-	}
+	originText := container.New(originTextLayout{}, a.originSecurity, a.originLabel)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(origin, container.NewHScroll(filters))
+		topBox = container.NewBorder(nil, nil, a.changeOrigin, container.NewHBox(a.filterChip, a.sortChip), originText)
 	} else {
+		origin := container.NewBorder(
+			nil,
+			nil,
+			a.changeOrigin,
+			nil,
+			originText,
+		)
+		filters := container.NewHBox(
+			a.selectRegion,
+			a.selectSolarSystem,
+			a.selectCharacter,
+			a.selectTag,
+		)
 		topBox = container.New(xlayout.NewColumnsByRatio(0.60), container.NewHScroll(filters), origin)
 	}
 	c := container.NewBorder(
@@ -252,38 +290,37 @@ func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *JumpClones) currentFilter() jumpClonesFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return jumpClonesFilter{
+			character:   s[jumpClonesFilterCharacter],
+			region:      s[jumpClonesFilterRegion],
+			solarSystem: s[jumpClonesFilterSystem],
+			tag:         s[jumpClonesFilterTag],
+		}
+	}
+	return jumpClonesFilter{
+		character:   a.selectCharacter.Selected,
+		region:      a.selectRegion.Selected,
+		solarSystem: a.selectSolarSystem.Selected,
+		tag:         a.selectTag.Selected,
+	}
+}
+
 func (a *JumpClones) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
-	character := a.selectCharacter.Selected
-	region := a.selectRegion.Selected
-	solarSystem := a.selectSolarSystem.Selected
-	tag := a.selectTag.Selected
+	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
 	runAsync(func() {
-		// filter
-		if character != "" {
-			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
-				return r.jc.Character.Name != character
-			})
-		}
-		if region != "" {
-			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
-				return r.jc.Location.RegionName() != region
-			})
-		}
-		if solarSystem != "" {
-			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
-				return r.jc.Location.SolarSystemName() != solarSystem
-			})
-		}
-		if tag != "" {
-			rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
-				return !r.tags.Contains(tag)
-			})
-		}
+		rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
+			return !filter.match(r)
+		})
 		a.columnSorter.SortRows(rows, sortCol, dir, doSort)
 		// set data & refresh
 		tagOptions := slices.Sorted(set.Union(xslices.Map(rows, func(r jumpCloneRow) set.Set[string] {
@@ -308,10 +345,19 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
-			a.selectCharacter.SetOptions(characterOptions)
-			a.selectRegion.SetOptions(regionOptions)
-			a.selectSolarSystem.SetOptions(solarSystemOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoiceWithSearch(jumpClonesFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(jumpClonesFilterSystem, solarSystemOptions),
+					xwidget.NewFilterOptionMultiChoice(jumpClonesFilterCharacter, characterOptions),
+					xwidget.NewFilterOptionMultiChoice(jumpClonesFilterTag, tagOptions),
+				)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+				a.selectCharacter.SetOptions(characterOptions)
+				a.selectRegion.SetOptions(regionOptions)
+				a.selectSolarSystem.SetOptions(solarSystemOptions)
+			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
 		})
@@ -397,10 +443,10 @@ func (a *JumpClones) updateRoutesAsync() {
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
-				s := "Failed to fetch routes: " + a.u.ErrorDisplay(err)
-				a.originLabel.Set(xwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
-					ColorName: theme.ColorNameError,
-				}))
+				a.originSecurity.Hide()
+				a.originLabel.Text = "Failed to fetch routes: " + a.u.ErrorDisplay(err)
+				a.originLabel.Importance = widget.DangerImportance
+				a.originLabel.Refresh()
 			})
 			return
 		}
@@ -464,10 +510,11 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 			fyne.Do(func() {
 				a.origin = s
 				a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-				a.originLabel.Set(xwidget.InlineRichTextSegments(
-					s.DisplayRichTextWithRegion(),
-					xwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-				))
+				a.originSecurity.Set(s.SecurityStatusRichText())
+				a.originSecurity.Show()
+				a.originLabel.Text = fmt.Sprintf("  %s [%s]", s.Name, a.routePref.String())
+				a.originLabel.Importance = widget.MediumImportance
+				a.originLabel.Refresh()
 				a.updateRoutesAsync()
 				d.Hide()
 			})
@@ -533,4 +580,33 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 	}
 	d.Show()
 	w.Canvas().Focus(entry)
+}
+
+// originTextLayout places the security status and the origin label so they read as one text,
+// while only the label is truncated.
+type originTextLayout struct{}
+
+// overlap returns how far the label is moved over the security status,
+// so the inner paddings between them don't add extra space.
+func (originTextLayout) overlap(objects []fyne.CanvasObject) float32 {
+	if !objects[0].Visible() {
+		return 0
+	}
+	return objects[0].MinSize().Width - 2*theme.Size(theme.SizeNameInnerPadding)
+}
+
+func (l originTextLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	security, label := objects[0], objects[1]
+	x := l.overlap(objects)
+	if security.Visible() {
+		security.Move(fyne.NewPos(0, 0))
+		security.Resize(fyne.NewSize(security.MinSize().Width, size.Height))
+	}
+	label.Move(fyne.NewPos(x, 0))
+	label.Resize(fyne.NewSize(size.Width-x, size.Height))
+}
+
+func (l originTextLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	security, label := objects[0].MinSize(), objects[1].MinSize()
+	return fyne.NewSize(l.overlap(objects)+label.Width, max(security.Height, label.Height))
 }
