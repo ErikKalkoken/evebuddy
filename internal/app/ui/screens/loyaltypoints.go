@@ -177,13 +177,9 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 			container.NewBorder(nil, nil, nil, container.NewHBox(a.collapseBranches, a.filterChip, a.sortChip), a.searchEntry),
 		)
 	} else {
-		filter := container.NewHScroll(container.NewHBox(
-			a.selectFaction,
-			a.selectCharacter,
-			a.selectTag,
-			a.sortChip,
-		))
-		top = container.NewVBox(a.top, filter, container.NewBorder(nil, nil, nil, a.collapseBranches, a.searchEntry))
+		leading := container.NewHBox(a.selectFaction, a.selectCharacter, a.selectTag)
+		trailing := container.NewHBox(a.sortChip, a.collapseBranches)
+		top = container.NewBorder(nil, nil, leading, trailing, a.searchEntry)
 	}
 	c := container.NewBorder(
 		top,
