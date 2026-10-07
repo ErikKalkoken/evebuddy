@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
@@ -88,19 +89,23 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			u := newUI(t, isMobile)
 			a := NewSkillCatalogue(u)
 			a.searchEntry.SetText("gun")
-			a.selectMain.SetSelected(skillCatalogueMySkill)
 			if isMobile {
-				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(skillCatalogueFilterGroup, []string{"Gunnery"}))
-				a.filterChip.SetSelected(map[string]string{skillCatalogueFilterGroup: "Gunnery"})
+				a.filterChip.SetOptions(a.filterOptions([]string{"Gunnery"})...)
+				a.filterChip.SetSelected(map[string]string{
+					skillCatalogueFilterGroup:    "Gunnery",
+					skillCatalogueFilterTraining: skillCatalogueTrained,
+				})
 			} else {
+				a.selectTraining.SetSelected(skillCatalogueTrained)
 				a.selectGroup.SetOptions([]string{"Gunnery"})
 				a.selectGroup.SetSelected("Gunnery")
 			}
+			require.Equal(t, skillCatalogueFilter{group: "Gunnery", training: skillCatalogueTrained}, a.currentFilter())
 
 			switchCharacter(t, u)
 
 			assert.Empty(t, a.searchEntry.Text)
-			assert.Equal(t, skillCatalogueFilter{main: skillCatalogueAllSkill}, a.currentFilter())
+			assert.Equal(t, skillCatalogueFilter{}, a.currentFilter())
 		})
 		t.Run(fmt.Sprintf("asset browser of character mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)

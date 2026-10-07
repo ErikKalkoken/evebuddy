@@ -86,18 +86,17 @@ func TestSkillCatalogueFilter_Match(t *testing.T) {
 		want   bool
 	}{
 		{"no filter", skillCatalogueFilter{}, untrained, true},
-		{"all skills", skillCatalogueFilter{main: skillCatalogueAllSkill}, untrained, true},
 		{"group matches", skillCatalogueFilter{group: "Gunnery"}, trained, true},
 		{"group differs", skillCatalogueFilter{group: "Navigation"}, trained, false},
-		{"my skills matches", skillCatalogueFilter{main: skillCatalogueMySkill}, trained, true},
-		{"my skills but untrained", skillCatalogueFilter{main: skillCatalogueMySkill}, untrained, false},
-		{"have prerequisites matches", skillCatalogueFilter{main: skillCatalogueHavePrerequisites}, untrained, true},
-		{"have prerequisites but maxed", skillCatalogueFilter{main: skillCatalogueHavePrerequisites}, maxed, false},
-		{"queued matches", skillCatalogueFilter{main: skillCatalogueQueued}, queued, true},
-		{"queued but not queued", skillCatalogueFilter{main: skillCatalogueQueued}, trained, false},
-		{"fully trained matches", skillCatalogueFilter{main: skillCatalogueFullyTrained}, maxed, true},
-		{"fully trained but not", skillCatalogueFilter{main: skillCatalogueFullyTrained}, trained, false},
-		{"mode and group combined", skillCatalogueFilter{group: "Navigation", main: skillCatalogueMySkill}, trained, false},
+		{"trained matches", skillCatalogueFilter{training: skillCatalogueTrained}, trained, true},
+		{"trained but untrained", skillCatalogueFilter{training: skillCatalogueTrained}, untrained, false},
+		{"have prerequisites matches", skillCatalogueFilter{training: skillCatalogueHavePrerequisites}, untrained, true},
+		{"have prerequisites but maxed", skillCatalogueFilter{training: skillCatalogueHavePrerequisites}, maxed, false},
+		{"queued matches", skillCatalogueFilter{training: skillCatalogueQueued}, queued, true},
+		{"queued but not queued", skillCatalogueFilter{training: skillCatalogueQueued}, trained, false},
+		{"fully trained matches", skillCatalogueFilter{training: skillCatalogueFullyTrained}, maxed, true},
+		{"fully trained but not", skillCatalogueFilter{training: skillCatalogueFullyTrained}, trained, false},
+		{"training and group combined", skillCatalogueFilter{group: "Navigation", training: skillCatalogueTrained}, trained, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, tc.filter.match(tc.row))
@@ -138,9 +137,14 @@ func TestSkillCatalogue_Filter(t *testing.T) {
 		a.selectGroup.SetSelected("Navigation")
 		assert.ElementsMatch(t, []int64{2}, typeIDs(a))
 	})
-	t.Run("can switch mode on mobile", func(t *testing.T) {
+	t.Run("can filter training on mobile", func(t *testing.T) {
 		a := newCatalogue(t, true)
-		a.selectMain.SetSelected(skillCatalogueMySkill)
+		a.filterChip.SetSelected(map[string]string{skillCatalogueFilterTraining: skillCatalogueTrained})
+		assert.ElementsMatch(t, []int64{1}, typeIDs(a))
+	})
+	t.Run("can filter training on desktop", func(t *testing.T) {
+		a := newCatalogue(t, false)
+		a.selectTraining.SetSelected(skillCatalogueTrained)
 		assert.ElementsMatch(t, []int64{1}, typeIDs(a))
 	})
 	t.Run("can search on mobile", func(t *testing.T) {
