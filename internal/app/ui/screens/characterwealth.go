@@ -67,6 +67,13 @@ func (r characterWealthRow) chartName() string {
 	return xstrings.TruncateWithSuffix(r.characterName, wealthNameTruncationLimit, wealthNameTruncationSuffix)
 }
 
+// Names of the character wealth filters, used as labels on desktop and as option names on mobile.
+const (
+	characterWealthFilterAlliance    = "Alliance"
+	characterWealthFilterCorporation = "Corporation"
+	characterWealthFilterTag         = "Tag"
+)
+
 // filterWealthRows returns the rows matching all non-empty filter values.
 func filterWealthRows(rows []characterWealthRow, tag, corporation, alliance string) []characterWealthRow {
 	return slices.DeleteFunc(slices.Clone(rows), func(r characterWealthRow) bool {
@@ -117,12 +124,13 @@ type CharacterWealth struct {
 	characterSplitChart          *fyneline.ArcChart[namedValue]
 	characterSplitTitleLabel     *widget.Label
 	details                      *characterWealthDetails
+	filterChip                   *xwidget.FilterChipCompact // only on mobile
 	filterRun                    latestRun
 	footer                       *widget.Label
 	overviewEmpty                *widget.Label
 	overviewGrid                 *fyne.Container
 	rows                         []characterWealthRow
-	selectAlliance               *kxwidget.FilterChipSelect
+	selectAlliance               *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCorporation            *kxwidget.FilterChipSelect
 	selectTag                    *kxwidget.FilterChipSelect
 	showHelp                     *xwidget.IconButton
@@ -196,15 +204,20 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 	a.overviewEmpty = newEmptyLabel()
 	a.breakdownEmpty = newEmptyLabel()
 
-	a.selectAlliance = kxwidget.NewFilterChipSelect("Alliance", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectCorporation = kxwidget.NewFilterChipSelect("Corporation", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterRowsAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterRowsAsync()
+		})
+	} else {
+		makeSelect := func(label string) *kxwidget.FilterChipSelect {
+			return kxwidget.NewFilterChipSelect(label, []string{}, func(string) {
+				a.filterRowsAsync()
+			})
+		}
+		a.selectAlliance = makeSelect(characterWealthFilterAlliance)
+		a.selectCorporation = makeSelect(characterWealthFilterCorporation)
+		a.selectTag = makeSelect(characterWealthFilterTag)
+	}
 
 	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
 		showHelpPopUp(characterWealthHelpText, a.u.IsMobile(), a.showHelp)
@@ -253,12 +266,12 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 		),
 		container.NewTabItem("Details", a.details),
 	)
-	filterBar := container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
 	var top fyne.CanvasObject
 	if !a.u.IsMobile() {
+		filterBar := container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
 		top = container.NewVBox(a.topLabel, filterBar)
 	} else {
-		top = filterBar
+		top = container.NewHBox(a.filterChip)
 	}
 	c := container.NewBorder(
 		top,
@@ -308,14 +321,22 @@ func (a *CharacterWealth) update(ctx context.Context) {
 	})
 }
 
+// currentFilter returns the selected tag, corporation and alliance:
+// from the compact chip on mobile and from the filter chips on desktop.
+func (a *CharacterWealth) currentFilter() (tag, corporation, alliance string) {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return s[characterWealthFilterTag], s[characterWealthFilterCorporation], s[characterWealthFilterAlliance]
+	}
+	return a.selectTag.Selected, a.selectCorporation.Selected, a.selectAlliance.Selected
+}
+
 // filterRowsAsync applies the filters and updates all tabs.
 // Must be called on the main thread.
 func (a *CharacterWealth) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
-	alliance := a.selectAlliance.Selected
-	corporation := a.selectCorporation.Selected
-	tag := a.selectTag.Selected
+	tag, corporation, alliance := a.currentFilter()
 	isFiltered := alliance != "" || corporation != "" || tag != ""
 
 	runAsync(func() {
@@ -330,9 +351,17 @@ func (a *CharacterWealth) filterRowsAsync() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectAlliance.SetOptions(allianceOptions)
-			a.selectCorporation.SetOptions(corporationOptions)
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(characterWealthFilterCorporation, corporationOptions),
+					xwidget.NewFilterOptionMultiChoice(characterWealthFilterAlliance, allianceOptions),
+					xwidget.NewFilterOptionMultiChoice(characterWealthFilterTag, tagOptions),
+				)
+			} else {
+				a.selectAlliance.SetOptions(allianceOptions)
+				a.selectCorporation.SetOptions(corporationOptions)
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.details.setRows(filtered)
 		})
 
