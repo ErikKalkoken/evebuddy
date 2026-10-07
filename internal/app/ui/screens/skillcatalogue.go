@@ -161,6 +161,7 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 		a.selectTraining = kxwidget.NewFilterChipSelect(skillCatalogueFilterTraining, skillCatalogueTrainingOptions(), func(string) {
 			a.filterRowsAsync()
 		})
+		a.selectTraining.SortDisabled = true
 		a.selectGroup = kxwidget.NewFilterChipSelect(skillCatalogueFilterGroup, []string{}, func(string) {
 			a.filterRowsAsync()
 		})
@@ -298,7 +299,7 @@ func (a *SkillCatalogue) makeSkillsGrid() fyne.CanvasObject {
 // filterOptions returns the options of the compact filter chip.
 func (a *SkillCatalogue) filterOptions(groups []string) []xwidget.FilterOption {
 	return []xwidget.FilterOption{
-		xwidget.NewFilterOptionMultiChoice(skillCatalogueFilterTraining, skillCatalogueTrainingOptions()),
+		xwidget.NewFilterOptionMultiChoiceOrdered(skillCatalogueFilterTraining, skillCatalogueTrainingOptions()),
 		xwidget.NewFilterOptionSeparator(),
 		xwidget.NewFilterOptionMultiChoice(skillCatalogueFilterGroup, groups),
 	}

@@ -91,6 +91,36 @@ func TestNewFilterOptionMultiChoice(t *testing.T) {
 	})
 }
 
+func TestNewFilterOptionMultiChoiceOrdered(t *testing.T) {
+	cases := []struct {
+		name    string
+		choices []string
+		want    []string
+	}{
+		{"should drop blanks, deduplicate and keep order", []string{"b", "a", "", "b", "C"}, []string{"b", "a", "C"}},
+		{"should return empty for nil", nil, nil},
+		{"should return empty for empty", []string{}, nil},
+		{"should return empty for blanks only", []string{"", ""}, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o := NewFilterOptionMultiChoiceOrdered("Bravo", tc.choices)
+			assert.Equal(t, optionKindMultiChoice, o.kind)
+			if tc.want == nil {
+				assert.Empty(t, o.choices)
+			} else {
+				assert.Equal(t, tc.want, o.choices)
+			}
+		})
+	}
+	t.Run("should not share the caller's slice", func(t *testing.T) {
+		choices := []string{"b", "a"}
+		o := NewFilterOptionMultiChoiceOrdered("Bravo", choices)
+		choices[0] = "z"
+		assert.Equal(t, []string{"b", "a"}, o.choices)
+	})
+}
+
 func TestFilterChipCompact_ClearItem(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("should reset selection and fire OnChanged once", func(t *testing.T) {

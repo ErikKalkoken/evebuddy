@@ -250,6 +250,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		a.selectDirection = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
 			a.filterRowsAsync("")
 		})
+		a.selectDirection.SortDisabled = true
 		a.selectType = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
@@ -400,7 +401,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(walletJournalFilterDirection, walletJournalDirectionOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(walletJournalFilterDirection, walletJournalDirectionOptions()),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, typeOptions),
 				)
 			} else {

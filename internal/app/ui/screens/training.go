@@ -305,6 +305,7 @@ func NewTraining(u baseUI) *Training {
 		a.selectStatus = kxwidget.NewFilterChipSelect(trainingFilterStatus, trainingStatusOptions(), func(string) {
 			a.filterRowsAsync("")
 		})
+		a.selectStatus.SortDisabled = true
 		a.selectTag = kxwidget.NewFilterChipSelect(trainingFilterTag, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
@@ -549,7 +550,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(trainingFilterStatus, trainingStatusOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(trainingFilterStatus, trainingStatusOptions()),
 					xwidget.NewFilterOptionMultiChoice(trainingFilterTag, tagOptions),
 				)
 			} else {

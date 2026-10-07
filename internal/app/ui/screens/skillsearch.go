@@ -23,12 +23,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// Option in search skill widget
+// Skill choices, used as filter values and as labels of the mobile segmented button.
 const (
-	searchSkillActive     = "Active skills"
-	searchSkillRestricted = "Restricted skills"
-	searchSkillAll        = "All skills"
+	searchSkillActive     = "Active"
+	searchSkillRestricted = "Restricted"
+	searchSkillAll        = "All"
 )
+
+// searchSkillChoices are the skill choices in display order. The first is the default.
+var searchSkillChoices = []string{searchSkillActive, searchSkillRestricted, searchSkillAll}
+
+// searchSkillChipLabels are the longer labels for the desktop chip,
+// which shows only the selected choice.
+var searchSkillChipLabels = map[string]string{
+	searchSkillActive:     "Active skills",
+	searchSkillRestricted: "Restricted skills",
+	searchSkillAll:        "All skills",
+}
 
 // Names of the skill search filters, used as labels on desktop and as option names on mobile.
 const (
@@ -104,7 +115,8 @@ type SkillSearch struct {
 	searchEntry     *xwidget.SearchEntry
 	selectCharacter *kxwidget.FilterChipSelect // select chips only on desktop
 	selectGroup     *kxwidget.FilterChipSelect
-	selectSkill     *kxwidget.FilterChipSelect // mode chip on all platforms
+	segmentSkill    *xwidget.SegmentedButton   // only on mobile
+	selectSkill     *kxwidget.FilterChipSelect // mode chip only on desktop
 	selectType      *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	top             *widget.Label
@@ -214,17 +226,10 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 		a.filterRowsAsync("")
 	})
 
-	a.selectSkill = kxwidget.NewFilterChipSelect("", []string{
-		searchSkillActive,
-		searchSkillRestricted,
-		searchSkillAll,
-	}, func(_ string) {
-		a.filterRowsAsync("")
-	})
-	a.selectSkill.Selected = searchSkillActive
-	a.selectSkill.SortDisabled = true
-
 	if a.u.IsMobile() {
+		a.segmentSkill = xwidget.NewSegmentedButton(searchSkillChoices, func(int) {
+			a.filterRowsAsync("")
+		})
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
 		})
@@ -235,6 +240,15 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 			}, a.u.MainWindow())
 		}
 		a.selectGroup = makeSelectWithSearch(skillSearchFilterGroup)
+		var labels []string
+		for _, c := range searchSkillChoices {
+			labels = append(labels, searchSkillChipLabels[c])
+		}
+		a.selectSkill = kxwidget.NewFilterChipSelect("", labels, func(string) {
+			a.filterRowsAsync("")
+		})
+		a.selectSkill.Selected = searchSkillChipLabels[searchSkillActive]
+		a.selectSkill.SortDisabled = true
 		a.selectCharacter = kxwidget.NewFilterChipSelect(skillSearchFilterCharacter, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
@@ -266,7 +280,7 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 func (a *SkillSearch) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox(a.top)
 	if a.u.IsMobile() {
-		topBox.Add(container.NewHBox(a.selectSkill))
+		topBox.Add(a.segmentSkill)
 		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
 		filters := container.NewHBox(
@@ -282,21 +296,28 @@ func (a *SkillSearch) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop. Skill comes from its mode chip on both.
+// and from the filter chips on desktop. Skill comes from the segmented button on mobile.
 func (a *SkillSearch) currentFilter() skillSearchFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
 		return skillSearchFilter{
 			character: s[skillSearchFilterCharacter],
 			group:     s[skillSearchFilterGroup],
-			skill:     a.selectSkill.Selected,
+			skill:     searchSkillChoices[a.segmentSkill.Selected],
 			typeName:  s[skillSearchFilterType],
+		}
+	}
+	var skill string
+	for _, c := range searchSkillChoices {
+		if searchSkillChipLabels[c] == a.selectSkill.Selected {
+			skill = c
+			break
 		}
 	}
 	return skillSearchFilter{
 		character: a.selectCharacter.Selected,
 		group:     a.selectGroup.Selected,
-		skill:     a.selectSkill.Selected,
+		skill:     skill,
 		typeName:  a.selectType.Selected,
 	}
 }

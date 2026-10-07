@@ -285,6 +285,7 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 		a.selectType = makeSelect(structuresFilterType)
 		a.selectPower = makeSelect(structuresFilterPower)
 		a.selectPower.SetOptions(structuresPowerOptions())
+		a.selectPower.SortDisabled = true
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
@@ -443,7 +444,7 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 				}
 				options = append(options,
 					xwidget.NewFilterOptionMultiChoice(structuresFilterService, servicesOptions),
-					xwidget.NewFilterOptionMultiChoice(structuresFilterPower, structuresPowerOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(structuresFilterPower, structuresPowerOptions()),
 				)
 				a.filterChip.SetOptions(options...)
 			} else {

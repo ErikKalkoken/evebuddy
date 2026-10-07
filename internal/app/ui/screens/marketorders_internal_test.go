@@ -1,6 +1,8 @@
 package screens
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestMarketOrdersFilter_Match(t *testing.T) {
@@ -65,10 +68,25 @@ func TestMarketOrders_Filter(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	future := time.Now().Add(time.Hour)
+	newRow := func(id int64, state app.MarketOrderState, typeName, locationName string) marketOrderRow {
+		return marketOrderRow{
+			expires:      future,
+			locationName: locationName,
+			orderID:      id,
+			searchTarget: makeMarketOrderSearchTarget(typeName, locationName),
+			state:        state,
+			typeName:     typeName,
+		}
+	}
 	rows := []marketOrderRow{
-		{orderID: 1, expires: future, state: app.OrderOpen, typeName: "Tritanium"},
-		{orderID: 2, expires: future, state: app.OrderOpen, typeName: "Pyerite"},
-		{orderID: 3, expires: future, state: app.OrderCancelled, typeName: "Tritanium"},
+		newRow(1, app.OrderOpen, "Tritanium", "Jita IV - Moon 4"),
+		newRow(2, app.OrderOpen, "Pyerite", "Amarr VIII (Oris)"),
+		newRow(3, app.OrderCancelled, "Tritanium", "Amarr VIII (Oris)"),
+	}
+	ids := func(a *MarketOrders) []int64 {
+		return xslices.Map(a.rowsFiltered, func(r marketOrderRow) int64 {
+			return r.orderID
+		})
 	}
 	newMarketOrders := func(t *testing.T, isMobile bool) *MarketOrders {
 		a := NewMarketOrders(testdouble.NewUIFake(testdouble.UIParams{
@@ -97,11 +115,56 @@ func TestMarketOrders_Filter(t *testing.T) {
 	})
 	t.Run("can combine state and filter on mobile", func(t *testing.T) {
 		a := newMarketOrders(t, true)
-		a.selectState.SetSelected(marketOrderStateHistory)
+		a.segmentState.SetSelected(slices.Index(marketOrderStateChoices, marketOrderStateHistory))
 		a.filterChip.SetSelected(map[string]string{marketOrdersFilterType: "Tritanium"})
 		if assert.Len(t, a.rowsFiltered, 1) {
 			assert.EqualValues(t, 3, a.rowsFiltered[0].orderID)
 		}
+	})
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can search items mobile=%v", isMobile), func(t *testing.T) {
+			a := newMarketOrders(t, isMobile)
+			a.searchEntry.SetText("trit")
+			assert.ElementsMatch(t, []int64{1}, ids(a))
+		})
+		t.Run(fmt.Sprintf("can search locations mobile=%v", isMobile), func(t *testing.T) {
+			a := newMarketOrders(t, isMobile)
+			a.searchEntry.SetText("amarr")
+			assert.ElementsMatch(t, []int64{2}, ids(a))
+		})
+		t.Run(fmt.Sprintf("search ignores case mobile=%v", isMobile), func(t *testing.T) {
+			a := newMarketOrders(t, isMobile)
+			a.searchEntry.SetText("JITA")
+			assert.ElementsMatch(t, []int64{1}, ids(a))
+		})
+		t.Run(fmt.Sprintf("can combine search and filter mobile=%v", isMobile), func(t *testing.T) {
+			a := newMarketOrders(t, isMobile)
+			if isMobile {
+				a.filterChip.SetSelected(map[string]string{marketOrdersFilterType: "Pyerite"})
+			} else {
+				a.selectType.SetSelected("Pyerite")
+			}
+			a.searchEntry.SetText("jita")
+			assert.Empty(t, ids(a))
+		})
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("can switch state mobile=%v", isMobile), func(t *testing.T) {
+			a := newMarketOrders(t, isMobile)
+			assert.Equal(t, marketOrderStateActive, a.currentFilter().state)
+			if isMobile {
+				a.segmentState.SetSelected(slices.Index(marketOrderStateChoices, marketOrderStateHistory))
+			} else {
+				a.selectState.SetSelected(marketOrderStateHistory)
+			}
+			assert.Equal(t, marketOrderStateHistory, a.currentFilter().state)
+			assert.ElementsMatch(t, []int64{3}, ids(a))
+		})
+	}
+	t.Run("search does not match across fields", func(t *testing.T) {
+		a := newMarketOrders(t, false)
+		a.searchEntry.SetText("tritaniumjita")
+		assert.Empty(t, ids(a))
 	})
 	t.Run("shows all filters on mobile", func(t *testing.T) {
 		a := newMarketOrders(t, true)

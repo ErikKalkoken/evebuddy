@@ -287,6 +287,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		a.selectActivity = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, walletTransactionActivityOptions(), func(_ string) {
 			a.filterRowsAsync("")
 		})
+		a.selectActivity.SortDisabled = true
 		a.selectCategory = makeSelectWithSearch(walletTransactionFilterCategory)
 		a.selectClient = makeSelectWithSearch(walletTransactionFilterClient)
 		a.selectLocation = makeSelectWithSearch(walletTransactionFilterLocation)
@@ -474,7 +475,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, walletTransactionActivityOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(walletTransactionFilterActivity, walletTransactionActivityOptions()),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterCategory, categoryOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterType, typeOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),

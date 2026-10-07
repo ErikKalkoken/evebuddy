@@ -52,10 +52,7 @@ func NewFilterOptionToogle(name string) FilterOption {
 // Choices are sorted alphabetically and deduplicated.
 // Empty choice strings are ignored.
 func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
-	choices2 := xslices.Deduplicate(choices) // also copies
-	choices2 = slices.DeleteFunc(choices2, func(x string) bool {
-		return x == ""
-	})
+	choices2 := cleanChoices(choices)
 	slices.Sort(choices2)
 	return FilterOption{
 		kind:    optionKindMultiChoice,
@@ -64,11 +61,25 @@ func NewFilterOptionMultiChoice(name string, choices []string) FilterOption {
 	}
 }
 
-// NewFilterOptionMultiChoiceWithSearch creates a multi-choice option for [FilterChipCompact],
-// which lets the user pick a choice in a search dialog instead of a sub menu.
-// Its menu item has a search icon.
-// Use it for options with many choices.
-// Choices are processed the same as for [NewFilterOptionMultiChoice].
+// NewFilterOptionMultiChoiceOrdered is like [NewFilterOptionMultiChoice],
+// but keeps the choices in the given order.
+func NewFilterOptionMultiChoiceOrdered(name string, choices []string) FilterOption {
+	return FilterOption{
+		kind:    optionKindMultiChoice,
+		name:    name,
+		choices: cleanChoices(choices),
+	}
+}
+
+func cleanChoices(choices []string) []string {
+	choices2 := xslices.Deduplicate(choices) // also copies
+	return slices.DeleteFunc(choices2, func(x string) bool {
+		return x == ""
+	})
+}
+
+// NewFilterOptionMultiChoiceWithSearch is like [NewFilterOptionMultiChoice],
+// but picks the choice in a search dialog. Use it for many choices.
 func NewFilterOptionMultiChoiceWithSearch(name string, choices []string) FilterOption {
 	o := NewFilterOptionMultiChoice(name, choices)
 	o.hasSearch = true

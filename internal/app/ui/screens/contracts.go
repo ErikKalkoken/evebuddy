@@ -26,21 +26,21 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-const (
-	contractStatusAllActive   = "All active"
-	contractStatusOutstanding = "Outstanding"
-	contractStatusInProgress  = "In progress"
-	contractStatusHasIssue    = "Has issues"
-	contractStatusHistory     = "History"
-)
-
 // Names of the contract filters, used as labels on desktop and as option names on mobile.
 const (
 	contractsFilterAssignee = "Assignee"
 	contractsFilterIssuer   = "Issuer"
+	contractsFilterStatus   = "Status"
 	contractsFilterTag      = "Tag"
 	contractsFilterType     = "Type"
 )
+
+// contractsStatusOptions returns the status choices in UI order.
+func contractsStatusOptions() []string {
+	return xslices.Map(app.ContractCategories(), func(c app.ContractCategory) string {
+		return c.Display()
+	})
+}
 
 // contractsFilter is the selected value of each contract filter. Empty means not filtered.
 type contractsFilter struct {
@@ -56,21 +56,10 @@ func (f contractsFilter) match(r contractRow) bool {
 	switch {
 	case f.assignee != "" && r.assigneeName != f.assignee,
 		f.issuer != "" && r.issuerName != f.issuer,
+		f.status != "" && r.category.Display() != f.status,
 		f.tag != "" && !r.tags.Contains(f.tag),
 		f.typeName != "" && r.typeName != f.typeName:
 		return false
-	}
-	switch f.status {
-	case contractStatusAllActive:
-		return r.isActive
-	case contractStatusOutstanding:
-		return r.status == app.ContractStatusOutstanding
-	case contractStatusInProgress:
-		return r.status == app.ContractStatusInProgress
-	case contractStatusHasIssue:
-		return r.hasIssue
-	case contractStatusHistory:
-		return r.isHistory
 	}
 	return true
 }
@@ -81,6 +70,7 @@ type contractRow struct {
 	assigneeName       string
 	availability       app.ContractAvailability
 	buyout             optional.Optional[float64]
+	category           app.ContractCategory
 	collateral         optional.Optional[float64]
 	contractID         int64
 	contractType       app.ContractType
@@ -91,11 +81,8 @@ type contractRow struct {
 	dateIssued         time.Time
 	daysToComplete     optional.Optional[int64]
 	endLocation        optional.Optional[*app.EveLocationShort]
-	hasIssue           bool
-	isActive           bool
 	isCorporation      bool
 	isExpired          bool // TODO: make dynamic
-	isHistory          bool
 	issuer             *app.EveEntity
 	issuerName         string
 	name               string
@@ -107,6 +94,7 @@ type contractRow struct {
 	searchTarget       string
 	startLocation      optional.Optional[*app.EveLocationShort]
 	status             app.ContractStatus
+	statusDisplay      []widget.RichTextSegment
 	statusText         string
 	tags               set.Set[string]
 	title              string
@@ -118,12 +106,14 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
+	category := o.Category()
 	return contractRow{
 		acceptor:           o.Acceptor,
 		assignee:           o.Assignee,
 		assigneeName:       assigneeName,
 		availability:       o.Availability,
 		buyout:             o.Buyout,
+		category:           category,
 		collateral:         o.Collateral,
 		contractID:         o.ContractID,
 		contractType:       o.Type,
@@ -134,11 +124,8 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		dateIssued:         o.DateIssued,
 		daysToComplete:     o.DaysToComplete,
 		endLocation:        o.EndLocation,
-		hasIssue:           o.HasIssue(),
-		isActive:           o.Status.IsActive(),
 		isCorporation:      false,
 		isExpired:          o.IsExpired(),
-		isHistory:          o.Status.IsHistory(),
 		issuer:             o.IssuerEffective(),
 		issuerName:         o.IssuerEffective().Name,
 		name:               o.NameDisplay(),
@@ -150,6 +137,7 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		searchTarget:       makeSearchTarget(o.Items, o.Title),
 		startLocation:      o.StartLocation,
 		status:             o.Status,
+		statusDisplay:      makeContractStatusDisplay(o.Status, category),
 		statusText:         o.Status.Display(),
 		title:              o.Title.ValueOrFallback("-"),
 		typeName:           o.Type.Display(),
@@ -161,12 +149,14 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
+	category := o.Category()
 	return contractRow{
 		acceptor:           o.Acceptor,
 		assignee:           o.Assignee,
 		assigneeName:       assigneeName,
 		availability:       o.Availability,
 		buyout:             o.Buyout,
+		category:           category,
 		collateral:         o.Collateral,
 		contractID:         o.ContractID,
 		contractType:       o.Type,
@@ -177,11 +167,8 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		dateIssued:         o.DateIssued,
 		daysToComplete:     o.DaysToComplete,
 		endLocation:        o.EndLocation,
-		hasIssue:           o.HasIssue(),
-		isActive:           o.Status.IsActive(),
 		isCorporation:      true,
 		isExpired:          o.IsExpired(),
-		isHistory:          o.Status.IsHistory(),
 		issuer:             o.IssuerEffective(),
 		issuerName:         o.IssuerEffective().Name,
 		name:               o.NameDisplay(),
@@ -193,6 +180,7 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		searchTarget:       makeSearchTarget(o.Items, o.Title),
 		startLocation:      o.StartLocation,
 		status:             o.Status,
+		statusDisplay:      makeContractStatusDisplay(o.Status, category),
 		statusText:         o.Status.Display(),
 		title:              o.Title.ValueOrFallback("-"),
 		typeName:           o.Type.Display(),
@@ -209,6 +197,13 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 		token = append(token, strings.ToLower(v))
 	}
 	return strings.Join(token, "~")
+}
+
+// makeContractStatusDisplay returns the status in the color of its category.
+func makeContractStatusDisplay(status app.ContractStatus, category app.ContractCategory) []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+		ColorName: category.Color(),
+	})
 }
 
 func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.RichTextSegment {
@@ -245,7 +240,7 @@ type Contracts struct {
 	searchEntry    *xwidget.SearchEntry
 	selectAssignee *kxwidget.FilterChipSelect // select chips only on desktop
 	selectIssuer   *kxwidget.FilterChipSelect
-	selectStatus   *kxwidget.FilterChipSelect // mode chip on all platforms
+	selectStatus   *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
@@ -304,7 +299,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			return strings.Compare(a.statusText, b.statusText)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).Set(r.status.DisplayRichText())
+			co.(*xwidget.RichText).Set(r.statusDisplay)
 		},
 	}, {
 		Label: "Date Issued",
@@ -392,19 +387,12 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		a.selectIssuer = makeSelectWithSearch(contractsFilterIssuer)
 		a.selectType = makeSelect(contractsFilterType)
 		a.selectTag = makeSelect(contractsFilterTag)
+		a.selectStatus = kxwidget.NewFilterChipSelect(contractsFilterStatus, contractsStatusOptions(), func(string) {
+			a.filterRowsAsync("")
+		})
+		a.selectStatus.SortDisabled = true // keep the UI order
 	}
 
-	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
-		contractStatusAllActive,
-		contractStatusOutstanding,
-		contractStatusInProgress,
-		contractStatusHasIssue,
-		contractStatusHistory,
-	}, func(string) {
-		a.filterRowsAsync("")
-	})
-	a.selectStatus.Selected = contractStatusAllActive
-	a.selectStatus.SortDisabled = true
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -419,13 +407,11 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
-				a.selectStatus.Selected = contractStatusAllActive
-				a.selectStatus.Refresh()
 				if a.filterChip != nil {
 					a.filterChip.ResetSilent()
 					return
 				}
-				clearSelectsSilent(a.selectAssignee, a.selectIssuer, a.selectTag, a.selectType)
+				clearSelectsSilent(a.selectAssignee, a.selectIssuer, a.selectStatus, a.selectTag, a.selectType)
 			})
 			a.update(ctx)
 		})
@@ -460,10 +446,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(
-			container.NewHBox(a.selectStatus),
-			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
-		)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
 		filter := container.NewHBox(
 			a.selectStatus,
@@ -488,14 +471,14 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop. Status comes from its mode chip on both.
+// and from the filter chips on desktop.
 func (a *Contracts) currentFilter() contractsFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
 		return contractsFilter{
 			assignee: s[contractsFilterAssignee],
 			issuer:   s[contractsFilterIssuer],
-			status:   a.selectStatus.Selected,
+			status:   s[contractsFilterStatus],
 			tag:      s[contractsFilterTag],
 			typeName: s[contractsFilterType],
 		}
@@ -539,7 +522,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 			main[0].(*widget.Label).SetText(r.name)
 			box := main[1].(*fyne.Container).Objects
 			box[0].(*widget.Label).SetText(r.typeName)
-			box[2].(*xwidget.RichText).Set(r.status.DisplayRichText())
+			box[2].(*xwidget.RichText).Set(r.statusDisplay)
 
 			main[2].(*widget.Label).SetText("From " + r.issuerName)
 			assignee := "To "
@@ -614,6 +597,8 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
+					xwidget.NewFilterOptionMultiChoiceOrdered(contractsFilterStatus, contractsStatusOptions()),
+					xwidget.NewFilterOptionSeparator(),
 					xwidget.NewFilterOptionMultiChoice(contractsFilterType, typeOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterIssuer, issueOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterAssignee, assigneeOptions),

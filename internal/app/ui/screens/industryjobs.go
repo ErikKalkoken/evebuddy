@@ -43,7 +43,6 @@ const (
 	industryInstallerMe              = "Installed by me"
 	industryOwnerCorp                = "Owned by corp"
 	industryOwnerMe                  = "Owned by me"
-	industryStatusActive             = "All active jobs"
 	industryStatusHalted             = "Halted"
 	industryStatusHistory            = "History"
 	industryStatusInProgress         = "In progress"
@@ -55,8 +54,14 @@ const (
 	industryJobsFilterActivity  = "Activity"
 	industryJobsFilterInstaller = "Installer"
 	industryJobsFilterOwner     = "Owner"
+	industryJobsFilterStatus    = "Status"
 	industryJobsFilterTag       = "Tag"
 )
+
+// industryJobsStatusOptions returns the status choices in UI order.
+func industryJobsStatusOptions() []string {
+	return []string{industryStatusInProgress, industryStatusReady, industryStatusHalted, industryStatusHistory}
+}
 
 // industryJobsFilter is the selected value of each industry job filter. Empty means not filtered.
 type industryJobsFilter struct {
@@ -104,8 +109,6 @@ func (f industryJobsFilter) match(r industryJobRow) bool {
 		}
 	}
 	switch status := r.statusCalculated(); f.status {
-	case industryStatusActive:
-		return status.IsActive()
 	case industryStatusInProgress:
 		return status == app.JobActive
 	case industryStatusReady:
@@ -189,7 +192,7 @@ type IndustryJobs struct {
 	selectActivity  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectInstaller *kxwidget.FilterChipSelect
 	selectOwner     *kxwidget.FilterChipSelect
-	selectStatus    *kxwidget.FilterChipSelect // mode chip on all platforms
+	selectStatus    *kxwidget.FilterChipSelect
 	selectTag       *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	u               baseUI
@@ -342,18 +345,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		a.filterRowsAsync("")
 	})
 
-	a.selectStatus = kxwidget.NewFilterChipSelect("", []string{
-		industryStatusActive,
-		industryStatusInProgress,
-		industryStatusReady,
-		industryStatusHalted,
-		industryStatusHistory,
-	}, func(_ string) {
-		a.filterRowsAsync("")
-	})
-	a.selectStatus.Selected = industryStatusActive
-	a.selectStatus.SortDisabled = true
-
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
@@ -364,10 +355,15 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 				a.filterRowsAsync("")
 			})
 		}
+		a.selectStatus = makeSelect(industryJobsFilterStatus, industryJobsStatusOptions()...)
+		a.selectStatus.SortDisabled = true
 		a.selectTag = makeSelect(industryJobsFilterTag)
 		a.selectOwner = makeSelect(industryJobsFilterOwner, industryJobsOwnerOptions()...)
+		a.selectOwner.SortDisabled = true
 		a.selectActivity = makeSelect(industryJobsFilterActivity, industryJobsActivityOptions()...)
+		a.selectActivity.SortDisabled = true
 		a.selectInstaller = makeSelect(industryJobsFilterInstaller, industryJobsInstallerOptions()...)
+		a.selectInstaller.SortDisabled = true
 		if !forCorporation {
 			a.selectInstaller.Selected = industryInstallerMe // hidden filter outside corporation mode
 		}
@@ -383,13 +379,11 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
-				a.selectStatus.Selected = industryStatusActive
-				a.selectStatus.Refresh()
 				if a.filterChip != nil {
 					a.filterChip.ResetSilent()
 					return
 				}
-				clearSelectsSilent(a.selectActivity, a.selectInstaller, a.selectOwner, a.selectTag)
+				clearSelectsSilent(a.selectActivity, a.selectInstaller, a.selectOwner, a.selectStatus, a.selectTag)
 			})
 			a.update(ctx)
 		})
@@ -436,10 +430,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewVBox(
-			container.NewHBox(a.selectStatus),
-			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
-		)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
 		filter := container.NewHBox(a.selectStatus, a.selectOwner, a.selectActivity)
 		if a.forCorporation {
@@ -485,7 +476,7 @@ func industryJobsOwnerOptions() []string {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop. Status comes from its mode chip on both.
+// and from the filter chips on desktop.
 func (a *IndustryJobs) currentFilter() industryJobsFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
@@ -497,7 +488,7 @@ func (a *IndustryJobs) currentFilter() industryJobsFilter {
 			activity:  s[industryJobsFilterActivity],
 			installer: installer,
 			owner:     s[industryJobsFilterOwner],
-			status:    a.selectStatus.Selected,
+			status:    s[industryJobsFilterStatus],
 			tag:       s[industryJobsFilterTag],
 		}
 	}
@@ -644,11 +635,13 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
-					xwidget.NewFilterOptionMultiChoice(industryJobsFilterOwner, industryJobsOwnerOptions()),
-					xwidget.NewFilterOptionMultiChoice(industryJobsFilterActivity, industryJobsActivityOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterStatus, industryJobsStatusOptions()),
+					xwidget.NewFilterOptionSeparator(),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterOwner, industryJobsOwnerOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterActivity, industryJobsActivityOptions()),
 				}
 				if a.forCorporation {
-					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterInstaller, industryJobsInstallerOptions()))
+					options = append(options, xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterInstaller, industryJobsInstallerOptions()))
 				} else {
 					options = append(options, xwidget.NewFilterOptionMultiChoice(industryJobsFilterTag, tagOptions))
 				}

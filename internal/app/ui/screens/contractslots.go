@@ -245,6 +245,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 		}
 		a.selectCorporation = makeSelect(contractSlotsFilterCorporation)
 		a.selectFreeSlots = makeSelect(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()...)
+		a.selectFreeSlots.SortDisabled = true
 		a.selectTag = makeSelect(contractSlotsFilterTag)
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -386,7 +387,7 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterCorporation, corporationOptions),
-					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()),
 					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterTag, tagOptions),
 				)
 			} else {
