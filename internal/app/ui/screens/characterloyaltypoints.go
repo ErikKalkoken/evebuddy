@@ -122,7 +122,7 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 				a.filterChip.ResetSilent()
 				return
 			}
-			a.selectFaction.Selected = ""
+			clearSelectsSilent(a.selectFaction)
 		})
 		a.Update(ctx)
 	},

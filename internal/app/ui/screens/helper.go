@@ -25,6 +25,14 @@ import (
 // Tests replace it to run f synchronously.
 var runAsync = func(f func()) { go f() }
 
+// clearSelectsSilent clears the selection of filter chips without calling their OnChanged.
+func clearSelectsSilent(chips ...*kxwidget.FilterChipSelect) {
+	for _, c := range chips {
+		c.Selected = ""
+		c.Refresh()
+	}
+}
+
 // latestRun identifies the newest of overlapping async runs,
 // so results from older runs can be discarded.
 type latestRun struct{ n atomic.Int64 }

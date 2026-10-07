@@ -142,8 +142,7 @@ func NewFlyableShips(u baseUI) *FlyableShips {
 					a.filterChip.ResetSilent()
 					return
 				}
-				a.selectFlyable.Selected = ""
-				a.selectGroup.Selected = ""
+				clearSelectsSilent(a.selectFlyable, a.selectGroup)
 			})
 			a.update(ctx)
 		},

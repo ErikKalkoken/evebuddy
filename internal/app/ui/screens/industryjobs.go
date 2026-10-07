@@ -389,10 +389,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 					a.filterChip.ResetSilent()
 					return
 				}
-				a.selectActivity.Selected = ""
-				a.selectInstaller.Selected = ""
-				a.selectOwner.Selected = ""
-				a.selectTag.Selected = ""
+				clearSelectsSilent(a.selectActivity, a.selectInstaller, a.selectOwner, a.selectTag)
 			})
 			a.update(ctx)
 		})

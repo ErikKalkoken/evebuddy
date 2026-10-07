@@ -478,14 +478,16 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 					a.filterChip.ResetSilent()
 					return
 				}
-				a.selectCategory.Selected = ""
-				a.selectGroup.Selected = ""
-				a.selectLocation.Selected = ""
-				a.selectOwner.Selected = ""
-				a.selectRegion.Selected = ""
-				a.selectState.Selected = ""
-				a.selectTag.Selected = ""
-				a.selectTotal.Selected = ""
+				clearSelectsSilent(
+					a.selectCategory,
+					a.selectGroup,
+					a.selectLocation,
+					a.selectOwner,
+					a.selectRegion,
+					a.selectState,
+					a.selectTag,
+					a.selectTotal,
+				)
 			})
 			a.update(ctx)
 		})

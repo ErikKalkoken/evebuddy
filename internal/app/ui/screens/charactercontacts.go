@@ -174,12 +174,14 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 				a.filterChip.ResetSilent()
 				return
 			}
-			a.selectBlocked.Selected = ""
-			a.selectCategory.Selected = ""
-			a.selectLabel.Selected = ""
-			a.selectNPC.Selected = ""
-			a.selectStanding.Selected = ""
-			a.selectWatched.Selected = ""
+			clearSelectsSilent(
+				a.selectBlocked,
+				a.selectCategory,
+				a.selectLabel,
+				a.selectNPC,
+				a.selectStanding,
+				a.selectWatched,
+			)
 		})
 		a.update(ctx)
 	})
