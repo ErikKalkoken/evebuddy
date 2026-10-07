@@ -14,9 +14,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -87,10 +89,11 @@ type JumpClones struct {
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
 	footer            *widget.Label
-	changeOrigin      *widget.Button
+	changeOrigin      *ttwidget.Button
 	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
 	origin            *app.EveSolarSystem
-	originLabel       *xwidget.RichText
+	originLabel       *widget.Label
+	originSecurity    *xwidget.RichText
 	routeCancel       context.CancelFunc
 	routePref         app.EveRoutePreference
 	rows              []jumpCloneRow
@@ -157,16 +160,18 @@ func NewJumpClones(u baseUI) *JumpClones {
 		},
 	}})
 	a := &JumpClones{
-		columnSorter: xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
-		originLabel:  xwidget.NewRichTextWithText("(not set)"),
-		footer:       ui.NewLabelWithTruncation(""),
-		u:            u,
+		columnSorter:   xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
+		originLabel:    ui.NewLabelWithTruncation("(not set)"),
+		originSecurity: xwidget.NewRichText(),
+		footer:         ui.NewLabelWithTruncation(""),
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
-	a.originLabel.Truncation = fyne.TextTruncateClip
-	a.changeOrigin = widget.NewButton("Origin", func() {
+	a.originSecurity.Hide()
+	a.changeOrigin = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.MapMarkerSvg), func() {
 		a.setOrigin(a.u.MainWindow())
 	})
+	a.changeOrigin.SetToolTip("Change origin")
 	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
@@ -255,16 +260,17 @@ func NewJumpClones(u baseUI) *JumpClones {
 }
 
 func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
+	originText := container.New(originTextLayout{}, a.originSecurity, a.originLabel)
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewBorder(nil, nil, a.changeOrigin, container.NewHBox(a.filterChip, a.sortChip), a.originLabel)
+		topBox = container.NewBorder(nil, nil, a.changeOrigin, container.NewHBox(a.filterChip, a.sortChip), originText)
 	} else {
 		origin := container.NewBorder(
 			nil,
 			nil,
 			a.changeOrigin,
 			nil,
-			a.originLabel,
+			originText,
 		)
 		filters := container.NewHBox(
 			a.selectRegion,
@@ -437,10 +443,10 @@ func (a *JumpClones) updateRoutesAsync() {
 		if err != nil {
 			slog.Error("failed to fetch routes", "error", err)
 			fyne.Do(func() {
-				s := "Failed to fetch routes: " + a.u.ErrorDisplay(err)
-				a.originLabel.Set(xwidget.RichTextSegmentsFromText(s, widget.RichTextStyle{
-					ColorName: theme.ColorNameError,
-				}))
+				a.originSecurity.Hide()
+				a.originLabel.Text = "Failed to fetch routes: " + a.u.ErrorDisplay(err)
+				a.originLabel.Importance = widget.DangerImportance
+				a.originLabel.Refresh()
 			})
 			return
 		}
@@ -504,10 +510,11 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 			fyne.Do(func() {
 				a.origin = s
 				a.routePref = app.EveRoutePreferenceFromString(routePref.Selected)
-				a.originLabel.Set(xwidget.InlineRichTextSegments(
-					s.DisplayRichTextWithRegion(),
-					xwidget.RichTextSegmentsFromText(fmt.Sprintf(" [%s]", a.routePref.String())),
-				))
+				a.originSecurity.Set(s.SecurityStatusRichText())
+				a.originSecurity.Show()
+				a.originLabel.Text = fmt.Sprintf("  %s [%s]", s.Name, a.routePref.String())
+				a.originLabel.Importance = widget.MediumImportance
+				a.originLabel.Refresh()
 				a.updateRoutesAsync()
 				d.Hide()
 			})
@@ -573,4 +580,33 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 	}
 	d.Show()
 	w.Canvas().Focus(entry)
+}
+
+// originTextLayout places the security status and the origin label so they read as one text,
+// while only the label is truncated.
+type originTextLayout struct{}
+
+// overlap returns how far the label is moved over the security status,
+// so the inner paddings between them don't add extra space.
+func (originTextLayout) overlap(objects []fyne.CanvasObject) float32 {
+	if !objects[0].Visible() {
+		return 0
+	}
+	return objects[0].MinSize().Width - 2*theme.Size(theme.SizeNameInnerPadding)
+}
+
+func (l originTextLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	security, label := objects[0], objects[1]
+	x := l.overlap(objects)
+	if security.Visible() {
+		security.Move(fyne.NewPos(0, 0))
+		security.Resize(fyne.NewSize(security.MinSize().Width, size.Height))
+	}
+	label.Move(fyne.NewPos(x, 0))
+	label.Resize(fyne.NewSize(size.Width-x, size.Height))
+}
+
+func (l originTextLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	security, label := objects[0].MinSize(), objects[1].MinSize()
+	return fyne.NewSize(l.overlap(objects)+label.Width, max(security.Height, label.Height))
 }

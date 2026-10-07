@@ -3,7 +3,10 @@ package screens
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func makeJumpCloneRow(id int64, character, system, region string, tags ...string) jumpCloneRow {
@@ -101,5 +105,32 @@ func TestJumpClones_Filter(t *testing.T) {
 			jumpClonesFilterSystem:    "",
 			jumpClonesFilterTag:       "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestOriginTextLayout(t *testing.T) {
+	test.NewTempApp(t)
+	newObjects := func() (*xwidget.RichText, *widget.Label) {
+		s := &app.EveSolarSystem{SecurityStatus: 0.9}
+		security := xwidget.NewRichText(s.SecurityStatusRichText()...)
+		label := widget.NewLabel("  Jita [shortest]")
+		label.Truncation = fyne.TextTruncateEllipsis
+		return security, label
+	}
+	t.Run("should place label over the security paddings, so the text reads as one", func(t *testing.T) {
+		security, label := newObjects()
+		originTextLayout{}.Layout([]fyne.CanvasObject{security, label}, fyne.NewSize(300, 40))
+
+		want := security.MinSize().Width - 2*theme.Size(theme.SizeNameInnerPadding)
+		assert.Equal(t, want, label.Position().X)
+		assert.Equal(t, 300-want, label.Size().Width)
+	})
+	t.Run("should give label the full width when security is hidden", func(t *testing.T) {
+		security, label := newObjects()
+		security.Hide()
+		originTextLayout{}.Layout([]fyne.CanvasObject{security, label}, fyne.NewSize(300, 40))
+
+		assert.Equal(t, float32(0), label.Position().X)
+		assert.Equal(t, float32(300), label.Size().Width)
 	})
 }
