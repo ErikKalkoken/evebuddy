@@ -25,6 +25,7 @@ func TestFixedFilterOptionsOrder(t *testing.T) {
 		}},
 		{"industry jobs installer", industryJobsInstallerOptions(), []string{"Installed by me", "Installed by corpmates"}},
 		{"industry jobs owner", industryJobsOwnerOptions(), []string{"Owned by me", "Owned by corp"}},
+		{"industry jobs status", industryJobsStatusOptions(), []string{"In progress", "Ready for delivery", "Halted", "History"}},
 		{"skill catalogue training", skillCatalogueTrainingOptions(), []string{
 			"Trained",
 			"Fully trained",
