@@ -6,13 +6,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type ContractAvailability uint
@@ -43,16 +41,56 @@ func (cca ContractAvailability) Display() string {
 	return xstrings.Title(cca.String())
 }
 
-// contractConsolidatedStatus represents a consolidated status of a contract based on the original contract.
-type contractConsolidatedStatus uint
+// ContractCategory groups contracts like the game client does.
+type ContractCategory uint
 
 const (
-	contractConsolidatedUndefined contractConsolidatedStatus = iota
-	contractConsolidatedOutstanding
-	contractConsolidatedInProgress
-	contractConsolidatedHasIssue
-	contractConsolidatedHistory
+	ContractCategoryUndefined ContractCategory = iota
+	ContractCategoryOutstanding
+	ContractCategoryInProgress
+	ContractCategoryRequiresAttention
+	ContractCategoryFinished
+	ContractCategoryOther
 )
+
+// ContractCategories returns the categories in UI order.
+func ContractCategories() []ContractCategory {
+	return []ContractCategory{
+		ContractCategoryOutstanding,
+		ContractCategoryInProgress,
+		ContractCategoryRequiresAttention,
+		ContractCategoryFinished,
+		ContractCategoryOther,
+	}
+}
+
+func (cc ContractCategory) Display() string {
+	switch cc {
+	case ContractCategoryOutstanding:
+		return "Outstanding"
+	case ContractCategoryInProgress:
+		return "In progress"
+	case ContractCategoryRequiresAttention:
+		return "Requires attention"
+	case ContractCategoryFinished:
+		return "Finished"
+	case ContractCategoryOther:
+		return "Other"
+	}
+	return "?"
+}
+
+func (cc ContractCategory) Color() fyne.ThemeColorName {
+	switch cc {
+	case ContractCategoryOutstanding:
+		return theme.ColorNameWarning
+	case ContractCategoryRequiresAttention:
+		return theme.ColorNameError
+	case ContractCategoryFinished:
+		return theme.ColorNameSuccess
+	}
+	return theme.ColorNameForeground
+}
 
 // ContractStatus represents the original status of a contract.
 type ContractStatus uint
@@ -99,10 +137,6 @@ func (cs ContractStatus) IsActive() bool {
 // ContractStatusActive defines which status is considered active.
 var ContractStatusActive = set.Of(ContractStatusOutstanding, ContractStatusInProgress)
 
-func (cs ContractStatus) IsHistory() bool {
-	return cs.consolidated() == contractConsolidatedHistory
-}
-
 func (cs ContractStatus) IsFinished() bool {
 	switch cs {
 	case
@@ -117,47 +151,6 @@ func (cs ContractStatus) IsFinished() bool {
 
 func (cs ContractStatus) Display() string {
 	return xstrings.Title(cs.String())
-}
-
-func (cs ContractStatus) DisplayRichText() []widget.RichTextSegment {
-	var color fyne.ThemeColorName
-	switch cs.consolidated() {
-	case contractConsolidatedOutstanding:
-		color = theme.ColorNameWarning
-	case contractConsolidatedInProgress:
-		color = theme.ColorNameForeground
-	case contractConsolidatedHistory:
-		color = theme.ColorNameSuccess
-	case contractConsolidatedHasIssue:
-		color = theme.ColorNameError
-	default:
-		color = theme.ColorNameForeground
-	}
-	return xwidget.RichTextSegmentsFromText(cs.Display(), widget.RichTextStyle{
-		ColorName: color,
-	})
-}
-
-func (cs ContractStatus) consolidated() contractConsolidatedStatus {
-	switch cs {
-	case ContractStatusOutstanding:
-		return contractConsolidatedOutstanding
-	case ContractStatusInProgress:
-		return contractConsolidatedInProgress
-	case
-		ContractStatusDeleted,
-		ContractStatusCancelled,
-		ContractStatusFinished,
-		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer,
-		ContractStatusReversed:
-		return contractConsolidatedHistory
-	case
-		ContractStatusFailed,
-		ContractStatusRejected:
-		return contractConsolidatedHasIssue
-	}
-	return contractConsolidatedUndefined
 }
 
 type ContractType uint
@@ -225,8 +218,8 @@ type CharacterContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CharacterContract) HasIssue() bool {
-	return contractHasIssue(cs.Status, cs.DateExpired)
+func (cs CharacterContract) Category() ContractCategory {
+	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
 }
 
 func (cs CharacterContract) IsExpired() bool {
@@ -294,8 +287,8 @@ type CorporationContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CorporationContract) HasIssue() bool {
-	return contractHasIssue(cs.Status, cs.DateExpired)
+func (cs CorporationContract) Category() ContractCategory {
+	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
 }
 
 func (cs CorporationContract) IsExpired() bool {
@@ -331,10 +324,30 @@ type CorporationContractItem struct {
 	Type        *EveType
 }
 
-func contractHasIssue(status ContractStatus, expired time.Time) bool {
-	statusIssue := status.consolidated() == contractConsolidatedHasIssue
-	expiredButStillActive := (contractIsExpired(expired) && status.IsActive())
-	return statusIssue || expiredButStillActive
+func contractCategory(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) ContractCategory {
+	switch status {
+	case ContractStatusOutstanding:
+		if dateExpired.Before(now) {
+			return ContractCategoryRequiresAttention
+		}
+		return ContractCategoryOutstanding
+	case ContractStatusInProgress:
+		accepted, ok1 := dateAccepted.Value()
+		days, ok2 := daysToComplete.Value()
+		if ok1 && ok2 && accepted.AddDate(0, 0, int(days)).Before(now) {
+			return ContractCategoryRequiresAttention // overdue
+		}
+		return ContractCategoryInProgress
+	case ContractStatusFailed, ContractStatusRejected:
+		return ContractCategoryRequiresAttention
+	case
+		ContractStatusFinished,
+		ContractStatusFinishedContractor,
+		ContractStatusFinishedIssuer,
+		ContractStatusReversed:
+		return ContractCategoryFinished
+	}
+	return ContractCategoryOther
 }
 
 func contractIsExpired(expired time.Time) bool {

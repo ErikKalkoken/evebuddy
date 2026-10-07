@@ -192,7 +192,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			if r.contractType == app.ContractTypeCourier {
 				fi = append(fi, widget.NewFormItem("Contractor", makeEveEntityActionLabel2(r.acceptor, u.InfoViewer().Show)))
 			}
-			fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(r.status.DisplayRichText()...)))
+			fi = append(fi, widget.NewFormItem("Status", xwidget.NewRichText(r.statusDisplay...)))
 			fi = append(fi, widget.NewFormItem("Location", makeLocationLabel2(r.startLocation, u.InfoViewer().ShowLocation)))
 
 			if r.contractType == app.ContractTypeCourier || r.contractType == app.ContractTypeItemExchange {

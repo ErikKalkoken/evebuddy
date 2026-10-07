@@ -6,12 +6,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestContractStatusString(t *testing.T) {
@@ -22,28 +20,33 @@ func TestContractStatusDisplay(t *testing.T) {
 	xassert.Equal(t, "Cancelled", app.ContractStatusCancelled.Display())
 }
 
-func TestContractStatusDisplayRichText(t *testing.T) {
+func TestContractCategories(t *testing.T) {
+	xassert.Equal(t, []app.ContractCategory{
+		app.ContractCategoryOutstanding,
+		app.ContractCategoryInProgress,
+		app.ContractCategoryRequiresAttention,
+		app.ContractCategoryFinished,
+		app.ContractCategoryOther,
+	}, app.ContractCategories())
+}
+
+func TestContractCategoryDisplayAndColor(t *testing.T) {
 	cases := []struct {
-		status    app.ContractStatus
+		category  app.ContractCategory
 		wantText  string
 		wantColor fyne.ThemeColorName
 	}{
-		{app.ContractStatusOutstanding, "Outstanding", theme.ColorNameWarning},
-		{app.ContractStatusInProgress, "In Progress", theme.ColorNameForeground},
-		{app.ContractStatusFinished, "Finished", theme.ColorNameSuccess},
-		{app.ContractStatusFailed, "Failed", theme.ColorNameError},
-		{app.ContractStatusReversed, "Reversed", theme.ColorNameSuccess},
-		{app.ContractStatusUndefined, "?", theme.ColorNameForeground},
+		{app.ContractCategoryOutstanding, "Outstanding", theme.ColorNameWarning},
+		{app.ContractCategoryInProgress, "In progress", theme.ColorNameForeground},
+		{app.ContractCategoryRequiresAttention, "Requires attention", theme.ColorNameError},
+		{app.ContractCategoryFinished, "Finished", theme.ColorNameSuccess},
+		{app.ContractCategoryOther, "Other", theme.ColorNameForeground},
+		{app.ContractCategoryUndefined, "?", theme.ColorNameForeground},
 	}
 	for _, tc := range cases {
-		t.Run(tc.status.String(), func(t *testing.T) {
-			got := tc.status.DisplayRichText()
-			want := xwidget.RichTextSegmentsFromText(tc.wantText,
-				widget.RichTextStyle{
-					ColorName: tc.wantColor,
-				},
-			)
-			xassert.Equal(t, want, got)
+		t.Run(tc.wantText, func(t *testing.T) {
+			xassert.Equal(t, tc.wantText, tc.category.Display())
+			xassert.Equal(t, tc.wantColor, tc.category.Color())
 		})
 	}
 }
@@ -52,25 +55,23 @@ func TestContractStatusPredicates(t *testing.T) {
 	cases := []struct {
 		status       app.ContractStatus
 		wantActive   bool
-		wantHistory  bool
 		wantFinished bool
 	}{
-		{app.ContractStatusUndefined, false, false, false},
-		{app.ContractStatusOutstanding, true, false, false},
-		{app.ContractStatusInProgress, true, false, false},
-		{app.ContractStatusDeleted, false, true, false},
-		{app.ContractStatusCancelled, false, true, false},
-		{app.ContractStatusFinished, false, true, true},
-		{app.ContractStatusFinishedContractor, false, true, true},
-		{app.ContractStatusFinishedIssuer, false, true, true},
-		{app.ContractStatusReversed, false, true, true},
-		{app.ContractStatusFailed, false, false, false},
-		{app.ContractStatusRejected, false, false, false},
+		{app.ContractStatusUndefined, false, false},
+		{app.ContractStatusOutstanding, true, false},
+		{app.ContractStatusInProgress, true, false},
+		{app.ContractStatusDeleted, false, false},
+		{app.ContractStatusCancelled, false, false},
+		{app.ContractStatusFinished, false, true},
+		{app.ContractStatusFinishedContractor, false, true},
+		{app.ContractStatusFinishedIssuer, false, true},
+		{app.ContractStatusReversed, false, true},
+		{app.ContractStatusFailed, false, false},
+		{app.ContractStatusRejected, false, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
 			xassert.Equal(t, tc.wantActive, tc.status.IsActive())
-			xassert.Equal(t, tc.wantHistory, tc.status.IsHistory())
 			xassert.Equal(t, tc.wantFinished, tc.status.IsFinished())
 		})
 	}
@@ -96,24 +97,40 @@ func TestContractAvailabilityStringUnknown(t *testing.T) {
 	xassert.Equal(t, "?", app.ContractAvailability(99).String())
 }
 
-func TestCharacterContractHasIssue(t *testing.T) {
+func TestContractCategory(t *testing.T) {
+	now := time.Now()
+	future := now.Add(time.Hour)
+	past := now.Add(-time.Hour)
 	cases := []struct {
-		name    string
-		status  app.ContractStatus
-		expired time.Time
-		want    bool
+		name           string
+		status         app.ContractStatus
+		dateExpired    time.Time
+		dateAccepted   optional.Optional[time.Time]
+		daysToComplete optional.Optional[int64]
+		want           app.ContractCategory
 	}{
-		{"status has issue", app.ContractStatusFailed, time.Now().Add(time.Hour), true},
-		{"expired while active", app.ContractStatusOutstanding, time.Now().Add(-time.Hour), true},
-		{"not expired and no issue", app.ContractStatusOutstanding, time.Now().Add(time.Hour), false},
-		{"expired but inactive", app.ContractStatusFinished, time.Now().Add(-time.Hour), false},
+		{"outstanding", app.ContractStatusOutstanding, future, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryOutstanding},
+		{"outstanding expired", app.ContractStatusOutstanding, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryRequiresAttention},
+		{"in progress", app.ContractStatusInProgress, past, optional.New(now.AddDate(0, 0, -1)), optional.New[int64](3), app.ContractCategoryInProgress},
+		{"in progress overdue", app.ContractStatusInProgress, future, optional.New(now.AddDate(0, 0, -4)), optional.New[int64](3), app.ContractCategoryRequiresAttention},
+		{"in progress without days to complete", app.ContractStatusInProgress, past, optional.New(now.AddDate(0, 0, -4)), optional.Optional[int64]{}, app.ContractCategoryInProgress},
+		{"in progress without date accepted", app.ContractStatusInProgress, past, optional.Optional[time.Time]{}, optional.New[int64](3), app.ContractCategoryInProgress},
+		{"failed", app.ContractStatusFailed, future, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryRequiresAttention},
+		{"rejected", app.ContractStatusRejected, future, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryRequiresAttention},
+		{"finished", app.ContractStatusFinished, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryFinished},
+		{"finished contractor", app.ContractStatusFinishedContractor, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryFinished},
+		{"finished issuer", app.ContractStatusFinishedIssuer, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryFinished},
+		{"reversed", app.ContractStatusReversed, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryFinished},
+		{"cancelled", app.ContractStatusCancelled, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryOther},
+		{"deleted", app.ContractStatusDeleted, past, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryOther},
+		{"undefined", app.ContractStatusUndefined, future, optional.Optional[time.Time]{}, optional.Optional[int64]{}, app.ContractCategoryOther},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cc := app.CharacterContract{Status: tc.status, DateExpired: tc.expired}
-			xassert.Equal(t, tc.want, cc.HasIssue())
-			corp := app.CorporationContract{Status: tc.status, DateExpired: tc.expired}
-			xassert.Equal(t, tc.want, corp.HasIssue())
+			cc := app.CharacterContract{Status: tc.status, DateExpired: tc.dateExpired, DateAccepted: tc.dateAccepted, DaysToComplete: tc.daysToComplete}
+			xassert.Equal(t, tc.want, cc.Category())
+			corp := app.CorporationContract{Status: tc.status, DateExpired: tc.dateExpired, DateAccepted: tc.dateAccepted, DaysToComplete: tc.daysToComplete}
+			xassert.Equal(t, tc.want, corp.Category())
 		})
 	}
 }
