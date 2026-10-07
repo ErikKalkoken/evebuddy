@@ -109,8 +109,8 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 		t.Run(fmt.Sprintf("asset browser of character mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
 			a := NewCharacterBrowser(u)
-			a.Navigation.searchEntry.Text = "jita" // not via SetText: filtering before assets are loaded panics
-			a.Navigation.selectCategory.Selected = categoryAll
+			a.Navigation.searchEntry.SetText("jita")
+			a.Navigation.selectCategory.SetSelected(categoryAll)
 
 			switchCharacter(t, u)
 
@@ -120,8 +120,8 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 		t.Run(fmt.Sprintf("asset browser of corporation mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
 			a := NewCorporationBrowser(u)
-			a.Navigation.searchEntry.Text = "jita" // not via SetText: filtering before assets are loaded panics
-			a.Navigation.selectCategory.Selected = categoryAll
+			a.Navigation.searchEntry.SetText("jita")
+			a.Navigation.selectCategory.SetSelected(categoryAll)
 
 			switchCorporation(t, u)
 

@@ -4,10 +4,15 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -668,5 +673,35 @@ func createAsset(arg assetParams) app.Asset {
 func allPaths(td *xwidget.TreeData[containerNode]) [][]string {
 	return td.AllPaths(nil, func(n *containerNode) string {
 		return n.String()
+	})
+}
+
+func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newBrowser := func(t *testing.T) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.Navigation.setFooter("Waiting for data to be loaded...", widget.WarningImportance)
+		return a
+	}
+	t.Run("should not crash when searching", func(t *testing.T) {
+		a := newBrowser(t)
+
+		a.Navigation.searchEntry.SetText("jita")
+
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+	})
+	t.Run("should not crash when changing category", func(t *testing.T) {
+		a := newBrowser(t)
+
+		a.Navigation.selectCategory.SetSelected(categoryAll)
+
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
 	})
 }

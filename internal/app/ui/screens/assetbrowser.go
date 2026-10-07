@@ -563,6 +563,9 @@ func (a *browserNavigation) filterLocationsAsync() {
 	isLatest := a.filterRun.start()
 	filter := assetFilterLookup[a.selectCategory.Selected]
 	ft := a.filteredTrees[filter]
+	if ft.td == nil {
+		return // assets not loaded yet
+	}
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.searchEntry.Text)
 
