@@ -33,6 +33,9 @@ const (
 	marketOrderStateHistory = "History"
 )
 
+// marketOrderStateChoices are the state choices in display order. The first is the default.
+var marketOrderStateChoices = []string{marketOrderStateActive, marketOrderStateHistory}
+
 // Names of the market order filters, used as labels on desktop and as option names on mobile.
 const (
 	marketOrdersFilterOwner  = "Owner"
@@ -171,9 +174,10 @@ type MarketOrders struct {
 	rows         []marketOrderRow
 	rowsFiltered []marketOrderRow
 	searchEntry  *xwidget.SearchEntry
+	segmentState *xwidget.SegmentedButton   // only on mobile
 	selectOwner  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectRegion *kxwidget.FilterChipSelect
-	selectState  *kxwidget.FilterChipSelect // mode chip on all platforms
+	selectState  *kxwidget.FilterChipSelect // mode chip only on desktop
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
@@ -288,6 +292,9 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 	})
 
 	if a.u.IsMobile() {
+		a.segmentState = xwidget.NewSegmentedButton(marketOrderStateChoices, func(int) {
+			a.filterRowsAsync("")
+		})
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
 		})
@@ -303,15 +310,12 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
 		a.selectTag = makeSelect(marketOrdersFilterTag)
+		a.selectState = kxwidget.NewFilterChipSelect("", slices.Clone(marketOrderStateChoices), func(_ string) {
+			a.filterRowsAsync("")
+		})
+		a.selectState.Selected = marketOrderStateActive
+		a.selectState.SortDisabled = true
 	}
-	a.selectState = kxwidget.NewFilterChipSelect("", []string{
-		marketOrderStateActive,
-		marketOrderStateHistory,
-	}, func(_ string) {
-		a.filterRowsAsync("")
-	})
-	a.selectState.Selected = marketOrderStateActive
-	a.selectState.SortDisabled = true
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
@@ -347,7 +351,7 @@ func (a *MarketOrders) CreateRenderer() fyne.WidgetRenderer {
 	var top fyne.CanvasObject
 	if a.u.IsMobile() {
 		top = container.NewVBox(
-			container.NewHBox(a.selectState),
+			a.segmentState,
 			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
 		)
 	} else {
@@ -427,14 +431,14 @@ func (a *MarketOrders) makeDataList() *xwidget.StripedList {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop. State comes from its mode chip on both.
+// and from the filter chips on desktop. State comes from the segmented button on mobile.
 func (a *MarketOrders) currentFilter() marketOrdersFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
 		return marketOrdersFilter{
 			owner:    s[marketOrdersFilterOwner],
 			region:   s[marketOrdersFilterRegion],
-			state:    a.selectState.Selected,
+			state:    marketOrderStateChoices[a.segmentState.Selected],
 			tag:      s[marketOrdersFilterTag],
 			typeName: s[marketOrdersFilterType],
 		}
