@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 
@@ -696,8 +697,70 @@ func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
 	t.Run("should not crash when changing category", func(t *testing.T) {
 		a := newBrowser(t)
 
-		a.Navigation.selectCategory.SetSelected(categoryAll)
+		a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
 
 		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
 	})
+}
+
+func TestAssetBrowser_FilterCategory(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const (
+		alphaID   = 60000001
+		charlieID = 60000002
+	)
+	item := createCharacterAsset(assetParams{
+		Quantity:   1,
+		LocationID: alphaID,
+	})
+	safetyWrap := createCharacterAsset(assetParams{
+		IsSingleton:  true,
+		Quantity:     1,
+		LocationID:   charlieID,
+		LocationFlag: app.FlagAssetSafety,
+		LocationType: app.TypeStation,
+		Type:         assetSafetyWrapType(),
+	})
+	safetyItem := createCharacterAsset(assetParams{
+		Quantity:   1,
+		LocationID: safetyWrap.ItemID,
+	})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}, {ID: charlieID, Name: "Charlie"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{item, safetyWrap, safetyItem}, locations)
+	newBrowser := func(t *testing.T, isMobile bool) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	topLocations := func(a *AssetBrowser) []string {
+		var names []string
+		for _, n := range a.Navigation.locations.Data().Children(nil) {
+			names = append(names, n.String())
+		}
+		return names
+	}
+	for _, isMobile := range []bool{true, false} {
+		t.Run(fmt.Sprintf("shows all locations by default mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			assert.False(t, a.Navigation.filterChip.IsOn())
+			assert.ElementsMatch(t, []string{"Alpha", "Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("can filter by category mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categorySafety})
+			assert.ElementsMatch(t, []string{"Charlie"}, topLocations(a))
+		})
+		t.Run(fmt.Sprintf("keeps search when category changes mobile=%v", isMobile), func(t *testing.T) {
+			a := newBrowser(t, isMobile)
+			a.Navigation.searchEntry.SetText("alpha")
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryPersonal})
+			assert.Equal(t, "alpha", a.Navigation.searchEntry.Text)
+			assert.ElementsMatch(t, []string{"Alpha"}, topLocations(a))
+		})
+	}
 }

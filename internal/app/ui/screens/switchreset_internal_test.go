@@ -106,23 +106,23 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			u := newUI(t, isMobile)
 			a := NewCharacterBrowser(u)
 			a.Navigation.searchEntry.SetText("jita")
-			a.Navigation.selectCategory.SetSelected(categoryAll)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
 
 			switchCharacter(t, u)
 
 			assert.Empty(t, a.Navigation.searchEntry.Text)
-			assert.Equal(t, categoryPersonal, a.Navigation.selectCategory.Selected)
+			assert.False(t, a.Navigation.filterChip.IsOn())
 		})
 		t.Run(fmt.Sprintf("asset browser of corporation mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
 			a := NewCorporationBrowser(u)
 			a.Navigation.searchEntry.SetText("jita")
-			a.Navigation.selectCategory.SetSelected(categoryAll)
+			a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
 
 			switchCorporation(t, u)
 
 			assert.Empty(t, a.Navigation.searchEntry.Text)
-			assert.Equal(t, categoryOffice, a.Navigation.selectCategory.Selected)
+			assert.False(t, a.Navigation.filterChip.IsOn())
 		})
 	}
 	t.Run("wallet journal of character", func(t *testing.T) {

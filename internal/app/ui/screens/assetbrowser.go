@@ -18,8 +18,6 @@ import (
 	"github.com/dustin/go-humanize"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -201,8 +199,9 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 	a.Navigation.update(ctx, at.Locations())
 }
 
+const assetBrowserFilterCategory = "Category"
+
 const (
-	categoryAll        = "All"
 	categoryDeliveries = "Deliveries"
 	categoryImpounded  = "Impounded"
 	categoryInSpace    = "In Space"
@@ -242,15 +241,15 @@ type browserNavigation struct {
 
 	OnSelected func()
 
-	b              *AssetBrowser
-	collapseAll    *ttwidget.Button
-	filteredTrees  map[assetFilter]filteredTree
-	filterRun      latestRun
-	filters        []assetFilter
-	locations      *xwidget.Tree[containerNode]
-	searchEntry    *xwidget.SearchEntry
-	selectCategory *kxwidget.FilterChipSelect
-	footer         *widget.Label
+	b             *AssetBrowser
+	collapseAll   *ttwidget.Button
+	filterChip    *xwidget.FilterChipCompact
+	filteredTrees map[assetFilter]filteredTree
+	filterRun     latestRun
+	filters       []assetFilter
+	locations     *xwidget.Tree[containerNode]
+	searchEntry   *xwidget.SearchEntry
+	footer        *widget.Label
 }
 
 func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
@@ -282,6 +281,7 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			a.locations.UnselectAll()
 		}
 	}
+	var categories []string
 	if a.b.forCorporation {
 		a.filters = []assetFilter{
 			assetOffice,
@@ -292,20 +292,14 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetCorpOther,
 			assetNoFilter,
 		}
-		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+		categories = []string{
 			categoryOffice,
 			categoryImpounded,
 			categoryDeliveries,
 			categoryInSpace,
 			categorySafety,
 			categoryOther,
-			categoryAll,
-		}, func(string) {
-			a.searchEntry.ClearSilent()
-			a.filterLocationsAsync()
-		})
-		a.selectCategory.Selected = categoryOffice
-		a.selectCategory.SortDisabled = true
+		}
 	} else {
 		a.filters = []assetFilter{
 			assetPersonalAssets,
@@ -314,19 +308,18 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 			assetSafety,
 			assetNoFilter,
 		}
-		a.selectCategory = kxwidget.NewFilterChipSelect("", []string{
+		categories = []string{
 			categoryPersonal,
 			categoryDeliveries,
 			categoryInSpace,
 			categorySafety,
-			categoryAll,
-		}, func(string) {
-			a.searchEntry.ClearSilent()
-			a.filterLocationsAsync()
-		})
-		a.selectCategory.Selected = categoryPersonal
-		a.selectCategory.SortDisabled = true
+		}
 	}
+	a.filterChip = xwidget.NewFilterChipCompact([]xwidget.FilterOption{
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, categories),
+	}, func(map[string]string) {
+		a.filterLocationsAsync()
+	})
 	a.collapseAll = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.locations.CloseAllBranches()
 	})
@@ -337,13 +330,7 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 
 func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
-		container.NewBorder(
-			container.NewHBox(a.selectCategory, layout.NewSpacer(), a.collapseAll),
-			nil,
-			nil,
-			nil,
-			a.searchEntry,
-		),
+		container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.collapseAll), a.searchEntry),
 		a.footer,
 		nil,
 		nil,
@@ -351,15 +338,10 @@ func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	))
 }
 
-// resetFilters clears the search and sets the category back to its default without filtering again.
+// resetFilters clears the search and the category without filtering again.
 func (a *browserNavigation) resetFilters() {
 	a.searchEntry.ClearSilent()
-	if a.b.forCorporation {
-		a.selectCategory.Selected = categoryOffice
-	} else {
-		a.selectCategory.Selected = categoryPersonal
-	}
-	a.selectCategory.Refresh()
+	a.filterChip.ResetSilent()
 }
 
 func (a *browserNavigation) clear() {
@@ -548,8 +530,9 @@ func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	}
 }
 
+// assetFilterLookup maps categories to filters. No category means all assets.
 var assetFilterLookup = map[string]assetFilter{
-	categoryAll:        assetNoFilter,
+	"":                 assetNoFilter,
 	categoryDeliveries: assetDeliveries,
 	categoryImpounded:  assetImpounded,
 	categoryInSpace:    assetInSpace,
@@ -561,7 +544,7 @@ var assetFilterLookup = map[string]assetFilter{
 
 func (a *browserNavigation) filterLocationsAsync() {
 	isLatest := a.filterRun.start()
-	filter := assetFilterLookup[a.selectCategory.Selected]
+	filter := assetFilterLookup[a.filterChip.Selected()[assetBrowserFilterCategory]]
 	ft := a.filteredTrees[filter]
 	if ft.td == nil {
 		return // assets not loaded yet
@@ -593,7 +576,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 }
 
 func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
-	filter := assetFilterLookup[a.selectCategory.Selected]
+	filter := assetFilterLookup[a.filterChip.Selected()[assetBrowserFilterCategory]]
 	ft, ok := a.filteredTrees[filter]
 	if !ok {
 		ft = a.filteredTrees[assetNoFilter]
