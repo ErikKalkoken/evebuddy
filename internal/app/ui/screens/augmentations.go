@@ -47,13 +47,41 @@ const (
 	augmentationsImplantsSome = "Has implants"
 )
 
+func augmentationsImplantsOptions() []string {
+	return []string{augmentationsImplantsNone, augmentationsImplantsSome}
+}
+
+// Names of the augmentations filters, used as labels on desktop and as option names on mobile.
+const (
+	augmentationsFilterImplants = "Implants"
+	augmentationsFilterTag      = "Tag"
+)
+
+// augmentationsFilter is the selected value of each augmentations filter. Empty means not filtered.
+type augmentationsFilter struct {
+	implants string
+	tag      string
+}
+
+// match reports whether character node n passes all filters.
+func (f augmentationsFilter) match(n *augmentationNode) bool {
+	switch {
+	case f.implants == augmentationsImplantsNone && n.implantCount != 0,
+		f.implants == augmentationsImplantsSome && n.implantCount == 0,
+		f.tag != "" && !n.tags.Contains(f.tag):
+		return false
+	}
+	return true
+}
+
 type Augmentations struct {
 	widget.BaseWidget
 
 	collapseBranches *ttwidget.Button
+	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
 	footer           *widget.Label
-	selectImplants   *kxwidget.FilterChipSelect
+	selectImplants   *kxwidget.FilterChipSelect // select chips only on desktop
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[augmentationNode]
 	treeData         *xwidget.TreeData[augmentationNode]
@@ -67,15 +95,18 @@ func NewAugmentations(u baseUI) *Augmentations {
 	}
 	a.ExtendBaseWidget(a)
 	a.tree = a.makeTree()
-	a.selectImplants = kxwidget.NewFilterChipSelect("Implants", []string{
-		augmentationsImplantsNone,
-		augmentationsImplantsSome,
-	}, func(_ string) {
-		a.filterTreeAsync()
-	})
-	a.selectTag = kxwidget.NewFilterChipSelect("Tag", []string{}, func(string) {
-		a.filterTreeAsync()
-	})
+	if a.u.IsMobile() {
+		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
+			a.filterTreeAsync()
+		})
+	} else {
+		a.selectImplants = kxwidget.NewFilterChipSelect(augmentationsFilterImplants, augmentationsImplantsOptions(), func(string) {
+			a.filterTreeAsync()
+		})
+		a.selectTag = kxwidget.NewFilterChipSelect(augmentationsFilterTag, []string{}, func(string) {
+			a.filterTreeAsync()
+		})
+	}
 	a.collapseBranches = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.CollapseAllSvg), func() {
 		a.tree.CloseAllBranches()
 	})
@@ -103,19 +134,36 @@ func NewAugmentations(u baseUI) *Augmentations {
 }
 
 func (a *Augmentations) CreateRenderer() fyne.WidgetRenderer {
-	filter := container.NewHBox(
-		a.selectImplants,
-		a.selectTag,
-		a.collapseBranches,
-	)
+	var top fyne.CanvasObject
+	if a.u.IsMobile() {
+		top = container.NewHBox(a.filterChip, a.collapseBranches)
+	} else {
+		top = container.NewHScroll(container.NewHBox(a.selectImplants, a.selectTag, a.collapseBranches))
+	}
 	c := container.NewBorder(
-		container.NewHScroll(filter),
+		top,
 		a.footer,
 		nil,
 		nil,
 		a.tree,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// currentFilter returns the selected filters: from the compact chip on mobile
+// and from the filter chips on desktop.
+func (a *Augmentations) currentFilter() augmentationsFilter {
+	if a.filterChip != nil {
+		s := a.filterChip.Selected()
+		return augmentationsFilter{
+			implants: s[augmentationsFilterImplants],
+			tag:      s[augmentationsFilterTag],
+		}
+	}
+	return augmentationsFilter{
+		implants: a.selectImplants.Selected,
+		tag:      a.selectTag.Selected,
+	}
 }
 
 func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
@@ -146,44 +194,16 @@ func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 func (a *Augmentations) filterTreeAsync() {
 	isLatest := a.filterRun.start()
 	total := a.treeData.ChildrenCount(nil)
-	tag := a.selectTag.Selected
-	implants := a.selectImplants.Selected
+	filter := a.currentFilter()
 	td := a.treeData.Clone()
 
 	runAsync(func() {
-		var del []func(c *augmentationNode) bool // f returns true when c is to be deleted
-		if tag != "" {
-			del = append(del, func(c *augmentationNode) bool {
-				return !c.tags.Contains(tag)
-			})
-		}
-		if implants != "" {
-			switch implants {
-			case augmentationsImplantsNone:
-				del = append(del, func(c *augmentationNode) bool {
-					return c.implantCount != 0
-				})
-			case augmentationsImplantsSome:
-				del = append(del, func(c *augmentationNode) bool {
-					return c.implantCount == 0
-				})
+		for _, c := range td.Children(nil) {
+			if filter.match(c) {
+				continue
 			}
-		}
-
-		if len(del) > 0 {
-			characters := td.Children(nil)
-			for _, c := range characters {
-				var toDelete bool
-				for _, d := range del {
-					toDelete = toDelete || d(c)
-				}
-				if !toDelete {
-					continue
-				}
-				err := td.Delete(c)
-				if err != nil {
-					slog.Error("Failed to remove a character from an augmentations tree", "node", c)
-				}
+			if err := td.Delete(c); err != nil {
+				slog.Error("Failed to remove a character from an augmentations tree", "node", c)
 			}
 		}
 		characters := td.Children(nil)
@@ -199,7 +219,14 @@ func (a *Augmentations) filterTreeAsync() {
 			a.footer.Text = footer
 			a.footer.Importance = widget.MediumImportance
 			a.footer.Refresh()
-			a.selectTag.SetOptions(tagOptions)
+			if a.filterChip != nil {
+				a.filterChip.SetOptions(
+					xwidget.NewFilterOptionMultiChoice(augmentationsFilterImplants, augmentationsImplantsOptions()),
+					xwidget.NewFilterOptionMultiChoice(augmentationsFilterTag, tagOptions),
+				)
+			} else {
+				a.selectTag.SetOptions(tagOptions)
+			}
 			a.tree.Set(td)
 		})
 	})
