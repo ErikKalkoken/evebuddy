@@ -41,8 +41,8 @@ func newAllianceInfo(iw *InfoViewer, id int64) *allianceInfo {
 	a.attributes = newAttributeList(a.iw)
 	a.members = newEntityList(a.iw.show)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Attributes", a.attributes),
-		container.NewTabItem("Members", a.members),
+		ui.NewTabItem("Attributes", a.attributes),
+		ui.NewTabItem("Members", a.members),
 	)
 	return a
 }

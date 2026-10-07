@@ -256,15 +256,15 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 
 func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		container.NewTabItem(
+		ui.NewTabItem(
 			"Overview",
 			container.NewStack(a.overviewGrid, container.NewCenter(a.overviewEmpty)),
 		),
-		container.NewTabItem(
+		ui.NewTabItem(
 			"Characters",
 			container.NewStack(a.characterBreakdownCard, container.NewCenter(a.breakdownEmpty)),
 		),
-		container.NewTabItem("Details", a.details),
+		ui.NewTabItem("Details", a.details),
 	)
 	var top fyne.CanvasObject
 	if !a.u.IsMobile() {

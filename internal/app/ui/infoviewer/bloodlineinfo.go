@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
@@ -39,7 +40,7 @@ func newBloodlineInfo(iw *InfoViewer, id int64) *bloodlineInfo {
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 	)
 	return a
 }
@@ -87,7 +88,7 @@ func (a *bloodlineInfo) update(ctx context.Context) error {
 		attributes = append(attributes, newAttributeItem("EVE ID", fmt.Sprint(o.ID)))
 	}
 	fyne.Do(func() {
-		a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, attributes...)))
+		a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, attributes...)))
 	})
 
 	// 	if a.iw.u.IsDeveloperMode() {

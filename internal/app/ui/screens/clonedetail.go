@@ -109,8 +109,8 @@ func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem,
 		route = l
 	}
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Implants", implants),
-		container.NewTabItem("Route", route),
+		ui.NewTabItem("Implants", implants),
+		ui.NewTabItem("Route", route),
 	)
 	if r.jc.ImplantsCount == 0 {
 		tabs.DisableIndex(0)

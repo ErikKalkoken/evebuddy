@@ -62,9 +62,9 @@ func (a *CharacterWallet) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		container.NewAppTabs(
-			container.NewTabItem("Transactions", a.journal),
-			container.NewTabItem("Market Transactions", a.transactions),
-			container.NewTabItem("Loyalty Points", a.loyaltyPoints),
+			ui.NewTabItem("Transactions", a.journal),
+			ui.NewTabItem("Market Transactions", a.transactions),
+			ui.NewTabItem("Loyalty Points", a.loyaltyPoints),
 		),
 	)
 	return widget.NewSimpleRenderer(c)

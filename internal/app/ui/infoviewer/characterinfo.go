@@ -76,15 +76,15 @@ func newCharacterInfo(iw *InfoViewer, id int64) *characterInfo {
 	a.ExtendBaseWidget(a)
 	a.attributes = newAttributeList(a.iw)
 	a.employeeHistory = newEntityListFromItems(a.iw.show)
-	attributes := container.NewTabItem("Attributes", a.attributes)
+	attributes := ui.NewTabItem("Attributes", a.attributes)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Bio", container.NewVScroll(a.bio)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 		attributes,
 	)
 	ee := app.EveEntity{ID: id, Category: app.EveEntityCharacter}
 	if !ee.IsNPC().ValueOrZero() {
-		a.tabs.Append(container.NewTabItem("Employment History", a.employeeHistory))
+		a.tabs.Append(ui.NewTabItem("Employment History", a.employeeHistory))
 	}
 	a.tabs.Select(attributes)
 	return a

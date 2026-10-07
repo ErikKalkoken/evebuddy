@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -38,9 +39,9 @@ func newRegionInfo(iw *InfoViewer, id int64) *regionInfo {
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.constellations = newEntityList(a.iw.show)
-	constellations := container.NewTabItem("Constellations", a.constellations)
+	constellations := ui.NewTabItem("Constellations", a.constellations)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 		constellations,
 	)
 	a.tabs.Select(constellations)
@@ -88,7 +89,7 @@ func (a *regionInfo) update(ctx context.Context) error {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))
 			}
 			fyne.Do(func() {
-				a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+				a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 			})
 		}
 		fyne.Do(func() {
