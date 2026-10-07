@@ -21,61 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-func TestIndustryJob_Filter(t *testing.T) {
-	t.Skip("Temporarily disabled as they are now flaky with filtering running async") // TODO
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int64(app.Manufacturing),
-		Status:     app.JobReady,
-	})
-	j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int64(app.Copying),
-		Status:     app.JobReady,
-	})
-	j3 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int64(app.Reactions1),
-		Status:     app.JobReady,
-	})
-	j4 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-		ActivityID: int64(app.Reactions2),
-		Status:     app.JobReady,
-	})
-	a := NewJobsForOverview(testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	}))
-	a.update(t.Context())
-
-	t.Run("no filter", func(t *testing.T) {
-		a.selectActivity.SetSelected("")
-
-		got := xslices.Map(a.rowsFiltered, func(r industryJobRow) int64 {
-			return r.jobID
-		})
-		want := []int64{j1.JobID, j2.JobID, j3.JobID, j4.JobID}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can filter manufacturing", func(t *testing.T) {
-		a.selectActivity.SetSelected("Manufacturing")
-
-		got := xslices.Map(a.rowsFiltered, func(r industryJobRow) int64 {
-			return r.jobID
-		})
-		want := []int64{j1.JobID}
-		assert.ElementsMatch(t, want, got)
-	})
-	t.Run("can filter reactions", func(t *testing.T) {
-		a.selectActivity.SetSelected("Reactions")
-
-		got := xslices.Map(a.rowsFiltered, func(r industryJobRow) int64 {
-			return r.jobID
-		})
-		want := []int64{j3.JobID, j4.JobID}
-		assert.ElementsMatch(t, want, got)
-	})
-}
-
 func TestIndustryJob_FetchJobs(t *testing.T) {
 	if testing.Short() {
 		t.Skip(ui.SkipUITestReason)
@@ -153,6 +98,8 @@ func TestIndustryJobsFilter_Match(t *testing.T) {
 	byCorpmate.isInstallerMe = false
 	ownedByCorp := r
 	ownedByCorp.isOwnerMe = false
+	reaction1 := r
+	reaction1.activity = app.Reactions1
 	reaction := r
 	reaction.activity = app.Reactions2
 	paused := r
@@ -178,6 +125,7 @@ func TestIndustryJobsFilter_Match(t *testing.T) {
 		{"tag missing", industryJobsFilter{tag: "bravo"}, r, false},
 		{"manufacturing matches", industryJobsFilter{activity: industryActivityManufacturing}, r, true},
 		{"copying differs", industryJobsFilter{activity: industryActivityCopying}, r, false},
+		{"reactions matches reactions 1", industryJobsFilter{activity: industryActivityReaction}, reaction1, true},
 		{"reactions matches reactions 2", industryJobsFilter{activity: industryActivityReaction}, reaction, true},
 		{"reactions but manufacturing", industryJobsFilter{activity: industryActivityReaction}, r, false},
 		{"all active matches ready", industryJobsFilter{status: industryStatusActive}, r, true},
