@@ -15,16 +15,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestIndustryJob_FetchJobs(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ec := factory.CreateEveCharacter()
@@ -144,9 +140,6 @@ func TestIndustryJobsFilter_Match(t *testing.T) {
 }
 
 func TestIndustryJobs_FilterWidgets(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []industryJobRow{

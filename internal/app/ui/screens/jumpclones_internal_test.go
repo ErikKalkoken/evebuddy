@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -62,9 +61,6 @@ func TestJumpClonesFilter_Match(t *testing.T) {
 }
 
 func TestJumpClones_Filter(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []jumpCloneRow{

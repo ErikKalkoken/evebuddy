@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -57,9 +56,6 @@ func TestStructuresFilter_Match(t *testing.T) {
 }
 
 func TestStructures_Filter(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []structureRow{
@@ -168,9 +164,6 @@ func TestStructures_Filter(t *testing.T) {
 }
 
 func TestStructures_RefreshTicker(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	u := testdouble.NewUIFake(testdouble.UIParams{

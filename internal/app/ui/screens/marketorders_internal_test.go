@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 func TestMarketOrdersFilter_Match(t *testing.T) {
@@ -63,9 +62,6 @@ func TestMarketOrdersFilter_Match(t *testing.T) {
 }
 
 func TestMarketOrders_Filter(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	future := time.Now().Add(time.Hour)

@@ -11,16 +11,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // TestResetFiltersOnSwitch verifies that screens for the current character or corporation
 // clear their search and filters and reset modes to their defaults when that switches.
 func TestResetFiltersOnSwitch(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	newUI := func(t *testing.T, isMobile bool) baseUI {

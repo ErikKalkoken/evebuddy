@@ -10,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -41,9 +40,6 @@ func TestContractSlotsFilter_Match(t *testing.T) {
 }
 
 func TestContractSlots_Filter(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []contractSlotRow{

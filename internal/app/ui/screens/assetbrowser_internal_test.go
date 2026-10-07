@@ -12,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -677,9 +676,6 @@ func allPaths(td *xwidget.TreeData[containerNode]) [][]string {
 }
 
 func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	newBrowser := func(t *testing.T) *AssetBrowser {

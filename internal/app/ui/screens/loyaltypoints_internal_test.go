@@ -9,7 +9,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 func TestLoyaltyPointsFilter_Match(t *testing.T) {
@@ -29,9 +28,6 @@ func TestLoyaltyPointsFilter_Match(t *testing.T) {
 }
 
 func TestLoyaltyPoints_Filter(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	newData := func() map[*loyaltyPointsNode][]*loyaltyPointsNode {

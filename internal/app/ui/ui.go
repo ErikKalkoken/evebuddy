@@ -38,11 +38,6 @@ const (
 	fallbackWebsiteURL    = "https://github.com/ErikKalkoken/evebuddy"
 )
 
-// See also related Fyne issue: https://github.com/fyne-io/fyne/issues/5847
-const (
-	SkipUITestReason = "UI tests are flaky"
-)
-
 // EVEImageService defines which methods from the EVE image service is used in the UI.
 type EVEImageService interface {
 	AllianceLogo(id int64, size int) (fyne.Resource, error)

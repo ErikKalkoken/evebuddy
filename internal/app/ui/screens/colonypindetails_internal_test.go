@@ -22,9 +22,6 @@ import (
 )
 
 func TestColonyPinDetails(t *testing.T) {
-	if testing.Short() {
-		t.Skip(ui.SkipUITestReason)
-	}
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	now := time.Now().UTC()
