@@ -204,7 +204,19 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 const (
 	assetBrowserFilterCategory = "Category"
 	assetBrowserFilterHasShips = "Has ships"
+	assetBrowserFilterSecurity = "Security"
 )
+
+const (
+	securityHighSec  = "High-sec"
+	securityLowSec   = "Low-sec"
+	securityNullSec  = "Null-sec"
+	securityWormhole = "W-space"
+)
+
+func assetBrowserSecurityOptions() []string {
+	return []string{securityHighSec, securityLowSec, securityNullSec, securityWormhole}
+}
 
 const (
 	categoryDeliveries = "Deliveries"
@@ -325,6 +337,7 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 		xwidget.NewFilterOptionToogle(assetBrowserFilterHasShips),
 		xwidget.NewFilterOptionSeparator(),
 		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterCategory, categories),
+		xwidget.NewFilterOptionMultiChoice(assetBrowserFilterSecurity, assetBrowserSecurityOptions()),
 	}, func(map[string]string) {
 		a.filterLocationsAsync()
 	})
@@ -528,6 +541,29 @@ func locationsWithDockedShips(td *xwidget.TreeData[containerNode]) set.Set[*cont
 	return locations
 }
 
+// locationSecurityBand returns the security band of a location
+// or an empty string when its solar system is not known.
+func locationSecurityBand(n *containerNode) string {
+	el, ok := n.node.Location()
+	if !ok {
+		return ""
+	}
+	es, ok := el.SolarSystem.Value()
+	if !ok || es == nil {
+		return ""
+	}
+	if es.IsWormholeSpace() {
+		return securityWormhole
+	}
+	switch es.SecurityType() {
+	case app.HighSec, app.SuperHighSec:
+		return securityHighSec
+	case app.LowSec:
+		return securityLowSec
+	}
+	return securityNullSec
+}
+
 func updateItemCounts(td *xwidget.TreeData[containerNode]) {
 	td.Walk(nil, func(n *containerNode) bool {
 		if k := n.node.ChildrenCount(); k > 0 && !n.node.IsShip() {
@@ -579,6 +615,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	selected := a.filterChip.Selected()
 	filter := assetFilterLookup[selected[assetBrowserFilterCategory]]
 	hasShips := selected[assetBrowserFilterHasShips] != ""
+	security := selected[assetBrowserFilterSecurity]
 	ft := a.filteredTrees[filter]
 	if ft.td == nil {
 		return // assets not loaded yet
@@ -588,10 +625,13 @@ func (a *browserNavigation) filterLocationsAsync() {
 
 	runAsync(func() {
 		var td *xwidget.TreeData[containerNode]
-		if len(search) > 1 || hasShips {
+		if len(search) > 1 || hasShips || security != "" {
 			td = ft.td.Clone()
 			td.DeleteChildrenFunc(nil, func(n *containerNode) bool {
 				if len(search) > 1 && !strings.Contains(n.searchText, search) {
+					return true
+				}
+				if security != "" && locationSecurityBand(n) != security {
 					return true
 				}
 				return hasShips && !ft.withShips.Contains(n)
