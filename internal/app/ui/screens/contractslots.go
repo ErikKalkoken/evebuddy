@@ -27,6 +27,10 @@ const (
 	contractSlotsFreeNone = "No free slots"
 )
 
+func contractSlotsFreeSlotsOptions() []string {
+	return []string{contractSlotsFreeSome, contractSlotsFreeNone}
+}
+
 // Names of the contract slot filters, used as labels on desktop and as option names on mobile.
 const (
 	contractSlotsFilterCorporation = "Corporation"
@@ -240,7 +244,7 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 			})
 		}
 		a.selectCorporation = makeSelect(contractSlotsFilterCorporation)
-		a.selectFreeSlots = makeSelect(contractSlotsFilterFreeSlots, contractSlotsFreeSome, contractSlotsFreeNone)
+		a.selectFreeSlots = makeSelect(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()...)
 		a.selectTag = makeSelect(contractSlotsFilterTag)
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -382,7 +386,7 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterCorporation, corporationOptions),
-					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterFreeSlots, []string{contractSlotsFreeSome, contractSlotsFreeNone}),
+					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterFreeSlots, contractSlotsFreeSlotsOptions()),
 					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterTag, tagOptions),
 				)
 			} else {

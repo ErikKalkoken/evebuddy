@@ -35,6 +35,10 @@ const (
 	trainingStatusInActive = "Inactive"
 )
 
+func trainingStatusOptions() []string {
+	return []string{trainingStatusActive, trainingStatusInActive}
+}
+
 // Names of the training filters, used as labels on desktop and as option names on mobile.
 const (
 	trainingFilterStatus = "Status"
@@ -298,15 +302,9 @@ func NewTraining(u baseUI) *Training {
 			a.filterRowsAsync("")
 		})
 	} else {
-		a.selectStatus = kxwidget.NewFilterChipSelect(
-			trainingFilterStatus,
-			[]string{
-				trainingStatusActive,
-				trainingStatusInActive,
-			}, func(string) {
-				a.filterRowsAsync("")
-			},
-		)
+		a.selectStatus = kxwidget.NewFilterChipSelect(trainingFilterStatus, trainingStatusOptions(), func(string) {
+			a.filterRowsAsync("")
+		})
 		a.selectTag = kxwidget.NewFilterChipSelect(trainingFilterTag, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
@@ -551,7 +549,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(trainingFilterStatus, []string{trainingStatusActive, trainingStatusInActive}),
+					xwidget.NewFilterOptionMultiChoice(trainingFilterStatus, trainingStatusOptions()),
 					xwidget.NewFilterOptionMultiChoice(trainingFilterTag, tagOptions),
 				)
 			} else {

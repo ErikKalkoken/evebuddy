@@ -41,6 +41,10 @@ const (
 	assetSearchTotalNo  = "Has no total"
 )
 
+func assetSearchTotalOptions() []string {
+	return []string{assetSearchTotalYes, assetSearchTotalNo}
+}
+
 // Names of the asset search filters, used as labels on desktop and as option names on mobile.
 const (
 	assetSearchFilterCategory = "Category"
@@ -457,7 +461,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 		a.selectLocation = makeSelectWithSearch(assetSearchFilterLocation)
 		a.selectState = makeSelect(assetSearchFilterState)
 		a.selectTotal = makeSelect(assetSearchFilterTotal)
-		a.selectTotal.SetOptions([]string{assetSearchTotalYes, assetSearchTotalNo})
+		a.selectTotal.SetOptions(assetSearchTotalOptions())
 		a.selectTag = makeSelect(assetSearchFilterTag)
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -821,7 +825,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterRegion, regionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterLocation, locationOptions),
 					xwidget.NewFilterOptionMultiChoice(assetSearchFilterState, stateOptions),
-					xwidget.NewFilterOptionMultiChoice(assetSearchFilterTotal, []string{assetSearchTotalYes, assetSearchTotalNo}),
+					xwidget.NewFilterOptionMultiChoice(assetSearchFilterTotal, assetSearchTotalOptions()),
 				}
 				if !a.forCorporation {
 					options = append(options,

@@ -32,6 +32,10 @@ const (
 	marketTransactionActivitySell = "Sell"
 )
 
+func walletTransactionActivityOptions() []string {
+	return []string{marketTransactionActivityBuy, marketTransactionActivitySell}
+}
+
 // Names of the wallet transaction filters, used as labels on desktop and as option names on mobile.
 const (
 	walletTransactionFilterActivity = "Activity"
@@ -280,10 +284,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 				a.filterRowsAsync("")
 			}, a.u.MainWindow())
 		}
-		a.selectActivity = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, []string{
-			marketTransactionActivityBuy,
-			marketTransactionActivitySell,
-		}, func(_ string) {
+		a.selectActivity = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, walletTransactionActivityOptions(), func(_ string) {
 			a.filterRowsAsync("")
 		})
 		a.selectCategory = makeSelectWithSearch(walletTransactionFilterCategory)
@@ -473,10 +474,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{
-						marketTransactionActivityBuy,
-						marketTransactionActivitySell,
-					}),
+					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, walletTransactionActivityOptions()),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterCategory, categoryOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterType, typeOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),

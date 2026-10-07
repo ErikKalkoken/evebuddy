@@ -31,6 +31,10 @@ const (
 	structuresPowerHigh = "High Power"
 )
 
+func structuresPowerOptions() []string {
+	return []string{structuresPowerHigh, structuresPowerLow}
+}
+
 // Names of the structure filters, used as labels on desktop and as option names on mobile.
 const (
 	structuresFilterOwner   = "Owner"
@@ -280,7 +284,7 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 		a.selectState = makeSelect(structuresFilterState)
 		a.selectType = makeSelect(structuresFilterType)
 		a.selectPower = makeSelect(structuresFilterPower)
-		a.selectPower.SetOptions([]string{structuresPowerHigh, structuresPowerLow})
+		a.selectPower.SetOptions(structuresPowerOptions())
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
@@ -439,7 +443,7 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 				}
 				options = append(options,
 					xwidget.NewFilterOptionMultiChoice(structuresFilterService, servicesOptions),
-					xwidget.NewFilterOptionMultiChoice(structuresFilterPower, []string{structuresPowerHigh, structuresPowerLow}),
+					xwidget.NewFilterOptionMultiChoice(structuresFilterPower, structuresPowerOptions()),
 				)
 				a.filterChip.SetOptions(options...)
 			} else {
