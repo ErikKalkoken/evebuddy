@@ -4,8 +4,14 @@ import (
 	"bytes"
 	"testing"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestSkillsForClipboard(t *testing.T) {
@@ -66,5 +72,84 @@ func TestWriteSkillCatalogueRowsToCSV(t *testing.T) {
 		err := writeSkillCatalogueRowsToCSV(&b, nil)
 		require.NoError(t, err)
 		assert.Equal(t, "Name,Level\n", b.String())
+	})
+}
+
+func TestSkillCatalogueFilter_Match(t *testing.T) {
+	trained := skillCatalogueRow{groupName: "Gunnery", levelActive: 3, levelTrained: 3}
+	untrained := skillCatalogueRow{groupName: "Gunnery", hasPrerequisites: true}
+	queued := skillCatalogueRow{groupName: "Gunnery", levelQueued: 1}
+	maxed := skillCatalogueRow{groupName: "Gunnery", hasPrerequisites: true, levelActive: 5, levelTrained: 5}
+	for _, tc := range []struct {
+		name   string
+		filter skillCatalogueFilter
+		row    skillCatalogueRow
+		want   bool
+	}{
+		{"no filter", skillCatalogueFilter{}, untrained, true},
+		{"all skills", skillCatalogueFilter{main: skillCatalogueAllSkill}, untrained, true},
+		{"group matches", skillCatalogueFilter{group: "Gunnery"}, trained, true},
+		{"group differs", skillCatalogueFilter{group: "Navigation"}, trained, false},
+		{"my skills matches", skillCatalogueFilter{main: skillCatalogueMySkill}, trained, true},
+		{"my skills but untrained", skillCatalogueFilter{main: skillCatalogueMySkill}, untrained, false},
+		{"have prerequisites matches", skillCatalogueFilter{main: skillCatalogueHavePrerequisites}, untrained, true},
+		{"have prerequisites but maxed", skillCatalogueFilter{main: skillCatalogueHavePrerequisites}, maxed, false},
+		{"queued matches", skillCatalogueFilter{main: skillCatalogueQueued}, queued, true},
+		{"queued but not queued", skillCatalogueFilter{main: skillCatalogueQueued}, trained, false},
+		{"fully trained matches", skillCatalogueFilter{main: skillCatalogueFullyTrained}, maxed, true},
+		{"fully trained but not", skillCatalogueFilter{main: skillCatalogueFullyTrained}, trained, false},
+		{"mode and group combined", skillCatalogueFilter{group: "Navigation", main: skillCatalogueMySkill}, trained, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.filter.match(tc.row))
+		})
+	}
+}
+
+func TestSkillCatalogue_Filter(t *testing.T) {
+	if testing.Short() {
+		t.Skip(ui.SkipUITestReason)
+	}
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	rows := []skillCatalogueRow{
+		{typeID: 1, name: "Gunnery", groupName: "Gunnery", levelActive: 1, levelTrained: 1, searchTarget: "gunnery"},
+		{typeID: 2, name: "Navigation", groupName: "Navigation", searchTarget: "navigation"},
+	}
+	newCatalogue := func(t *testing.T, isMobile bool) *SkillCatalogue {
+		a := NewSkillCatalogue(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: isMobile,
+			Storage:  st,
+		}))
+		a.rows = rows
+		a.filterRowsAsync()
+		require.Len(t, a.rowsFiltered, 2) // all skills by default
+		return a
+	}
+	typeIDs := func(a *SkillCatalogue) []int64 {
+		return xslices.Map(a.rowsFiltered, func(r skillCatalogueRow) int64 {
+			return r.typeID
+		})
+	}
+	t.Run("can filter on mobile", func(t *testing.T) {
+		a := newCatalogue(t, true)
+		a.filterChip.SetSelected(map[string]string{skillCatalogueFilterGroup: "Navigation"})
+		assert.ElementsMatch(t, []int64{2}, typeIDs(a))
+	})
+	t.Run("can filter on desktop", func(t *testing.T) {
+		a := newCatalogue(t, false)
+		a.selectGroup.SetSelected("Navigation")
+		assert.ElementsMatch(t, []int64{2}, typeIDs(a))
+	})
+	t.Run("can switch mode on mobile", func(t *testing.T) {
+		a := newCatalogue(t, true)
+		a.selectMain.SetSelected(skillCatalogueMySkill)
+		assert.ElementsMatch(t, []int64{1}, typeIDs(a))
+	})
+	t.Run("can search on mobile", func(t *testing.T) {
+		a := newCatalogue(t, true)
+		a.searchEntry.SetText("navi")
+		assert.ElementsMatch(t, []int64{2}, typeIDs(a))
 	})
 }
