@@ -82,6 +82,7 @@ func newBrowser(u baseUI, forCorporation bool) *AssetBrowser {
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(a.Navigation.resetFilters)
 			a.Update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -95,6 +96,7 @@ func newBrowser(u baseUI, forCorporation bool) *AssetBrowser {
 	} else {
 		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 			a.character.Store(c)
+			fyne.Do(a.Navigation.resetFilters)
 			a.Update(ctx)
 		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -347,6 +349,17 @@ func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.locations,
 	))
+}
+
+// resetFilters clears the search and sets the category back to its default without filtering again.
+func (a *browserNavigation) resetFilters() {
+	a.searchEntry.ClearSilent()
+	if a.b.forCorporation {
+		a.selectCategory.Selected = categoryOffice
+	} else {
+		a.selectCategory.Selected = categoryPersonal
+	}
+	a.selectCategory.Refresh()
 }
 
 func (a *browserNavigation) clear() {

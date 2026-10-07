@@ -59,7 +59,7 @@ func TestStructures_Filter(t *testing.T) {
 	if testing.Short() {
 		t.Skip(ui.SkipUITestReason)
 	}
-	db, st, _ := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []structureRow{
 		{structureID: 1, structureName: "Jita - Trade Hub", solarSystemName: "Jita", typeName: "Keepstar"},
@@ -143,4 +143,25 @@ func TestStructures_Filter(t *testing.T) {
 			}
 		})
 	}
+	t.Run("resets filters and search when corporation changes on mobile", func(t *testing.T) {
+		a := newStructures(t, true, true)
+		a.filterChip.SetSelected(map[string]string{structuresFilterType: "Astrahus"})
+		a.searchEntry.SetText("home")
+		require.True(t, a.filterChip.IsOn())
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+
+		assert.False(t, a.filterChip.IsOn())
+		assert.Empty(t, a.searchEntry.Text)
+	})
+	t.Run("resets filters and search when corporation changes on desktop", func(t *testing.T) {
+		a := newStructures(t, false, true)
+		a.selectType.SetSelected("Astrahus")
+		a.searchEntry.SetText("home")
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+
+		assert.Empty(t, a.currentFilter())
+		assert.Empty(t, a.searchEntry.Text)
+	})
 }

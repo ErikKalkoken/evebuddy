@@ -417,6 +417,16 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				a.searchEntry.ClearSilent()
+				a.selectStatus.Selected = contractStatusAllActive
+				a.selectStatus.Refresh()
+				if a.filterChip != nil {
+					a.filterChip.ResetSilent()
+					return
+				}
+				clearSelectsSilent(a.selectAssignee, a.selectIssuer, a.selectTag, a.selectType)
+			})
 			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {

@@ -290,6 +290,22 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 	if forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				a.searchEntry.ClearSilent()
+				if a.filterChip != nil {
+					a.filterChip.ResetSilent()
+					return
+				}
+				clearSelectsSilent(
+					a.selectOwner,
+					a.selectPower,
+					a.selectRegion,
+					a.selectService,
+					a.selectSolarSystem,
+					a.selectState,
+					a.selectType,
+				)
+			})
 			a.update(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {

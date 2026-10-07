@@ -183,6 +183,16 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			a.searchEntry.ClearSilent()
+			a.selectMain.Selected = skillCatalogueAllSkill
+			a.selectMain.Refresh()
+			if a.filterChip != nil {
+				a.filterChip.ResetSilent()
+				return
+			}
+			clearSelectsSilent(a.selectGroup)
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {

@@ -77,6 +77,9 @@ func NewCharacterWalletJournal(u baseUI) *WalletJournal {
 	a := newWalletJournal(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(func() {
+			clearSelectsSilent(a.selectType)
+		})
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -95,6 +98,9 @@ func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
 	a.u.Signals().CurrentCorporationExchanged.AddListener(
 		func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
+			fyne.Do(func() {
+				clearSelectsSilent(a.selectType)
+			})
 			a.Update(ctx)
 		},
 	)

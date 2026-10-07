@@ -129,6 +129,7 @@ func NewCharacterWalletTransaction(u baseUI) *WalletTransactions {
 	a := newWalletTransaction(u, app.DivisionZero)
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
+		fyne.Do(a.resetFilters)
 		a.Update(ctx)
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -146,6 +147,7 @@ func NewCorporationWalletTransactions(u baseUI, d app.Division) *WalletTransacti
 	a := newWalletTransaction(u, d)
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
+		fyne.Do(a.resetFilters)
 		a.Update(ctx)
 	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
@@ -343,6 +345,23 @@ func (a *WalletTransactions) currentFilter() walletTransactionFilter {
 		region:   a.selectRegion.Selected,
 		typeName: a.selectType.Selected,
 	}
+}
+
+// resetFilters clears search and filters without filtering again.
+func (a *WalletTransactions) resetFilters() {
+	a.searchEntry.ClearSilent()
+	if a.filterChip != nil {
+		a.filterChip.ResetSilent()
+		return
+	}
+	clearSelectsSilent(
+		a.selectActivity,
+		a.selectCategory,
+		a.selectClient,
+		a.selectLocation,
+		a.selectRegion,
+		a.selectType,
+	)
 }
 
 func (a *WalletTransactions) isCorporation() bool {

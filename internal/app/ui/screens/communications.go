@@ -90,6 +90,8 @@ func newCommunications(u baseUI, forCharacter bool) *Communications {
 			a.character.Store(c)
 			fyne.Do(func() {
 				a.ReadingPane.clear()
+				a.MessagePane.searchEntry.ClearSilent()
+				a.MessagePane.filterChip.ResetSilent()
 			})
 			a.update(ctx)
 		})
