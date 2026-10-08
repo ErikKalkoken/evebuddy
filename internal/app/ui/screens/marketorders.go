@@ -310,11 +310,9 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
 		a.selectTag = makeSelect(marketOrdersFilterTag)
-		a.selectState = kxwidget.NewFilterChipSelect("", slices.Clone(marketOrderStateChoices), func(_ string) {
+		a.selectState = newModeChip(marketOrderStateChoices, marketOrderStateActive, func(string) {
 			a.filterRowsAsync("")
 		})
-		a.selectState.Selected = marketOrderStateActive
-		a.selectState.SortDisabled = true
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")

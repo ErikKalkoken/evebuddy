@@ -38,6 +38,16 @@ func clearSelectsSilent(chips ...*kxwidget.FilterChipSelect) {
 	}
 }
 
+// newModeChip returns a filter chip for switching between modes.
+// It always has a selection and keeps choices in the given order.
+func newModeChip(choices []string, selected string, changed func(string)) *kxwidget.FilterChipSelect {
+	c := kxwidget.NewFilterChipSelect("", slices.Clone(choices), changed)
+	c.ClearDisabled = true
+	c.SortDisabled = true
+	c.Selected = selected
+	return c
+}
+
 // latestRun identifies the newest of overlapping async runs,
 // so results from older runs can be discarded.
 type latestRun struct{ n atomic.Int64 }
