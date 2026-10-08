@@ -181,6 +181,7 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 			}),
 		),
 	)
+	a.moreButton.SetToolTip("Show more options")
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
