@@ -43,6 +43,18 @@ func renderedTexts(w fyne.Widget) []string {
 	return texts
 }
 
+func TestNewModeChip(t *testing.T) {
+	choices := []string{"Beta", "Alpha"}
+	chip := newModeChip(choices, "Beta", func(string) {})
+	assert.Empty(t, chip.Placeholder)
+	assert.Equal(t, "Beta", chip.Selected)
+	assert.Equal(t, []string{"Beta", "Alpha"}, chip.Options)
+	assert.True(t, chip.ClearDisabled)
+	assert.True(t, chip.SortDisabled)
+	choices[0] = "Gamma"
+	assert.Equal(t, "Beta", chip.Options[0], "choices must be cloned")
+}
+
 func TestClearSelectsSilent(t *testing.T) {
 	test.NewTempApp(t)
 	var calls int

@@ -244,11 +244,9 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 		for _, c := range searchSkillChoices {
 			labels = append(labels, searchSkillChipLabels[c])
 		}
-		a.selectSkill = kxwidget.NewFilterChipSelect("", labels, func(string) {
+		a.selectSkill = newModeChip(labels, searchSkillChipLabels[searchSkillActive], func(string) {
 			a.filterRowsAsync("")
 		})
-		a.selectSkill.Selected = searchSkillChipLabels[searchSkillActive]
-		a.selectSkill.SortDisabled = true
 		a.selectCharacter = kxwidget.NewFilterChipSelect(skillSearchFilterCharacter, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
