@@ -81,3 +81,56 @@ func TestNavRail_TappingActionItem(t *testing.T) {
 	test.Tap(x.dest)
 	assert.Equal(t, 1, tapped)
 }
+
+func TestNavRail_IndicatorFollowsSelection(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+	c := NewNavRailItem(theme.SettingsIcon(), "C", widget.NewLabel("C"))
+	nr := NewNavRail([]*NavRailItem{a, b}, c)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(300, 400))
+
+	assertIndicatorAt(t, nr, a)
+
+	nr.Select(b)
+	assertIndicatorAt(t, nr, b)
+
+	nr.Select(c)
+	assertIndicatorAt(t, nr, c)
+
+	nr.DisableItem(c)
+	assertIndicatorAt(t, nr, a)
+}
+
+func TestNavRail_IndicatorFollowsTrailingItemOnResize(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	c := NewNavRailItem(theme.SettingsIcon(), "C", widget.NewLabel("C"))
+	nr := NewNavRail([]*NavRailItem{a}, c)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(300, 400))
+	nr.Select(c)
+
+	w.Resize(fyne.NewSize(300, 500))
+	assertIndicatorAt(t, nr, c)
+}
+
+// assertIndicatorAt asserts that the indicator sits on the separator next to it.
+func assertIndicatorAt(t *testing.T, nr *NavRail, it *NavRailItem) {
+	t.Helper()
+	d := fyne.CurrentApp().Driver()
+	origin := d.AbsolutePositionForObject(nr)
+	dest := d.AbsolutePositionForObject(it.dest).Subtract(origin)
+	sep := d.AbsolutePositionForObject(nr.separator).Subtract(origin)
+	assert.Equal(t, fyne.NewPos(sep.X, dest.Y), nr.indicator.Position())
+	assert.Equal(t, it.dest.Size().Height, nr.indicator.Size().Height)
+	assert.Equal(t, theme.Size(theme.SizeNameSeparatorThickness), nr.indicator.Size().Width)
+	assert.Equal(t, theme.Color(theme.ColorNamePrimary), nr.indicator.FillColor)
+}
