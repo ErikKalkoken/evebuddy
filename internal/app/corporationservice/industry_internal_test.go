@@ -583,4 +583,107 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		}
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should mark orphaned jobs when nothing else changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobReady,
+		})
+		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobDelivered,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          j2.BlueprintID,
+					"blueprint_location_id": j2.BlueprintLocationID,
+					"blueprint_type_id":     j2.BlueprintType.ID,
+					"duration":              j2.Duration,
+					"end_date":              j2.EndDate.Format(time.RFC3339),
+					"facility_id":           j2.FacilityID,
+					"installer_id":          j2.Installer.ID,
+					"job_id":                j2.JobID,
+					"location_id":           j2.Location.ID,
+					"output_location_id":    j2.OutputLocationID,
+					"runs":                  j2.Runs,
+					"start_date":            j2.StartDate.Format(time.RFC3339),
+					"status":                "delivered",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListAllCorporationIndustryJobs(ctx)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
+			return x.JobID, x.Status
+		}))
+		want := map[int64]app.IndustryJobStatus{
+			j1.JobID: app.JobUnknown,
+			j2.JobID: app.JobDelivered,
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should report no change when nothing changed and no orphans", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobDelivered,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          j1.BlueprintID,
+					"blueprint_location_id": j1.BlueprintLocationID,
+					"blueprint_type_id":     j1.BlueprintType.ID,
+					"duration":              j1.Duration,
+					"end_date":              j1.EndDate.Format(time.RFC3339),
+					"facility_id":           j1.FacilityID,
+					"installer_id":          j1.Installer.ID,
+					"job_id":                j1.JobID,
+					"location_id":           j1.Location.ID,
+					"output_location_id":    j1.OutputLocationID,
+					"runs":                  j1.Runs,
+					"start_date":            j1.StartDate.Format(time.RFC3339),
+					"status":                "delivered",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.GetCorporationIndustryJob(ctx, c.ID, j1.JobID)
+		require.NoError(t, err)
+		assert.Equal(t, app.JobDelivered, got.Status)
+	})
 }

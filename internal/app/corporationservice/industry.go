@@ -111,70 +111,71 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 			}
 
 			// Process changed jobs
-			if len(changedJobs) == 0 {
-				return false, nil
-			}
-
-			var entityIDs set.Set[int64]
-			var typeIDs set.Set[int64]
-			var locationIDs set.Set[int64]
-			for _, j := range jobs {
-				entityIDs.Add(j.InstallerId)
-				if x := j.CompletedCharacterId; x != nil {
-					entityIDs.Add(*x)
+			hasChanges := len(changedJobs) > 0
+			if hasChanges {
+				var entityIDs set.Set[int64]
+				var typeIDs set.Set[int64]
+				var locationIDs set.Set[int64]
+				for _, j := range jobs {
+					entityIDs.Add(j.InstallerId)
+					if x := j.CompletedCharacterId; x != nil {
+						entityIDs.Add(*x)
+					}
+					locationIDs.Add(j.LocationId)
+					typeIDs.Add(j.BlueprintTypeId)
+					if x := j.ProductTypeId; x != nil {
+						typeIDs.Add(*x)
+					}
 				}
-				locationIDs.Add(j.LocationId)
-				typeIDs.Add(j.BlueprintTypeId)
-				if x := j.ProductTypeId; x != nil {
-					typeIDs.Add(*x)
-				}
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
-			for _, j := range jobs {
-				if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
-					ActivityID:           j.ActivityId,
-					BlueprintID:          j.BlueprintId,
-					BlueprintLocationID:  j.BlueprintLocationId,
-					BlueprintTypeID:      j.BlueprintTypeId,
-					CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
-					CompletedDate:        optional.FromPtr(j.CompletedDate),
-					CorporationID:        arg.corporationID,
-					Cost:                 optional.FromPtr(j.Cost),
-					Duration:             j.Duration,
-					EndDate:              j.EndDate,
-					FacilityID:           j.FacilityId,
-					InstallerID:          j.InstallerId,
-					JobID:                j.JobId,
-					LicensedRuns:         optional.FromPtr(j.LicensedRuns),
-					LocationID:           j.LocationId,
-					OutputLocationID:     j.OutputLocationId,
-					PauseDate:            optional.FromPtr(j.PauseDate),
-					Probability:          optional.FromPtr(j.Probability),
-					ProductTypeID:        optional.FromPtr(j.ProductTypeId),
-					Runs:                 j.Runs,
-					StartDate:            j.StartDate,
-					Status:               statusFromESIJob(j),
-					SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
-				}); err != nil {
+				g := new(errgroup.Group)
+				g.Go(func() error {
+					_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+					return err
+				})
+				g.Go(func() error {
+					return s.eus.AddMissingLocations(ctx, locationIDs)
+				})
+				g.Go(func() error {
+					return s.eus.AddMissingTypes(ctx, typeIDs)
+				})
+				if err := g.Wait(); err != nil {
 					return false, err
 				}
+				for _, j := range jobs {
+					if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
+						ActivityID:           j.ActivityId,
+						BlueprintID:          j.BlueprintId,
+						BlueprintLocationID:  j.BlueprintLocationId,
+						BlueprintTypeID:      j.BlueprintTypeId,
+						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+						CompletedDate:        optional.FromPtr(j.CompletedDate),
+						CorporationID:        arg.corporationID,
+						Cost:                 optional.FromPtr(j.Cost),
+						Duration:             j.Duration,
+						EndDate:              j.EndDate,
+						FacilityID:           j.FacilityId,
+						InstallerID:          j.InstallerId,
+						JobID:                j.JobId,
+						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
+						LocationID:           j.LocationId,
+						OutputLocationID:     j.OutputLocationId,
+						PauseDate:            optional.FromPtr(j.PauseDate),
+						Probability:          optional.FromPtr(j.Probability),
+						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
+						Runs:                 j.Runs,
+						StartDate:            j.StartDate,
+						Status:               statusFromESIJob(j),
+						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
+					}); err != nil {
+						return false, err
+					}
+				}
+				slog.Info("Updated industry jobs", "corporationID", arg.corporationID, "count", len(jobs))
 			}
-			slog.Info("Updated industry jobs", "corporationID", arg.corporationID, "count", len(jobs))
 
 			// Mark orphans
+			// The ESI response only returns jobs from the last 90 days, so a long
+			// running job can vanish from it even when nothing else changed this cycle.
 			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.CorporationsCorporationIdIndustryJobsGetInner) int64 {
 				return x.JobId
 			}))
@@ -189,13 +190,9 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 			}))
 			orphans := set.Difference(running, incoming)
 			if orphans.Size() == 0 {
-				return true, nil
+				return hasChanges, nil
 			}
 
-			// The ESI response only returns jobs from the last 90 days.
-			// It can therefore happen that a long running job vanishes from the response,
-			// without the app having received a final status (e.g. delivered or canceled).
-			// The status of these orphaned job is therefore marked as undefined.
 			err = s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
 				CorporationID: arg.corporationID,
 				JobIDs:        orphans,
