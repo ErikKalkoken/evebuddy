@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestIconButton_CanCreateAndTap(t *testing.T) {
 	w := test.NewWindow(b)
 	defer w.Close()
 
-	test.Tap(b.Icon)
+	test.Tap(b)
 	assert.True(t, tapped)
 }
 
@@ -32,13 +33,11 @@ func TestIconButton_CanCreateWithMenu(t *testing.T) {
 
 	menu := fyne.NewMenu("", fyne.NewMenuItem("Item1", nil))
 	b := xwidget.NewIconButtonWithMenu(theme.HomeIcon(), menu)
-	w := test.NewWindow(b)
+	w := test.NewWindow(container.NewCenter(b))
 	defer w.Close()
 
-	assert.NotNil(t, b.Icon)
-	assert.NotPanics(t, func() {
-		test.Tap(b.Icon)
-	})
+	test.Tap(b)
+	assert.NotNil(t, w.Canvas().Overlays().Top(), "should show menu")
 }
 
 func TestIconButton_SetToolTip(t *testing.T) {
@@ -50,5 +49,5 @@ func TestIconButton_SetToolTip(t *testing.T) {
 	defer w.Close()
 
 	b.SetToolTip("Hello")
-	assert.Equal(t, "Hello", b.Icon.ToolTip())
+	assert.Equal(t, "Hello", b.ToolTip())
 }

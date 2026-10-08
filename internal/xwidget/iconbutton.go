@@ -2,38 +2,54 @@ package xwidget
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/driver/desktop"
+	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
+
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// IconButton represents an icon button.
-//
-// This is a workaround until kxwidget.IconButton has been modified to be extensible with tooltips.
+// IconButton is a [kxwidget.IconButton] with tooltip support.
 type IconButton struct {
-	widget.BaseWidget
-	Icon *TappableIcon
+	kxwidget.IconButton
+	ttwidget.ToolTipWidgetExtend
 }
 
+var _ desktop.Hoverable = (*IconButton)(nil)
+
 func NewIconButton(res fyne.Resource, tapped func()) *IconButton {
-	w := &IconButton{
-		Icon: NewTappableIcon(res, tapped),
-	}
+	w := &IconButton{}
 	w.ExtendBaseWidget(w)
+	w.SetIcon(res)
+	w.OnTapped = tapped
 	return w
 }
 
 func NewIconButtonWithMenu(res fyne.Resource, menu *fyne.Menu) *IconButton {
-	w := &IconButton{
-		Icon: NewTappableIconWithMenu(res, menu),
+	w := NewIconButton(res, nil)
+	if menu == nil {
+		fyne.LogError("IconButton misconfigured: missing menu", nil)
+		return w
 	}
-	w.ExtendBaseWidget(w)
+	w.SetMenuItems(menu.Items)
 	return w
 }
 
-func (w *IconButton) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(container.NewPadded(w.Icon))
+func (w *IconButton) ExtendBaseWidget(wid fyne.Widget) {
+	w.ExtendToolTipWidget(wid)
+	w.IconButton.ExtendBaseWidget(wid)
 }
 
-func (w *IconButton) SetToolTip(toolTip string) {
-	w.Icon.SetToolTip(toolTip)
+func (w *IconButton) MouseIn(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseIn(e)
+	w.IconButton.MouseIn(e)
+}
+
+func (w *IconButton) MouseMoved(e *desktop.MouseEvent) {
+	w.ToolTipWidgetExtend.MouseMoved(e)
+	w.IconButton.MouseMoved(e)
+}
+
+func (w *IconButton) MouseOut() {
+	w.ToolTipWidgetExtend.MouseOut()
+	w.IconButton.MouseOut()
 }
