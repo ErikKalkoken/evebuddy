@@ -128,7 +128,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			a.security,
 		),
 	)
-	forums := xwidget.NewTappableIcon(icons.EvelogoPng, func() {
+	forums := xwidget.NewIconButton(icons.EvelogoPng, func() {
 		go func() {
 			ec, err := a.iw.u.EVEUniverse().GetCharacterESI(context.Background(), a.id)
 			if err != nil {
@@ -149,7 +149,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewCustomPaddedVBoxLayout(2*p),
 			a.portrait,
 			container.New(
-				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewCustomPaddedHBoxLayout(linkIconPaddingFactor*p),
 				layout.NewSpacer(),
 				a.iw.makeZKillboardIcon(a.id, Character),
 				a.iw.makeEveWhoIcon(a.id, Character),

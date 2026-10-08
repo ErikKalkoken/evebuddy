@@ -56,7 +56,7 @@ func (a *allianceInfo) CreateRenderer() fyne.WidgetRenderer {
 			layout.NewCustomPaddedVBoxLayout(2*p),
 			container.NewPadded(a.logo),
 			container.New(
-				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewCustomPaddedHBoxLayout(linkIconPaddingFactor*p),
 				layout.NewSpacer(),
 				a.iw.makeZKillboardIcon(a.id, Alliance),
 				a.iw.makeDotlanIcon(a.id, Alliance),

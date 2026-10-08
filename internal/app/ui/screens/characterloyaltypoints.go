@@ -324,7 +324,7 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 type loyaltyPointsListItem struct {
 	widget.BaseWidget
 
-	icon     *xwidget.TappableIcon
+	icon     *xwidget.IconButton
 	entity   *ui.EveEntityListItem
 	points   *widget.Label
 	loadIcon ui.EveEntityIconLoader
@@ -334,7 +334,7 @@ type loyaltyPointsListItem struct {
 func newLoyaltyPointsListItem(loadIcon ui.EveEntityIconLoader, showInfo func(*app.EveEntity)) *loyaltyPointsListItem {
 	w := &loyaltyPointsListItem{
 		entity:   ui.NewEveEntityListItem(loadIcon),
-		icon:     xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
+		icon:     xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		points:   widget.NewLabel(""),
 		showInfo: showInfo,
 	}

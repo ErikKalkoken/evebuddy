@@ -31,13 +31,13 @@ func TestAttributeList(t *testing.T) {
 	defer win.Close()
 	win.Resize(fyne.NewSize(300, 200))
 
-	var icons []*xwidget.TappableIcon
+	var icons []*xwidget.IconButton
 	for _, o := range test.LaidOutObjects(w) {
 		c, ok := o.(*fyne.Container)
 		if !ok || !c.Visible() || len(c.Objects) != 3 {
 			continue
 		}
-		if x, ok := c.Objects[1].(*xwidget.TappableIcon); ok {
+		if x, ok := c.Objects[1].(*xwidget.IconButton); ok {
 			icons = append(icons, x)
 		}
 	}
