@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	colorRailIndicator = theme.ColorNameSelection
-	railIconSize       = 28
+	railIconSize = 28
 )
 
 // railDestination is a tappable icon in a [NavRail].
@@ -30,7 +29,6 @@ type railDestination struct {
 	iconDisabled fyne.Resource
 	iconEnabled  fyne.Resource
 	iconSelected fyne.Resource
-	indicator    *canvas.Rectangle
 	isActive     bool
 	onTapped     func()
 }
@@ -40,27 +38,17 @@ var _ desktop.Hoverable = (*railDestination)(nil)
 var _ desktop.Cursorable = (*railDestination)(nil)
 
 func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *railDestination {
-	iconImage := NewImageFromResource(
-		theme.NewThemedResource(icon),
-		fyne.NewSquareSize(railIconSize),
-	)
-	// pills stay visible and are made transparent instead, so the destination never changes size
-	makePill := func() *canvas.Rectangle {
-		r := canvas.NewRectangle(color.Transparent)
-		r.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
-		r.SetMinSize(fyne.NewSquareSize(railIconSize + 2*theme.Padding()))
-		return r
-	}
 	w := &railDestination{
-		hover:        makePill(),
-		icon:         iconImage,
+		hover:        canvas.NewRectangle(color.Transparent),
+		icon:         NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(railIconSize)),
 		iconEnabled:  theme.NewThemedResource(icon),
 		iconSelected: theme.NewPrimaryThemedResource(icon),
 		iconDisabled: theme.NewDisabledResource(icon),
-		indicator:    makePill(),
 		onTapped:     onTapped,
 	}
 	w.ExtendBaseWidget(w)
+	// stays visible but transparent, so the destination never changes size
+	w.hover.SetMinSize(fyne.NewSquareSize(railIconSize + 2*theme.Padding()))
 	w.SetToolTip(tooltip)
 	return w
 }
@@ -86,20 +74,13 @@ func (w *railDestination) Refresh() {
 	default:
 		w.icon.Resource = w.iconEnabled
 	}
-	if w.isActive {
-		w.indicator.FillColor = th.Color(colorRailIndicator, v)
-	} else {
-		w.indicator.FillColor = color.Transparent
-	}
 	radius := th.Size(theme.SizeNameSelectionRadius)
-	w.indicator.CornerRadius = radius
 	w.hover.CornerRadius = radius
-	if w.hovered && !w.isActive && !w.Disabled() {
+	if w.hovered && !w.Disabled() {
 		w.hover.FillColor = th.Color(theme.ColorNameHover, v)
 	} else {
 		w.hover.FillColor = color.Transparent
 	}
-	w.indicator.Refresh()
 	w.hover.Refresh()
 	w.icon.Refresh()
 	w.BaseWidget.Refresh()
@@ -138,7 +119,6 @@ func (w *railDestination) MouseOut() {
 func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewStack(
 		container.NewCenter(w.hover),
-		container.NewCenter(w.indicator),
 		container.NewCenter(w.icon),
 	)
 	return widget.NewSimpleRenderer(c)
