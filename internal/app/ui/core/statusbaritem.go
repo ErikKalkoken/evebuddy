@@ -22,10 +22,10 @@ type StatusBarItem struct {
 	// The function that is called when the label is tapped.
 	OnTapped func()
 
-	bg       *canvas.Rectangle
-	label    *widget.Label
-	leading  *widget.Icon
-	trailing fyne.CanvasObject
+	hoover      *canvas.Rectangle
+	label       *widget.Label
+	leadingIcon *widget.Icon
+	trailing    fyne.CanvasObject
 }
 
 var _ fyne.Tappable = (*StatusBarItem)(nil)
@@ -36,36 +36,35 @@ func NewStatusBarItem(leading fyne.Resource, text string, tapped func()) *Status
 }
 
 func NewStatusBarItemWithTrailing(leading fyne.Resource, trailing fyne.CanvasObject, text string, tapped func()) *StatusBarItem {
-	icon := widget.NewIcon(icons.BlankSvg)
-	if leading != nil {
-		icon.SetResource(leading)
-	} else {
-		icon.Hide()
-	}
 	if trailing == nil {
 		trailing = canvas.NewRectangle(color.Transparent)
 		trailing.Hide()
 	}
-	bg := canvas.NewRectangle(theme.Color(theme.ColorNameHover))
-	bg.Hide()
 	w := &StatusBarItem{
-		bg:       bg,
-		label:    widget.NewLabel(text),
-		leading:  icon,
-		OnTapped: tapped,
-		trailing: trailing,
+		hoover:      canvas.NewRectangle(color.Transparent),
+		label:       widget.NewLabel(text),
+		leadingIcon: widget.NewIcon(icons.BlankSvg),
+		OnTapped:    tapped,
+		trailing:    trailing,
 	}
 	w.ExtendBaseWidget(w)
+	w.hoover.Hide()
+	if leading != nil {
+		w.leadingIcon.SetResource(leading)
+	} else {
+		w.leadingIcon.Hide()
+	}
 	return w
 }
 
 func (w *StatusBarItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
+	w.updateStyle()
+	p := w.Theme().Size(theme.SizeNamePadding)
 	c := container.NewStack(
-		w.bg,
+		w.hoover,
 		container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, p),
 			container.New(layout.NewCustomPaddedHBoxLayout(0),
-				container.NewVBox(layout.NewSpacer(), w.leading, layout.NewSpacer()),
+				container.NewVBox(layout.NewSpacer(), w.leadingIcon, layout.NewSpacer()),
 				container.NewVBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
 				container.NewVBox(layout.NewSpacer(), w.trailing, layout.NewSpacer()),
 			)),
@@ -74,21 +73,32 @@ func (w *StatusBarItem) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *StatusBarItem) Refresh() {
-	th := w.Theme()
-	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.bg.FillColor = th.Color(theme.ColorNameHover, v)
-	w.bg.Refresh()
-	w.leading.Refresh()
+	w.updateStyle()
+	w.hoover.Refresh()
+	w.leadingIcon.Refresh()
 	w.label.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-// SetLeading updates the leading icon.
-func (w *StatusBarItem) SetLeading(icon fyne.Resource) {
-	w.leading.SetResource(icon)
+func (w *StatusBarItem) updateStyle() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.hoover.FillColor = th.Color(theme.ColorNameHover, v)
+	w.hoover.CornerRadius = th.Size(theme.SizeNameButtonRadius)
 }
 
-// SetText updates the label's text.
+// SetLeading updates the leading icon. A nil icon hides it.
+func (w *StatusBarItem) SetLeading(icon fyne.Resource) {
+	if icon == nil {
+		w.leadingIcon.Hide()
+		return
+	}
+	w.leadingIcon.SetResource(icon)
+	w.leadingIcon.Show()
+	w.Refresh()
+}
+
+// SetText updates the label's text. And resets its importance to medium.
 func (w *StatusBarItem) SetText(text string) {
 	w.SetTextAndImportance(text, widget.MediumImportance)
 }
@@ -101,18 +111,16 @@ func (w *StatusBarItem) SetTextAndImportance(text string, importance widget.Impo
 }
 
 func (w *StatusBarItem) Tapped(_ *fyne.PointEvent) {
+	w.ToolTipWidget.MouseOut() // cancel pending tooltip
 	if w.OnTapped != nil {
 		w.OnTapped()
 	}
 }
 
-func (w *StatusBarItem) TappedSecondary(_ *fyne.PointEvent) {
-}
-
 func (w *StatusBarItem) MouseIn(e *desktop.MouseEvent) {
 	w.ToolTipWidget.MouseIn(e)
 	if w.OnTapped != nil {
-		w.bg.Show()
+		w.hoover.Show()
 	}
 }
 
@@ -122,5 +130,5 @@ func (w *StatusBarItem) MouseMoved(e *desktop.MouseEvent) {
 
 func (w *StatusBarItem) MouseOut() {
 	w.ToolTipWidget.MouseOut()
-	w.bg.Hide()
+	w.hoover.Hide()
 }
