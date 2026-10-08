@@ -90,7 +90,7 @@ func (a *solarSystemInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(
 			container.NewPadded(a.logo),
 			container.New(
-				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewCustomPaddedHBoxLayout(linkIconPaddingFactor*p),
 				layout.NewSpacer(),
 				a.iw.makeZKillboardIcon(a.id, SolarSystem),
 				a.iw.makeDotlanIcon(a.id, SolarSystem),

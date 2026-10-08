@@ -120,6 +120,10 @@ const (
 	zoomImagePixelSize  = 512
 )
 
+const (
+	linkIconPaddingFactor = 1
+)
+
 // New returns a new InfoViewer.
 func New(u baseUI) *InfoViewer {
 	iw := &InfoViewer{
@@ -449,7 +453,7 @@ func (iw *InfoViewer) openURL(s string) {
 	}
 }
 
-func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.IconButton {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Character:   "character",
@@ -466,14 +470,14 @@ func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.TappableIcon
 		}
 		title = fmt.Sprintf("Show %s on zKillboard.com", strings.ToLower(v.String()))
 	}
-	icon := xwidget.NewTappableIcon(icons.ZkillboardPng, f)
+	icon := xwidget.NewIconButton(icons.ZkillboardPng, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
 	return icon
 }
 
-func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.IconButton {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Corporation: "corp",
@@ -489,14 +493,14 @@ func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.TappableIcon {
 		}
 		title = fmt.Sprintf("Show %s on evemaps.dotlan.net", strings.ToLower(v.String()))
 	}
-	icon := xwidget.NewTappableIcon(icons.DotlanAvatarPng, f)
+	icon := xwidget.NewIconButton(icons.DotlanAvatarPng, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
 	return icon
 }
 
-func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.TappableIcon {
+func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.IconButton {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Corporation: "corporation",
@@ -511,7 +515,7 @@ func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.TappableIcon {
 		}
 		title = fmt.Sprintf("Show %s on evewho.com", strings.ToLower(v.String()))
 	}
-	icon := xwidget.NewTappableIcon(icons.Characterplaceholder32Jpeg, f)
+	icon := xwidget.NewIconButton(icons.Characterplaceholder32Jpeg, f)
 	if title != "" {
 		icon.SetToolTip(title)
 	}
@@ -809,7 +813,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			category.SizeName = theme.SizeNameCaptionText
 			text := xwidget.NewRichText()
 			text.Truncation = fyne.TextTruncateEllipsis
-			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon := xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			p := theme.Padding()
 			return container.NewBorder(
 				nil,
@@ -829,7 +833,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
-			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.TappableIcon)
+			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.IconButton)
 			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == Undefined {

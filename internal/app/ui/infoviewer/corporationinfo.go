@@ -90,7 +90,7 @@ func (a *corporationInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(
 			container.NewPadded(a.logo),
 			container.New(
-				layout.NewCustomPaddedHBoxLayout(3*p),
+				layout.NewCustomPaddedHBoxLayout(linkIconPaddingFactor*p),
 				layout.NewSpacer(),
 				a.iw.makeZKillboardIcon(a.id, Corporation),
 				a.iw.makeDotlanIcon(a.id, Corporation),

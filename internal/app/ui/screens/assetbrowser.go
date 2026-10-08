@@ -977,14 +977,14 @@ type browserLocation struct {
 	widget.BaseWidget
 
 	breadcrumbs *fyne.Container
-	info        *xwidget.TappableIcon
+	info        *xwidget.IconButton
 	selected    *browserContainer
 }
 
 func newBrowserLocation(selected *browserContainer) *browserLocation {
 	a := &browserLocation{
 		breadcrumbs: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, 0)),
-		info:        xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
+		info:        xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil),
 		selected:    selected,
 	}
 	a.ExtendBaseWidget(a)

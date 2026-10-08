@@ -132,7 +132,7 @@ func (a *CharacterAugmentations) update(ctx context.Context) {
 type characterAugmentationItem struct {
 	widget.BaseWidget
 
-	iconInfo     *xwidget.TappableIcon
+	iconInfo     *xwidget.IconButton
 	iconMain     *canvas.Image
 	loadTypeIcon loadFuncAsync
 	name         *ttwidget.Label
@@ -148,7 +148,7 @@ func newCharacterAugmentationItem(
 		icons.BlankSvg,
 		fyne.NewSquareSize(ui.IconUnitSize*1.2),
 	)
-	iconInfo := xwidget.NewTappableIcon(
+	iconInfo := xwidget.NewIconButton(
 		theme.NewThemedResource(icons.InformationSlabCircleSvg),
 		nil,
 	)
