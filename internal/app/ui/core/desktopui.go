@@ -10,18 +10,15 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/icrowley/fake"
-
-	fynetooltip "github.com/dweymouth/fyne-tooltip"
-
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	fynetooltip "github.com/dweymouth/fyne-tooltip"
+	"github.com/icrowley/fake"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -469,7 +466,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	// Make overall UI
 	makeTabContent := func(header *PageHeader, content fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewBorder(
-			container.NewVBox(header, widget.NewSeparator()),
+			container.NewVBox(container.NewHBox(header), widget.NewSeparator()),
 			nil,
 			nil,
 			nil,
@@ -480,28 +477,19 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	homeItem := xwidget.NewNavRailItem(
 		theme.HomeIcon(),
 		"Home",
-		makeTabContent(NewPageHeader(NewPageHeaderParams{Title: "Home"}), homeNav),
+		makeTabContent(NewPageHeader("Home", nil), homeNav),
 	)
 
-	characterHeader := NewPageHeader(NewPageHeaderParams{
-		ButtonTooltip: "Switch character",
-		IconFallback:  icons.Characterplaceholder64Jpeg,
-		Title:         "Characters",
-		TitleTooltip:  "Show character information",
-	})
+	characterHeader := NewPageHeader("Characters", icons.Characterplaceholder64Jpeg)
+	characterHeader.SetToolTip("Switch character")
 	characterItem := xwidget.NewNavRailItem(
 		theme.AccountIcon(),
 		"Characters",
 		makeTabContent(characterHeader, characterNav),
 	)
 
-	corporationHeader := NewPageHeader(NewPageHeaderParams{
-		ButtonTooltip: "Switch corporation",
-		IconFallback:  icons.Corporationplaceholder64Png,
-		Title:         "Corporations",
-		TitleTooltip:  "Show corporation information",
-	})
-
+	corporationHeader := NewPageHeader("Corporations", icons.Corporationplaceholder64Png)
+	corporationHeader.SetToolTip("Switch corporation")
 	corporationItem := xwidget.NewNavRailItem(
 		icons.StarCircleOutlineSvg,
 		"Corporations",
@@ -563,12 +551,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.hideMailIndicator() // init system tray icon
 
 	u.onSetCharacter = func(c *app.Character) {
-		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		fyne.Do(func() {
-			characterHeader.SetTitle(s)
-			characterHeader.SetTitleAction(func() {
-				u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
-			})
+			characterHeader.SetTitle(c.EveCharacter.Name)
 		})
 		go func() {
 			u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
@@ -653,15 +637,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	u.onSetCorporation = func(c *app.Corporation) {
-		s := c.EveCorporation.Name
-		if v, ok := c.EveCorporation.Alliance.Value(); ok {
-			s += fmt.Sprintf(" (%s)", v.Name)
-		}
 		fyne.Do(func() {
-			corporationHeader.SetTitle(s)
-			corporationHeader.SetTitleAction(func() {
-				u.InfoViewer().Show(c.EveCorporation.ToEveEntity())
-			})
+			corporationHeader.SetTitle(c.EveCorporation.Name)
 		})
 		go func() {
 			u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
@@ -708,7 +685,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			u.setCharacterSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
-					characterHeader.SetButtonMenu(items)
+					characterHeader.SetMenu(items)
 				},
 				func() {
 					characterHeader.Refresh()
@@ -719,7 +696,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			u.setCorporationSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
-					corporationHeader.SetButtonMenu(items)
+					corporationHeader.SetMenu(items)
 				},
 				func() {
 					corporationHeader.Refresh()
@@ -976,90 +953,4 @@ func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
 
 func (w *contentPage) SetTitle(s string) {
 	w.title.SetText(s)
-}
-
-// PageHeader is a widget for rendering the header on a page.
-// Headers contain a title and can also have a leading icon and a trailing button.
-type PageHeader struct {
-	widget.BaseWidget
-
-	button        *xwidget.ContextMenuButton
-	buttonIcon    fyne.Resource
-	buttonTooltip string
-	icon          *canvas.Image
-	title         *xwidget.TappableLabel
-	titleTooltip  string
-}
-
-type NewPageHeaderParams struct {
-	ButtonTooltip string
-	IconFallback  fyne.Resource // must be define to show leading icon at all
-	Title         string
-	TitleTooltip  string
-}
-
-func NewPageHeader(arg NewPageHeaderParams) *PageHeader {
-	w := &PageHeader{
-		title:         xwidget.NewTappableLabel(arg.Title, nil),
-		button:        xwidget.NewContextMenuButtonWithIcon("", theme.NewThemedResource(icons.SwitchaccountSvg), fyne.NewMenu("")),
-		buttonTooltip: arg.ButtonTooltip,
-		titleTooltip:  arg.TitleTooltip,
-	}
-	if arg.IconFallback != nil {
-		w.icon = xwidget.NewImageFromResource(arg.IconFallback, fyne.NewSquareSize(ui.IconUnitSize))
-
-	}
-	w.ExtendBaseWidget(w)
-	w.title.SizeName = theme.SizeNameSubHeadingText
-	return w
-}
-
-func (w *PageHeader) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
-	c := container.NewHBox()
-	if w.icon != nil {
-		c.Add(container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), w.icon))
-	}
-	c.Add(w.title)
-	spacer := xwidget.NewSpacer(w.button.MinSize())
-	c.Add(container.NewStack(spacer, container.NewCenter(w.button)))
-	if w.buttonTooltip == "" {
-		w.button.Hide()
-	}
-	return widget.NewSimpleRenderer(c)
-}
-
-func (w *PageHeader) SetIcon(r fyne.Resource) {
-	if r == nil {
-		return
-	}
-	w.icon.Resource = r
-	w.icon.Refresh()
-}
-
-func (w *PageHeader) SetButtonMenu(it []*fyne.MenuItem) {
-	if it == nil {
-		return
-	}
-	if w.button.Hidden {
-		return // does not have a menu button button
-	}
-	w.button.SetMenuItems(it)
-	if w.buttonIcon != nil {
-		w.button.SetIcon(w.buttonIcon)
-	}
-	if w.buttonTooltip != "" {
-		w.button.SetToolTip(w.buttonTooltip)
-	}
-}
-
-func (w *PageHeader) SetTitle(s string) {
-	w.title.SetText(s)
-}
-
-func (w *PageHeader) SetTitleAction(f func()) {
-	w.title.OnTapped = f
-	if w.titleTooltip != "" {
-		w.title.SetToolTip(w.titleTooltip)
-	}
 }
