@@ -48,7 +48,7 @@ func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *ra
 	}
 	w.ExtendBaseWidget(w)
 	// stays visible but transparent, so the destination never changes size
-	w.hover.SetMinSize(fyne.NewSquareSize(railIconSize + 2*theme.Padding()))
+	w.hover.SetMinSize(fyne.NewSquareSize(railIconSize + 3*theme.Padding()))
 	w.SetToolTip(tooltip)
 	return w
 }
@@ -178,11 +178,15 @@ func (it *NavRailItem) isAction() bool {
 type NavRail struct {
 	widget.BaseWidget
 
-	body     *fyne.Container
-	items    []*NavRailItem
-	leading  *fyne.Container
-	selected *NavRailItem
-	trailing *fyne.Container
+	body      *fyne.Container
+	column    *fyne.Container
+	indicator *canvas.Rectangle
+	items     []*NavRailItem
+	leading   *fyne.Container
+	selected  *NavRailItem
+	separator *widget.Separator
+	strip     *fyne.Container
+	trailing  *fyne.Container
 }
 
 // NewNavRail returns a new navigation rail. The first leading non-action item is selected initially.
@@ -197,10 +201,15 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	}
 	gap := 3 * theme.Padding()
 	w := &NavRail{
-		body:     container.NewStack(),
-		leading:  container.New(layout.NewCustomPaddedVBoxLayout(gap)),
-		trailing: container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		body:      container.NewStack(),
+		leading:   container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		trailing:  container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		indicator: canvas.NewRectangle(color.Transparent),
+		separator: widget.NewSeparator(),
 	}
+	w.column = container.NewBorder(w.leading, w.trailing, nil, nil)
+	// no padding, so the indicator touches the hover background
+	w.strip = container.New(layout.NewCustomPaddedHBoxLayout(0), w.column, w.separator)
 	w.ExtendBaseWidget(w)
 	add := func(c *fyne.Container, it *NavRailItem) {
 		if it.rail != nil {
@@ -293,6 +302,7 @@ func (w *NavRail) selectItem(it *NavRailItem) {
 	it.dest.setActive(true)
 	it.content.Show()
 	w.selected = it
+	w.updateIndicator()
 	if it.OnSelected != nil {
 		it.OnSelected()
 	}
@@ -304,14 +314,58 @@ func (w *NavRail) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
+// updateIndicator places the indicator on the separator next to the selected item.
+func (w *NavRail) updateIndicator() {
+	dest := w.selected.dest
+	parent := w.leading
+	if slices.Contains(w.trailing.Objects, fyne.CanvasObject(dest)) {
+		parent = w.trailing
+	}
+	x := w.strip.Position().X + w.separator.Position().X
+	y := w.strip.Position().Y + w.column.Position().Y + parent.Position().Y + dest.Position().Y
+	w.indicator.Move(fyne.NewPos(x, y))
+	w.indicator.Resize(fyne.NewSize(w.Theme().Size(theme.SizeNameSeparatorThickness), dest.Size().Height))
+	w.indicator.Refresh()
+}
+
 func (w *NavRail) CreateRenderer() fyne.WidgetRenderer {
-	strip := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		widget.NewSeparator(),
-		container.NewBorder(w.leading, w.trailing, nil, nil),
-	)
-	c := container.NewBorder(nil, nil, strip, nil, w.body)
-	return widget.NewSimpleRenderer(c)
+	r := &navRailRenderer{
+		content: container.NewBorder(nil, nil, w.strip, nil, w.body),
+		w:       w,
+	}
+	r.updateColors()
+	return r
+}
+
+type navRailRenderer struct {
+	content *fyne.Container
+	w       *NavRail
+}
+
+func (r *navRailRenderer) Destroy() {}
+
+func (r *navRailRenderer) Layout(size fyne.Size) {
+	r.content.Resize(size)
+	r.w.updateIndicator()
+}
+
+func (r *navRailRenderer) MinSize() fyne.Size {
+	return r.content.MinSize()
+}
+
+func (r *navRailRenderer) Objects() []fyne.CanvasObject {
+	return []fyne.CanvasObject{r.content, r.w.indicator}
+}
+
+func (r *navRailRenderer) Refresh() {
+	r.updateColors()
+	r.w.updateIndicator()
+	r.content.Refresh()
+}
+
+func (r *navRailRenderer) updateColors() {
+	th := r.w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)
+	r.w.indicator.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
 }
