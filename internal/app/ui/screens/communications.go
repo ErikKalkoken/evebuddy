@@ -845,7 +845,13 @@ func (a *communicationsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		container.NewVBox(a.subjectLabel, a.headerWidget, a.bodyText),
+		container.NewBorder(
+			container.NewVBox(a.subjectLabel, a.headerWidget),
+			nil,
+			nil,
+			nil,
+			ui.NewWideScrollBarOverride(container.NewVScroll(a.bodyText)),
+		),
 	)
 	return widget.NewSimpleRenderer(c)
 }
