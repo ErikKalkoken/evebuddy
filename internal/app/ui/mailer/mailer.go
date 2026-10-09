@@ -197,7 +197,7 @@ func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		nil,
-		a.body,
+		ui.NewWideScrollBarOverride(a.body),
 	)
 	p := theme.Padding()
 	c := container.NewBorder(

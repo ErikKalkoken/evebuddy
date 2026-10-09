@@ -1230,29 +1230,29 @@ func (a *mailsMessagePane) fetchRows(ctx context.Context, f *mailFolderNode) ([]
 type mailsReadingPane struct {
 	widget.BaseWidget
 
-	body      *widget.Label
-	header    *MailHeaderWidget
-	ma        *Mails
-	mail      *app.CharacterMail
-	owner     *app.EveEntity
-	requested struct{ characterID, mailID int64 } // latest mail requested for display
-	subject   *widget.Label
-	toolbar   *widget.Toolbar
+	bodyLabel    *widget.Label
+	headerWidget *MailHeaderWidget
+	ma           *Mails
+	mail         *app.CharacterMail
+	owner        *app.EveEntity
+	requested    struct{ characterID, mailID int64 } // latest mail requested for display
+	subjectLabel *widget.Label
+	toolbar      *widget.Toolbar
 }
 
 func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 	a := &mailsReadingPane{
-		body:    widget.NewLabel(""),
-		header:  NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
-		ma:      ma,
-		subject: widget.NewLabel(""),
+		bodyLabel:    widget.NewLabel(""),
+		headerWidget: NewMailHeaderWidget(ma.u.EVEImage().EveEntityLogoAsync, ma.u.InfoViewer().Show),
+		ma:           ma,
+		subjectLabel: widget.NewLabel(""),
 	}
 	a.ExtendBaseWidget(a)
-	a.subject.SizeName = theme.SizeNameSubHeadingText
-	a.subject.Truncation = fyne.TextTruncateClip
-	a.subject.Selectable = true
-	a.body.Wrapping = fyne.TextWrapWord
-	a.body.Selectable = true
+	a.subjectLabel.SizeName = theme.SizeNameSubHeadingText
+	a.subjectLabel.Truncation = fyne.TextTruncateClip
+	a.subjectLabel.Selectable = true
+	a.bodyLabel.Wrapping = fyne.TextWrapWord
+	a.bodyLabel.Selectable = true
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 	return a
@@ -1260,11 +1260,11 @@ func newMailsReadingPane(ma *Mails) *mailsReadingPane {
 
 func (a *mailsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewVBox(a.subject, a.header),
+		container.NewVBox(a.subjectLabel, a.headerWidget),
 		nil,
 		nil,
 		nil,
-		container.NewVScroll(a.body),
+		ui.NewWideScrollBarOverride(container.NewVScroll(a.bodyLabel)),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -1379,17 +1379,17 @@ func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
 func (a *mailsReadingPane) clear() {
 	a.mail = nil
 	a.requested.characterID, a.requested.mailID = 0, 0
-	a.subject.SetText("")
-	a.header.Clear()
-	a.body.SetText("")
+	a.subjectLabel.SetText("")
+	a.headerWidget.Clear()
+	a.bodyLabel.SetText("")
 	a.owner = nil
 	a.toolbar.Hide()
 }
 
 func (a *mailsReadingPane) setMail(m *app.CharacterMail) {
-	a.subject.SetText(m.Subject.ValueOrZero())
+	a.subjectLabel.SetText(m.Subject.ValueOrZero())
 	a.setBody(m.BodyPlain())
-	a.header.Set(m.From, m.Timestamp, a.owner, m.Recipients...)
+	a.headerWidget.Set(m.From, m.Timestamp, a.owner, m.Recipients...)
 }
 
 func (a *mailsReadingPane) setBody(s string) {
@@ -1398,9 +1398,9 @@ func (a *mailsReadingPane) setBody(s string) {
 		i = widget.LowImportance
 		s = "Loading..."
 	}
-	a.body.Importance = i
-	a.body.Text = s
-	a.body.Refresh()
+	a.bodyLabel.Importance = i
+	a.bodyLabel.Text = s
+	a.bodyLabel.Refresh()
 }
 
 func (a *mailsReadingPane) loadMail(ctx context.Context, characterID, mailID int64) {

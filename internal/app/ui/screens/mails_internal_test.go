@@ -93,7 +93,7 @@ func TestMails_Refresh(t *testing.T) {
 		assert.Len(t, f.a.MessagePane.rowsFiltered, 3)
 		require.NotNil(t, f.a.ReadingPane.mail)
 		assert.Equal(t, f.mail1.MailID, f.a.ReadingPane.mail.MailID)
-		assert.Equal(t, f.mail1.Subject.ValueOrZero(), f.a.ReadingPane.subject.Text)
+		assert.Equal(t, f.mail1.Subject.ValueOrZero(), f.a.ReadingPane.subjectLabel.Text)
 	})
 	t.Run("keeps open branches when new mail arrives", func(t *testing.T) {
 		f := setup(t)
@@ -118,7 +118,7 @@ func TestMails_Refresh(t *testing.T) {
 		assert.Equal(t, f.inbox.UID(), f.a.MessagePane.currentFolder.Load().UID())
 		assert.Len(t, f.a.MessagePane.rowsFiltered, 1)
 		assert.Nil(t, f.a.ReadingPane.mail)
-		assert.Empty(t, f.a.ReadingPane.subject.Text)
+		assert.Empty(t, f.a.ReadingPane.subjectLabel.Text)
 	})
 	t.Run("resets to Inbox and clears reading pane on character switch", func(t *testing.T) {
 		f := setup(t)
@@ -129,7 +129,7 @@ func TestMails_Refresh(t *testing.T) {
 		assert.Equal(t, character2.ID, folder.CharacterID)
 		assert.Equal(t, folderNodeInbox, folder.Type)
 		assert.Nil(t, f.a.ReadingPane.mail)
-		assert.Empty(t, f.a.ReadingPane.subject.Text)
+		assert.Empty(t, f.a.ReadingPane.subjectLabel.Text)
 	})
 }
 
@@ -158,7 +158,7 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		p.loadMail(t.Context(), character.ID, mail1.MailID)
 		require.NotNil(t, p.mail)
 		assert.Equal(t, mail1.MailID, p.mail.MailID)
-		assert.Equal(t, mail1.Subject.ValueOrZero(), p.subject.Text)
+		assert.Equal(t, mail1.Subject.ValueOrZero(), p.subjectLabel.Text)
 	})
 	t.Run("ignores earlier request completing after later one", func(t *testing.T) {
 		request(mail1.MailID)
@@ -167,14 +167,14 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		p.loadMail(t.Context(), character.ID, mail1.MailID)
 		require.NotNil(t, p.mail)
 		assert.Equal(t, mail2.MailID, p.mail.MailID)
-		assert.Equal(t, mail2.Subject.ValueOrZero(), p.subject.Text)
+		assert.Equal(t, mail2.Subject.ValueOrZero(), p.subjectLabel.Text)
 	})
 	t.Run("ignores earlier request completing before later one", func(t *testing.T) {
 		request(mail1.MailID)
 		request(mail2.MailID)
 		p.loadMail(t.Context(), character.ID, mail1.MailID)
 		assert.Nil(t, p.mail)
-		assert.Empty(t, p.subject.Text)
+		assert.Empty(t, p.subjectLabel.Text)
 		p.loadMail(t.Context(), character.ID, mail2.MailID)
 		require.NotNil(t, p.mail)
 		assert.Equal(t, mail2.MailID, p.mail.MailID)
@@ -184,25 +184,25 @@ func TestMailsReadingPane_LoadMail(t *testing.T) {
 		p.clear()
 		p.loadMail(t.Context(), character.ID, mail1.MailID)
 		assert.Nil(t, p.mail)
-		assert.Empty(t, p.subject.Text)
+		assert.Empty(t, p.subjectLabel.Text)
 	})
 	t.Run("ignores result for other character", func(t *testing.T) {
 		request(mail1.MailID)
 		p.loadMail(t.Context(), character.ID+1, mail1.MailID)
 		assert.Nil(t, p.mail)
-		assert.Empty(t, p.body.Text)
+		assert.Empty(t, p.bodyLabel.Text)
 	})
 	t.Run("ignores error of stale request", func(t *testing.T) {
 		request(mail2.MailID)
 		p.loadMail(t.Context(), character.ID, 999_999_999) // does not exist
 		assert.Nil(t, p.mail)
-		assert.Empty(t, p.body.Text)
+		assert.Empty(t, p.bodyLabel.Text)
 	})
 	t.Run("shows error of current request", func(t *testing.T) {
 		request(999_999_999)
 		p.loadMail(t.Context(), character.ID, 999_999_999)
 		assert.Nil(t, p.mail)
-		assert.Contains(t, p.body.Text, "ERROR")
+		assert.Contains(t, p.bodyLabel.Text, "ERROR")
 	})
 }
 
@@ -624,13 +624,13 @@ func TestMailsReadingPane_Owner(t *testing.T) {
 		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		a.ReadingPane.showMail(r)
 		require.NotNil(t, a.ReadingPane.mail)
-		assert.True(t, headerShowsOwner(a.ReadingPane.header, c.EveCharacter.Name))
+		assert.True(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
 	})
 	t.Run("character view does not show owner", func(t *testing.T) {
 		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		a.ReadingPane.showMail(r)
 		require.NotNil(t, a.ReadingPane.mail)
-		assert.False(t, headerShowsOwner(a.ReadingPane.header, c.EveCharacter.Name))
+		assert.False(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
 	})
 }
 
