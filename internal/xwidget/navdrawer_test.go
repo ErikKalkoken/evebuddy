@@ -34,7 +34,6 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 		xwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
 		xwidget.NewNavPage("Second", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 2")),
 		xwidget.NewNavPage("Third", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 3")),
-		xwidget.NewNavSectionLabel("Section"),
 		xwidget.NewNavPage("Forth", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 4")),
 	)
 	drawer.MinWidth = 200

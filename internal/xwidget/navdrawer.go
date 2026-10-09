@@ -11,8 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -24,7 +22,6 @@ type navItemVariant uint
 const (
 	navUndefined navItemVariant = iota
 	navPage
-	navSectionLabel // TODO: Maybe remove when no longer used?
 	navSeparator
 )
 
@@ -131,20 +128,6 @@ func (w *NavDrawer) makeList() *widget.List {
 				icon.Show()
 				spacer.Show()
 			}
-			updateBadge := func() {
-				if it.badge != "" {
-					badge.Text = it.badge
-					if it.isDisabled {
-						badge.Importance = widget.LowImportance
-					} else {
-						badge.Importance = widget.MediumImportance
-					}
-					badge.Refresh()
-					badge.Show()
-				} else {
-					badge.Hide()
-				}
-			}
 			switch it.variant {
 			case navPage:
 				title.SizeName = theme.SizeNameText
@@ -159,21 +142,21 @@ func (w *NavDrawer) makeList() *widget.List {
 				}
 				title.Refresh()
 				showIcon()
-				updateBadge()
-				thief.Hide()
-			case navSectionLabel:
-				title.SizeName = theme.SizeNameScrollBar
-				toUpper := cases.Upper(language.English)
-				title.Text = toUpper.String(it.text)
-				if it.isDisabled {
-					title.Importance = widget.LowImportance
+				if it.badge != "" {
+					badge.Text = it.badge
+					if it.isDisabled {
+						badge.Importance = widget.LowImportance
+					} else if it.isSelected {
+						badge.Importance = widget.HighImportance
+					} else {
+						badge.Importance = widget.MediumImportance
+					}
+					badge.Refresh()
+					badge.Show()
 				} else {
-					title.Importance = widget.MediumImportance
+					badge.Hide()
 				}
-				title.Refresh()
-				icon.Hide()
-				spacer.Hide()
-				updateBadge()
+				thief.Hide()
 			}
 			// fyne.Do(func() {
 			// 	// TODO: Maybe remove?
@@ -187,7 +170,7 @@ func (w *NavDrawer) makeList() *widget.List {
 			return
 		}
 		it := w.items[id]
-		if it.isDisabled || it.variant == navSeparator || it.variant == navSectionLabel {
+		if it.isDisabled || it.variant == navSeparator {
 			list.UnselectAll()
 			return
 		}
@@ -335,12 +318,6 @@ func NewNavPage(text string, icon fyne.Resource, content fyne.CanvasObject) *Nav
 	it.text = text
 	it.icon = icon
 	it.content = content
-	return it
-}
-
-func NewNavSectionLabel(text string) *NavItem {
-	it := newNavItem(navSectionLabel)
-	it.text = text
 	return it
 }
 
