@@ -15,7 +15,9 @@ import (
 )
 
 const (
-	railIconSize = 28
+	navRailIconScale       = 1.5 // × inline icon size
+	navRailItemGapPaddings = 1   // × theme padding
+	navRailHoverPaddings   = 3   // × theme padding
 )
 
 // railDestination is a tappable icon in a [NavRail].
@@ -38,9 +40,10 @@ var _ desktop.Hoverable = (*railDestination)(nil)
 var _ desktop.Cursorable = (*railDestination)(nil)
 
 func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *railDestination {
+	iconSize := theme.Size(theme.SizeNameInlineIcon) * navRailIconScale
 	w := &railDestination{
 		hover:        canvas.NewRectangle(color.Transparent),
-		icon:         NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(railIconSize)),
+		icon:         NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(iconSize)),
 		iconEnabled:  theme.NewThemedResource(icon),
 		iconSelected: theme.NewPrimaryThemedResource(icon),
 		iconDisabled: theme.NewDisabledResource(icon),
@@ -48,7 +51,7 @@ func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *ra
 	}
 	w.ExtendBaseWidget(w)
 	// stays visible but transparent, so the destination never changes size
-	w.hover.SetMinSize(fyne.NewSquareSize(railIconSize + 3*theme.Padding()))
+	w.hover.SetMinSize(fyne.NewSquareSize(iconSize + navRailHoverPaddings*theme.Padding()))
 	w.SetToolTip(tooltip)
 	return w
 }
@@ -74,7 +77,7 @@ func (w *railDestination) Refresh() {
 	default:
 		w.icon.Resource = w.iconEnabled
 	}
-	radius := th.Size(theme.SizeNameSelectionRadius)
+	radius := th.Size(theme.SizeNameButtonRadius)
 	w.hover.CornerRadius = radius
 	if w.hovered && !w.Disabled() {
 		w.hover.FillColor = th.Color(theme.ColorNameHover, v)
@@ -199,7 +202,7 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	if first == -1 {
 		panic("must define at least one leading non-action item")
 	}
-	gap := 3 * theme.Padding()
+	gap := navRailItemGapPaddings * theme.Padding()
 	w := &NavRail{
 		body:      container.NewStack(),
 		leading:   container.New(layout.NewCustomPaddedVBoxLayout(gap)),
