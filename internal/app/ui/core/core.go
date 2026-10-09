@@ -133,7 +133,7 @@ type baseUI struct {
 	corporationOverview        *screens.CorporationOverview
 	corporationSheet           *screens.CorporationSheet
 	corporationStructures      *screens.Structures
-	corporationWallets         map[app.Division]*screens.CorporationWallet
+	corporationWallets         *screens.CorporationWallets
 	corporationWealth          *screens.CorporationWealth
 	gameSearch                 *gamesearch.GameSearch
 	industryJobs               *screens.IndustryJobs
@@ -224,7 +224,6 @@ func newBaseUI(arg UIParams) *baseUI {
 	u := &baseUI{
 		app:                            arg.App,
 		concurrencyLimit:               -1, // Default is no limit
-		corporationWallets:             make(map[app.Division]*screens.CorporationWallet),
 		cs:                             arg.Character,
 		eis:                            arg.EVEImage,
 		ess:                            arg.ESIStatus,
@@ -457,9 +456,7 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.corporationOverview = screens.NewCorporationOverview(u)
 	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationSheet = screens.NewCorporationSheet(u, true)
-	for _, d := range app.Divisions {
-		u.corporationWallets[d] = screens.NewCorporationWallet(u, d)
-	}
+	u.corporationWallets = screens.NewCorporationWallets(u)
 	u.corporationWealth = screens.NewCorporationWealth(u)
 	u.gameSearch = gamesearch.NewGameSearch(u)
 	u.industryJobs = screens.NewJobsForOverview(u)

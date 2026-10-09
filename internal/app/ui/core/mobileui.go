@@ -212,8 +212,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemSkills.Refresh()
 	}
 
-	u.characterWallet.OnTopUpdate = func(b string) {
-		navItemWallet.Supporting = b
+	u.characterWallet.OnBalanceUpdate = func(balance optional.Optional[float64]) {
+		navItemWallet.Supporting = formatISKValueLong(balance, ui.FloatFormatISKRounded)
 		navItemWallet.Refresh()
 	}
 
@@ -257,48 +257,13 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
-	var corpWalletItems []*xwidget.NavListItem
-	corporationWalletNavs := make(map[app.Division]*xwidget.NavListItem)
-	for _, d := range app.Divisions {
-		corporationWalletNavs[d] = xwidget.NewNavListItem(
-			d.DefaultWalletName(),
-			theme.NewThemedResource(icons.CashSvg),
-			func() {
-				corpNav.Push(
-					newCorpAppBar(
-						corporationWalletNavs[d].Headline,
-						u.corporationWallets[d],
-					))
-			},
-		)
-		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
-	}
-	corpWalletList := xwidget.NewNavList(corpWalletItems...)
 	corpWalletNav := xwidget.NewNavListItem(
 		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
-			corpNav.Push(
-				newCorpAppBar(
-					"Wallets",
-					corpWalletList,
-				))
+			corpNav.Push(newCorpAppBar("Wallets", u.corporationWallets))
 		},
 	)
-	for _, d := range app.Divisions {
-		u.corporationWallets[d].OnTopUpdate = func(top string) {
-			fyne.Do(func() {
-				corporationWalletNavs[d].Supporting = top
-				corporationWalletNavs[d].Refresh()
-			})
-		}
-		u.corporationWallets[d].NnNameUpdate = func(name string) {
-			fyne.Do(func() {
-				corporationWalletNavs[d].Headline = name
-				corporationWalletNavs[d].Refresh()
-			})
-		}
-	}
 
 	corpContractsNav := xwidget.NewNavListItem(
 		"Contracts",
