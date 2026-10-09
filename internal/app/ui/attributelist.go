@@ -83,7 +83,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 
 			iconBox := border[2].(*fyne.Container)
 			if it.InfoAction != nil && !it.IsHeading {
-				iconBox.Objects[1].(*xwidget.IconButton).OnTapped = it.InfoAction
+				iconBox.Objects[1].(*xwidget.Button).OnTapped = it.InfoAction
 				iconBox.Show()
 			} else {
 				iconBox.Hide()

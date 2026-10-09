@@ -17,17 +17,28 @@ type ContextMenuButton struct {
 	menu *fyne.Menu
 }
 
+// NewContextMenuButton creates a normal button with a menu.
 func NewContextMenuButton(label string, menu *fyne.Menu) *ContextMenuButton {
 	return NewContextMenuButtonWithIcon(label, nil, menu)
 }
 
+// NewIconButtonWithMenu creates an icon button with a menu.
+func NewIconButtonWithMenu(res fyne.Resource, menu *fyne.Menu) *ContextMenuButton {
+	w := NewContextMenuButtonWithIcon("", res, menu)
+	if menu == nil {
+		fyne.LogError("IconButton misconfigured: missing menu", nil)
+		return w
+	}
+	w.Importance = widget.LowImportance
+	return w
+}
+
+// NewContextMenuButtonWithIcon creates a normal button with an icon and a menu.
 func NewContextMenuButtonWithIcon(label string, icon fyne.Resource, menu *fyne.Menu) *ContextMenuButton {
 	w := &ContextMenuButton{menu: menu}
+	w.Text = label
+	w.Icon = icon
 	w.ExtendBaseWidget(w)
-	w.SetText(label)
-	if icon != nil {
-		w.SetIcon(icon)
-	}
 	return w
 }
 

@@ -101,7 +101,7 @@ type SkillCatalogue struct {
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
-	moreButton     *xwidget.IconButton
+	moreButton     *xwidget.ContextMenuButton
 	rows           []skillCatalogueRow
 	rowsFiltered   []skillCatalogueRow
 	searchEntry    *xwidget.SearchEntry

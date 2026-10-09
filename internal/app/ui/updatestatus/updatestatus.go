@@ -103,12 +103,12 @@ type updateStatus struct {
 	currentSectionID  int
 	entities          []entity
 	entityList        *widget.List
-	entityMoreButton  *kxwidget.IconButton
+	entityMoreButton  *xwidget.ContextMenuButton
 	entitySections    []app.CacheSectionStatus
 	nav               *xwidget.Navigator
 	sb                *kxwidget.Snackbar
 	sectionList       *widget.List
-	sectionMoreButton *kxwidget.IconButton
+	sectionMoreButton *xwidget.ContextMenuButton
 	sectionStatus     *sectionStatus
 	signalKey         string
 	u                 baseUI
@@ -127,8 +127,8 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 
 	a.entityList = a.makeEntityList()
 	a.sectionList = a.makeSectionList()
-	a.entityMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
-	a.sectionMoreButton = kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
+	a.entityMoreButton = xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
+	a.sectionMoreButton = xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu(""))
 
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("Reload all characters", func() {
@@ -218,7 +218,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		)
 	}
 	menu := fyne.NewMenu("", items...)
-	moreButton := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
+	moreButton := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
 	if a.u.IsOffline() {
 		moreButton.Disable()
 	}

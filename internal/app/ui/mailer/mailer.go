@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 //go:generate go tool stringer -type=Mode
@@ -264,12 +265,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 			ui.ShowErrorAndLog("Search for '"+search+"' failed", err, u.IsDeveloperMode(), w)
 		})
 	}
-	entry := widget.NewEntry()
-	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		entry.SetText("")
-	})
-	entry.OnChanged = func(search string) {
+	entry := xwidget.NewSearchEntry("Type to start searching...", func(search string) {
 		if len(search) < 3 {
 			results = results[:0]
 			list.Refresh()
@@ -310,7 +306,7 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 				list.Refresh()
 			})
 		}()
-	}
+	})
 	c := container.NewBorder(
 		container.NewBorder(
 			widget.NewLabel("Add Recipient"),

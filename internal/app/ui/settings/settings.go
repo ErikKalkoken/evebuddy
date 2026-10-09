@@ -121,7 +121,7 @@ func (a *settings) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *settings) makeGeneralPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuButton) {
 	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
@@ -462,7 +462,7 @@ func (a *settings) showExportFileDialog(topic, path string) {
 	})
 }
 
-func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButton) {
+func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMenuButton) {
 	groupsAndTypes := make(map[app.EveNotificationGroup][]app.EveNotificationType)
 	for n := range app.NotificationTypesSupported().All() {
 		g := n.Group()
@@ -717,12 +717,12 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *kxwidget.IconButt
 // 	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
 // }
 
-func makeIconButtonFromActions(actions []settingAction) *kxwidget.IconButton {
+func makeIconButtonFromActions(actions []settingAction) *xwidget.ContextMenuButton {
 	var items []*fyne.MenuItem
 	for _, a := range actions {
 		items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 	}
-	return kxwidget.NewIconButtonWithMenu(
+	return xwidget.NewIconButtonWithMenu(
 		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("", items...),
 	)

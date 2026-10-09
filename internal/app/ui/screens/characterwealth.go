@@ -133,7 +133,7 @@ type CharacterWealth struct {
 	selectAlliance               *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCorporation            *kxwidget.FilterChipSelect
 	selectTag                    *kxwidget.FilterChipSelect
-	showHelp                     *xwidget.IconButton
+	helpButton                   *xwidget.Button
 	topLabel                     *widget.Label
 	totalSplitCard               *chartCard
 	totalSplitChart              *fyneline.ArcChart[namedValue]
@@ -219,10 +219,10 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 		a.selectTag = makeSelect(characterWealthFilterTag)
 	}
 
-	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
-		showHelpPopUp(characterWealthHelpText, a.u.IsMobile(), a.showHelp)
+	a.helpButton = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(characterWealthHelpText, a.u.IsMobile(), a.helpButton)
 	})
-	a.showHelp.SetToolTip("Show explanation for values")
+	a.helpButton.SetToolTip("Show explanation for values")
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -275,7 +275,7 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		container.NewHBox(a.footer, layout.NewSpacer(), a.showHelp),
+		container.NewHBox(a.footer, layout.NewSpacer(), a.helpButton),
 		nil,
 		nil,
 		tabs,

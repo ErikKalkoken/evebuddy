@@ -37,8 +37,8 @@ type inventoryTypeInfo struct {
 	characterName    *widget.Hyperlink
 	checkIcon        *widget.Icon
 	description      *widget.Label
-	eveMarketBrowser *xwidget.IconButton
-	janice           *xwidget.IconButton
+	eveMarketBrowser *xwidget.Button
+	janice           *xwidget.Button
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
 	typeIcon         *xwidget.TappableImage

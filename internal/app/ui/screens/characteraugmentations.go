@@ -132,7 +132,7 @@ func (a *CharacterAugmentations) update(ctx context.Context) {
 type characterAugmentationItem struct {
 	widget.BaseWidget
 
-	iconInfo     *xwidget.IconButton
+	iconInfo     *xwidget.Button
 	iconMain     *canvas.Image
 	loadTypeIcon loadFuncAsync
 	name         *ttwidget.Label

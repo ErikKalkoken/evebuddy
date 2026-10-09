@@ -521,12 +521,7 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 		}()
 	}
 	list.HideSeparators = true
-	entry := widget.NewEntry()
-	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		entry.SetText("")
-	})
-	entry.OnChanged = func(search string) {
+	entry := xwidget.NewSearchEntry("Type to start searching...", func(search string) {
 		if len(search) < 3 {
 			results = results[:0]
 			list.Refresh()
@@ -553,7 +548,7 @@ func (a *JumpClones) setOrigin(w fyne.Window) {
 				list.Refresh()
 			})
 		}()
-	}
+	})
 	note := widget.NewLabel("Select solar system from results list to change origin.")
 	note.Importance = widget.LowImportance
 	c := container.NewBorder(
