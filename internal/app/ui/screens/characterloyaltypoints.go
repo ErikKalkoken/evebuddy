@@ -324,7 +324,7 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 type loyaltyPointsListItem struct {
 	widget.BaseWidget
 
-	icon     *xwidget.IconButton
+	icon     *xwidget.Button
 	entity   *ui.EveEntityListItem
 	points   *widget.Label
 	loadIcon ui.EveEntityIconLoader

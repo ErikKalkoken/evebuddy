@@ -279,7 +279,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 type characterJumpCloneItem struct {
 	widget.BaseWidget
 
-	iconInfo     *xwidget.IconButton
+	iconInfo     *xwidget.Button
 	iconMain     *canvas.Image
 	implants     *widget.Label
 	isMobile     bool

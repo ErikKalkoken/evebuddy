@@ -314,7 +314,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (*xwidget.TreeData[augmen
 type augmentationNodeItem struct {
 	widget.BaseWidget
 
-	iconInfo              *xwidget.IconButton
+	iconInfo              *xwidget.Button
 	iconMain              *canvas.Image
 	implants              *widget.Label
 	loadCharacterPortrait loadFuncAsync

@@ -474,7 +474,7 @@ type communicationsMessagePane struct {
 	filterRun     latestRun
 	footerLabel   *widget.Label
 	messageList   *widget.List
-	moreButton    *kxwidget.IconButton
+	moreButton    *xwidget.ContextMenuButton
 	reselecting   bool // suppresses OnSelected while restoring the selection
 	rowsFiltered  []notificationRow
 	searchEntry   *xwidget.SearchEntry
@@ -523,7 +523,7 @@ func newCommunicationsMessagePane(co *Communications) *communicationsMessagePane
 		}
 		a.filterRowsAsync()
 	})
-	a.moreButton = kxwidget.NewIconButtonWithMenu(
+	a.moreButton = xwidget.NewIconButtonWithMenu(
 		theme.MoreHorizontalIcon(),
 		fyne.NewMenu("", fyne.NewMenuItem("Mark folder as read", a.markCurrentFolderRead)),
 	)

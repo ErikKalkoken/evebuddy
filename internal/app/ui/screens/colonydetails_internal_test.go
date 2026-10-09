@@ -111,13 +111,13 @@ func TestColonyDetails(t *testing.T) {
 		w.Resize(fyne.NewSize(160, 640)) // narrow, so the header texts wrap
 		require.NoError(t, a.Update(t.Context()))
 		w.Resize(fyne.NewSize(360, 640))
-		for _, o := range []fyne.CanvasObject{a.planet, a.planetType, a.owner, a.status} {
+		for _, o := range []fyne.CanvasObject{a.planet, a.planetType, a.owner, a.statusText} {
 			assert.Equal(t, o.MinSize().Height, o.Size().Height)
 		}
 	})
 	t.Run("should show colony status", func(t *testing.T) {
 		// factory without input route makes the colony not setup
-		assert.Contains(t, a.status.String(), app.ColonyNotSetup.Display())
+		assert.Contains(t, a.statusText.String(), app.ColonyNotSetup.Display())
 	})
 	t.Run("should name pins with designator", func(t *testing.T) {
 		r := rowByType(t, pinTypeExtractor)

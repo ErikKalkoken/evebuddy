@@ -106,13 +106,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	const assetsTitle = "Assets"
+	x := xwidget.NewContextMenuButtonWithIcon(
+		"",
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
+	)
+	x.Importance = widget.LowImportance
 	assetSearch := xwidget.NewNavPage(
 		assetsTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
-		newContentPage(assetsTitle, u.assetSearchAll, xwidget.NewIconButtonWithMenu(
-			theme.MoreHorizontalIcon(),
-			fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
-		)),
+		newContentPage(assetsTitle, u.assetSearchAll, x),
 	)
 
 	unifiedCommunications := xwidget.NewNavPage(

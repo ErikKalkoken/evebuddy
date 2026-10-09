@@ -9,8 +9,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // An AppBar displays navigation, actions, and text at the top of a screen.
@@ -79,7 +77,7 @@ func (w *AppBar) Refresh() {
 func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	var left, right fyne.CanvasObject
 	if w.Navigator != nil {
-		left = kxwidget.NewIconButton(theme.NavigateBackIcon(), func() {
+		left = NewIconButton(theme.NavigateBackIcon(), func() {
 			w.Navigator.Pop()
 		})
 	}

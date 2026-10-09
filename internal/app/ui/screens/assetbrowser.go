@@ -977,7 +977,7 @@ type browserLocation struct {
 	widget.BaseWidget
 
 	breadcrumbs *fyne.Container
-	info        *xwidget.IconButton
+	info        *xwidget.Button
 	selected    *browserContainer
 }
 

@@ -453,7 +453,7 @@ func (iw *InfoViewer) openURL(s string) {
 	}
 }
 
-func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.IconButton {
+func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.Button {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Character:   "character",
@@ -477,7 +477,7 @@ func (iw *InfoViewer) makeZKillboardIcon(id int64, v Kind) *xwidget.IconButton {
 	return icon
 }
 
-func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.IconButton {
+func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.Button {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Corporation: "corp",
@@ -500,7 +500,7 @@ func (iw *InfoViewer) makeDotlanIcon(id int64, v Kind) *xwidget.IconButton {
 	return icon
 }
 
-func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.IconButton {
+func (iw *InfoViewer) makeEveWhoIcon(id int64, v Kind) *xwidget.Button {
 	m := map[Kind]string{
 		Alliance:    "alliance",
 		Corporation: "corporation",
@@ -833,7 +833,7 @@ func (w *entityList) CreateRenderer() fyne.WidgetRenderer {
 			it := w.items[id]
 			border1 := co.(*fyne.Container).Objects
 			border2 := border1[0].(*fyne.Container).Objects
-			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.IconButton)
+			icon := border1[1].(*fyne.Container).Objects[1].(*xwidget.Button)
 			category := border2[0].(*fyne.Container).Objects[0].(*widget.Label)
 			category.SetText(it.category)
 			if it.infoVariant == Undefined {

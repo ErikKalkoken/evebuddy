@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 
@@ -42,20 +41,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	var navBar *xwidget.NavBar
 
-	makeAppBarIcons := func(items ...*kxwidget.IconButton) []fyne.CanvasObject {
-		var x []fyne.CanvasObject
-		for _, ib := range items {
-			x = append(x, ib)
-		}
-		return x
-	}
-
 	// character destination
 	fallbackAvatar, _ := ximage.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
-	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
+	characterSelector := xwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
+	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...fyne.CanvasObject) *xwidget.AppBar {
 		items = append(items, characterSelector)
-		return xwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
+		return xwidget.NewAppBar(title, body, items...)
 	}
 	var characterNav *xwidget.Navigator
 
@@ -85,7 +76,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 				newCharacterAppBar(
 					"Communications",
 					u.characterCommunications.MessagePane,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), characterCommunicationsMenu),
+					xwidget.NewIconButtonWithMenu(theme.FolderIcon(), characterCommunicationsMenu),
 				),
 			)
 		},
@@ -103,10 +94,10 @@ func NewMobileUI(params UIParams) *MobileUI {
 					newCharacterAppBar(
 						"Mail",
 						u.characterMails.ReadingPane,
-						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
-						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
-						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
-						kxwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
+						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
+						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
+						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
+						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
 							fyne.Do(func() {
 								characterNav.Pop()
 							})
@@ -117,8 +108,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			mailPage = newCharacterAppBar(
 				"Mail",
 				u.characterMails.MessagePane,
-				kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-				kxwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
+				xwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+				xwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
 			)
 			characterNav.Push(mailPage)
 		},
@@ -231,10 +222,10 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	// corporation destination
 	fallbackAvatar2, _ := ximage.MakeAvatar(icons.Corporationplaceholder64Png)
-	corpSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
-	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
+	corpSelector := xwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
+	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...fyne.CanvasObject) *xwidget.AppBar {
 		items = append(items, corpSelector)
-		return xwidget.NewAppBar(title, body, makeAppBarIcons(items...)...)
+		return xwidget.NewAppBar(title, body, items...)
 	}
 
 	var corpNav *xwidget.Navigator
@@ -257,7 +248,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch,
-				kxwidget.NewIconButtonWithMenu(
+				xwidget.NewIconButtonWithMenu(
 					theme.MoreHorizontalIcon(),
 					fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
 				),
@@ -793,7 +784,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	return u
 }
 
-func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar, u *MobileUI) *xwidget.Navigator {
+func makeSearchNav(newCharacterAppBar func(title string, body fyne.CanvasObject, items ...fyne.CanvasObject) *xwidget.AppBar, u *MobileUI) *xwidget.Navigator {
 	searchNav := xwidget.NewNavigator(
 		newCharacterAppBar("Search", u.gameSearch),
 	)
@@ -881,7 +872,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
 			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll,
-				kxwidget.NewIconButtonWithMenu(
+				xwidget.NewIconButtonWithMenu(
 					theme.MoreHorizontalIcon(),
 					fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
 				),
@@ -928,7 +919,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 				xwidget.NewAppBar(
 					"Communications",
 					u.unifiedCommunications.MessagePane,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedCommunicationsMenu),
+					xwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedCommunicationsMenu),
 				),
 			)
 		},
@@ -957,10 +948,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 					xwidget.NewAppBar(
 						"Mail",
 						u.unifiedMails.ReadingPane,
-						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
-						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
-						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
-						kxwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
+						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
+						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
+						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
+						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
 							fyne.Do(func() {
 								homeNav.Pop()
 							})
@@ -968,15 +959,15 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 					),
 				)
 			}
-			var compose *kxwidget.IconButton
-			compose = kxwidget.NewIconButton(theme.DocumentCreateIcon(), func() {
+			var compose *xwidget.Button
+			compose = xwidget.NewIconButton(theme.DocumentCreateIcon(), func() {
 				u.unifiedMails.Compose(compose)
 			})
 			homeNav.Push(
 				xwidget.NewAppBar(
 					"Mail",
 					u.unifiedMails.MessagePane,
-					kxwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedMailMenu),
+					xwidget.NewIconButtonWithMenu(theme.FolderIcon(), unifiedMailMenu),
 					compose,
 				),
 			)
@@ -1020,7 +1011,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
 				ui.NewTabItem("Training", u.training),
 				ui.NewTabItem("Search", u.skillSearch),
-			), kxwidget.NewIconButtonWithMenu(
+			), xwidget.NewIconButtonWithMenu(
 				theme.MoreHorizontalIcon(),
 				fyne.NewMenu("", u.training.MoreItems()...),
 			)))

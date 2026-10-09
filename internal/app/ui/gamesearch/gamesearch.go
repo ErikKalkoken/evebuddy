@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -73,7 +72,7 @@ type GameSearch struct {
 
 	categories          *kxwidget.FilterChipGroup
 	defaultCategories   []string
-	searchEntry         *widget.Entry
+	searchEntry         *xwidget.SearchEntry
 	iconCache           xsync.Map[int64, fyne.Resource]
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
@@ -96,7 +95,6 @@ func NewGameSearch(u baseUI) *GameSearch {
 		displaySnackbar:     u.DisplaySnackbar,
 		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
-		searchEntry:         widget.NewEntry(),
 		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
@@ -116,13 +114,28 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
 	a.results = a.makeResults()
-	a.searchEntry.ActionItem = kxwidget.NewIconButton(theme.CancelIcon(), func() {
-		a.Reset()
-	})
-	a.searchEntry.PlaceHolder = "Search New Eden"
-	a.searchEntry.OnSubmitted = func(s string) {
-		go a.DoSearch(context.Background(), s)
-	}
+
+	a.searchEntry = xwidget.NewSearchEntry(
+		"Search New Eden",
+		func(s string) {
+			if s == "" {
+				a.Reset()
+			}
+			if len(s) < 3 {
+				return
+			}
+			go a.DoSearch(context.Background(), s)
+		},
+	)
+
+	// p := theme.Padding()
+	// a.searchEntry.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), kxwidget.NewTappableIcon(theme.CancelIcon(), func() {
+	// 	a.Reset()
+	// }))
+	// a.searchEntry.PlaceHolder = "Search New Eden"
+	// a.searchEntry.OnSubmitted = func(s string) {
+	// 	go a.DoSearch(context.Background(), s)
+	// }
 	a.indicator.Hide()
 
 	a.searchOptions = widget.NewAccordion(
