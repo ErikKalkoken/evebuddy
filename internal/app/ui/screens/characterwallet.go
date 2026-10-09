@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -20,10 +21,9 @@ import (
 type CharacterWallet struct {
 	widget.BaseWidget
 
-	OnTopUpdate     func(top string)
 	OnBalanceUpdate func(balance optional.Optional[float64])
 
-	balance       *widget.Label
+	balanceLabel  *widget.Label
 	character     atomic.Pointer[app.Character]
 	journal       *WalletJournal
 	transactions  *WalletTransactions
@@ -33,13 +33,17 @@ type CharacterWallet struct {
 
 func NewCharacterWallet(u baseUI) *CharacterWallet {
 	a := &CharacterWallet{
-		balance:       xwidget.NewLabelWithSelection(""),
+		balanceLabel:  xwidget.NewLabelWithSelection(""),
 		journal:       NewCharacterWalletJournal(u),
 		transactions:  NewCharacterWalletTransaction(u),
 		loyaltyPoints: NewCharacterLoyaltyPoints(u),
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.balanceLabel.TextStyle.Bold = true
+
+	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.Update(ctx)
@@ -57,13 +61,13 @@ func NewCharacterWallet(u baseUI) *CharacterWallet {
 
 func (a *CharacterWallet) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		a.balance,
+		a.balanceLabel,
 		nil,
 		nil,
 		nil,
 		container.NewAppTabs(
 			ui.NewTabItem("Transactions", a.journal),
-			ui.NewTabItem("Market Transactions", a.transactions),
+			ui.NewTabItem("Market", a.transactions),
 			ui.NewTabItem("Loyalty Points", a.loyaltyPoints),
 		),
 	)
@@ -93,15 +97,12 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 			if a.OnBalanceUpdate != nil {
 				a.OnBalanceUpdate(optional.Optional[float64]{})
 			}
-			if a.OnTopUpdate != nil {
-				a.OnTopUpdate("")
-			}
 		})
 	}
 	setBalance := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.balance.Text, a.balance.Importance = s, i
-			a.balance.Refresh()
+			a.balanceLabel.Text, a.balanceLabel.Importance = s, i
+			a.balanceLabel.Refresh()
 		})
 	}
 	characterID := a.character.Load().IDOrZero()
@@ -149,12 +150,9 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 		return
 	}
 
-	s := ui.FormatISKAmountLong(balance, ui.FloatFormatISK)
+	s := humanize.FormatFloat(ui.FloatFormatISK, balance) + " ISK"
 	setBalance(s, widget.MediumImportance)
 	fyne.Do(func() {
-		if a.OnTopUpdate != nil {
-			a.OnTopUpdate(s)
-		}
 		if a.OnBalanceUpdate != nil {
 			a.OnBalanceUpdate(optional.New(balance))
 		}

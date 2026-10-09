@@ -214,6 +214,7 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		},
 		Update: func(r walletTransactionRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.totalFormatted, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
 				ColorName: r.totalColor,
 			})
 		},
