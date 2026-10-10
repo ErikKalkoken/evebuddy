@@ -66,14 +66,13 @@ func TestNavRail_SelectSwitchesItemAndContent(t *testing.T) {
 	assert.True(t, contentB.Visible())
 }
 
-func TestNavRail_SelectingCurrentItemAgainFiresOnSelectedAgain(t *testing.T) {
+func TestNavRail_SelectingCurrentItemAgainDoesNothing(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	var selected, selectedAgain int
+	var selected int
 	a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 	a.OnSelected = func() { selected++ }
-	a.OnSelectedAgain = func() { selectedAgain++ }
 
 	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a})
 	w := test.NewWindow(nr)
@@ -81,7 +80,6 @@ func TestNavRail_SelectingCurrentItemAgainFiresOnSelectedAgain(t *testing.T) {
 
 	nr.Select(a)
 	assert.Equal(t, 1, selected)
-	assert.Equal(t, 1, selectedAgain)
 }
 
 func TestNavRail_DisabledItemCanNotBeSelected(t *testing.T) {

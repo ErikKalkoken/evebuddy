@@ -77,8 +77,7 @@ func (w *railDestination) Refresh() {
 	default:
 		w.icon.Resource = w.iconEnabled
 	}
-	radius := th.Size(theme.SizeNameButtonRadius)
-	w.hover.CornerRadius = radius
+	w.hover.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
 	if w.hovered && !w.Disabled() {
 		w.hover.FillColor = th.Color(theme.ColorNameHover, v)
 	} else {
@@ -131,9 +130,6 @@ func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
 type NavRailItem struct {
 	// OnSelected is an optional callback that fires when this item is selected.
 	OnSelected func()
-
-	// OnSelectedAgain is an optional callback that fires when this item is selected while already selected.
-	OnSelectedAgain func()
 
 	content  fyne.CanvasObject
 	dest     *railDestination
@@ -249,9 +245,6 @@ func (w *NavRail) Select(it *NavRailItem) {
 		return
 	}
 	if it == w.selected {
-		if it.OnSelectedAgain != nil {
-			it.OnSelectedAgain()
-		}
 		return
 	}
 	w.selectItem(it)
