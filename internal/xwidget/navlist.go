@@ -9,8 +9,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 )
 
 // NavList is a widget that renders a list of selectable items.
@@ -234,11 +232,11 @@ func newButtonTapAnimation(bg *canvas.Rectangle, w *NavListItem, th fyne.Theme) 
 		bg.Resize(fyne.NewSize(size*2, w.Size().Height))
 		bg.Move(fyne.NewPos(mid-size, 0))
 
-		r, g, bb, a := fynetools.ToNRGBA(th.Color(theme.ColorNamePressed, v))
-		aa := uint8(a)
-		fade := aa - uint8(float32(aa)*done)
+		c := color.NRGBAModel.Convert(th.Color(theme.ColorNamePressed, v)).(color.NRGBA)
+		fade := c.A - uint8(float32(c.A)*done)
 		if fade > 0 {
-			bg.FillColor = &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(bb), A: fade}
+			c.A = fade
+			bg.FillColor = &c
 		} else {
 			bg.FillColor = color.Transparent
 		}

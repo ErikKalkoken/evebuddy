@@ -1,18 +1,18 @@
-// Package fynetools contains tools for working with Fyne elements.
-package fynetools
+// Package ximage contains tools for transforming image resources.
+package ximage
 
 import (
 	"bytes"
 	"image"
 	"image/color"
 	"image/draw"
+	"image/jpeg"
+	"image/png"
 	"path"
 	"strings"
 
 	"fyne.io/fyne/v2"
-
-	_ "image/jpeg" // required for the images package to support jpeg
-	"image/png"
+	"github.com/anthonynsimon/bild/effect"
 )
 
 // circle is an alpha mask of a circle filling a square.
@@ -73,4 +73,60 @@ func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 	name += "_avatar.png"
 	out := fyne.NewStaticResource(name, buf.Bytes())
 	return out, nil
+}
+
+// ToGrayscale returns a copy of an image in grayscale.
+//
+// Will fail if the resource it not a PNG or JPEG image.
+func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
+	j, format, err := image.Decode(bytes.NewReader(r.Content()))
+	if err != nil {
+		return nil, err
+	}
+	b := j.Bounds()
+	m := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	draw.Draw(m, m.Bounds(), j, b.Min, draw.Src)
+	m = effect.Grayscale(m)
+	var byt bytes.Buffer
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(&byt, m, nil)
+	case "png":
+		err = png.Encode(&byt, m)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return fyne.NewStaticResource(r.Name(), byt.Bytes()), nil
+}
+
+// TintPNG returns a copy of a PNG image with all pixels set to color c, keeping their alpha.
+func TintPNG(in fyne.Resource, c color.Color) (fyne.Resource, error) {
+	img, err := png.Decode(bytes.NewReader(in.Content()))
+	if err != nil {
+		return nil, err
+	}
+	bounds := img.Bounds()
+	newImg := image.NewNRGBA(bounds)
+	target := color.NRGBAModel.Convert(c).(color.NRGBA)
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			// keep the original alpha so anti-aliased edges stay smooth
+			_, _, _, a := img.At(x, y).RGBA()
+			px := target
+			px.A = uint8(uint32(target.A) * a / 0xffff)
+			newImg.SetNRGBA(x, y, px)
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, newImg); err != nil {
+		return nil, err
+	}
+	r := &fyne.StaticResource{
+		StaticName:    in.Name(),
+		StaticContent: buf.Bytes(),
+	}
+	return r, nil
 }

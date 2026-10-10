@@ -24,10 +24,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/charactermanager"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/updatestatus"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -51,7 +51,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	// character destination
-	fallbackAvatar, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
+	fallbackAvatar, _ := ximage.MakeAvatar(icons.Characterplaceholder64Jpeg)
 	characterSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
 		items = append(items, characterSelector)
@@ -230,7 +230,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	characterNav = xwidget.NewNavigator(characterPage)
 
 	// corporation destination
-	fallbackAvatar2, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
+	fallbackAvatar2, _ := ximage.MakeAvatar(icons.Corporationplaceholder64Png)
 	corpSelector := kxwidget.NewIconButtonWithMenu(fallbackAvatar2, fyne.NewMenu(""))
 	newCorpAppBar := func(title string, body fyne.CanvasObject, items ...*kxwidget.IconButton) *xwidget.AppBar {
 		items = append(items, corpSelector)

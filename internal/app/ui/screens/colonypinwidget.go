@@ -12,9 +12,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -366,7 +366,7 @@ func colonyTintedIcon(icon fyne.Resource, c color.NRGBA) fyne.Resource {
 	if r, ok := tintedIconCache.Load(key); ok {
 		return r
 	}
-	r, err := fynetools.ThemedPNG(icon, c)
+	r, err := ximage.TintPNG(icon, c)
 	if err != nil {
 		fyne.LogError("Failed theme PNG", err)
 		return icons.BlankSvg
