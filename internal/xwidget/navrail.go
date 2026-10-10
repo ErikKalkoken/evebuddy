@@ -174,18 +174,20 @@ func (it *NavRailItem) isAction() bool {
 
 // NavRail lets people switch between the top-level views of an app on desktop.
 // It shows a vertical strip of icons with leading items at the top and trailing items at the bottom.
+// While no non-action item is enabled, it shows an optional placeholder instead of any content.
 type NavRail struct {
 	widget.BaseWidget
 
-	body      *fyne.Container
-	column    *fyne.Container
-	indicator *canvas.Rectangle
-	items     []*NavRailItem
-	leading   *fyne.Container
-	selected  *NavRailItem
-	separator *widget.Separator
-	strip     *fyne.Container
-	trailing  *fyne.Container
+	body        *fyne.Container
+	column      *fyne.Container
+	indicator   *canvas.Rectangle
+	items       []*NavRailItem
+	leading     *fyne.Container
+	placeholder fyne.CanvasObject
+	selected    *NavRailItem // nil while no non-action item is enabled
+	separator   *widget.Separator
+	strip       *fyne.Container
+	trailing    *fyne.Container
 }
 
 // NewNavRail returns a new navigation rail. The first leading non-action item is selected initially.
@@ -250,40 +252,85 @@ func (w *NavRail) Select(it *NavRailItem) {
 	w.selectItem(it)
 }
 
-// Selected returns the currently selected item.
+// Selected returns the currently selected item or nil when no non-action item is enabled.
 func (w *NavRail) Selected() *NavRailItem {
 	return w.selected
 }
 
+// SetPlaceholder sets an object to show instead of any content while no non-action item is enabled.
+// A nil object removes the placeholder.
+func (w *NavRail) SetPlaceholder(obj fyne.CanvasObject) {
+	if w.placeholder != nil {
+		w.body.Remove(w.placeholder)
+	}
+	w.placeholder = obj
+	if obj != nil {
+		if w.selected == nil {
+			obj.Show()
+		} else {
+			obj.Hide()
+		}
+		w.body.Add(obj)
+	}
+	w.body.Refresh()
+}
+
 // EnableItem enables an item.
+// When no non-action item was enabled before, the rail switches to the first enabled non-action item.
 func (w *NavRail) EnableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.dest.Enable()
+	w.updateSelection()
 }
 
 // DisableItem disables an item. Disabled items can not be selected.
-// When the selected item is disabled, the rail switches to the first enabled non-action item.
+// When the selected item is disabled, the rail switches to the first enabled non-action item
+// or shows the placeholder when there is none.
 func (w *NavRail) DisableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.dest.Disable()
-	if it != w.selected {
-		return
-	}
-	for _, x := range w.items {
-		if !x.isAction() && !x.dest.Disabled() {
-			w.selectItem(x)
-			return
-		}
-	}
+	w.updateSelection()
 }
 
 // ItemEnabled reports whether an item is enabled.
 func (w *NavRail) ItemEnabled(it *NavRailItem) bool {
 	return w.owns(it) && !it.dest.Disabled()
+}
+
+// updateSelection switches to the first enabled non-action item when the selected item is disabled
+// and shows the placeholder when there is none.
+func (w *NavRail) updateSelection() {
+	if w.selected != nil && !w.selected.dest.Disabled() {
+		return
+	}
+	first := slices.IndexFunc(w.items, func(it *NavRailItem) bool {
+		return !it.isAction() && !it.dest.Disabled()
+	})
+	wasEmpty := w.selected == nil
+	if first == -1 {
+		if wasEmpty {
+			return
+		}
+		w.selected.dest.setActive(false)
+		w.selected.content.Hide()
+		w.selected = nil
+		if w.placeholder != nil {
+			w.placeholder.Show()
+		}
+		w.Refresh() // showing a never-visible object may not repaint
+		return
+	}
+	if wasEmpty && w.placeholder != nil {
+		w.placeholder.Hide()
+	}
+	w.selectItem(w.items[first])
+	if wasEmpty {
+		w.Refresh()
+	}
 }
 
 func (w *NavRail) owns(it *NavRailItem) bool {
@@ -312,6 +359,9 @@ func (w *NavRail) Refresh() {
 
 // updateIndicator places the indicator on the separator next to the selected item.
 func (w *NavRail) updateIndicator() {
+	if w.selected == nil {
+		return
+	}
 	dest := w.selected.dest
 	parent := w.leading
 	if slices.Contains(w.trailing.Objects, fyne.CanvasObject(dest)) {
@@ -362,6 +412,11 @@ func (r *navRailRenderer) Refresh() {
 func (r *navRailRenderer) updateColors() {
 	th := r.w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)
+	// transparent instead of hidden, because showing a never-visible object may not repaint
+	if r.w.selected == nil {
+		r.w.indicator.FillColor = color.Transparent
+	} else {
+		r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)
+	}
 	r.w.indicator.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
 }

@@ -47,18 +47,20 @@ func (it *NavDrawerItem) SetText(text string) {
 
 // NavDrawer lets people switch between UI views on larger devices.
 // It shows a scrollable list of items next to the content of the selected item.
+// While no item is enabled, it shows an optional placeholder instead.
 type NavDrawer struct {
 	widget.DisableableWidget
 
 	MinWidth float32 // minimum width of the navigation area
 
-	body      *fyne.Container
-	column    *fyne.Container
-	indicator *canvas.Rectangle
-	items     []*NavDrawerItem
-	scroll    *container.Scroll
-	selected  *NavDrawerItem
-	separator *widget.Separator
+	body        *fyne.Container
+	column      *fyne.Container
+	indicator   *canvas.Rectangle
+	items       []*NavDrawerItem
+	placeholder fyne.CanvasObject
+	scroll      *container.Scroll
+	selected    *NavDrawerItem // nil while no item is enabled
+	separator   *widget.Separator
 }
 
 // NewNavDrawer returns a new navigation drawer. The first item is selected initially.
@@ -101,37 +103,50 @@ func (w *NavDrawer) Select(it *NavDrawerItem) {
 	w.selectItem(it)
 }
 
-// Selected returns the currently selected item.
+// Selected returns the currently selected item or nil when no item is enabled.
 func (w *NavDrawer) Selected() *NavDrawerItem {
 	return w.selected
 }
 
+// SetPlaceholder sets an object to show instead of any content while no item is enabled.
+// A nil object removes the placeholder.
+func (w *NavDrawer) SetPlaceholder(obj fyne.CanvasObject) {
+	if w.placeholder != nil {
+		w.body.Remove(w.placeholder)
+	}
+	w.placeholder = obj
+	if obj != nil {
+		if w.selected == nil {
+			obj.Show()
+		} else {
+			obj.Hide()
+		}
+		w.body.Add(obj)
+	}
+	w.body.Refresh()
+}
+
 // EnableItem enables an item.
+// When no item was enabled before, the drawer switches to the first enabled item.
 func (w *NavDrawer) EnableItem(it *NavDrawerItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.disabled = false
 	w.updateItemState(it)
+	w.updateSelection()
 }
 
 // DisableItem disables an item. Disabled items can not be selected.
-// When the selected item is disabled, the drawer switches to the first enabled item.
+// When the selected item is disabled, the drawer switches to the first enabled item
+// or shows the placeholder when there is none.
 func (w *NavDrawer) DisableItem(it *NavDrawerItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.disabled = true
 	w.updateItemState(it)
-	if it != w.selected {
-		return
-	}
-	for _, x := range w.items {
-		if !x.dest.Disabled() {
-			w.selectItem(x)
-			return
-		}
-	}
+	w.updateSelection()
 }
 
 // ItemEnabled reports whether an item is enabled.
@@ -139,20 +154,20 @@ func (w *NavDrawer) ItemEnabled(it *NavDrawerItem) bool {
 	return w.owns(it) && !it.dest.Disabled()
 }
 
-// Disable disables all items and switches to the first item.
+// Disable disables all items and shows the placeholder.
 func (w *NavDrawer) Disable() {
 	if w.Disabled() {
 		return
 	}
 	w.DisableableWidget.Disable()
-	w.selectItem(w.items[0])
-	w.ScrollToTop()
 	for _, it := range w.items {
 		w.updateItemState(it)
 	}
+	w.updateSelection()
 }
 
-// Enable enables all items, except those disabled with [NavDrawer.DisableItem], and switches to the first item.
+// Enable enables all items, except those disabled with [NavDrawer.DisableItem],
+// and switches to the first enabled item.
 func (w *NavDrawer) Enable() {
 	if !w.Disabled() {
 		return
@@ -161,17 +176,45 @@ func (w *NavDrawer) Enable() {
 	for _, it := range w.items {
 		w.updateItemState(it)
 	}
-	if first := slices.IndexFunc(w.items, func(it *NavDrawerItem) bool {
-		return !it.dest.Disabled()
-	}); first != -1 {
-		w.selectItem(w.items[first])
-	}
-	w.ScrollToTop()
+	w.updateSelection()
 }
 
 // ScrollToTop scrolls the navigation area to the top.
 func (w *NavDrawer) ScrollToTop() {
 	w.scroll.ScrollToOffset(fyne.Position{})
+}
+
+// updateSelection switches to the first enabled item when the selected item is disabled
+// and shows the placeholder when no item is enabled.
+func (w *NavDrawer) updateSelection() {
+	if w.selected != nil && !w.selected.dest.Disabled() {
+		return
+	}
+	first := slices.IndexFunc(w.items, func(it *NavDrawerItem) bool {
+		return !it.dest.Disabled()
+	})
+	wasEmpty := w.selected == nil
+	if first == -1 {
+		if wasEmpty {
+			return
+		}
+		w.selected.dest.setActive(false)
+		w.selected.content.Hide()
+		w.selected = nil
+		if w.placeholder != nil {
+			w.placeholder.Show()
+		}
+		w.Refresh() // showing a never-visible object may not repaint
+		return
+	}
+	if wasEmpty && w.placeholder != nil {
+		w.placeholder.Hide()
+	}
+	w.selectItem(w.items[first])
+	if wasEmpty {
+		w.ScrollToTop()
+		w.Refresh()
+	}
 }
 
 func (w *NavDrawer) owns(it *NavDrawerItem) bool {
@@ -205,6 +248,9 @@ func (w *NavDrawer) selectItem(it *NavDrawerItem) {
 
 // updateIndicator places the indicator on the separator next to the selected item.
 func (w *NavDrawer) updateIndicator() {
+	if w.selected == nil {
+		return
+	}
 	dest := w.selected.dest
 	w.indicator.Move(fyne.NewPos(w.separator.Position().X, w.column.Position().Y+dest.Position().Y))
 	w.indicator.Resize(fyne.NewSize(w.separator.Size().Width, dest.Size().Height))
@@ -252,7 +298,7 @@ func (r *navDrawerRenderer) updateColors() {
 	th := r.w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	// transparent instead of hidden, because showing a never-visible object may not repaint
-	if r.w.Disabled() {
+	if r.w.selected == nil {
 		r.w.indicator.FillColor = color.Transparent
 	} else {
 		r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)

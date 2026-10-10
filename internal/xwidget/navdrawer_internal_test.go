@@ -159,7 +159,7 @@ func TestNavDrawer_OnSelectedFiresOnlyOnChange(t *testing.T) {
 	assert.Equal(t, 1, selected)
 }
 
-func TestNavDrawer_DisableAndEnableDoNotRefireOnSelected(t *testing.T) {
+func TestNavDrawer_EnableFiresOnSelectedOfFirstItem(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
@@ -173,12 +173,14 @@ func TestNavDrawer_DisableAndEnableDoNotRefireOnSelected(t *testing.T) {
 	assert.Equal(t, 1, selected)
 
 	nd.Disable()
-	nd.Enable()
 	assert.Equal(t, 1, selected)
+	nd.Enable()
+	assert.Equal(t, 2, selected)
 
 	nd.Select(b)
 	nd.Disable()
-	assert.Equal(t, 2, selected)
+	nd.Enable()
+	assert.Equal(t, 3, selected)
 }
 
 func TestNavDrawer_IndicatorInvisibleWhileDisabled(t *testing.T) {
@@ -238,18 +240,132 @@ func TestNavDrawer_DisableAndEnable(t *testing.T) {
 	nd.DisableItem(c)
 
 	nd.Disable()
-	assert.Equal(t, a, nd.Selected())
+	assert.Nil(t, nd.Selected())
 	for _, it := range []*NavDrawerItem{a, b, c} {
 		assert.False(t, nd.ItemEnabled(it))
 	}
-	nd.Select(b)
-	assert.Equal(t, a, nd.Selected())
+	nd.Select(a)
+	assert.Nil(t, nd.Selected())
 
 	nd.Enable()
-	assert.Equal(t, a, nd.Selected())
+	assert.Equal(t, a, nd.Selected(), "switches to first enabled item")
 	assert.True(t, nd.ItemEnabled(a))
 	assert.True(t, nd.ItemEnabled(b))
 	assert.False(t, nd.ItemEnabled(c), "individually disabled item stays disabled")
+}
+
+func TestNavDrawer_EnableSwitchesToFirstEnabledWhenSelectionStaysDisabled(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	b := NewNavDrawerItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+	nd := NewNavDrawer(a, b)
+	w := test.NewWindow(nd)
+	defer w.Close()
+	nd.Select(b)
+
+	nd.Disable()
+	nd.DisableItem(b)
+	nd.Enable()
+	assert.Equal(t, a, nd.Selected())
+	assert.True(t, a.content.Visible())
+	assert.False(t, b.content.Visible())
+}
+
+func TestNavDrawer_Placeholder(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	t.Run("shown while drawer is disabled", func(t *testing.T) {
+		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavDrawerItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nd := NewNavDrawer(a, b)
+		p := widget.NewLabel("placeholder")
+		nd.SetPlaceholder(p)
+		nd.Disable() // before the renderer exists, like at app startup
+		w := test.NewWindow(nd)
+		defer w.Close()
+
+		assert.True(t, p.Visible())
+		assert.False(t, a.content.Visible())
+		assert.False(t, b.content.Visible())
+		assert.Nil(t, nd.Selected())
+		_, _, _, alpha := nd.indicator.FillColor.RGBA()
+		assert.Zero(t, alpha)
+
+		nd.Enable()
+		assert.False(t, p.Visible())
+		assert.True(t, a.content.Visible())
+		assert.Equal(t, a, nd.Selected())
+		assert.Equal(t, theme.Color(theme.ColorNamePrimary), nd.indicator.FillColor)
+	})
+	t.Run("shown when all items are disabled", func(t *testing.T) {
+		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavDrawerItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nd := NewNavDrawer(a, b)
+		p := widget.NewLabel("placeholder")
+		nd.SetPlaceholder(p)
+		w := test.NewWindow(nd)
+		defer w.Close()
+		nd.Select(b)
+
+		nd.DisableItem(a)
+		assert.False(t, p.Visible())
+		nd.DisableItem(b)
+		assert.True(t, p.Visible())
+		assert.False(t, b.content.Visible())
+		assert.False(t, b.dest.isActive)
+		assert.Nil(t, nd.Selected())
+
+		nd.EnableItem(a)
+		nd.EnableItem(b)
+		assert.False(t, p.Visible())
+		assert.True(t, a.content.Visible())
+		assert.False(t, b.content.Visible())
+		assert.Equal(t, a, nd.Selected(), "does not restore previous selection")
+	})
+	t.Run("set while empty", func(t *testing.T) {
+		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		nd := NewNavDrawer(a)
+		w := test.NewWindow(nd)
+		defer w.Close()
+		nd.Disable()
+		assert.False(t, a.content.Visible())
+
+		p := widget.NewLabel("placeholder")
+		nd.SetPlaceholder(p)
+		assert.True(t, p.Visible())
+	})
+	t.Run("can be removed", func(t *testing.T) {
+		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		nd := NewNavDrawer(a)
+		p := widget.NewLabel("placeholder")
+		nd.SetPlaceholder(p)
+
+		nd.SetPlaceholder(nil)
+		assert.NotContains(t, nd.body.Objects, p)
+	})
+}
+
+func TestNavDrawer_ScrollsToTopWhenReenabled(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	var items []*NavDrawerItem
+	for range 20 {
+		items = append(items, NewNavDrawerItem(theme.HomeIcon(), "X", widget.NewLabel("X")))
+	}
+	nd := NewNavDrawer(items...)
+	w := test.NewWindow(nd)
+	defer w.Close()
+	w.Resize(fyne.NewSize(400, 200))
+
+	nd.Disable()
+	nd.scroll.ScrollToBottom()
+	assert.Greater(t, nd.scroll.Offset.Y, float32(0), "drawer scrolled")
+	nd.Enable()
+	assert.Zero(t, nd.scroll.Offset.Y)
 }
 
 func TestNavDrawer_ItemSetters(t *testing.T) {
@@ -387,6 +503,7 @@ func TestNavDrawer_TappingWhileDisabledDoesNothing(t *testing.T) {
 	nd.Disable()
 
 	test.Tap(b.dest)
+	nd.Enable()
 	assert.Equal(t, a, nd.Selected())
 }
 

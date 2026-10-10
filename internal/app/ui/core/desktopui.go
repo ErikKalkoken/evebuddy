@@ -499,7 +499,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		rail,
 	)
 
+	rail.SetPlaceholder(container.NewCenter(widget.NewLabel("Please add a character via Manage Characters")))
+
 	// initial state is disabled
+	rail.DisableItem(homeItem)
 	rail.DisableItem(characterItem)
 	rail.DisableItem(corporationItem)
 	homeNav.Disable()
@@ -639,6 +642,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
+				rail.DisableItem(homeItem)
 				rail.DisableItem(characterItem)
 				homeNav.Disable()
 				rail.DisableItem(searchItem)
@@ -647,6 +651,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			return
 		}
 		fyne.Do(func() {
+			rail.EnableItem(homeItem)
 			rail.EnableItem(characterItem)
 			homeNav.Enable()
 			rail.EnableItem(searchItem)
