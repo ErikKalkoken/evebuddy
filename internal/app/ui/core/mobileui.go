@@ -212,8 +212,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemSkills.Refresh()
 	}
 
-	u.characterWallet.OnTopUpdate = func(b string) {
-		navItemWallet.Supporting = b
+	u.characterWallet.OnBalanceUpdate = func(balance optional.Optional[float64]) {
+		navItemWallet.Supporting = formatISKValue(balance, ui.FloatFormatISKRounded)
 		navItemWallet.Refresh()
 	}
 
@@ -257,48 +257,13 @@ func NewMobileUI(params UIParams) *MobileUI {
 		},
 	)
 
-	var corpWalletItems []*xwidget.NavListItem
-	corporationWalletNavs := make(map[app.Division]*xwidget.NavListItem)
-	for _, d := range app.Divisions {
-		corporationWalletNavs[d] = xwidget.NewNavListItem(
-			d.DefaultWalletName(),
-			theme.NewThemedResource(icons.CashSvg),
-			func() {
-				corpNav.Push(
-					newCorpAppBar(
-						corporationWalletNavs[d].Headline,
-						u.corporationWallets[d],
-					))
-			},
-		)
-		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
-	}
-	corpWalletList := xwidget.NewNavList(corpWalletItems...)
 	corpWalletNav := xwidget.NewNavListItem(
 		"Wallets",
 		theme.NewThemedResource(icons.CashSvg),
 		func() {
-			corpNav.Push(
-				newCorpAppBar(
-					"Wallets",
-					corpWalletList,
-				))
+			corpNav.Push(newCorpAppBar("Wallets", u.corporationWallets))
 		},
 	)
-	for _, d := range app.Divisions {
-		u.corporationWallets[d].OnTopUpdate = func(top string) {
-			fyne.Do(func() {
-				corporationWalletNavs[d].Supporting = top
-				corporationWalletNavs[d].Refresh()
-			})
-		}
-		u.corporationWallets[d].NnNameUpdate = func(name string) {
-			fyne.Do(func() {
-				corporationWalletNavs[d].Headline = name
-				corporationWalletNavs[d].Refresh()
-			})
-		}
-	}
 
 	corpContractsNav := xwidget.NewNavListItem(
 		"Contracts",
@@ -355,8 +320,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
-			corpWealthNav,
 			corpWalletNav,
+			corpWealthNav,
 		})...,
 	)
 	u.corporationContracts.OnUpdate = func(count int) {
@@ -383,9 +348,20 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpStructuresNav.Supporting = badge
 		corpStructuresNav.Refresh()
 	}
-	u.onUpdateCorporationWalletTotals = func(balance optional.Optional[float64]) {
-		corpWalletNav.Supporting = formatISKValueLong(balance, ui.FloatFormatISKRounded)
+	// Hides the total while the wallets are not permitted, since the two update independently.
+	var corpWalletTotal optional.Optional[float64]
+	var corpWalletEnabled bool
+	refreshCorpWalletSupporting := func() {
+		var s string
+		if corpWalletEnabled {
+			s = formatISKValue(corpWalletTotal, ui.FloatFormatISKRounded)
+		}
+		corpWalletNav.Supporting = s
 		corpWalletNav.Refresh()
+	}
+	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
+		corpWalletTotal = total
+		refreshCorpWalletSupporting()
 	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
@@ -519,7 +495,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 			setEnabled(corpAssetBrowserNav, sections.Contains(app.SectionCorporationAssets))
 			setEnabled(corpIndustryNav, sections.Contains(app.SectionCorporationIndustryJobs))
 			setEnabled(corpContractsNav, sections.Contains(app.SectionCorporationContracts))
-			setEnabled(corpWalletNav, sections.Contains(app.SectionCorporationWalletBalances))
+			corpWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
+			setEnabled(corpWalletNav, corpWalletEnabled)
+			refreshCorpWalletSupporting()
 			setEnabled(corpWealthNav, sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
 				sections.Contains(app.SectionCorporationWalletBalances))
@@ -863,7 +841,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.wealth.OnUpdate = func(total optional.Optional[float64]) {
-		navItemWealth.Supporting = formatISKValueLong(total, ui.FloatFormatISKRounded)
+		navItemWealth.Supporting = formatISKValue(total, ui.FloatFormatISKRounded)
 		navItemWealth.Refresh()
 	}
 
@@ -1083,10 +1061,10 @@ func setNavItemSupportingWarning(item *xwidget.NavListItem, count int, label str
 	item.Refresh()
 }
 
-func formatISKValueLong(value optional.Optional[float64], format string) string {
+func formatISKValue(value optional.Optional[float64], format string) string {
 	v, ok := value.Value()
 	if !ok {
 		return "? ISK"
 	}
-	return ui.FormatISKAmountLong(v, format)
+	return humanize.FormatFloat(format, v) + " ISK"
 }

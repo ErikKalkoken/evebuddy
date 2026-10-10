@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"slices"
 	"sync"
 	"time"
 
@@ -370,20 +369,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	var corporationNav *xwidget.NavDrawer
-	walletsNav := xwidget.NewNavSectionLabel("Wallets")
-	corpWalletItems := []*xwidget.NavItem{walletsNav}
-	corporationWalletNavs := make(map[app.Division]*xwidget.NavItem)
-	corporationWalletPages := make(map[app.Division]*contentPage)
-	for _, d := range app.Divisions {
-		name := d.DefaultWalletName()
-		corporationWalletPages[d] = newContentPage(name, u.corporationWallets[d])
-		corporationWalletNavs[d] = xwidget.NewNavPage(
-			name,
-			theme.NewThemedResource(icons.CashSvg),
-			corporationWalletPages[d],
-		)
-		corpWalletItems = append(corpWalletItems, corporationWalletNavs[d])
-	}
+	corpWalletsItem := xwidget.NewNavPage(
+		"Wallets",
+		theme.NewThemedResource(icons.CashSvg),
+		newContentPage("Wallets", u.corporationWallets),
+	)
 
 	corpContractsItem := xwidget.NewNavPage(
 		"Contracts",
@@ -439,31 +429,30 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Wealth", u.corporationWealth),
 	)
 
-	corporationNav = xwidget.NewNavDrawer(slices.Concat(
-		[]*xwidget.NavItem{
-			corpSheetItem,
-			corpAssetsItem,
-			corpContractsItem,
-			corpIndustryItem,
-			corpStructuresItem,
-			corpWealthItem,
-		},
-		corpWalletItems,
-	)...)
+	corporationNav = xwidget.NewNavDrawer(
+		corpSheetItem,
+		corpAssetsItem,
+		corpContractsItem,
+		corpIndustryItem,
+		corpStructuresItem,
+		corpWalletsItem,
+		corpWealthItem,
+	)
 	corporationNav.MinWidth = navDrawerMinWidth
 
-	for _, d := range app.Divisions {
-		u.corporationWallets[d].OnBalanceUpdate = func(balance optional.Optional[float64]) {
-			corporationNav.SetItemBadge(corporationWalletNavs[d], formatISKValueShort(balance))
+	// Hides the total while the wallets are not permitted, since the two update independently.
+	var corpWalletTotal optional.Optional[float64]
+	var corpWalletEnabled bool
+	refreshCorpWalletBadge := func() {
+		var s string
+		if corpWalletEnabled {
+			s = formatISKValueShort(corpWalletTotal)
 		}
-		u.corporationWallets[d].NnNameUpdate = func(name string) {
-			corporationNav.SetItemText(corporationWalletNavs[d], name)
-			corporationWalletPages[d].SetTitle(name)
-		}
+		corporationNav.SetItemBadge(corpWalletsItem, s)
 	}
-	u.onUpdateCorporationWalletTotals = func(balance optional.Optional[float64]) {
-		corporationNav.SetItemBadge(walletsNav, formatISKValueShort(balance))
-		corporationNav.Refresh()
+	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
+		corpWalletTotal = total
+		refreshCorpWalletBadge()
 	}
 
 	// Make overall UI
@@ -613,16 +602,14 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				hasDisabled = true
 			}
 
-			if sections.Contains(app.SectionCorporationWalletBalances) {
-				for _, it := range corpWalletItems {
-					it.Enable()
-				}
+			corpWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
+			if corpWalletEnabled {
+				corpWalletsItem.Enable()
 			} else {
-				for _, it := range corpWalletItems {
-					it.Disable()
-					hasDisabled = true
-				}
+				corpWalletsItem.Disable()
+				hasDisabled = true
 			}
+			refreshCorpWalletBadge()
 
 			if sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
