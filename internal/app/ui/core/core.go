@@ -33,11 +33,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/gamesearch"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/screens"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -219,8 +219,8 @@ func newBaseUI(arg UIParams) *baseUI {
 	if arg.Signals == nil {
 		panic("Signals missing")
 	}
-	characterAvatarPlaceholder64, _ := fynetools.MakeAvatar(icons.Characterplaceholder64Jpeg)
-	corporationAvatarPlaceholder64, _ := fynetools.MakeAvatar(icons.Corporationplaceholder64Png)
+	characterAvatarPlaceholder64, _ := ximage.MakeAvatar(icons.Characterplaceholder64Jpeg)
+	corporationAvatarPlaceholder64, _ := ximage.MakeAvatar(icons.Corporationplaceholder64Png)
 	u := &baseUI{
 		app:                            arg.App,
 		concurrencyLimit:               -1, // Default is no limit
@@ -1022,7 +1022,7 @@ func (u *baseUI) SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Re
 			if err != nil {
 				return nil, err
 			}
-			return fynetools.MakeAvatar(r)
+			return ximage.MakeAvatar(r)
 		},
 		func(r fyne.Resource) {
 			u.avatarCache.Store(characterID, r)
@@ -1042,7 +1042,7 @@ func (u *baseUI) setCorporationAvatarAsync(corporationID int64, setIcon func(fyn
 			if err != nil {
 				return nil, err
 			}
-			return fynetools.MakeAvatar(r)
+			return ximage.MakeAvatar(r)
 		},
 		func(r fyne.Resource) {
 			u.avatarCache.Store(corporationID, r)

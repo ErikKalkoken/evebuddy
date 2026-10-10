@@ -23,9 +23,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -695,7 +695,7 @@ func colonyPlanetIcon(iconID int64, needsAttention bool) fyne.Resource {
 	if r, ok := grayscalePlanetIconCache.Load(iconID); ok {
 		return r
 	}
-	r, err := fynetools.ImageToGrayscale(icon)
+	r, err := ximage.ToGrayscale(icon)
 	if err != nil {
 		slog.Warn("Failed to convert planet icon to grayscale", "iconID", iconID, "error", err)
 		return icon
