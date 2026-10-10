@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -24,12 +25,16 @@ type corporationWalletsData struct {
 	balances   map[app.Division]float64 // empty when there is no data
 	importance widget.Importance
 	names      map[app.Division]string
-	status     string // shown instead of balances when not empty
+	status     string                     // shown instead of balances when not empty
+	total      optional.Optional[float64] // empty when there is no data
 }
 
 // CorporationWallets shows the wallets of the current corporation.
 type CorporationWallets struct {
 	widget.BaseWidget
+
+	// OnBalanceUpdate is called on the main thread with the total balance after each update.
+	OnBalanceUpdate func(total optional.Optional[float64])
 
 	balanceLabel      *widget.Label
 	corporation       atomic.Pointer[app.Corporation]
@@ -132,6 +137,9 @@ func (a *CorporationWallets) Update(ctx context.Context) {
 			return
 		}
 		a.applyData(data)
+		if a.OnBalanceUpdate != nil {
+			a.OnBalanceUpdate(data.total)
+		}
 	})
 }
 
@@ -149,6 +157,14 @@ func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID in
 		}
 		slog.Error("Failed to update corp wallets UI", "corporationID", corporationID, "err", err)
 		data.status, data.importance = "Error: "+u.ErrorDisplay(err), widget.DangerImportance
+		return data
+	}
+	hasRole, err := u.Corporation().PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return setError(err)
+	}
+	if !hasRole {
+		data.status, data.importance = "No permission", widget.WarningImportance
 		return data
 	}
 	hasData, err := u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationWalletBalances)
@@ -170,6 +186,7 @@ func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID in
 	data.balances = make(map[app.Division]float64)
 	for _, o := range oo {
 		data.balances[app.Division(o.DivisionID)] = o.Balance
+		data.total = optional.SumNonEmpty(data.total, optional.New(o.Balance))
 	}
 	return data
 }

@@ -440,8 +440,19 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 	corporationNav.MinWidth = navDrawerMinWidth
 
-	u.onUpdateCorporationWalletTotals = func(balance optional.Optional[float64]) {
-		corporationNav.SetItemBadge(corpWalletsItem, formatISKValueShort(balance))
+	// Hides the total while the wallets are not permitted, since the two update independently.
+	var corpWalletTotal optional.Optional[float64]
+	var corpWalletEnabled bool
+	refreshCorpWalletBadge := func() {
+		var s string
+		if corpWalletEnabled {
+			s = formatISKValueShort(corpWalletTotal)
+		}
+		corporationNav.SetItemBadge(corpWalletsItem, s)
+	}
+	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
+		corpWalletTotal = total
+		refreshCorpWalletBadge()
 	}
 
 	// Make overall UI
@@ -591,12 +602,14 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				hasDisabled = true
 			}
 
-			if sections.Contains(app.SectionCorporationWalletBalances) {
+			corpWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
+			if corpWalletEnabled {
 				corpWalletsItem.Enable()
 			} else {
 				corpWalletsItem.Disable()
 				hasDisabled = true
 			}
+			refreshCorpWalletBadge()
 
 			if sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&

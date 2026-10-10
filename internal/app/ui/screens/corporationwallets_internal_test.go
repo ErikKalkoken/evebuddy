@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCorporationWalletLabel(t *testing.T) {
@@ -122,10 +123,48 @@ func TestCorporationWallets(t *testing.T) {
 	t.Run("shows no data when balances are missing", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		a := newCorporationWallets(t, false)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 
-		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
 
 		assert.Equal(t, "No data", a.balanceLabel.Text)
+	})
+	t.Run("reports total balance", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		a := newCorporationWallets(t, false)
+		var got optional.Optional[float64]
+		a.OnBalanceUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), createCorporationWithWalletBalances(factory))
+
+		assert.Equal(t, optional.New(1234.5), got)
+	})
+	t.Run("hides balances without permission", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		a := newCorporationWallets(t, false)
+		got := optional.New(1.0)
+		a.OnBalanceUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletBalances,
+			CompletedAt:   time.Now(),
+		})
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Balance:       1000,
+		})
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+
+		assert.Equal(t, "No permission", a.balanceLabel.Text)
+		assert.True(t, got.IsEmpty())
 	})
 }
 

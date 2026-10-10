@@ -131,8 +131,10 @@ func TestCorporationWalletDivisions(t *testing.T) {
 	t.Run("shows no data when balances are missing", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		a := newDivisions(t, false)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 
-		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
 
 		assert.Equal(t, "No data", a.status.Text)
 		assert.True(t, a.status.Visible())

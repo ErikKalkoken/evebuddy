@@ -36,7 +36,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
@@ -86,21 +85,20 @@ type UIParams struct {
 // baseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type baseUI struct {
 	// Callbacks
-	clearCache                      func() // clear all caches
-	hideMailIndicator               func()
-	onAppFirstStarted               func()
-	onAppStopped                    func()
-	onAppTerminated                 func()
-	onSetCharacter                  func(*app.Character)
-	onShowCharacter                 func()
-	onSetCorporation                func(*app.Corporation)
-	onShowCorporation               func()
-	onShowAndRun                    func()
-	onUpdateCorporationWalletTotals func(balance optional.Optional[float64])
-	onUpdateMissingScope            func(characterCount int)
-	onUpdateStatus                  func(ctx context.Context)
-	showMailIndicator               func()
-	showManageCharacters            func()
+	clearCache           func() // clear all caches
+	hideMailIndicator    func()
+	onAppFirstStarted    func()
+	onAppStopped         func()
+	onAppTerminated      func()
+	onSetCharacter       func(*app.Character)
+	onShowCharacter      func()
+	onSetCorporation     func(*app.Corporation)
+	onShowCorporation    func()
+	onShowAndRun         func()
+	onUpdateMissingScope func(characterCount int)
+	onUpdateStatus       func(ctx context.Context)
+	showMailIndicator    func()
+	showManageCharacters func()
 
 	// UI elements
 	assetSearchAll             *screens.AssetSearch
@@ -348,15 +346,6 @@ func newBaseUI(arg UIParams) *baseUI {
 		slog.Debug("Signal: CorporationsChanged")
 		updateStatus(ctx)
 	})
-	u.signals.CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		slog.Debug("Signal: CorporationSectionChanged", "arg", arg)
-		if u.CurrentCorporation().IDOrZero() != arg.CorporationID {
-			return
-		}
-		if arg.Section == app.SectionCorporationWalletBalances {
-			u.updateCorporationWalletTotal(ctx)
-		}
-	})
 	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDOrZero())
 		updateStatus(ctx)
@@ -364,7 +353,6 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDOrZero())
 		updateStatus(ctx)
-		u.updateCorporationWalletTotal(ctx)
 	})
 	u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
@@ -957,42 +945,6 @@ func (u *baseUI) ListCorporationsForSelection(ctx context.Context) ([]*app.Entit
 		return u.rs.ListPrivilegedCorporations(ctx)
 	}
 	return u.cs.ListCharacterCorporations(ctx)
-}
-
-func (u *baseUI) updateCorporationWalletTotal(ctx context.Context) {
-	var v optional.Optional[float64]
-	func() {
-		corporationID := u.CurrentCorporation().IDOrZero()
-		if corporationID == 0 {
-			return
-		}
-		hasRole, err := u.rs.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to determine role for corporation wallet", "error", err)
-			return
-		}
-		if !hasRole {
-			return
-		}
-		b, err := u.rs.GetWalletBalancesTotal(ctx, corporationID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to update wallet total", "corporationID", corporationID, "error", err)
-			return
-		}
-		v = b
-	}()
-	if ctx.Err() != nil {
-		return
-	}
-	fyne.Do(func() {
-		u.onUpdateCorporationWalletTotals(v)
-	})
 }
 
 func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error) {
