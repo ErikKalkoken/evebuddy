@@ -3,6 +3,7 @@ package ximage
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -77,7 +78,7 @@ func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 
 // ToGrayscale returns a copy of an image in grayscale.
 //
-// Will fail if the resource it not a PNG or JPEG image.
+// Will fail if the resource is not a PNG or JPEG image.
 func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 	j, format, err := image.Decode(bytes.NewReader(r.Content()))
 	if err != nil {
@@ -93,6 +94,8 @@ func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 		err = jpeg.Encode(&byt, m, nil)
 	case "png":
 		err = png.Encode(&byt, m)
+	default:
+		err = fmt.Errorf("unsupported image format: %s", format)
 	}
 	if err != nil {
 		return nil, err
