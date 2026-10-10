@@ -9,21 +9,22 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-func ThemedPNG(in fyne.Resource, nc color.Color) (fyne.Resource, error) {
-	img, _ := png.Decode(bytes.NewReader(in.Content()))
+func ThemedPNG(in fyne.Resource, c color.Color) (fyne.Resource, error) {
+	img, err := png.Decode(bytes.NewReader(in.Content()))
+	if err != nil {
+		return nil, err
+	}
 	bounds := img.Bounds()
-	newImg := image.NewRGBA(bounds)
+	newImg := image.NewNRGBA(bounds)
+	target := color.NRGBAModel.Convert(c).(color.NRGBA)
 
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			originalColor := img.At(x, y)
-			_, _, _, a := originalColor.RGBA()
-
-			if a > 0 {
-				newImg.Set(x, y, nc)
-			} else {
-				newImg.Set(x, y, color.Transparent)
-			}
+			// keep the original alpha so anti-aliased edges stay smooth
+			_, _, _, a := img.At(x, y).RGBA()
+			px := target
+			px.A = uint8(uint32(target.A) * a / 0xffff)
+			newImg.SetNRGBA(x, y, px)
 		}
 	}
 
