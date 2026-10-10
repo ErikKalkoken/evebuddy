@@ -183,7 +183,7 @@ type NavRail struct {
 	indicator   *canvas.Rectangle
 	items       []*NavRailItem
 	leading     *fyne.Container
-	placeholder fyne.CanvasObject
+	placeholder *navPlaceholder
 	selected    *NavRailItem // nil while no non-action item is enabled
 	separator   *widget.Separator
 	strip       *fyne.Container
@@ -202,11 +202,12 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	}
 	gap := navRailItemGapPaddings * theme.Padding()
 	w := &NavRail{
-		body:      container.NewStack(),
-		leading:   container.New(layout.NewCustomPaddedVBoxLayout(gap)),
-		trailing:  container.New(layout.NewCustomPaddedVBoxLayout(gap)),
-		indicator: canvas.NewRectangle(color.Transparent),
-		separator: widget.NewSeparator(),
+		body:        container.NewStack(),
+		placeholder: newNavPlaceholder(),
+		leading:     container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		trailing:    container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		indicator:   canvas.NewRectangle(color.Transparent),
+		separator:   widget.NewSeparator(),
 	}
 	w.column = container.NewBorder(w.leading, w.trailing, nil, nil)
 	// no padding, so the indicator touches the hover background
@@ -237,6 +238,7 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	for _, it := range trailing {
 		add(w.trailing, it)
 	}
+	w.body.Add(w.placeholder)
 	w.selectItem(leading[first])
 	return w
 }
@@ -257,22 +259,10 @@ func (w *NavRail) Selected() *NavRailItem {
 	return w.selected
 }
 
-// SetPlaceholder sets an object to show instead of any content while no non-action item is enabled.
-// A nil object removes the placeholder.
-func (w *NavRail) SetPlaceholder(obj fyne.CanvasObject) {
-	if w.placeholder != nil {
-		w.body.Remove(w.placeholder)
-	}
-	w.placeholder = obj
-	if obj != nil {
-		if w.selected == nil {
-			obj.Show()
-		} else {
-			obj.Hide()
-		}
-		w.body.Add(obj)
-	}
-	w.body.Refresh()
+// SetPlaceholder sets a short text to show centered instead of any content while no non-action item is enabled.
+// An empty text shows nothing.
+func (w *NavRail) SetPlaceholder(text string) {
+	w.placeholder.setText(text)
 }
 
 // EnableItem enables an item.
@@ -318,13 +308,11 @@ func (w *NavRail) updateSelection() {
 		w.selected.dest.setActive(false)
 		w.selected.content.Hide()
 		w.selected = nil
-		if w.placeholder != nil {
-			w.placeholder.Show()
-		}
+		w.placeholder.Show()
 		w.Refresh() // showing a never-visible object may not repaint
 		return
 	}
-	if wasEmpty && w.placeholder != nil {
+	if wasEmpty {
 		w.placeholder.Hide()
 	}
 	w.selectItem(w.items[first])
@@ -419,4 +407,5 @@ func (r *navRailRenderer) updateColors() {
 		r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)
 	}
 	r.w.indicator.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
+	r.w.indicator.Refresh()
 }

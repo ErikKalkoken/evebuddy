@@ -116,9 +116,9 @@ func TestNavRail_Placeholder(t *testing.T) {
 		x := NewNavRailActionItem(theme.SearchIcon(), "Search", func() {})
 		m := NewNavRailMenuItem(theme.MenuIcon(), "Menu", fyne.NewMenu("", fyne.NewMenuItem("X", nil)))
 		nr := NewNavRail([]*NavRailItem{a, b}, x, m)
-		p := widget.NewLabel("placeholder")
-		nr.SetPlaceholder(p)
-		nr.DisableItem(a) // before the renderer exists, like at app startup
+		nr.SetPlaceholder("placeholder")
+		p := nr.placeholder
+		nr.DisableItem(a) // before the window is shown, like at app startup
 		nr.DisableItem(b)
 		w := test.NewWindow(nr)
 		defer w.Close()
@@ -141,8 +141,8 @@ func TestNavRail_Placeholder(t *testing.T) {
 		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
 		nr := NewNavRail([]*NavRailItem{a, b})
-		p := widget.NewLabel("placeholder")
-		nr.SetPlaceholder(p)
+		nr.SetPlaceholder("placeholder")
+		p := nr.placeholder
 		w := test.NewWindow(nr)
 		defer w.Close()
 		nr.Select(b)
@@ -164,20 +164,45 @@ func TestNavRail_Placeholder(t *testing.T) {
 		defer w.Close()
 		nr.DisableItem(a)
 		assert.False(t, a.content.Visible())
+		assert.True(t, nr.placeholder.Visible())
 
-		p := widget.NewLabel("placeholder")
-		nr.SetPlaceholder(p)
-		assert.True(t, p.Visible())
+		nr.SetPlaceholder("placeholder")
+		assert.Equal(t, "placeholder", nr.placeholder.text.String())
+		seg := nr.placeholder.text.Segments[0].(*widget.TextSegment)
+		assert.Equal(t, theme.ColorNamePlaceHolder, seg.Style.ColorName)
 	})
-	t.Run("can be removed", func(t *testing.T) {
+	t.Run("empty text shows nothing", func(t *testing.T) {
 		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 		nr := NewNavRail([]*NavRailItem{a})
-		p := widget.NewLabel("placeholder")
-		nr.SetPlaceholder(p)
+		nr.SetPlaceholder("placeholder")
 
-		nr.SetPlaceholder(nil)
-		assert.NotContains(t, nr.body.Objects, p)
+		nr.SetPlaceholder("")
+		assert.Empty(t, nr.placeholder.text.String())
 	})
+}
+
+func TestNavRail_OnSelectedFiresOnlyWhenItemIsSelected(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	var selected int
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+	a.OnSelected = func() { selected++ }
+	nr := NewNavRail([]*NavRailItem{a, b})
+	w := test.NewWindow(nr)
+	defer w.Close()
+	assert.Equal(t, 1, selected)
+
+	nr.DisableItem(a)
+	nr.DisableItem(b)
+	assert.Equal(t, 1, selected, "not fired when becoming empty")
+
+	nr.EnableItem(a)
+	assert.Equal(t, 2, selected, "fired when re-enabled")
+
+	nr.EnableItem(b)
+	assert.Equal(t, 2, selected, "not fired when selection is unchanged")
 }
 
 func TestNavRail_IndicatorFollowsTrailingItemOnResize(t *testing.T) {

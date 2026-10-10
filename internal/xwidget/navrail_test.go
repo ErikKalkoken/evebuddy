@@ -237,3 +237,18 @@ func TestNavRail_ActionItem(t *testing.T) {
 		assert.Equal(t, a, nr.Selected())
 	})
 }
+
+func TestNavRail_CanShowPlaceholder(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a})
+	nr.SetPlaceholder("No items")
+	nr.DisableItem(a)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	test.AssertImageMatches(t, "navrail/placeholder.png", w.Canvas().Capture())
+}

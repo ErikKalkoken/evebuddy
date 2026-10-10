@@ -189,7 +189,7 @@ func TestNavDrawer_IndicatorInvisibleWhileDisabled(t *testing.T) {
 
 	a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 	nd := NewNavDrawer(a)
-	nd.Disable() // before the renderer exists, like at app startup
+	nd.Disable() // before the window is shown, like at app startup
 	w := test.NewWindow(nd)
 	defer w.Close()
 
@@ -281,9 +281,9 @@ func TestNavDrawer_Placeholder(t *testing.T) {
 		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 		b := NewNavDrawerItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
 		nd := NewNavDrawer(a, b)
-		p := widget.NewLabel("placeholder")
-		nd.SetPlaceholder(p)
-		nd.Disable() // before the renderer exists, like at app startup
+		nd.SetPlaceholder("placeholder")
+		p := nd.placeholder
+		nd.Disable() // before the window is shown, like at app startup
 		w := test.NewWindow(nd)
 		defer w.Close()
 
@@ -304,8 +304,8 @@ func TestNavDrawer_Placeholder(t *testing.T) {
 		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 		b := NewNavDrawerItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
 		nd := NewNavDrawer(a, b)
-		p := widget.NewLabel("placeholder")
-		nd.SetPlaceholder(p)
+		nd.SetPlaceholder("placeholder")
+		p := nd.placeholder
 		w := test.NewWindow(nd)
 		defer w.Close()
 		nd.Select(b)
@@ -332,19 +332,18 @@ func TestNavDrawer_Placeholder(t *testing.T) {
 		defer w.Close()
 		nd.Disable()
 		assert.False(t, a.content.Visible())
+		assert.True(t, nd.placeholder.Visible())
 
-		p := widget.NewLabel("placeholder")
-		nd.SetPlaceholder(p)
-		assert.True(t, p.Visible())
+		nd.SetPlaceholder("placeholder")
+		assert.Equal(t, "placeholder", nd.placeholder.text.String())
 	})
-	t.Run("can be removed", func(t *testing.T) {
+	t.Run("empty text shows nothing", func(t *testing.T) {
 		a := NewNavDrawerItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 		nd := NewNavDrawer(a)
-		p := widget.NewLabel("placeholder")
-		nd.SetPlaceholder(p)
+		nd.SetPlaceholder("placeholder")
 
-		nd.SetPlaceholder(nil)
-		assert.NotContains(t, nd.body.Objects, p)
+		nd.SetPlaceholder("")
+		assert.Empty(t, nd.placeholder.text.String())
 	})
 }
 
@@ -503,8 +502,8 @@ func TestNavDrawer_TappingWhileDisabledDoesNothing(t *testing.T) {
 	nd.Disable()
 
 	test.Tap(b.dest)
-	nd.Enable()
-	assert.Equal(t, a, nd.Selected())
+	assert.Nil(t, nd.Selected())
+	assert.False(t, b.content.Visible())
 }
 
 func TestNavDrawer_IgnoresForeignItems(t *testing.T) {

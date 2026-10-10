@@ -57,7 +57,7 @@ type NavDrawer struct {
 	column      *fyne.Container
 	indicator   *canvas.Rectangle
 	items       []*NavDrawerItem
-	placeholder fyne.CanvasObject
+	placeholder *navPlaceholder
 	scroll      *container.Scroll
 	selected    *NavDrawerItem // nil while no item is enabled
 	separator   *widget.Separator
@@ -71,10 +71,11 @@ func NewNavDrawer(items ...*NavDrawerItem) *NavDrawer {
 		panic("must define at least one item")
 	}
 	w := &NavDrawer{
-		body:      container.NewStack(),
-		column:    container.New(layout.NewVBoxLayout()),
-		indicator: canvas.NewRectangle(color.Transparent),
-		separator: widget.NewSeparator(),
+		body:        container.NewStack(),
+		placeholder: newNavPlaceholder(),
+		column:      container.New(layout.NewVBoxLayout()),
+		indicator:   canvas.NewRectangle(color.Transparent),
+		separator:   widget.NewSeparator(),
 	}
 	w.ExtendBaseWidget(w)
 	// the separator and indicator live inside the scroll, so the indicator scrolls with its item
@@ -91,6 +92,7 @@ func NewNavDrawer(items ...*NavDrawerItem) *NavDrawer {
 		it.content.Hide()
 		w.body.Add(it.content)
 	}
+	w.body.Add(w.placeholder)
 	w.selectItem(items[0])
 	return w
 }
@@ -108,22 +110,10 @@ func (w *NavDrawer) Selected() *NavDrawerItem {
 	return w.selected
 }
 
-// SetPlaceholder sets an object to show instead of any content while no item is enabled.
-// A nil object removes the placeholder.
-func (w *NavDrawer) SetPlaceholder(obj fyne.CanvasObject) {
-	if w.placeholder != nil {
-		w.body.Remove(w.placeholder)
-	}
-	w.placeholder = obj
-	if obj != nil {
-		if w.selected == nil {
-			obj.Show()
-		} else {
-			obj.Hide()
-		}
-		w.body.Add(obj)
-	}
-	w.body.Refresh()
+// SetPlaceholder sets a short text to show centered instead of any content while no item is enabled.
+// An empty text shows nothing.
+func (w *NavDrawer) SetPlaceholder(text string) {
+	w.placeholder.setText(text)
 }
 
 // EnableItem enables an item.
@@ -201,13 +191,11 @@ func (w *NavDrawer) updateSelection() {
 		w.selected.dest.setActive(false)
 		w.selected.content.Hide()
 		w.selected = nil
-		if w.placeholder != nil {
-			w.placeholder.Show()
-		}
+		w.placeholder.Show()
 		w.Refresh() // showing a never-visible object may not repaint
 		return
 	}
-	if wasEmpty && w.placeholder != nil {
+	if wasEmpty {
 		w.placeholder.Hide()
 	}
 	w.selectItem(w.items[first])

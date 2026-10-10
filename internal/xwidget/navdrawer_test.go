@@ -43,3 +43,20 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 
 	test.AssertImageMatches(t, "navdrawer/full.png", w.Canvas().Capture())
 }
+
+func TestNavDrawer_CanShowPlaceholder(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	drawer := xwidget.NewNavDrawer(
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "First", widget.NewLabel("PLACEHOLDER 1")),
+	)
+	drawer.MinWidth = 200
+	drawer.SetPlaceholder("No items")
+	drawer.Disable()
+	w := test.NewWindow(drawer)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	test.AssertImageMatches(t, "navdrawer/placeholder.png", w.Canvas().Capture())
+}

@@ -265,6 +265,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.assetSearchAll.Focus()
 	}
 	homeNav.MinWidth = navDrawerMinWidth
+	homeNav.SetPlaceholder("Loading...")
 
 	// current character
 
@@ -499,7 +500,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		rail,
 	)
 
-	rail.SetPlaceholder(container.NewCenter(widget.NewLabel("Please add a character via Manage Characters")))
+	rail.SetPlaceholder("Loading...")
 
 	// initial state is disabled
 	rail.DisableItem(homeItem)
@@ -642,8 +643,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
+				rail.SetPlaceholder("Please add a character to start")
 				rail.DisableItem(homeItem)
 				rail.DisableItem(characterItem)
+				rail.DisableItem(corporationItem) // don't wait for the status update to show the placeholder
 				homeNav.Disable()
 				rail.DisableItem(searchItem)
 				characterNav.Select(characterSheetNav)
@@ -711,6 +714,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				return
 			}
 			fyne.Do(func() {
+				if u.CurrentCharacter() == nil {
+					return // enabled by the status update that follows a character exchange
+				}
+				// corporations imply characters, and an empty rail selects the first item enabled
+				rail.EnableItem(homeItem)
+				rail.EnableItem(characterItem)
 				rail.EnableItem(corporationItem)
 			})
 		})
