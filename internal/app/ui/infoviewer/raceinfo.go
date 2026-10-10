@@ -36,7 +36,7 @@ func newRaceInfo(iw *InfoViewer, id int64) *raceInfo {
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 	)
 	return a
 }
@@ -84,7 +84,7 @@ func (a *raceInfo) update(ctx context.Context) error {
 	}
 	if len(items) > 0 {
 		fyne.Do(func() {
-			a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, items...)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, items...)))
 		})
 	}
 	return nil

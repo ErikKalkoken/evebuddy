@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -42,7 +43,7 @@ func newConstellationInfo(iw *InfoViewer, id int64) *constellationInfo {
 	a.logo.Resource = icons.Constellation64Png
 	a.systems = newEntityList(a.iw.show)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Solar Systems", a.systems),
+		ui.NewTabItem("Solar Systems", a.systems),
 	)
 	return a
 }
@@ -81,7 +82,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))
 			}
 			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
-			attributesTab := container.NewTabItem("Attributes", attributeList)
+			attributesTab := ui.NewTabItem("Attributes", attributeList)
 			a.tabs.Append(attributesTab)
 			a.tabs.Refresh()
 		}

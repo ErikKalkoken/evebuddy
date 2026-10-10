@@ -62,11 +62,11 @@ func newLocationInfo(iw *InfoViewer, itemID, characterID int64) *locationInfo {
 	a.ExtendBaseWidget(a)
 	a.initBase(iw)
 	a.location = newEntityList(a.iw.show)
-	location := container.NewTabItem("Location", a.location)
+	location := ui.NewTabItem("Location", a.location)
 	a.services = newEntityList(a.iw.show)
-	services := container.NewTabItem("Services", a.services)
+	services := ui.NewTabItem("Services", a.services)
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		ui.NewTabItem("Description", container.NewVScroll(a.description)),
 		location,
 		services,
 	)
@@ -158,7 +158,7 @@ func (a *locationInfo) update(ctx context.Context) error {
 			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
 		}
 		fyne.Do(func() {
-			a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 		})
 	}
 	fyne.Do(func() {

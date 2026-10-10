@@ -100,11 +100,11 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		u:             u,
 	}
 	a.ExtendBaseWidget(a)
-	a.mainTab = container.NewTabItem("Main", a.main)
-	a.programTab = container.NewTabItem("Program", newChartCard(a.programTitle, a.programLegend, a.program))
-	a.inputsTab = container.NewTabItem("Inputs", a.inputs)
-	a.storageTab = container.NewTabItem("Storage", a.storage)
-	a.routesTab = container.NewTabItem("Routes", a.routes)
+	a.mainTab = ui.NewTabItem("Main", a.main)
+	a.programTab = ui.NewTabItem("Program", newChartCard(a.programTitle, a.programLegend, a.program))
+	a.inputsTab = ui.NewTabItem("Inputs", a.inputs)
+	a.storageTab = ui.NewTabItem("Storage", a.storage)
+	a.routesTab = ui.NewTabItem("Routes", a.routes)
 
 	a.program.SetCurve(fyneline.CurveStepBefore) // output is constant until the next cycle
 	a.tabs = container.NewAppTabs(a.mainTab, a.routesTab)

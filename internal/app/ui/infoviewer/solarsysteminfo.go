@@ -56,10 +56,10 @@ func newSolarSystemInfo(iw *InfoViewer, id int64) *solarSystemInfo {
 	note := widget.NewLabel("Only contains structures known through characters")
 	note.Importance = widget.LowImportance
 	a.tabs = container.NewAppTabs(
-		container.NewTabItem("Stargates", a.stargates),
-		container.NewTabItem("Planets", a.planets),
-		container.NewTabItem("Stations", a.stations),
-		container.NewTabItem("Structures", container.NewBorder(
+		ui.NewTabItem("Stargates", a.stargates),
+		ui.NewTabItem("Planets", a.planets),
+		ui.NewTabItem("Stations", a.stations),
+		ui.NewTabItem("Structures", container.NewBorder(
 			nil,
 			note,
 			nil,
@@ -121,7 +121,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))
 			}
 			fyne.Do(func() {
-				a.tabs.Append(container.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+				a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 			})
 		}
 		fyne.Do(func() {

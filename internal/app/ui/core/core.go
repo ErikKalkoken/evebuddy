@@ -589,6 +589,7 @@ func (u *baseUI) appInit(ctx context.Context) {
 		u.onAppFirstStarted()
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
+		time.Sleep(2 * time.Second) // give app time to finish loading screens
 		u.eus.Start(eveUniverseUpdateTick)
 		u.cs.Start(characterUpdateTick)
 		u.rs.Start(corporationUpdateTick)
