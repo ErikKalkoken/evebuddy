@@ -80,28 +80,26 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	// Home
 
-	var homeNav *xwidget.NavDrawer
-	overview := xwidget.NewNavPage(
-		"Characters",
+	overview := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.PortraitSvg),
+		"Characters",
 		newContentPage("Characters", u.characterOverview),
 	)
 
-	corporationOverview := xwidget.NewNavPage(
-		"Corporations",
+	corporationOverview := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
+		"Corporations",
 		newContentPage("Corporations", u.corporationOverview),
 	)
 
-	wealth := xwidget.NewNavPage(
-		"Wealth",
+	wealth := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.GoldSvg),
+		"Wealth",
 		newContentPage("Wealth", u.wealth),
 	)
 
 	u.wealth.OnUpdate = func(balance optional.Optional[float64]) {
-		homeNav.SetItemBadge(wealth, formatISKValueShort(balance))
-		homeNav.Refresh()
+		wealth.SetBadge(formatISKValueShort(balance))
 	}
 
 	const assetsTitle = "Assets"
@@ -111,15 +109,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
 	)
 	x.Importance = widget.LowImportance
-	assetSearch := xwidget.NewNavPage(
-		assetsTitle,
+	assetSearch := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.Inventory2Svg),
+		assetsTitle,
 		newContentPage(assetsTitle, u.assetSearchAll, x),
 	)
 
-	unifiedCommunications := xwidget.NewNavPage(
-		"Communications",
+	unifiedCommunications := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.MessageSvg),
+		"Communications",
 		newContentPage("Communications", u.unifiedCommunications),
 	)
 	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -129,21 +127,21 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		} else if v > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
-		homeNav.SetItemBadge(unifiedCommunications, s)
+		unifiedCommunications.SetBadge(s)
 	}
 
-	unifiedMails := xwidget.NewNavPage(
-		"Mail",
+	unifiedMails := xwidget.NewNavDrawerItem(
 		theme.MailComposeIcon(),
+		"Mail",
 		newContentPage("Mail", u.unifiedMails),
 	)
 	u.unifiedMails.OnUpdate = func(unread, _ int) {
-		homeNav.SetItemBadge(unifiedMails, formatBadge(unread, 999))
+		unifiedMails.SetBadge(formatBadge(unread, 999))
 	}
 
-	unifiedStructures := xwidget.NewNavPage(
-		"Structures",
+	unifiedStructures := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		"Structures",
 		newContentPage("Structures", u.unifiedStructures),
 	)
 	u.unifiedStructures.OnUpdate = func(count int) {
@@ -151,12 +149,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		homeNav.SetItemBadge(unifiedStructures, badge)
+		unifiedStructures.SetBadge(badge)
 	}
 
-	contracts := xwidget.NewNavPage(
-		"Contracts",
+	contracts := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.FileSignSvg),
+		"Contracts",
 		newContentPage("Contracts", container.NewAppTabs(
 			ui.NewTabItem("Contracts", u.contractList),
 			ui.NewTabItem("Slots", container.NewAppTabs(
@@ -170,12 +168,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			s += ihumanize.Comma(count)
 		}
-		homeNav.SetItemBadge(contracts, s)
+		contracts.SetBadge(s)
 	}
 
-	overviewColonies := xwidget.NewNavPage(
-		"Colonies",
+	overviewColonies := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.EarthSvg),
+		"Colonies",
 		newContentPage("Colonies", u.colonies),
 	)
 	u.colonies.OnUpdate = func(_, notWorking int) {
@@ -183,12 +181,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if notWorking > 0 {
 			s = fmt.Sprint(notWorking)
 		}
-		homeNav.SetItemBadge(overviewColonies, s)
+		overviewColonies.SetBadge(s)
 	}
 
-	industry := xwidget.NewNavPage(
-		"Industry",
+	industry := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.FactorySvg),
+		"Industry",
 		newContentPage("Industry", container.NewAppTabs(
 			ui.NewTabItem("Jobs", u.industryJobs),
 			ui.NewTabItem("Slots", container.NewAppTabs(
@@ -203,12 +201,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		homeNav.SetItemBadge(industry, badge)
+		industry.SetBadge(badge)
 	}
 
-	marketOrders := xwidget.NewNavPage(
-		"Market Orders",
+	marketOrders := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.ChartAreasplineSvg),
+		"Market Orders",
 		newContentPage("Market Orders", container.NewAppTabs(
 			ui.NewTabItem("Buy", u.marketOrdersBuy),
 			ui.NewTabItem("Sell", u.marketOrdersSell),
@@ -220,9 +218,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.NewMenu("", u.training.MoreItems()...),
 	)
 
-	skills := xwidget.NewNavPage(
-		"Skills",
+	skills := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.SchoolSvg),
+		"Skills",
 		newContentPage("Skills", container.NewAppTabs(
 			ui.NewTabItem("Training", u.training),
 			ui.NewTabItem("Search", u.skillSearch),
@@ -233,16 +231,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if expired > 0 {
 			badge = ihumanize.Comma(expired)
 		}
-		homeNav.SetItemBadge(skills, badge)
+		skills.SetBadge(badge)
 	}
 
-	homeNav = xwidget.NewNavDrawer(
+	homeNav := xwidget.NewNavDrawer(
 		overview,
 		corporationOverview,
 		assetSearch,
-		xwidget.NewNavPage(
-			"Clones",
+		xwidget.NewNavDrawerItem(
 			theme.NewThemedResource(icons.HeadSnowflakeSvg),
+			"Clones",
 			newContentPage("Clones", container.NewAppTabs(
 				ui.NewTabItem("Augmentations", u.augmentations),
 				ui.NewTabItem("Jump Clones", u.clones),
@@ -252,9 +250,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		contracts,
 		overviewColonies,
 		industry,
-		xwidget.NewNavPage(
-			"Loyalty Points",
+		xwidget.NewNavDrawerItem(
 			theme.NewThemedResource(icons.HandHeartSvg),
+			"Loyalty Points",
 			newContentPage("Loyalty Points", u.loyaltyPoints),
 		),
 		unifiedMails,
@@ -263,31 +261,29 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		skills,
 		wealth,
 	)
-	homeNav.OnSelectItem = func(it *xwidget.NavItem) {
-		if it == assetSearch {
-			u.assetSearchAll.Focus()
-		}
+	assetSearch.OnSelected = func() {
+		u.assetSearchAll.Focus()
 	}
 	homeNav.MinWidth = navDrawerMinWidth
+	homeNav.SetPlaceholder("Loading...")
 
 	// current character
-	var characterNav *xwidget.NavDrawer
 
-	characterMailNav := xwidget.NewNavPage(
-		"Mail",
+	characterMailNav := xwidget.NewNavDrawerItem(
 		theme.MailComposeIcon(),
+		"Mail",
 		newContentPage("Mail", u.characterMails),
 	)
 	u.characterMails.OnUpdate = func(unread, _ int) {
-		characterNav.SetItemBadge(characterMailNav, formatBadge(unread, 99))
+		characterMailNav.SetBadge(formatBadge(unread, 99))
 	}
 	// u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
 	// 	characters.ShowSendMailWindow(u, character, mode, mail)
 	// }
 
-	characterCommunicationsNav := xwidget.NewNavPage(
-		"Communications",
+	characterCommunicationsNav := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.MessageSvg),
+		"Communications",
 		newContentPage("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
@@ -297,12 +293,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		} else if v > 0 {
 			s = formatBadge(count.ValueOrZero(), 999)
 		}
-		characterNav.SetItemBadge(characterCommunicationsNav, s)
+		characterCommunicationsNav.SetBadge(s)
 	}
 
-	characterSkillsNav := xwidget.NewNavPage(
-		"Skills",
+	characterSkillsNav := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.SchoolSvg),
+		"Skills",
 		newContentPage(
 			"Skills",
 			container.NewAppTabs(
@@ -314,35 +310,37 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	u.characterSkillQueue.OnUpdate = func(status, _ string) {
-		characterNav.SetItemBadge(characterSkillsNav, status)
+		characterSkillsNav.SetBadge(status)
 	}
 
-	characterWalletNav := xwidget.NewNavPage("Wallet",
+	characterWalletNav := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.CashSvg),
+		"Wallet",
 		newContentPage("Wallet", u.characterWallet),
 	)
-	characterAssetsNav := xwidget.NewNavPage(
-		"Assets",
+	characterAssetsNav := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.Inventory2Svg),
+		"Assets",
 		newContentPage("Assets", u.characterAssetBrowser),
 	)
-	characterNav = xwidget.NewNavDrawer(
-		xwidget.NewNavPage(
-			"Character",
-			theme.NewThemedResource(icons.PortraitSvg),
-			newContentPage("Character", container.NewAppTabs(
-				ui.NewTabItem("Character", u.characterSheet),
-				ui.NewTabItem("Corporation", u.characterCorporation),
-				ui.NewTabItem("Augmentations", u.characterAugmentations),
-				ui.NewTabItem("Jump Clones", u.characterJumpClones),
-				ui.NewTabItem("Attributes", u.characterAttributes),
-				ui.NewTabItem("Biography", u.characterBiography),
-			)),
-		),
+	characterSheetNav := xwidget.NewNavDrawerItem(
+		theme.NewThemedResource(icons.PortraitSvg),
+		"Character",
+		newContentPage("Character", container.NewAppTabs(
+			ui.NewTabItem("Character", u.characterSheet),
+			ui.NewTabItem("Corporation", u.characterCorporation),
+			ui.NewTabItem("Augmentations", u.characterAugmentations),
+			ui.NewTabItem("Jump Clones", u.characterJumpClones),
+			ui.NewTabItem("Attributes", u.characterAttributes),
+			ui.NewTabItem("Biography", u.characterBiography),
+		)),
+	)
+	characterNav := xwidget.NewNavDrawer(
+		characterSheetNav,
 		characterAssetsNav,
-		xwidget.NewNavPage(
-			"Contacts",
+		xwidget.NewNavDrawerItem(
 			theme.NewThemedResource(icons.AccountSearchSvg),
+			"Contacts",
 			newContentPage("Contacts", u.characterContacts),
 		),
 		characterCommunicationsNav,
@@ -352,13 +350,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 	characterNav.MinWidth = navDrawerMinWidth
 	u.characterWallet.OnBalanceUpdate = func(balance optional.Optional[float64]) {
-		characterNav.SetItemBadge(characterWalletNav, formatISKValueShort(balance))
+		characterWalletNav.SetBadge(formatISKValueShort(balance))
 	}
 
 	// Corporation
-	corpAssetsItem := xwidget.NewNavPage(
-		"Assets",
+	corpAssetsItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.Inventory2Svg),
+		"Assets",
 		newContentPage("Assets", container.NewAppTabs(
 			ui.NewTabItem("Browse", u.corporationAssetBrowser),
 			ui.NewTabItem("Search", u.corporationAssetSearch),
@@ -368,16 +366,15 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
-	var corporationNav *xwidget.NavDrawer
-	corpWalletsItem := xwidget.NewNavPage(
-		"Wallets",
+	corpWalletsItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.CashSvg),
+		"Wallets",
 		newContentPage("Wallets", u.corporationWallets),
 	)
 
-	corpContractsItem := xwidget.NewNavPage(
-		"Contracts",
+	corpContractsItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.FileSignSvg),
+		"Contracts",
 		newContentPage("Contracts", u.corporationContracts),
 	)
 	u.corporationContracts.OnUpdate = func(count int) {
@@ -385,12 +382,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		corporationNav.SetItemBadge(corpContractsItem, badge)
+		corpContractsItem.SetBadge(badge)
 	}
 
-	corpIndustryItem := xwidget.NewNavPage(
-		"Industry",
+	corpIndustryItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.FactorySvg),
+		"Industry",
 		newContentPage("Industry", u.corporationIndyJobs),
 	)
 	u.corporationIndyJobs.OnUpdate = func(count int) {
@@ -398,12 +395,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		corporationNav.SetItemBadge(corpIndustryItem, badge)
+		corpIndustryItem.SetBadge(badge)
 	}
 
-	corpStructuresItem := xwidget.NewNavPage(
-		"Structures",
+	corpStructuresItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.OfficeBuildingSvg),
+		"Structures",
 		newContentPage("Structures", u.corporationStructures),
 	)
 	u.corporationStructures.OnUpdate = func(count int) {
@@ -411,25 +408,25 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if count > 0 {
 			badge = ihumanize.Comma(count)
 		}
-		corporationNav.SetItemBadge(corpStructuresItem, badge)
+		corpStructuresItem.SetBadge(badge)
 	}
 
-	corpSheetItem := xwidget.NewNavPage(
-		"Corporation",
+	corpSheetItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
+		"Corporation",
 		newContentPage("Corporation", container.NewAppTabs(
 			ui.NewTabItem("Corporation", u.corporationSheet),
 			ui.NewTabItem("Members", u.corporationMember),
 		)),
 	)
 
-	corpWealthItem := xwidget.NewNavPage(
-		"Wealth",
+	corpWealthItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.GoldSvg),
+		"Wealth",
 		newContentPage("Wealth", u.corporationWealth),
 	)
 
-	corporationNav = xwidget.NewNavDrawer(
+	corporationNav := xwidget.NewNavDrawer(
 		corpSheetItem,
 		corpAssetsItem,
 		corpContractsItem,
@@ -448,7 +445,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		if corpWalletEnabled {
 			s = formatISKValueShort(corpWalletTotal)
 		}
-		corporationNav.SetItemBadge(corpWalletsItem, s)
+		corpWalletsItem.SetBadge(s)
 	}
 	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
 		corpWalletTotal = total
@@ -503,7 +500,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		rail,
 	)
 
+	rail.SetPlaceholder("Loading...")
+
 	// initial state is disabled
+	rail.DisableItem(homeItem)
 	rail.DisableItem(characterItem)
 	rail.DisableItem(corporationItem)
 	homeNav.Disable()
@@ -575,38 +575,38 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			var hasDisabled bool
 
 			if sections.Contains(app.SectionCorporationAssets) {
-				corpAssetsItem.Enable()
+				corporationNav.EnableItem(corpAssetsItem)
 			} else {
-				corpAssetsItem.Disable()
+				corporationNav.DisableItem(corpAssetsItem)
 				hasDisabled = true
 			}
 
 			if sections.Contains(app.SectionCorporationIndustryJobs) {
-				corpIndustryItem.Enable()
+				corporationNav.EnableItem(corpIndustryItem)
 			} else {
-				corpIndustryItem.Disable()
+				corporationNav.DisableItem(corpIndustryItem)
 				hasDisabled = true
 			}
 
 			if sections.Contains(app.SectionCorporationStructures) {
-				corpStructuresItem.Enable()
+				corporationNav.EnableItem(corpStructuresItem)
 			} else {
-				corpStructuresItem.Disable()
+				corporationNav.DisableItem(corpStructuresItem)
 				hasDisabled = true
 			}
 
 			if sections.Contains(app.SectionCorporationContracts) {
-				corpContractsItem.Enable()
+				corporationNav.EnableItem(corpContractsItem)
 			} else {
-				corpContractsItem.Disable()
+				corporationNav.DisableItem(corpContractsItem)
 				hasDisabled = true
 			}
 
 			corpWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
 			if corpWalletEnabled {
-				corpWalletsItem.Enable()
+				corporationNav.EnableItem(corpWalletsItem)
 			} else {
-				corpWalletsItem.Disable()
+				corporationNav.DisableItem(corpWalletsItem)
 				hasDisabled = true
 			}
 			refreshCorpWalletBadge()
@@ -614,9 +614,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			if sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
 				sections.Contains(app.SectionCorporationWalletBalances) {
-				corpWealthItem.Enable()
+				corporationNav.EnableItem(corpWealthItem)
 			} else {
-				corpWealthItem.Disable()
+				corporationNav.DisableItem(corpWealthItem)
 				hasDisabled = true
 			}
 
@@ -643,14 +643,18 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.Signals().CurrentCharacterExchanged.AddListener(func(_ context.Context, c *app.Character) {
 		if c == nil {
 			fyne.Do(func() {
+				rail.SetPlaceholder("Please add a character to start")
+				rail.DisableItem(homeItem)
 				rail.DisableItem(characterItem)
+				rail.DisableItem(corporationItem) // don't wait for the status update to show the placeholder
 				homeNav.Disable()
 				rail.DisableItem(searchItem)
-				characterNav.SelectIndex(0)
+				characterNav.Select(characterSheetNav)
 			})
 			return
 		}
 		fyne.Do(func() {
+			rail.EnableItem(homeItem)
 			rail.EnableItem(characterItem)
 			homeNav.Enable()
 			rail.EnableItem(searchItem)
@@ -710,6 +714,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 				return
 			}
 			fyne.Do(func() {
+				if u.CurrentCharacter() == nil {
+					return // enabled by the status update that follows a character exchange
+				}
+				// corporations imply characters, and an empty rail selects the first item enabled
+				rail.EnableItem(homeItem)
+				rail.EnableItem(characterItem)
 				rail.EnableItem(corporationItem)
 			})
 		})

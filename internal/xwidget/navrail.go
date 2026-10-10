@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	colorRailIndicator = theme.ColorNameSelection
-	railIconSize       = 28
+	navRailIconScale       = 1.5 // × inline icon size
+	navRailItemGapPaddings = 1   // × theme padding
+	navRailHoverPaddings   = 3   // × theme padding
 )
 
 // railDestination is a tappable icon in a [NavRail].
@@ -30,7 +31,6 @@ type railDestination struct {
 	iconDisabled fyne.Resource
 	iconEnabled  fyne.Resource
 	iconSelected fyne.Resource
-	indicator    *canvas.Rectangle
 	isActive     bool
 	onTapped     func()
 }
@@ -40,27 +40,18 @@ var _ desktop.Hoverable = (*railDestination)(nil)
 var _ desktop.Cursorable = (*railDestination)(nil)
 
 func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *railDestination {
-	iconImage := NewImageFromResource(
-		theme.NewThemedResource(icon),
-		fyne.NewSquareSize(railIconSize),
-	)
-	// pills stay visible and are made transparent instead, so the destination never changes size
-	makePill := func() *canvas.Rectangle {
-		r := canvas.NewRectangle(color.Transparent)
-		r.CornerRadius = theme.Size(theme.SizeNameButtonRadius)
-		r.SetMinSize(fyne.NewSquareSize(railIconSize + 2*theme.Padding()))
-		return r
-	}
+	iconSize := theme.Size(theme.SizeNameInlineIcon) * navRailIconScale
 	w := &railDestination{
-		hover:        makePill(),
-		icon:         iconImage,
+		hover:        canvas.NewRectangle(color.Transparent),
+		icon:         NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(iconSize)),
 		iconEnabled:  theme.NewThemedResource(icon),
 		iconSelected: theme.NewPrimaryThemedResource(icon),
 		iconDisabled: theme.NewDisabledResource(icon),
-		indicator:    makePill(),
 		onTapped:     onTapped,
 	}
 	w.ExtendBaseWidget(w)
+	// stays visible but transparent, so the destination never changes size
+	w.hover.SetMinSize(fyne.NewSquareSize(iconSize + navRailHoverPaddings*theme.Padding()))
 	w.SetToolTip(tooltip)
 	return w
 }
@@ -86,20 +77,12 @@ func (w *railDestination) Refresh() {
 	default:
 		w.icon.Resource = w.iconEnabled
 	}
-	if w.isActive {
-		w.indicator.FillColor = th.Color(colorRailIndicator, v)
-	} else {
-		w.indicator.FillColor = color.Transparent
-	}
-	radius := th.Size(theme.SizeNameSelectionRadius)
-	w.indicator.CornerRadius = radius
-	w.hover.CornerRadius = radius
-	if w.hovered && !w.isActive && !w.Disabled() {
+	w.hover.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
+	if w.hovered && !w.Disabled() {
 		w.hover.FillColor = th.Color(theme.ColorNameHover, v)
 	} else {
 		w.hover.FillColor = color.Transparent
 	}
-	w.indicator.Refresh()
 	w.hover.Refresh()
 	w.icon.Refresh()
 	w.BaseWidget.Refresh()
@@ -138,7 +121,6 @@ func (w *railDestination) MouseOut() {
 func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewStack(
 		container.NewCenter(w.hover),
-		container.NewCenter(w.indicator),
 		container.NewCenter(w.icon),
 	)
 	return widget.NewSimpleRenderer(c)
@@ -148,9 +130,6 @@ func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
 type NavRailItem struct {
 	// OnSelected is an optional callback that fires when this item is selected.
 	OnSelected func()
-
-	// OnSelectedAgain is an optional callback that fires when this item is selected while already selected.
-	OnSelectedAgain func()
 
 	content  fyne.CanvasObject
 	dest     *railDestination
@@ -195,14 +174,20 @@ func (it *NavRailItem) isAction() bool {
 
 // NavRail lets people switch between the top-level views of an app on desktop.
 // It shows a vertical strip of icons with leading items at the top and trailing items at the bottom.
+// While no non-action item is enabled, it shows an optional placeholder instead of any content.
 type NavRail struct {
 	widget.BaseWidget
 
-	body     *fyne.Container
-	items    []*NavRailItem
-	leading  *fyne.Container
-	selected *NavRailItem
-	trailing *fyne.Container
+	body        *fyne.Container
+	column      *fyne.Container
+	indicator   *canvas.Rectangle
+	items       []*NavRailItem
+	leading     *fyne.Container
+	placeholder *navPlaceholder
+	selected    *NavRailItem // nil while no non-action item is enabled
+	separator   *widget.Separator
+	strip       *fyne.Container
+	trailing    *fyne.Container
 }
 
 // NewNavRail returns a new navigation rail. The first leading non-action item is selected initially.
@@ -215,12 +200,18 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	if first == -1 {
 		panic("must define at least one leading non-action item")
 	}
-	gap := 3 * theme.Padding()
+	gap := navRailItemGapPaddings * theme.Padding()
 	w := &NavRail{
-		body:     container.NewStack(),
-		leading:  container.New(layout.NewCustomPaddedVBoxLayout(gap)),
-		trailing: container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		body:        container.NewStack(),
+		placeholder: newNavPlaceholder(),
+		leading:     container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		trailing:    container.New(layout.NewCustomPaddedVBoxLayout(gap)),
+		indicator:   canvas.NewRectangle(color.Transparent),
+		separator:   widget.NewSeparator(),
 	}
+	w.column = container.NewBorder(w.leading, w.trailing, nil, nil)
+	// no padding, so the indicator touches the hover background
+	w.strip = container.New(layout.NewCustomPaddedHBoxLayout(0), w.column, w.separator)
 	w.ExtendBaseWidget(w)
 	add := func(c *fyne.Container, it *NavRailItem) {
 		if it.rail != nil {
@@ -247,6 +238,7 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 	for _, it := range trailing {
 		add(w.trailing, it)
 	}
+	w.body.Add(w.placeholder)
 	w.selectItem(leading[first])
 	return w
 }
@@ -257,48 +249,76 @@ func (w *NavRail) Select(it *NavRailItem) {
 		return
 	}
 	if it == w.selected {
-		if it.OnSelectedAgain != nil {
-			it.OnSelectedAgain()
-		}
 		return
 	}
 	w.selectItem(it)
 }
 
-// Selected returns the currently selected item.
+// Selected returns the currently selected item or nil when no non-action item is enabled.
 func (w *NavRail) Selected() *NavRailItem {
 	return w.selected
 }
 
+// SetPlaceholder sets a short text to show centered instead of any content while no non-action item is enabled.
+// An empty text shows nothing.
+func (w *NavRail) SetPlaceholder(text string) {
+	w.placeholder.setText(text)
+}
+
 // EnableItem enables an item.
+// When no non-action item was enabled before, the rail switches to the first enabled non-action item.
 func (w *NavRail) EnableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.dest.Enable()
+	w.updateSelection()
 }
 
 // DisableItem disables an item. Disabled items can not be selected.
-// When the selected item is disabled, the rail switches to the first enabled non-action item.
+// When the selected item is disabled, the rail switches to the first enabled non-action item
+// or shows the placeholder when there is none.
 func (w *NavRail) DisableItem(it *NavRailItem) {
 	if !w.owns(it) {
 		return
 	}
 	it.dest.Disable()
-	if it != w.selected {
-		return
-	}
-	for _, x := range w.items {
-		if !x.isAction() && !x.dest.Disabled() {
-			w.selectItem(x)
-			return
-		}
-	}
+	w.updateSelection()
 }
 
 // ItemEnabled reports whether an item is enabled.
 func (w *NavRail) ItemEnabled(it *NavRailItem) bool {
 	return w.owns(it) && !it.dest.Disabled()
+}
+
+// updateSelection switches to the first enabled non-action item when the selected item is disabled
+// and shows the placeholder when there is none.
+func (w *NavRail) updateSelection() {
+	if w.selected != nil && !w.selected.dest.Disabled() {
+		return
+	}
+	first := slices.IndexFunc(w.items, func(it *NavRailItem) bool {
+		return !it.isAction() && !it.dest.Disabled()
+	})
+	wasEmpty := w.selected == nil
+	if first == -1 {
+		if wasEmpty {
+			return
+		}
+		w.selected.dest.setActive(false)
+		w.selected.content.Hide()
+		w.selected = nil
+		w.placeholder.Show()
+		w.Refresh() // showing a never-visible object may not repaint
+		return
+	}
+	if wasEmpty {
+		w.placeholder.Hide()
+	}
+	w.selectItem(w.items[first])
+	if wasEmpty {
+		w.Refresh()
+	}
 }
 
 func (w *NavRail) owns(it *NavRailItem) bool {
@@ -313,6 +333,7 @@ func (w *NavRail) selectItem(it *NavRailItem) {
 	it.dest.setActive(true)
 	it.content.Show()
 	w.selected = it
+	w.updateIndicator()
 	if it.OnSelected != nil {
 		it.OnSelected()
 	}
@@ -324,14 +345,67 @@ func (w *NavRail) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
+// updateIndicator places the indicator on the separator next to the selected item.
+func (w *NavRail) updateIndicator() {
+	if w.selected == nil {
+		return
+	}
+	dest := w.selected.dest
+	parent := w.leading
+	if slices.Contains(w.trailing.Objects, fyne.CanvasObject(dest)) {
+		parent = w.trailing
+	}
+	x := w.strip.Position().X + w.separator.Position().X
+	y := w.strip.Position().Y + w.column.Position().Y + parent.Position().Y + dest.Position().Y
+	w.indicator.Move(fyne.NewPos(x, y))
+	w.indicator.Resize(fyne.NewSize(w.Theme().Size(theme.SizeNameSeparatorThickness), dest.Size().Height))
+	w.indicator.Refresh()
+}
+
 func (w *NavRail) CreateRenderer() fyne.WidgetRenderer {
-	strip := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		widget.NewSeparator(),
-		container.NewBorder(w.leading, w.trailing, nil, nil),
-	)
-	c := container.NewBorder(nil, nil, strip, nil, w.body)
-	return widget.NewSimpleRenderer(c)
+	r := &navRailRenderer{
+		content: container.NewBorder(nil, nil, w.strip, nil, w.body),
+		w:       w,
+	}
+	r.updateColors()
+	return r
+}
+
+type navRailRenderer struct {
+	content *fyne.Container
+	w       *NavRail
+}
+
+func (r *navRailRenderer) Destroy() {}
+
+func (r *navRailRenderer) Layout(size fyne.Size) {
+	r.content.Resize(size)
+	r.w.updateIndicator()
+}
+
+func (r *navRailRenderer) MinSize() fyne.Size {
+	return r.content.MinSize()
+}
+
+func (r *navRailRenderer) Objects() []fyne.CanvasObject {
+	return []fyne.CanvasObject{r.content, r.w.indicator}
+}
+
+func (r *navRailRenderer) Refresh() {
+	r.updateColors()
+	r.w.updateIndicator()
+	r.content.Refresh()
+}
+
+func (r *navRailRenderer) updateColors() {
+	th := r.w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	// transparent instead of hidden, because showing a never-visible object may not repaint
+	if r.w.selected == nil {
+		r.w.indicator.FillColor = color.Transparent
+	} else {
+		r.w.indicator.FillColor = th.Color(theme.ColorNamePrimary, v)
+	}
+	r.w.indicator.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
+	r.w.indicator.Refresh()
 }

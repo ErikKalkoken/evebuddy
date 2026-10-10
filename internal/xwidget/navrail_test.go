@@ -66,14 +66,13 @@ func TestNavRail_SelectSwitchesItemAndContent(t *testing.T) {
 	assert.True(t, contentB.Visible())
 }
 
-func TestNavRail_SelectingCurrentItemAgainFiresOnSelectedAgain(t *testing.T) {
+func TestNavRail_SelectingCurrentItemAgainDoesNothing(t *testing.T) {
 	test.NewTempApp(t)
 	test.ApplyTheme(t, test.Theme())
 
-	var selected, selectedAgain int
+	var selected int
 	a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
 	a.OnSelected = func() { selected++ }
-	a.OnSelectedAgain = func() { selectedAgain++ }
 
 	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a})
 	w := test.NewWindow(nr)
@@ -81,7 +80,6 @@ func TestNavRail_SelectingCurrentItemAgainFiresOnSelectedAgain(t *testing.T) {
 
 	nr.Select(a)
 	assert.Equal(t, 1, selected)
-	assert.Equal(t, 1, selectedAgain)
 }
 
 func TestNavRail_DisabledItemCanNotBeSelected(t *testing.T) {
@@ -238,4 +236,19 @@ func TestNavRail_ActionItem(t *testing.T) {
 		nr.Select(x)
 		assert.Equal(t, a, nr.Selected())
 	})
+}
+
+func TestNavRail_CanShowPlaceholder(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := xwidget.NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a})
+	nr.SetPlaceholder("No items")
+	nr.DisableItem(a)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	test.AssertImageMatches(t, "navrail/placeholder.png", w.Canvas().Capture())
 }

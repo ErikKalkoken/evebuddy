@@ -16,7 +16,7 @@ func TestNavDrawer_CanCreateBasic(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 
 	drawer := xwidget.NewNavDrawer(
-		xwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "First", widget.NewLabel("PLACEHOLDER 1")),
 	)
 	drawer.MinWidth = 200
 	w := test.NewWindow(drawer)
@@ -31,11 +31,10 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 	test.ApplyTheme(t, test.Theme())
 
 	drawer := xwidget.NewNavDrawer(
-		xwidget.NewNavPage("First", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 1")),
-		xwidget.NewNavPage("Second", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 2")),
-		xwidget.NewNavPage("Third", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 3")),
-		xwidget.NewNavSectionLabel("Section"),
-		xwidget.NewNavPage("Forth", theme.HomeIcon(), widget.NewLabel("PLACEHOLDER 4")),
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "First", widget.NewLabel("PLACEHOLDER 1")),
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "Second", widget.NewLabel("PLACEHOLDER 2")),
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "Third", widget.NewLabel("PLACEHOLDER 3")),
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "Forth", widget.NewLabel("PLACEHOLDER 4")),
 	)
 	drawer.MinWidth = 200
 	w := test.NewWindow(drawer)
@@ -43,4 +42,21 @@ func TestNavDrawer_CanCreateFull(t *testing.T) {
 	w.Resize(fyne.NewSize(500, 500))
 
 	test.AssertImageMatches(t, "navdrawer/full.png", w.Canvas().Capture())
+}
+
+func TestNavDrawer_CanShowPlaceholder(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	drawer := xwidget.NewNavDrawer(
+		xwidget.NewNavDrawerItem(theme.HomeIcon(), "First", widget.NewLabel("PLACEHOLDER 1")),
+	)
+	drawer.MinWidth = 200
+	drawer.SetPlaceholder("No items")
+	drawer.Disable()
+	w := test.NewWindow(drawer)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	test.AssertImageMatches(t, "navdrawer/placeholder.png", w.Canvas().Capture())
 }
