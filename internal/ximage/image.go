@@ -100,9 +100,10 @@ func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 	return fyne.NewStaticResource(r.Name(), byt.Bytes()), nil
 }
 
-// TintPNG returns a copy of a PNG image with all pixels set to color c, keeping their alpha.
-func TintPNG(in fyne.Resource, c color.Color) (fyne.Resource, error) {
-	img, err := png.Decode(bytes.NewReader(in.Content()))
+// Tint returns a copy of an image with all pixels set to color c, keeping their alpha.
+// The result is always a PNG and its name gets a .png extension.
+func Tint(in fyne.Resource, c color.Color) (fyne.Resource, error) {
+	img, _, err := image.Decode(bytes.NewReader(in.Content()))
 	if err != nil {
 		return nil, err
 	}
@@ -124,9 +125,6 @@ func TintPNG(in fyne.Resource, c color.Color) (fyne.Resource, error) {
 	if err := png.Encode(&buf, newImg); err != nil {
 		return nil, err
 	}
-	r := &fyne.StaticResource{
-		StaticName:    in.Name(),
-		StaticContent: buf.Bytes(),
-	}
-	return r, nil
+	name := strings.TrimSuffix(in.Name(), path.Ext(in.Name())) + ".png"
+	return fyne.NewStaticResource(name, buf.Bytes()), nil
 }

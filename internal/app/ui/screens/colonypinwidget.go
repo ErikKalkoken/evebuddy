@@ -366,9 +366,9 @@ func colonyTintedIcon(icon fyne.Resource, c color.NRGBA) fyne.Resource {
 	if r, ok := tintedIconCache.Load(key); ok {
 		return r
 	}
-	r, err := ximage.TintPNG(icon, c)
+	r, err := ximage.Tint(icon, c)
 	if err != nil {
-		fyne.LogError("Failed theme PNG", err)
+		fyne.LogError("Failed to tint icon", err)
 		return icons.BlankSvg
 	}
 	tintedIconCache.Store(key, r)

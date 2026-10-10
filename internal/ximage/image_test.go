@@ -236,14 +236,14 @@ func TestToGrayscale(t *testing.T) {
 	})
 }
 
-func TestTintPNG(t *testing.T) {
+func TestTint(t *testing.T) {
 	red := color.NRGBA{R: 255, A: 255}
 
 	t.Run("should recolor pixels and keep the name", func(t *testing.T) {
 		in := makePNGResource(t, "icon.png", 2, 1, func(x, y int) color.NRGBA {
 			return color.NRGBA{R: 10, G: 20, B: 30, A: 255}
 		})
-		got, err := ximage.TintPNG(in, red)
+		got, err := ximage.Tint(in, red)
 		require.NoError(t, err)
 		assert.Equal(t, "icon.png", got.Name())
 		img := decodePNG(t, got)
@@ -258,7 +258,7 @@ func TestTintPNG(t *testing.T) {
 		in := makePNGResource(t, "icon.png", len(alphas), 1, func(x, y int) color.NRGBA {
 			return color.NRGBA{G: 255, A: alphas[x]}
 		})
-		got, err := ximage.TintPNG(in, red)
+		got, err := ximage.Tint(in, red)
 		require.NoError(t, err)
 		img := decodePNG(t, got)
 		for x, want := range alphas {
@@ -279,7 +279,7 @@ func TestTintPNG(t *testing.T) {
 			}
 			return color.NRGBA{A: 128}
 		})
-		got, err := ximage.TintPNG(in, color.NRGBA{B: 255, A: 128})
+		got, err := ximage.Tint(in, color.NRGBA{B: 255, A: 128})
 		require.NoError(t, err)
 		img := decodePNG(t, got)
 		assert.Equal(t, uint8(128), color.NRGBAModel.Convert(img.At(0, 0)).(color.NRGBA).A)
@@ -290,7 +290,7 @@ func TestTintPNG(t *testing.T) {
 		in := makePNGResource(t, "icon.png", 1, 1, func(x, y int) color.NRGBA {
 			return color.NRGBA{A: 255}
 		})
-		got, err := ximage.TintPNG(in, color.RGBA{R: 100, A: 200})
+		got, err := ximage.Tint(in, color.RGBA{R: 100, A: 200})
 		require.NoError(t, err)
 		img := decodePNG(t, got)
 		c := color.NRGBAModel.Convert(img.At(0, 0)).(color.NRGBA)
@@ -298,9 +298,30 @@ func TestTintPNG(t *testing.T) {
 		assert.InDelta(t, 127, int(c.R), 1)
 	})
 
-	t.Run("should return error when resource is not a PNG", func(t *testing.T) {
-		in := fyne.NewStaticResource("bad.png", []byte("not a png"))
-		_, err := ximage.TintPNG(in, red)
+	t.Run("should accept JPEG and return PNG with .png name", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 4, 4))
+		for y := range 4 {
+			for x := range 4 {
+				img.SetNRGBA(x, y, color.NRGBA{G: 200, A: 255})
+			}
+		}
+		var buf bytes.Buffer
+		require.NoError(t, jpeg.Encode(&buf, img, nil))
+		in := fyne.NewStaticResource("photo.jpg", buf.Bytes())
+
+		got, err := ximage.Tint(in, red)
+		require.NoError(t, err)
+		assert.Equal(t, "photo.png", got.Name())
+
+		out, format, err := image.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, "png", format)
+		assert.Equal(t, red, color.NRGBAModel.Convert(out.At(2, 2)))
+	})
+
+	t.Run("should return error when resource is not an image", func(t *testing.T) {
+		in := fyne.NewStaticResource("bad.png", []byte("not an image"))
+		_, err := ximage.Tint(in, red)
 		assert.Error(t, err)
 	})
 }
