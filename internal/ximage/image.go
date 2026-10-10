@@ -9,6 +9,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"math"
 	"path"
 	"strings"
 
@@ -34,10 +35,9 @@ func (c *circle) At(x, y int) color.Color {
 	r := float64(c.rect.Dx()) / 2
 	xx := float64(x-c.rect.Min.X) + 0.5 - r
 	yy := float64(y-c.rect.Min.Y) + 0.5 - r
-	if xx*xx+yy*yy < r*r {
-		return color.Alpha{255}
-	}
-	return color.Alpha{0}
+	// alpha fades over one pixel at the rim for a smooth edge
+	a := min(max(r-math.Hypot(xx, yy)+0.5, 0), 1)
+	return color.Alpha{uint8(a*255 + 0.5)}
 }
 
 // applyCircleMask creates a new image from a round shape within the square rect of the original.

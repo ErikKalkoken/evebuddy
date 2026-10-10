@@ -45,8 +45,8 @@ func TestMakeAvatar(t *testing.T) {
 		assert.Equal(t, "png", format)
 		assert.Equal(t, image.Rect(0, 0, 10, 10), img.Bounds())
 		assert.Equal(t, red, color.NRGBAModel.Convert(img.At(5, 5)), "center")
-		assert.Equal(t, uint8(255), alphaAt(img, 0, 5), "left edge middle")
-		assert.Equal(t, uint8(255), alphaAt(img, 5, 0), "top edge middle")
+		assert.Greater(t, alphaAt(img, 0, 5), uint8(200), "left edge middle")
+		assert.Greater(t, alphaAt(img, 5, 0), uint8(200), "top edge middle")
 		for _, p := range []image.Point{{0, 0}, {9, 0}, {0, 9}, {9, 9}} {
 			assert.Equal(t, uint8(0), alphaAt(img, p.X, p.Y), "corner %v", p)
 		}
@@ -97,7 +97,9 @@ func TestMakeAvatar(t *testing.T) {
 					for x := range 10 {
 						c := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
 						if c.A > 0 {
-							assert.Equal(t, thirds[1], c, "at %d,%d", x, y)
+							// edge pixels are partly transparent, so only check the hue
+							assert.Equal(t, uint8(0), c.R, "at %d,%d", x, y)
+							assert.Equal(t, uint8(0), c.B, "at %d,%d", x, y)
 						}
 					}
 				}
@@ -118,6 +120,33 @@ func TestMakeAvatar(t *testing.T) {
 		assert.Equal(t, uint8(0), alphaAt(img, 5, 5))
 	})
 
+	t.Run("should smooth the edge of the circle", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, makeImage(64, 64)))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		img, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		var partial int
+		for y := range 64 {
+			for x := range 64 {
+				if a := alphaAt(img, x, y); a > 0 && a < 255 {
+					partial++
+				}
+			}
+		}
+		assert.Greater(t, partial, 0, "edge has partially transparent pixels")
+		// alpha must not increase from the center outward
+		for _, y := range []int{0, 10, 20, 32} {
+			for x := 32; x < 63; x++ {
+				assert.GreaterOrEqual(t, alphaAt(img, x, y), alphaAt(img, x+1, y), "at %d,%d", x, y)
+			}
+		}
+	})
+
 	t.Run("should keep all pixels of an odd-sized image and center the circle", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, png.Encode(&buf, makeImage(5, 5)))
@@ -130,7 +159,7 @@ func TestMakeAvatar(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, image.Rect(0, 0, 5, 5), img.Bounds())
 		assert.Equal(t, red, color.NRGBAModel.Convert(img.At(2, 2)), "center")
-		assert.Equal(t, uint8(0), alphaAt(img, 0, 0), "corner")
+		assert.Less(t, alphaAt(img, 0, 0), uint8(100), "corner")
 		for y := range 5 {
 			for x := range 5 {
 				a := alphaAt(img, x, y)
