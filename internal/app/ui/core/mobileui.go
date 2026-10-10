@@ -320,8 +320,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpContractsNav,
 			corpIndustryNav,
 			corpStructuresNav,
-			corpWealthNav,
 			corpWalletNav,
+			corpWealthNav,
 		})...,
 	)
 	u.corporationContracts.OnUpdate = func(count int) {

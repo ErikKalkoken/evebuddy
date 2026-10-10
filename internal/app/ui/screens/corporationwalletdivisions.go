@@ -10,8 +10,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -56,11 +59,12 @@ type CorporationWalletDivisions struct {
 	status       *widget.Label
 	u            baseUI
 	updateRun    latestRun
+	sortChip     *kxwidget.SortChip
 }
 
 func NewCorporationWalletDivisions(u baseUI) *CorporationWalletDivisions {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[corporationWalletRow]{{
-		Label: "#",
+		Label: "No.",
 		Width: 50,
 		Sort: func(a, b corporationWalletRow) int {
 			return cmp.Compare(a.division, b.division)
@@ -95,11 +99,16 @@ func NewCorporationWalletDivisions(u baseUI) *CorporationWalletDivisions {
 		},
 	}})
 	a := &CorporationWalletDivisions{
-		columnSorter: xwidget.NewColumnSorter(columns, "#", xwidget.SortAsc),
+		columnSorter: xwidget.NewColumnSorter(columns, "No.", xwidget.SortAsc),
 		status:       widget.NewLabel(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.sortChip = a.columnSorter.NewSortChip(func() {
+		a.sortRows("")
+	})
+
 	a.status.Hide()
 	if a.u.IsMobile() {
 		a.body = a.makeList()
@@ -118,6 +127,7 @@ func NewCorporationWalletDivisions(u baseUI) *CorporationWalletDivisions {
 		)
 	}
 
+	// Signals
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
 		a.Update(ctx)
@@ -135,12 +145,22 @@ func NewCorporationWalletDivisions(u baseUI) *CorporationWalletDivisions {
 }
 
 func (a *CorporationWalletDivisions) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.status, nil, nil, nil, a.body)
+	top := container.NewVBox(a.status)
+	if a.u.IsMobile() {
+		top.Add(container.NewHBox(layout.NewSpacer(), a.sortChip))
+	}
+	c := container.NewBorder(
+		top,
+		nil,
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *CorporationWalletDivisions) makeList() *widget.List {
-	l := widget.NewList(
+func (a *CorporationWalletDivisions) makeList() *xwidget.StripedList {
+	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsSorted)
 		},
