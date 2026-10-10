@@ -189,13 +189,7 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 	split2 := container.NewHSplit(a.NavigationPane, split1)
 	split2.SetOffset(0.15)
 	p := theme.Padding()
-	c := container.NewBorder(
-		widget.NewSeparator(),
-		nil,
-		nil,
-		nil,
-		container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), split2),
-	)
+	c := container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), split2)
 	return widget.NewSimpleRenderer(c)
 }
 
