@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -81,7 +80,7 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		a.tagList,
 	)
-	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
+	actions := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Export tags", a.exportTags),
 		fyne.NewMenuItem("Import tags", a.importTags),
 		fyne.NewMenuItem("Delete all tags", a.deleteTags),

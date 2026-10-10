@@ -314,7 +314,7 @@ func (a *Augmentations) fetchData(ctx context.Context) (*xwidget.TreeData[augmen
 type augmentationNodeItem struct {
 	widget.BaseWidget
 
-	iconInfo              *xwidget.TappableIcon
+	iconInfo              *xwidget.Button
 	iconMain              *canvas.Image
 	implants              *widget.Label
 	loadCharacterPortrait loadFuncAsync
@@ -336,7 +336,7 @@ func newAugmentationNodeItem(
 	main := ttwidget.NewLabel("")
 	main.Truncation = fyne.TextTruncateEllipsis
 	implants := widget.NewLabel("")
-	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	iconInfo := xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	w := &augmentationNodeItem{
 		iconInfo:              iconInfo,
 		loadTypeIcon:          loadTypeIcon,

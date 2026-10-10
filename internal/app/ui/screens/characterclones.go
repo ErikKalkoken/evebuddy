@@ -279,7 +279,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 type characterJumpCloneItem struct {
 	widget.BaseWidget
 
-	iconInfo     *xwidget.TappableIcon
+	iconInfo     *xwidget.Button
 	iconMain     *canvas.Image
 	implants     *widget.Label
 	isMobile     bool
@@ -295,7 +295,7 @@ func newCharacterJumpCloneItem(isMobile bool, loadTypeIcon loadFuncAsync, showTy
 	iconMain := xwidget.NewImageFromResource(icons.BlankSvg, fyne.NewSquareSize(ui.IconUnitSize))
 	main := ttwidget.NewLabel("Template")
 	main.Truncation = fyne.TextTruncateEllipsis
-	iconInfo := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+	iconInfo := xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 	implants := widget.NewLabel("9")
 	spacer := xwidget.NewSpacer(fyne.NewSize(40, 10))
 	prefix := widget.NewLabel("-9.9")

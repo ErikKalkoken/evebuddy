@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
@@ -65,4 +66,44 @@ func TestTappableImage_IgnoreTapWhenNoCallback(t *testing.T) {
 	defer w.Close()
 
 	test.Tap(image)
+}
+
+func TestTappableImage_CanCreateWithMenu(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	menu := fyne.NewMenu("", fyne.NewMenuItem("Item1", nil))
+	image := xwidget.NewTappableImageWithMenu(theme.HomeIcon(), menu)
+	w := test.NewWindow(container.NewCenter(image))
+	defer w.Close()
+
+	test.Tap(image)
+	assert.NotNil(t, w.Canvas().Overlays().Top(), "should show menu")
+}
+
+func TestTappableImage_NilMenuDoesNotPanic(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	var image *xwidget.TappableImage
+	assert.NotPanics(t, func() {
+		image = xwidget.NewTappableImageWithMenu(theme.HomeIcon(), nil)
+	})
+	w := test.NewWindow(container.NewCenter(image))
+	defer w.Close()
+
+	test.Tap(image)
+	assert.Nil(t, w.Canvas().Overlays().Top())
+}
+
+func TestTappableImage_SetToolTip(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	image := xwidget.NewTappableImage(theme.HomeIcon(), nil)
+	w := test.NewWindow(image)
+	defer w.Close()
+
+	image.SetToolTip("Hello")
+	assert.Equal(t, "Hello", image.ToolTip())
 }

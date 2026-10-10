@@ -22,9 +22,11 @@ func NewTappableImage(res fyne.Resource, tapped func()) *TappableImage {
 }
 
 func NewTappableImageWithMenu(res fyne.Resource, menu *fyne.Menu) *TappableImage {
-	w := &TappableImage{}
-	w.ExtendBaseWidget(w)
-	w.SetResource(res)
+	w := NewTappableImage(res, nil)
+	if menu == nil {
+		fyne.LogError("TappableImage misconfigured: missing menu", nil)
+		return w
+	}
 	w.SetMenuItems(menu.Items)
 	return w
 }

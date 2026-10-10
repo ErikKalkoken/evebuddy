@@ -44,7 +44,7 @@ func newTraining(cw *manageCharacters) *training {
 }
 
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
-	actions := kxwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
+	actions := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Set to currently trained", func() {
 			go func() {
 				ctx := context.Background()

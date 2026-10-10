@@ -21,7 +21,7 @@ func NewSearchEntry(placeholder string, changed func(string)) *SearchEntry {
 	w.clearButton = NewTappableIcon(theme.CancelIcon(), func() {
 		w.SetText("")
 	})
-	w.clearButton.SetToolTip("Clear search")
+	// w.clearButton.SetToolTip("Clear search") does not work on dialogs
 	w.clearButton.Hide()
 	p := theme.Padding()
 	w.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), w.clearButton)

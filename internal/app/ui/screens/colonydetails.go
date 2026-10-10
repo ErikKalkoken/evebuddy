@@ -83,11 +83,11 @@ type colonyDetails struct {
 	rowsGen       int // incremented when Update replaces rows
 	rowsRun       latestRun
 	searchEntry   *xwidget.SearchEntry
-	showHelp      *xwidget.IconButton
+	helpButton    *xwidget.Button
 	showPin       func(pinID int64, title string)
 	signalKey     string
 	sortChip      *kxwidget.SortChip
-	status        *xwidget.RichText
+	statusText    *xwidget.RichText
 	u             baseUI
 }
 
@@ -236,7 +236,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		planet:       planet,
 		planetType:   makeHyperLink(),
 		signalKey:    u.Signals().UniqueKey(),
-		status:       xwidget.NewRichText(),
+		statusText:   xwidget.NewRichText(),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
@@ -244,7 +244,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.characterID.Store(characterID)
 	a.planetID.Store(planetID)
 
-	a.status.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
+	a.statusText.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
 	a.icon.icon.CornerRadius = theme.InputRadiusSize()
 
 	list := widget.NewList(
@@ -290,10 +290,10 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		a.filterRowsAsync()
 	})
 
-	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
-		showHelpPopUp(colonyDetailsHelpText, a.u.IsMobile(), a.showHelp)
+	a.helpButton = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(colonyDetailsHelpText, a.u.IsMobile(), a.helpButton)
 	})
-	a.showHelp.SetToolTip("Show explanation")
+	a.helpButton.SetToolTip("Show explanation")
 
 	// signals
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
@@ -339,7 +339,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			),
 		),
 		nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.planet, a.planetType, a.owner, a.status),
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.planet, a.planetType, a.owner, a.statusText),
 	)
 
 	filter := container.NewBorder(
@@ -356,7 +356,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 			filter,
 		),
-		container.NewBorder(nil, nil, nil, a.showHelp, a.footer),
+		container.NewBorder(nil, nil, nil, a.helpButton, a.footer),
 		nil,
 		nil,
 		a.installations,
@@ -551,7 +551,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 
 // setStatus shows the status of the colony and its planet icon.
 func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, s app.ColonyStatus, display []widget.RichTextSegment) {
-	a.status.Set(display)
+	a.statusText.Set(display)
 	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), s.IsProblem())
 }
 

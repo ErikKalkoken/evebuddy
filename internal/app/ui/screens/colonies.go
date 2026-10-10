@@ -185,7 +185,7 @@ type Colonies struct {
 	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
-	showHelp          *xwidget.IconButton
+	helpButton        *widget.Button
 	sortChip          *kxwidget.SortChip
 	u                 baseUI
 }
@@ -344,10 +344,10 @@ func NewColonies(u baseUI) *Colonies {
 		a.filterRowsAsync("")
 	})
 
-	a.showHelp = xwidget.NewIconButton(theme.QuestionIcon(), func() {
-		showHelpPopUp(coloniesHelpText(a.u.IsMobile()), a.u.IsMobile(), a.showHelp)
+	a.helpButton = widget.NewButtonWithIcon("", theme.QuestionIcon(), func() {
+		showHelpPopUp(coloniesHelpText(a.u.IsMobile()), a.u.IsMobile(), a.helpButton)
 	})
-	a.showHelp.SetToolTip("Show explanation for columns")
+	a.helpButton.Importance = widget.LowImportance
 
 	// Signals
 	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -396,7 +396,7 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		container.NewBorder(nil, nil, nil, a.showHelp, a.footer),
+		container.NewBorder(nil, nil, nil, a.helpButton, a.footer),
 		nil,
 		nil,
 		a.body,

@@ -3,6 +3,7 @@ package xwidget_test
 import (
 	"testing"
 
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
@@ -70,4 +71,28 @@ func TestTappableIcon_IgnoreTapWhenNoCallback(t *testing.T) {
 	defer w.Close()
 
 	test.Tap(icon)
+}
+
+func TestTappableIcon_Cursor(t *testing.T) {
+	t.Run("pointer when hovered with callback", func(t *testing.T) {
+		test.NewTempApp(t)
+		icon := xwidget.NewTappableIcon(theme.HomeIcon(), func() {})
+		icon.MouseIn(&desktop.MouseEvent{})
+		assert.Equal(t, desktop.PointerCursor, icon.Cursor())
+		icon.MouseOut()
+		assert.Equal(t, desktop.DefaultCursor, icon.Cursor())
+	})
+	t.Run("no pointer without callback", func(t *testing.T) {
+		test.NewTempApp(t)
+		icon := xwidget.NewTappableIcon(theme.HomeIcon(), nil)
+		icon.MouseIn(&desktop.MouseEvent{})
+		assert.Equal(t, desktop.DefaultCursor, icon.Cursor())
+	})
+}
+
+func TestTappableIcon_SetToolTip(t *testing.T) {
+	test.NewTempApp(t)
+	icon := xwidget.NewTappableIcon(theme.HomeIcon(), nil)
+	icon.SetToolTip("Hello")
+	assert.Equal(t, "Hello", icon.ToolTip())
 }

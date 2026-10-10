@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"image/color"
 	"log/slog"
 	"slices"
 	"time"
@@ -38,8 +37,8 @@ type inventoryTypeInfo struct {
 	characterName    *widget.Hyperlink
 	checkIcon        *widget.Icon
 	description      *widget.Label
-	eveMarketBrowser *fyne.Container
-	janice           *fyne.Container
+	eveMarketBrowser *xwidget.Button
+	janice           *xwidget.Button
 	setTitle         func(string) // for setting the title during update
 	tabs             *container.AppTabs
 	typeIcon         *xwidget.TappableImage
@@ -67,18 +66,16 @@ func newInventoryTypeInfo(iw *InfoViewer, typeID, characterID int64) *inventoryT
 	a.characterName.Wrapping = fyne.TextWrapWord
 	a.characterName.Hide()
 
-	emb := xwidget.NewTappableIcon(icons.EvemarketbrowserJpg, func() {
+	a.eveMarketBrowser = xwidget.NewIconButton(icons.EvemarketbrowserJpg, func() {
 		a.iw.openURL(fmt.Sprintf("https://evemarketbrowser.com/region/0/type/%d", a.typeID))
 	})
-	emb.SetToolTip("Show on evemarketbrowser.com")
-	a.eveMarketBrowser = container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameButton)), emb)
+	a.eveMarketBrowser.SetToolTip("Show on evemarketbrowser.com")
 	a.eveMarketBrowser.Hide()
 
-	janice := xwidget.NewTappableIcon(icons.JanicePng, func() {
+	a.janice = xwidget.NewIconButton(icons.JanicePng, func() {
 		a.iw.openURL(fmt.Sprintf("https://janice.e-351.com/i/%d", a.typeID))
 	})
-	janice.SetToolTip("Show on janice.e-351.com")
-	a.janice = container.NewStack(canvas.NewRectangle(color.White), janice)
+	a.janice.SetToolTip("Show on janice.e-351.com")
 	a.janice.Hide()
 
 	a.tabs = container.NewAppTabs(ui.NewTabItem("Description", container.NewVScroll(a.description)))
@@ -92,7 +89,7 @@ func (a *inventoryTypeInfo) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(
 			container.NewPadded(a.typeIcon),
 			container.New(
-				layout.NewCustomPaddedHBoxLayout(3*theme.Padding()),
+				layout.NewCustomPaddedHBoxLayout(linkIconPaddingFactor*theme.Padding()),
 				layout.NewSpacer(),
 				a.eveMarketBrowser,
 				a.janice,

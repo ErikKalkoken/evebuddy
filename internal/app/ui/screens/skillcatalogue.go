@@ -101,7 +101,7 @@ type SkillCatalogue struct {
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
-	moreButton     *xwidget.IconButton
+	moreButton     *xwidget.ContextMenuButton
 	rows           []skillCatalogueRow
 	rowsFiltered   []skillCatalogueRow
 	searchEntry    *xwidget.SearchEntry
@@ -181,6 +181,7 @@ func NewSkillCatalogue(u baseUI) *SkillCatalogue {
 			}),
 		),
 	)
+	a.moreButton.SetToolTip("Show more options")
 
 	// signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {

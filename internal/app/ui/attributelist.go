@@ -50,7 +50,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			value.Truncation = fyne.TextTruncateEllipsis
 			value.Alignment = fyne.TextAlignTrailing
 			label := widget.NewLabel("Label")
-			icon := xwidget.NewTappableIcon(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
+			icon := xwidget.NewIconButton(theme.NewThemedResource(icons.InformationSlabCircleSvg), nil)
 			return container.NewBorder(
 				nil,
 				nil,
@@ -83,7 +83,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 
 			iconBox := border[2].(*fyne.Container)
 			if it.InfoAction != nil && !it.IsHeading {
-				iconBox.Objects[1].(*xwidget.TappableIcon).OnTapped = it.InfoAction
+				iconBox.Objects[1].(*xwidget.Button).OnTapped = it.InfoAction
 				iconBox.Show()
 			} else {
 				iconBox.Hide()
