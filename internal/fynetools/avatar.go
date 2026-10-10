@@ -15,9 +15,9 @@ import (
 	"image/png"
 )
 
+// circle is an alpha mask of a circle filling a square.
 type circle struct {
-	p image.Point
-	r int
+	rect image.Rectangle
 }
 
 func (c *circle) ColorModel() color.Model {
@@ -25,22 +25,25 @@ func (c *circle) ColorModel() color.Model {
 }
 
 func (c *circle) Bounds() image.Rectangle {
-	return image.Rect(c.p.X-c.r, c.p.Y-c.r, c.p.X+c.r, c.p.Y+c.r)
+	return c.rect
 }
 
 func (c *circle) At(x, y int) color.Color {
-	xx, yy, rr := float64(x-c.p.X)+0.5, float64(y-c.p.Y)+0.5, float64(c.r)
-	if xx*xx+yy*yy < rr*rr {
+	// center can be fractional, so odd-sized squares keep all pixels
+	r := float64(c.rect.Dx()) / 2
+	xx := float64(x-c.rect.Min.X) + 0.5 - r
+	yy := float64(y-c.rect.Min.Y) + 0.5 - r
+	if xx*xx+yy*yy < r*r {
 		return color.Alpha{255}
 	}
 	return color.Alpha{0}
 }
 
-// applyCircleMask creates a new image from a round shape within the original
-func applyCircleMask(source image.Image, origin image.Point, r int) image.Image {
-	c := &circle{origin, r}
-	result := image.NewRGBA(c.Bounds())
-	draw.DrawMask(result, source.Bounds(), source, image.Point{}, c, image.Point{}, draw.Over)
+// applyCircleMask creates a new image from a round shape within the square rect of the original.
+func applyCircleMask(source image.Image, rect image.Rectangle) image.Image {
+	c := &circle{rect}
+	result := image.NewRGBA(rect)
+	draw.DrawMask(result, rect, source, rect.Min, c, rect.Min, draw.Over)
 	return result
 }
 
@@ -55,10 +58,10 @@ func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 
 	// convert
 	b := m.Bounds()
-	w := (b.Max.X - b.Min.X) / 2
-	h := (b.Max.Y - b.Min.Y) / 2
-	r := min(w, h)
-	m2 := applyCircleMask(m, image.Point{X: w, Y: h}, r)
+	s := min(b.Dx(), b.Dy())
+	x0 := b.Min.X + (b.Dx()-s)/2
+	y0 := b.Min.Y + (b.Dy()-s)/2
+	m2 := applyCircleMask(m, image.Rect(x0, y0, x0+s, y0+s))
 
 	// encode new image
 	var buf bytes.Buffer
