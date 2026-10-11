@@ -132,14 +132,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("Reload all characters", func() {
-			go func() {
-				err := a.u.Character().UpdateCharactersIfNeeded(context.Background(), true)
-				if err != nil {
-					slog.Error("update status", "error", err)
-					a.sb.Display("Error: " + a.u.ErrorDisplay(err))
-					return
-				}
-			}()
+			a.u.Character().UpdateCharactersIfNeededAsync(true)
 			a.sb.Display("Started reloading characters")
 		}),
 		fyne.NewMenuItem("Reload all corporations", func() {
@@ -159,16 +152,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				}
 				characterIDs = append(characterIDs, x.id)
 			}
-			go func() {
-				for _, id := range characterIDs {
-					go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-						context.Background(),
-						id,
-						app.SectionCharacterNotifications,
-						true,
-					)
-				}
-			}()
+			for _, id := range characterIDs {
+				a.u.Character().UpdateCharacterSectionAndRefreshIfNeededAsync(id, app.SectionCharacterNotifications, true)
+			}
 			a.sb.Display("Started reloading notifications")
 		}),
 		fyne.NewMenuItem("Reload colonies for all characters", func() {
@@ -179,16 +165,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 				}
 				characterIDs = append(characterIDs, x.id)
 			}
-			go func() {
-				for _, id := range characterIDs {
-					go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-						context.Background(),
-						id,
-						app.SectionCharacterPlanets,
-						true,
-					)
-				}
-			}()
+			for _, id := range characterIDs {
+				a.u.Character().UpdateCharacterSectionAndRefreshIfNeededAsync(id, app.SectionCharacterPlanets, true)
+			}
 			a.sb.Display("Started reloading colonies")
 		}),
 	}
@@ -310,7 +289,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		case sectionGeneral:
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
 		case sectionCharacter:
-			go a.u.Character().UpdateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(c.id, true)
 		case sectionCorporation:
 			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(c.id, true)
 		default:
@@ -446,8 +425,8 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 				context.Background(), app.EveUniverseSection(ss.SectionID), true,
 			)
 		case sectionCharacter:
-			go a.u.Character().UpdateCharacterSectionAndRefreshIfNeeded(
-				context.Background(), ss.EntityID, app.CharacterSection(ss.SectionID), true,
+			a.u.Character().UpdateCharacterSectionAndRefreshIfNeededAsync(
+				ss.EntityID, app.CharacterSection(ss.SectionID), true,
 			)
 		case sectionCorporation:
 			a.u.Corporation().UpdateSectionAndRefreshIfNeededAsync(

@@ -631,6 +631,68 @@ func TestRecordUpdateFailed(t *testing.T) {
 // A singleflight follower must not record a real error when the singleflight
 // leader's ctx was the one that got canceled, even though the follower's own
 // ctx (e.g. from a manual "reload section" UI action) was never canceled.
+func TestAsyncUpdates(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	const section = app.SectionCharacterAssets
+
+	t.Run("Stop cancels and waits for a running update", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		entered := make(chan struct{})
+		var wasCanceled bool
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
+			func(req *http.Request) (*http.Response, error) {
+				close(entered)
+				<-req.Context().Done()
+				wasCanceled = true
+				return nil, req.Context().Err()
+			},
+		)
+		s.UpdateCharacterSectionAndRefreshIfNeededAsync(c.ID, section, true)
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			t.Fatal("update never reached the HTTP call")
+		}
+		// when
+		stopped := make(chan struct{})
+		go func() {
+			s.Stop()
+			close(stopped)
+		}()
+		// then
+		select {
+		case <-stopped:
+		case <-time.After(time.Second):
+			t.Fatal("Stop did not return")
+		}
+		assert.True(t, wasCanceled)
+	})
+	t.Run("skips updates after Stop", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		s.Stop()
+		// when
+		s.UpdateCharactersIfNeededAsync(true)
+		s.UpdateCharacterAndRefreshIfNeededAsync(c.ID, true)
+		s.UpdateCharacterSectionAndRefreshIfNeededAsync(c.ID, section, true)
+		s.Stop()
+		// then
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
+}
+
 func TestCharacterService_UpdateSectionIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

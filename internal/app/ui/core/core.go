@@ -486,7 +486,7 @@ func newBaseUI(arg UIParams) *baseUI {
 			if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
-					go u.cs.UpdateCharactersIfNeeded(ctx, false)
+					u.cs.UpdateCharactersIfNeededAsync(false)
 					u.rs.UpdateCorporationsIfNeededAsync(false)
 					go u.eus.UpdateSectionsIfNeeded(ctx, false)
 				}()

@@ -390,9 +390,11 @@ func TestAsyncUpdates(t *testing.T) {
 		s := newService()
 		// when
 		s.UpdateAfterPermissionChangeAsync(42)
-		s.Stop()
 		// then
-		assert.Zero(t, httpmock.GetTotalCallCount())
+		assert.Never(t, func() bool {
+			return httpmock.GetTotalCallCount() > 0
+		}, 100*time.Millisecond, 10*time.Millisecond)
+		s.Stop()
 	})
 }
 

@@ -60,6 +60,36 @@ func (s *CharacterService) Stop() {
 	slog.Info("Character update scheduler and background jobs stopped")
 }
 
+// goTask runs f as a background job, which Stop cancels and waits for.
+func (s *CharacterService) goTask(name string, f func(ctx context.Context)) {
+	if !s.tasks.Go(f) {
+		slog.Debug("Skipped background job: shutting down", "job", name)
+	}
+}
+
+// UpdateCharactersIfNeededAsync is the background job variant of [CharacterService.UpdateCharactersIfNeeded].
+func (s *CharacterService) UpdateCharactersIfNeededAsync(forceUpdate bool) {
+	s.goTask("UpdateCharactersIfNeeded", func(ctx context.Context) {
+		if err := s.UpdateCharactersIfNeeded(ctx, forceUpdate); err != nil && !app.IsContextCanceled(ctx, err) {
+			slog.Error("Failed to update characters", "error", err)
+		}
+	})
+}
+
+// UpdateCharacterAndRefreshIfNeededAsync is the background job variant of [CharacterService.UpdateCharacterAndRefreshIfNeeded].
+func (s *CharacterService) UpdateCharacterAndRefreshIfNeededAsync(characterID int64, forceUpdate bool) {
+	s.goTask("UpdateCharacterAndRefreshIfNeeded", func(ctx context.Context) {
+		s.UpdateCharacterAndRefreshIfNeeded(ctx, characterID, forceUpdate)
+	})
+}
+
+// UpdateCharacterSectionAndRefreshIfNeededAsync is the background job variant of [CharacterService.UpdateCharacterSectionAndRefreshIfNeeded].
+func (s *CharacterService) UpdateCharacterSectionAndRefreshIfNeededAsync(characterID int64, section app.CharacterSection, forceUpdate bool) {
+	s.goTask("UpdateCharacterSectionAndRefreshIfNeeded", func(ctx context.Context) {
+		s.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, section, forceUpdate)
+	})
+}
+
 func (s *CharacterService) UpdateCharactersIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of characters during daily downtime")

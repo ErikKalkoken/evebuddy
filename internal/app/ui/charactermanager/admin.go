@@ -199,7 +199,7 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
 			if !a.cw.u.IsUpdateDisabled() {
-				go a.cw.u.Character().UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
+				a.cw.u.Character().UpdateCharacterAndRefreshIfNeededAsync(character.ID, true)
 			}
 			return nil
 		}()
