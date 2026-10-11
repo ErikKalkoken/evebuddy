@@ -83,21 +83,26 @@ func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := src.Bounds()
-	m := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			c := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA)
-			k := uint8(0.3*float64(c.R) + 0.6*float64(c.G) + 0.1*float64(c.B) + 0.5)
-			m.SetNRGBA(x-b.Min.X, y-b.Min.Y, color.NRGBA{R: k, G: k, B: k, A: c.A})
-		}
-	}
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, m); err != nil {
+	if err := png.Encode(&buf, ToGrayscaleImage(src)); err != nil {
 		return nil, err
 	}
 	name := strings.TrimSuffix(r.Name(), path.Ext(r.Name())) + ".png"
 	return fyne.NewStaticResource(name, buf.Bytes()), nil
+}
+
+// ToGrayscaleImage returns a grayscale copy of img with its origin at (0, 0).
+func ToGrayscaleImage(img image.Image) *image.NRGBA {
+	b := img.Bounds()
+	m := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+			k := uint8(0.3*float64(c.R) + 0.6*float64(c.G) + 0.1*float64(c.B) + 0.5)
+			m.SetNRGBA(x-b.Min.X, y-b.Min.Y, color.NRGBA{R: k, G: k, B: k, A: c.A})
+		}
+	}
+	return m
 }
 
 // Tint returns a copy of an image with all pixels set to color c, keeping their alpha.
