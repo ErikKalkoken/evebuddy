@@ -92,6 +92,9 @@ func (a *admin) makeCharacterList() *widget.List {
 
 func (a *admin) update(ctx context.Context) {
 	characters, err := a.fetchRows(ctx)
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		a.cw.reportError("Failed to update characters", err)
 		return
@@ -153,10 +156,13 @@ func (a *admin) showAddCharacterDialog() {
 	d1.SetOnClosed(func() {
 		cancel()
 	})
-	d1.Show()
-	go func() {
+	ok := a.cw.u.Go(func(ctx context.Context) {
+		// Shutdown aborts the browser login, but not storing the character.
+		stop := context.AfterFunc(ctx, cancel)
+		defer stop()
 		err := func() error {
 			character, err := a.cw.u.Character().UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
+				stop()
 				fyne.Do(func() {
 					infoText.SetText(s)
 					closeButton.Hide()
@@ -171,10 +177,12 @@ func (a *admin) showAddCharacterDialog() {
 			fyne.Do(func() {
 				infoText.SetText("Adding new character...")
 			})
-			ctx := context.Background()
 			a.update(ctx)
 			if a.cw.u.CurrentCharacter() == nil {
 				err := a.cw.u.LoadCharacter(ctx, character.ID)
+				if ctx.Err() != nil {
+					return nil // shutting down
+				}
 				if err != nil {
 					slog.Error(
 						"Setting newly added character",
@@ -187,6 +195,9 @@ func (a *admin) showAddCharacterDialog() {
 			if a.cw.u.CurrentCorporation() == nil {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
 					err := a.cw.u.LoadCorporation(ctx, c.ID)
+					if ctx.Err() != nil {
+						return nil // shutting down
+					}
 					if err != nil {
 						slog.Error(
 							"Setting newly added corporation",
@@ -203,6 +214,9 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			return nil
 		}()
+		if ctx.Err() != nil {
+			return
+		}
 		fyne.Do(func() {
 			d1.Hide()
 		})
@@ -211,7 +225,12 @@ func (a *admin) showAddCharacterDialog() {
 				ui.ShowErrorAndLog("Failed to add a new character", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
 		}
-	}()
+	})
+	if !ok {
+		cancel()
+		return
+	}
+	d1.Show()
 }
 
 func (a *admin) showDeleteDialog(r adminRow) {
