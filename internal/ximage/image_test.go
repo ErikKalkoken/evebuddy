@@ -107,6 +107,39 @@ func TestMakeAvatar(t *testing.T) {
 		}
 	})
 
+	t.Run("should keep semi-transparent source pixels", func(t *testing.T) {
+		c := color.NRGBA{R: 200, G: 100, B: 50, A: 128}
+		img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+		for y := range 64 {
+			for x := range 64 {
+				img.SetNRGBA(x, y, c)
+			}
+		}
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, img))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		out, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, c, color.NRGBAModel.Convert(out.At(32, 32)), "center")
+		// rim alpha is the source alpha scaled down by the mask
+		var rim int
+		for y := range 64 {
+			for x := range 64 {
+				o := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
+				assert.LessOrEqual(t, o.A, c.A, "at %d,%d", x, y)
+				if o.A > 0 && o.A < c.A {
+					rim++
+					assert.Equal(t, color.NRGBA{R: c.R, G: c.G, B: c.B, A: o.A}, o, "at %d,%d", x, y)
+				}
+			}
+		}
+		assert.Greater(t, rim, 0)
+	})
+
 	t.Run("should keep transparent source pixels transparent", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, png.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, 10, 10))))
