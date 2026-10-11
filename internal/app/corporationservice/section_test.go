@@ -101,6 +101,26 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, status.HasContent())
 	})
+	t.Run("completes removal when context is canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: corporation.ID,
+		})
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		ctx, cancel := context.WithCancel(ctx)
+		cancel()
+		// when
+		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCorporationIndustryJob(context.Background(), j1.CorporationID, j1.JobID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCorporationService_PermittedSections(t *testing.T) {

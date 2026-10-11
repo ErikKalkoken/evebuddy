@@ -215,7 +215,11 @@ func (s *CorporationService) updateSectionAndRefreshIfNeeded(ctx context.Context
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
 // This can happen after a character has lost a role or a character was deleted.
+// Does nothing when the corporation does not exist. Once started, the removal always completes.
 func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int64) error {
+	// A partial removal would leave data no remaining character may see.
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
 	wrapErr := func(err error) error {
 		return fmt.Errorf("RemoveSectionDataWhenNoPermission: CorporationID %d: %w", corporationID, err)
 	}

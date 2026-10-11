@@ -249,45 +249,57 @@ func (a *admin) showDeleteDialog(r adminRow) {
 		"Delete",
 		widget.DangerImportance,
 		func(ctx context.Context) {
-			wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
-			if ctx.Err() != nil {
-				return
-			}
-			if err != nil {
-				a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
-				return
-			}
-			a.update(ctx)
-			a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
-
-			if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
-				err := a.cw.u.SetAnyCharacter(ctx)
-				if ctx.Err() != nil {
-					return
-				}
-				if err != nil {
-					slog.Warn("Failed to set current character after deletion", "error", err)
-				}
-			}
-			if wasCorpDeleted {
-				err := a.cw.u.SetAnyCorporation(ctx)
-				if ctx.Err() != nil {
-					return
-				}
-				if err != nil {
-					slog.Warn("Failed to set current corporation after deletion", "error", err)
-				}
-
-			} else {
-				a.cw.u.Corporation().UpdateAfterPermissionChangeAsync(r.corporationID)
-			}
-			go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
-				ID:   r.characterID,
-				Name: r.characterName,
-			})
+			a.deleteCharacter(ctx, r)
 		},
 		a.cw.w,
 	)
+}
+
+// deleteCharacter deletes a character and updates the UI.
+func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
+	wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
+	if err == nil {
+		// Done before the shutdown check, so quitting can't skip it.
+		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+		if err != nil {
+			slog.Error("Failed to remove corporation data after character was deleted", "corporationID", r.corporationID, "error", err)
+		}
+	}
+	if ctx.Err() != nil {
+		return
+	}
+	if err != nil {
+		a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
+		return
+	}
+	a.update(ctx)
+	a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
+
+	if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
+		err := a.cw.u.SetAnyCharacter(ctx)
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			slog.Warn("Failed to set current character after deletion", "error", err)
+		}
+	}
+	if wasCorpDeleted {
+		err := a.cw.u.SetAnyCorporation(ctx)
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			slog.Warn("Failed to set current corporation after deletion", "error", err)
+		}
+
+	} else {
+		a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(r.corporationID, true)
+	}
+	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
+		ID:   r.characterID,
+		Name: r.characterName,
+	})
 }
 
 type adminListItem struct {
