@@ -21,7 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
-// TODO: Add tests for UpdateSectionIfNeeded()
+// TODO: Add tests for updateSectionIfNeeded()
 
 func TestUpdateSectionIfChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
@@ -285,7 +285,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -327,7 +327,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -371,7 +371,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -394,7 +394,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -433,7 +433,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data),
 		)
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 			forceUpdate: true,
@@ -474,7 +474,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 			forceUpdate: true,
@@ -520,7 +520,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -565,7 +565,7 @@ func TestCharacterService_UpdateSectionIfNeeded(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/assets", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateSectionIfNeeded(ctx, characterSectionUpdateParams{
+		changed, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     section,
 		})
@@ -725,7 +725,7 @@ func TestCharacterService_UpdateSectionIfNeeded_SingleflightFollowerNotCanceled(
 	leaderDone := make(chan struct{})
 	go func() {
 		defer close(leaderDone)
-		s.UpdateSectionIfNeeded(ctxLeader, characterSectionUpdateParams{characterID: c.ID, section: section})
+		s.updateSectionIfNeeded(ctxLeader, characterSectionUpdateParams{characterID: c.ID, section: section})
 	}()
 	select {
 	case <-entered:
@@ -738,7 +738,7 @@ func TestCharacterService_UpdateSectionIfNeeded_SingleflightFollowerNotCanceled(
 	followerDone := make(chan struct{})
 	go func() {
 		defer close(followerDone)
-		s.UpdateSectionIfNeeded(context.Background(), characterSectionUpdateParams{characterID: c.ID, section: section})
+		s.updateSectionIfNeeded(context.Background(), characterSectionUpdateParams{characterID: c.ID, section: section})
 	}()
 	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
 

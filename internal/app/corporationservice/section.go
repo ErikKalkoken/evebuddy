@@ -26,13 +26,13 @@ import (
 func (s *CorporationService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
-			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
+			if err := s.updateCorporationsIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
 				slog.Error("Failed to update corporations", "error", err)
 			}
 		})
 	})
 	if errors.Is(err, xsync.ErrTaskGroupStopped) {
-		slog.Info("Corporation update scheduler not started: shutting down")
+		slog.Info("Corporation update scheduler not started: service stopped")
 		return
 	}
 	if err != nil {
@@ -50,61 +50,66 @@ func (s *CorporationService) Stop() {
 	slog.Info("Corporation update scheduler stopped")
 }
 
-// goTask runs f as a background job, which Stop cancels and waits for.
-func (s *CorporationService) goTask(name string, f func(ctx context.Context)) {
-	if !s.tasks.Go(f) {
-		slog.Debug("Skipped background job: shutting down", "job", name)
-	}
-}
-
-// UpdateCorporationsIfNeededAsync is the background job variant of [CorporationService.UpdateCorporationsIfNeeded].
+// UpdateCorporationsIfNeededAsync updates all corporations if needed in the background.
 func (s *CorporationService) UpdateCorporationsIfNeededAsync(forceUpdate bool) {
-	s.goTask("UpdateCorporationsIfNeeded", func(ctx context.Context) {
-		if err := s.UpdateCorporationsIfNeeded(ctx, forceUpdate); err != nil && !app.IsContextCanceled(ctx, err) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		if err := s.updateCorporationsIfNeeded(ctx, forceUpdate); err != nil && !app.IsContextCanceled(ctx, err) {
 			slog.Error("Failed to update corporations", "error", err)
 		}
 	})
+	if !ok {
+		slog.Debug("Skipped updating corporations: service stopped")
+	}
 }
 
-// UpdateCorporationAndRefreshIfNeededAsync is the background job variant of [CorporationService.UpdateCorporationAndRefreshIfNeeded].
+// UpdateCorporationAndRefreshIfNeededAsync updates all sections of a corporation if needed in the background.
 func (s *CorporationService) UpdateCorporationAndRefreshIfNeededAsync(corporationID int64, forceUpdate bool) {
-	s.goTask("UpdateCorporationAndRefreshIfNeeded", func(ctx context.Context) {
-		s.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, forceUpdate)
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, forceUpdate)
 	})
+	if !ok {
+		slog.Debug("Skipped updating corporation: service stopped", "corporationID", corporationID)
+	}
 }
 
-// UpdateSectionAndRefreshIfNeededAsync is the background job variant of [CorporationService.UpdateSectionAndRefreshIfNeeded].
+// UpdateSectionAndRefreshIfNeededAsync updates a corporation section if needed in the background.
 func (s *CorporationService) UpdateSectionAndRefreshIfNeededAsync(corporationID int64, section app.CorporationSection, forceUpdate bool) {
-	s.goTask("UpdateSectionAndRefreshIfNeeded", func(ctx context.Context) {
-		s.UpdateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
 	})
+	if !ok {
+		slog.Debug("Skipped updating corporation section: service stopped", "corporationID", corporationID, "section", section)
+	}
 }
 
 // UpdateAfterPermissionChangeAsync removes data no longer permitted and reloads the corporation.
 // Does nothing when the corporation does not exist.
 func (s *CorporationService) UpdateAfterPermissionChangeAsync(corporationID int64) {
-	s.goTask("UpdateAfterPermissionChange", func(ctx context.Context) {
+	ok := s.tasks.Go(func(ctx context.Context) {
 		logErr := func(err error) {
 			if !app.IsContextCanceled(ctx, err) {
 				slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
 			}
 		}
-		ok, err := s.HasCorporation(ctx, corporationID)
+		exists, err := s.HasCorporation(ctx, corporationID)
 		if err != nil {
 			logErr(err)
 			return
 		}
-		if !ok {
+		if !exists {
 			return
 		}
 		if err := s.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
 			logErr(err)
 		}
-		s.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 	})
+	if !ok {
+		slog.Debug("Skipped updating corporation after permission change: service stopped", "corporationID", corporationID)
+	}
 }
 
-func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+func (s *CorporationService) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
@@ -128,7 +133,7 @@ func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, for
 	var wg sync.WaitGroup
 	for id := range corporations.All() {
 		wg.Go(func() {
-			s.UpdateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+			s.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
@@ -137,14 +142,14 @@ func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, for
 	return nil
 }
 
-// UpdateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
+// updateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
 // and refreshes the UI accordingly.
-func (s *CorporationService) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
+func (s *CorporationService) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
 	sections := app.CorporationSections
 	var wg sync.WaitGroup
 	for _, section := range sections {
 		wg.Go(func() {
-			s.UpdateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+			s.updateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
@@ -152,12 +157,12 @@ func (s *CorporationService) UpdateCorporationAndRefreshIfNeeded(ctx context.Con
 	slog.Debug("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
-// UpdateSectionAndRefreshIfNeeded runs update for a corporation section if needed
+// updateSectionAndRefreshIfNeeded runs update for a corporation section if needed
 // and refreshes the UI accordingly.
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
+func (s *CorporationService) updateSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := s.updateSectionIfNeeded(
 		ctx, corporationSectionUpdateParams{
 			corporationID: corporationID,

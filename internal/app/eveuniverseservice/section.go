@@ -22,11 +22,11 @@ import (
 func (s *EVEUniverseService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
-			s.UpdateSectionsIfNeeded(ctx, false)
+			s.updateSectionsIfNeeded(ctx, false)
 		})
 	})
 	if errors.Is(err, xsync.ErrTaskGroupStopped) {
-		slog.Info("EVEUniverse update scheduler not started: shutting down")
+		slog.Info("EVEUniverse update scheduler not started: service stopped")
 		return
 	}
 	if err != nil {
@@ -44,28 +44,27 @@ func (s *EVEUniverseService) Stop() {
 	slog.Info("EVEUniverse update scheduler stopped")
 }
 
-// goTask runs f as a background job, which Stop cancels and waits for.
-func (s *EVEUniverseService) goTask(name string, f func(ctx context.Context)) {
-	if !s.tasks.Go(f) {
-		slog.Debug("Skipped background job: shutting down", "job", name)
+// UpdateSectionsIfNeededAsync updates all general sections if needed in the background.
+func (s *EVEUniverseService) UpdateSectionsIfNeededAsync(forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionsIfNeeded(ctx, forceUpdate)
+	})
+	if !ok {
+		slog.Debug("Skipped updating general sections: service stopped")
 	}
 }
 
-// UpdateSectionsIfNeededAsync is the background job variant of [EVEUniverseService.UpdateSectionsIfNeeded].
-func (s *EVEUniverseService) UpdateSectionsIfNeededAsync(forceUpdate bool) {
-	s.goTask("UpdateSectionsIfNeeded", func(ctx context.Context) {
-		s.UpdateSectionsIfNeeded(ctx, forceUpdate)
-	})
-}
-
-// UpdateSectionAndRefreshIfNeededAsync is the background job variant of [EVEUniverseService.UpdateSectionAndRefreshIfNeeded].
+// UpdateSectionAndRefreshIfNeededAsync updates a general section if needed in the background.
 func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeededAsync(section app.EveUniverseSection, forceUpdate bool) {
-	s.goTask("UpdateSectionAndRefreshIfNeeded", func(ctx context.Context) {
-		s.UpdateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
 	})
+	if !ok {
+		slog.Debug("Skipped updating general section: service stopped", "section", section)
+	}
 }
 
-func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
+func (s *EVEUniverseService) updateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
@@ -79,7 +78,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	var wg sync.WaitGroup
 	for section := range sections.All() {
 		wg.Go(func() {
-			s.UpdateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
+			s.updateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
@@ -87,7 +86,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
+func (s *EVEUniverseService) updateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
 		if app.IsContextCanceled(ctx, err) {
 			slog.Debug("Failed to update general section", "section", section, "err", err)
