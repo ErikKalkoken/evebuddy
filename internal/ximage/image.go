@@ -3,11 +3,10 @@ package ximage
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/jpeg"
+	_ "image/jpeg"
 	"image/png"
 	"math"
 	"path"
@@ -49,6 +48,7 @@ func applyCircleMask(source image.Image, rect image.Rectangle) image.Image {
 }
 
 // MakeAvatar creates a rounded avatar style image from a resource and returns it.
+// The result is always a PNG named <base>_avatar.png.
 func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 	// decode
 	reader := bytes.NewReader(in.Content())
@@ -77,15 +77,11 @@ func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 }
 
 // ToGrayscale returns a copy of an image in grayscale.
-//
-// Will fail if the resource is not a PNG or JPEG image.
+// The result is always a PNG and its name gets a .png extension.
 func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
-	src, format, err := image.Decode(bytes.NewReader(r.Content()))
+	src, _, err := image.Decode(bytes.NewReader(r.Content()))
 	if err != nil {
 		return nil, err
-	}
-	if format != "png" && format != "jpeg" {
-		return nil, fmt.Errorf("unsupported image format: %s", format)
 	}
 	b := src.Bounds()
 	m := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
@@ -96,16 +92,12 @@ func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
 			m.SetNRGBA(x-b.Min.X, y-b.Min.Y, color.NRGBA{R: k, G: k, B: k, A: c.A})
 		}
 	}
-	var byt bytes.Buffer
-	if format == "jpeg" {
-		err = jpeg.Encode(&byt, m, nil)
-	} else {
-		err = png.Encode(&byt, m)
-	}
-	if err != nil {
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, m); err != nil {
 		return nil, err
 	}
-	return fyne.NewStaticResource(r.Name(), byt.Bytes()), nil
+	name := strings.TrimSuffix(r.Name(), path.Ext(r.Name())) + ".png"
+	return fyne.NewStaticResource(name, buf.Bytes()), nil
 }
 
 // Tint returns a copy of an image with all pixels set to color c, keeping their alpha.

@@ -335,7 +335,7 @@ func TestToGrayscale(t *testing.T) {
 		assert.Equal(t, color.NRGBA{R: 200, G: 200, B: 200, A: 3}, color.NRGBAModel.Convert(out.At(0, 0)))
 	})
 
-	t.Run("should convert JPEG to grayscale", func(t *testing.T) {
+	t.Run("should accept JPEG and return PNG with .png name", func(t *testing.T) {
 		img := image.NewNRGBA(image.Rect(0, 0, 16, 16))
 		for y := range 16 {
 			for x := range 16 {
@@ -348,16 +348,17 @@ func TestToGrayscale(t *testing.T) {
 
 		got, err := ximage.ToGrayscale(in)
 		require.NoError(t, err)
-		assert.Equal(t, "photo.jpg", got.Name())
+		assert.Equal(t, "photo.png", got.Name())
 
 		out, format, err := image.Decode(bytes.NewReader(got.Content()))
 		require.NoError(t, err)
-		assert.Equal(t, "jpeg", format)
+		assert.Equal(t, "png", format)
 		assert.Equal(t, image.Rect(0, 0, 16, 16), out.Bounds())
 		c := color.NRGBAModel.Convert(out.At(8, 8)).(color.NRGBA)
-		// JPEG is lossy, so allow small deviations between channels
-		assert.InDelta(t, int(c.R), int(c.G), 3)
-		assert.InDelta(t, int(c.R), int(c.B), 3)
+		assert.Equal(t, c.R, c.G)
+		assert.Equal(t, c.R, c.B)
+		// JPEG input is lossy, so allow a small deviation from 0.3*200+0.6*50+0.1*100
+		assert.InDelta(t, 100, int(c.R), 5)
 	})
 
 	t.Run("should return error when resource is not an image", func(t *testing.T) {
@@ -365,19 +366,29 @@ func TestToGrayscale(t *testing.T) {
 		_, err := ximage.ToGrayscale(in)
 		assert.Error(t, err)
 	})
-	t.Run("should return error for unsupported image formats", func(t *testing.T) {
+
+	t.Run("should accept other decodable formats", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, gif.Encode(&buf, makeImage(), nil))
 		in := fyne.NewStaticResource("icon.gif", buf.Bytes())
-		_, err := ximage.ToGrayscale(in)
-		assert.Error(t, err)
+
+		got, err := ximage.ToGrayscale(in)
+		require.NoError(t, err)
+		assert.Equal(t, "icon.png", got.Name())
+
+		out, format, err := image.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, "png", format)
+		c := color.NRGBAModel.Convert(out.At(0, 0)).(color.NRGBA)
+		assert.Equal(t, c.R, c.G)
+		assert.Equal(t, c.R, c.B)
 	})
 }
 
 func TestTint(t *testing.T) {
 	red := color.NRGBA{R: 255, A: 255}
 
-	t.Run("should recolor pixels and keep the name", func(t *testing.T) {
+	t.Run("should recolor all pixels to the target color", func(t *testing.T) {
 		in := makePNGResource(t, "icon.png", 2, 1, func(x, y int) color.NRGBA {
 			return color.NRGBA{R: 10, G: 20, B: 30, A: 255}
 		})
