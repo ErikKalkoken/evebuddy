@@ -462,6 +462,7 @@ func newBaseUI(arg UIParams) *baseUI {
 			slog.Info("App resumed")
 			return
 		}
+
 		// First app start
 		u.isDeveloperMode.Store(u.settings.DeveloperMode())
 		if u.isOfflineMode {
@@ -470,8 +471,7 @@ func newBaseUI(arg UIParams) *baseUI {
 			slog.Info("App started initially")
 		}
 		u.snackbar.Start()
-		ctx := context.Background()
-		go u.appInit(ctx)
+		u.Go(u.appInit)
 	})
 
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
@@ -530,6 +530,9 @@ func (u *baseUI) appInit(ctx context.Context) {
 
 	updateCharactersMissingScope := func(ctx context.Context) {
 		cc, err := u.cs.CharactersWithMissingScopes(ctx)
+		if ctx.Err() != nil {
+			return
+		}
 		if err != nil {
 			slog.Error("Failed to fetch characters with missing scopes", "error", err)
 			return
@@ -548,7 +551,8 @@ func (u *baseUI) appInit(ctx context.Context) {
 	})
 	updateCharactersMissingScope(ctx)
 
-	u.isStartupCompleted.Store(true)
+	u.isStartupCompleted.Store(true) // for tests only
+
 	u.tasks.Go(func(ctx context.Context) {
 		// No immediate fire: the screens have just been loaded.
 		ticker := time.NewTicker(refreshUITick)
@@ -562,11 +566,18 @@ func (u *baseUI) appInit(ctx context.Context) {
 			}
 		}
 	})
+	if ctx.Err() != nil {
+		return // shutting down
+	}
 	if u.onAppFirstStarted != nil {
 		u.onAppFirstStarted()
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-		time.Sleep(2 * time.Second) // give app time to finish loading screens
+		select {
+		case <-time.After(2 * time.Second): // give app time to finish loading screens
+		case <-ctx.Done():
+			return
+		}
 		u.eus.Start(eveUniverseUpdateTick)
 		u.cs.Start(characterUpdateTick)
 		u.rs.Start(corporationUpdateTick)
@@ -748,6 +759,9 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 	var err error
 	if cID := u.settings.LastCharacterID(); cID != 0 {
 		c, err = u.cs.GetCharacter(ctx, int64(cID))
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -756,6 +770,9 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 	}
 	if c == nil {
 		c, err = u.cs.GetAnyCharacter(ctx)
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -838,6 +855,9 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 	var err error
 	if cID := u.settings.LastCorporationID(); cID != 0 {
 		c, err = u.rs.GetCorporation(ctx, int64(cID))
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load corporation", "error", err)
@@ -846,6 +866,9 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 	}
 	if c == nil {
 		c, err = u.rs.GetAnyCorporation(ctx)
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load corporation", "error", err)
