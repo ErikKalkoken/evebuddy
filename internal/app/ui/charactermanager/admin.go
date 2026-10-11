@@ -167,10 +167,10 @@ func (a *admin) showAddCharacterDialog() {
 					closeButton.Hide()
 				})
 			})
-			if errors.Is(err, eveauth.ErrAborted) {
-				return nil
-			}
 			if err != nil {
+				if errors.Is(err, eveauth.ErrAborted) || cancelCTX.Err() != nil {
+					return nil // canceled by the user or shutdown
+				}
 				return err
 			}
 			if ctx.Err() != nil {

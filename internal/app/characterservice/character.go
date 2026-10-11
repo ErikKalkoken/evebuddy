@@ -160,7 +160,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	}
 
 	if err := ctx.Err(); err != nil {
-		return nil, err // canceled while fetching; store nothing
+		return nil, err // skip storing if canceled while fetching
 	}
 	setInfo("Storing character...")
 	// A partial store would leave a character without its token.
