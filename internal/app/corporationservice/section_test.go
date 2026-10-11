@@ -11,6 +11,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
@@ -139,4 +140,31 @@ func TestCorporationService_PermittedSections(t *testing.T) {
 		want := set.Of[app.CorporationSection]()
 		xassert.Equal(t, want, got)
 	})
+}
+
+func TestCorporationService_Init(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	c := factory.CreateCorporation()
+	o := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+		CorporationID: c.ID,
+		Section:       app.SectionCorporationIndustryJobs,
+	})
+	require.False(t, o.StartedAt.IsZero())
+	scs := new(statuscache.StatusCache)
+	require.NoError(t, scs.Init(ctx, st))
+	x0, _ := scs.CorporationSection(c.ID, app.SectionCorporationIndustryJobs)
+	require.True(t, x0.IsRunning())
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st, StatusCacheService: scs})
+	// when
+	err := s.Init(ctx)
+	// then
+	require.NoError(t, err)
+	got, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
+	require.NoError(t, err)
+	assert.True(t, got.StartedAt.IsZero())
+	x, ok := scs.CorporationSection(c.ID, app.SectionCorporationIndustryJobs)
+	require.True(t, ok)
+	assert.False(t, x.IsRunning())
 }

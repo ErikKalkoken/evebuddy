@@ -22,6 +22,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// Init prepares the service after app start. Must be called before Start.
+func (s *CorporationService) Init(ctx context.Context) error {
+	// No update can be running yet, so a running mark is left over from an unclean exit.
+	oo, err := s.st.ClearCorporationSectionStatusStartedAt(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range oo {
+		s.scs.SetCorporationSection(o)
+	}
+	if len(oo) > 0 {
+		slog.Info("Corporation sections: cleared stale running marks", "count", len(oo))
+	}
+	return nil
+}
+
 // Start starts the update scheduler.
 func (s *CorporationService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
@@ -408,7 +424,7 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 func (s *CorporationService) recordUpdateFailed(ctx context.Context, arg corporationSectionUpdateParams, err error) {
 	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section, "error", err)
-		// Clear StartedAt so the section doesn't show as running after a restart.
+		// Clear StartedAt so the section doesn't keep showing as running.
 		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: arg.corporationID,
 			Section:       arg.section,

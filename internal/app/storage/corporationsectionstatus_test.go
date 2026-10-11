@@ -138,4 +138,39 @@ func TestCorporationSectionStatus(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, x2.HasContent())
 	})
+	t.Run("can clear started at", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		running := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+			ErrorMessage:  "error",
+		})
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
+		})
+		_, err := st.UpdateOrCreateCorporationSectionStatus(ctx, storage.UpdateOrCreateCorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
+			StartedAt:     new(optional.Optional[time.Time]),
+		})
+		require.NoError(t, err)
+		// when
+		oo, err := st.ClearCorporationSectionStatusStartedAt(ctx)
+		// then
+		require.NoError(t, err)
+		require.Len(t, oo, 1)
+		got := oo[0]
+		assert.True(t, got.StartedAt.IsZero())
+		assert.Equal(t, running.Section, got.Section)
+		assert.True(t, running.CompletedAt.Equal(got.CompletedAt))
+		assert.Equal(t, running.ContentHash, got.ContentHash)
+		assert.Equal(t, running.ErrorMessage, got.ErrorMessage)
+		assert.True(t, running.UpdatedAt.Equal(got.UpdatedAt))
+		x, err := st.GetCorporationSectionStatus(ctx, c.ID, app.SectionCorporationIndustryJobs)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
+	})
 }

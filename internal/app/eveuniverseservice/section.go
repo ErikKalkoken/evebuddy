@@ -18,6 +18,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// Init prepares the service after app start. Must be called before Start.
+func (s *EVEUniverseService) Init(ctx context.Context) error {
+	// No update can be running yet, so a running mark is left over from an unclean exit.
+	oo, err := s.st.ClearGeneralSectionStatusStartedAt(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range oo {
+		s.scs.SetEveUniverseSection(o)
+	}
+	if len(oo) > 0 {
+		slog.Info("EVEUniverse sections: cleared stale running marks", "count", len(oo))
+	}
+	return nil
+}
+
 // Start starts the update scheduler.
 func (s *EVEUniverseService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
@@ -223,7 +239,7 @@ func (s *EVEUniverseService) updateSection(ctx context.Context, section app.EveU
 func (s *EVEUniverseService) recordUpdateFailed(ctx context.Context, arg eveUniverseSectionUpdateParams, err error) {
 	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("General section update canceled", "section", arg.section, "error", err)
-		// Clear StartedAt so the section doesn't show as running after a restart.
+		// Clear StartedAt so the section doesn't keep showing as running.
 		o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   arg.section,
 			StartedAt: new(optional.Optional[time.Time]),

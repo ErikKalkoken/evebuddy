@@ -22,6 +22,20 @@ type CharacterSectionStatusParams struct {
 	StartedAt   time.Time
 }
 
+// ClearCharacterSectionStatusStartedAt clears the running mark of all character sections
+// and returns the changed statuses.
+func (st *Storage) ClearCharacterSectionStatusStartedAt(ctx context.Context) ([]*app.CharacterSectionStatus, error) {
+	rows, err := st.qRW.ClearCharacterSectionStatusStartedAt(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("clear started at for character section status: %w", err)
+	}
+	oo := make([]*app.CharacterSectionStatus, len(rows))
+	for i, row := range rows {
+		oo[i] = characterSectionStatusFromDBModel(row)
+	}
+	return oo, nil
+}
+
 func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int64, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
 		CharacterID: characterID,

@@ -39,6 +39,20 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 	return nil
 }
 
+// ClearCorporationSectionStatusStartedAt clears the running mark of all corporation sections
+// and returns the changed statuses.
+func (st *Storage) ClearCorporationSectionStatusStartedAt(ctx context.Context) ([]*app.CorporationSectionStatus, error) {
+	rows, err := st.qRW.ClearCorporationSectionStatusStartedAt(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("clear started at for corporation section status: %w", err)
+	}
+	oo := make([]*app.CorporationSectionStatus, len(rows))
+	for i, row := range rows {
+		oo[i] = corporationSectionStatusFromDBModel(row)
+	}
+	return oo, nil
+}
+
 func (st *Storage) GetCorporationSectionStatus(ctx context.Context, corporationID int64, section app.CorporationSection) (*app.CorporationSectionStatus, error) {
 	arg := queries.GetCorporationSectionStatusParams{
 		CorporationID: corporationID,

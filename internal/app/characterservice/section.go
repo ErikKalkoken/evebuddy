@@ -22,6 +22,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// Init prepares the service after app start. Must be called before Start.
+func (s *CharacterService) Init(ctx context.Context) error {
+	// No update can be running yet, so a running mark is left over from an unclean exit.
+	oo, err := s.st.ClearCharacterSectionStatusStartedAt(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range oo {
+		s.scs.SetCharacterSection(o)
+	}
+	if len(oo) > 0 {
+		slog.Info("Character sections: cleared stale running marks", "count", len(oo))
+	}
+	return nil
+}
+
 // Start starts the update scheduler.
 func (s *CharacterService) Start(d time.Duration) {
 	// Separate loops so slow updates don't delay notifications.
@@ -511,7 +527,7 @@ func (s *CharacterService) recordUpdateSuccessful(ctx context.Context, arg chara
 func (s *CharacterService) recordUpdateFailed(ctx context.Context, arg characterSectionUpdateParams, err error) {
 	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("Character section update canceled", "characterID", arg.characterID, "section", arg.section, "error", err)
-		// Clear StartedAt so the section doesn't show as running after a restart.
+		// Clear StartedAt so the section doesn't keep showing as running.
 		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID: arg.characterID,
 			Section:     arg.section,

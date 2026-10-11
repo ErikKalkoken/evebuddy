@@ -12,6 +12,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+// ClearGeneralSectionStatusStartedAt clears the running mark of all general sections
+// and returns the changed statuses.
+func (st *Storage) ClearGeneralSectionStatusStartedAt(ctx context.Context) ([]*app.EveUniverseSectionStatus, error) {
+	rows, err := st.qRW.ClearGeneralSectionStatusStartedAt(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("clear started at for general section status: %w", err)
+	}
+	oo := make([]*app.EveUniverseSectionStatus, len(rows))
+	for i, row := range rows {
+		oo[i] = generalSectionStatusFromDBModel(row)
+	}
+	return oo, nil
+}
+
 func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.EveUniverseSection) (*app.EveUniverseSectionStatus, error) {
 	s, err := st.qRO.GetGeneralSectionStatus(ctx, section.String())
 	if err != nil {

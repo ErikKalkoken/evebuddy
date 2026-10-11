@@ -35,4 +35,14 @@ SET
     error = ?5,
     started_at = ?6,
     updated_at = ?7
-RETURNING *;
+RETURNING
+    *;
+
+-- name: ClearCharacterSectionStatusStartedAt :many
+UPDATE character_section_status
+SET
+    started_at = NULL
+WHERE
+    started_at IS NOT NULL
+RETURNING
+    *;

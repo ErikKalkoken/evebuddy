@@ -36,7 +36,9 @@ SET
     content_hash = ?5,
     error = ?6,
     started_at = ?7,
-    updated_at = ?8 RETURNING *;
+    updated_at = ?8
+RETURNING
+    *;
 
 -- name: UpdateCorporationSectionStatusContentHash :exec
 UPDATE corporation_section_status
@@ -45,3 +47,12 @@ SET
 WHERE
     corporation_id = ?
     AND section_id = ?;
+
+-- name: ClearCorporationSectionStatusStartedAt :many
+UPDATE corporation_section_status
+SET
+    started_at = NULL
+WHERE
+    started_at IS NOT NULL
+RETURNING
+    *;

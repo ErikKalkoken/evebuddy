@@ -11,6 +11,49 @@ import (
 	"time"
 )
 
+const clearCharacterSectionStatusStartedAt = `-- name: ClearCharacterSectionStatusStartedAt :many
+UPDATE character_section_status
+SET
+    started_at = NULL
+WHERE
+    started_at IS NOT NULL
+RETURNING
+    id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+`
+
+func (q *Queries) ClearCharacterSectionStatusStartedAt(ctx context.Context) ([]CharacterSectionStatus, error) {
+	rows, err := q.db.QueryContext(ctx, clearCharacterSectionStatusStartedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CharacterSectionStatus
+	for rows.Next() {
+		var i CharacterSectionStatus
+		if err := rows.Scan(
+			&i.ID,
+			&i.CharacterID,
+			&i.SectionID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ContentHash,
+			&i.CompletedAt,
+			&i.Error,
+			&i.StartedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCharacterSectionStatus = `-- name: GetCharacterSectionStatus :one
 SELECT
     id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
@@ -105,7 +148,8 @@ SET
     error = ?5,
     started_at = ?6,
     updated_at = ?7
-RETURNING id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+RETURNING
+    id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 
 type UpdateOrCreateCharacterSectionStatusParams struct {

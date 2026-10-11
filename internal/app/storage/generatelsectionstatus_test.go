@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -10,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -74,5 +76,36 @@ func TestGeneralSectionStatus(t *testing.T) {
 		x2, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
+	})
+	t.Run("can clear started at", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		running := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section:      app.SectionEveTypes,
+			ErrorMessage: "error",
+		})
+		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section: app.SectionEveCharacters,
+		})
+		_, err := st.UpdateOrCreateGeneralSectionStatus(ctx, storage.UpdateOrCreateGeneralSectionStatusParams{
+			Section:   app.SectionEveCharacters,
+			StartedAt: new(optional.Optional[time.Time]),
+		})
+		require.NoError(t, err)
+		// when
+		oo, err := st.ClearGeneralSectionStatusStartedAt(ctx)
+		// then
+		require.NoError(t, err)
+		require.Len(t, oo, 1)
+		got := oo[0]
+		assert.True(t, got.StartedAt.IsZero())
+		assert.Equal(t, running.Section, got.Section)
+		assert.True(t, running.CompletedAt.Equal(got.CompletedAt))
+		assert.Equal(t, running.ContentHash, got.ContentHash)
+		assert.Equal(t, running.ErrorMessage, got.ErrorMessage)
+		assert.True(t, running.UpdatedAt.Equal(got.UpdatedAt))
+		x, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
 	})
 }
