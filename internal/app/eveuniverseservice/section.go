@@ -54,10 +54,11 @@ func (s *EVEUniverseService) Start(d time.Duration) {
 
 // Stop cancels the update scheduler and background jobs and waits for them.
 func (s *EVEUniverseService) Stop() {
-	if !s.tasks.Stop() {
-		return
+	if s.tasks.Stop() {
+		slog.Info("EVEUniverse update scheduler and background jobs stopped")
+	} else {
+		slog.Info("EVEUniverse background jobs stopped")
 	}
-	slog.Info("EVEUniverse update scheduler and background jobs stopped")
 }
 
 // UpdateSectionsIfNeededAsync updates all general sections if needed in the background.

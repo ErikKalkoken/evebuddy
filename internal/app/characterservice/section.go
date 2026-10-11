@@ -70,10 +70,11 @@ func (s *CharacterService) Start(d time.Duration) {
 
 // Stop cancels the update scheduler and background jobs and waits for them.
 func (s *CharacterService) Stop() {
-	if !s.tasks.Stop() {
-		return
+	if s.tasks.Stop() {
+		slog.Info("Character update scheduler and background jobs stopped")
+	} else {
+		slog.Info("Character background jobs stopped")
 	}
-	slog.Info("Character update scheduler and background jobs stopped")
 }
 
 // UpdateCharactersIfNeededAsync updates all characters if needed in the background.

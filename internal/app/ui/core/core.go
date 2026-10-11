@@ -585,7 +585,10 @@ func (u *baseUI) ShowAndRun() {
 	u.signals.BeginShutdown()
 	// Stop in parallel so shutdown is faster and all update contexts are canceled at once.
 	var wg sync.WaitGroup
-	wg.Go(func() { u.tasks.Stop() })
+	wg.Go(func() {
+		u.tasks.Stop()
+		slog.Info("UI background jobs stopped")
+	})
 	wg.Go(u.cs.Stop)
 	wg.Go(u.rs.Stop)
 	wg.Go(u.eus.Stop)

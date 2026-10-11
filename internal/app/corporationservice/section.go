@@ -60,10 +60,11 @@ func (s *CorporationService) Start(d time.Duration) {
 
 // Stop cancels the update scheduler and background jobs and waits for them.
 func (s *CorporationService) Stop() {
-	if !s.tasks.Stop() {
-		return
+	if s.tasks.Stop() {
+		slog.Info("Corporation update scheduler and background jobs stopped")
+	} else {
+		slog.Info("Corporation background jobs stopped")
 	}
-	slog.Info("Corporation update scheduler and background jobs stopped")
 }
 
 // UpdateCorporationsIfNeededAsync updates all corporations if needed in the background.
