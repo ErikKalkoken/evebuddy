@@ -87,7 +87,7 @@ type baseUI struct {
 	// Callbacks
 	clearCache           func() // clear all caches
 	hideMailIndicator    func()
-	onAppFirstStarted    func()
+	onAppFirstStarted    func(ctx context.Context)
 	onAppStopped         func()
 	onAppTerminated      func()
 	onSetCharacter       func(*app.Character)
@@ -177,7 +177,6 @@ type baseUI struct {
 	isMobile                       bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isOffline                      atomic.Bool
 	isOfflineMode                  bool
-	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
 	signals                        *app.Signals
 	tasks                          *xsync.TaskGroup       // UI tickers, stopped at shutdown
@@ -546,8 +545,6 @@ func (u *baseUI) appInit(ctx context.Context) {
 	})
 	updateCharactersMissingScope(ctx)
 
-	u.isStartupCompleted.Store(true) // for tests only
-
 	u.tasks.Go(func(ctx context.Context) {
 		// No immediate fire: the screens have just been loaded.
 		ticker := time.NewTicker(refreshUITick)
@@ -565,7 +562,7 @@ func (u *baseUI) appInit(ctx context.Context) {
 		return // shutting down
 	}
 	if u.onAppFirstStarted != nil {
-		u.onAppFirstStarted()
+		u.onAppFirstStarted(ctx)
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 		select {
@@ -685,10 +682,6 @@ func (u *baseUI) IsDeveloperMode() bool {
 func (u *baseUI) IsOffline() bool {
 	return u.isOfflineMode || u.isOffline.Load()
 }
-func (u *baseUI) IsStartupCompleted() bool {
-	return u.isStartupCompleted.Load()
-}
-
 func (u *baseUI) IsUpdateDisabled() bool {
 	return u.isUpdateDisabled.Load()
 }

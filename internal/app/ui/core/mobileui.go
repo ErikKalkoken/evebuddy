@@ -682,7 +682,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		set(status.Display(), status.DisplayShort(), status.Status().ToImportance(), icon)
 	}
 
-	u.onAppFirstStarted = func() {
+	u.onAppFirstStarted = func(startupCtx context.Context) {
 		// signals
 		u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			updateCharacterCount(ctx)
@@ -702,9 +702,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 			updateUpdateStatus(ctx)
 		})
 
-		ctx := context.Background()
-		updateCharacterCount(ctx)
-		updateUpdateStatus(ctx)
+		updateCharacterCount(startupCtx)
+		updateUpdateStatus(startupCtx)
 
 		if !u.isOfflineMode {
 			u.tasks.Go(func(ctx context.Context) {
