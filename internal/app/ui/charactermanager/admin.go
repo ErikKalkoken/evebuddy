@@ -235,13 +235,16 @@ func (a *admin) showAddCharacterDialog() {
 
 func (a *admin) showDeleteDialog(r adminRow) {
 	ui.ShowProgressConfirm(
+		a.cw.u,
 		"Delete Character?",
 		fmt.Sprintf("%s will be permanently removed from this app", r.characterName),
 		"Delete",
 		widget.DangerImportance,
-		func() {
-			ctx := context.Background()
+		func(ctx context.Context) {
 			wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
+			if ctx.Err() != nil {
+				return
+			}
 			if err != nil {
 				a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
 				return
@@ -251,12 +254,18 @@ func (a *admin) showDeleteDialog(r adminRow) {
 
 			if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
 				err := a.cw.u.SetAnyCharacter(ctx)
+				if ctx.Err() != nil {
+					return
+				}
 				if err != nil {
 					slog.Warn("Failed to set current character after deletion", "error", err)
 				}
 			}
 			if wasCorpDeleted {
 				err := a.cw.u.SetAnyCorporation(ctx)
+				if ctx.Err() != nil {
+					return
+				}
 				if err != nil {
 					slog.Warn("Failed to set current corporation after deletion", "error", err)
 				}

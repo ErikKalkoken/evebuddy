@@ -328,11 +328,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 		Label: "Clear cache",
 		Action: func() {
 			ui.ShowProgressConfirm(
+				a.u,
 				"Clear Cache?",
 				"This will clear the cache",
 				"Clear",
 				widget.DangerImportance,
-				func() {
+				func(_ context.Context) {
 					a.u.ClearAllCaches()
 					a.sb.Display("Cache cleared")
 				}, a.w,
@@ -408,11 +409,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 
 func (a *settings) showDeleteFileDialog(name, path string) {
 	ui.ShowProgressConfirm(
+		a.u,
 		"Delete File?",
 		fmt.Sprintf("This will permanently delete the %s", name),
 		"Delete",
 		widget.DangerImportance,
-		func() {
+		func(_ context.Context) {
 			err := func() error {
 				files, err := filepath.Glob(path)
 				if err != nil {

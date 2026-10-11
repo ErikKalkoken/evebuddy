@@ -96,13 +96,16 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *manageTags) deleteTags() {
 	ui.ShowProgressConfirm(
+		a.cw.u,
 		"Delete all tags?",
 		"This will permanently remove all tags",
 		"Delete",
 		widget.DangerImportance,
-		func() {
-			ctx := context.Background()
+		func(ctx context.Context) {
 			err := a.cw.u.Character().DeleteAllTags(ctx)
+			if ctx.Err() != nil {
+				return
+			}
 			if err != nil {
 				a.cw.reportError("Failed to delete tags", err)
 				return
@@ -302,13 +305,16 @@ func (a *manageTags) makeTagList() *widget.List {
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
 				ui.ShowProgressConfirm(
+					a.cw.u,
 					"Delete Tag?",
 					"This will permanently delete tag \""+tag.Name+"\"",
 					"Delete",
 					widget.DangerImportance,
-					func() {
-						ctx := context.Background()
+					func(ctx context.Context) {
 						err := a.cw.u.Character().DeleteTag(ctx, tag.ID)
+						if ctx.Err() != nil {
+							return
+						}
 						if err != nil {
 							a.cw.reportError("Failed to delete tag", err)
 							return
