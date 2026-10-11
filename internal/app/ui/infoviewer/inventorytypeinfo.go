@@ -656,7 +656,8 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 		return nil
 	}
 	marketTab := ui.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
-	go func() {
+	// ctx ends when the page is closed or the app shuts down.
+	a.iw.u.Go(func(context.Context) {
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
 	L:
@@ -701,7 +702,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			}
 		}
 		slog.Debug("Market price updates stopped", "name", et.Name)
-	}()
+	})
 	return marketTab
 }
 

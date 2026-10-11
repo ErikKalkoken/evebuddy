@@ -92,6 +92,7 @@ type baseUI interface {
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
 	ErrorDisplay(err error) string
+	Go(job func(ctx context.Context)) bool
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool
@@ -183,9 +184,11 @@ func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 		return
 	}
 
-	go func() {
-		ctx := context.Background()
+	iw.u.Go(func(ctx context.Context) {
 		et, err := iw.u.EVEUniverse().GetOrCreateTypeESI(ctx, typeID)
+		if ctx.Err() != nil {
+			return // shutting down
+		}
 		if err != nil {
 			fyne.Do(func() {
 				showError(err)
@@ -213,7 +216,7 @@ func (iw *InfoViewer) Show2(typeID, itemID, characterID int64) {
 
 			showError(fmt.Errorf("not supported"))
 		})
-	}()
+	})
 }
 
 func (iw *InfoViewer) ShowBloodline(id int64) {
@@ -408,10 +411,14 @@ func (iw *InfoViewer) show2(arg showParams) {
 			iw.w.RequestFocus()
 		}
 	}
-	go func() {
-		err := page.update(pageCtx)
-		if pageCtx.Err() != nil {
-			return // page was closed
+	iw.u.Go(func(ctx context.Context) {
+		// Ends when the page is closed or the app shuts down. Lives as long as the page,
+		// because the market tab keeps using it after the load.
+		ctx, cancel := context.WithCancel(ctx)
+		context.AfterFunc(pageCtx, cancel)
+		err := page.update(ctx)
+		if ctx.Err() != nil {
+			return // page closed or shutting down
 		}
 		if err != nil {
 			slog.Error("info widget load", "params", arg, "error", err)
@@ -419,7 +426,7 @@ func (iw *InfoViewer) show2(arg showParams) {
 				page.setError("ERROR: " + iw.u.ErrorDisplay(err))
 			})
 		}
-	}()
+	})
 }
 
 // dialogParent returns the window error dialogs should attach to.
