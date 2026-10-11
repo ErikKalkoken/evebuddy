@@ -101,7 +101,8 @@ func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWri
 	}
 	ok := u.Go(func(ctx context.Context) {
 		defer writer.Close()
-		err := arg.WriteFunc(ctx, writer)
+		// Exports always finish, so no partial or empty file is left behind.
+		err := arg.WriteFunc(context.WithoutCancel(ctx), writer)
 		if ctx.Err() != nil {
 			return
 		}
