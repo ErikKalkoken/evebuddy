@@ -157,12 +157,11 @@ func (a *admin) showAddCharacterDialog() {
 		cancel()
 	})
 	ok := a.cw.u.Go(func(ctx context.Context) {
-		// Shutdown aborts the browser login, but not storing the character.
+		// Shutdown cancels the add like the dialog's Cancel; the service protects storing.
 		stop := context.AfterFunc(ctx, cancel)
 		defer stop()
 		err := func() error {
 			character, err := a.cw.u.Character().UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
-				stop()
 				fyne.Do(func() {
 					infoText.SetText(s)
 					closeButton.Hide()
@@ -173,6 +172,9 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			if err != nil {
 				return err
+			}
+			if ctx.Err() != nil {
+				return nil // shutting down
 			}
 			fyne.Do(func() {
 				infoText.SetText("Adding new character...")

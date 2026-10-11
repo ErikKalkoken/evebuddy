@@ -134,7 +134,7 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int64) (bool, er
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
-// The provided context is used for the SSO authentication process only and can be canceled.
+// ctx can cancel the login and fetching from ESI. Once storing has started, the call always completes.
 // the setInfo callback is used to update info text in a dialog.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
 	ssoToken, err := s.authClient.Authorize(ctx, slices.Collect(app.Scopes().All()))
@@ -160,6 +160,9 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	}
 
 	setInfo("Storing character...")
+	// A partial store would leave a character without its token.
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
 	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: characterID})
 	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
 		return nil, err

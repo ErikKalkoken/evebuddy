@@ -78,8 +78,8 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	ctx := context.Background()
 	test.NewTempApp(t)
 
-	t.Run("create new character", func(t *testing.T) {
-		// given
+	// setupNewCharacter prepares storage, auth and ESI mocks for adding a new character.
+	setupNewCharacter := func() (*characterservice.CharacterService, *app.EveCharacter, *app.EveCorporation) {
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateEveCorporation()
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
@@ -143,6 +143,11 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				"type": "player_owned",
 			}),
 		)
+		return cs, ec, corporation
+	}
+	t.Run("create new character", func(t *testing.T) {
+		// given
+		cs, ec, corporation := setupNewCharacter()
 		// when
 		var info string
 		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
@@ -161,6 +166,42 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, x.EveCorporation)
 		assert.NotZero(t, info)
+	})
+	t.Run("completes storing when canceled after fetching", func(t *testing.T) {
+		// given
+		cs, ec, _ := setupNewCharacter()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		// when
+		_, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			if s == "Storing character..." {
+				cancel()
+			}
+		})
+		// then
+		require.NoError(t, err)
+		ok, err := cs.HasCharacter(context.Background(), ec.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		_, err = st.GetCharacterToken(context.Background(), ec.ID)
+		require.NoError(t, err)
+	})
+	t.Run("aborts when canceled while fetching", func(t *testing.T) {
+		// given
+		cs, ec, _ := setupNewCharacter()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		// when
+		_, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			if s == "Fetching character from game server..." {
+				cancel()
+			}
+		})
+		// then
+		require.Error(t, err)
+		ok, err := cs.HasCharacter(context.Background(), ec.ID)
+		require.NoError(t, err)
+		assert.False(t, ok)
 	})
 
 	// Test for verifying issue #443 - Part 1
