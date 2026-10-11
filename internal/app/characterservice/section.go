@@ -35,11 +35,6 @@ func (s *CharacterService) Init(ctx context.Context) error {
 	if len(oo) > 0 {
 		slog.Info("Character sections: cleared stale running marks", "count", len(oo))
 	}
-	s.tasks.Go(func(ctx context.Context) {
-		if err := s.UpdateAllCalculatedValues(ctx); err != nil && ctx.Err() == nil {
-			slog.Error("Failed to update calculated values", "error", err)
-		}
-	})
 	return nil
 }
 
@@ -91,6 +86,18 @@ func (s *CharacterService) UpdateCharactersIfNeededAsync(forceUpdate bool) {
 	})
 	if !ok {
 		slog.Debug("Skipped updating characters: service stopped")
+	}
+}
+
+// UpdateAllCalculatedValuesAsync updates the calculated values of all characters in the background.
+func (s *CharacterService) UpdateAllCalculatedValuesAsync() {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		if err := s.UpdateAllCalculatedValues(ctx); err != nil && !app.IsContextCanceled(ctx, err) {
+			slog.Error("Failed to update calculated values", "error", err)
+		}
+	})
+	if !ok {
+		slog.Debug("Skipped updating calculated values: service stopped")
 	}
 }
 

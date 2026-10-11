@@ -522,6 +522,7 @@ func (u *baseUI) appInit(ctx context.Context) {
 		u.initCorporation(ctx)
 	})
 	wg.Wait()
+	u.cs.UpdateAllCalculatedValuesAsync()
 
 	updateCharactersMissingScope := func(ctx context.Context) {
 		cc, err := u.cs.CharactersWithMissingScopes(ctx)
