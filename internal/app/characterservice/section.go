@@ -35,6 +35,11 @@ func (s *CharacterService) Init(ctx context.Context) error {
 	if len(oo) > 0 {
 		slog.Info("Character sections: cleared stale running marks", "count", len(oo))
 	}
+	s.tasks.Go(func(ctx context.Context) {
+		if err := s.UpdateAllCalculatedValues(ctx); err != nil && ctx.Err() == nil {
+			slog.Error("Failed to update calculated values", "error", err)
+		}
+	})
 	return nil
 }
 

@@ -87,6 +87,7 @@ func TestCharacterService_Init(t *testing.T) {
 	x0, _ := scs.CharacterSection(c.ID, app.SectionCharacterImplants)
 	require.True(t, x0.IsRunning())
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, StatusCacheService: scs})
+	defer s.Stop() // waits for background jobs started by Init
 	// when
 	err := s.Init(ctx)
 	// then

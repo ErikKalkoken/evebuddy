@@ -274,11 +274,6 @@ func newBaseUI(arg UIParams) *baseUI {
 	// Core signal listeners and signal logging
 	u.signals.AppInit.AddListener(func(ctx context.Context, s struct{}) {
 		slog.Debug("Signal: AppInit")
-		err := u.cs.UpdateAllCalculatedValues(ctx)
-		if err != nil {
-			slog.Error("Failed to update total net worth", "arg", arg, "err", err)
-			return
-		}
 	})
 	u.signals.CharacterAdded.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: CharacterAdded", "characterID", c.IDOrZero())
