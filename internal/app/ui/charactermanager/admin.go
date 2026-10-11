@@ -168,7 +168,13 @@ func (a *admin) showAddCharacterDialog() {
 				})
 			})
 			if err != nil {
-				if errors.Is(err, eveauth.ErrAborted) || cancelCTX.Err() != nil {
+				if errors.Is(err, eveauth.ErrAborted) {
+					return nil // canceled by the user
+				}
+				if cancelCTX.Err() != nil {
+					if !app.IsErrorCanceled(err) {
+						slog.Error("Failed to add character after cancel", "error", err)
+					}
 					return nil // canceled by the user or shutdown
 				}
 				return err
