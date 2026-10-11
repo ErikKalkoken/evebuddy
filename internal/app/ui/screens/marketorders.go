@@ -177,7 +177,7 @@ type MarketOrders struct {
 	segmentState *xwidget.SegmentedButton   // only on mobile
 	selectOwner  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectRegion *kxwidget.FilterChipSelect
-	selectState  *kxwidget.FilterChipSelect // mode chip only on desktop
+	selectState  *widget.Select // only on desktop
 	selectTag    *kxwidget.FilterChipSelect
 	selectType   *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
@@ -310,9 +310,11 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
 		a.selectTag = makeSelect(marketOrdersFilterTag)
-		a.selectState = newModeChip(marketOrderStateChoices, marketOrderStateActive, func(string) {
+		a.selectState = widget.NewSelect(marketOrderStateChoices, func(s string) {
 			a.filterRowsAsync("")
 		})
+		a.selectState.Selected = marketOrderStateActive
+		a.selectState.PlaceHolder = marketOrderStateHistory
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")

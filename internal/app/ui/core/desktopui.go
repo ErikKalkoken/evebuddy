@@ -453,9 +453,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	}
 
 	// Make overall UI
-	makeTabContent := func(header *PageHeader, content fyne.CanvasObject) fyne.CanvasObject {
+	makeTabContent := func(title string, content fyne.CanvasObject) fyne.CanvasObject {
+		header := widget.NewLabel(title)
+		header.SizeName = theme.SizeNameSubHeadingText
 		return container.NewBorder(
-			container.NewVBox(container.NewHBox(header), widget.NewSeparator()),
+			container.NewVBox(header, widget.NewSeparator()),
 			nil,
 			nil,
 			nil,
@@ -466,23 +468,23 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	homeItem := xwidget.NewNavRailItem(
 		theme.HomeIcon(),
 		"Home",
-		makeTabContent(NewPageHeader("Home", nil), homeNav),
+		makeTabContent("Home", homeNav),
 	)
 
-	characterHeader := NewPageHeader("Characters", icons.Characterplaceholder64Jpeg)
-	characterHeader.SetToolTip("Switch character")
+	characterSelector := newNavSelector()
+	characterNav.Header = newTitleRow(characterSelector)
 	characterItem := xwidget.NewNavRailItem(
 		theme.AccountIcon(),
 		"Characters",
-		makeTabContent(characterHeader, characterNav),
+		makeTabContent("Characters", characterNav),
 	)
 
-	corporationHeader := NewPageHeader("Corporations", icons.Corporationplaceholder64Png)
-	corporationHeader.SetToolTip("Switch corporation")
+	corporationSelector := newNavSelector()
+	corporationNav.Header = newTitleRow(corporationSelector)
 	corporationItem := xwidget.NewNavRailItem(
 		icons.StarCircleOutlineSvg,
 		"Corporations",
-		makeTabContent(corporationHeader, corporationNav),
+		makeTabContent("Corporations", corporationNav),
 	)
 	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search New Eden", u.showSearchWindow)
 	rail := xwidget.NewNavRail(
@@ -544,15 +546,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	u.onSetCharacter = func(c *app.Character) {
 		fyne.Do(func() {
-			characterHeader.SetTitle(c.EveCharacter.Name)
+			characterSelector.SetTitle(c.EveCharacter.Name)
 		})
-		go func() {
-			u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					characterHeader.SetIcon(r)
-				})
-			})
-		}()
 	}
 	u.onShowCharacter = func() {
 		fyne.Do(func() {
@@ -628,15 +623,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	u.onSetCorporation = func(c *app.Corporation) {
 		fyne.Do(func() {
-			corporationHeader.SetTitle(c.EveCorporation.Name)
+			corporationSelector.SetTitle(c.EveCorporation.Name)
 		})
-		go func() {
-			u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					corporationHeader.SetIcon(r)
-				})
-			})
-		}()
 		go togglePermittedSections()
 	}
 
@@ -679,10 +667,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			u.setCharacterSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
-					characterHeader.SetMenu(items)
+					characterSelector.SetMenu(items)
 				},
 				func() {
-					characterHeader.Refresh()
+					characterSelector.Refresh()
 				},
 			)
 		})
@@ -690,10 +678,10 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			u.setCorporationSwitchMenu(
 				ctx,
 				func(items []*fyne.MenuItem) {
-					corporationHeader.SetMenu(items)
+					corporationSelector.SetMenu(items)
 				},
 				func() {
-					corporationHeader.Refresh()
+					corporationSelector.Refresh()
 				},
 			)
 		})
@@ -942,13 +930,42 @@ func (w *contentPage) CreateRenderer() fyne.WidgetRenderer {
 		}
 	}
 	c := container.NewBorder(
-		top,
+		container.NewVBox(top, widget.NewSeparator()),
 		nil,
 		nil,
 		nil,
 		w.content,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// newTitleRow returns a container as tall as the title row of a [contentPage]
+// including the padding above its separator, with obj centered vertically.
+// Separators placed directly below both line up.
+func newTitleRow(obj fyne.CanvasObject) *fyne.Container {
+	ref := widget.NewLabel("")
+	ref.SizeName = theme.SizeNameSubHeadingText
+	return container.New(&titleRowLayout{ref: ref}, obj)
+}
+
+type titleRowLayout struct {
+	ref *widget.Label // measures the height of a page title
+}
+
+func (l *titleRowLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, o := range objects {
+		h := o.MinSize().Height
+		o.Resize(fyne.NewSize(size.Width, h))
+		o.Move(fyne.NewPos(0, (size.Height-h)/2))
+	}
+}
+
+func (l *titleRowLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	var w float32
+	for _, o := range objects {
+		w = max(w, o.MinSize().Width)
+	}
+	return fyne.NewSize(w, l.ref.MinSize().Height+l.ref.Theme().Size(theme.SizeNamePadding))
 }
 
 func (w *contentPage) SetTitle(s string) {

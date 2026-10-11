@@ -51,6 +51,10 @@ func (it *NavDrawerItem) SetText(text string) {
 type NavDrawer struct {
 	widget.DisableableWidget
 
+	// Header is an optional object pinned above the items without padding.
+	// Must be set before the drawer is rendered.
+	Header fyne.CanvasObject
+
 	MinWidth float32 // minimum width of the navigation area
 
 	body        *fyne.Container
@@ -247,10 +251,22 @@ func (w *NavDrawer) updateIndicator() {
 
 func (w *NavDrawer) CreateRenderer() fyne.WidgetRenderer {
 	p := w.Theme().Size(theme.SizeNamePadding)
+	var nav fyne.CanvasObject = w.scroll
+	if w.Header != nil {
+		header := container.NewBorder(
+			nil,
+			widget.NewSeparator(),
+			nil,
+			widget.NewSeparator(), // continues the strip separator next to the header
+			// no padding, so the header starts flush with the body and spans the same width as the items
+			container.New(layout.NewCustomPaddedLayout(0, -p, 0, -p), w.Header),
+		)
+		nav = container.NewBorder(header, nil, nil, nil, w.scroll)
+	}
 	r := &navDrawerRenderer{
 		// negative padding lets the separator span the full height
 		content: container.New(layout.NewCustomPaddedLayout(-p, -p, 0, 0),
-			container.NewBorder(nil, nil, w.scroll, nil, w.body),
+			container.NewBorder(nil, nil, nav, nil, w.body),
 		),
 		w: w,
 	}

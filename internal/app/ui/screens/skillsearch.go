@@ -115,8 +115,8 @@ type SkillSearch struct {
 	searchEntry     *xwidget.SearchEntry
 	selectCharacter *kxwidget.FilterChipSelect // select chips only on desktop
 	selectGroup     *kxwidget.FilterChipSelect
-	segmentSkill    *xwidget.SegmentedButton   // only on mobile
-	selectSkill     *kxwidget.FilterChipSelect // mode chip only on desktop
+	segmentSkill    *xwidget.SegmentedButton // only on mobile
+	selectSkill     *widget.Select           // only on desktop
 	selectType      *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	top             *widget.Label
@@ -244,9 +244,11 @@ func NewSkillSearch(u baseUI) *SkillSearch {
 		for _, c := range searchSkillChoices {
 			labels = append(labels, searchSkillChipLabels[c])
 		}
-		a.selectSkill = newModeChip(labels, searchSkillChipLabels[searchSkillActive], func(string) {
+		a.selectSkill = widget.NewSelect(labels, func(_ string) {
 			a.filterRowsAsync("")
 		})
+		a.selectSkill.Selected = searchSkillChipLabels[searchSkillActive]
+		a.selectSkill.PlaceHolder = searchSkillChipLabels[searchSkillRestricted]
 		a.selectCharacter = kxwidget.NewFilterChipSelect(skillSearchFilterCharacter, []string{}, func(string) {
 			a.filterRowsAsync("")
 		})
