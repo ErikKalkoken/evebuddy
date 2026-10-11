@@ -14,7 +14,6 @@ require (
 	github.com/ErikKalkoken/go-set v0.3.1
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.12.0
-	github.com/anthonynsimon/bild v0.16.0
 	github.com/chasinglogic/appdirs v0.0.0-20260224113447-85de447711c9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/dweymouth/fyne-tooltip v0.4.0
@@ -49,6 +48,7 @@ require (
 	github.com/MicahParks/keyfunc/v3 v3.8.0 // indirect
 	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/cascadia v1.3.4 // indirect
+	github.com/anthonynsimon/bild v0.16.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/corpix/uarand v0.2.0 // indirect

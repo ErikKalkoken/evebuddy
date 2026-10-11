@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"image/draw"
 	"log/slog"
 	"slices"
 	"strings"
@@ -17,10 +16,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/anthonynsimon/bild/effect"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -73,7 +72,7 @@ type FlyableShips struct {
 	filterRun     latestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
-	imageCache    xsync.Map[string, *image.RGBA]
+	imageCache    xsync.Map[string, image.Image]
 	rows          []flyableShipRow
 	rowsFiltered  []flyableShipRow
 	searchEntry   *xwidget.SearchEntry
@@ -389,14 +388,14 @@ type ShipItem struct {
 	image      *canvas.Image
 	label      *widget.Label
 	renderType func(int64, int) (fyne.Resource, error)
-	cacheLoad  func(string) (*image.RGBA, bool)
-	cacheStore func(string, *image.RGBA)
+	cacheLoad  func(string) (image.Image, bool)
+	cacheStore func(string, image.Image)
 }
 
 func NewShipItem(
 	renderType func(int64, int) (fyne.Resource, error),
-	cacheLoad func(string) (*image.RGBA, bool),
-	cacheStore func(string, *image.RGBA),
+	cacheLoad func(string) (image.Image, bool),
+	cacheStore func(string, image.Image),
 ) *ShipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
@@ -429,8 +428,6 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 	w.label.Importance = i
 	w.label.Refresh()
 
-	// TODO: Move grayscale feature into general package
-
 	key := fmt.Sprintf("%d-%v", typeID, canFly)
 	img, ok := w.cacheLoad(key)
 	if ok {
@@ -460,11 +457,9 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 			return
 		}
 
-		b := j.Bounds()
-		img = image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-		draw.Draw(img, img.Bounds(), j, b.Min, draw.Src)
+		img := j
 		if !canFly {
-			img = effect.Grayscale(img)
+			img = ximage.ToGrayscaleImage(j)
 		}
 		w.cacheStore(key, img)
 

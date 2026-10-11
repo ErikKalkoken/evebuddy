@@ -45,8 +45,8 @@ func TestMakeAvatar(t *testing.T) {
 		assert.Equal(t, "png", format)
 		assert.Equal(t, image.Rect(0, 0, 10, 10), img.Bounds())
 		assert.Equal(t, red, color.NRGBAModel.Convert(img.At(5, 5)), "center")
-		assert.Equal(t, uint8(255), alphaAt(img, 0, 5), "left edge middle")
-		assert.Equal(t, uint8(255), alphaAt(img, 5, 0), "top edge middle")
+		assert.Greater(t, alphaAt(img, 0, 5), uint8(200), "left edge middle")
+		assert.Greater(t, alphaAt(img, 5, 0), uint8(200), "top edge middle")
 		for _, p := range []image.Point{{0, 0}, {9, 0}, {0, 9}, {9, 9}} {
 			assert.Equal(t, uint8(0), alphaAt(img, p.X, p.Y), "corner %v", p)
 		}
@@ -97,12 +97,47 @@ func TestMakeAvatar(t *testing.T) {
 					for x := range 10 {
 						c := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
 						if c.A > 0 {
-							assert.Equal(t, thirds[1], c, "at %d,%d", x, y)
+							// edge pixels are partly transparent, so only check the hue
+							assert.Equal(t, uint8(0), c.R, "at %d,%d", x, y)
+							assert.Equal(t, uint8(0), c.B, "at %d,%d", x, y)
 						}
 					}
 				}
 			})
 		}
+	})
+
+	t.Run("should keep semi-transparent source pixels", func(t *testing.T) {
+		c := color.NRGBA{R: 200, G: 100, B: 50, A: 128}
+		img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+		for y := range 64 {
+			for x := range 64 {
+				img.SetNRGBA(x, y, c)
+			}
+		}
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, img))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		out, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, c, color.NRGBAModel.Convert(out.At(32, 32)), "center")
+		// rim alpha is the source alpha scaled down by the mask
+		var rim int
+		for y := range 64 {
+			for x := range 64 {
+				o := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
+				assert.LessOrEqual(t, o.A, c.A, "at %d,%d", x, y)
+				if o.A > 0 && o.A < c.A {
+					rim++
+					assert.Equal(t, color.NRGBA{R: c.R, G: c.G, B: c.B, A: o.A}, o, "at %d,%d", x, y)
+				}
+			}
+		}
+		assert.Greater(t, rim, 0)
 	})
 
 	t.Run("should keep transparent source pixels transparent", func(t *testing.T) {
@@ -118,6 +153,61 @@ func TestMakeAvatar(t *testing.T) {
 		assert.Equal(t, uint8(0), alphaAt(img, 5, 5))
 	})
 
+	t.Run("should smooth the edge of the circle", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, makeImage(64, 64)))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		img, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		var partial int
+		for y := range 64 {
+			for x := range 64 {
+				if a := alphaAt(img, x, y); a > 0 && a < 255 {
+					partial++
+				}
+			}
+		}
+		assert.Greater(t, partial, 0, "edge has partially transparent pixels")
+		// alpha must not increase from the center outward
+		for _, y := range []int{0, 10, 20, 32} {
+			for x := 32; x < 63; x++ {
+				assert.GreaterOrEqual(t, alphaAt(img, x, y), alphaAt(img, x+1, y), "at %d,%d", x, y)
+			}
+		}
+	})
+
+	t.Run("should keep exact colors of partly transparent rim pixels", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+		c := color.NRGBA{R: 200, G: 100, B: 50, A: 255}
+		for y := range 64 {
+			for x := range 64 {
+				img.SetNRGBA(x, y, c)
+			}
+		}
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, img))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		out, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		for y := range 64 {
+			for x := range 64 {
+				o := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
+				if o.A > 0 {
+					o.A = 255
+					assert.Equal(t, c, o, "at %d,%d", x, y)
+				}
+			}
+		}
+	})
+
 	t.Run("should keep all pixels of an odd-sized image and center the circle", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, png.Encode(&buf, makeImage(5, 5)))
@@ -130,7 +220,7 @@ func TestMakeAvatar(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, image.Rect(0, 0, 5, 5), img.Bounds())
 		assert.Equal(t, red, color.NRGBAModel.Convert(img.At(2, 2)), "center")
-		assert.Equal(t, uint8(0), alphaAt(img, 0, 0), "corner")
+		assert.Less(t, alphaAt(img, 0, 0), uint8(100), "corner")
 		for y := range 5 {
 			for x := range 5 {
 				a := alphaAt(img, x, y)
@@ -198,38 +288,30 @@ func TestMakeAvatar(t *testing.T) {
 	})
 }
 
-func TestToGrayscale(t *testing.T) {
-	colors := []color.NRGBA{
-		{R: 255, A: 255},
-		{G: 255, A: 255},
-		{B: 255, A: 255},
-		{R: 255, G: 255, B: 255, A: 255},
-		{A: 255},
+func TestToGrayscaleImage(t *testing.T) {
+	grayAt := func(img image.Image, x, y int) color.NRGBA {
+		return color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
 	}
-	makeImage := func() *image.NRGBA {
+
+	t.Run("should convert colors to grey levels", func(t *testing.T) {
+		colors := []color.NRGBA{
+			{R: 255, A: 255},
+			{G: 255, A: 255},
+			{B: 255, A: 255},
+			{R: 255, G: 255, B: 255, A: 255},
+			{A: 255},
+			{R: 200, G: 200, B: 200, A: 255},
+		}
 		img := image.NewNRGBA(image.Rect(0, 0, len(colors), 1))
 		for x, c := range colors {
 			img.SetNRGBA(x, 0, c)
 		}
-		return img
-	}
 
-	t.Run("should convert PNG to grayscale", func(t *testing.T) {
-		var buf bytes.Buffer
-		require.NoError(t, png.Encode(&buf, makeImage()))
-		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+		got := ximage.ToGrayscaleImage(img)
 
-		got, err := ximage.ToGrayscale(in)
-		require.NoError(t, err)
-		assert.Equal(t, "icon.png", got.Name())
-
-		img, format, err := image.Decode(bytes.NewReader(got.Content()))
-		require.NoError(t, err)
-		assert.Equal(t, "png", format)
-		assert.Equal(t, image.Rect(0, 0, len(colors), 1), img.Bounds())
 		var lums []uint8
 		for x := range colors {
-			c := color.NRGBAModel.Convert(img.At(x, 0)).(color.NRGBA)
+			c := grayAt(got, x, 0)
 			assert.Equal(t, c.R, c.G, "x=%d", x)
 			assert.Equal(t, c.R, c.B, "x=%d", x)
 			assert.Equal(t, uint8(255), c.A, "x=%d", x)
@@ -237,66 +319,115 @@ func TestToGrayscale(t *testing.T) {
 		}
 		assert.Equal(t, uint8(255), lums[3], "white stays white")
 		assert.Equal(t, uint8(0), lums[4], "black stays black")
+		assert.Equal(t, uint8(200), lums[5], "grey stays the same")
 		assert.Greater(t, lums[1], lums[0], "green is brighter than red")
 		assert.Greater(t, lums[0], lums[2], "red is brighter than blue")
 	})
 
-	t.Run("should preserve transparency of PNG", func(t *testing.T) {
-		img := image.NewNRGBA(image.Rect(0, 0, 2, 1))
+	t.Run("should keep alpha and exact grey level of transparent pixels", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 3, 1))
 		img.SetNRGBA(0, 0, color.NRGBA{R: 255, A: 0})
 		img.SetNRGBA(1, 0, color.NRGBA{R: 200, G: 200, B: 200, A: 128})
+		img.SetNRGBA(2, 0, color.NRGBA{R: 200, G: 200, B: 200, A: 3})
+
+		got := ximage.ToGrayscaleImage(img)
+
+		assert.Equal(t, uint8(0), grayAt(got, 0, 0).A)
+		assert.Equal(t, color.NRGBA{R: 200, G: 200, B: 200, A: 128}, grayAt(got, 1, 0))
+		assert.Equal(t, color.NRGBA{R: 200, G: 200, B: 200, A: 3}, grayAt(got, 2, 0))
+	})
+
+	t.Run("should move origin to zero", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 4, 4))
+		for y := range 4 {
+			for x := range 4 {
+				v := uint8(10 * (y*4 + x))
+				img.SetNRGBA(x, y, color.NRGBA{R: v, G: v, B: v, A: 255})
+			}
+		}
+		sub := img.SubImage(image.Rect(2, 1, 4, 3))
+
+		got := ximage.ToGrayscaleImage(sub)
+
+		assert.Equal(t, image.Rect(0, 0, 2, 2), got.Bounds())
+		assert.Equal(t, uint8(60), grayAt(got, 0, 0).R, "from 2,1")
+		assert.Equal(t, uint8(110), grayAt(got, 1, 1).R, "from 3,2")
+	})
+
+	t.Run("should accept YCbCr images as decoded from JPEG", func(t *testing.T) {
+		img := image.NewYCbCr(image.Rect(0, 0, 2, 2), image.YCbCrSubsampleRatio444)
+		for i := range img.Y {
+			img.Y[i] = 150
+		}
+		for i := range img.Cb {
+			img.Cb[i] = 128
+			img.Cr[i] = 128
+		}
+
+		got := ximage.ToGrayscaleImage(img)
+
+		assert.Equal(t, color.NRGBA{R: 150, G: 150, B: 150, A: 255}, grayAt(got, 1, 1))
+	})
+}
+
+func TestToGrayscale(t *testing.T) {
+	red := color.NRGBA{R: 255, A: 255}
+	makeImage := func() *image.NRGBA {
+		img := image.NewNRGBA(image.Rect(0, 0, 4, 4))
+		for y := range 4 {
+			for x := range 4 {
+				img.SetNRGBA(x, y, red)
+			}
+		}
+		return img
+	}
+	assertGrey := func(t *testing.T, r fyne.Resource) {
+		t.Helper()
+		img, format, err := image.Decode(bytes.NewReader(r.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, "png", format)
+		assert.Equal(t, image.Rect(0, 0, 4, 4), img.Bounds())
+		c := color.NRGBAModel.Convert(img.At(1, 1)).(color.NRGBA)
+		assert.Equal(t, c.R, c.G)
+		assert.Equal(t, c.R, c.B)
+		assert.NotEqual(t, uint8(0), c.R)
+	}
+
+	t.Run("should convert PNG and keep the name", func(t *testing.T) {
 		var buf bytes.Buffer
-		require.NoError(t, png.Encode(&buf, img))
+		require.NoError(t, png.Encode(&buf, makeImage()))
 		in := fyne.NewStaticResource("icon.png", buf.Bytes())
 
 		got, err := ximage.ToGrayscale(in)
 		require.NoError(t, err)
-
-		out, err := png.Decode(bytes.NewReader(got.Content()))
-		require.NoError(t, err)
-		assert.Equal(t, uint8(0), color.NRGBAModel.Convert(out.At(0, 0)).(color.NRGBA).A)
-		c := color.NRGBAModel.Convert(out.At(1, 0)).(color.NRGBA)
-		assert.Equal(t, uint8(128), c.A)
-		// grey level must not be darkened by premultiplied alpha
-		assert.InDelta(t, 200, int(c.R), 1)
-		assert.Equal(t, c.R, c.G)
-		assert.Equal(t, c.R, c.B)
+		assert.Equal(t, "icon.png", got.Name())
+		assertGrey(t, got)
 	})
 
-	t.Run("should convert JPEG to grayscale", func(t *testing.T) {
-		img := image.NewNRGBA(image.Rect(0, 0, 16, 16))
-		for y := range 16 {
-			for x := range 16 {
-				img.SetNRGBA(x, y, color.NRGBA{R: 200, G: 50, B: 100, A: 255})
-			}
-		}
+	t.Run("should accept JPEG and return PNG with .png name", func(t *testing.T) {
 		var buf bytes.Buffer
-		require.NoError(t, jpeg.Encode(&buf, img, nil))
+		require.NoError(t, jpeg.Encode(&buf, makeImage(), nil))
 		in := fyne.NewStaticResource("photo.jpg", buf.Bytes())
 
 		got, err := ximage.ToGrayscale(in)
 		require.NoError(t, err)
-		assert.Equal(t, "photo.jpg", got.Name())
+		assert.Equal(t, "photo.png", got.Name())
+		assertGrey(t, got)
+	})
 
-		out, format, err := image.Decode(bytes.NewReader(got.Content()))
+	t.Run("should accept other decodable formats", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, gif.Encode(&buf, makeImage(), nil))
+		in := fyne.NewStaticResource("icon.gif", buf.Bytes())
+
+		got, err := ximage.ToGrayscale(in)
 		require.NoError(t, err)
-		assert.Equal(t, "jpeg", format)
-		assert.Equal(t, image.Rect(0, 0, 16, 16), out.Bounds())
-		c := color.NRGBAModel.Convert(out.At(8, 8)).(color.NRGBA)
-		// JPEG is lossy, so allow small deviations between channels
-		assert.InDelta(t, int(c.R), int(c.G), 3)
-		assert.InDelta(t, int(c.R), int(c.B), 3)
+		assert.Equal(t, "icon.png", got.Name())
+		assertGrey(t, got)
 	})
 
 	t.Run("should return error when resource is not an image", func(t *testing.T) {
 		in := fyne.NewStaticResource("bad.png", []byte("not an image"))
-		_, err := ximage.ToGrayscale(in)
-		assert.Error(t, err)
-	})
-	t.Run("should return error for unsupported image formats", func(t *testing.T) {
-		var buf bytes.Buffer
-		require.NoError(t, gif.Encode(&buf, makeImage(), nil))
-		in := fyne.NewStaticResource("icon.gif", buf.Bytes())
 		_, err := ximage.ToGrayscale(in)
 		assert.Error(t, err)
 	})
@@ -305,7 +436,7 @@ func TestToGrayscale(t *testing.T) {
 func TestTint(t *testing.T) {
 	red := color.NRGBA{R: 255, A: 255}
 
-	t.Run("should recolor pixels and keep the name", func(t *testing.T) {
+	t.Run("should recolor all pixels to the target color", func(t *testing.T) {
 		in := makePNGResource(t, "icon.png", 2, 1, func(x, y int) color.NRGBA {
 			return color.NRGBA{R: 10, G: 20, B: 30, A: 255}
 		})
