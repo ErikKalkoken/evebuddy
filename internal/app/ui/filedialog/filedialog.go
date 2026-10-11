@@ -103,11 +103,13 @@ func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWri
 		defer writer.Close()
 		// Exports always finish, so no partial or empty file is left behind.
 		err := arg.WriteFunc(context.WithoutCancel(ctx), writer)
-		if ctx.Err() != nil {
-			return
-		}
 		if err != nil {
 			slog.Error(arg.Title, "error", err)
+		}
+		if ctx.Err() != nil {
+			return // shutting down
+		}
+		if err != nil {
 			fyne.Do(func() {
 				arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 			})
