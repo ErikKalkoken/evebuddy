@@ -41,7 +41,7 @@ func (s *EVEUniverseService) Stop() {
 	if !s.tasks.Stop() {
 		return
 	}
-	slog.Info("EVEUniverse update scheduler stopped")
+	slog.Info("EVEUniverse update scheduler and background jobs stopped")
 }
 
 // UpdateSectionsIfNeededAsync updates all general sections if needed in the background.

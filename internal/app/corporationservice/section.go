@@ -47,7 +47,7 @@ func (s *CorporationService) Stop() {
 	if !s.tasks.Stop() {
 		return
 	}
-	slog.Info("Corporation update scheduler stopped")
+	slog.Info("Corporation update scheduler and background jobs stopped")
 }
 
 // UpdateCorporationsIfNeededAsync updates all corporations if needed in the background.
