@@ -484,12 +484,16 @@ func newBaseUI(arg UIParams) *baseUI {
 			// and updates must be run at once
 			go u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
 			if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-				go func() {
-					time.Sleep(1 * time.Second) // allow app to fully load before updating
+				u.Go(func(ctx context.Context) {
+					select {
+					case <-time.After(1 * time.Second): // allow app to fully load before updating
+					case <-ctx.Done():
+						return
+					}
 					u.cs.UpdateCharactersIfNeededAsync(false)
 					u.rs.UpdateCorporationsIfNeededAsync(false)
 					u.eus.UpdateSectionsIfNeededAsync(false)
-				}()
+				})
 			}
 		}
 	})
