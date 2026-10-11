@@ -188,3 +188,39 @@ func TestCorporationService_Init(t *testing.T) {
 	require.True(t, ok)
 	assert.False(t, x.IsRunning())
 }
+
+func TestCorporationService_InitRemovesDataWithoutPermission(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("removes data no character has permission for", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: corporation.ID,
+		})
+		// when
+		err := s.Init(ctx)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("keeps data with permission", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(corporation.ID, app.SectionCorporationIndustryJobs)
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: corporation.ID,
+		})
+		// when
+		err := s.Init(ctx)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		assert.NoError(t, err)
+	})
+}

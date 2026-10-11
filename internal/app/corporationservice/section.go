@@ -35,6 +35,16 @@ func (s *CorporationService) Init(ctx context.Context) error {
 	if len(oo) > 0 {
 		slog.Info("Corporation sections: cleared stale running marks", "count", len(oo))
 	}
+	// Removes data left behind when a cleanup after a permission loss was skipped, e.g. by a quit or crash.
+	ids, err := s.ListCorporationIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for id := range ids.All() {
+		if err := s.RemoveSectionDataWhenPermissionLost(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
