@@ -243,20 +243,7 @@ func (a *admin) showDeleteDialog(r adminRow) {
 				}
 
 			} else {
-				ok, err := a.cw.u.Corporation().HasCorporation(ctx, r.corporationID)
-				if err != nil {
-					slog.Error("Failed to determine if corp exists", "err", err)
-				}
-				if ok {
-					err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
-					if err != nil {
-						slog.Error(
-							"Failed to remove corp data after character was deleted",
-							slog.Int64("characterID", r.characterID),
-							slog.Any("error", err))
-					}
-					go a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
-				}
+				a.cw.u.Corporation().UpdateAfterPermissionChangeAsync(r.corporationID)
 			}
 			go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
 				ID:   r.characterID,

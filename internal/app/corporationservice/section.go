@@ -50,6 +50,60 @@ func (s *CorporationService) Stop() {
 	slog.Info("Corporation update scheduler stopped")
 }
 
+// goTask runs f as a background job, which Stop cancels and waits for.
+func (s *CorporationService) goTask(name string, f func(ctx context.Context)) {
+	if !s.tasks.Go(f) {
+		slog.Debug("Skipped background job: shutting down", "job", name)
+	}
+}
+
+// UpdateCorporationsIfNeededAsync is the background job variant of [CorporationService.UpdateCorporationsIfNeeded].
+func (s *CorporationService) UpdateCorporationsIfNeededAsync(forceUpdate bool) {
+	s.goTask("UpdateCorporationsIfNeeded", func(ctx context.Context) {
+		if err := s.UpdateCorporationsIfNeeded(ctx, forceUpdate); err != nil && !app.IsContextCanceled(ctx, err) {
+			slog.Error("Failed to update corporations", "error", err)
+		}
+	})
+}
+
+// UpdateCorporationAndRefreshIfNeededAsync is the background job variant of [CorporationService.UpdateCorporationAndRefreshIfNeeded].
+func (s *CorporationService) UpdateCorporationAndRefreshIfNeededAsync(corporationID int64, forceUpdate bool) {
+	s.goTask("UpdateCorporationAndRefreshIfNeeded", func(ctx context.Context) {
+		s.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, forceUpdate)
+	})
+}
+
+// UpdateSectionAndRefreshIfNeededAsync is the background job variant of [CorporationService.UpdateSectionAndRefreshIfNeeded].
+func (s *CorporationService) UpdateSectionAndRefreshIfNeededAsync(corporationID int64, section app.CorporationSection, forceUpdate bool) {
+	s.goTask("UpdateSectionAndRefreshIfNeeded", func(ctx context.Context) {
+		s.UpdateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+	})
+}
+
+// UpdateAfterPermissionChangeAsync removes data no longer permitted and reloads the corporation.
+// Does nothing when the corporation does not exist.
+func (s *CorporationService) UpdateAfterPermissionChangeAsync(corporationID int64) {
+	s.goTask("UpdateAfterPermissionChange", func(ctx context.Context) {
+		logErr := func(err error) {
+			if !app.IsContextCanceled(ctx, err) {
+				slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
+			}
+		}
+		ok, err := s.HasCorporation(ctx, corporationID)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		if !ok {
+			return
+		}
+		if err := s.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
+			logErr(err)
+		}
+		s.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+	})
+}
+
 func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of corporations during daily downtime")

@@ -143,16 +143,8 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			a.sb.Display("Started reloading characters")
 		}),
 		fyne.NewMenuItem("Reload all corporations", func() {
-			go func() {
-				err := a.u.Corporation().UpdateCorporationsIfNeeded(context.Background(), true)
-				if err != nil {
-					slog.Error("update status", "error", err)
-					a.sb.Display("Error: " + a.u.ErrorDisplay(err))
-					return
-				}
-			}()
+			a.u.Corporation().UpdateCorporationsIfNeededAsync(true)
 			a.sb.Display("Started reloading corporations")
-
 		}),
 		fyne.NewMenuItem("Reload all general entities", func() {
 			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
@@ -320,7 +312,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		case sectionCharacter:
 			go a.u.Character().UpdateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
 		case sectionCorporation:
-			go a.u.Corporation().UpdateCorporationAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(c.id, true)
 		default:
 			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
 		}
@@ -458,8 +450,8 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 				context.Background(), ss.EntityID, app.CharacterSection(ss.SectionID), true,
 			)
 		case sectionCorporation:
-			go a.u.Corporation().UpdateSectionAndRefreshIfNeeded(
-				context.Background(), ss.EntityID, app.CorporationSection(ss.SectionID), true,
+			a.u.Corporation().UpdateSectionAndRefreshIfNeededAsync(
+				ss.EntityID, app.CorporationSection(ss.SectionID), true,
 			)
 		default:
 			slog.Error("makeUpdateAllAction: Undefined category", "entity", c)

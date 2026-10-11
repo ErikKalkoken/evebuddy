@@ -324,19 +324,7 @@ func newBaseUI(arg UIParams) *baseUI {
 				logErr(err)
 				return
 			}
-			corporationID := character.EveCharacter.Corporation.ID
-			ok, err := u.rs.HasCorporation(ctx, corporationID)
-			if err != nil {
-				logErr(err)
-				return
-			}
-			if !ok {
-				return
-			}
-			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
-				logErr(err)
-			}
-			u.rs.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+			u.rs.UpdateAfterPermissionChangeAsync(character.EveCharacter.Corporation.ID)
 		}
 	})
 	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -499,7 +487,7 @@ func newBaseUI(arg UIParams) *baseUI {
 				go func() {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					go u.cs.UpdateCharactersIfNeeded(ctx, false)
-					go u.rs.UpdateCorporationsIfNeeded(ctx, false)
+					u.rs.UpdateCorporationsIfNeededAsync(false)
 					go u.eus.UpdateSectionsIfNeeded(ctx, false)
 				}()
 			}
