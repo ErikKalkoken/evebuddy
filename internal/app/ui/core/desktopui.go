@@ -653,7 +653,9 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.MainWindow().Resize(u.settings.WindowSize())
 	}
 	u.onAppFirstStarted = func() {
-		xdesktop.EnableShortcuts(u.MainWindow())
+		fyne.Do(func() {
+			xdesktop.EnableShortcuts(u.MainWindow())
+		})
 		go u.UpdateMailIndicator(context.Background())
 		go statusBar.start()
 	}
