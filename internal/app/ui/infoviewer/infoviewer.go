@@ -35,7 +35,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -104,13 +103,12 @@ type baseUI interface {
 // InfoViewer represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
 type InfoViewer struct {
-	current       *showParams // parameters for currently shown info window (if any)
-	nav           *xwidget.Navigator
-	onClosedFuncs xsync.Stack[func()]                      // f runs when the window is closed. Useful for cleanup.
-	pageCancels   map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
-	sb            *kxwidget.Snackbar
-	u             baseUI
-	w             fyne.Window
+	current     *showParams // parameters for currently shown info window (if any)
+	nav         *xwidget.Navigator
+	pageCancels map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
+	sb          *kxwidget.Snackbar
+	u           baseUI
+	w           fyne.Window
 }
 
 const (
@@ -378,9 +376,6 @@ func (iw *InfoViewer) show2(arg showParams) {
 			}
 		}
 		w.SetOnClosed(func() {
-			for f, ok := iw.onClosedFuncs.Pop(); ok; f, ok = iw.onClosedFuncs.Pop() {
-				f()
-			}
 			for page, cancel := range iw.pageCancels {
 				cancel()
 				delete(iw.pageCancels, page)
