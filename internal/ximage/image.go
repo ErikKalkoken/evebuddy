@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"github.com/anthonynsimon/bild/effect"
 )
 
 // circle is an alpha mask of a circle filling a square.
@@ -43,7 +42,8 @@ func (c *circle) At(x, y int) color.Color {
 // applyCircleMask creates a new image from a round shape within the square rect of the original.
 func applyCircleMask(source image.Image, rect image.Rectangle) image.Image {
 	c := &circle{rect}
-	result := image.NewRGBA(rect)
+	// NRGBA keeps exact colors for the partly transparent rim
+	result := image.NewNRGBA(rect)
 	draw.DrawMask(result, rect, source, rect.Min, c, rect.Min, draw.Over)
 	return result
 }
@@ -80,22 +80,27 @@ func MakeAvatar(in fyne.Resource) (fyne.Resource, error) {
 //
 // Will fail if the resource is not a PNG or JPEG image.
 func ToGrayscale(r fyne.Resource) (fyne.Resource, error) {
-	j, format, err := image.Decode(bytes.NewReader(r.Content()))
+	src, format, err := image.Decode(bytes.NewReader(r.Content()))
 	if err != nil {
 		return nil, err
 	}
-	b := j.Bounds()
-	m := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(m, m.Bounds(), j, b.Min, draw.Src)
-	m = effect.Grayscale(m)
+	if format != "png" && format != "jpeg" {
+		return nil, fmt.Errorf("unsupported image format: %s", format)
+	}
+	b := src.Bounds()
+	m := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA)
+			k := uint8(0.3*float64(c.R) + 0.6*float64(c.G) + 0.1*float64(c.B) + 0.5)
+			m.SetNRGBA(x-b.Min.X, y-b.Min.Y, color.NRGBA{R: k, G: k, B: k, A: c.A})
+		}
+	}
 	var byt bytes.Buffer
-	switch format {
-	case "jpeg":
+	if format == "jpeg" {
 		err = jpeg.Encode(&byt, m, nil)
-	case "png":
+	} else {
 		err = png.Encode(&byt, m)
-	default:
-		err = fmt.Errorf("unsupported image format: %s", format)
 	}
 	if err != nil {
 		return nil, err

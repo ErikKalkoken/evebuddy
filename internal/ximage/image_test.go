@@ -147,6 +147,34 @@ func TestMakeAvatar(t *testing.T) {
 		}
 	})
 
+	t.Run("should keep exact colors of partly transparent rim pixels", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+		c := color.NRGBA{R: 200, G: 100, B: 50, A: 255}
+		for y := range 64 {
+			for x := range 64 {
+				img.SetNRGBA(x, y, c)
+			}
+		}
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, img))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.MakeAvatar(in)
+		require.NoError(t, err)
+
+		out, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		for y := range 64 {
+			for x := range 64 {
+				o := color.NRGBAModel.Convert(out.At(x, y)).(color.NRGBA)
+				if o.A > 0 {
+					o.A = 255
+					assert.Equal(t, c, o, "at %d,%d", x, y)
+				}
+			}
+		}
+	})
+
 	t.Run("should keep all pixels of an odd-sized image and center the circle", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, png.Encode(&buf, makeImage(5, 5)))
@@ -290,6 +318,21 @@ func TestToGrayscale(t *testing.T) {
 		assert.InDelta(t, 200, int(c.R), 1)
 		assert.Equal(t, c.R, c.G)
 		assert.Equal(t, c.R, c.B)
+	})
+
+	t.Run("should keep exact grey level of nearly transparent pixels", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+		img.SetNRGBA(0, 0, color.NRGBA{R: 200, G: 200, B: 200, A: 3})
+		var buf bytes.Buffer
+		require.NoError(t, png.Encode(&buf, img))
+		in := fyne.NewStaticResource("icon.png", buf.Bytes())
+
+		got, err := ximage.ToGrayscale(in)
+		require.NoError(t, err)
+
+		out, err := png.Decode(bytes.NewReader(got.Content()))
+		require.NoError(t, err)
+		assert.Equal(t, color.NRGBA{R: 200, G: 200, B: 200, A: 3}, color.NRGBAModel.Convert(out.At(0, 0)))
 	})
 
 	t.Run("should convert JPEG to grayscale", func(t *testing.T) {
