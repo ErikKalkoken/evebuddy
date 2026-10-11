@@ -106,7 +106,8 @@ type baseUI interface {
 type InfoViewer struct {
 	current       *showParams // parameters for currently shown info window (if any)
 	nav           *xwidget.Navigator
-	onClosedFuncs xsync.Stack[func()] // f runs when the window is closed. Useful for cleanup.
+	onClosedFuncs xsync.Stack[func()]                      // f runs when the window is closed. Useful for cleanup.
+	pageCancels   map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
 	sb            *kxwidget.Snackbar
 	u             baseUI
 	w             fyne.Window
@@ -359,15 +360,30 @@ func (iw *InfoViewer) show2(arg showParams) {
 	}
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !iw.u.IsMobile()
+	pageCtx, cancel := context.WithCancel(context.Background())
+	if iw.pageCancels == nil {
+		iw.pageCancels = make(map[fyne.CanvasObject]context.CancelFunc)
+	}
+	iw.pageCancels[ab] = cancel
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
 		iw.sb = kxwidget.NewSnackbar(w.Canvas())
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
+		iw.nav.OnPop = func(page fyne.CanvasObject) {
+			if cancel, ok := iw.pageCancels[page]; ok {
+				cancel()
+				delete(iw.pageCancels, page)
+			}
+		}
 		w.SetOnClosed(func() {
 			for f, ok := iw.onClosedFuncs.Pop(); ok; f, ok = iw.onClosedFuncs.Pop() {
 				f()
+			}
+			for page, cancel := range iw.pageCancels {
+				cancel()
+				delete(iw.pageCancels, page)
 			}
 			iw.nav = nil
 			iw.w = nil
@@ -398,7 +414,10 @@ func (iw *InfoViewer) show2(arg showParams) {
 		}
 	}
 	go func() {
-		err := page.update(context.Background())
+		err := page.update(pageCtx)
+		if pageCtx.Err() != nil {
+			return // page was closed
+		}
 		if err != nil {
 			slog.Error("info widget load", "params", arg, "error", err)
 			fyne.Do(func() {

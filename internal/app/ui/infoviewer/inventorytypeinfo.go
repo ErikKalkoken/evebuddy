@@ -655,8 +655,6 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 	if !et.IsTradeable() {
 		return nil
 	}
-	ctx, cancel := context.WithCancel(ctx)
-	a.iw.onClosedFuncs.Push(cancel)
 	marketTab := ui.NewTabItem("Market", widget.NewLabel("Fetching prices..."))
 	go func() {
 		ticker := time.NewTicker(60 * time.Second)
@@ -702,7 +700,7 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 			case <-ticker.C:
 			}
 		}
-		slog.Debug("market update type for canceled", "name", et.Name)
+		slog.Debug("Market price updates stopped", "name", et.Name)
 	}()
 	return marketTab
 }
