@@ -471,12 +471,13 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Fyne App entered foreground")
 		u.isForeground.Store(true)
-		ctx := context.Background()
 		if u.isMobile {
 			// When the app is shown on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
-			go u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			u.Go(func(ctx context.Context) {
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			})
 			if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
 				u.Go(func(ctx context.Context) {
 					select {
