@@ -16,6 +16,9 @@ import (
 // DeleteCharacter deletes a character and corporations which have become orphaned as a result.
 // It reports whether the related corporation was also deleted.
 func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool, error) {
+	// A partial delete would leave orphaned corporations behind.
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return false, err
 	}

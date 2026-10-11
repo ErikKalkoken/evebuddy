@@ -464,6 +464,26 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, got)
 	})
+	t.Run("completes delete when context is canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		ctx2, cancel := context.WithCancel(ctx)
+		cancel()
+		// when
+		got, err := cs.DeleteCharacter(ctx2, character.ID)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCharacter(ctx, character.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		assert.True(t, got)
+	})
 }
 
 func TestListCharacters(t *testing.T) {
