@@ -32,6 +32,7 @@ type baseUI interface {
 	EVEImage() ui.EVEImageService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	Go(job func(ctx context.Context)) bool
 	IsDeveloperMode() bool
 	IsMobile() bool
 	IsOffline() bool

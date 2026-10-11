@@ -45,6 +45,11 @@ func (u *UIServiceFake) GetOrCreateWindow(id string, titles ...string) (fyne.Win
 	return u.lastCreatedWindow, true
 }
 
+func (u *UIServiceFake) Go(job func(ctx context.Context)) bool {
+	go job(context.Background())
+	return true
+}
+
 func (u *UIServiceFake) IsDeveloperMode() bool   { return false }
 func (u *UIServiceFake) IsMobile() bool          { return u.isMobile }
 func (u *UIServiceFake) MainWindow() fyne.Window { return u.mainWindow }

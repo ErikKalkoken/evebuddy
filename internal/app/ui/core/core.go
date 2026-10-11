@@ -1125,6 +1125,16 @@ func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Win
 	return w, ok
 }
 
+// Go runs job in the background. Shutdown cancels the job and waits for it.
+// Reports false when the job was not started because the UI was stopped.
+func (u *baseUI) Go(job func(ctx context.Context)) bool {
+	ok := u.tasks.Go(job)
+	if !ok {
+		slog.Debug("Skipped UI job: UI stopped")
+	}
+	return ok
+}
+
 // GetOrCreateWindowWithOnClosed is like GetOrCreateWindow,
 // but returns an additional onClosed function which must be called when the window is closed.
 // This allows constructing a custom onClosed callback for the window.

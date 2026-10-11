@@ -40,6 +40,7 @@ type baseUI interface {
 	ErrorDisplay(err error) string
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	Go(job func(ctx context.Context)) bool
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
