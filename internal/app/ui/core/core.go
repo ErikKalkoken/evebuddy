@@ -488,7 +488,7 @@ func newBaseUI(arg UIParams) *baseUI {
 					time.Sleep(1 * time.Second) // allow app to fully load before updating
 					u.cs.UpdateCharactersIfNeededAsync(false)
 					u.rs.UpdateCorporationsIfNeededAsync(false)
-					go u.eus.UpdateSectionsIfNeeded(ctx, false)
+					u.eus.UpdateSectionsIfNeededAsync(false)
 				}()
 			}
 		}

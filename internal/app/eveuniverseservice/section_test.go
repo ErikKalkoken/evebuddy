@@ -156,6 +156,60 @@ func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_SingleflightFollower
 	assert.True(t, status.StartedAt.IsZero(), "a canceled update must not leave the section as running")
 }
 
+func TestEveuniverseservice_AsyncUpdates(t *testing.T) {
+	_, st, _ := testutil.NewDBOnDisk(t)
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	const section = app.SectionEveMarketPrices
+
+	t.Run("Stop cancels and waits for a running update", func(t *testing.T) {
+		httpmock.Reset()
+		s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+		entered := make(chan struct{})
+		var wasCanceled bool
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			func(req *http.Request) (*http.Response, error) {
+				close(entered)
+				<-req.Context().Done()
+				wasCanceled = true
+				return nil, req.Context().Err()
+			},
+		)
+		s.UpdateSectionAndRefreshIfNeededAsync(section, true)
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			t.Fatal("update never reached the HTTP call")
+		}
+		// when
+		stopped := make(chan struct{})
+		go func() {
+			s.Stop()
+			close(stopped)
+		}()
+		// then
+		select {
+		case <-stopped:
+		case <-time.After(time.Second):
+			t.Fatal("Stop did not return")
+		}
+		assert.True(t, wasCanceled)
+	})
+	t.Run("skips updates after Stop", func(t *testing.T) {
+		httpmock.Reset()
+		s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+		s.Stop()
+		// when
+		s.UpdateSectionsIfNeededAsync(true)
+		s.UpdateSectionAndRefreshIfNeededAsync(section, true)
+		s.Stop()
+		// then
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
+}
+
 func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_ForceRefresh(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()

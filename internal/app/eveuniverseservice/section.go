@@ -44,6 +44,27 @@ func (s *EVEUniverseService) Stop() {
 	slog.Info("EVEUniverse update scheduler stopped")
 }
 
+// goTask runs f as a background job, which Stop cancels and waits for.
+func (s *EVEUniverseService) goTask(name string, f func(ctx context.Context)) {
+	if !s.tasks.Go(f) {
+		slog.Debug("Skipped background job: shutting down", "job", name)
+	}
+}
+
+// UpdateSectionsIfNeededAsync is the background job variant of [EVEUniverseService.UpdateSectionsIfNeeded].
+func (s *EVEUniverseService) UpdateSectionsIfNeededAsync(forceUpdate bool) {
+	s.goTask("UpdateSectionsIfNeeded", func(ctx context.Context) {
+		s.UpdateSectionsIfNeeded(ctx, forceUpdate)
+	})
+}
+
+// UpdateSectionAndRefreshIfNeededAsync is the background job variant of [EVEUniverseService.UpdateSectionAndRefreshIfNeeded].
+func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeededAsync(section app.EveUniverseSection, forceUpdate bool) {
+	s.goTask("UpdateSectionAndRefreshIfNeeded", func(ctx context.Context) {
+		s.UpdateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
+	})
+}
+
 func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of general sections during daily downtime")

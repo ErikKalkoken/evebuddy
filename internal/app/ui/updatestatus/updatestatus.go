@@ -140,7 +140,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 			a.sb.Display("Started reloading corporations")
 		}),
 		fyne.NewMenuItem("Reload all general entities", func() {
-			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
+			a.u.EVEUniverse().UpdateSectionsIfNeededAsync(true)
 			a.sb.Display("Started reloading all general entities")
 		}),
 		fyne.NewMenuItemSeparator(),
@@ -287,7 +287,7 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 		c := a.entities[a.currentEntityID]
 		switch c.category {
 		case sectionGeneral:
-			go a.u.EVEUniverse().UpdateSectionsIfNeeded(context.Background(), true)
+			a.u.EVEUniverse().UpdateSectionsIfNeededAsync(true)
 		case sectionCharacter:
 			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(c.id, true)
 		case sectionCorporation:
@@ -421,8 +421,8 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 	action := func() {
 		switch c {
 		case sectionGeneral:
-			go a.u.EVEUniverse().UpdateSectionAndRefreshIfNeeded(
-				context.Background(), app.EveUniverseSection(ss.SectionID), true,
+			a.u.EVEUniverse().UpdateSectionAndRefreshIfNeededAsync(
+				app.EveUniverseSection(ss.SectionID), true,
 			)
 		case sectionCharacter:
 			a.u.Character().UpdateCharacterSectionAndRefreshIfNeededAsync(
