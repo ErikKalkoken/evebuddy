@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/ximage"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -707,38 +707,36 @@ func NewMobileUI(params UIParams) *MobileUI {
 		updateUpdateStatus(ctx)
 
 		if !u.isOfflineMode {
-			tickerNewVersion := time.NewTicker(3600 * time.Second)
-			go func() {
-				for {
-					func() {
-						v, err := u.availableUpdate(ctx)
-						if err != nil {
+			u.tasks.Go(func(ctx context.Context) {
+				xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
+					v, err := u.availableUpdate(ctx)
+					if err != nil {
+						if !app.IsContextCanceled(ctx, err) {
 							slog.Error("fetch github version for menu info", "error", err)
-							return
 						}
-						if v.IsRemoteNewer {
-							hasUpdate.Store(true)
-							fyne.Do(func() {
-								refreshMoreBadge()
-								navItemAbout.Supporting = "Update available"
-								navItemAbout.SupportingImportance = widget.HighImportance
-								navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
-								navItemAbout.Refresh()
-							})
-						} else {
-							hasUpdate.Store(false)
-							fyne.Do(func() {
-								refreshMoreBadge()
-								navItemAbout.Supporting = ""
-								navItemAbout.SupportingImportance = widget.MediumImportance
-								navItemAbout.Trailing = nil
-								navItemAbout.Refresh()
-							})
-						}
-					}()
-					<-tickerNewVersion.C
-				}
-			}()
+						return
+					}
+					if v.IsRemoteNewer {
+						hasUpdate.Store(true)
+						fyne.Do(func() {
+							refreshMoreBadge()
+							navItemAbout.Supporting = "Update available"
+							navItemAbout.SupportingImportance = widget.HighImportance
+							navItemAbout.Trailing = theme.NewPrimaryThemedResource(icons.Numeric1CircleSvg)
+							navItemAbout.Refresh()
+						})
+					} else {
+						hasUpdate.Store(false)
+						fyne.Do(func() {
+							refreshMoreBadge()
+							navItemAbout.Supporting = ""
+							navItemAbout.SupportingImportance = widget.MediumImportance
+							navItemAbout.Trailing = nil
+							navItemAbout.Refresh()
+						})
+					}
+				})
+			})
 		}
 	}
 
