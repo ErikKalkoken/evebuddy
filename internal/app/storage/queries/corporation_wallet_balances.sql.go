@@ -9,15 +9,18 @@ import (
 	"context"
 )
 
-const deleteCorporationWalletBalances = `-- name: DeleteCorporationWalletBalances :exec
+const deleteCorporationWalletBalances = `-- name: DeleteCorporationWalletBalances :execrows
 DELETE FROM corporation_wallet_balances
 WHERE
     corporation_id = ?
 `
 
-func (q *Queries) DeleteCorporationWalletBalances(ctx context.Context, corporationID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteCorporationWalletBalances, corporationID)
-	return err
+func (q *Queries) DeleteCorporationWalletBalances(ctx context.Context, corporationID int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteCorporationWalletBalances, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getCorporationWalletBalance = `-- name: GetCorporationWalletBalance :one

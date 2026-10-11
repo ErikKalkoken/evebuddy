@@ -45,7 +45,7 @@ func (q *Queries) CountCorporationIndustryJobsWithStatus(ctx context.Context, ar
 	return count, err
 }
 
-const deleteCorporationIndustryJobs = `-- name: DeleteCorporationIndustryJobs :exec
+const deleteCorporationIndustryJobs = `-- name: DeleteCorporationIndustryJobs :execrows
 ;
 
 DELETE FROM corporation_industry_jobs
@@ -53,9 +53,12 @@ WHERE
     corporation_id = ?
 `
 
-func (q *Queries) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteCorporationIndustryJobs, corporationID)
-	return err
+func (q *Queries) DeleteCorporationIndustryJobs(ctx context.Context, corporationID int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteCorporationIndustryJobs, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const deleteCorporationIndustryJobsByID = `-- name: DeleteCorporationIndustryJobsByID :exec

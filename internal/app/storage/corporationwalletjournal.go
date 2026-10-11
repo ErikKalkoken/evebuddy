@@ -69,14 +69,16 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{
+	n, err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{
 		CorporationID: corporationID,
 		DivisionID:    d.ID(),
 	})
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Wallet journal deleted for corporation", "corporationID", corporationID)
+	if n > 0 {
+		slog.Info("Wallet journal deleted for corporation", "corporationID", corporationID)
+	}
 	return nil
 }
 

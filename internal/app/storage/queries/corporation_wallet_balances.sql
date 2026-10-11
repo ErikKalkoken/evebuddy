@@ -24,7 +24,7 @@ FROM
 WHERE
     corporation_id = ?;
 
--- name: DeleteCorporationWalletBalances :exec
+-- name: DeleteCorporationWalletBalances :execrows
 DELETE FROM corporation_wallet_balances
 WHERE
     corporation_id = ?;

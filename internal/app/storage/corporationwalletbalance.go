@@ -16,11 +16,13 @@ func (st *Storage) DeleteCorporationWalletBalance(ctx context.Context, corporati
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationWalletBalances(ctx, corporationID)
+	n, err := st.qRW.DeleteCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Wallet balances deleted for corporation", "corporationID", corporationID)
+	if n > 0 {
+		slog.Info("Wallet balances deleted for corporation", "corporationID", corporationID)
+	}
 	return nil
 }
 

@@ -62,14 +62,16 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
+	n, err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
 		CorporationID: corporationID,
 		DivisionID:    d.ID(),
 	})
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Wallet transactions deleted for corporation", "corporationID", corporationID)
+	if n > 0 {
+		slog.Info("Wallet transactions deleted for corporation", "corporationID", corporationID)
+	}
 	return nil
 }
 

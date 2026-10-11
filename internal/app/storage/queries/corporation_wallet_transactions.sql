@@ -16,7 +16,7 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
--- name: DeleteCorporationWalletTransactions :exec
+-- name: DeleteCorporationWalletTransactions :execrows
 DELETE FROM corporation_wallet_transactions
 WHERE
     corporation_id = ?

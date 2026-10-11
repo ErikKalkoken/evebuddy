@@ -43,11 +43,13 @@ func (st *Storage) DeleteCorporationIndustryJobs(ctx context.Context, corporatio
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.DeleteCorporationIndustryJobs(ctx, corporationID)
+	n, err := st.qRW.DeleteCorporationIndustryJobs(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Industry jobs deleted for corporation", "corporationID", corporationID)
+	if n > 0 {
+		slog.Info("Industry jobs deleted for corporation", "corporationID", corporationID)
+	}
 	return nil
 }
 
