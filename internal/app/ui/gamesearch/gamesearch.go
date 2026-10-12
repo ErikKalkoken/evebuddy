@@ -194,6 +194,9 @@ func (a *GameSearch) init(ctx context.Context) {
 		return
 	}
 	ee, err := a.u.EVEUniverse().ListEntitiesForIDs(ctx, ids)
+	if ctx.Err() != nil {
+		return // shutting down
+	}
 	if errors.Is(err, app.ErrNotFound) {
 		fyne.Do(func() {
 			xslices.Clear(&a.recentItems)

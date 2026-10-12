@@ -61,7 +61,7 @@ func (q *Queries) CreateCorporationWalletTransaction(ctx context.Context, arg Cr
 	return err
 }
 
-const deleteCorporationWalletTransactions = `-- name: DeleteCorporationWalletTransactions :exec
+const deleteCorporationWalletTransactions = `-- name: DeleteCorporationWalletTransactions :execrows
 DELETE FROM corporation_wallet_transactions
 WHERE
     corporation_id = ?
@@ -73,9 +73,12 @@ type DeleteCorporationWalletTransactionsParams struct {
 	DivisionID    int64
 }
 
-func (q *Queries) DeleteCorporationWalletTransactions(ctx context.Context, arg DeleteCorporationWalletTransactionsParams) error {
-	_, err := q.db.ExecContext(ctx, deleteCorporationWalletTransactions, arg.CorporationID, arg.DivisionID)
-	return err
+func (q *Queries) DeleteCorporationWalletTransactions(ctx context.Context, arg DeleteCorporationWalletTransactionsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteCorporationWalletTransactions, arg.CorporationID, arg.DivisionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getCorporationWalletTransaction = `-- name: GetCorporationWalletTransaction :one

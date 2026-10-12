@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"image/color"
 	"log/slog"
 
@@ -17,6 +18,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
+
+// JobRunner runs background jobs which are canceled and awaited on shutdown.
+// In the app this is the base UI.
+type JobRunner interface {
+	Go(job func(ctx context.Context)) bool
+}
 
 // ShowInformation shows a custom information dialog.
 func ShowInformation(title, message string, parent fyne.Window) {
@@ -36,13 +43,26 @@ func ShowConfirm(title, message, confirm string, callback func(bool), parent fyn
 }
 
 // ShowProgressConfirm shows a custom confirmation dialog with progress indicator.
-// Note that the callback is called on confirmation only and runs in a goroutine.
+// The callback is called on confirmation only and runs as a background job via u.Go,
+// so shutdown cancels it and waits for it.
 func ShowProgressConfirm(
+	u JobRunner,
 	title, message, confirmLabel string,
 	confirmImportance widget.Importance,
-	callback func(),
+	callback func(ctx context.Context),
 	parent fyne.Window,
 ) {
+	d, _ := newProgressConfirm(u, title, message, confirmLabel, confirmImportance, callback, parent)
+	d.Show()
+}
+
+func newProgressConfirm(
+	u JobRunner,
+	title, message, confirmLabel string,
+	confirmImportance widget.Importance,
+	callback func(ctx context.Context),
+	parent fyne.Window,
+) (dialog.Dialog, *kxwidget.LoadingButton) {
 	text := widget.NewLabel(message)
 	text.Alignment = fyne.TextAlignCenter
 	text.Wrapping = fyne.TextWrapWord
@@ -51,13 +71,18 @@ func ShowProgressConfirm(
 		d.Hide()
 	})
 	confirm := kxwidget.NewLoadingButton(confirmLabel, theme.ConfirmIcon(), func(done func()) {
-		go func() {
-			defer done()
-			callback()
-			fyne.Do(func() {
-				d.Hide()
-			})
-		}()
+		ok := u.Go(func(ctx context.Context) {
+			callback(ctx)
+			if ctx.Err() != nil {
+				return // UI is gone, so skip done() and Hide
+			}
+			done()
+			fyne.Do(d.Hide)
+		})
+		if !ok {
+			done()
+			d.Hide()
+		}
 	})
 	confirm.SetImportance(confirmImportance)
 	p := theme.Padding()
@@ -81,7 +106,7 @@ func ShowProgressConfirm(
 		parent,
 	)
 	xdesktop.DisableShortcutsForDialog(d, parent)
-	d.Show()
+	return d, confirm
 }
 
 // ShowErrorAndLog shows a error dialog and logs the error.

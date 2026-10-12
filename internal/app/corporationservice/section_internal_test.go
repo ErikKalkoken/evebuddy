@@ -302,6 +302,102 @@ func TestUpdateSectionIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
 	assert.True(t, x.StartedAt.IsZero(), "a canceled update must not leave the section as running")
 }
 
+func TestAsyncUpdates(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	newService := func() *CorporationService {
+		return NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{
+			Token: &app.CharacterToken{AccessToken: "accessToken"},
+		}})
+	}
+	const section = app.SectionCorporationWalletBalances
+
+	t.Run("Stop cancels and waits for a running update", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := newService()
+		c := factory.CreateCorporation()
+		entered := make(chan struct{})
+		var wasCanceled bool
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets", c.ID),
+			func(req *http.Request) (*http.Response, error) {
+				close(entered)
+				<-req.Context().Done()
+				wasCanceled = true
+				return nil, req.Context().Err()
+			},
+		)
+		s.UpdateSectionAndRefreshIfNeededAsync(c.ID, section, true)
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			t.Fatal("update never reached the HTTP call")
+		}
+		// when
+		stopped := make(chan struct{})
+		go func() {
+			s.Stop()
+			close(stopped)
+		}()
+		// then
+		select {
+		case <-stopped:
+		case <-time.After(time.Second):
+			t.Fatal("Stop did not return")
+		}
+		assert.True(t, wasCanceled)
+	})
+	t.Run("skips updates after Stop", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := newService()
+		c := factory.CreateCorporation()
+		s.Stop()
+		// when
+		s.UpdateCorporationsIfNeededAsync(true)
+		s.UpdateCorporationAndRefreshIfNeededAsync(c.ID, true)
+		s.UpdateSectionAndRefreshIfNeededAsync(c.ID, section, true)
+		s.UpdateAfterPermissionChangeAsync(c.ID)
+		s.Stop()
+		// then
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
+	t.Run("permission change removes data no longer permitted", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := newService() // no character token in storage, so no permission
+		c := factory.CreateCorporation()
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		// when
+		s.UpdateAfterPermissionChangeAsync(c.ID)
+		// then
+		assert.Eventually(t, func() bool {
+			oo, err := st.ListCorporationWalletBalances(context.Background(), c.ID)
+			return err == nil && len(oo) == 0
+		}, time.Second, 10*time.Millisecond)
+		s.Stop()
+	})
+	t.Run("permission change does nothing for unknown corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := newService()
+		// when
+		s.UpdateAfterPermissionChangeAsync(42)
+		// then
+		assert.Never(t, func() bool {
+			return httpmock.GetTotalCallCount() > 0
+		}, 100*time.Millisecond, 10*time.Millisecond)
+		s.Stop()
+	})
+}
+
 func TestRecordUpdateFailed(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	scs := new(statuscache.StatusCache)

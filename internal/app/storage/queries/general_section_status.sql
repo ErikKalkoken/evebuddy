@@ -32,4 +32,15 @@ SET
     content_hash = ?3,
     error = ?4,
     started_at = ?5,
-    updated_at = ?6 RETURNING *;
+    updated_at = ?6
+RETURNING
+    *;
+
+-- name: ClearGeneralSectionStatusStartedAt :many
+UPDATE general_section_status
+SET
+    started_at = NULL
+WHERE
+    started_at IS NOT NULL
+RETURNING
+    *;

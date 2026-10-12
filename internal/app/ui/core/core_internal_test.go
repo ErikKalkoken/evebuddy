@@ -285,3 +285,67 @@ func TestMakeOrFindWindow(t *testing.T) {
 		assert.Contains(t, w.Title(), "title-new")
 	})
 }
+
+func TestBaseUI_Go(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	t.Run("runs the job", func(t *testing.T) {
+		u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+		done := make(chan struct{})
+		ok := u.Go(func(ctx context.Context) {
+			close(done)
+		})
+		assert.True(t, ok)
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Fatal("job did not run")
+		}
+	})
+	t.Run("stopping cancels the job and waits for it", func(t *testing.T) {
+		u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+		entered := make(chan struct{})
+		var wasCanceled bool
+		u.Go(func(ctx context.Context) {
+			close(entered)
+			<-ctx.Done()
+			wasCanceled = true
+		})
+		<-entered
+		u.tasks.Stop()
+		assert.True(t, wasCanceled)
+	})
+	t.Run("skips the job after stop", func(t *testing.T) {
+		u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+		u.tasks.Stop()
+		ok := u.Go(func(ctx context.Context) {
+			t.Error("job should not run")
+		})
+		assert.False(t, ok)
+	})
+}
+
+func TestBaseUI_InitKeepsLastSelectionWhenCanceled(t *testing.T) {
+	// On disk, because a canceled query drops its connection, which would wipe an in-memory DB.
+	_, st, factory := testutil.NewDBOnDisk(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	t.Run("character", func(t *testing.T) {
+		u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+		c := factory.CreateCharacterFull()
+		u.settings.SetLastCharacterID(c.ID)
+		// when
+		u.initCharacter(ctx)
+		// then
+		assert.Equal(t, c.ID, u.settings.LastCharacterID())
+	})
+	t.Run("corporation", func(t *testing.T) {
+		u := MakeFakeBaseUI(st, test.NewTempApp(t), false)
+		c := factory.CreateCorporation()
+		u.settings.SetLastCorporationID(c.ID)
+		// when
+		u.initCorporation(ctx)
+		// then
+		assert.Equal(t, c.ID, u.settings.LastCorporationID())
+	})
+}

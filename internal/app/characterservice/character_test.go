@@ -78,8 +78,8 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 	ctx := context.Background()
 	test.NewTempApp(t)
 
-	t.Run("create new character", func(t *testing.T) {
-		// given
+	// setupNewCharacter prepares storage, auth and ESI mocks for adding a new character.
+	setupNewCharacter := func() (*characterservice.CharacterService, *app.EveCharacter, *app.EveCorporation) {
 		testutil.MustTruncateTables(db)
 		corporation := factory.CreateEveCorporation()
 		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: corporation.ID})
@@ -143,6 +143,11 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 				"type": "player_owned",
 			}),
 		)
+		return cs, ec, corporation
+	}
+	t.Run("create new character", func(t *testing.T) {
+		// given
+		cs, ec, corporation := setupNewCharacter()
 		// when
 		var info string
 		got, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
@@ -161,6 +166,42 @@ func TestUpdateOrCreateCharacterFromSSO(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, corporation, x.EveCorporation)
 		assert.NotZero(t, info)
+	})
+	t.Run("completes storing when canceled after fetching", func(t *testing.T) {
+		// given
+		cs, ec, _ := setupNewCharacter()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		// when
+		_, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			if s == "Storing character..." {
+				cancel()
+			}
+		})
+		// then
+		require.NoError(t, err)
+		ok, err := cs.HasCharacter(context.Background(), ec.ID)
+		require.NoError(t, err)
+		assert.True(t, ok)
+		_, err = st.GetCharacterToken(context.Background(), ec.ID)
+		require.NoError(t, err)
+	})
+	t.Run("aborts when canceled while fetching", func(t *testing.T) {
+		// given
+		cs, ec, _ := setupNewCharacter()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		// when
+		_, err := cs.UpdateOrCreateCharacterFromSSO(ctx, func(s string) {
+			if s == "Fetching character from game server..." {
+				cancel()
+			}
+		})
+		// then
+		require.Error(t, err)
+		ok, err := cs.HasCharacter(context.Background(), ec.ID)
+		require.NoError(t, err)
+		assert.False(t, ok)
 	})
 
 	// Test for verifying issue #443 - Part 1
@@ -426,6 +467,7 @@ func TestDeleteCharacter(t *testing.T) {
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
+
 	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -444,6 +486,7 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 		assert.True(t, got)
 	})
+
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -463,6 +506,48 @@ func TestDeleteCharacter(t *testing.T) {
 		_, err = st.GetCorporation(ctx, corporation.ID)
 		assert.NoError(t, err)
 		assert.False(t, got)
+	})
+
+	t.Run("keep unrelated orphaned corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		orphan := factory.CreateCorporation()
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		x1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x1.ID})
+		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x2.ID})
+		// when
+		got, err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.False(t, got)
+		_, err = st.GetCorporation(ctx, orphan.ID)
+		assert.NoError(t, err)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("completes delete when context is canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		ctx2, cancel := context.WithCancel(ctx)
+		cancel()
+		// when
+		got, err := cs.DeleteCharacter(ctx2, character.ID)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCharacter(ctx, character.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		assert.True(t, got)
 	})
 }
 

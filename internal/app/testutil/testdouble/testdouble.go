@@ -360,6 +360,11 @@ func (u *UIFake) InfoViewer() ui.InfoViewer {
 	return u.iw
 }
 
+func (u *UIFake) Go(job func(ctx context.Context)) bool {
+	go job(context.Background())
+	return true
+}
+
 func (u *UIFake) IsDeveloperMode() bool {
 	return false
 }

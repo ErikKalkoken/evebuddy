@@ -9,7 +9,7 @@ WHERE
 
 ;
 
--- name: DeleteCorporationIndustryJobs :exec
+-- name: DeleteCorporationIndustryJobs :execrows
 DELETE FROM corporation_industry_jobs
 WHERE
     corporation_id = ?;

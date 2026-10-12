@@ -129,7 +129,7 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *statusBar) start() {
+func (a *statusBar) start(startupCtx context.Context) {
 	// signals
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.updateCharacterCount(ctx)
@@ -181,10 +181,8 @@ func (a *statusBar) start() {
 			showUpdate(on)
 		})
 	})
-	ctx := context.Background()
-	a.updateCharacterCount(ctx)
-	a.updateUpdateStatus(ctx)
-	a.updateEveStatus(ctx)
+	a.updateCharacterCount(startupCtx)
+	a.updateUpdateStatus(startupCtx)
 
 	a.u.tasks.Go(func(ctx context.Context) {
 		xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
@@ -202,8 +200,8 @@ func (a *statusBar) start() {
 		})
 		return
 	}
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		a.updateEveStatus(ctx)
+	a.u.tasks.Go(func(ctx context.Context) {
+		xsync.RunEvery(ctx, refreshUITick, a.updateEveStatus)
 	})
 	a.u.tasks.Go(func(ctx context.Context) {
 		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {

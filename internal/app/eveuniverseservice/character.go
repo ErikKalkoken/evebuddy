@@ -17,10 +17,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 )
 
-func (s *EVEUniverseService) GetCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
+// GetCharacter returns a character from storage.
+func (s *EVEUniverseService) GetCharacter(ctx context.Context, characterID int64) (*app.EveCharacter, error) {
 	return s.st.GetEveCharacter(ctx, characterID)
 }
 
+// GetOrCreateCharacterESI returns a character from storage
+// or from the server and reports whether it was created.
 func (s *EVEUniverseService) GetOrCreateCharacterESI(ctx context.Context, characterID int64) (*app.EveCharacter, bool, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetOrCreateCharacterESI %d: %w", characterID, err)

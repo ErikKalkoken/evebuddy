@@ -33,6 +33,8 @@ func (s *CharacterService) DeleteMail(ctx context.Context, characterID, mailID i
 	if err != nil {
 		return err
 	}
+	// The mail was deleted on the server, so always delete it locally.
+	ctx = context.WithoutCancel(ctx)
 	err = s.st.DeleteCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
@@ -167,6 +169,19 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	if err != nil {
 		return 0, err
 	}
+
+	// resolve entities
+	recipientIDs := make([]int64, len(rr))
+	for i, r := range rr {
+		recipientIDs[i] = r.RecipientId
+	}
+	ids := set.Union(set.Of(recipientIDs...), set.Of(characterID))
+	_, err = s.eus.AddMissingEntities(ctx, ids)
+	if err != nil {
+		return 0, err
+	}
+
+	// send mail to server
 	ts, err := s.TokenSource(ctx, characterID, app.SectionCharacterMailHeaders.Scopes())
 	if err != nil {
 		return 0, err
@@ -183,15 +198,10 @@ func (s *CharacterService) SendMail(ctx context.Context, characterID int64, subj
 	if err != nil {
 		return 0, err
 	}
-	recipientIDs := make([]int64, len(rr))
-	for i, r := range rr {
-		recipientIDs[i] = r.RecipientId
-	}
-	ids := set.Union(set.Of(recipientIDs...), set.Of(characterID))
-	_, err = s.eus.AddMissingEntities(ctx, ids)
-	if err != nil {
-		return 0, err
-	}
+
+	// store mail
+	// The mail was sent, so always store it.
+	ctx = context.WithoutCancel(ctx)
 	_, err = s.st.GetOrCreateCharacterMailLabel(ctx, storage.MailLabelParams{
 		CharacterID: characterID,
 		LabelID:     app.MailLabelSent,

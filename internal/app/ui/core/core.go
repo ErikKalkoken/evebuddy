@@ -87,7 +87,7 @@ type baseUI struct {
 	// Callbacks
 	clearCache           func() // clear all caches
 	hideMailIndicator    func()
-	onAppFirstStarted    func()
+	onAppFirstStarted    func(ctx context.Context)
 	onAppStopped         func()
 	onAppTerminated      func()
 	onSetCharacter       func(*app.Character)
@@ -177,7 +177,6 @@ type baseUI struct {
 	isMobile                       bool        // whether Fyne has detected the app running on a mobile. Else we assume it's a desktop.
 	isOffline                      atomic.Bool
 	isOfflineMode                  bool
-	isStartupCompleted             atomic.Bool // whether the app has completed startup (for testing)
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
 	signals                        *app.Signals
 	tasks                          *xsync.TaskGroup       // UI tickers, stopped at shutdown
@@ -274,11 +273,6 @@ func newBaseUI(arg UIParams) *baseUI {
 	// Core signal listeners and signal logging
 	u.signals.AppInit.AddListener(func(ctx context.Context, s struct{}) {
 		slog.Debug("Signal: AppInit")
-		err := u.cs.UpdateAllCalculatedValues(ctx)
-		if err != nil {
-			slog.Error("Failed to update total net worth", "arg", arg, "err", err)
-			return
-		}
 	})
 	u.signals.CharacterAdded.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: CharacterAdded", "characterID", c.IDOrZero())
@@ -319,24 +313,16 @@ func newBaseUI(arg UIParams) *baseUI {
 			u.UpdateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
 			updateStatus(ctx)
-			character, err := u.cs.GetCharacter(ctx, arg.CharacterID)
+			character, err := u.eus.GetCharacter(ctx, arg.CharacterID)
 			if err != nil {
 				logErr(err)
 				return
 			}
-			corporationID := character.EveCharacter.Corporation.ID
-			ok, err := u.rs.HasCorporation(ctx, corporationID)
-			if err != nil {
-				logErr(err)
+			corporationID := character.Corporation.ID
+			if app.IsNPCCorporation(corporationID) {
 				return
 			}
-			if !ok {
-				return
-			}
-			if err := u.rs.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
-				logErr(err)
-			}
-			u.rs.UpdateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+			u.rs.UpdateAfterPermissionChangeAsync(corporationID)
 		}
 	})
 	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
@@ -474,6 +460,7 @@ func newBaseUI(arg UIParams) *baseUI {
 			slog.Info("App resumed")
 			return
 		}
+
 		// First app start
 		u.isDeveloperMode.Store(u.settings.DeveloperMode())
 		if u.isOfflineMode {
@@ -482,26 +469,30 @@ func newBaseUI(arg UIParams) *baseUI {
 			slog.Info("App started initially")
 		}
 		u.snackbar.Start()
-		ctx := context.Background()
-		go u.appInit(ctx)
+		u.Go(u.appInit)
 	})
 
 	u.app.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Debug("Fyne App entered foreground")
 		u.isForeground.Store(true)
-		ctx := context.Background()
 		if u.isMobile {
 			// When the app is shown on mobile the UI must be
 			// refreshed immediately to avoid showing stale data (e.g. timers) to users
 			// and updates must be run at once
-			go u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			u.Go(func(ctx context.Context) {
+				u.signals.RefreshTickerExpired.Emit(ctx, struct{}{})
+			})
 			if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-				go func() {
-					time.Sleep(1 * time.Second) // allow app to fully load before updating
-					go u.cs.UpdateCharactersIfNeeded(ctx, false)
-					go u.rs.UpdateCorporationsIfNeeded(ctx, false)
-					go u.eus.UpdateSectionsIfNeeded(ctx, false)
-				}()
+				u.Go(func(ctx context.Context) {
+					select {
+					case <-time.After(1 * time.Second): // allow app to fully load before updating
+					case <-ctx.Done():
+						return
+					}
+					u.cs.UpdateCharactersIfNeededAsync(false)
+					u.rs.UpdateCorporationsIfNeededAsync(false)
+					u.eus.UpdateSectionsIfNeededAsync(false)
+				})
 			}
 		}
 	})
@@ -535,9 +526,13 @@ func (u *baseUI) appInit(ctx context.Context) {
 		u.initCorporation(ctx)
 	})
 	wg.Wait()
+	u.cs.UpdateAllCalculatedValuesAsync()
 
 	updateCharactersMissingScope := func(ctx context.Context) {
 		cc, err := u.cs.CharactersWithMissingScopes(ctx)
+		if ctx.Err() != nil {
+			return
+		}
 		if err != nil {
 			slog.Error("Failed to fetch characters with missing scopes", "error", err)
 			return
@@ -556,7 +551,6 @@ func (u *baseUI) appInit(ctx context.Context) {
 	})
 	updateCharactersMissingScope(ctx)
 
-	u.isStartupCompleted.Store(true)
 	u.tasks.Go(func(ctx context.Context) {
 		// No immediate fire: the screens have just been loaded.
 		ticker := time.NewTicker(refreshUITick)
@@ -570,11 +564,18 @@ func (u *baseUI) appInit(ctx context.Context) {
 			}
 		}
 	})
+	if ctx.Err() != nil {
+		return // shutting down
+	}
 	if u.onAppFirstStarted != nil {
-		u.onAppFirstStarted()
+		u.onAppFirstStarted(ctx)
 	}
 	if !u.isOfflineMode && !u.isUpdateDisabled.Load() {
-		time.Sleep(2 * time.Second) // give app time to finish loading screens
+		select {
+		case <-time.After(2 * time.Second): // give app time to finish loading screens
+		case <-ctx.Done():
+			return
+		}
 		u.eus.Start(eveUniverseUpdateTick)
 		u.cs.Start(characterUpdateTick)
 		u.rs.Start(corporationUpdateTick)
@@ -597,7 +598,10 @@ func (u *baseUI) ShowAndRun() {
 	u.signals.BeginShutdown()
 	// Stop in parallel so shutdown is faster and all update contexts are canceled at once.
 	var wg sync.WaitGroup
-	wg.Go(func() { u.tasks.Stop() })
+	wg.Go(func() {
+		u.tasks.Stop()
+		slog.Info("UI background jobs stopped")
+	})
 	wg.Go(u.cs.Stop)
 	wg.Go(u.rs.Stop)
 	wg.Go(u.eus.Stop)
@@ -684,10 +688,6 @@ func (u *baseUI) IsDeveloperMode() bool {
 func (u *baseUI) IsOffline() bool {
 	return u.isOfflineMode || u.isOffline.Load()
 }
-func (u *baseUI) IsStartupCompleted() bool {
-	return u.isStartupCompleted.Load()
-}
-
 func (u *baseUI) IsUpdateDisabled() bool {
 	return u.isUpdateDisabled.Load()
 }
@@ -753,6 +753,9 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 	var err error
 	if cID := u.settings.LastCharacterID(); cID != 0 {
 		c, err = u.cs.GetCharacter(ctx, int64(cID))
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -761,6 +764,9 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 	}
 	if c == nil {
 		c, err = u.cs.GetAnyCharacter(ctx)
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -843,6 +849,9 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 	var err error
 	if cID := u.settings.LastCorporationID(); cID != 0 {
 		c, err = u.rs.GetCorporation(ctx, int64(cID))
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load corporation", "error", err)
@@ -851,6 +860,9 @@ func (u *baseUI) initCorporation(ctx context.Context) {
 	}
 	if c == nil {
 		c, err = u.rs.GetAnyCorporation(ctx)
+		if ctx.Err() != nil {
+			return // shutting down; keep the last selection
+		}
 		if err != nil {
 			if !errors.Is(err, app.ErrNotFound) {
 				slog.Error("Failed to load corporation", "error", err)
@@ -1135,6 +1147,16 @@ func (u *baseUI) GetOrCreateWindow(id string, titles ...string) (window fyne.Win
 		w.SetOnClosed(f)
 	}
 	return w, ok
+}
+
+// Go runs job in the background. Shutdown cancels the job and waits for it.
+// Reports false when the job was not started because the UI was stopped.
+func (u *baseUI) Go(job func(ctx context.Context)) bool {
+	ok := u.tasks.Go(job)
+	if !ok {
+		slog.Debug("Skipped UI job: UI stopped")
+	}
+	return ok
 }
 
 // GetOrCreateWindowWithOnClosed is like GetOrCreateWindow,

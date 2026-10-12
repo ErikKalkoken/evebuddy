@@ -22,17 +22,53 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// Init prepares the service after app start. Must be called before Start.
+// Returns only fatal errors. Other errors are logged.
+func (s *CorporationService) Init(ctx context.Context) error {
+	// No update can be running yet, so a running mark is left over from an unclean exit.
+	oo, err := s.st.ClearCorporationSectionStatusStartedAt(ctx)
+	if err != nil {
+		return fmt.Errorf("corporation service init: %w", err)
+	}
+	for _, o := range oo {
+		s.scs.SetCorporationSection(o)
+	}
+	if len(oo) > 0 {
+		slog.Info("Corporation sections: cleared stale running marks", "count", len(oo))
+	}
+	s.tasks.Go(func(ctx context.Context) {
+		// Removes data left behind when a cleanup after a permission loss was skipped, e.g. by a quit or crash.
+		ids, err := s.ListCorporationIDs(ctx)
+		if err != nil {
+			if !app.IsContextCanceled(ctx, err) {
+				slog.Error("Permission cleanup at startup failed", "error", err)
+			}
+			return
+		}
+		for id := range ids.All() {
+			if ctx.Err() != nil {
+				return
+			}
+			err := s.RemoveSectionDataWhenPermissionLost(ctx, id)
+			if err != nil && !errors.Is(err, app.ErrNotFound) { // may have been deleted meanwhile
+				slog.Error("Permission cleanup at startup failed", "corporationID", id, "error", err)
+			}
+		}
+	})
+	return nil
+}
+
 // Start starts the update scheduler.
 func (s *CorporationService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
-			if err := s.UpdateCorporationsIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
+			if err := s.updateCorporationsIfNeeded(ctx, false); err != nil && !app.IsContextCanceled(ctx, err) {
 				slog.Error("Failed to update corporations", "error", err)
 			}
 		})
 	})
 	if errors.Is(err, xsync.ErrTaskGroupStopped) {
-		slog.Info("Corporation update scheduler not started: shutting down")
+		slog.Info("Corporation update scheduler not started: service stopped")
 		return
 	}
 	if err != nil {
@@ -44,13 +80,62 @@ func (s *CorporationService) Start(d time.Duration) {
 
 // Stop cancels the update scheduler and background jobs and waits for them.
 func (s *CorporationService) Stop() {
-	if !s.tasks.Stop() {
-		return
+	if s.tasks.Stop() {
+		slog.Info("Corporation update scheduler and background jobs stopped")
+	} else {
+		slog.Info("Corporation background jobs stopped")
 	}
-	slog.Info("Corporation update scheduler stopped")
 }
 
-func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
+// UpdateCorporationsIfNeededAsync updates all corporations if needed in the background.
+func (s *CorporationService) UpdateCorporationsIfNeededAsync(forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		if err := s.updateCorporationsIfNeeded(ctx, forceUpdate); err != nil && !app.IsContextCanceled(ctx, err) {
+			slog.Error("Failed to update corporations", "error", err)
+		}
+	})
+	if !ok {
+		slog.Debug("Skipped updating corporations: service stopped")
+	}
+}
+
+// UpdateCorporationAndRefreshIfNeededAsync updates all sections of a corporation if needed in the background.
+func (s *CorporationService) UpdateCorporationAndRefreshIfNeededAsync(corporationID int64, forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, forceUpdate)
+	})
+	if !ok {
+		slog.Debug("Skipped updating corporation: service stopped", "corporationID", corporationID)
+	}
+}
+
+// UpdateSectionAndRefreshIfNeededAsync updates a corporation section if needed in the background.
+func (s *CorporationService) UpdateSectionAndRefreshIfNeededAsync(corporationID int64, section app.CorporationSection, forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+	})
+	if !ok {
+		slog.Debug("Skipped updating corporation section: service stopped", "corporationID", corporationID, "section", section)
+	}
+}
+
+// UpdateAfterPermissionChangeAsync removes data no longer permitted and reloads the corporation.
+func (s *CorporationService) UpdateAfterPermissionChangeAsync(corporationID int64) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		if err := s.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
+			if errors.Is(err, app.ErrNotFound) {
+				return
+			}
+			slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
+		}
+		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
+	})
+	if !ok {
+		slog.Debug("Skipped updating corporation after permission change: service stopped", "corporationID", corporationID)
+	}
+}
+
+func (s *CorporationService) updateCorporationsIfNeeded(ctx context.Context, forceUpdate bool) error {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of corporations during daily downtime")
 		return nil
@@ -74,7 +159,7 @@ func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, for
 	var wg sync.WaitGroup
 	for id := range corporations.All() {
 		wg.Go(func() {
-			s.UpdateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
+			s.updateCorporationAndRefreshIfNeeded(ctx, id, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporations", "corporations", corporations, "forceUpdate", forceUpdate)
@@ -83,14 +168,14 @@ func (s *CorporationService) UpdateCorporationsIfNeeded(ctx context.Context, for
 	return nil
 }
 
-// UpdateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
+// updateCorporationAndRefreshIfNeeded runs update for all sections of a corporation if needed
 // and refreshes the UI accordingly.
-func (s *CorporationService) UpdateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
+func (s *CorporationService) updateCorporationAndRefreshIfNeeded(ctx context.Context, corporationID int64, forceUpdate bool) {
 	sections := app.CorporationSections
 	var wg sync.WaitGroup
 	for _, section := range sections {
 		wg.Go(func() {
-			s.UpdateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
+			s.updateSectionAndRefreshIfNeeded(ctx, corporationID, section, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
@@ -98,12 +183,12 @@ func (s *CorporationService) UpdateCorporationAndRefreshIfNeeded(ctx context.Con
 	slog.Debug("Finished updating corporation", "corporationID", corporationID, "sections", sections, "forceUpdate", forceUpdate)
 }
 
-// UpdateSectionAndRefreshIfNeeded runs update for a corporation section if needed
+// updateSectionAndRefreshIfNeeded runs update for a corporation section if needed
 // and refreshes the UI accordingly.
 //
 // All UI areas showing data based on corporation sections needs to be included
 // to make sure they are refreshed when data changes.
-func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
+func (s *CorporationService) updateSectionAndRefreshIfNeeded(ctx context.Context, corporationID int64, section app.CorporationSection, forceUpdate bool) {
 	hasChanged, err := s.updateSectionIfNeeded(
 		ctx, corporationSectionUpdateParams{
 			corporationID: corporationID,
@@ -139,14 +224,30 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeeded(ctx context.Context
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
 // This can happen after a character has lost a role or a character was deleted.
+// Once started, the removal always completes.
+// Returns [app.ErrNotFound] when the corporation does not exist.
 func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("RemoveSectionDataWhenNoPermission: CorporationID %d: %w", corporationID, err)
 	}
-	permitted, err := s.PermittedSections(ctx, corporationID)
+
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
+
+	ok, err := s.HasCorporation(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
+	if !ok {
+		return wrapErr(app.ErrNotFound)
+	}
+
+	// Roles only: data from a missing scope can't be fetched again, so it's kept until the user re-adds the character.
+	permitted, err := s.permittedSections(ctx, corporationID, false)
+	if err != nil {
+		return wrapErr(err)
+	}
+
 	for _, section := range app.CorporationSections {
 		if !permitted.Contains(section) {
 			switch section {
@@ -215,18 +316,37 @@ func (s *CorporationService) HasSection(ctx context.Context, corporationID int64
 	return !x.IsMissing(), nil
 }
 
+// PermittedSection reports whether the user has permission to access a section.
+func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
+	sections, err := s.PermittedSections(ctx, corporationID)
+	if err != nil {
+		return false, err
+	}
+	return sections.Contains(section), nil
+}
+
 // PermittedSections returns which sections the user has permission to access.
 // i.e. the user has a character with the required roles and scopes.
 func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
+	return s.permittedSections(ctx, corporationID, true)
+}
+
+// permittedSections returns which sections a character's token permits,
+// checking the scopes only when withScopes is true.
+func (s *CorporationService) permittedSections(ctx context.Context, corporationID int64, withScopes bool) (set.Set[app.CorporationSection], error) {
 	var enabled, zero set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
-		return fmt.Errorf("PermittedSections %d: %w", corporationID, err)
+		return fmt.Errorf("permittedSections %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return zero, nil
 	}
 	for _, section := range app.CorporationSections {
-		ok, err := s.hasToken(ctx, corporationID, section.Roles(), section.Scopes())
+		var scopes set.Set[string]
+		if withScopes {
+			scopes = section.Scopes()
+		}
+		ok, err := s.hasToken(ctx, corporationID, section.Roles(), scopes)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
 				continue
@@ -239,15 +359,6 @@ func (s *CorporationService) PermittedSections(ctx context.Context, corporationI
 		enabled.Add(section)
 	}
 	return enabled, nil
-}
-
-// PermittedSection reports whether the user has permission to access a section.
-func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
-	sections, err := s.PermittedSections(ctx, corporationID)
-	if err != nil {
-		return false, err
-	}
-	return sections.Contains(section), nil
 }
 
 type corporationSectionUpdateParams struct {
@@ -349,7 +460,7 @@ func (s *CorporationService) updateSectionIfNeeded(ctx context.Context, arg corp
 func (s *CorporationService) recordUpdateFailed(ctx context.Context, arg corporationSectionUpdateParams, err error) {
 	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("Corporation section update canceled", "corporationID", arg.corporationID, "section", arg.section, "error", err)
-		// Clear StartedAt so the section doesn't show as running after a restart.
+		// Clear StartedAt so the section doesn't keep showing as running.
 		o, err2 := s.st.UpdateOrCreateCorporationSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateCorporationSectionStatusParams{
 			CorporationID: arg.corporationID,
 			Section:       arg.section,

@@ -40,6 +40,7 @@ type baseUI interface {
 	ErrorDisplay(err error) string
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
 	GetOrCreateWindowWithOnClosed(id string, titles ...string) (window fyne.Window, created bool, onClosed func())
+	Go(job func(ctx context.Context)) bool
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
@@ -327,11 +328,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 		Label: "Clear cache",
 		Action: func() {
 			ui.ShowProgressConfirm(
+				a.u,
 				"Clear Cache?",
 				"This will clear the cache",
 				"Clear",
 				widget.DangerImportance,
-				func() {
+				func(_ context.Context) {
 					a.u.ClearAllCaches()
 					a.sb.Display("Cache cleared")
 				}, a.w,
@@ -407,11 +409,12 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 
 func (a *settings) showDeleteFileDialog(name, path string) {
 	ui.ShowProgressConfirm(
+		a.u,
 		"Delete File?",
 		fmt.Sprintf("This will permanently delete the %s", name),
 		"Delete",
 		widget.DangerImportance,
-		func() {
+		func(_ context.Context) {
 			err := func() error {
 				files, err := filepath.Glob(path)
 				if err != nil {

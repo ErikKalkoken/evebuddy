@@ -92,6 +92,9 @@ func (a *admin) makeCharacterList() *widget.List {
 
 func (a *admin) update(ctx context.Context) {
 	characters, err := a.fetchRows(ctx)
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		a.cw.reportError("Failed to update characters", err)
 		return
@@ -153,8 +156,10 @@ func (a *admin) showAddCharacterDialog() {
 	d1.SetOnClosed(func() {
 		cancel()
 	})
-	d1.Show()
-	go func() {
+	ok := a.cw.u.Go(func(ctx context.Context) {
+		// Shutdown cancels the add like the dialog's Cancel; the service protects storing.
+		stop := context.AfterFunc(ctx, cancel)
+		defer stop()
 		err := func() error {
 			character, err := a.cw.u.Character().UpdateOrCreateCharacterFromSSO(cancelCTX, func(s string) {
 				fyne.Do(func() {
@@ -162,19 +167,30 @@ func (a *admin) showAddCharacterDialog() {
 					closeButton.Hide()
 				})
 			})
-			if errors.Is(err, eveauth.ErrAborted) {
-				return nil
-			}
 			if err != nil {
+				if errors.Is(err, eveauth.ErrAborted) {
+					return nil // canceled by the user
+				}
+				if cancelCTX.Err() != nil {
+					if !app.IsErrorCanceled(err) {
+						slog.Error("Failed to add character after cancel", "error", err)
+					}
+					return nil // canceled by the user or shutdown
+				}
 				return err
+			}
+			if ctx.Err() != nil {
+				return nil // shutting down
 			}
 			fyne.Do(func() {
 				infoText.SetText("Adding new character...")
 			})
-			ctx := context.Background()
 			a.update(ctx)
 			if a.cw.u.CurrentCharacter() == nil {
 				err := a.cw.u.LoadCharacter(ctx, character.ID)
+				if ctx.Err() != nil {
+					return nil // shutting down
+				}
 				if err != nil {
 					slog.Error(
 						"Setting newly added character",
@@ -187,6 +203,9 @@ func (a *admin) showAddCharacterDialog() {
 			if a.cw.u.CurrentCorporation() == nil {
 				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
 					err := a.cw.u.LoadCorporation(ctx, c.ID)
+					if ctx.Err() != nil {
+						return nil // shutting down
+					}
 					if err != nil {
 						slog.Error(
 							"Setting newly added corporation",
@@ -199,10 +218,13 @@ func (a *admin) showAddCharacterDialog() {
 			}
 			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
 			if !a.cw.u.IsUpdateDisabled() {
-				go a.cw.u.Character().UpdateCharacterAndRefreshIfNeeded(ctx, character.ID, true)
+				a.cw.u.Character().UpdateCharacterAndRefreshIfNeededAsync(character.ID, true)
 			}
 			return nil
 		}()
+		if ctx.Err() != nil {
+			return
+		}
 		fyne.Do(func() {
 			d1.Hide()
 		})
@@ -211,60 +233,79 @@ func (a *admin) showAddCharacterDialog() {
 				ui.ShowErrorAndLog("Failed to add a new character", err, a.cw.u.IsDeveloperMode(), a.cw.w)
 			})
 		}
-	}()
+	})
+	if !ok {
+		cancel()
+		return
+	}
+	d1.Show()
 }
 
 func (a *admin) showDeleteDialog(r adminRow) {
 	ui.ShowProgressConfirm(
+		a.cw.u,
 		"Delete Character?",
 		fmt.Sprintf("%s will be permanently removed from this app", r.characterName),
 		"Delete",
 		widget.DangerImportance,
-		func() {
-			ctx := context.Background()
-			wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
-			if err != nil {
-				a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
-				return
-			}
-			a.update(ctx)
-			a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
-
-			if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
-				err := a.cw.u.SetAnyCharacter(ctx)
-				if err != nil {
-					slog.Warn("Failed to set current character after deletion", "error", err)
-				}
-			}
-			if wasCorpDeleted {
-				err := a.cw.u.SetAnyCorporation(ctx)
-				if err != nil {
-					slog.Warn("Failed to set current corporation after deletion", "error", err)
-				}
-
-			} else {
-				ok, err := a.cw.u.Corporation().HasCorporation(ctx, r.corporationID)
-				if err != nil {
-					slog.Error("Failed to determine if corp exists", "err", err)
-				}
-				if ok {
-					err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
-					if err != nil {
-						slog.Error(
-							"Failed to remove corp data after character was deleted",
-							slog.Int64("characterID", r.characterID),
-							slog.Any("error", err))
-					}
-					go a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeeded(ctx, r.corporationID, true)
-				}
-			}
-			go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
-				ID:   r.characterID,
-				Name: r.characterName,
-			})
+		func(ctx context.Context) {
+			a.deleteCharacter(ctx, r)
 		},
 		a.cw.w,
 	)
+}
+
+// deleteCharacter deletes a character and updates the UI.
+func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
+	wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
+	if ctx.Err() != nil {
+		return
+	}
+	if err != nil {
+		a.cw.reportError(fmt.Sprintf("Failed to delete character %s", r.characterName), err)
+		return
+	}
+	a.update(ctx)
+	a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
+
+	if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
+		err := a.cw.u.SetAnyCharacter(ctx)
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			slog.Warn("Failed to set current character after deletion", "error", err)
+		}
+	}
+
+	if wasCorpDeleted {
+		err := a.cw.u.SetAnyCorporation(ctx)
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			slog.Warn("Failed to set current corporation after deletion", "error", err)
+		}
+
+	} else if !app.IsNPCCorporation(r.corporationID) {
+		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+		// A corporation not stored yet has nothing to remove or update.
+		if !errors.Is(err, app.ErrNotFound) {
+			if err != nil {
+				slog.Error(
+					"Failed to remove corporation data after character was deleted",
+					slog.Int64("characterID", r.characterID),
+					slog.Int64("corporationID", r.corporationID),
+					slog.Any("error", err))
+			}
+			a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(r.corporationID, true)
+		}
+	}
+
+	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
+		ID:   r.characterID,
+		Name: r.characterName,
+	})
 }
 
 type adminListItem struct {

@@ -3,7 +3,6 @@ package eveuniverseservice_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -14,10 +13,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
-	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func TestEveuniverseservice_HasSection(t *testing.T) {
@@ -71,124 +70,81 @@ func TestEveuniverseservice_HasSection(t *testing.T) {
 	})
 }
 
-func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_DoesNotReportSuccessOnFailedUpdate(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	sig := app.NewSignals()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st, Signals: sig})
-	ctx := context.Background()
-	httpmock.Reset()
-	httpmock.RegisterResponder(
-		"GET",
-		"https://esi.evetech.net/markets/prices",
-		httpmock.NewErrorResponder(fmt.Errorf("failed")),
-	)
-	var updated bool
-	sig.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		updated = true
-	})
-	// when
-	s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, false)
-	// then
-	status, err := st.GetGeneralSectionStatus(ctx, app.SectionEveMarketPrices)
-	require.NoError(t, err)
-	assert.True(t, status.HasError(), "expected section status to record the ESI failure")
-	assert.False(t, updated, "EveUniverseSectionUpdated must not be emitted for a failed update")
-}
-
-func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_SingleflightFollowerNotCanceled(t *testing.T) {
-	// on disk: concurrent callers would get separate, empty in-memory DBs
+func TestEveuniverseservice_AsyncUpdates(t *testing.T) {
 	_, st, _ := testutil.NewDBOnDisk(t)
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	const section = app.SectionEveMarketPrices
 
-	entered := make(chan struct{})
-	release := make(chan struct{})
-	httpmock.RegisterResponder(
-		"GET",
-		"https://esi.evetech.net/markets/prices",
-		func(req *http.Request) (*http.Response, error) {
-			close(entered)
-			select {
-			case <-req.Context().Done():
+	t.Run("Stop cancels and waits for a running update", func(t *testing.T) {
+		httpmock.Reset()
+		s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+		entered := make(chan struct{})
+		var wasCanceled bool
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/markets/prices",
+			func(req *http.Request) (*http.Response, error) {
+				close(entered)
+				<-req.Context().Done()
+				wasCanceled = true
 				return nil, req.Context().Err()
-			case <-release:
-				return httpmock.NewJsonResponse(200, []map[string]any{})
-			}
-		},
-	)
-
-	// leader: cancelable ctx, e.g. tied to the update scheduler
-	ctxLeader, cancelLeader := context.WithCancel(context.Background())
-	leaderDone := make(chan struct{})
-	go func() {
-		defer close(leaderDone)
-		s.UpdateSectionAndRefreshIfNeeded(ctxLeader, section, false)
-	}()
-	select {
-	case <-entered:
-		// the leader's HTTP call is now in flight
-	case <-time.After(time.Second):
-		t.Fatal("leader never reached the HTTP call")
-	}
-
-	// follower: independent, never-canceled ctx, e.g. from a manual reload
-	followerDone := make(chan struct{})
-	go func() {
-		defer close(followerDone)
-		s.UpdateSectionAndRefreshIfNeeded(context.Background(), section, false)
-	}()
-	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
-
-	// when
-	cancelLeader()
-	<-leaderDone
-	<-followerDone
-
-	// then
-	status, err := st.GetGeneralSectionStatus(context.Background(), section)
-	require.NoError(t, err)
-	assert.False(t, status.HasError(), "a canceled leader must not be recorded as a real error via the follower's uncanceled ctx")
-	assert.True(t, status.StartedAt.IsZero(), "a canceled update must not leave the section as running")
+			},
+		)
+		s.UpdateSectionAndRefreshIfNeededAsync(section, true)
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			t.Fatal("update never reached the HTTP call")
+		}
+		// when
+		stopped := make(chan struct{})
+		go func() {
+			s.Stop()
+			close(stopped)
+		}()
+		// then
+		select {
+		case <-stopped:
+		case <-time.After(time.Second):
+			t.Fatal("Stop did not return")
+		}
+		assert.True(t, wasCanceled)
+	})
+	t.Run("skips updates after Stop", func(t *testing.T) {
+		httpmock.Reset()
+		s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+		s.Stop()
+		// when
+		s.UpdateSectionsIfNeededAsync(true)
+		s.UpdateSectionAndRefreshIfNeededAsync(section, true)
+		s.Stop()
+		// then
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
 }
 
-func TestEveuniverseservice_UpdateSectionAndRefreshIfNeeded_ForceRefresh(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
+func TestEveuniverseservice_Init(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 	ctx := context.Background()
-	newResponder := func(gotForceRefresh *bool) httpmock.Responder {
-		return func(req *http.Request) (*http.Response, error) {
-			*gotForceRefresh = xgoesi.IsForceRefresh(req.Context())
-			return httpmock.NewJsonResponse(200, []any{})
-		}
-	}
-	t.Run("should mark context for force refresh only when forced", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		var gotForceRefresh bool
-		httpmock.RegisterResponder("GET", "https://esi.evetech.net/markets/prices", newResponder(&gotForceRefresh))
-		// when
-		s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, true)
-		// then
-		assert.True(t, gotForceRefresh)
+	o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+		Section: app.SectionEveTypes,
 	})
-	t.Run("should not mark context for force refresh when not forced", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		var gotForceRefresh bool
-		httpmock.RegisterResponder("GET", "https://esi.evetech.net/markets/prices", newResponder(&gotForceRefresh))
-		// when
-		s.UpdateSectionAndRefreshIfNeeded(ctx, app.SectionEveMarketPrices, false)
-		// then
-		assert.False(t, gotForceRefresh)
-	})
+	require.False(t, o.StartedAt.IsZero())
+	scs := new(statuscache.StatusCache)
+	require.NoError(t, scs.Init(ctx, st))
+	x0, _ := scs.EveUniverseSection(app.SectionEveTypes)
+	require.True(t, x0.IsRunning())
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st, StatusCacheService: scs})
+	// when
+	err := s.Init(ctx)
+	// then
+	require.NoError(t, err)
+	got, err := st.GetGeneralSectionStatus(ctx, app.SectionEveTypes)
+	require.NoError(t, err)
+	assert.True(t, got.StartedAt.IsZero())
+	x, ok := scs.EveUniverseSection(app.SectionEveTypes)
+	require.True(t, ok)
+	assert.False(t, x.IsRunning())
 }

@@ -129,8 +129,11 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 		),
 	)
 	forums := xwidget.NewIconButton(icons.EvelogoPng, func() {
-		go func() {
-			ec, err := a.iw.u.EVEUniverse().GetCharacterESI(context.Background(), a.id)
+		a.iw.u.Go(func(ctx context.Context) {
+			ec, err := a.iw.u.EVEUniverse().GetCharacter(ctx, a.id)
+			if ctx.Err() != nil {
+				return // shutting down
+			}
 			if err != nil {
 				a.iw.sb.Display("Failed to get character for forum: " + a.iw.u.ErrorDisplay(err))
 				return
@@ -139,7 +142,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 			fyne.Do(func() {
 				a.iw.openURL(fmt.Sprintf("https://forums.eveonline.com/u/%s/summary", name))
 			})
-		}()
+		})
 	})
 	forums.SetToolTip("Show on forums.eveonline.com")
 	top := container.NewBorder(

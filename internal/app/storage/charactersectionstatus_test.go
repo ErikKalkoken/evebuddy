@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -112,5 +113,40 @@ func TestCharacterSectionStatus(t *testing.T) {
 		x2, err := st.GetCharacterSectionStatus(ctx, c.ID, x.Section.(app.CharacterSection))
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
+	})
+	t.Run("can clear started at", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		running := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID:  c.ID,
+			Section:      app.SectionCharacterImplants,
+			ErrorMessage: "error",
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkillqueue,
+		})
+		_, err := st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkillqueue,
+			StartedAt:   new(optional.Optional[time.Time]),
+		})
+		require.NoError(t, err)
+		// when
+		oo, err := st.ClearCharacterSectionStatusStartedAt(ctx)
+		// then
+		require.NoError(t, err)
+		require.Len(t, oo, 1)
+		got := oo[0]
+		assert.True(t, got.StartedAt.IsZero())
+		assert.Equal(t, running.Section, got.Section)
+		assert.True(t, running.CompletedAt.Equal(got.CompletedAt))
+		assert.Equal(t, running.ContentHash, got.ContentHash)
+		assert.Equal(t, running.ErrorMessage, got.ErrorMessage)
+		assert.True(t, running.UpdatedAt.Equal(got.UpdatedAt))
+		x, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionCharacterImplants)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero())
 	})
 }

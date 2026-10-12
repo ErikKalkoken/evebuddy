@@ -652,10 +652,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.onShowAndRun = func() {
 		u.MainWindow().Resize(u.settings.WindowSize())
 	}
-	u.onAppFirstStarted = func() {
-		xdesktop.EnableShortcuts(u.MainWindow())
-		go u.UpdateMailIndicator(context.Background())
-		go statusBar.start()
+	u.onAppFirstStarted = func(startupCtx context.Context) {
+		fyne.Do(func() {
+			xdesktop.EnableShortcuts(u.MainWindow())
+		})
+		u.UpdateMailIndicator(startupCtx)
+		statusBar.start(startupCtx)
 	}
 	u.onAppStopped = func() {
 		u.saveAppState()

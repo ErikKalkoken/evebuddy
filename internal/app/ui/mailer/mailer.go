@@ -48,6 +48,7 @@ type baseUI interface {
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
+	Go(job func(ctx context.Context)) bool
 	InfoViewer() ui.InfoViewer
 	IsDeveloperMode() bool
 	IsMobile() bool
@@ -82,14 +83,14 @@ func NewWindow(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail) (
 type mailer struct {
 	widget.BaseWidget
 
-	body      *widget.Entry
-	character atomic.Pointer[app.Character]
-	from      *eveEntityEntry
-	send      *kxwidget.LoadingButton
-	subject   *widget.Entry
-	to        *eveEntityEntry
-	u         baseUI
-	w         fyne.Window
+	bodyEntry    *widget.Entry
+	character    atomic.Pointer[app.Character]
+	fromEntry    *eveEntityEntry
+	sendButton   *kxwidget.LoadingButton
+	subjectEntry *widget.Entry
+	toEntry      *eveEntityEntry
+	u            baseUI
+	w            fyne.Window
 }
 
 func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w fyne.Window) *mailer {
@@ -100,14 +101,14 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
-	a.from = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage().EveEntityLogoAsync)
-	a.from.showInfo = u.InfoViewer().Show
-	a.from.Set([]*app.EveEntity{{
+	a.fromEntry = newEveEntityEntry(widget.NewLabel("From"), labelWith, u.EVEImage().EveEntityLogoAsync)
+	a.fromEntry.showInfo = u.InfoViewer().Show
+	a.fromEntry.Set([]*app.EveEntity{{
 		ID:       c.ID,
 		Name:     c.EveCharacter.Name,
 		Category: app.EveEntityCharacter,
 	}})
-	a.from.Disable()
+	a.fromEntry.Disable()
 
 	toButton := widget.NewButton("To", func() {
 		if a.u.IsOffline() {
@@ -115,68 +116,74 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 			return
 		}
 		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
-			a.to.Add(ee)
+			a.toEntry.Add(ee)
 		}, a.w)
 	})
-	a.to = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
-	a.to.showInfo = u.InfoViewer().Show
-	a.to.placeholderText = "Tap To-Button to add recipients..."
+	a.toEntry = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
+	a.toEntry.showInfo = u.InfoViewer().Show
+	a.toEntry.placeholderText = "Tap To-Button to add recipients..."
 
-	a.subject = widget.NewEntry()
-	a.subject.PlaceHolder = "Subject"
+	a.subjectEntry = widget.NewEntry()
+	a.subjectEntry.PlaceHolder = "Subject"
 
-	a.body = widget.NewEntry()
-	a.body.MultiLine = true
-	a.body.Wrapping = fyne.TextWrapWord
-	a.body.SetMinRowsVisible(14)
-	a.body.PlaceHolder = "Compose message"
+	a.bodyEntry = widget.NewEntry()
+	a.bodyEntry.MultiLine = true
+	a.bodyEntry.Wrapping = fyne.TextWrapWord
+	a.bodyEntry.SetMinRowsVisible(14)
+	a.bodyEntry.PlaceHolder = "Compose message"
 
 	const sep = "\n\n--------------------------------\n"
 	switch mode {
 	case New:
 		// nothing to do
 	case Reply:
-		a.to.Set([]*app.EveEntity{mail.From})
-		a.subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-		a.body.SetText(sep + mail.String())
+		a.toEntry.Set([]*app.EveEntity{mail.From})
+		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+		a.bodyEntry.SetText(sep + mail.String())
 	case ReplyAll:
 		oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
 		oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
 			return o.ID == c.EveCharacter.ID
 		})
-		a.to.Set(oo)
-		a.subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-		a.body.SetText(sep + mail.String())
+		a.toEntry.Set(oo)
+		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+		a.bodyEntry.SetText(sep + mail.String())
 	case Forward:
-		a.subject.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
-		a.body.SetText(sep + mail.String())
+		a.subjectEntry.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
+		a.bodyEntry.SetText(sep + mail.String())
 	default:
 		panic(fmt.Errorf("unexpected mailer mode: %v", mode))
 	}
 
-	a.send = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
-		go func() {
+	a.sendButton = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
+		// TODO: Convert to dynamic enable/disable of send button
+		var issue string
+		if a.toEntry.IsEmpty() {
+			issue = "Needs to have at least one recipient."
+		}
+		if a.subjectEntry.Text == "" {
+			issue = "Subject can not be empty"
+		}
+		if a.bodyEntry.Text == "" {
+			issue = "Message can not be empty"
+		}
+		if issue != "" {
+			ui.ShowInformation("Incomplete mail", issue, w)
+			done()
+			return
+		}
+		characterID := a.character.Load().ID
+		subject := a.subjectEntry.Text
+		body := a.bodyEntry.Text
+		recipients := slices.Clone(a.toEntry.Items())
+		to := a.toEntry.String()
+		ok := a.u.Go(func(ctx context.Context) {
+			err := a.send(ctx, characterID, subject, recipients, body)
+			if ctx.Err() != nil {
+				return // UI is gone, so skip done()
+			}
 			defer done()
-
-			// TODO: Convert to dynamic enable/disable of send button
-			var issue string
-			if a.to.IsEmpty() {
-				issue = "Needs to have at least one recipient."
-			}
-			if a.subject.Text == "" {
-				issue = "Subject can not be empty"
-			}
-			if a.body.Text == "" {
-				issue = "Message can not be empty"
-			}
-			if issue != "" {
-				fyne.Do(func() {
-					ui.ShowInformation("Incomplete mail", issue, w)
-				})
-				return
-			}
-			ctx := context.Background()
-			if err := a.Send(ctx); err != nil {
+			if err != nil {
 				fyne.Do(func() {
 					ui.ShowErrorAndLog("Failed to send mail", err, a.u.IsDeveloperMode(), w)
 				})
@@ -185,26 +192,29 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 			fyne.Do(func() {
 				w.Close()
 			})
-			a.u.DisplaySnackbar(fmt.Sprintf("Your mail to %s has been sent.", a.to))
-		}()
+			a.u.DisplaySnackbar(fmt.Sprintf("Your mail to %s has been sent.", to))
+		})
+		if !ok {
+			done()
+		}
 	})
-	a.send.SetImportance(widget.HighImportance)
+	a.sendButton.SetImportance(widget.HighImportance)
 	return a
 }
 
 func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 	inner := container.NewBorder(
-		container.NewVBox(a.from, a.to, a.subject),
+		container.NewVBox(a.fromEntry, a.toEntry, a.subjectEntry),
 		nil,
 		nil,
 		nil,
-		ui.NewWideScrollBarOverride(a.body),
+		ui.NewWideScrollBarOverride(a.bodyEntry),
 	)
 	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
 		container.NewCenter(container.New(layout.NewCustomPaddedLayout(p, p, 0, 0),
-			a.send,
+			a.sendButton,
 		)),
 		nil,
 		nil,
@@ -214,21 +224,14 @@ func (a *mailer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-// Send tries to send the current mail and reports any errors.
-func (a *mailer) Send(ctx context.Context) error {
-	c := a.character.Load()
-	_, err := a.u.Character().SendMail(
-		ctx,
-		c.ID,
-		a.subject.Text,
-		a.to.Items(),
-		a.body.Text,
-	)
+// send sends a mail and reports any errors.
+func (a *mailer) send(ctx context.Context, characterID int64, subject string, recipients []*app.EveEntity, body string) error {
+	_, err := a.u.Character().SendMail(ctx, characterID, subject, recipients, body)
 	if err != nil {
 		return err
 	}
 	go a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
-		CharacterID: c.ID,
+		CharacterID: characterID,
 		Section:     app.SectionCharacterMailHeaders,
 	})
 	return nil

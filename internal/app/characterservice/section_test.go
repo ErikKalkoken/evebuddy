@@ -11,6 +11,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
@@ -69,4 +70,31 @@ func TestCharacterService_HasSection(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, got)
 	})
+}
+
+func TestCharacterService_Init(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	c := factory.CreateCharacterFull()
+	o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: c.ID,
+		Section:     app.SectionCharacterImplants,
+	})
+	require.False(t, o.StartedAt.IsZero())
+	scs := new(statuscache.StatusCache)
+	require.NoError(t, scs.Init(ctx, st))
+	x0, _ := scs.CharacterSection(c.ID, app.SectionCharacterImplants)
+	require.True(t, x0.IsRunning())
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, StatusCacheService: scs})
+	// when
+	err := s.Init(ctx)
+	// then
+	require.NoError(t, err)
+	got, err := st.GetCharacterSectionStatus(ctx, c.ID, app.SectionCharacterImplants)
+	require.NoError(t, err)
+	assert.True(t, got.StartedAt.IsZero())
+	x, ok := scs.CharacterSection(c.ID, app.SectionCharacterImplants)
+	require.True(t, ok)
+	assert.False(t, x.IsRunning())
 }

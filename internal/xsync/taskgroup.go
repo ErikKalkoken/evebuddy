@@ -66,7 +66,7 @@ func (g *TaskGroup) Go(job func(context.Context)) bool {
 }
 
 // Stop cancels all tasks and jobs and waits for them to finish.
-// Reports whether Run had been called, so callers can log only when it was.
+// Reports whether Run had been called.
 func (g *TaskGroup) Stop() bool {
 	g.mu.Lock()
 	wasRunning := g.running

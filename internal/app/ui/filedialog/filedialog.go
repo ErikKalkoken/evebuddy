@@ -14,6 +14,7 @@ import (
 type baseUI interface {
 	ErrorDisplay(err error) string
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
+	Go(job func(ctx context.Context)) bool
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
@@ -98,18 +99,27 @@ func handleSaveResult(u baseUI, arg ShowFileSaveWindowParams, writer fyne.URIWri
 	if writer == nil {
 		return
 	}
-	go func() {
+	ok := u.Go(func(ctx context.Context) {
 		defer writer.Close()
-		err := arg.WriteFunc(context.Background(), writer)
+		// Shutdown doesn't cancel exports, to avoid partial files.
+		err := arg.WriteFunc(context.WithoutCancel(ctx), writer)
 		if err != nil {
 			slog.Error(arg.Title, "error", err)
+		}
+		if ctx.Err() != nil {
+			return // shutting down
+		}
+		if err != nil {
 			fyne.Do(func() {
 				arg.DisplaySnackbar("Error: " + u.ErrorDisplay(err))
 			})
 			return
 		}
 		fyne.Do(func() { arg.DisplaySnackbar(arg.CompletionText) })
-	}()
+	})
+	if !ok {
+		writer.Close()
+	}
 }
 
 func createFileOpenDialog(u baseUI, arg ShowFileOpenWindowParams, w fyne.Window) *dialog.FileDialog {
@@ -130,9 +140,12 @@ func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIRea
 	if reader == nil {
 		return
 	}
-	go func() {
+	ok := u.Go(func(ctx context.Context) {
 		defer reader.Close()
-		err := arg.ReadFunc(context.Background(), reader)
+		err := arg.ReadFunc(ctx, reader)
+		if ctx.Err() != nil {
+			return
+		}
 		if err != nil {
 			slog.Error(arg.Title, "error", err)
 			fyne.Do(func() {
@@ -141,5 +154,8 @@ func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIRea
 			return
 		}
 		fyne.Do(func() { arg.DisplaySnackbar(arg.CompletionText) })
-	}()
+	})
+	if !ok {
+		reader.Close()
+	}
 }

@@ -18,15 +18,31 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
+// Init prepares the service after app start. Must be called before Start.
+func (s *EVEUniverseService) Init(ctx context.Context) error {
+	// No update can be running yet, so a running mark is left over from an unclean exit.
+	oo, err := s.st.ClearGeneralSectionStatusStartedAt(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range oo {
+		s.scs.SetEveUniverseSection(o)
+	}
+	if len(oo) > 0 {
+		slog.Info("EVEUniverse sections: cleared stale running marks", "count", len(oo))
+	}
+	return nil
+}
+
 // Start starts the update scheduler.
 func (s *EVEUniverseService) Start(d time.Duration) {
 	err := s.tasks.Run(func(ctx context.Context) {
 		xsync.RunEvery(ctx, d, func(ctx context.Context) {
-			s.UpdateSectionsIfNeeded(ctx, false)
+			s.updateSectionsIfNeeded(ctx, false)
 		})
 	})
 	if errors.Is(err, xsync.ErrTaskGroupStopped) {
-		slog.Info("EVEUniverse update scheduler not started: shutting down")
+		slog.Info("EVEUniverse update scheduler not started: service stopped")
 		return
 	}
 	if err != nil {
@@ -38,13 +54,34 @@ func (s *EVEUniverseService) Start(d time.Duration) {
 
 // Stop cancels the update scheduler and background jobs and waits for them.
 func (s *EVEUniverseService) Stop() {
-	if !s.tasks.Stop() {
-		return
+	if s.tasks.Stop() {
+		slog.Info("EVEUniverse update scheduler and background jobs stopped")
+	} else {
+		slog.Info("EVEUniverse background jobs stopped")
 	}
-	slog.Info("EVEUniverse update scheduler stopped")
 }
 
-func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
+// UpdateSectionsIfNeededAsync updates all general sections if needed in the background.
+func (s *EVEUniverseService) UpdateSectionsIfNeededAsync(forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionsIfNeeded(ctx, forceUpdate)
+	})
+	if !ok {
+		slog.Debug("Skipped updating general sections: service stopped")
+	}
+}
+
+// UpdateSectionAndRefreshIfNeededAsync updates a general section if needed in the background.
+func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeededAsync(section app.EveUniverseSection, forceUpdate bool) {
+	ok := s.tasks.Go(func(ctx context.Context) {
+		s.updateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
+	})
+	if !ok {
+		slog.Debug("Skipped updating general section: service stopped", "section", section)
+	}
+}
+
+func (s *EVEUniverseService) updateSectionsIfNeeded(ctx context.Context, forceUpdate bool) {
 	if !forceUpdate && xgoesi.IsDailyDowntime() {
 		slog.Info("Skipping regular update of general sections during daily downtime")
 		return
@@ -58,7 +95,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	var wg sync.WaitGroup
 	for section := range sections.All() {
 		wg.Go(func() {
-			s.UpdateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
+			s.updateSectionAndRefreshIfNeeded(ctx, section, forceUpdate)
 		})
 	}
 	slog.Debug("Started updating general sections", "sections", sections, "forceUpdate", forceUpdate)
@@ -66,7 +103,7 @@ func (s *EVEUniverseService) UpdateSectionsIfNeeded(ctx context.Context, forceUp
 	slog.Debug("Finished updating general sections", "sections", sections, "forceUpdate", forceUpdate)
 }
 
-func (s *EVEUniverseService) UpdateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
+func (s *EVEUniverseService) updateSectionAndRefreshIfNeeded(ctx context.Context, section app.EveUniverseSection, forceUpdate bool) {
 	logErr := func(err error) {
 		if app.IsContextCanceled(ctx, err) {
 			slog.Debug("Failed to update general section", "section", section, "err", err)
@@ -203,7 +240,7 @@ func (s *EVEUniverseService) updateSection(ctx context.Context, section app.EveU
 func (s *EVEUniverseService) recordUpdateFailed(ctx context.Context, arg eveUniverseSectionUpdateParams, err error) {
 	if app.IsContextCanceled(ctx, err) {
 		slog.Debug("General section update canceled", "section", arg.section, "error", err)
-		// Clear StartedAt so the section doesn't show as running after a restart.
+		// Clear StartedAt so the section doesn't keep showing as running.
 		o, err2 := s.st.UpdateOrCreateGeneralSectionStatus(context.WithoutCancel(ctx), storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   arg.section,
 			StartedAt: new(optional.Optional[time.Time]),

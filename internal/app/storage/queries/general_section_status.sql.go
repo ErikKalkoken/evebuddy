@@ -11,6 +11,48 @@ import (
 	"time"
 )
 
+const clearGeneralSectionStatusStartedAt = `-- name: ClearGeneralSectionStatusStartedAt :many
+UPDATE general_section_status
+SET
+    started_at = NULL
+WHERE
+    started_at IS NOT NULL
+RETURNING
+    id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+`
+
+func (q *Queries) ClearGeneralSectionStatusStartedAt(ctx context.Context) ([]GeneralSectionStatus, error) {
+	rows, err := q.db.QueryContext(ctx, clearGeneralSectionStatusStartedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GeneralSectionStatus
+	for rows.Next() {
+		var i GeneralSectionStatus
+		if err := rows.Scan(
+			&i.ID,
+			&i.SectionID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ContentHash,
+			&i.CompletedAt,
+			&i.Error,
+			&i.StartedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getGeneralSectionStatus = `-- name: GetGeneralSectionStatus :one
 SELECT
     id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
@@ -95,7 +137,9 @@ SET
     content_hash = ?3,
     error = ?4,
     started_at = ?5,
-    updated_at = ?6 RETURNING id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
+    updated_at = ?6
+RETURNING
+    id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 
 type UpdateOrCreateGeneralSectionStatusParams struct {

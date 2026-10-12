@@ -187,6 +187,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	ctx := context.Background()
+
 	t.Run("return matching token only", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -239,6 +240,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		assert.Len(t, r, 1)
 		xassert.Equal(t, c1.ID, r[0].CharacterID)
 	})
+
 	t.Run("matches any when no roles", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -269,6 +271,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, r, 2)
 	})
+
 	t.Run("returns each token with its own scopes", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -311,6 +314,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		xassert.Equal(t, set.Of("alpha", "charlie"), got[c2.ID])
 		xassert.Equal(t, set.Of("alpha"), got[c3.ID])
 	})
+
 	t.Run("returns token once when character has multiple matching roles", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -335,6 +339,7 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		require.Len(t, r, 1)
 		xassert.Equal(t, c.ID, r[0].CharacterID)
 	})
+
 	t.Run("returns empty when no tokens found", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		corp := factory.CreateCorporation()
@@ -342,4 +347,33 @@ func TestListCharacterTokenForCorporation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
+
+	t.Run("returns matching roles when no scopes provided", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corp1 := factory.CreateEveEntityCorporation()
+
+		// token with correct corp and role, but wrong scope
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corp1.ID})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		err := st.UpdateCharacterRoles(ctx, c.ID, set.Of(app.RoleFactoryManager))
+		require.NoError(t, err)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+			Scopes:      set.Of("bravo"),
+		})
+
+		// when
+		r, err := st.ListCharacterTokenForCorporation(
+			ctx,
+			c.EveCharacter.Corporation.ID,
+			set.Of(app.RoleFactoryManager, app.RoleAccountant),
+			set.Set[string]{},
+		)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, r, 1)
+		xassert.Equal(t, c.ID, r[0].CharacterID)
+	})
+
 }

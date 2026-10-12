@@ -13,35 +13,47 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-// DeleteCharacter deletes a character and corporations which have become orphaned as a result.
-// It reports whether the related corporation was also deleted.
-func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool, error) {
-	if err := s.st.DeleteCharacter(ctx, id); err != nil {
-		return false, err
+// DeleteCharacter deletes a character
+// and potentially also its corporation when it becomes orphaned.
+// It reports whether its corporation was also deleted.
+func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int64) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacter: %w", err)
 	}
-	s.clearForecasts(id)
-	s.scs.DeleteCharacter(id)
-	slog.Info("Character deleted", "characterID", id)
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
-		return false, err
-	}
-	ids, err := s.st.ListOrphanedCorporationIDs(ctx)
+
+	// A partial delete would leave orphaned corporations behind.
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
+	character, err := s.st.GetEveCharacter(ctx, characterID)
 	if err != nil {
-		return false, err
+		return false, wrapErr(err)
 	}
-	if ids.Size() == 0 {
+	if err := s.st.DeleteCharacter(ctx, characterID); err != nil {
+		return false, wrapErr(err)
+	}
+	s.clearForecasts(characterID)
+	s.scs.DeleteCharacter(characterID)
+	slog.Info("Character deleted", "characterID", characterID)
+	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
+		return false, wrapErr(err)
+	}
+
+	// remove character's corporation if it becomes orphaned
+	orphans, err := s.st.ListOrphanedCorporationIDs(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	corporationID := character.Corporation.ID
+	if !orphans.Contains(corporationID) {
 		return false, nil
 	}
-	for id := range ids.All() {
-		err := s.st.DeleteCorporation(ctx, id)
-		if err != nil {
-			return false, err
-		}
-		s.scs.DeleteCorporation(id)
-		slog.Info("Corporation deleted", "corporationID", id)
+	if err := s.st.DeleteCorporation(ctx, corporationID); err != nil {
+		return false, wrapErr(err)
 	}
+	s.scs.DeleteCorporation(corporationID)
+	slog.Info("Corporation deleted", "corporationID", corporationID)
 	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-		return false, err
+		return false, wrapErr(err)
 	}
 	return true, nil
 }
@@ -131,7 +143,7 @@ func (s *CharacterService) HasCharacter(ctx context.Context, id int64) (bool, er
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
-// The provided context is used for the SSO authentication process only and can be canceled.
+// ctx can cancel the login and fetching from ESI. Once storing has started, the call always completes.
 // the setInfo callback is used to update info text in a dialog.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, setInfo func(s string)) (*app.Character, error) {
 	ssoToken, err := s.authClient.Authorize(ctx, slices.Collect(app.Scopes().All()))
@@ -156,7 +168,13 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 		return nil, err
 	}
 
+	if err := ctx.Err(); err != nil {
+		return nil, err // skip storing if canceled while fetching
+	}
 	setInfo("Storing character...")
+	// A partial store would leave a character without its token.
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
 	err = s.st.CreateCharacter(ctx, storage.CreateCharacterParams{ID: characterID})
 	if err != nil && !errors.Is(err, app.ErrAlreadyExists) {
 		return nil, err

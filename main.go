@@ -400,6 +400,20 @@ func main() {
 		return
 	}
 
+	// Prepare services
+	if err := eus.Init(context.Background()); err != nil {
+		slog.Error("Failed to init EVEUniverse service", "error", err)
+		os.Exit(1)
+	}
+	if err := cs.Init(context.Background()); err != nil {
+		slog.Error("Failed to init Character service", "error", err)
+		os.Exit(1)
+	}
+	if err := rs.Init(context.Background()); err != nil {
+		slog.Error("Failed to init Corporation service", "error", err)
+		os.Exit(1)
+	}
+
 	// Init UI
 	os.Setenv("FYNE_SCALE", fmt.Sprint(settings.FyneScale()))
 	os.Setenv("FYNE_DISABLE_DPI_DETECTION", fmt.Sprint(settings.DisableDPIDetection()))

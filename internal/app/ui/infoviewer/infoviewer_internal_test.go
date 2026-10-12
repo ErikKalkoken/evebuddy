@@ -1,6 +1,7 @@
 package infoviewer
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -35,7 +36,11 @@ func (u *UIServiceFake) GetOrCreateWindow(id string, titles ...string) (fyne.Win
 func (u *UIServiceFake) GetOrCreateWindowWithOnClosed(id string, titles ...string) (fyne.Window, bool, func()) {
 	return u.app.NewWindow(strings.Join(titles, " - ")), true, func() {}
 }
-func (u *UIServiceFake) ErrorDisplay(err error) string        { return err.Error() }
+func (u *UIServiceFake) ErrorDisplay(err error) string { return err.Error() }
+func (u *UIServiceFake) Go(job func(ctx context.Context)) bool {
+	go job(context.Background())
+	return true
+}
 func (u *UIServiceFake) IsDeveloperMode() bool                { return false }
 func (u *UIServiceFake) IsMobile() bool                       { return false }
 func (u *UIServiceFake) IsOffline() bool                      { return false }

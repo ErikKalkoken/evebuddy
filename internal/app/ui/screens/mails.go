@@ -1272,6 +1272,7 @@ func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, fu
 		}
 		subject := xstrings.TruncateWithSuffix(m.Subject.ValueOrFallback("?"), 50, 0)
 		ui.ShowProgressConfirm(
+			a.ma.u,
 			"Delete mail?",
 			fmt.Sprintf(
 				"You are about to permanently delete \"%s\" from %s. "+
@@ -1281,9 +1282,11 @@ func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, fu
 			),
 			"Delete",
 			widget.DangerImportance,
-			func() {
-				ctx := context.Background()
+			func(ctx context.Context) {
 				err := a.ma.u.Character().DeleteMail(ctx, m.CharacterID, m.MailID)
+				if ctx.Err() != nil {
+					return
+				}
 				if err != nil {
 					slog.Error("Failed to delete mail",
 						slog.Int64("characterID", m.CharacterID),

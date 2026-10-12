@@ -113,7 +113,9 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateO
 	return nil
 }
 
-// ListCharacterTokenForCorporation returns tokens from a corporation members that match any of the provided roles an scopes.
+// ListCharacterTokenForCorporation returns tokens of a corporation's members
+// that have any of the roles and all of the scopes.
+// Empty roles or scopes match all.
 func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corporationID int64, roles set.Set[app.Role], scopes set.Set[string]) ([]*app.CharacterToken, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterTokenForCorporation: ID %d, roles %s, scopes %s: %w", corporationID, roles, scopes, err)
