@@ -467,6 +467,7 @@ func TestDeleteCharacter(t *testing.T) {
 	defer db.Close()
 	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
 	ctx := context.Background()
+
 	t.Run("delete character and delete corporation when it has no members anymore", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -485,6 +486,7 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 		assert.True(t, got)
 	})
+
 	t.Run("delete character and keep corporation when it still has members", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -505,6 +507,28 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, got)
 	})
+
+	t.Run("keep unrelated orphaned corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		orphan := factory.CreateCorporation()
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		x1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x1.ID})
+		x2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x2.ID})
+		// when
+		got, err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		assert.False(t, got)
+		_, err = st.GetCorporation(ctx, orphan.ID)
+		assert.NoError(t, err)
+		_, err = st.GetCorporation(ctx, corporation.ID)
+		assert.NoError(t, err)
+	})
+
 	t.Run("completes delete when context is canceled", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

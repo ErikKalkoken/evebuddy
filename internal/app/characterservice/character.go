@@ -13,38 +13,47 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-// DeleteCharacter deletes a character and corporations which have become orphaned as a result.
-// It reports whether the related corporation was also deleted.
-func (s *CharacterService) DeleteCharacter(ctx context.Context, id int64) (bool, error) {
+// DeleteCharacter deletes a character
+// and potentially also its corporation when it becomes orphaned.
+// It reports whether its corporation was also deleted.
+func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int64) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacter: %w", err)
+	}
+
 	// A partial delete would leave orphaned corporations behind.
 	// TODO: Replace with a DB transaction.
 	ctx = context.WithoutCancel(ctx)
-	if err := s.st.DeleteCharacter(ctx, id); err != nil {
-		return false, err
-	}
-	s.clearForecasts(id)
-	s.scs.DeleteCharacter(id)
-	slog.Info("Character deleted", "characterID", id)
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
-		return false, err
-	}
-	ids, err := s.st.ListOrphanedCorporationIDs(ctx)
+	character, err := s.st.GetEveCharacter(ctx, characterID)
 	if err != nil {
-		return false, err
+		return false, wrapErr(err)
 	}
-	if ids.Size() == 0 {
+	if err := s.st.DeleteCharacter(ctx, characterID); err != nil {
+		return false, wrapErr(err)
+	}
+	s.clearForecasts(characterID)
+	s.scs.DeleteCharacter(characterID)
+	slog.Info("Character deleted", "characterID", characterID)
+	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
+		return false, wrapErr(err)
+	}
+
+	// remove character's corporation if it becomes orphaned
+	orphans, err := s.st.ListOrphanedCorporationIDs(ctx)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	corporationID := character.Corporation.ID
+	if !orphans.Contains(corporationID) {
 		return false, nil
 	}
-	for id := range ids.All() {
-		err := s.st.DeleteCorporation(ctx, id)
-		if err != nil {
-			return false, err
-		}
-		s.scs.DeleteCorporation(id)
-		slog.Info("Corporation deleted", "corporationID", id)
+	if err := s.st.DeleteCorporation(ctx, corporationID); err != nil {
+		return false, wrapErr(err)
 	}
+	s.scs.DeleteCorporation(corporationID)
+	slog.Info("Corporation deleted", "corporationID", corporationID)
 	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-		return false, err
+		return false, wrapErr(err)
 	}
 	return true, nil
 }
