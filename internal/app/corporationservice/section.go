@@ -243,7 +243,7 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 	}
 
 	// Roles only: data from a missing scope can't be fetched again, so it's kept until the user re-adds the character.
-	permitted, err := s.permittedSectionsWithRoles(ctx, corporationID)
+	permitted, err := s.permittedSections(ctx, corporationID, false)
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -316,32 +316,6 @@ func (s *CorporationService) HasSection(ctx context.Context, corporationID int64
 	return !x.IsMissing(), nil
 }
 
-// PermittedSections returns which sections the user has permission to access.
-// i.e. the user has a character with the required roles and scopes.
-func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
-	var enabled, zero set.Set[app.CorporationSection]
-	wrapErr := func(err error) error {
-		return fmt.Errorf("PermittedSections %d: %w", corporationID, err)
-	}
-	if corporationID == 0 {
-		return zero, nil
-	}
-	for _, section := range app.CorporationSections {
-		ok, err := s.hasToken(ctx, corporationID, section.Roles(), section.Scopes())
-		if err != nil {
-			if errors.Is(err, app.ErrNotFound) {
-				continue
-			}
-			return zero, wrapErr(err)
-		}
-		if !ok {
-			continue
-		}
-		enabled.Add(section)
-	}
-	return enabled, nil
-}
-
 // PermittedSection reports whether the user has permission to access a section.
 func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
 	sections, err := s.PermittedSections(ctx, corporationID)
@@ -351,18 +325,28 @@ func (s *CorporationService) PermittedSection(ctx context.Context, corporationID
 	return sections.Contains(section), nil
 }
 
-// permittedSectionsWithRoles returns which sections the user has permission
-// to access based on roles only.
-func (s *CorporationService) permittedSectionsWithRoles(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
+// PermittedSections returns which sections the user has permission to access.
+// i.e. the user has a character with the required roles and scopes.
+func (s *CorporationService) PermittedSections(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
+	return s.permittedSections(ctx, corporationID, true)
+}
+
+// permittedSections returns which sections a character's token permits,
+// checking the scopes only when withScopes is true.
+func (s *CorporationService) permittedSections(ctx context.Context, corporationID int64, withScopes bool) (set.Set[app.CorporationSection], error) {
 	var enabled, zero set.Set[app.CorporationSection]
 	wrapErr := func(err error) error {
-		return fmt.Errorf("permittedSectionsWithRoles %d: %w", corporationID, err)
+		return fmt.Errorf("permittedSections %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return zero, nil
 	}
 	for _, section := range app.CorporationSections {
-		ok, err := s.hasToken(ctx, corporationID, section.Roles(), set.Set[string]{})
+		var scopes set.Set[string]
+		if withScopes {
+			scopes = section.Scopes()
+		}
+		ok, err := s.hasToken(ctx, corporationID, section.Roles(), scopes)
 		if err != nil {
 			if errors.Is(err, app.ErrNotFound) {
 				continue
