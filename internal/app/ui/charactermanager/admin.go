@@ -289,14 +289,17 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 
 	} else if !app.IsNPCCorporation(r.corporationID) {
 		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
-		if err != nil {
-			slog.Error(
-				"Failed to remove corporation data after character was deleted",
-				slog.Int64("characterID", r.characterID),
-				slog.Int64("corporationID", r.corporationID),
-				slog.Any("error", err))
+		// A corporation not stored yet has nothing to remove or update.
+		if !errors.Is(err, app.ErrNotFound) {
+			if err != nil {
+				slog.Error(
+					"Failed to remove corporation data after character was deleted",
+					slog.Int64("characterID", r.characterID),
+					slog.Int64("corporationID", r.corporationID),
+					slog.Any("error", err))
+			}
+			a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(r.corporationID, true)
 		}
-		a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(r.corporationID, true)
 	}
 
 	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{

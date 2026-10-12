@@ -318,10 +318,11 @@ func newBaseUI(arg UIParams) *baseUI {
 				logErr(err)
 				return
 			}
-			if character.Corporation.IsNPC().ValueOrZero() {
+			corporationID := character.Corporation.ID
+			if app.IsNPCCorporation(corporationID) {
 				return
 			}
-			u.rs.UpdateAfterPermissionChangeAsync(character.Corporation.ID)
+			u.rs.UpdateAfterPermissionChangeAsync(corporationID)
 		}
 	})
 	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {

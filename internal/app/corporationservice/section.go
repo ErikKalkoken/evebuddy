@@ -125,9 +125,6 @@ func (s *CorporationService) UpdateAfterPermissionChangeAsync(corporationID int6
 			if errors.Is(err, app.ErrNotFound) {
 				return
 			}
-			if app.IsContextCanceled(ctx, err) {
-				return
-			}
 			slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
 		}
 		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
