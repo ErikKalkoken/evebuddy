@@ -23,11 +23,12 @@ import (
 )
 
 // Init prepares the service after app start. Must be called before Start.
+// Returns only fatal errors. Other errors are logged.
 func (s *CorporationService) Init(ctx context.Context) error {
 	// No update can be running yet, so a running mark is left over from an unclean exit.
 	oo, err := s.st.ClearCorporationSectionStatusStartedAt(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("corporation service init: %w", err)
 	}
 	for _, o := range oo {
 		s.scs.SetCorporationSection(o)
@@ -35,16 +36,24 @@ func (s *CorporationService) Init(ctx context.Context) error {
 	if len(oo) > 0 {
 		slog.Info("Corporation sections: cleared stale running marks", "count", len(oo))
 	}
-	// Removes data left behind when a cleanup after a permission loss was skipped, e.g. by a quit or crash.
-	ids, err := s.ListCorporationIDs(ctx)
-	if err != nil {
-		return err
-	}
-	for id := range ids.All() {
-		if err := s.RemoveSectionDataWhenPermissionLost(ctx, id); err != nil {
-			return err
+	s.tasks.Go(func(ctx context.Context) {
+		// Removes data left behind when a cleanup after a permission loss was skipped, e.g. by a quit or crash.
+		ids, err := s.ListCorporationIDs(ctx)
+		if err != nil {
+			if !app.IsContextCanceled(ctx, err) {
+				slog.Error("Permission cleanup at startup failed", "error", err)
+			}
+			return
 		}
-	}
+		for id := range ids.All() {
+			if ctx.Err() != nil {
+				return
+			}
+			if err := s.RemoveSectionDataWhenPermissionLost(ctx, id); err != nil {
+				slog.Error("Permission cleanup at startup failed", "corporationID", id, "error", err)
+			}
+		}
+	})
 	return nil
 }
 
@@ -110,24 +119,16 @@ func (s *CorporationService) UpdateSectionAndRefreshIfNeededAsync(corporationID 
 }
 
 // UpdateAfterPermissionChangeAsync removes data no longer permitted and reloads the corporation.
-// Does nothing when the corporation does not exist.
 func (s *CorporationService) UpdateAfterPermissionChangeAsync(corporationID int64) {
 	ok := s.tasks.Go(func(ctx context.Context) {
-		logErr := func(err error) {
-			if !app.IsContextCanceled(ctx, err) {
-				slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
-			}
-		}
-		exists, err := s.HasCorporation(ctx, corporationID)
-		if err != nil {
-			logErr(err)
-			return
-		}
-		if !exists {
-			return
-		}
 		if err := s.RemoveSectionDataWhenPermissionLost(ctx, corporationID); err != nil {
-			logErr(err)
+			if errors.Is(err, app.ErrNotFound) {
+				return
+			}
+			if app.IsContextCanceled(ctx, err) {
+				return
+			}
+			slog.Error("Failed to update corporation after permission change", "corporationID", corporationID, "error", err)
 		}
 		s.updateCorporationAndRefreshIfNeeded(ctx, corporationID, true)
 	})
@@ -225,18 +226,29 @@ func (s *CorporationService) updateSectionAndRefreshIfNeeded(ctx context.Context
 
 // RemoveSectionDataWhenPermissionLost removes all data related to a corporation section after the permission was lost.
 // This can happen after a character has lost a role or a character was deleted.
-// Does nothing when the corporation does not exist. Once started, the removal always completes.
+// Once started, the removal always completes.
+// Returns [app.ErrNotFound] when the corporation does not exist.
 func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Context, corporationID int64) error {
-	// A partial removal would leave data no remaining character may see.
-	// TODO: Replace with a DB transaction.
-	ctx = context.WithoutCancel(ctx)
 	wrapErr := func(err error) error {
 		return fmt.Errorf("RemoveSectionDataWhenNoPermission: CorporationID %d: %w", corporationID, err)
 	}
+
+	// TODO: Replace with a DB transaction.
+	ctx = context.WithoutCancel(ctx)
+
+	ok, err := s.HasCorporation(ctx, corporationID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	if !ok {
+		return wrapErr(app.ErrNotFound)
+	}
+
 	permitted, err := s.PermittedSections(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
+
 	for _, section := range app.CorporationSections {
 		if !permitted.Contains(section) {
 			switch section {

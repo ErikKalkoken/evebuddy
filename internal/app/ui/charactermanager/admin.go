@@ -258,13 +258,6 @@ func (a *admin) showDeleteDialog(r adminRow) {
 // deleteCharacter deletes a character and updates the UI.
 func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 	wasCorpDeleted, err := a.cw.u.Character().DeleteCharacter(ctx, r.characterID)
-	if err == nil {
-		// Done before the shutdown check, so quitting can't skip it.
-		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
-		if err != nil {
-			slog.Error("Failed to remove corporation data after character was deleted", "corporationID", r.corporationID, "error", err)
-		}
-	}
 	if ctx.Err() != nil {
 		return
 	}
@@ -284,6 +277,7 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 			slog.Warn("Failed to set current character after deletion", "error", err)
 		}
 	}
+
 	if wasCorpDeleted {
 		err := a.cw.u.SetAnyCorporation(ctx)
 		if ctx.Err() != nil {
@@ -293,9 +287,18 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 			slog.Warn("Failed to set current corporation after deletion", "error", err)
 		}
 
-	} else {
+	} else if !app.IsNPCCorporation(r.corporationID) {
+		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
+		if err != nil {
+			slog.Error(
+				"Failed to remove corporation data after character was deleted",
+				slog.Int64("characterID", r.characterID),
+				slog.Int64("corporationID", r.corporationID),
+				slog.Any("error", err))
+		}
 		a.cw.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(r.corporationID, true)
 	}
+
 	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
 		ID:   r.characterID,
 		Name: r.characterName,

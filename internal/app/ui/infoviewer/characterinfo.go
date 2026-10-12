@@ -130,7 +130,7 @@ func (a *characterInfo) CreateRenderer() fyne.WidgetRenderer {
 	)
 	forums := xwidget.NewIconButton(icons.EvelogoPng, func() {
 		a.iw.u.Go(func(ctx context.Context) {
-			ec, err := a.iw.u.EVEUniverse().GetCharacterESI(ctx, a.id)
+			ec, err := a.iw.u.EVEUniverse().GetCharacter(ctx, a.id)
 			if ctx.Err() != nil {
 				return // shutting down
 			}

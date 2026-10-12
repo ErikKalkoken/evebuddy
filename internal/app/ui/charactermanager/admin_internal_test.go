@@ -62,20 +62,6 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		}
 		return cw.characterAdmin, u, r, j
 	}
-
-	t.Run("removes corporation data when shutting down", func(t *testing.T) {
-		a, _, r, j := setup(t)
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		// when
-		a.deleteCharacter(ctx, r)
-		// then
-		ctx = context.Background()
-		_, err := st.GetCharacter(ctx, r.characterID)
-		assert.ErrorIs(t, err, app.ErrNotFound)
-		_, err = st.GetCorporationIndustryJob(ctx, j.CorporationID, j.JobID)
-		assert.ErrorIs(t, err, app.ErrNotFound)
-	})
 	t.Run("removes corporation data before CharacterRemoved", func(t *testing.T) {
 		a, u, r, j := setup(t)
 		removed := make(chan bool, 1)

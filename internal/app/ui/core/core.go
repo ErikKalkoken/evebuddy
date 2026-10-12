@@ -313,12 +313,15 @@ func newBaseUI(arg UIParams) *baseUI {
 			u.UpdateMailIndicator(ctx)
 		case app.SectionCharacterRoles:
 			updateStatus(ctx)
-			character, err := u.cs.GetCharacter(ctx, arg.CharacterID)
+			character, err := u.eus.GetCharacter(ctx, arg.CharacterID)
 			if err != nil {
 				logErr(err)
 				return
 			}
-			u.rs.UpdateAfterPermissionChangeAsync(character.EveCharacter.Corporation.ID)
+			if character.Corporation.IsNPC().ValueOrZero() {
+				return
+			}
+			u.rs.UpdateAfterPermissionChangeAsync(character.Corporation.ID)
 		}
 	})
 	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {

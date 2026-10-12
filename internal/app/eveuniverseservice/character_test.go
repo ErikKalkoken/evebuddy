@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestGetCharacterESI(t *testing.T) {
+func TestGetCharacter(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
@@ -28,7 +28,7 @@ func TestGetCharacterESI(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c1 := f.CreateEveCharacter()
 		// when
-		c2, err := s.GetCharacterESI(t.Context(), c1.ID)
+		c2, err := s.GetCharacter(t.Context(), c1.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, c1, c2)
@@ -37,7 +37,7 @@ func TestGetCharacterESI(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		_, err := s.GetCharacterESI(t.Context(), 666)
+		_, err := s.GetCharacter(t.Context(), 666)
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})

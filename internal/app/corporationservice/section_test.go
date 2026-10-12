@@ -2,8 +2,11 @@ package corporationservice_test
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -16,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
@@ -121,6 +125,14 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		_, err = st.GetCorporationIndustryJob(context.Background(), j1.CorporationID, j1.JobID)
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+	t.Run("returns not found when corporation does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := s.RemoveSectionDataWhenPermissionLost(ctx, 42)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCorporationService_PermittedSections(t *testing.T) {
@@ -190,10 +202,14 @@ func TestCorporationService_Init(t *testing.T) {
 }
 
 func TestCorporationService_InitRemovesDataWithoutPermission(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	// On disk, because Stop cancels queries, which wipes an in-memory DB.
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
+	jobExists := func(j *app.CorporationIndustryJob) bool {
+		_, err := st.GetCorporationIndustryJob(ctx, j.CorporationID, j.JobID)
+		return !errors.Is(err, app.ErrNotFound)
+	}
 	t.Run("removes data no character has permission for", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -201,12 +217,15 @@ func TestCorporationService_InitRemovesDataWithoutPermission(t *testing.T) {
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: corporation.ID,
 		})
+		s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+		defer s.Stop()
 		// when
 		err := s.Init(ctx)
 		// then
 		require.NoError(t, err)
-		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-		assert.ErrorIs(t, err, app.ErrNotFound)
+		assert.Eventually(t, func() bool {
+			return !jobExists(j1)
+		}, 2*time.Second, 10*time.Millisecond)
 	})
 	t.Run("keeps data with permission", func(t *testing.T) {
 		// given
@@ -216,11 +235,43 @@ func TestCorporationService_InitRemovesDataWithoutPermission(t *testing.T) {
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: corporation.ID,
 		})
+		s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+		defer s.Stop()
 		// when
 		err := s.Init(ctx)
 		// then
 		require.NoError(t, err)
-		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
-		assert.NoError(t, err)
+		assert.Never(t, func() bool {
+			return !jobExists(j1)
+		}, 200*time.Millisecond, 10*time.Millisecond)
 	})
+}
+
+func TestCorporationService_StartAfterInit(t *testing.T) {
+	if xgoesi.IsDailyDowntime() {
+		t.Skip("the scheduler skips updates during daily downtime")
+	}
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	signals := app.NewSignals()
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st, Signals: signals})
+	started := make(chan struct{}, 1)
+	signals.UpdateStarted.AddListener(func(_ context.Context, _ string) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+	})
+	// when
+	require.NoError(t, s.Init(t.Context()))
+	s.Start(time.Hour)
+	defer s.Stop()
+	// then
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("update scheduler did not start after Init")
+	}
 }
