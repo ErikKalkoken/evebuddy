@@ -205,6 +205,7 @@ func TestCorporationService_Init(t *testing.T) {
 	x0, _ := scs.CorporationSection(c.ID, app.SectionCorporationIndustryJobs)
 	require.True(t, x0.IsRunning())
 	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st, StatusCacheService: scs})
+	defer s.Stop() // stops the background job started by Init
 	// when
 	err := s.Init(ctx)
 	// then

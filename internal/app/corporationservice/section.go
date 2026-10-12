@@ -49,7 +49,8 @@ func (s *CorporationService) Init(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return
 			}
-			if err := s.RemoveSectionDataWhenPermissionLost(ctx, id); err != nil {
+			err := s.RemoveSectionDataWhenPermissionLost(ctx, id)
+			if err != nil && !errors.Is(err, app.ErrNotFound) { // may have been deleted meanwhile
 				slog.Error("Permission cleanup at startup failed", "corporationID", id, "error", err)
 			}
 		}
