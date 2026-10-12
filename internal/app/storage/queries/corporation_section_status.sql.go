@@ -131,23 +131,23 @@ func (q *Queries) ListCorporationSectionStatus(ctx context.Context, corporationI
 	return items, nil
 }
 
-const updateCorporationSectionStatusContentHash = `-- name: UpdateCorporationSectionStatusContentHash :exec
+const resetCorporationSectionStatusContentHash = `-- name: ResetCorporationSectionStatusContentHash :exec
 UPDATE corporation_section_status
 SET
-    content_hash = ?
+    content_hash = ''
 WHERE
     corporation_id = ?
     AND section_id = ?
+    AND content_hash != ''
 `
 
-type UpdateCorporationSectionStatusContentHashParams struct {
-	ContentHash   string
+type ResetCorporationSectionStatusContentHashParams struct {
 	CorporationID int64
 	SectionID     string
 }
 
-func (q *Queries) UpdateCorporationSectionStatusContentHash(ctx context.Context, arg UpdateCorporationSectionStatusContentHashParams) error {
-	_, err := q.db.ExecContext(ctx, updateCorporationSectionStatusContentHash, arg.ContentHash, arg.CorporationID, arg.SectionID)
+func (q *Queries) ResetCorporationSectionStatusContentHash(ctx context.Context, arg ResetCorporationSectionStatusContentHashParams) error {
+	_, err := q.db.ExecContext(ctx, resetCorporationSectionStatusContentHash, arg.CorporationID, arg.SectionID)
 	return err
 }
 

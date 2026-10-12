@@ -28,8 +28,7 @@ func (st *Storage) ResetCorporationSectionStatusContentHash(ctx context.Context,
 	if arg.IsInvalid() {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.UpdateCorporationSectionStatusContentHash(ctx, queries.UpdateCorporationSectionStatusContentHashParams{
-		ContentHash:   "",
+	err := st.qRW.ResetCorporationSectionStatusContentHash(ctx, queries.ResetCorporationSectionStatusContentHashParams{
 		CorporationID: arg.CorporationID,
 		SectionID:     arg.Section.String(),
 	})
