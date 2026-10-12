@@ -462,7 +462,9 @@ func TestCharacterPlanet_ConsistentReads(t *testing.T) {
 		}
 		var seenA, seenB, seenDeleted bool
 		ok := true
-		for i := 0; ok && i < 300; i++ {
+		// Read until all versions were seen, so the test does not depend on scheduling.
+		deadline := time.Now().Add(10 * time.Second)
+		for i := 0; ok && (i < 300 || !(seenA && seenB && seenDeleted)) && time.Now().Before(deadline); i++ {
 			p, err := st.GetCharacterPlanet(ctx, c1.ID, p1)
 			if errors.Is(err, app.ErrNotFound) {
 				seenDeleted = true
