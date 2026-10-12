@@ -244,7 +244,8 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 		return wrapErr(app.ErrNotFound)
 	}
 
-	permitted, err := s.PermittedSections(ctx, corporationID)
+	// Roles only: data from a missing scope can't be fetched again, so it's kept until the user re-adds the character.
+	permitted, err := s.permittedSectionsWithRoles(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -350,6 +351,32 @@ func (s *CorporationService) PermittedSection(ctx context.Context, corporationID
 		return false, err
 	}
 	return sections.Contains(section), nil
+}
+
+// permittedSectionsWithRoles returns which sections the user has permission
+// to access based on roles only.
+func (s *CorporationService) permittedSectionsWithRoles(ctx context.Context, corporationID int64) (set.Set[app.CorporationSection], error) {
+	var enabled, zero set.Set[app.CorporationSection]
+	wrapErr := func(err error) error {
+		return fmt.Errorf("permittedSectionsWithRoles %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return zero, nil
+	}
+	for _, section := range app.CorporationSections {
+		ok, err := s.hasToken(ctx, corporationID, section.Roles(), set.Set[string]{})
+		if err != nil {
+			if errors.Is(err, app.ErrNotFound) {
+				continue
+			}
+			return zero, wrapErr(err)
+		}
+		if !ok {
+			continue
+		}
+		enabled.Add(section)
+	}
+	return enabled, nil
 }
 
 type corporationSectionUpdateParams struct {

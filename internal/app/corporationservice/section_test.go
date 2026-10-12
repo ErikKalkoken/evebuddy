@@ -125,6 +125,22 @@ func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 		_, err = st.GetCorporationIndustryJob(context.Background(), j1.CorporationID, j1.JobID)
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+	t.Run("keeps data when role exists but scope is missing", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		const section = app.SectionCorporationIndustryJobs
+		factory.CreateCorporationToken(corporation.ID, section.Roles(), set.Of("other-scope"))
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: corporation.ID,
+		})
+		// when
+		err := s.RemoveSectionDataWhenPermissionLost(ctx, corporation.ID)
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCorporationIndustryJob(ctx, j1.CorporationID, j1.JobID)
+		assert.NoError(t, err)
+	})
 	t.Run("returns not found when corporation does not exist", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
