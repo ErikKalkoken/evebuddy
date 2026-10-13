@@ -322,7 +322,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		},
 	}, {
 		Label: "Status",
-		Width: 160,
+		Width: 180,
 		Sort: func(a, b contractRow) int {
 			return strings.Compare(a.statusText, b.statusText)
 		},

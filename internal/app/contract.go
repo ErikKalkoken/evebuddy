@@ -137,10 +137,6 @@ func (cs ContractStatus) String() string {
 	return s
 }
 
-func (cs ContractStatus) IsActive() bool {
-	return ContractStatusActive.Contains(cs)
-}
-
 // ContractStatusActive defines which status is considered active.
 var ContractStatusActive = set.Of(ContractStatusOutstanding, ContractStatusInProgress)
 

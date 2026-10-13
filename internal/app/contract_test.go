@@ -73,24 +73,22 @@ func TestContractCategoryDisplayAndColor(t *testing.T) {
 func TestContractStatusPredicates(t *testing.T) {
 	cases := []struct {
 		status       app.ContractStatus
-		wantActive   bool
 		wantFinished bool
 	}{
-		{app.ContractStatusUndefined, false, false},
-		{app.ContractStatusOutstanding, true, false},
-		{app.ContractStatusInProgress, true, false},
-		{app.ContractStatusDeleted, false, false},
-		{app.ContractStatusCancelled, false, false},
-		{app.ContractStatusFinished, false, true},
-		{app.ContractStatusFinishedContractor, false, true},
-		{app.ContractStatusFinishedIssuer, false, true},
-		{app.ContractStatusReversed, false, true},
-		{app.ContractStatusFailed, false, false},
-		{app.ContractStatusRejected, false, false},
+		{app.ContractStatusUndefined, false},
+		{app.ContractStatusOutstanding, false},
+		{app.ContractStatusInProgress, false},
+		{app.ContractStatusDeleted, false},
+		{app.ContractStatusCancelled, false},
+		{app.ContractStatusFinished, true},
+		{app.ContractStatusFinishedContractor, true},
+		{app.ContractStatusFinishedIssuer, true},
+		{app.ContractStatusReversed, true},
+		{app.ContractStatusFailed, false},
+		{app.ContractStatusRejected, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.status.String(), func(t *testing.T) {
-			xassert.Equal(t, tc.wantActive, tc.status.IsActive())
 			xassert.Equal(t, tc.wantFinished, tc.status.IsFinished())
 		})
 	}
