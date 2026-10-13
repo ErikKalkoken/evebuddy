@@ -43,6 +43,8 @@ const (
 	industryInstallerMe              = "Installed by me"
 	industryOwnerCorp                = "Owned by corp"
 	industryOwnerMe                  = "Owned by me"
+	industryStatusAll                = "All jobs"
+	industryStatusAllActive          = "All active jobs"
 	industryStatusHalted             = "Halted"
 	industryStatusHistory            = "History"
 	industryStatusInProgress         = "In progress"
@@ -54,13 +56,19 @@ const (
 	industryJobsFilterActivity  = "Activity"
 	industryJobsFilterInstaller = "Installer"
 	industryJobsFilterOwner     = "Owner"
-	industryJobsFilterStatus    = "Status"
 	industryJobsFilterTag       = "Tag"
 )
 
 // industryJobsStatusOptions returns the status choices in UI order.
 func industryJobsStatusOptions() []string {
-	return []string{industryStatusInProgress, industryStatusReady, industryStatusHalted, industryStatusHistory}
+	return []string{
+		industryStatusAllActive,
+		industryStatusInProgress,
+		industryStatusReady,
+		industryStatusHalted,
+		industryStatusHistory,
+		industryStatusAll,
+	}
 }
 
 // industryJobsFilter is the selected value of each industry job filter. Empty means not filtered.
@@ -109,6 +117,8 @@ func (f industryJobsFilter) match(r industryJobRow) bool {
 		}
 	}
 	switch status := r.statusCalculated(); f.status {
+	case industryStatusAllActive:
+		return status.IsActive()
 	case industryStatusInProgress:
 		return status == app.JobActive
 	case industryStatusReady:
@@ -192,7 +202,7 @@ type IndustryJobs struct {
 	selectActivity  *kxwidget.FilterChipSelect // select chips only on desktop
 	selectInstaller *kxwidget.FilterChipSelect
 	selectOwner     *kxwidget.FilterChipSelect
-	selectStatus    *kxwidget.FilterChipSelect
+	selectStatus    *widget.Select
 	selectTag       *kxwidget.FilterChipSelect
 	sortChip        *kxwidget.SortChip
 	u               baseUI
@@ -345,6 +355,12 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		a.filterRowsAsync("")
 	})
 
+	a.selectStatus = widget.NewSelect(industryJobsStatusOptions(), func(string) {
+		a.filterRowsAsync("")
+	})
+	a.selectStatus.Selected = industryStatusAllActive // matches the game client's default
+	a.selectStatus.PlaceHolder = industryStatusReady  // widest option, so the select fits all choices
+
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
@@ -355,8 +371,6 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 				a.filterRowsAsync("")
 			})
 		}
-		a.selectStatus = makeSelect(industryJobsFilterStatus, industryJobsStatusOptions()...)
-		a.selectStatus.SortDisabled = true
 		a.selectTag = makeSelect(industryJobsFilterTag)
 		a.selectOwner = makeSelect(industryJobsFilterOwner, industryJobsOwnerOptions()...)
 		a.selectOwner.SortDisabled = true
@@ -379,11 +393,13 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
+				a.selectStatus.Selected = industryStatusAllActive
+				a.selectStatus.Refresh()
 				if a.filterChip != nil {
 					a.filterChip.ResetSilent()
 					return
 				}
-				clearSelectsSilent(a.selectActivity, a.selectInstaller, a.selectOwner, a.selectStatus, a.selectTag)
+				clearSelectsSilent(a.selectActivity, a.selectInstaller, a.selectOwner, a.selectTag)
 			})
 			a.update(ctx)
 		})
@@ -430,7 +446,10 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+		topBox = container.NewVBox(
+			a.selectStatus,
+			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
+		)
 	} else {
 		filter := container.NewHBox(a.selectStatus, a.selectOwner, a.selectActivity)
 		if a.forCorporation {
@@ -476,7 +495,7 @@ func industryJobsOwnerOptions() []string {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop.
+// and from the filter chips on desktop. Status always comes from its select.
 func (a *IndustryJobs) currentFilter() industryJobsFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
@@ -488,7 +507,7 @@ func (a *IndustryJobs) currentFilter() industryJobsFilter {
 			activity:  s[industryJobsFilterActivity],
 			installer: installer,
 			owner:     s[industryJobsFilterOwner],
-			status:    s[industryJobsFilterStatus],
+			status:    a.selectStatus.Selected,
 			tag:       s[industryJobsFilterTag],
 		}
 	}
@@ -635,8 +654,6 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
-					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterStatus, industryJobsStatusOptions()),
-					xwidget.NewFilterOptionSeparator(),
 					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterOwner, industryJobsOwnerOptions()),
 					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterActivity, industryJobsActivityOptions()),
 				}
