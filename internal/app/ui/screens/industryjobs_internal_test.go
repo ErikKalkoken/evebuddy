@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2/test"
 
@@ -102,6 +103,9 @@ func TestIndustryJobsFilter_Match(t *testing.T) {
 	paused.status = app.JobPaused
 	delivered := r
 	delivered.status = app.JobDelivered
+	overdue := r
+	overdue.status = app.JobActive
+	overdue.endDate = time.Now().Add(-time.Hour)
 	for _, tc := range []struct {
 		name   string
 		filter industryJobsFilter
@@ -125,7 +129,15 @@ func TestIndustryJobsFilter_Match(t *testing.T) {
 		{"reactions matches reactions 2", industryJobsFilter{activity: industryActivityReaction}, reaction, true},
 		{"reactions but manufacturing", industryJobsFilter{activity: industryActivityReaction}, r, false},
 		{"no status matches delivered", industryJobsFilter{}, delivered, true},
+		{"all active matches ready", industryJobsFilter{status: industryStatusAllActive}, r, true},
+		{"all active matches halted", industryJobsFilter{status: industryStatusAllActive}, paused, true},
+		{"all active matches overdue", industryJobsFilter{status: industryStatusAllActive}, overdue, true},
+		{"all active but delivered", industryJobsFilter{status: industryStatusAllActive}, delivered, false},
+		{"all matches delivered", industryJobsFilter{status: industryStatusAll}, delivered, true},
+		{"all matches ready", industryJobsFilter{status: industryStatusAll}, r, true},
 		{"ready matches", industryJobsFilter{status: industryStatusReady}, r, true},
+		{"ready matches overdue", industryJobsFilter{status: industryStatusReady}, overdue, true},
+		{"in progress but overdue", industryJobsFilter{status: industryStatusInProgress}, overdue, false},
 		{"halted matches", industryJobsFilter{status: industryStatusHalted}, paused, true},
 		{"halted but ready", industryJobsFilter{status: industryStatusHalted}, r, false},
 		{"history matches delivered", industryJobsFilter{status: industryStatusHistory}, delivered, true},
@@ -171,10 +183,24 @@ func TestIndustryJobs_FilterWidgets(t *testing.T) {
 	for _, isMobile := range []bool{true, false} {
 		t.Run(fmt.Sprintf("shows only jobs installed by me outside corporation mode mobile=%v", isMobile), func(t *testing.T) {
 			a := newIndustryJobs(t, isMobile, false)
-			assert.ElementsMatch(t, []int64{1, 2, 4}, jobIDs(a))
+			assert.ElementsMatch(t, []int64{1, 2}, jobIDs(a))
 		})
 		t.Run(fmt.Sprintf("shows jobs of all installers in corporation mode mobile=%v", isMobile), func(t *testing.T) {
 			a := newIndustryJobs(t, isMobile, true)
+			assert.ElementsMatch(t, []int64{1, 2, 3}, jobIDs(a))
+		})
+		t.Run(fmt.Sprintf("shows all active jobs by default mobile=%v", isMobile), func(t *testing.T) {
+			a := newIndustryJobs(t, isMobile, false)
+			assert.Equal(t, industryStatusAllActive, a.selectStatus.Selected)
+		})
+		t.Run(fmt.Sprintf("can filter status mobile=%v", isMobile), func(t *testing.T) {
+			a := newIndustryJobs(t, isMobile, false)
+			a.selectStatus.SetSelected(industryStatusHistory)
+			assert.ElementsMatch(t, []int64{4}, jobIDs(a))
+		})
+		t.Run(fmt.Sprintf("can show all jobs mobile=%v", isMobile), func(t *testing.T) {
+			a := newIndustryJobs(t, isMobile, true)
+			a.selectStatus.SetSelected(industryStatusAll)
 			assert.ElementsMatch(t, []int64{1, 2, 3, 4}, jobIDs(a))
 		})
 	}
@@ -188,30 +214,17 @@ func TestIndustryJobs_FilterWidgets(t *testing.T) {
 		a.selectActivity.SetSelected(industryActivityCopying)
 		assert.ElementsMatch(t, []int64{2}, jobIDs(a))
 	})
-	t.Run("can filter status on mobile", func(t *testing.T) {
-		a := newIndustryJobs(t, true, false)
-		a.filterChip.SetSelected(map[string]string{industryJobsFilterStatus: industryStatusHistory})
-		assert.ElementsMatch(t, []int64{4}, jobIDs(a))
-	})
-	t.Run("can filter status on desktop", func(t *testing.T) {
-		a := newIndustryJobs(t, false, false)
-		a.selectStatus.SetSelected(industryStatusHistory)
-		assert.ElementsMatch(t, []int64{4}, jobIDs(a))
-	})
 	t.Run("can combine status and filter on mobile", func(t *testing.T) {
 		a := newIndustryJobs(t, true, false)
-		a.filterChip.SetSelected(map[string]string{
-			industryJobsFilterActivity: industryActivityManufacturing,
-			industryJobsFilterStatus:   industryStatusReady,
-		})
-		assert.ElementsMatch(t, []int64{1}, jobIDs(a))
+		a.selectStatus.SetSelected(industryStatusAll)
+		a.filterChip.SetSelected(map[string]string{industryJobsFilterActivity: industryActivityManufacturing})
+		assert.ElementsMatch(t, []int64{1, 4}, jobIDs(a))
 	})
 	t.Run("shows tag filter outside corporation mode on mobile", func(t *testing.T) {
 		a := newIndustryJobs(t, true, false)
 		assert.Equal(t, map[string]string{
 			industryJobsFilterActivity: "",
 			industryJobsFilterOwner:    "",
-			industryJobsFilterStatus:   "",
 			industryJobsFilterTag:      "",
 		}, a.filterChip.Selected())
 	})
@@ -221,7 +234,6 @@ func TestIndustryJobs_FilterWidgets(t *testing.T) {
 			industryJobsFilterActivity:  "",
 			industryJobsFilterInstaller: "",
 			industryJobsFilterOwner:     "",
-			industryJobsFilterStatus:    "",
 		}, a.filterChip.Selected())
 	})
 	t.Run("resets filters when corporation changes on mobile", func(t *testing.T) {
@@ -236,16 +248,12 @@ func TestIndustryJobs_FilterWidgets(t *testing.T) {
 	for _, isMobile := range []bool{true, false} {
 		t.Run(fmt.Sprintf("resets status when corporation changes mobile=%v", isMobile), func(t *testing.T) {
 			a := newIndustryJobs(t, isMobile, true)
-			if isMobile {
-				a.filterChip.SetSelected(map[string]string{industryJobsFilterStatus: industryStatusHistory})
-			} else {
-				a.selectStatus.SetSelected(industryStatusHistory)
-			}
+			a.selectStatus.SetSelected(industryStatusHistory)
 			require.Equal(t, industryStatusHistory, a.currentFilter().status)
 
 			a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
 
-			assert.Empty(t, a.currentFilter().status)
+			assert.Equal(t, industryStatusAllActive, a.currentFilter().status)
 		})
 	}
 }

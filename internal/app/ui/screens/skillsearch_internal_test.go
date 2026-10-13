@@ -2,7 +2,6 @@ package screens
 
 import (
 	"fmt"
-	"slices"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -173,7 +172,7 @@ func TestSkillSearch_Filter(t *testing.T) {
 	})
 	t.Run("can combine skill choice and filter on mobile", func(t *testing.T) {
 		a := newSkillSearch(t, true)
-		a.segmentSkill.SetSelected(slices.Index(searchSkillChoices, searchSkillAll))
+		a.selectSkill.SetSelected(searchSkillAll)
 		a.filterChip.SetSelected(map[string]string{skillSearchFilterGroup: "Gunnery"})
 		assert.Len(t, a.rowsFiltered, 2)
 	})
@@ -181,11 +180,7 @@ func TestSkillSearch_Filter(t *testing.T) {
 		t.Run(fmt.Sprintf("can switch skill choice mobile=%v", isMobile), func(t *testing.T) {
 			a := newSkillSearch(t, isMobile)
 			assert.Equal(t, searchSkillActive, a.currentFilter().skill)
-			if isMobile {
-				a.segmentSkill.SetSelected(slices.Index(searchSkillChoices, searchSkillAll))
-			} else {
-				a.selectSkill.SetSelected(searchSkillChipLabels[searchSkillAll])
-			}
+			a.selectSkill.SetSelected(searchSkillAll)
 			assert.Equal(t, searchSkillAll, a.currentFilter().skill)
 			assert.Len(t, a.rowsFiltered, 3)
 		})

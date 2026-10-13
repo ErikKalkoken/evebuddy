@@ -2,7 +2,6 @@ package screens
 
 import (
 	"fmt"
-	"slices"
 	"testing"
 	"time"
 
@@ -115,7 +114,7 @@ func TestMarketOrders_Filter(t *testing.T) {
 	})
 	t.Run("can combine state and filter on mobile", func(t *testing.T) {
 		a := newMarketOrders(t, true)
-		a.segmentState.SetSelected(slices.Index(marketOrderStateChoices, marketOrderStateHistory))
+		a.selectState.SetSelected(marketOrderStateHistory)
 		a.filterChip.SetSelected(map[string]string{marketOrdersFilterType: "Tritanium"})
 		if assert.Len(t, a.rowsFiltered, 1) {
 			assert.EqualValues(t, 3, a.rowsFiltered[0].orderID)
@@ -152,11 +151,7 @@ func TestMarketOrders_Filter(t *testing.T) {
 		t.Run(fmt.Sprintf("can switch state mobile=%v", isMobile), func(t *testing.T) {
 			a := newMarketOrders(t, isMobile)
 			assert.Equal(t, marketOrderStateActive, a.currentFilter().state)
-			if isMobile {
-				a.segmentState.SetSelected(slices.Index(marketOrderStateChoices, marketOrderStateHistory))
-			} else {
-				a.selectState.SetSelected(marketOrderStateHistory)
-			}
+			a.selectState.SetSelected(marketOrderStateHistory)
 			assert.Equal(t, marketOrderStateHistory, a.currentFilter().state)
 			assert.ElementsMatch(t, []int64{3}, ids(a))
 		})

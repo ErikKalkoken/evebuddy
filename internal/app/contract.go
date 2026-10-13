@@ -64,6 +64,13 @@ func ContractCategories() []ContractCategory {
 	}
 }
 
+// ContractCategoriesOpen defines which categories are considered open.
+var ContractCategoriesOpen = set.Of(ContractCategoryOutstanding, ContractCategoryInProgress, ContractCategoryRequiresAttention)
+
+func (cc ContractCategory) IsOpen() bool {
+	return ContractCategoriesOpen.Contains(cc)
+}
+
 func (cc ContractCategory) Display() string {
 	switch cc {
 	case ContractCategoryOutstanding:
@@ -128,10 +135,6 @@ func (cs ContractStatus) String() string {
 		return "?"
 	}
 	return s
-}
-
-func (cs ContractStatus) IsActive() bool {
-	return ContractStatusActive.Contains(cs)
 }
 
 // ContractStatusActive defines which status is considered active.

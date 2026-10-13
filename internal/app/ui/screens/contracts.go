@@ -26,20 +26,27 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// Status choices which are not a single category.
+const (
+	contractsStatusAll     = "All contracts"
+	contractsStatusAllOpen = "All open contracts"
+)
+
 // Names of the contract filters, used as labels on desktop and as option names on mobile.
 const (
 	contractsFilterAssignee = "Assignee"
 	contractsFilterIssuer   = "Issuer"
-	contractsFilterStatus   = "Status"
 	contractsFilterTag      = "Tag"
 	contractsFilterType     = "Type"
 )
 
 // contractsStatusOptions returns the status choices in UI order.
 func contractsStatusOptions() []string {
-	return xslices.Map(app.ContractCategories(), func(c app.ContractCategory) string {
-		return c.Display()
-	})
+	options := []string{contractsStatusAllOpen}
+	for _, c := range app.ContractCategories() {
+		options = append(options, c.Display())
+	}
+	return append(options, contractsStatusAll)
 }
 
 // contractsFilter is the selected value of each contract filter. Empty means not filtered.
@@ -56,12 +63,17 @@ func (f contractsFilter) match(r contractRow) bool {
 	switch {
 	case f.assignee != "" && r.assigneeName != f.assignee,
 		f.issuer != "" && r.issuerName != f.issuer,
-		f.status != "" && r.category.Display() != f.status,
 		f.tag != "" && !r.tags.Contains(f.tag),
 		f.typeName != "" && r.typeName != f.typeName:
 		return false
 	}
-	return true
+	switch f.status {
+	case "", contractsStatusAll:
+		return true
+	case contractsStatusAllOpen:
+		return r.category.IsOpen()
+	}
+	return r.category.Display() == f.status
 }
 
 type contractRow struct {
@@ -138,7 +150,7 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		startLocation:      o.StartLocation,
 		status:             o.Status,
 		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         o.Status.Display(),
+		statusText:         contractStatusText(o.Status, category),
 		title:              o.Title.ValueOrFallback("-"),
 		typeName:           o.Type.Display(),
 		volume:             o.Volume,
@@ -181,7 +193,7 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		startLocation:      o.StartLocation,
 		status:             o.Status,
 		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         o.Status.Display(),
+		statusText:         contractStatusText(o.Status, category),
 		title:              o.Title.ValueOrFallback("-"),
 		typeName:           o.Type.Display(),
 		volume:             o.Volume,
@@ -199,9 +211,25 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 	return strings.Join(token, "~")
 }
 
+// contractStatusText returns the status and explains why it requires attention
+// when the status alone does not.
+func contractStatusText(status app.ContractStatus, category app.ContractCategory) string {
+	s := status.Display()
+	if category != app.ContractCategoryRequiresAttention {
+		return s
+	}
+	switch status {
+	case app.ContractStatusOutstanding:
+		return s + " (expired)"
+	case app.ContractStatusInProgress:
+		return s + " (overdue)"
+	}
+	return s
+}
+
 // makeContractStatusDisplay returns the status in the color of its category.
 func makeContractStatusDisplay(status app.ContractStatus, category app.ContractCategory) []widget.RichTextSegment {
-	return xwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+	return xwidget.RichTextSegmentsFromText(contractStatusText(status, category), widget.RichTextStyle{
 		ColorName: category.Color(),
 	})
 }
@@ -226,7 +254,7 @@ func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.Rich
 type Contracts struct {
 	widget.BaseWidget
 
-	OnUpdate func(active int)
+	OnUpdate func(open int)
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -240,7 +268,7 @@ type Contracts struct {
 	searchEntry    *xwidget.SearchEntry
 	selectAssignee *kxwidget.FilterChipSelect // select chips only on desktop
 	selectIssuer   *kxwidget.FilterChipSelect
-	selectStatus   *kxwidget.FilterChipSelect
+	selectStatus   *widget.Select
 	selectTag      *kxwidget.FilterChipSelect
 	selectType     *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
@@ -294,7 +322,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		},
 	}, {
 		Label: "Status",
-		Width: 100,
+		Width: 180,
 		Sort: func(a, b contractRow) int {
 			return strings.Compare(a.statusText, b.statusText)
 		},
@@ -368,6 +396,12 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		a.filterRowsAsync("")
 	})
 
+	a.selectStatus = widget.NewSelect(contractsStatusOptions(), func(string) {
+		a.filterRowsAsync("")
+	})
+	a.selectStatus.Selected = contractsStatusAllOpen
+	a.selectStatus.PlaceHolder = app.ContractCategoryRequiresAttention.Display() // widest option, so the select fits all choices
+
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
 			a.filterRowsAsync("")
@@ -387,10 +421,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		a.selectIssuer = makeSelectWithSearch(contractsFilterIssuer)
 		a.selectType = makeSelect(contractsFilterType)
 		a.selectTag = makeSelect(contractsFilterTag)
-		a.selectStatus = kxwidget.NewFilterChipSelect(contractsFilterStatus, contractsStatusOptions(), func(string) {
-			a.filterRowsAsync("")
-		})
-		a.selectStatus.SortDisabled = true // keep the UI order
 	}
 
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -407,11 +437,13 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.corporation.Store(c)
 			fyne.Do(func() {
 				a.searchEntry.ClearSilent()
+				a.selectStatus.Selected = contractsStatusAllOpen
+				a.selectStatus.Refresh()
 				if a.filterChip != nil {
 					a.filterChip.ResetSilent()
 					return
 				}
-				clearSelectsSilent(a.selectAssignee, a.selectIssuer, a.selectStatus, a.selectTag, a.selectType)
+				clearSelectsSilent(a.selectAssignee, a.selectIssuer, a.selectTag, a.selectType)
 			})
 			a.update(ctx)
 		})
@@ -446,7 +478,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+		topBox = container.NewVBox(
+			a.selectStatus,
+			container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry),
+		)
 	} else {
 		filter := container.NewHBox(
 			a.selectStatus,
@@ -471,14 +506,14 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
-// and from the filter chips on desktop.
+// and from the filter chips on desktop. Status always comes from its select.
 func (a *Contracts) currentFilter() contractsFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
 		return contractsFilter{
 			assignee: s[contractsFilterAssignee],
 			issuer:   s[contractsFilterIssuer],
-			status:   s[contractsFilterStatus],
+			status:   a.selectStatus.Selected,
 			tag:      s[contractsFilterTag],
 			typeName: s[contractsFilterType],
 		}
@@ -597,8 +632,6 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			a.footer.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
-					xwidget.NewFilterOptionMultiChoiceOrdered(contractsFilterStatus, contractsStatusOptions()),
-					xwidget.NewFilterOptionSeparator(),
 					xwidget.NewFilterOptionMultiChoice(contractsFilterType, typeOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterIssuer, issueOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(contractsFilterAssignee, assigneeOptions),
@@ -620,13 +653,12 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 }
 
 func (a *Contracts) update(ctx context.Context) {
-	var activeCount int
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
-		rows, activeCount, err = a.fetchRowsCorporation(ctx)
+		rows, err = a.fetchRowsCorporation(ctx)
 	} else {
-		rows, activeCount, err = a.fetchRowsOverview(ctx)
+		rows, err = a.fetchRowsOverview(ctx)
 	}
 	if err != nil {
 		if ctx.Err() != nil {
@@ -640,40 +672,42 @@ func (a *Contracts) update(ctx context.Context) {
 		})
 		return
 	}
+	var openCount int
+	for _, r := range rows {
+		if r.category.IsOpen() {
+			openCount++
+		}
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
-			a.OnUpdate(activeCount)
+			a.OnUpdate(openCount)
 		}
 	})
 }
 
-func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, error) {
 	corporation := a.corporation.Load()
 	if corporation == nil {
-		return nil, 0, nil
+		return nil, nil
 	}
 	oo, err := a.u.Corporation().ListCorporationContracts(ctx, corporation.ID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []contractRow
-	var activeCount int
 	for _, c := range oo {
 		r := newContractRowForCorporation(c, corporation)
 		rows = append(rows, r)
-		if c.Status.IsActive() {
-			activeCount++
-		}
 	}
-	return rows, activeCount, nil
+	return rows, nil
 }
 
-func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error) {
 	oo, err := a.u.Character().ListAllContracts(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	// Remove duplicate oo2 between the user's own characters
 	oo2 := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
@@ -685,10 +719,9 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	})
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []contractRow
-	var activeCount int
 	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
@@ -698,15 +731,12 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
 			if err != nil {
-				return nil, 0, err
+				return nil, err
 			}
 			tagsByCharacter[c.CharacterID] = tags
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if c.Status.IsActive() {
-			activeCount++
-		}
 	}
-	return rows, activeCount, nil
+	return rows, nil
 }
