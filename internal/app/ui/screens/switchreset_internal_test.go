@@ -72,14 +72,11 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			a := NewContractsForCorporation(u)
 			a.searchEntry.SetText("ship")
 			finished := app.ContractCategoryFinished.Display()
+			a.selectStatus.SetSelected(finished)
 			if isMobile {
-				a.filterChip.SetOptions(
-					xwidget.NewFilterOptionMultiChoiceOrdered(contractsFilterStatus, contractsStatusOptions()),
-					xwidget.NewFilterOptionMultiChoice(contractsFilterType, []string{"Courier"}),
-				)
-				a.filterChip.SetSelected(map[string]string{contractsFilterStatus: finished, contractsFilterType: "Courier"})
+				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(contractsFilterType, []string{"Courier"}))
+				a.filterChip.SetSelected(map[string]string{contractsFilterType: "Courier"})
 			} else {
-				a.selectStatus.SetSelected(finished)
 				a.selectType.SetOptions([]string{"Courier"})
 				a.selectType.SetSelected("Courier")
 			}
@@ -88,7 +85,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			switchCorporation(t, u)
 
 			assert.Empty(t, a.searchEntry.Text)
-			assert.Equal(t, contractsFilter{}, a.currentFilter())
+			assert.Equal(t, contractsFilter{status: contractsStatusAllOpen}, a.currentFilter())
 		})
 		t.Run(fmt.Sprintf("skill catalogue mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)

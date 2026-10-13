@@ -30,6 +30,25 @@ func TestContractCategories(t *testing.T) {
 	}, app.ContractCategories())
 }
 
+func TestContractCategoryIsOpen(t *testing.T) {
+	cases := []struct {
+		category app.ContractCategory
+		want     bool
+	}{
+		{app.ContractCategoryOutstanding, true},
+		{app.ContractCategoryInProgress, true},
+		{app.ContractCategoryRequiresAttention, true},
+		{app.ContractCategoryFinished, false},
+		{app.ContractCategoryOther, false},
+		{app.ContractCategoryUndefined, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.category.Display(), func(t *testing.T) {
+			xassert.Equal(t, tc.want, tc.category.IsOpen())
+		})
+	}
+}
+
 func TestContractCategoryDisplayAndColor(t *testing.T) {
 	cases := []struct {
 		category  app.ContractCategory
