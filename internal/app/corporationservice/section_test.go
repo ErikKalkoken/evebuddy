@@ -191,7 +191,8 @@ func TestCorporationService_PermittedSections(t *testing.T) {
 }
 
 func TestCorporationService_Init(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
+	// On disk, because Init starts a background job, and a second connection to an in-memory DB sees an empty DB.
+	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
 	c := factory.CreateCorporation()
