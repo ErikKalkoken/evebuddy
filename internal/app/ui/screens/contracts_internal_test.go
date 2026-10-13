@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -183,5 +185,57 @@ func TestContracts_Filter(t *testing.T) {
 			contractsFilterIssuer:   "",
 			contractsFilterType:     "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	expired := time.Now().Add(-time.Hour)
+	newUI := func(t *testing.T) *testdouble.UIFake {
+		return testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+	}
+	t.Run("characters", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		for _, arg := range []storage.CreateCharacterContractParams{
+			{Status: app.ContractStatusOutstanding},
+			{Status: app.ContractStatusOutstanding, DateExpired: expired},
+			{Status: app.ContractStatusInProgress},
+			{Status: app.ContractStatusFailed},
+			{Status: app.ContractStatusFinished},
+		} {
+			arg.CharacterID = c.ID
+			factory.CreateCharacterContract(arg)
+		}
+		a := NewContractsForCharacters(newUI(t))
+		var got int
+		a.OnUpdate = func(open int) {
+			got = open
+		}
+		a.update(t.Context())
+		assert.Equal(t, 4, got)
+	})
+	t.Run("corporation", func(t *testing.T) {
+		corporation := factory.CreateCorporation()
+		for _, arg := range []storage.CreateCorporationContractParams{
+			{Status: app.ContractStatusOutstanding},
+			{Status: app.ContractStatusOutstanding, DateExpired: expired},
+			{Status: app.ContractStatusRejected},
+			{Status: app.ContractStatusFinished},
+		} {
+			arg.CorporationID = corporation.ID
+			factory.CreateCorporationContract(arg)
+		}
+		a := NewContractsForCorporation(newUI(t))
+		a.corporation.Store(corporation)
+		var got int
+		a.OnUpdate = func(open int) {
+			got = open
+		}
+		a.update(t.Context())
+		assert.Equal(t, 3, got)
 	})
 }

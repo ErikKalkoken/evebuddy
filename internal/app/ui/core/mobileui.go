@@ -327,7 +327,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	u.corporationContracts.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%d contracts active", count)
+			badge = fmt.Sprintf("%d contracts open", count)
 		}
 		corpContractsNav.Supporting = badge
 		corpContractsNav.Refresh()
@@ -824,7 +824,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	u.contractList.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%d contracts active", count)
+			badge = fmt.Sprintf("%d contracts open", count)
 		}
 		navItemContracts.Supporting = badge
 		navItemContracts.Refresh()

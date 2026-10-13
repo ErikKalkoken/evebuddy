@@ -254,7 +254,7 @@ func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.Rich
 type Contracts struct {
 	widget.BaseWidget
 
-	OnUpdate func(active int)
+	OnUpdate func(open int)
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -653,13 +653,12 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 }
 
 func (a *Contracts) update(ctx context.Context) {
-	var activeCount int
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
-		rows, activeCount, err = a.fetchRowsCorporation(ctx)
+		rows, err = a.fetchRowsCorporation(ctx)
 	} else {
-		rows, activeCount, err = a.fetchRowsOverview(ctx)
+		rows, err = a.fetchRowsOverview(ctx)
 	}
 	if err != nil {
 		if ctx.Err() != nil {
@@ -673,40 +672,42 @@ func (a *Contracts) update(ctx context.Context) {
 		})
 		return
 	}
+	var openCount int
+	for _, r := range rows {
+		if r.category.IsOpen() {
+			openCount++
+		}
+	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
-			a.OnUpdate(activeCount)
+			a.OnUpdate(openCount)
 		}
 	})
 }
 
-func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, error) {
 	corporation := a.corporation.Load()
 	if corporation == nil {
-		return nil, 0, nil
+		return nil, nil
 	}
 	oo, err := a.u.Corporation().ListCorporationContracts(ctx, corporation.ID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []contractRow
-	var activeCount int
 	for _, c := range oo {
 		r := newContractRowForCorporation(c, corporation)
 		rows = append(rows, r)
-		if c.Status.IsActive() {
-			activeCount++
-		}
 	}
-	return rows, activeCount, nil
+	return rows, nil
 }
 
-func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, error) {
+func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error) {
 	oo, err := a.u.Character().ListAllContracts(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	// Remove duplicate oo2 between the user's own characters
 	oo2 := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
@@ -718,10 +719,9 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 	})
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []contractRow
-	var activeCount int
 	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
@@ -731,15 +731,12 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, int, 
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)
 			if err != nil {
-				return nil, 0, err
+				return nil, err
 			}
 			tagsByCharacter[c.CharacterID] = tags
 		}
 		r.tags = tags
 		rows = append(rows, r)
-		if c.Status.IsActive() {
-			activeCount++
-		}
 	}
-	return rows, activeCount, nil
+	return rows, nil
 }
