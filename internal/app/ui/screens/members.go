@@ -76,6 +76,13 @@ func NewMembers(s baseUI) *Members {
 		}
 		a.update(ctx)
 	})
+	// Which members are owned depends on the user's characters.
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
+	})
 	return a
 }
 

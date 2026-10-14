@@ -455,3 +455,42 @@ func TestContracts_RefreshTimeDependent_KeepsErrorFooter(t *testing.T) {
 	assert.Equal(t, "ERROR: failed", a.footer.Text)
 	assert.Equal(t, app.ContractCategoryOutstanding, a.rows[0].category)
 }
+
+func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	corporation := factory.CreateCorporation()
+	c := factory.CreateCharacterFull()
+	for _, arg := range []storage.CreateEveEntityParams{
+		{ID: corporation.ID, Name: corporation.EveCorporation.Name, Category: app.EveEntityCorporation},
+		{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter},
+	} {
+		if _, err := st.GetOrCreateEveEntity(t.Context(), arg); err != nil {
+			t.Fatal(err)
+		}
+	}
+	factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+		CorporationID: corporation.ID,
+		Status:        app.ContractStatusOutstanding,
+		DateExpired:   time.Now().Add(-time.Hour),
+		IssuerID:      c.ID,
+	})
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	a := NewContractsForCorporation(u)
+	a.corporation.Store(corporation)
+	var got int
+	a.OnUpdate = func(attention int) {
+		got = attention
+	}
+	a.update(t.Context())
+	assert.Equal(t, 1, got, "issued by one of the user's characters")
+
+	if err := st.DeleteCharacter(t.Context(), c.ID); err != nil {
+		t.Fatal(err)
+	}
+	u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
+	assert.Equal(t, 0, got, "reloaded after the issuer was removed")
+}

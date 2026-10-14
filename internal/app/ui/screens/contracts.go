@@ -538,6 +538,13 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			}
 			a.update(ctx)
 		})
+		// Which contracts require attention depends on the user's characters.
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
 	} else {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 			a.update(ctx)

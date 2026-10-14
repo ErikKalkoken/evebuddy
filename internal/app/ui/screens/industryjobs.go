@@ -411,6 +411,13 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 				a.update(ctx)
 			}
 		})
+		// Which jobs were installed by the user depends on the user's characters.
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
 	} else {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 			a.update(ctx)
