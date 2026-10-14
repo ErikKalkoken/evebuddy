@@ -221,14 +221,6 @@ type CharacterContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CharacterContract) Category() ContractCategory {
-	return ContractCategoryAt(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
-}
-
-func (cs CharacterContract) IsExpired() bool {
-	return contractIsExpired(cs.DateExpired)
-}
-
 func (cs CharacterContract) IssuerEffective() *EveEntity {
 	if cs.ForCorporation {
 		return cs.IssuerCorporation
@@ -290,14 +282,6 @@ type CorporationContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CorporationContract) Category() ContractCategory {
-	return ContractCategoryAt(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
-}
-
-func (cs CorporationContract) IsExpired() bool {
-	return contractIsExpired(cs.DateExpired)
-}
-
 func (cs CorporationContract) IssuerEffective() *EveEntity {
 	if cs.ForCorporation {
 		return cs.IssuerCorporation
@@ -328,18 +312,22 @@ type CorporationContractItem struct {
 }
 
 // ContractCategoryAt returns the category of a contract at the given time.
-func ContractCategoryAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) ContractCategory {
+// A contract only requires attention when one of the user's characters must act:
+// the issuer of an expired contract or the acceptor of an overdue one.
+// Corporation roles (e.g. Contract Manager, Director) are not checked.
+func ContractCategoryAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) ContractCategory {
 	switch status {
 	case ContractStatusOutstanding:
-		if dateExpired.Before(now) {
+		if !ContractIsExpiredAt(dateExpired, now) {
+			return ContractCategoryOutstanding
+		}
+		if issuerIsMine {
 			return ContractCategoryRequiresAttention
 		}
-		return ContractCategoryOutstanding
+		return ContractCategoryOther
 	case ContractStatusInProgress:
-		accepted, ok1 := dateAccepted.Value()
-		days, ok2 := daysToComplete.Value()
-		if ok1 && ok2 && accepted.AddDate(0, 0, int(days)).Before(now) {
-			return ContractCategoryRequiresAttention // overdue
+		if ContractIsOverdueAt(dateAccepted, daysToComplete, now) && acceptorIsMine {
+			return ContractCategoryRequiresAttention
 		}
 		return ContractCategoryInProgress
 	case
@@ -351,8 +339,16 @@ func ContractCategoryAt(status ContractStatus, dateExpired time.Time, dateAccept
 	return ContractCategoryOther
 }
 
-func contractIsExpired(expired time.Time) bool {
-	return expired.Before(time.Now())
+// ContractIsExpiredAt reports whether a contract has expired at the given time.
+func ContractIsExpiredAt(dateExpired, now time.Time) bool {
+	return dateExpired.Before(now)
+}
+
+// ContractIsOverdueAt reports whether an accepted contract has passed its deadline at the given time.
+func ContractIsOverdueAt(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) bool {
+	accepted, ok1 := dateAccepted.Value()
+	days, ok2 := daysToComplete.Value()
+	return ok1 && ok2 && accepted.AddDate(0, 0, int(days)).Before(now)
 }
 func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {

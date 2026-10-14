@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -78,6 +79,7 @@ func (f contractsFilter) match(r contractRow) bool {
 
 type contractRow struct {
 	acceptor           optional.Optional[*app.EveEntity]
+	acceptorIsMine     bool // accepted by one of the user's characters
 	assignee           optional.Optional[*app.EveEntity]
 	assigneeName       string
 	availability       app.ContractAvailability
@@ -95,7 +97,9 @@ type contractRow struct {
 	endLocation        optional.Optional[*app.EveLocationShort]
 	isCorporation      bool
 	isExpired          bool
+	isOverdue          bool
 	issuer             *app.EveEntity
+	issuerIsMine       bool // issued by one of the user's characters
 	issuerName         string
 	name               string
 	objectID           int64
@@ -114,7 +118,7 @@ type contractRow struct {
 	volume             optional.Optional[float64]
 }
 
-func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string) contractRow {
+func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
@@ -149,11 +153,13 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
+	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
+	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
 	r.updateTimeDependent(time.Now())
 	return r
 }
 
-func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation) contractRow {
+func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation, myCharacterIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
@@ -188,6 +194,8 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
+	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
+	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
 	r.updateTimeDependent(time.Now())
 	return r
 }
@@ -203,21 +211,28 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 	return strings.Join(token, "~")
 }
 
+// isMyEntity reports whether an entity is one of the user's characters.
+func isMyEntity(o optional.Optional[*app.EveEntity], myCharacterIDs set.Set[int64]) bool {
+	v, ok := o.Value()
+	return ok && myCharacterIDs.Contains(v.ID)
+}
+
 // updateTimeDependent recomputes the fields which change with time
-// and reports whether the category or expiry changed.
+// and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {
-	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, now)
-	isExpired := r.dateExpired.Before(now)
-	changed := category != r.category || isExpired != r.isExpired
-	if !changed && r.statusDisplay != nil {
+	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
+	isExpired := app.ContractIsExpiredAt(r.dateExpired, now)
+	isOverdue := app.ContractIsOverdueAt(r.dateAccepted, r.daysToComplete, now)
+	if category == r.category && isExpired == r.isExpired && isOverdue == r.isOverdue {
 		return false
 	}
 	r.category = category
 	r.isExpired = isExpired
-	r.statusText = contractStatusText(r.status, category)
-	r.statusDisplay = makeContractStatusDisplay(r.status, category)
+	r.isOverdue = isOverdue
+	r.statusText = contractStatusText(r.status, isExpired, isOverdue)
+	r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
 	r.dateExpiredDisplay = makeDateExpiredDisplay(isExpired, r.dateExpired)
-	return changed
+	return true
 }
 
 // contractsAttentionCount returns how many rows require attention.
@@ -231,25 +246,22 @@ func contractsAttentionCount(rows []contractRow) int {
 	return n
 }
 
-// contractStatusText returns the status and explains why it requires attention
-// when the status alone does not.
-func contractStatusText(status app.ContractStatus, category app.ContractCategory) string {
+// contractStatusText returns the status and notes when an open contract
+// has passed its deadline.
+func contractStatusText(status app.ContractStatus, isExpired, isOverdue bool) string {
 	s := status.Display()
-	if category != app.ContractCategoryRequiresAttention {
-		return s
-	}
-	switch status {
-	case app.ContractStatusOutstanding:
+	switch {
+	case status == app.ContractStatusOutstanding && isExpired:
 		return s + " (expired)"
-	case app.ContractStatusInProgress:
+	case status == app.ContractStatusInProgress && isOverdue:
 		return s + " (overdue)"
 	}
 	return s
 }
 
-// makeContractStatusDisplay returns the status in the color of its category.
-func makeContractStatusDisplay(status app.ContractStatus, category app.ContractCategory) []widget.RichTextSegment {
-	return xwidget.RichTextSegmentsFromText(contractStatusText(status, category), widget.RichTextStyle{
+// makeContractStatusDisplay returns the status text in the color of its category.
+func makeContractStatusDisplay(text string, category app.ContractCategory) []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: category.Color(),
 	})
 }
@@ -733,9 +745,14 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	if err != nil {
 		return nil, err
 	}
+	characters, err := a.u.Character().CharacterNames(ctx)
+	if err != nil {
+		return nil, err
+	}
+	myCharacterIDs := set.Collect(maps.Keys(characters))
 	var rows []contractRow
 	for _, c := range oo {
-		r := newContractRowForCorporation(c, corporation)
+		r := newContractRowForCorporation(c, corporation, myCharacterIDs)
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -758,12 +775,13 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	if err != nil {
 		return nil, err
 	}
+	myCharacterIDs := set.Collect(maps.Keys(characters))
 	var rows []contractRow
 	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
 			return characters[id]
-		})
+		}, myCharacterIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)

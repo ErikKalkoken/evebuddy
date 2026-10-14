@@ -82,27 +82,28 @@ func TestContractsStatusOptions(t *testing.T) {
 }
 
 func TestMakeContractStatusDisplay(t *testing.T) {
-	got := makeContractStatusDisplay(app.ContractStatusOutstanding, app.ContractCategoryRequiresAttention)
+	got := makeContractStatusDisplay("Outstanding (expired)", app.ContractCategoryRequiresAttention)
 	want := xwidget.RichTextSegmentsFromText("Outstanding (expired)", widget.RichTextStyle{ColorName: theme.ColorNameError})
 	assert.Equal(t, want, got)
 }
 
 func TestContractStatusText(t *testing.T) {
 	for _, tc := range []struct {
-		status   app.ContractStatus
-		category app.ContractCategory
-		want     string
+		status    app.ContractStatus
+		isExpired bool
+		isOverdue bool
+		want      string
 	}{
-		{app.ContractStatusOutstanding, app.ContractCategoryRequiresAttention, "Outstanding (expired)"},
-		{app.ContractStatusInProgress, app.ContractCategoryRequiresAttention, "In Progress (overdue)"},
-		{app.ContractStatusOutstanding, app.ContractCategoryOutstanding, "Outstanding"},
-		{app.ContractStatusInProgress, app.ContractCategoryInProgress, "In Progress"},
-		{app.ContractStatusFailed, app.ContractCategoryOther, "Failed"},
-		{app.ContractStatusRejected, app.ContractCategoryOther, "Rejected"},
-		{app.ContractStatusFinished, app.ContractCategoryFinished, "Finished"},
+		{app.ContractStatusOutstanding, true, false, "Outstanding (expired)"},
+		{app.ContractStatusInProgress, true, true, "In Progress (overdue)"},
+		{app.ContractStatusOutstanding, false, false, "Outstanding"},
+		{app.ContractStatusInProgress, true, false, "In Progress"},
+		{app.ContractStatusFailed, true, true, "Failed"},
+		{app.ContractStatusRejected, true, false, "Rejected"},
+		{app.ContractStatusFinished, true, false, "Finished"},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
-			assert.Equal(t, tc.want, contractStatusText(tc.status, tc.category))
+			assert.Equal(t, tc.want, contractStatusText(tc.status, tc.isExpired, tc.isOverdue))
 		})
 	}
 }
@@ -193,6 +194,7 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	expired := time.Now().Add(-time.Hour)
+	overdueAccepted := optional.New(time.Now().AddDate(0, 0, -4))
 	newUI := func(t *testing.T) *testdouble.UIFake {
 		return testdouble.NewUIFake(testdouble.UIParams{
 			App:     test.NewTempApp(t),
@@ -201,10 +203,13 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 	}
 	t.Run("characters", func(t *testing.T) {
 		c := factory.CreateCharacterFull()
+		other := factory.CreateEveEntityCharacter()
 		for _, arg := range []storage.CreateCharacterContractParams{
 			{Status: app.ContractStatusOutstanding},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired},
-			{Status: app.ContractStatusInProgress, DateAccepted: optional.New(time.Now().AddDate(0, 0, -4)), DaysToComplete: optional.New[int64](3)},
+			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: other.ID},
+			{Status: app.ContractStatusInProgress, AcceptorID: c.ID, DateAccepted: overdueAccepted, DaysToComplete: optional.New[int64](3)},
+			{Status: app.ContractStatusInProgress, AcceptorID: other.ID, DateAccepted: overdueAccepted, DaysToComplete: optional.New[int64](3)},
 			{Status: app.ContractStatusInProgress},
 			{Status: app.ContractStatusFailed},
 			{Status: app.ContractStatusFinished},
@@ -222,9 +227,19 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 	})
 	t.Run("corporation", func(t *testing.T) {
 		corporation := factory.CreateCorporation()
+		c := factory.CreateCharacterFull()
+		_, err := st.GetOrCreateEveEntity(t.Context(), storage.CreateEveEntityParams{
+			ID:       c.ID,
+			Name:     c.EveCharacter.Name,
+			Category: app.EveEntityCharacter,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
 		for _, arg := range []storage.CreateCorporationContractParams{
 			{Status: app.ContractStatusOutstanding},
-			{Status: app.ContractStatusOutstanding, DateExpired: expired},
+			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: c.ID},
+			{Status: app.ContractStatusOutstanding, DateExpired: expired}, // issued by the corporation itself
 			{Status: app.ContractStatusRejected},
 			{Status: app.ContractStatusFinished},
 		} {
@@ -245,7 +260,7 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	now := time.Now()
 	t.Run("outstanding becomes expired", func(t *testing.T) {
-		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
 		assert.True(t, r.updateTimeDependent(now))
 		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
 		assert.False(t, r.isExpired)
@@ -258,6 +273,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	t.Run("in progress becomes overdue", func(t *testing.T) {
 		r := contractRow{
 			status:         app.ContractStatusInProgress,
+			acceptorIsMine: true,
 			dateAccepted:   optional.New(now),
 			dateExpired:    now.Add(time.Hour),
 			daysToComplete: optional.New[int64](3),
@@ -268,6 +284,25 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 		assert.Equal(t, "In Progress (overdue)", r.statusText)
 	})
+	t.Run("expired contract of others does not require attention", func(t *testing.T) {
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		r.updateTimeDependent(now)
+		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
+		assert.Equal(t, app.ContractCategoryOther, r.category)
+		assert.Equal(t, "Outstanding (expired)", r.statusText)
+	})
+	t.Run("overdue contract of others still shows as overdue", func(t *testing.T) {
+		r := contractRow{
+			status:         app.ContractStatusInProgress,
+			dateAccepted:   optional.New(now),
+			dateExpired:    now.Add(time.Hour),
+			daysToComplete: optional.New[int64](3),
+		}
+		r.updateTimeDependent(now)
+		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
+		assert.Equal(t, app.ContractCategoryInProgress, r.category)
+		assert.Equal(t, "In Progress (overdue)", r.statusText)
+	})
 }
 
 func TestContracts_RefreshTimeDependent(t *testing.T) {
@@ -275,8 +310,8 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 	defer db.Close()
 	now := time.Now()
 	rows := []contractRow{
-		{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)},
-		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2)},
+		{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true},
+		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2), issuerIsMine: true},
 	}
 	for i := range rows {
 		rows[i].updateTimeDependent(now)
