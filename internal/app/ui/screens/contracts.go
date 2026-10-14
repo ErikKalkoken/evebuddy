@@ -254,7 +254,7 @@ func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.Rich
 type Contracts struct {
 	widget.BaseWidget
 
-	OnUpdate func(open int)
+	OnUpdate func(attention int)
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -672,17 +672,17 @@ func (a *Contracts) update(ctx context.Context) {
 		})
 		return
 	}
-	var openCount int
+	var attentionCount int
 	for _, r := range rows {
-		if r.category.IsOpen() {
-			openCount++
+		if r.category == app.ContractCategoryRequiresAttention {
+			attentionCount++
 		}
 	}
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
-			a.OnUpdate(openCount)
+			a.OnUpdate(attentionCount)
 		}
 	})
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -188,7 +189,7 @@ func TestContracts_Filter(t *testing.T) {
 	})
 }
 
-func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
+func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	expired := time.Now().Add(-time.Hour)
@@ -203,6 +204,7 @@ func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
 		for _, arg := range []storage.CreateCharacterContractParams{
 			{Status: app.ContractStatusOutstanding},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired},
+			{Status: app.ContractStatusInProgress, DateAccepted: optional.New(time.Now().AddDate(0, 0, -4)), DaysToComplete: optional.New[int64](3)},
 			{Status: app.ContractStatusInProgress},
 			{Status: app.ContractStatusFailed},
 			{Status: app.ContractStatusFinished},
@@ -212,11 +214,11 @@ func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
 		}
 		a := NewContractsForCharacters(newUI(t))
 		var got int
-		a.OnUpdate = func(open int) {
-			got = open
+		a.OnUpdate = func(attention int) {
+			got = attention
 		}
 		a.update(t.Context())
-		assert.Equal(t, 3, got)
+		assert.Equal(t, 2, got)
 	})
 	t.Run("corporation", func(t *testing.T) {
 		corporation := factory.CreateCorporation()
@@ -232,10 +234,10 @@ func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
 		a := NewContractsForCorporation(newUI(t))
 		a.corporation.Store(corporation)
 		var got int
-		a.OnUpdate = func(open int) {
-			got = open
+		a.OnUpdate = func(attention int) {
+			got = attention
 		}
 		a.update(t.Context())
-		assert.Equal(t, 2, got)
+		assert.Equal(t, 1, got)
 	})
 }
