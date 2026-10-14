@@ -78,44 +78,46 @@ func (f contractsFilter) match(r contractRow) bool {
 }
 
 type contractRow struct {
-	acceptor           optional.Optional[*app.EveEntity]
-	acceptorIsMine     bool // accepted by one of the user's characters
-	assignee           optional.Optional[*app.EveEntity]
-	assigneeName       string
-	availability       app.ContractAvailability
-	buyout             optional.Optional[float64]
-	category           app.ContractCategory
-	collateral         optional.Optional[float64]
-	contractID         int64
-	contractType       app.ContractType
-	dateAccepted       optional.Optional[time.Time]
-	dateCompleted      optional.Optional[time.Time]
-	dateExpired        time.Time
-	dateExpiredDisplay []widget.RichTextSegment
-	dateIssued         time.Time
-	daysToComplete     optional.Optional[int64]
-	endLocation        optional.Optional[*app.EveLocationShort]
-	isCorporation      bool
-	isExpired          bool
-	isOverdue          bool
-	issuer             *app.EveEntity
-	issuerIsMine       bool // issued by one of the user's characters
-	issuerName         string
-	name               string
-	objectID           int64
-	ownerID            int64
-	ownerName          string
-	price              optional.Optional[float64]
-	reward             optional.Optional[float64]
-	searchTarget       string
-	startLocation      optional.Optional[*app.EveLocationShort]
-	status             app.ContractStatus
-	statusDisplay      []widget.RichTextSegment
-	statusText         string
-	tags               set.Set[string]
-	title              string
-	typeName           string
-	volume             optional.Optional[float64]
+	acceptor        optional.Optional[*app.EveEntity]
+	acceptorIsMine  bool // accepted by one of the user's characters
+	assignee        optional.Optional[*app.EveEntity]
+	assigneeName    string
+	availability    app.ContractAvailability
+	buyout          optional.Optional[float64]
+	category        app.ContractCategory
+	collateral      optional.Optional[float64]
+	contractID      int64
+	contractType    app.ContractType
+	dateAccepted    optional.Optional[time.Time]
+	dateCompleted   optional.Optional[time.Time]
+	dateExpired     time.Time
+	dateIssued      time.Time
+	daysToComplete  optional.Optional[int64]
+	endLocation     optional.Optional[*app.EveLocationShort]
+	isCorporation   bool
+	isExpired       bool
+	isOverdue       bool
+	deadline        optional.Optional[time.Time] // the deadline relevant for the current status
+	deadlineLabel   string                       // describes the deadline, e.g. "Expires"
+	timeLeftDisplay []widget.RichTextSegment
+	issuer          *app.EveEntity
+	issuerIsMine    bool // issued by one of the user's characters
+	issuerName      string
+	name            string
+	objectID        int64
+	ownerID         int64
+	ownerName       string
+	price           optional.Optional[float64]
+	reward          optional.Optional[float64]
+	searchTarget    string
+	startLocation   optional.Optional[*app.EveLocationShort]
+	status          app.ContractStatus
+	statusDisplay   []widget.RichTextSegment
+	statusText      string
+	tags            set.Set[string]
+	title           string
+	typeName        string
+	volume          optional.Optional[float64]
 }
 
 func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs set.Set[int64]) contractRow {
@@ -231,7 +233,9 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 	r.isOverdue = isOverdue
 	r.statusText = contractStatusText(r.status, isExpired, isOverdue)
 	r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
-	r.dateExpiredDisplay = makeDateExpiredDisplay(isExpired, r.dateExpired)
+	var passed string
+	r.deadline, r.deadlineLabel, passed = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+	r.timeLeftDisplay = makeTimeLeftDisplay(r.deadline, passed, now)
 	return true
 }
 
@@ -266,19 +270,51 @@ func makeContractStatusDisplay(text string, category app.ContractCategory) []wid
 	})
 }
 
-func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.RichTextSegment {
-	var text string
-	var color fyne.ThemeColorName
-	if isExpired {
-		text = "EXPIRED"
-		color = theme.ColorNameError
-	} else {
-		text = ihumanize.RelTime(dateExpired)
-		color = theme.ColorNameForeground
+// contractDeadline returns the deadline relevant for a status, a label for it
+// and the text to show once it has passed: the expiry for outstanding contracts
+// and the delivery deadline for accepted couriers.
+// Finished and other closed contracts have no deadline.
+func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (deadline optional.Optional[time.Time], label, passed string) {
+	switch status {
+	case app.ContractStatusOutstanding:
+		return optional.New(dateExpired), "Expires", "EXPIRED"
+	case app.ContractStatusInProgress:
+		if v, ok := app.ContractDeliveryDeadline(dateAccepted, daysToComplete); ok {
+			return optional.New(v), "Due", "OVERDUE"
+		}
+		return optional.New(dateExpired), "Expires", "EXPIRED"
 	}
-	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-		ColorName: color,
-	})
+	return optional.Optional[time.Time]{}, "", ""
+}
+
+// makeTimeLeftDisplay returns the time left until the deadline
+// or the passed text when it is over.
+func makeTimeLeftDisplay(deadline optional.Optional[time.Time], passed string, now time.Time) []widget.RichTextSegment {
+	v, ok := deadline.Value()
+	if !ok {
+		return xwidget.RichTextSegmentsFromText("")
+	}
+	if v.Before(now) {
+		return xwidget.RichTextSegmentsFromText(passed, widget.RichTextStyle{
+			ColorName: theme.ColorNameError,
+		})
+	}
+	return xwidget.RichTextSegmentsFromText(ihumanize.RelTime(v))
+}
+
+// compareContractDeadlines compares two deadlines. Missing deadlines sort last.
+func compareContractDeadlines(a, b optional.Optional[time.Time]) int {
+	x, okA := a.Value()
+	y, okB := b.Value()
+	switch {
+	case !okA && !okB:
+		return 0
+	case !okA:
+		return 1
+	case !okB:
+		return -1
+	}
+	return x.Compare(y)
 }
 
 // Contracts is a UI element for showing Contracts.
@@ -374,10 +410,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		Label: "Time Left",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
-			return a.dateExpired.Compare(b.dateExpired)
+			return compareContractDeadlines(a.deadline, b.deadline)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
+			co.(*xwidget.RichText).Set(r.timeLeftDisplay)
 		},
 	}, {
 		Label: "Description",
@@ -604,10 +640,14 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 			}
 			main[3].(*widget.Label).SetText(assignee)
 
-			main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
-				xwidget.RichTextSegmentsFromText("Expires "),
-				r.dateExpiredDisplay,
-			))
+			if r.deadlineLabel == "" {
+				main[4].(*xwidget.RichText).Set(xwidget.RichTextSegmentsFromText(""))
+			} else {
+				main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
+					xwidget.RichTextSegmentsFromText(r.deadlineLabel+" "),
+					r.timeLeftDisplay,
+				))
+			}
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {

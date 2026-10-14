@@ -163,6 +163,17 @@ func TestContractIsExpiredAt(t *testing.T) {
 	xassert.Equal(t, false, app.ContractIsExpiredAt(now.Add(time.Hour), now))
 }
 
+func TestContractDeliveryDeadline(t *testing.T) {
+	accepted := time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC)
+	got, ok := app.ContractDeliveryDeadline(optional.New(accepted), optional.New[int64](3))
+	xassert.Equal(t, true, ok)
+	xassert.Equal(t, accepted.AddDate(0, 0, 3), got)
+	_, ok = app.ContractDeliveryDeadline(optional.Optional[time.Time]{}, optional.New[int64](3))
+	xassert.Equal(t, false, ok)
+	_, ok = app.ContractDeliveryDeadline(optional.New(accepted), optional.Optional[int64]{})
+	xassert.Equal(t, false, ok)
+}
+
 func TestContractIsOverdueAt(t *testing.T) {
 	now := time.Now()
 	xassert.Equal(t, true, app.ContractIsOverdueAt(optional.New(now.AddDate(0, 0, -4)), optional.New[int64](3), now))

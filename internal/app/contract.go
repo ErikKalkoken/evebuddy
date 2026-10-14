@@ -344,11 +344,21 @@ func ContractIsExpiredAt(dateExpired, now time.Time) bool {
 	return dateExpired.Before(now)
 }
 
-// ContractIsOverdueAt reports whether an accepted contract has passed its deadline at the given time.
-func ContractIsOverdueAt(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) bool {
+// ContractDeliveryDeadline returns when an accepted contract must be completed.
+// It reports false when the contract has no such deadline.
+func ContractDeliveryDeadline(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (time.Time, bool) {
 	accepted, ok1 := dateAccepted.Value()
 	days, ok2 := daysToComplete.Value()
-	return ok1 && ok2 && accepted.AddDate(0, 0, int(days)).Before(now)
+	if !ok1 || !ok2 {
+		return time.Time{}, false
+	}
+	return accepted.AddDate(0, 0, int(days)), true
+}
+
+// ContractIsOverdueAt reports whether an accepted contract has passed its deadline at the given time.
+func ContractIsOverdueAt(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) bool {
+	deadline, ok := ContractDeliveryDeadline(dateAccepted, daysToComplete)
+	return ok && deadline.Before(now)
 }
 func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {

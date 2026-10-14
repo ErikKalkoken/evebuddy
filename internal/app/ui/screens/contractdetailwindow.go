@@ -207,7 +207,18 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 				fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(r.dateAccepted.StringFunc("", func(v time.Time) string {
 					return v.Format(app.DateTimeFormat)
 				}))))
-				fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractExpiresString(r.dateExpired, r.isExpired))))
+				var expiredNote string
+				if r.deadlineLabel == "Expires" { // only while the expiry is the relevant deadline
+					expiredNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
+				}
+				fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractDateString(r.dateExpired, expiredNote))))
+				if deadline, ok := app.ContractDeliveryDeadline(r.dateAccepted, r.daysToComplete); ok {
+					var note string
+					if r.status == app.ContractStatusInProgress {
+						note = makeContractDeadlineNote(deadline, r.isOverdue, "OVERDUE")
+					}
+					fi = append(fi, widget.NewFormItem("Deliver By", widget.NewLabel(makeContractDateString(deadline, note))))
+				}
 				fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(r.dateCompleted.StringFunc("", func(v time.Time) string {
 					return v.Format(app.DateTimeFormat)
 				}))))
@@ -248,7 +259,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-					{Text: "Expires", Widget: widget.NewLabel(makeContractExpiresString(r.dateExpired, r.isExpired))},
+					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")))},
 				})
 			}
 
@@ -316,15 +327,21 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 	}()
 }
 
-func makeContractExpiresString(dateExpired time.Time, isExpired bool) string {
-	ts := dateExpired.Format(app.DateTimeFormat)
-	var ds string
-	if isExpired {
-		ds = "EXPIRED"
-	} else {
-		ds = ihumanize.RelTime(dateExpired)
+// makeContractDateString returns a formatted date with an optional note.
+func makeContractDateString(t time.Time, note string) string {
+	ts := t.Format(app.DateTimeFormat)
+	if note == "" {
+		return ts
 	}
-	return fmt.Sprintf("%s (%s)", ts, ds)
+	return fmt.Sprintf("%s (%s)", ts, note)
+}
+
+// makeContractDeadlineNote returns the time left until a deadline or the passed text when it is over.
+func makeContractDeadlineNote(deadline time.Time, isPassed bool, passed string) string {
+	if isPassed {
+		return passed
+	}
+	return ihumanize.RelTime(deadline)
 }
 
 // ui.MakeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.

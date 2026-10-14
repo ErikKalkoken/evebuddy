@@ -283,6 +283,8 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 		assert.Equal(t, "In Progress (overdue)", r.statusText)
+		assert.Equal(t, "Due", r.deadlineLabel)
+		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
 	})
 	t.Run("expired contract of others does not require attention", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
@@ -338,4 +340,73 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 
 	a.refreshTimeDependent(now.Add(91 * time.Minute))
 	assert.Equal(t, 1, calls, "no update without changes")
+}
+
+func overdueSegments() []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText("OVERDUE", widget.RichTextStyle{ColorName: theme.ColorNameError})
+}
+
+func TestContractDeadline(t *testing.T) {
+	expired := time.Date(2026, 9, 18, 10, 0, 0, 0, time.UTC)
+	accepted := optional.New(time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC))
+	days := optional.New[int64](1)
+	none := optional.Optional[time.Time]{}
+	noDays := optional.Optional[int64]{}
+	for _, tc := range []struct {
+		name         string
+		status       app.ContractStatus
+		dateAccepted optional.Optional[time.Time]
+		days         optional.Optional[int64]
+		wantDeadline optional.Optional[time.Time]
+		wantLabel    string
+		wantPassed   string
+	}{
+		{"outstanding", app.ContractStatusOutstanding, none, days, optional.New(expired), "Expires", "EXPIRED"},
+		{"in progress courier", app.ContractStatusInProgress, accepted, days, optional.New(accepted.MustValue().AddDate(0, 0, 1)), "Due", "OVERDUE"},
+		{"in progress without delivery data", app.ContractStatusInProgress, none, noDays, optional.New(expired), "Expires", "EXPIRED"},
+		{"finished", app.ContractStatusFinished, accepted, days, none, "", ""},
+		{"failed", app.ContractStatusFailed, accepted, days, none, "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			deadline, label, passed := contractDeadline(tc.status, expired, tc.dateAccepted, tc.days)
+			assert.Equal(t, tc.wantDeadline, deadline)
+			assert.Equal(t, tc.wantLabel, label)
+			assert.Equal(t, tc.wantPassed, passed)
+		})
+	}
+}
+
+func TestMakeTimeLeftDisplay(t *testing.T) {
+	now := time.Now()
+	t.Run("before deadline", func(t *testing.T) {
+		got := makeTimeLeftDisplay(optional.New(now.Add(3*time.Hour)), "OVERDUE", now)
+		assert.NotEqual(t, overdueSegments(), got)
+		assert.NotEmpty(t, got)
+	})
+	t.Run("after deadline", func(t *testing.T) {
+		got := makeTimeLeftDisplay(optional.New(now.Add(-time.Hour)), "OVERDUE", now)
+		assert.Equal(t, overdueSegments(), got)
+	})
+	t.Run("no deadline", func(t *testing.T) {
+		got := makeTimeLeftDisplay(optional.Optional[time.Time]{}, "", now)
+		assert.Equal(t, xwidget.RichTextSegmentsFromText(""), got)
+	})
+}
+
+func TestCompareContractDeadlines(t *testing.T) {
+	now := time.Now()
+	early := optional.New(now)
+	late := optional.New(now.Add(time.Hour))
+	none := optional.Optional[time.Time]{}
+	assert.Equal(t, -1, compareContractDeadlines(early, late))
+	assert.Equal(t, 1, compareContractDeadlines(late, early))
+	assert.Equal(t, -1, compareContractDeadlines(late, none))
+	assert.Equal(t, 1, compareContractDeadlines(none, early))
+	assert.Equal(t, 0, compareContractDeadlines(none, none))
+}
+
+func TestMakeContractDateString(t *testing.T) {
+	d := time.Date(2026, 9, 18, 10, 0, 0, 0, time.UTC)
+	assert.Equal(t, d.Format(app.DateTimeFormat), makeContractDateString(d, ""))
+	assert.Equal(t, d.Format(app.DateTimeFormat)+" (OVERDUE)", makeContractDateString(d, makeContractDeadlineNote(d, true, "OVERDUE")))
 }
