@@ -241,3 +241,66 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		assert.Equal(t, 1, got)
 	})
 }
+
+func TestContractRow_UpdateTimeDependent(t *testing.T) {
+	now := time.Now()
+	t.Run("outstanding becomes expired", func(t *testing.T) {
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		assert.True(t, r.updateTimeDependent(now))
+		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
+		assert.False(t, r.isExpired)
+		assert.False(t, r.updateTimeDependent(now))
+		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
+		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
+		assert.True(t, r.isExpired)
+		assert.Equal(t, "Outstanding (expired)", r.statusText)
+	})
+	t.Run("in progress becomes overdue", func(t *testing.T) {
+		r := contractRow{
+			status:         app.ContractStatusInProgress,
+			dateAccepted:   optional.New(now),
+			dateExpired:    now.Add(time.Hour),
+			daysToComplete: optional.New[int64](3),
+		}
+		r.updateTimeDependent(now)
+		assert.Equal(t, app.ContractCategoryInProgress, r.category)
+		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
+		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
+		assert.Equal(t, "In Progress (overdue)", r.statusText)
+	})
+}
+
+func TestContracts_RefreshTimeDependent(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	now := time.Now()
+	rows := []contractRow{
+		{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)},
+		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2)},
+	}
+	for i := range rows {
+		rows[i].updateTimeDependent(now)
+	}
+	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	var calls, got int
+	a.OnUpdate = func(attention int) {
+		calls++
+		got = attention
+	}
+	a.rows = rows
+	a.selectStatus.SetSelected(app.ContractCategoryRequiresAttention.Display())
+	assert.Empty(t, a.rowsFiltered)
+
+	a.refreshTimeDependent(now.Add(90 * time.Minute))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, 1, got)
+	assert.Equal(t, []int64{1}, xslices.Map(a.rowsFiltered, func(r contractRow) int64 {
+		return r.contractID
+	}))
+
+	a.refreshTimeDependent(now.Add(91 * time.Minute))
+	assert.Equal(t, 1, calls, "no update without changes")
+}

@@ -94,7 +94,7 @@ type contractRow struct {
 	daysToComplete     optional.Optional[int64]
 	endLocation        optional.Optional[*app.EveLocationShort]
 	isCorporation      bool
-	isExpired          bool // TODO: make dynamic
+	isExpired          bool
 	issuer             *app.EveEntity
 	issuerName         string
 	name               string
@@ -118,86 +118,78 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	category := o.Category()
-	return contractRow{
-		acceptor:           o.Acceptor,
-		assignee:           o.Assignee,
-		assigneeName:       assigneeName,
-		availability:       o.Availability,
-		buyout:             o.Buyout,
-		category:           category,
-		collateral:         o.Collateral,
-		contractID:         o.ContractID,
-		contractType:       o.Type,
-		dateAccepted:       o.DateAccepted,
-		dateCompleted:      o.DateCompleted,
-		dateExpired:        o.DateExpired,
-		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
-		dateIssued:         o.DateIssued,
-		daysToComplete:     o.DaysToComplete,
-		endLocation:        o.EndLocation,
-		isCorporation:      false,
-		isExpired:          o.IsExpired(),
-		issuer:             o.IssuerEffective(),
-		issuerName:         o.IssuerEffective().Name,
-		name:               o.NameDisplay(),
-		objectID:           o.ID,
-		ownerID:            o.CharacterID,
-		ownerName:          characterName(o.CharacterID),
-		price:              o.Price,
-		reward:             o.Reward,
-		searchTarget:       makeSearchTarget(o.Items, o.Title),
-		startLocation:      o.StartLocation,
-		status:             o.Status,
-		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         contractStatusText(o.Status, category),
-		title:              o.Title.ValueOrFallback("-"),
-		typeName:           o.Type.Display(),
-		volume:             o.Volume,
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		isCorporation:  false,
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        o.CharacterID,
+		ownerName:      characterName(o.CharacterID),
+		price:          o.Price,
+		reward:         o.Reward,
+		searchTarget:   makeSearchTarget(o.Items, o.Title),
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
 	}
+	r.updateTimeDependent(time.Now())
+	return r
 }
 
 func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	category := o.Category()
-	return contractRow{
-		acceptor:           o.Acceptor,
-		assignee:           o.Assignee,
-		assigneeName:       assigneeName,
-		availability:       o.Availability,
-		buyout:             o.Buyout,
-		category:           category,
-		collateral:         o.Collateral,
-		contractID:         o.ContractID,
-		contractType:       o.Type,
-		dateAccepted:       o.DateAccepted,
-		dateCompleted:      o.DateCompleted,
-		dateExpired:        o.DateExpired,
-		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
-		dateIssued:         o.DateIssued,
-		daysToComplete:     o.DaysToComplete,
-		endLocation:        o.EndLocation,
-		isCorporation:      true,
-		isExpired:          o.IsExpired(),
-		issuer:             o.IssuerEffective(),
-		issuerName:         o.IssuerEffective().Name,
-		name:               o.NameDisplay(),
-		objectID:           o.ID,
-		ownerID:            corporation.ID,
-		ownerName:          corporation.NameOrZero(),
-		price:              o.Price,
-		reward:             o.Reward,
-		searchTarget:       makeSearchTarget(o.Items, o.Title),
-		startLocation:      o.StartLocation,
-		status:             o.Status,
-		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         contractStatusText(o.Status, category),
-		title:              o.Title.ValueOrFallback("-"),
-		typeName:           o.Type.Display(),
-		volume:             o.Volume,
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		isCorporation:  true,
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        corporation.ID,
+		ownerName:      corporation.NameOrZero(),
+		price:          o.Price,
+		reward:         o.Reward,
+		searchTarget:   makeSearchTarget(o.Items, o.Title),
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
 	}
+	r.updateTimeDependent(time.Now())
+	return r
 }
 
 func makeSearchTarget(items []string, title optional.Optional[string]) string {
@@ -209,6 +201,34 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 		token = append(token, strings.ToLower(v))
 	}
 	return strings.Join(token, "~")
+}
+
+// updateTimeDependent recomputes the fields which change with time
+// and reports whether the category or expiry changed.
+func (r *contractRow) updateTimeDependent(now time.Time) bool {
+	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, now)
+	isExpired := r.dateExpired.Before(now)
+	changed := category != r.category || isExpired != r.isExpired
+	if !changed && r.statusDisplay != nil {
+		return false
+	}
+	r.category = category
+	r.isExpired = isExpired
+	r.statusText = contractStatusText(r.status, category)
+	r.statusDisplay = makeContractStatusDisplay(r.status, category)
+	r.dateExpiredDisplay = makeDateExpiredDisplay(isExpired, r.dateExpired)
+	return changed
+}
+
+// contractsAttentionCount returns how many rows require attention.
+func contractsAttentionCount(rows []contractRow) int {
+	var n int
+	for _, r := range rows {
+		if r.category == app.ContractCategoryRequiresAttention {
+			n++
+		}
+	}
+	return n
 }
 
 // contractStatusText returns the status and explains why it requires attention
@@ -472,6 +492,11 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.update(ctx)
 		})
 	}
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.refreshTimeDependent(time.Now())
+		})
+	})
 	return a
 }
 
@@ -672,12 +697,7 @@ func (a *Contracts) update(ctx context.Context) {
 		})
 		return
 	}
-	var attentionCount int
-	for _, r := range rows {
-		if r.category == app.ContractCategoryRequiresAttention {
-			attentionCount++
-		}
-	}
+	attentionCount := contractsAttentionCount(rows)
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync("")
@@ -685,6 +705,24 @@ func (a *Contracts) update(ctx context.Context) {
 			a.OnUpdate(attentionCount)
 		}
 	})
+}
+
+// refreshTimeDependent updates rows which crossed a deadline,
+// so that list and badge stay current without new data. Must run on the main thread.
+func (a *Contracts) refreshTimeDependent(now time.Time) {
+	var changed bool
+	for i := range a.rows {
+		if a.rows[i].updateTimeDependent(now) {
+			changed = true
+		}
+	}
+	if !changed {
+		return
+	}
+	a.filterRowsAsync("")
+	if a.OnUpdate != nil {
+		a.OnUpdate(contractsAttentionCount(a.rows))
+	}
 }
 
 func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, error) {

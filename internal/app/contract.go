@@ -222,7 +222,7 @@ type CharacterContract struct {
 }
 
 func (cs CharacterContract) Category() ContractCategory {
-	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
+	return ContractCategoryAt(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
 }
 
 func (cs CharacterContract) IsExpired() bool {
@@ -291,7 +291,7 @@ type CorporationContract struct {
 }
 
 func (cs CorporationContract) Category() ContractCategory {
-	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
+	return ContractCategoryAt(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
 }
 
 func (cs CorporationContract) IsExpired() bool {
@@ -327,7 +327,8 @@ type CorporationContractItem struct {
 	Type        *EveType
 }
 
-func contractCategory(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) ContractCategory {
+// ContractCategoryAt returns the category of a contract at the given time.
+func ContractCategoryAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) ContractCategory {
 	switch status {
 	case ContractStatusOutstanding:
 		if dateExpired.Before(now) {
