@@ -694,6 +694,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
 		})
+		return
 	}
 	var readyCount int
 	for _, j := range jobs {
