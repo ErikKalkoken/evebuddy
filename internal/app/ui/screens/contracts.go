@@ -339,7 +339,8 @@ type Contracts struct {
 
 	OnUpdate func(attention int)
 
-	attentionCount int // last count reported to OnUpdate
+	attentionCount int  // last count reported to OnUpdate
+	updateFailed   bool // last update failed and the footer shows the error
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -759,6 +760,7 @@ func (a *Contracts) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
+			a.updateFailed = true
 			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
@@ -767,6 +769,7 @@ func (a *Contracts) update(ctx context.Context) {
 	}
 	attentionCount := contractsAttentionCount(rows)
 	fyne.Do(func() {
+		a.updateFailed = false
 		a.rows = rows
 		a.filterRowsAsync("")
 		a.attentionCount = attentionCount
@@ -779,6 +782,9 @@ func (a *Contracts) update(ctx context.Context) {
 // refreshTimeDependent updates the time dependent fields of all rows,
 // so that list and badge stay current without new data. Must run on the main thread.
 func (a *Contracts) refreshTimeDependent(now time.Time) {
+	if a.updateFailed {
+		return // keep the error visible; the data is stale anyway
+	}
 	var changed bool
 	for i := range a.rows {
 		if a.rows[i].updateTimeDependent(now) {

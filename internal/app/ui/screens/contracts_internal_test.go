@@ -434,3 +434,24 @@ func TestMakeContractDateString(t *testing.T) {
 	assert.Equal(t, d.Format(app.DateTimeFormat), makeContractDateString(d, ""))
 	assert.Equal(t, d.Format(app.DateTimeFormat)+" (OVERDUE)", makeContractDateString(d, makeContractDeadlineNote(d, true, "OVERDUE")))
 }
+
+func TestContracts_RefreshTimeDependent_KeepsErrorFooter(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	now := time.Now()
+	r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
+	r.updateTimeDependent(now)
+	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.rows = []contractRow{r}
+	a.filterRowsAsync("")
+	a.updateFailed = true
+	a.footer.Text = "ERROR: failed"
+
+	a.refreshTimeDependent(now.Add(2 * time.Hour))
+
+	assert.Equal(t, "ERROR: failed", a.footer.Text)
+	assert.Equal(t, app.ContractCategoryOutstanding, a.rows[0].category)
+}
