@@ -3,14 +3,12 @@ package screens
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -50,7 +48,7 @@ func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 			reportError(err)
 			return
 		}
-		characters, err := u.Character().CharacterNames(ctx)
+		myCharacterIDs, err := u.Character().ListCharacterIDs(ctx)
 		if err != nil {
 			reportError(err)
 			return
@@ -58,7 +56,7 @@ func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 		fyne.Do(func() {
 			ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
 				return c.NameOrZero()
-			}, set.Collect(maps.Keys(characters))))
+			}, myCharacterIDs))
 		})
 	}()
 }
@@ -208,7 +206,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					return v.Format(app.DateTimeFormat)
 				}))))
 				var expiredNote string
-				if r.deadlineLabel == "Expires" { // only while the expiry is the relevant deadline
+				if r.deadlineKind == contractDeadlineExpiry {
 					expiredNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
 				fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractDateString(r.dateExpired, expiredNote))))

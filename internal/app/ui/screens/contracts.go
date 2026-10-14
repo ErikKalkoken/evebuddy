@@ -98,7 +98,7 @@ type contractRow struct {
 	isExpired       bool
 	isOverdue       bool
 	deadline        optional.Optional[time.Time] // the deadline relevant for the current status
-	deadlineLabel   string                       // describes the deadline, e.g. "Expires"
+	deadlineKind    contractDeadlineKind
 	timeLeftDisplay []widget.RichTextSegment
 	timeLeftText    string
 	issuer          *app.EveEntity
@@ -156,6 +156,7 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
+	r.setDeadline()
 	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
 	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
 	r.updateTimeDependent(time.Now())
@@ -197,6 +198,7 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
+	r.setDeadline()
 	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
 	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
 	r.updateTimeDependent(time.Now())
@@ -220,14 +222,19 @@ func isMyEntity(o optional.Optional[*app.EveEntity], myCharacterIDs set.Set[int6
 	return ok && myCharacterIDs.Contains(v.ID)
 }
 
+// setDeadline sets the deadline relevant for the status of the contract.
+// It must be called once after the row is created.
+func (r *contractRow) setDeadline() {
+	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+}
+
 // updateTimeDependent recomputes the fields which change with time
 // and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {
 	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
 	isExpired := app.ContractIsExpiredAt(r.dateExpired, now)
-	isOverdue := app.ContractIsOverdueAt(r.dateAccepted, r.daysToComplete, now)
-	deadline, label, passed := contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
-	timeLeft, isPassed := contractTimeLeftText(deadline, passed, now)
+	isOverdue := r.deadlineKind == contractDeadlineDelivery && r.deadline.MustValue().Before(now)
+	timeLeft, isPassed := contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
 	statusChanged := category != r.category || isExpired != r.isExpired || isOverdue != r.isOverdue
 	if !statusChanged && timeLeft == r.timeLeftText {
 		return false
@@ -238,8 +245,6 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 		r.isOverdue = isOverdue
 		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
 		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
-		r.deadline = deadline
-		r.deadlineLabel = label
 	}
 	r.timeLeftText = timeLeft
 	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
@@ -277,21 +282,51 @@ func makeContractStatusDisplay(text string, category app.ContractCategory) []wid
 	})
 }
 
-// contractDeadline returns the deadline relevant for a status, a label for it
-// and the text to show once it has passed: the expiry for outstanding contracts
-// and the delivery deadline for accepted couriers.
+// contractDeadlineKind is the kind of deadline relevant for a contract.
+type contractDeadlineKind uint8
+
+const (
+	contractDeadlineNone     contractDeadlineKind = iota
+	contractDeadlineExpiry                        // contract must be accepted before it expires
+	contractDeadlineDelivery                      // accepted contract must be completed in time
+)
+
+// label returns a short description of the deadline.
+func (k contractDeadlineKind) label() string {
+	switch k {
+	case contractDeadlineExpiry:
+		return "Expires"
+	case contractDeadlineDelivery:
+		return "Due"
+	}
+	return ""
+}
+
+// passedText returns the text to show once the deadline has passed.
+func (k contractDeadlineKind) passedText() string {
+	switch k {
+	case contractDeadlineExpiry:
+		return "EXPIRED"
+	case contractDeadlineDelivery:
+		return "OVERDUE"
+	}
+	return ""
+}
+
+// contractDeadline returns the deadline relevant for a status and its kind:
+// the expiry for outstanding contracts and the delivery deadline for accepted couriers.
 // Finished and other closed contracts have no deadline.
-func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (deadline optional.Optional[time.Time], label, passed string) {
+func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (optional.Optional[time.Time], contractDeadlineKind) {
 	switch status {
 	case app.ContractStatusOutstanding:
-		return optional.New(dateExpired), "Expires", "EXPIRED"
+		return optional.New(dateExpired), contractDeadlineExpiry
 	case app.ContractStatusInProgress:
 		if v, ok := app.ContractDeliveryDeadline(dateAccepted, daysToComplete); ok {
-			return optional.New(v), "Due", "OVERDUE"
+			return optional.New(v), contractDeadlineDelivery
 		}
-		return optional.New(dateExpired), "Expires", "EXPIRED"
+		return optional.New(dateExpired), contractDeadlineExpiry
 	}
-	return optional.Optional[time.Time]{}, "", ""
+	return optional.Optional[time.Time]{}, contractDeadlineNone
 }
 
 // contractTimeLeftText returns the time left until the deadline
@@ -665,11 +700,11 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 			}
 			main[3].(*widget.Label).SetText(assignee)
 
-			if r.deadlineLabel == "" {
+			if r.deadlineKind == contractDeadlineNone {
 				main[4].(*xwidget.RichText).Set(xwidget.RichTextSegmentsFromText(""))
 			} else {
 				main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
-					xwidget.RichTextSegmentsFromText(r.deadlineLabel+" "),
+					xwidget.RichTextSegmentsFromText(r.deadlineKind.label()+" "),
 					r.timeLeftDisplay,
 				))
 			}
@@ -821,11 +856,10 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	if err != nil {
 		return nil, err
 	}
-	characters, err := a.u.Character().CharacterNames(ctx)
+	myCharacterIDs, err := a.u.Character().ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	myCharacterIDs := set.Collect(maps.Keys(characters))
 	var rows []contractRow
 	for _, c := range oo {
 		r := newContractRowForCorporation(c, corporation, myCharacterIDs)

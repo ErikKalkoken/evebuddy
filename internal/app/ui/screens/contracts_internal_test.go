@@ -262,6 +262,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	now := time.Now()
 	t.Run("outstanding becomes expired", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
+		r.setDeadline()
 		assert.True(t, r.updateTimeDependent(now))
 		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
 		assert.False(t, r.isExpired)
@@ -279,16 +280,18 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 			dateExpired:    now.Add(time.Hour),
 			daysToComplete: optional.New[int64](3),
 		}
+		r.setDeadline()
 		r.updateTimeDependent(now)
 		assert.Equal(t, app.ContractCategoryInProgress, r.category)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 		assert.Equal(t, "In Progress (overdue)", r.statusText)
-		assert.Equal(t, "Due", r.deadlineLabel)
+		assert.Equal(t, contractDeadlineDelivery, r.deadlineKind)
 		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
 	})
 	t.Run("time left changes with time", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour), issuerIsMine: true}
+		r.setDeadline()
 		r.updateTimeDependent(now)
 		assert.Equal(t, "3h 0m", r.timeLeftText)
 		assert.False(t, r.updateTimeDependent(now.Add(10*time.Second)), "no change within a minute")
@@ -298,6 +301,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	})
 	t.Run("expired contract of others does not require attention", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		r.setDeadline()
 		r.updateTimeDependent(now)
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
 		assert.Equal(t, app.ContractCategoryOther, r.category)
@@ -310,6 +314,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 			dateExpired:    now.Add(time.Hour),
 			daysToComplete: optional.New[int64](3),
 		}
+		r.setDeadline()
 		r.updateTimeDependent(now)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		assert.Equal(t, app.ContractCategoryInProgress, r.category)
@@ -326,6 +331,7 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2), issuerIsMine: true},
 	}
 	for i := range rows {
+		rows[i].setDeadline()
 		rows[i].updateTimeDependent(now)
 	}
 	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
@@ -375,21 +381,34 @@ func TestContractDeadline(t *testing.T) {
 		dateAccepted optional.Optional[time.Time]
 		days         optional.Optional[int64]
 		wantDeadline optional.Optional[time.Time]
-		wantLabel    string
-		wantPassed   string
+		wantKind     contractDeadlineKind
 	}{
-		{"outstanding", app.ContractStatusOutstanding, none, days, optional.New(expired), "Expires", "EXPIRED"},
-		{"in progress courier", app.ContractStatusInProgress, accepted, days, optional.New(accepted.MustValue().AddDate(0, 0, 1)), "Due", "OVERDUE"},
-		{"in progress without delivery data", app.ContractStatusInProgress, none, noDays, optional.New(expired), "Expires", "EXPIRED"},
-		{"finished", app.ContractStatusFinished, accepted, days, none, "", ""},
-		{"failed", app.ContractStatusFailed, accepted, days, none, "", ""},
+		{"outstanding", app.ContractStatusOutstanding, none, days, optional.New(expired), contractDeadlineExpiry},
+		{"in progress courier", app.ContractStatusInProgress, accepted, days, optional.New(accepted.MustValue().AddDate(0, 0, 1)), contractDeadlineDelivery},
+		{"in progress without delivery data", app.ContractStatusInProgress, none, noDays, optional.New(expired), contractDeadlineExpiry},
+		{"finished", app.ContractStatusFinished, accepted, days, none, contractDeadlineNone},
+		{"failed", app.ContractStatusFailed, accepted, days, none, contractDeadlineNone},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			deadline, label, passed := contractDeadline(tc.status, expired, tc.dateAccepted, tc.days)
+			deadline, kind := contractDeadline(tc.status, expired, tc.dateAccepted, tc.days)
 			assert.Equal(t, tc.wantDeadline, deadline)
-			assert.Equal(t, tc.wantLabel, label)
-			assert.Equal(t, tc.wantPassed, passed)
+			assert.Equal(t, tc.wantKind, kind)
 		})
+	}
+}
+
+func TestContractDeadlineKind(t *testing.T) {
+	for _, tc := range []struct {
+		kind       contractDeadlineKind
+		wantLabel  string
+		wantPassed string
+	}{
+		{contractDeadlineNone, "", ""},
+		{contractDeadlineExpiry, "Expires", "EXPIRED"},
+		{contractDeadlineDelivery, "Due", "OVERDUE"},
+	} {
+		assert.Equal(t, tc.wantLabel, tc.kind.label())
+		assert.Equal(t, tc.wantPassed, tc.kind.passedText())
 	}
 }
 
@@ -440,6 +459,7 @@ func TestContracts_RefreshTimeDependent_KeepsErrorFooter(t *testing.T) {
 	defer db.Close()
 	now := time.Now()
 	r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
+	r.setDeadline()
 	r.updateTimeDependent(now)
 	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
