@@ -448,10 +448,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	})
 
 	// Signals
-	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
-		a.update(ctx)
-	})
-
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
@@ -477,6 +473,9 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.update(ctx)
 		})
 	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterContracts {
 				a.update(ctx)
