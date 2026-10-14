@@ -96,8 +96,8 @@ func TestContractStatusText(t *testing.T) {
 		{app.ContractStatusInProgress, app.ContractCategoryRequiresAttention, "In Progress (overdue)"},
 		{app.ContractStatusOutstanding, app.ContractCategoryOutstanding, "Outstanding"},
 		{app.ContractStatusInProgress, app.ContractCategoryInProgress, "In Progress"},
-		{app.ContractStatusFailed, app.ContractCategoryRequiresAttention, "Failed"},
-		{app.ContractStatusRejected, app.ContractCategoryRequiresAttention, "Rejected"},
+		{app.ContractStatusFailed, app.ContractCategoryOther, "Failed"},
+		{app.ContractStatusRejected, app.ContractCategoryOther, "Rejected"},
 		{app.ContractStatusFinished, app.ContractCategoryFinished, "Finished"},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
@@ -216,7 +216,7 @@ func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
 			got = open
 		}
 		a.update(t.Context())
-		assert.Equal(t, 4, got)
+		assert.Equal(t, 3, got)
 	})
 	t.Run("corporation", func(t *testing.T) {
 		corporation := factory.CreateCorporation()
@@ -236,6 +236,6 @@ func TestContracts_OnUpdateCountsOpenContracts(t *testing.T) {
 			got = open
 		}
 		a.update(t.Context())
-		assert.Equal(t, 3, got)
+		assert.Equal(t, 2, got)
 	})
 }

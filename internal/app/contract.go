@@ -341,13 +341,10 @@ func contractCategory(status ContractStatus, dateExpired time.Time, dateAccepted
 			return ContractCategoryRequiresAttention // overdue
 		}
 		return ContractCategoryInProgress
-	case ContractStatusFailed, ContractStatusRejected:
-		return ContractCategoryRequiresAttention
 	case
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer,
-		ContractStatusReversed:
+		ContractStatusFinishedIssuer:
 		return ContractCategoryFinished
 	}
 	return ContractCategoryOther
