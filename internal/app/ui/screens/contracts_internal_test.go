@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -286,6 +287,15 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.Equal(t, "Due", r.deadlineLabel)
 		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
 	})
+	t.Run("time left changes with time", func(t *testing.T) {
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour), issuerIsMine: true}
+		r.updateTimeDependent(now)
+		assert.Equal(t, "3h 0m", r.timeLeftText)
+		assert.False(t, r.updateTimeDependent(now.Add(10*time.Second)), "no change within a minute")
+		assert.True(t, r.updateTimeDependent(now.Add(5*time.Minute)))
+		assert.Equal(t, "2h 55m", r.timeLeftText)
+		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
+	})
 	t.Run("expired contract of others does not require attention", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
 		r.updateTimeDependent(now)
@@ -340,6 +350,13 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 
 	a.refreshTimeDependent(now.Add(91 * time.Minute))
 	assert.Equal(t, 1, calls, "no update without changes")
+
+	a.selectStatus.SetSelected(contractsStatusAll)
+	before := a.rowsFiltered[slices.IndexFunc(a.rowsFiltered, func(r contractRow) bool { return r.contractID == 2 })].timeLeftText
+	a.refreshTimeDependent(now.Add(5 * time.Hour))
+	after := a.rowsFiltered[slices.IndexFunc(a.rowsFiltered, func(r contractRow) bool { return r.contractID == 2 })].timeLeftText
+	assert.NotEqual(t, before, after, "time left is updated in the list")
+	assert.Equal(t, 1, calls, "badge is not updated when the count is unchanged")
 }
 
 func overdueSegments() []widget.RichTextSegment {
@@ -376,21 +393,28 @@ func TestContractDeadline(t *testing.T) {
 	}
 }
 
-func TestMakeTimeLeftDisplay(t *testing.T) {
+func TestContractTimeLeftText(t *testing.T) {
 	now := time.Now()
 	t.Run("before deadline", func(t *testing.T) {
-		got := makeTimeLeftDisplay(optional.New(now.Add(3*time.Hour)), "OVERDUE", now)
-		assert.NotEqual(t, overdueSegments(), got)
-		assert.NotEmpty(t, got)
+		got, isPassed := contractTimeLeftText(optional.New(now.Add(3*time.Hour)), "OVERDUE", now)
+		assert.Equal(t, "3h 0m", got)
+		assert.False(t, isPassed)
 	})
 	t.Run("after deadline", func(t *testing.T) {
-		got := makeTimeLeftDisplay(optional.New(now.Add(-time.Hour)), "OVERDUE", now)
-		assert.Equal(t, overdueSegments(), got)
+		got, isPassed := contractTimeLeftText(optional.New(now.Add(-time.Hour)), "OVERDUE", now)
+		assert.Equal(t, "OVERDUE", got)
+		assert.True(t, isPassed)
 	})
 	t.Run("no deadline", func(t *testing.T) {
-		got := makeTimeLeftDisplay(optional.Optional[time.Time]{}, "", now)
-		assert.Equal(t, xwidget.RichTextSegmentsFromText(""), got)
+		got, isPassed := contractTimeLeftText(optional.Optional[time.Time]{}, "", now)
+		assert.Equal(t, "", got)
+		assert.False(t, isPassed)
 	})
+}
+
+func TestMakeTimeLeftDisplay(t *testing.T) {
+	assert.Equal(t, xwidget.RichTextSegmentsFromText("3h"), makeTimeLeftDisplay("3h", false))
+	assert.Equal(t, overdueSegments(), makeTimeLeftDisplay("OVERDUE", true))
 }
 
 func TestCompareContractDeadlines(t *testing.T) {

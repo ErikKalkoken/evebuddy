@@ -100,6 +100,7 @@ type contractRow struct {
 	deadline        optional.Optional[time.Time] // the deadline relevant for the current status
 	deadlineLabel   string                       // describes the deadline, e.g. "Expires"
 	timeLeftDisplay []widget.RichTextSegment
+	timeLeftText    string
 	issuer          *app.EveEntity
 	issuerIsMine    bool // issued by one of the user's characters
 	issuerName      string
@@ -225,17 +226,23 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
 	isExpired := app.ContractIsExpiredAt(r.dateExpired, now)
 	isOverdue := app.ContractIsOverdueAt(r.dateAccepted, r.daysToComplete, now)
-	if category == r.category && isExpired == r.isExpired && isOverdue == r.isOverdue {
+	deadline, label, passed := contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+	timeLeft, isPassed := contractTimeLeftText(deadline, passed, now)
+	statusChanged := category != r.category || isExpired != r.isExpired || isOverdue != r.isOverdue
+	if !statusChanged && timeLeft == r.timeLeftText {
 		return false
 	}
-	r.category = category
-	r.isExpired = isExpired
-	r.isOverdue = isOverdue
-	r.statusText = contractStatusText(r.status, isExpired, isOverdue)
-	r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
-	var passed string
-	r.deadline, r.deadlineLabel, passed = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
-	r.timeLeftDisplay = makeTimeLeftDisplay(r.deadline, passed, now)
+	if statusChanged {
+		r.category = category
+		r.isExpired = isExpired
+		r.isOverdue = isOverdue
+		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
+		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
+		r.deadline = deadline
+		r.deadlineLabel = label
+	}
+	r.timeLeftText = timeLeft
+	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
 	return true
 }
 
@@ -287,19 +294,27 @@ func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAcce
 	return optional.Optional[time.Time]{}, "", ""
 }
 
-// makeTimeLeftDisplay returns the time left until the deadline
-// or the passed text when it is over.
-func makeTimeLeftDisplay(deadline optional.Optional[time.Time], passed string, now time.Time) []widget.RichTextSegment {
+// contractTimeLeftText returns the time left until the deadline
+// or the passed text when it is over. It also reports whether the deadline has passed.
+func contractTimeLeftText(deadline optional.Optional[time.Time], passed string, now time.Time) (string, bool) {
 	v, ok := deadline.Value()
 	if !ok {
-		return xwidget.RichTextSegmentsFromText("")
+		return "", false
 	}
 	if v.Before(now) {
-		return xwidget.RichTextSegmentsFromText(passed, widget.RichTextStyle{
-			ColorName: theme.ColorNameError,
-		})
+		return passed, true
 	}
-	return xwidget.RichTextSegmentsFromText(ihumanize.RelTime(v))
+	return ihumanize.Duration(v.Sub(now)), false
+}
+
+// makeTimeLeftDisplay returns the time left text, in red when the deadline has passed.
+func makeTimeLeftDisplay(text string, isPassed bool) []widget.RichTextSegment {
+	if !isPassed {
+		return xwidget.RichTextSegmentsFromText(text)
+	}
+	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
+		ColorName: theme.ColorNameError,
+	})
 }
 
 // compareContractDeadlines compares two deadlines. Missing deadlines sort last.
@@ -323,6 +338,8 @@ type Contracts struct {
 	widget.BaseWidget
 
 	OnUpdate func(attention int)
+
+	attentionCount int // last count reported to OnUpdate
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -752,13 +769,14 @@ func (a *Contracts) update(ctx context.Context) {
 	fyne.Do(func() {
 		a.rows = rows
 		a.filterRowsAsync("")
+		a.attentionCount = attentionCount
 		if a.OnUpdate != nil {
 			a.OnUpdate(attentionCount)
 		}
 	})
 }
 
-// refreshTimeDependent updates rows which crossed a deadline,
+// refreshTimeDependent updates the time dependent fields of all rows,
 // so that list and badge stay current without new data. Must run on the main thread.
 func (a *Contracts) refreshTimeDependent(now time.Time) {
 	var changed bool
@@ -771,8 +789,13 @@ func (a *Contracts) refreshTimeDependent(now time.Time) {
 		return
 	}
 	a.filterRowsAsync("")
+	n := contractsAttentionCount(a.rows)
+	if n == a.attentionCount {
+		return
+	}
+	a.attentionCount = n
 	if a.OnUpdate != nil {
-		a.OnUpdate(contractsAttentionCount(a.rows))
+		a.OnUpdate(n)
 	}
 }
 
