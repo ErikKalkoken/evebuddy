@@ -98,6 +98,7 @@ type Mails struct {
 	NavigationPane *mailsNavigationPane
 	ReadingPane    *mailsReadingPane
 
+	bodiesComplete    atomic.Bool // all mail bodies downloaded, so ticks can skip the check
 	character         atomic.Pointer[app.Character]
 	composeCharacters []app.EntityShort // senders offered for new mails in unified mode
 	composeMenu       *fyne.Menu
@@ -171,10 +172,14 @@ func newMails(u baseUI, forCharacter bool) *Mails {
 		if s == mailsUpdated {
 			a.NavigationPane.updateUnreadCounts(ctx)
 			a.MessagePane.update(ctx)
+			a.NavigationPane.updateDownloaded(ctx, true) // ticks may be skipping it
 		}
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		a.NavigationPane.updateDownloaded(ctx)
+		if a.bodiesComplete.Load() {
+			return // new mails go through update, which checks again
+		}
+		a.NavigationPane.updateDownloaded(ctx, true)
 	})
 	return a
 }
@@ -194,12 +199,19 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Mails) update(ctx context.Context) {
+	// discard running checks and keep ticks checking, also when returning early
+	a.NavigationPane.downloadedRun.start()
+	a.bodiesComplete.Store(false)
 	clearAll := func() {
+		// stored now, not queued, so a newer update's counts are not overwritten
+		a.unreadCount.Store(0)
+		a.missingPercent.Store(0)
 		fyne.Do(func() {
 			a.NavigationPane.clear()
 			a.MessagePane.currentFolder.Store(nil)
 			a.MessagePane.clear()
 			a.ReadingPane.clear()
+			a.callOnUpdate()
 		})
 	}
 	setStatus := func(s string, i widget.Importance) {
@@ -291,7 +303,7 @@ func (a *Mails) update(ctx context.Context) {
 		a.MessagePane.setCurrentFolder(ctx, folder)
 	}
 	a.unreadCount.Store(int64(unread))
-	a.NavigationPane.updateDownloaded(ctx)
+	a.NavigationPane.updateDownloaded(ctx, false) // OnUpdate is called below
 	fyne.Do(func() {
 		a.callOnUpdate()
 	})
@@ -396,6 +408,7 @@ type mailsNavigationPane struct {
 	widget.BaseWidget
 
 	compose          *widget.Button
+	downloadedRun    latestRun
 	folderDownloaded *ttwidget.Label
 	folders          *xwidget.Tree[mailFolderNode]
 	folderStatus     *widget.Label
@@ -488,56 +501,82 @@ func (a *mailsNavigationPane) setStatus(s string, i widget.Importance) {
 	a.compose.Disable()
 }
 
-func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
-	var total2, downloaded, hint string
-	var missingPercent int
-	var canceled bool
-	func() {
-		var total, missing int
-		var err error
-		if a.ma.forCharacter {
-			characterID := a.ma.character.Load().IDOrZero()
-			if characterID == 0 {
-				return
-			}
-			total, missing, err = a.ma.u.Character().DownloadedBodiesPercentage(ctx, characterID)
-		} else {
-			total, missing, err = a.ma.u.Character().AllDownloadedBodiesPercentage(ctx)
-		}
-		if app.IsContextCanceled(ctx, err) {
-			canceled = true
-			return
-		}
-		if err != nil {
-			slog.Error("updateDownloaded", "error", err)
-			total2 = "ERROR"
-			return
-		}
-		p := message.NewPrinter(language.English)
-		total2 = p.Sprintf("%d total", total)
-		if total == 0 || missing == 0 {
-			return
-		}
+// mailsDownloaded is the result of a check for downloaded mail bodies.
+type mailsDownloaded struct {
+	complete       bool
+	downloaded     string
+	hint           string
+	missingPercent int
+	total          string
+}
 
-		missingPercent = int(float64(missing) / float64(total) * 100)
-		downloaded = fmt.Sprintf("%d%%", 100-missingPercent)
-		hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
-	}()
-	if canceled {
+// updateDownloaded shows how many mail bodies are downloaded.
+// With notify it calls OnUpdate when the percentage changed.
+func (a *mailsNavigationPane) updateDownloaded(ctx context.Context, notify bool) {
+	isLatest := a.downloadedRun.start()
+	r, ok := a.fetchDownloaded(ctx)
+	if !ok {
 		return
 	}
-	a.ma.missingPercent.Store(int64(missingPercent))
 	fyne.Do(func() {
-		a.folderTotal.SetText(total2)
-		if downloaded == "" {
-			a.folderDownloaded.Hide()
-			return
-		}
-		a.folderDownloaded.SetText(downloaded)
-		a.folderDownloaded.SetToolTip(hint)
-		a.folderDownloaded.Show()
-		a.ma.callOnUpdate()
+		a.applyDownloaded(isLatest, r, notify)
 	})
+}
+
+// fetchDownloaded returns the current download state. It reports false when canceled.
+func (a *mailsNavigationPane) fetchDownloaded(ctx context.Context) (mailsDownloaded, bool) {
+	var r mailsDownloaded
+	var total, missing int
+	var err error
+	if a.ma.forCharacter {
+		characterID := a.ma.character.Load().IDOrZero()
+		if characterID == 0 {
+			return r, true
+		}
+		total, missing, err = a.ma.u.Character().CountMailsWithoutBody(ctx, characterID)
+	} else {
+		total, missing, err = a.ma.u.Character().CountAllMailsWithoutBody(ctx)
+	}
+	if app.IsContextCanceled(ctx, err) {
+		return r, false
+	}
+	if err != nil {
+		slog.Error("updateDownloaded", "error", err)
+		r.total = "ERROR"
+		return r, true
+	}
+	missing = min(missing, total) // the two counts can race with incoming mails
+	r.complete = missing == 0
+	p := message.NewPrinter(language.English)
+	r.total = p.Sprintf("%d total", total)
+	if total == 0 || missing == 0 {
+		return r, true
+	}
+	r.missingPercent = int(float64(missing) / float64(total) * 100)
+	r.downloaded = fmt.Sprintf("%d%%", 100-r.missingPercent)
+	r.hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
+	return r, true
+}
+
+// applyDownloaded shows a download state unless a newer check was started.
+// Must be called on the main thread.
+func (a *mailsNavigationPane) applyDownloaded(isLatest func() bool, r mailsDownloaded, notify bool) {
+	if !isLatest() {
+		return
+	}
+	a.ma.bodiesComplete.Store(r.complete)
+	changed := a.ma.missingPercent.Swap(int64(r.missingPercent)) != int64(r.missingPercent)
+	a.folderTotal.SetText(r.total)
+	if r.downloaded == "" {
+		a.folderDownloaded.Hide()
+	} else {
+		a.folderDownloaded.SetText(r.downloaded)
+		a.folderDownloaded.SetToolTip(r.hint)
+		a.folderDownloaded.Show()
+	}
+	if notify && changed {
+		a.ma.callOnUpdate()
+	}
 }
 
 // fetchFolders returns the folder tree of a character, or of all characters when characterID is 0.
@@ -665,29 +704,29 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 	var unreadCount int
 	var err error
 	if characterID != 0 {
-		labelUnreadCounts, err = cs.GetMailLabelUnreadCounts(ctx, characterID)
+		labelUnreadCounts, err = cs.CountMailsUnreadByLabel(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
-		listUnreadCounts, err = cs.GetMailListUnreadCounts(ctx, characterID)
+		listUnreadCounts, err = cs.CountMailsUnreadByList(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
 		// summing label and list counts would count mails with several labels or lists repeatedly
-		_, unreadCount, err = cs.GetMailCounts(ctx, characterID)
+		_, unreadCount, err = cs.CountMails(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
 	} else {
-		labelUnreadCounts, err = cs.GetAllMailLabelUnreadCounts(ctx)
+		labelUnreadCounts, err = cs.CountAllMailsUnreadByLabel(ctx)
 		if err != nil {
 			return 0, err
 		}
-		listUnreadCounts, err = cs.GetAllMailListUnreadCounts(ctx)
+		listUnreadCounts, err = cs.CountAllMailsUnreadByList(ctx)
 		if err != nil {
 			return 0, err
 		}
-		_, unreadCount, err = cs.GetAllMailCounts(ctx)
+		_, unreadCount, err = cs.CountAllMails(ctx)
 		if err != nil {
 			return 0, err
 		}
@@ -1224,6 +1263,9 @@ func (a *mailsMessagePane) fetchRows(ctx context.Context, f *mailFolderNode) ([]
 type mailsReadingPane struct {
 	widget.BaseWidget
 
+	// OnCleared is called on the main thread when a shown or requested mail is cleared.
+	OnCleared func()
+
 	bodyLabel    *widget.Label
 	headerWidget *MailHeaderWidget
 	ma           *Mails
@@ -1263,7 +1305,7 @@ func (a *mailsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
+func (a *mailsReadingPane) MakeDeleteAction() (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		// callback runs off the main thread, so it must not read a.mail
 		m := a.mail
@@ -1296,10 +1338,7 @@ func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, fu
 					a.ma.u.DisplaySnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.ma.u.ErrorDisplay(err)))
 					return
 				}
-				a.ma.mailsChanged(ctx, m.CharacterID)
-				if onSuccess != nil {
-					onSuccess()
-				}
+				a.ma.mailsChanged(ctx, m.CharacterID) // clears the reading pane, which calls OnCleared
 				a.ma.u.DisplaySnackbar(fmt.Sprintf("Mail \"%s\" deleted", subject))
 			}, a.ma.u.MainWindow(),
 		)
@@ -1345,14 +1384,14 @@ func (a *mailsReadingPane) makeToolbar() *widget.Toolbar {
 			fyne.CurrentApp().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(a.MakeDeleteAction(nil)),
+		widget.NewToolbarAction(a.MakeDeleteAction()),
 	)
 	return toolbar
 }
 
 // showMail displays the mail of a row and discards results from earlier requests.
 func (a *mailsReadingPane) showMail(r mailRow) {
-	a.clear()
+	a.reset() // a replaced mail is not a cleared one
 	if r.characterID == 0 {
 		return
 	}
@@ -1373,7 +1412,16 @@ func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
 	return a.requested.characterID == characterID && a.requested.mailID == mailID
 }
 
+// clear removes the mail and notifies OnCleared if one was shown or requested.
 func (a *mailsReadingPane) clear() {
+	hadMail := a.requested.mailID != 0
+	a.reset()
+	if hadMail && a.OnCleared != nil {
+		a.OnCleared()
+	}
+}
+
+func (a *mailsReadingPane) reset() {
 	a.mail = nil
 	a.requested.characterID, a.requested.mailID = 0, 0
 	a.subjectLabel.SetText("")

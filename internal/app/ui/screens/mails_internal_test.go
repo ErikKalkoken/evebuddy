@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"slices"
@@ -582,6 +583,8 @@ func TestUnifiedMails(t *testing.T) {
 		})
 		require.NotEqual(t, -1, idx)
 		p := f.a.ReadingPane
+		var cleared int
+		p.OnCleared = func() { cleared++ }
 		p.showMail(mp.rowsFiltered[idx])
 		require.NoError(t, f.st.DeleteCharacterMail(t.Context(), f.c2.ID, 42))
 
@@ -589,6 +592,7 @@ func TestUnifiedMails(t *testing.T) {
 
 		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
 		assert.Zero(t, p.requested.mailID)
+		assert.Equal(t, 1, cleared)
 	})
 	t.Run("is refreshed when a mail is read in the character screen", func(t *testing.T) {
 		f := setup(t)
@@ -668,5 +672,253 @@ func TestUnifiedMails_ComposeMenu(t *testing.T) {
 		u.Signals().CharacterAdded.Emit(t.Context(), c)
 		assert.Contains(t, labels(), c.EveCharacter.Name)
 		assert.Len(t, a.composeCharacters, 3)
+	})
+}
+
+func TestMails_DownloadProgress(t *testing.T) {
+	type env struct {
+		a       *Mails
+		c       *app.Character
+		db      *sql.DB
+		factory testutil.Factory
+		missing []int // values received by OnUpdate
+		st      *storage.Storage
+		unread  []int // values received by OnUpdate
+	}
+	setup := func(t *testing.T) *env {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		e := &env{c: factory.CreateCharacterFull(), db: db, factory: factory, st: st}
+		e.a = NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		e.a.character.Store(e.c)
+		e.a.OnUpdate = func(unread, missing int) {
+			e.missing = append(e.missing, missing)
+			e.unread = append(e.unread, unread)
+		}
+		return e
+	}
+	// setupHalfDownloaded returns an env with one of two mail bodies downloaded and the missing mail's ID.
+	setupHalfDownloaded := func(t *testing.T) (*env, int64) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		m := e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		return e, m.MailID
+	}
+	dropMails := func(t *testing.T, db *sql.DB) {
+		if _, err := db.Exec("DROP TABLE character_mails"); err != nil { // let the next check fail
+			t.Fatal(err)
+		}
+	}
+	tick := func(t *testing.T, a *Mails) {
+		a.u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+	}
+
+	t.Run("shows percentage while bodies are missing", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.Equal(t, "50%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.Equal(t, []int{50}, e.missing)
+		assert.False(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("reports completion", func(t *testing.T) {
+		e, mailID := setupHalfDownloaded(t)
+		err := e.st.UpdateCharacterMailSetBody(t.Context(), e.c.ID, mailID, optional.New("body"))
+		require.NoError(t, err)
+
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+
+		assert.False(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.Equal(t, []int{50, 0}, e.missing)
+		assert.True(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("does not call OnUpdate when unchanged", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		assert.Equal(t, []int{50}, e.missing)
+	})
+	t.Run("tick skips check when complete", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		dropMails(t, e.db)
+
+		tick(t, e.a)
+
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("tick checks while bodies are missing", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		dropMails(t, e.db)
+
+		tick(t, e.a)
+
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("tick retries after error", func(t *testing.T) {
+		e := setup(t)
+		dropMails(t, e.db)
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		e.a.NavigationPane.folderTotal.SetText("")
+
+		tick(t, e.a)
+
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		assert.False(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("update resets completion", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: e.c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.update(t.Context())
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
+	})
+	t.Run("update resets completion on early return", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		e.a.character.Store(e.factory.CreateCharacterFull()) // mail data not loaded yet
+
+		e.a.update(t.Context())
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		require.Equal(t, "?", e.a.NavigationPane.folderTotal.Text)
+		tick(t, e.a)
+		assert.Equal(t, "0 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("discards outdated check", func(t *testing.T) {
+		e := setup(t)
+		p := e.a.NavigationPane
+		older := p.downloadedRun.start()
+		newer := p.downloadedRun.start()
+		p.applyDownloaded(newer, mailsDownloaded{total: "2 total", downloaded: "50%", missingPercent: 50}, true)
+		require.Equal(t, []int{50}, e.missing)
+
+		p.applyDownloaded(older, mailsDownloaded{total: "1 total", complete: true}, true)
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		assert.Equal(t, "2 total", p.folderTotal.Text)
+		assert.Equal(t, "50%", p.folderDownloaded.Text)
+		assert.Equal(t, []int{50}, e.missing)
+	})
+	t.Run("mail change refreshes total when complete", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		m := e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		require.Equal(t, "2 total", e.a.NavigationPane.folderTotal.Text)
+		require.NoError(t, e.st.DeleteCharacterMail(t.Context(), e.c.ID, m.MailID))
+
+		e.a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("early return does not report previous character", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		e.a.unreadCount.Store(5)
+		e.a.character.Store(e.factory.CreateCharacterFull()) // mail data not loaded yet
+
+		e.a.update(t.Context())
+		tick(t, e.a)
+
+		require.NotEmpty(t, e.unread)
+		assert.Equal(t, 0, e.unread[len(e.unread)-1])
+		assert.Equal(t, 0, e.missing[len(e.missing)-1])
+		assert.Zero(t, e.a.unreadCount.Load())
+	})
+	t.Run("OnUpdate once per update", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: e.c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.update(t.Context())
+
+		assert.Equal(t, []int{50}, e.missing)
+	})
+}
+
+func TestMailsReadingPane_OnCleared(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	c := factory.CreateCharacterFull()
+	m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	setup := func(t *testing.T) (*mailsReadingPane, *int) {
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		var cleared int
+		a.ReadingPane.OnCleared = func() { cleared++ }
+		return a.ReadingPane, &cleared
+	}
+	t.Run("fires when a shown mail is cleared", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.showMail(mailRow{characterID: c.ID, mailID: m1.MailID})
+		p.clear()
+		assert.Equal(t, 1, *cleared)
+	})
+	t.Run("does not fire when already empty", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.clear()
+		assert.Zero(t, *cleared)
+	})
+	t.Run("fires when the shown mail is deleted", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.True(t, slices.ContainsFunc(a.MessagePane.rowsFiltered, func(r mailRow) bool {
+			return r.mailID == m.MailID
+		}), "mail must be listed, else the pane is cleared regardless of the delete")
+		var cleared int
+		a.ReadingPane.OnCleared = func() { cleared++ }
+		a.ReadingPane.showMail(mailRow{characterID: c.ID, mailID: m.MailID})
+		a.MessagePane.update(t.Context())
+		require.Zero(t, cleared, "listed mail must stay shown")
+		require.NoError(t, st.DeleteCharacterMail(t.Context(), c.ID, m.MailID))
+
+		a.mailsChanged(t.Context(), c.ID) // what the delete action does on success
+
+		assert.Equal(t, 1, cleared)
+	})
+	t.Run("does not fire when another mail is shown", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.showMail(mailRow{characterID: c.ID, mailID: m1.MailID})
+		p.showMail(mailRow{characterID: c.ID, mailID: m2.MailID})
+		assert.Zero(t, *cleared)
+		assert.Equal(t, m2.MailID, p.requested.mailID)
 	})
 }

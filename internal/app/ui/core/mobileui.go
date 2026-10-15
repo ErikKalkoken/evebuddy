@@ -84,34 +84,28 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	mailMenu := fyne.NewMenu("")
 
-	var mailPage *xwidget.AppBar
+	var readingPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
 			u.characterMails.MessagePane.OnSelected = func() {
-				characterNav.PushAndHideNavBar(
-					newCharacterAppBar(
-						"Mail",
-						u.characterMails.ReadingPane,
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
-							fyne.Do(func() {
-								characterNav.Pop()
-							})
-						})),
-					),
+				readingPage = newCharacterAppBar(
+					"Mail",
+					u.characterMails.ReadingPane,
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction()),
 				)
+				characterNav.PushAndHideNavBar(readingPage)
 			}
-			mailPage = newCharacterAppBar(
+			characterNav.Push(newCharacterAppBar(
 				"Mail",
 				u.characterMails.MessagePane,
 				xwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
 				xwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
-			)
-			characterNav.Push(mailPage)
+			))
 		},
 	)
 
@@ -187,8 +181,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 		mailMenu.Items = u.characterMails.NavigationPane.MakeFolderMenu()
 		mailMenu.Refresh()
-
-		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
+	}
+	u.characterMails.ReadingPane.OnCleared = func() {
+		if readingPage != nil && characterNav.Current() == readingPage {
 			characterNav.Pop()
 		}
 	}
@@ -914,25 +909,26 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	}
 
 	unifiedMailMenu := fyne.NewMenu("")
+	var unifiedReadingPage *xwidget.AppBar
+	u.unifiedMails.ReadingPane.OnCleared = func() {
+		if unifiedReadingPage != nil && homeNav.Current() == unifiedReadingPage {
+			homeNav.Pop()
+		}
+	}
 	navItemUnifiedMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
 			u.unifiedMails.MessagePane.OnSelected = func() {
-				homeNav.PushAndHideNavBar(
-					xwidget.NewAppBar(
-						"Mail",
-						u.unifiedMails.ReadingPane,
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
-							fyne.Do(func() {
-								homeNav.Pop()
-							})
-						})),
-					),
+				unifiedReadingPage = xwidget.NewAppBar(
+					"Mail",
+					u.unifiedMails.ReadingPane,
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction()),
 				)
+				homeNav.PushAndHideNavBar(unifiedReadingPage)
 			}
 			var compose *xwidget.Button
 			compose = xwidget.NewIconButton(theme.DocumentCreateIcon(), func() {

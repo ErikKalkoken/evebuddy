@@ -101,46 +101,55 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 	return mail, nil
 }
 
-func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int64) (int, error) {
-	count, err := st.qRO.GetMailUnreadCount(ctx, id)
+func (st *Storage) CountCharacterMailsUnread(ctx context.Context, id int64) (int, error) {
+	count, err := st.qRO.CountCharacterMailsUnread(ctx, id)
 	if err != nil {
 		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, convertGetError(err))
 	}
 	return int(count), err
 }
 
-func (st *Storage) GetAllCharactersMailUnreadCount(ctx context.Context) (int, error) {
-	count, err := st.qRO.GetAllMailUnreadCount(ctx)
+func (st *Storage) CountAllCharactersMailsUnread(ctx context.Context) (int, error) {
+	count, err := st.qRO.CountAllCharactersMailsUnread(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail unread count: %w", err)
 	}
 	return int(count), err
 }
 
-// GetAllCharactersMailCount returns the number of mails of all characters.
-func (st *Storage) GetAllCharactersMailCount(ctx context.Context) (int, error) {
-	count, err := st.qRO.GetAllMailCount(ctx)
+// CountAllCharactersMails returns the number of mails of all characters.
+func (st *Storage) CountAllCharactersMails(ctx context.Context) (int, error) {
+	count, err := st.qRO.CountAllCharactersMails(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail count: %w", err)
 	}
 	return int(count), nil
 }
 
-// GetAllCharactersMailWithoutBodyCount returns the number of mails of all characters without a body.
-func (st *Storage) GetAllCharactersMailWithoutBodyCount(ctx context.Context) (int, error) {
-	count, err := st.qRO.GetAllMailWithoutBodyCount(ctx)
+// CountAllCharactersMailsWithoutBody returns the number of mails of all characters without a body.
+func (st *Storage) CountAllCharactersMailsWithoutBody(ctx context.Context) (int, error) {
+	count, err := st.qRO.CountAllCharactersMailsWithoutBody(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("get all mail without body count: %w", err)
 	}
 	return int(count), nil
 }
 
-func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int64) (int, error) {
-	count, err := st.qRO.GetMailCount(ctx, characterID)
+func (st *Storage) CountCharacterMails(ctx context.Context, characterID int64) (int, error) {
+	count, err := st.qRO.CountCharacterMails(ctx, characterID)
 	if err != nil {
 		return 0, fmt.Errorf("get mail count for character %d: %w", characterID, convertGetError(err))
 	}
 	return int(count), err
+}
+
+// CountCharacterMailsWithoutBody returns the number of mails of a character without a body.
+func (st *Storage) CountCharacterMailsWithoutBody(ctx context.Context, characterID int64) (int, error) {
+	count, err := st.qRO.CountCharacterMailsWithoutBody(ctx, characterID)
+	if err != nil {
+		return 0, fmt.Errorf("count mails without body for character %d: %w", characterID, err)
+	}
+	return int(count), nil
 }
 
 func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID int64) error {
@@ -160,8 +169,8 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 	return nil
 }
 
-func (st *Storage) GetAllCharactersMailLabelUnreadCounts(ctx context.Context) (map[int64]int, error) {
-	rows, err := st.qRO.GetAllCharactersMailLabelUnreadCounts(ctx)
+func (st *Storage) CountAllCharactersMailsUnreadByLabel(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.CountAllCharactersMailsUnreadByLabel(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get mail label unread counts for all characters: %w", err)
 	}
@@ -172,8 +181,8 @@ func (st *Storage) GetAllCharactersMailLabelUnreadCounts(ctx context.Context) (m
 	return result, nil
 }
 
-func (st *Storage) GetAllCharactersMailListUnreadCounts(ctx context.Context) (map[int64]int, error) {
-	rows, err := st.qRO.GetAllCharactersMailListUnreadCounts(ctx)
+func (st *Storage) CountAllCharactersMailsUnreadByList(ctx context.Context) (map[int64]int, error) {
+	rows, err := st.qRO.CountAllCharactersMailsUnreadByList(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get mail list unread counts for all characters: %w", err)
 	}
@@ -184,8 +193,8 @@ func (st *Storage) GetAllCharactersMailListUnreadCounts(ctx context.Context) (ma
 	return result, nil
 }
 
-func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
-	rows, err := st.qRO.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+func (st *Storage) CountCharacterMailsUnreadByLabel(ctx context.Context, characterID int64) (map[int64]int, error) {
+	rows, err := st.qRO.CountCharacterMailsUnreadByLabel(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, convertGetError(err))
 	}
@@ -196,8 +205,8 @@ func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, charac
 	return result, nil
 }
 
-func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
-	rows, err := st.qRO.GetCharacterMailListUnreadCounts(ctx, characterID)
+func (st *Storage) CountCharacterMailsUnreadByList(ctx context.Context, characterID int64) (map[int64]int, error) {
+	rows, err := st.qRO.CountCharacterMailsUnreadByList(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, convertGetError(err))
 	}

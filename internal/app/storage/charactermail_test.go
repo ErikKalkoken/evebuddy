@@ -208,7 +208,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		r, err := st.GetCharacterMailLabelUnreadCounts(ctx, c.ID)
+		r, err := st.CountCharacterMailsUnreadByLabel(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int{app.MailLabelCorp: 2, app.MailLabelInbox: 1}, r)
 	})
@@ -230,7 +230,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 		})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		r, err := st.GetCharacterMailListUnreadCounts(ctx, c.ID)
+		r, err := st.CountCharacterMailsUnreadByList(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int{l1.ID: 1}, r)
 	})
@@ -294,7 +294,7 @@ func TestUnreadMailCounts(t *testing.T) {
 		})
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
+		r, err := st.CountCharacterMailsUnread(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 6, r)
 	})
@@ -303,7 +303,7 @@ func TestUnreadMailCounts(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		r, err := st.GetCharacterMailUnreadCount(ctx, c.ID)
+		r, err := st.CountCharacterMailsUnread(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, r)
 	})
@@ -371,7 +371,7 @@ func TestUnreadMailCounts(t *testing.T) {
 			IsRead:      optional.New(true),
 		})
 		// when
-		got, err := st.GetAllCharactersMailUnreadCount(ctx)
+		got, err := st.CountAllCharactersMailsUnread(ctx)
 		require.NoError(t, err)
 		xassert.Equal(t, 7, got)
 	})
@@ -395,7 +395,7 @@ func TestMailCounts(t *testing.T) {
 		})
 		factory.CreateCharacterMailWithBody()
 		// when
-		got, err := st.GetCharacterMailCount(ctx, character.ID)
+		got, err := st.CountCharacterMails(ctx, character.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 2, got)
 	})
@@ -405,7 +405,35 @@ func TestMailCounts(t *testing.T) {
 		character := factory.CreateCharacter()
 		factory.CreateCharacterMailWithBody()
 		// when
-		got, err := st.GetCharacterMailCount(ctx, character.ID)
+		got, err := st.CountCharacterMails(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
+}
+
+func TestCountCharacterMailsWithoutBody(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("counts only mails without body", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
+		factory.CreateCharacterMail() // other character
+		// when
+		got, err := st.CountCharacterMailsWithoutBody(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 1, got)
+	})
+	t.Run("character has no mail", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterMail() // other character
+		// when
+		got, err := st.CountCharacterMailsWithoutBody(ctx, character.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
 	})
@@ -517,7 +545,7 @@ func TestAllCharactersMails(t *testing.T) {
 			})
 		}
 		// when
-		got, err := st.GetAllCharactersMailLabelUnreadCounts(ctx)
+		got, err := st.CountAllCharactersMailsUnreadByLabel(ctx)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int{app.MailLabelInbox: 2}, got)
@@ -545,7 +573,7 @@ func TestAllCharactersMails(t *testing.T) {
 			IsRead:       optional.New(true),
 		})
 		// when
-		got, err := st.GetAllCharactersMailListUnreadCounts(ctx)
+		got, err := st.CountAllCharactersMailsUnreadByList(ctx)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int{l.ID: 2}, got)
@@ -557,8 +585,8 @@ func TestAllCharactersMails(t *testing.T) {
 		factory.CreateCharacterMailWithBody()
 		factory.CreateCharacterMail()
 		// when
-		total, err1 := st.GetAllCharactersMailCount(ctx)
-		missing, err2 := st.GetAllCharactersMailWithoutBodyCount(ctx)
+		total, err1 := st.CountAllCharactersMails(ctx)
+		missing, err2 := st.CountAllCharactersMailsWithoutBody(ctx)
 		// then
 		require.NoError(t, err1)
 		require.NoError(t, err2)

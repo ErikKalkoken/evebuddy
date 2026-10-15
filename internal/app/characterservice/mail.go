@@ -47,50 +47,50 @@ func (s *CharacterService) GetMail(ctx context.Context, characterID int64, mailI
 	return s.st.GetCharacterMail(ctx, characterID, mailID)
 }
 
-func (s *CharacterService) GetAllMailUnreadCount(ctx context.Context) (int, error) {
-	return s.st.GetAllCharactersMailUnreadCount(ctx)
+func (s *CharacterService) CountAllMailsUnread(ctx context.Context) (int, error) {
+	return s.st.CountAllCharactersMailsUnread(ctx)
 }
 
-// GetAllMailCounts returns the total and unread number of mails for all characters.
-func (s *CharacterService) GetAllMailCounts(ctx context.Context) (int, int, error) {
-	total, err := s.st.GetAllCharactersMailCount(ctx)
+// CountAllMails returns the total and unread number of mails for all characters.
+func (s *CharacterService) CountAllMails(ctx context.Context) (int, int, error) {
+	total, err := s.st.CountAllCharactersMails(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
-	unread, err := s.st.GetAllCharactersMailUnreadCount(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	return total, unread, nil
-}
-
-func (s *CharacterService) GetAllMailLabelUnreadCounts(ctx context.Context) (map[int64]int, error) {
-	return s.st.GetAllCharactersMailLabelUnreadCounts(ctx)
-}
-
-func (s *CharacterService) GetAllMailListUnreadCounts(ctx context.Context) (map[int64]int, error) {
-	return s.st.GetAllCharactersMailListUnreadCounts(ctx)
-}
-
-// GetMailCounts returns the total and unread number of mails for a character.
-func (s *CharacterService) GetMailCounts(ctx context.Context, characterID int64) (int, int, error) {
-	total, err := s.st.GetCharacterMailCount(ctx, characterID)
-	if err != nil {
-		return 0, 0, err
-	}
-	unread, err := s.st.GetCharacterMailUnreadCount(ctx, characterID)
+	unread, err := s.st.CountAllCharactersMailsUnread(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
 	return total, unread, nil
 }
 
-func (s *CharacterService) GetMailLabelUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
-	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+func (s *CharacterService) CountAllMailsUnreadByLabel(ctx context.Context) (map[int64]int, error) {
+	return s.st.CountAllCharactersMailsUnreadByLabel(ctx)
 }
 
-func (s *CharacterService) GetMailListUnreadCounts(ctx context.Context, characterID int64) (map[int64]int, error) {
-	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
+func (s *CharacterService) CountAllMailsUnreadByList(ctx context.Context) (map[int64]int, error) {
+	return s.st.CountAllCharactersMailsUnreadByList(ctx)
+}
+
+// CountMails returns the total and unread number of mails for a character.
+func (s *CharacterService) CountMails(ctx context.Context, characterID int64) (int, int, error) {
+	total, err := s.st.CountCharacterMails(ctx, characterID)
+	if err != nil {
+		return 0, 0, err
+	}
+	unread, err := s.st.CountCharacterMailsUnread(ctx, characterID)
+	if err != nil {
+		return 0, 0, err
+	}
+	return total, unread, nil
+}
+
+func (s *CharacterService) CountMailsUnreadByLabel(ctx context.Context, characterID int64) (map[int64]int, error) {
+	return s.st.CountCharacterMailsUnreadByLabel(ctx, characterID)
+}
+
+func (s *CharacterService) CountMailsUnreadByList(ctx context.Context, characterID int64) (map[int64]int, error) {
+	return s.st.CountCharacterMailsUnreadByList(ctx, characterID)
 }
 
 func (s *CharacterService) NotifyMails(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
@@ -363,27 +363,26 @@ func (s *CharacterService) DownloadMissingMailBodies(ctx context.Context, charac
 	return aborted, nil
 }
 
-// TODO: Refactor into one DB call
-
-func (s *CharacterService) DownloadedBodiesPercentage(ctx context.Context, characterID int64) (total int, missing int, err error) {
-	m2, err := s.st.ListCharacterMailsWithoutBody(ctx, characterID)
+// CountMailsWithoutBody returns the total number of mails and the number of mails without body for a character.
+func (s *CharacterService) CountMailsWithoutBody(ctx context.Context, characterID int64) (total int, missing int, err error) {
+	total, err = s.st.CountCharacterMails(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	t2, err := s.st.ListCharacterMailIDs(ctx, characterID)
+	missing, err = s.st.CountCharacterMailsWithoutBody(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	return t2.Size(), m2.Size(), nil
+	return total, missing, nil
 }
 
-// AllDownloadedBodiesPercentage returns the total number of mails and the number of mails without body for all characters.
-func (s *CharacterService) AllDownloadedBodiesPercentage(ctx context.Context) (total int, missing int, err error) {
-	total, err = s.st.GetAllCharactersMailCount(ctx)
+// CountAllMailsWithoutBody returns the total number of mails and the number of mails without body for all characters.
+func (s *CharacterService) CountAllMailsWithoutBody(ctx context.Context) (total int, missing int, err error) {
+	total, err = s.st.CountAllCharactersMails(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
-	missing, err = s.st.GetAllCharactersMailWithoutBodyCount(ctx)
+	missing, err = s.st.CountAllCharactersMailsWithoutBody(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
