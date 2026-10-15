@@ -137,3 +137,30 @@ func TestCorporationSheet_ErrorDisplay(t *testing.T) {
 		assert.False(t, a.errorLabel.Visible())
 	})
 }
+
+func TestCorporationSheet_RefreshesRolesWhenRolesChange(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	c := factory.CreateCharacterFull()
+	factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: c.EveCharacter.Corporation.ID})
+	err := st.UpdateCharacterRoles(t.Context(), c.ID, set.Of(app.RoleAccountant))
+	require.NoError(t, err)
+	a := NewCorporationSheet(u, false)
+	a.character.Store(c)
+	a.update(t.Context())
+	assert.Equal(t, app.RoleAccountant.Display(), a.rolesLabel.Text)
+	err = st.UpdateCharacterRoles(t.Context(), c.ID, set.Of(app.RoleAccountant, app.RoleAuditor))
+	require.NoError(t, err)
+
+	u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+		CharacterID: c.ID,
+		Section:     app.SectionCharacterRoles,
+	})
+
+	want := slices.Sorted(slices.Values([]string{app.RoleAccountant.Display(), app.RoleAuditor.Display()}))
+	assert.Equal(t, strings.Join(want, "\n"), a.rolesLabel.Text)
+}

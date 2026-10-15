@@ -97,6 +97,14 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 			a.character.Store(c)
 			a.update(ctx)
 		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if a.character.Load().IDOrZero() != arg.CharacterID {
+				return
+			}
+			if arg.Section == app.SectionCharacterRoles {
+				a.update(ctx)
+			}
+		})
 		a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 			c := a.character.Load()
 			if c == nil {
