@@ -209,6 +209,10 @@ func (a *CharacterSheet) update(ctx context.Context) {
 	if !swapReloadedCharacter(&a.character, old, c) {
 		return // character switched meanwhile; that switch runs its own update
 	}
+	if c.EveCharacter == nil {
+		clearAll()
+		return
+	}
 	var home *app.EveLocation
 	if v, ok := c.HomeLocationID.Value(); ok {
 		el, err := a.u.EVEUniverse().GetLocation(ctx, v)
