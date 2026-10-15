@@ -700,7 +700,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 		e := setup(t)
 		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
 		m := e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		return e, m.MailID
 	}
 	dropMails := func(t *testing.T, db *sql.DB) {
@@ -724,7 +724,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 		err := e.st.UpdateCharacterMailSetBody(t.Context(), e.c.ID, mailID, optional.New("body"))
 		require.NoError(t, err)
 
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 
 		assert.False(t, e.a.NavigationPane.folderDownloaded.Visible())
 		assert.Equal(t, []int{50, 0}, e.missing)
@@ -732,13 +732,13 @@ func TestMails_DownloadProgress(t *testing.T) {
 	})
 	t.Run("does not call OnUpdate when unchanged", func(t *testing.T) {
 		e, _ := setupHalfDownloaded(t)
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		assert.Equal(t, []int{50}, e.missing)
 	})
 	t.Run("tick skips check when complete", func(t *testing.T) {
 		e := setup(t)
 		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		require.True(t, e.a.bodiesComplete.Load())
 		dropMails(t, e.db)
 
@@ -757,7 +757,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 	t.Run("tick retries after error", func(t *testing.T) {
 		e := setup(t)
 		dropMails(t, e.db)
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		require.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
 		e.a.NavigationPane.folderTotal.SetText("")
 
@@ -774,7 +774,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 			CompletedAt: time.Now().UTC(),
 		})
 		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
-		e.a.NavigationPane.updateDownloaded(t.Context())
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		require.True(t, e.a.bodiesComplete.Load())
 		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
 
@@ -782,6 +782,49 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 		assert.False(t, e.a.bodiesComplete.Load())
 		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
+	})
+	t.Run("update resets completion on early return", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		e.a.character.Store(e.factory.CreateCharacterFull()) // mail data not loaded yet
+
+		e.a.update(t.Context())
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		require.Equal(t, "?", e.a.NavigationPane.folderTotal.Text)
+		tick(t, e.a)
+		assert.Equal(t, "0 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("discards outdated check", func(t *testing.T) {
+		e := setup(t)
+		p := e.a.NavigationPane
+		older := p.downloadedRun.start()
+		newer := p.downloadedRun.start()
+		p.applyDownloaded(newer, mailsDownloaded{total: "2 total", downloaded: "50%", missingPercent: 50}, true)
+		require.Equal(t, []int{50}, e.missing)
+
+		p.applyDownloaded(older, mailsDownloaded{total: "1 total", complete: true}, true)
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		assert.Equal(t, "2 total", p.folderTotal.Text)
+		assert.Equal(t, "50%", p.folderDownloaded.Text)
+		assert.Equal(t, []int{50}, e.missing)
+	})
+	t.Run("OnUpdate once per update", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: e.c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.update(t.Context())
+
+		assert.Equal(t, []int{50}, e.missing)
 	})
 }
 

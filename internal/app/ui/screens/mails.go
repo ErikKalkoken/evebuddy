@@ -178,7 +178,7 @@ func newMails(u baseUI, forCharacter bool) *Mails {
 		if a.bodiesComplete.Load() {
 			return // new mails go through update, which checks again
 		}
-		a.NavigationPane.updateDownloaded(ctx)
+		a.NavigationPane.updateDownloaded(ctx, true)
 	})
 	return a
 }
@@ -198,6 +198,9 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Mails) update(ctx context.Context) {
+	// discard running checks and keep ticks checking, also when returning early
+	a.NavigationPane.downloadedRun.start()
+	a.bodiesComplete.Store(false)
 	clearAll := func() {
 		fyne.Do(func() {
 			a.NavigationPane.clear()
@@ -295,7 +298,7 @@ func (a *Mails) update(ctx context.Context) {
 		a.MessagePane.setCurrentFolder(ctx, folder)
 	}
 	a.unreadCount.Store(int64(unread))
-	a.NavigationPane.updateDownloaded(ctx)
+	a.NavigationPane.updateDownloaded(ctx, false) // OnUpdate is called below
 	fyne.Do(func() {
 		a.callOnUpdate()
 	})
@@ -400,6 +403,7 @@ type mailsNavigationPane struct {
 	widget.BaseWidget
 
 	compose          *widget.Button
+	downloadedRun    latestRun
 	folderDownloaded *ttwidget.Label
 	folders          *xwidget.Tree[mailFolderNode]
 	folderStatus     *widget.Label
@@ -492,60 +496,82 @@ func (a *mailsNavigationPane) setStatus(s string, i widget.Importance) {
 	a.compose.Disable()
 }
 
-func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
-	var total2, downloaded, hint string
-	var missingPercent int
-	var canceled, complete bool
-	func() {
-		var total, missing int
-		var err error
-		if a.ma.forCharacter {
-			characterID := a.ma.character.Load().IDOrZero()
-			if characterID == 0 {
-				return
-			}
-			total, missing, err = a.ma.u.Character().CountMailsWithoutBody(ctx, characterID)
-		} else {
-			total, missing, err = a.ma.u.Character().CountAllMailsWithoutBody(ctx)
-		}
-		if app.IsContextCanceled(ctx, err) {
-			canceled = true
-			return
-		}
-		if err != nil {
-			slog.Error("updateDownloaded", "error", err)
-			total2 = "ERROR"
-			return
-		}
-		complete = missing == 0
-		p := message.NewPrinter(language.English)
-		total2 = p.Sprintf("%d total", total)
-		if total == 0 || missing == 0 {
-			return
-		}
+// mailsDownloaded is the result of a check for downloaded mail bodies.
+type mailsDownloaded struct {
+	complete       bool
+	downloaded     string
+	hint           string
+	missingPercent int
+	total          string
+}
 
-		missingPercent = int(float64(missing) / float64(total) * 100)
-		downloaded = fmt.Sprintf("%d%%", 100-missingPercent)
-		hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
-	}()
-	if canceled {
+// updateDownloaded shows how many mail bodies are downloaded.
+// With notify it calls OnUpdate when the percentage changed.
+func (a *mailsNavigationPane) updateDownloaded(ctx context.Context, notify bool) {
+	isLatest := a.downloadedRun.start()
+	r, ok := a.fetchDownloaded(ctx)
+	if !ok {
 		return
 	}
-	a.ma.bodiesComplete.Store(complete)
-	changed := a.ma.missingPercent.Swap(int64(missingPercent)) != int64(missingPercent)
 	fyne.Do(func() {
-		a.folderTotal.SetText(total2)
-		if downloaded == "" {
-			a.folderDownloaded.Hide()
-		} else {
-			a.folderDownloaded.SetText(downloaded)
-			a.folderDownloaded.SetToolTip(hint)
-			a.folderDownloaded.Show()
-		}
-		if changed {
-			a.ma.callOnUpdate()
-		}
+		a.applyDownloaded(isLatest, r, notify)
 	})
+}
+
+// fetchDownloaded returns the current download state. It reports false when canceled.
+func (a *mailsNavigationPane) fetchDownloaded(ctx context.Context) (mailsDownloaded, bool) {
+	var r mailsDownloaded
+	var total, missing int
+	var err error
+	if a.ma.forCharacter {
+		characterID := a.ma.character.Load().IDOrZero()
+		if characterID == 0 {
+			return r, true
+		}
+		total, missing, err = a.ma.u.Character().CountMailsWithoutBody(ctx, characterID)
+	} else {
+		total, missing, err = a.ma.u.Character().CountAllMailsWithoutBody(ctx)
+	}
+	if app.IsContextCanceled(ctx, err) {
+		return r, false
+	}
+	if err != nil {
+		slog.Error("updateDownloaded", "error", err)
+		r.total = "ERROR"
+		return r, true
+	}
+	missing = min(missing, total) // the two counts can race with incoming mails
+	r.complete = missing == 0
+	p := message.NewPrinter(language.English)
+	r.total = p.Sprintf("%d total", total)
+	if total == 0 || missing == 0 {
+		return r, true
+	}
+	r.missingPercent = int(float64(missing) / float64(total) * 100)
+	r.downloaded = fmt.Sprintf("%d%%", 100-r.missingPercent)
+	r.hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
+	return r, true
+}
+
+// applyDownloaded shows a download state unless a newer check was started.
+// Must be called on the main thread.
+func (a *mailsNavigationPane) applyDownloaded(isLatest func() bool, r mailsDownloaded, notify bool) {
+	if !isLatest() {
+		return
+	}
+	a.ma.bodiesComplete.Store(r.complete)
+	changed := a.ma.missingPercent.Swap(int64(r.missingPercent)) != int64(r.missingPercent)
+	a.folderTotal.SetText(r.total)
+	if r.downloaded == "" {
+		a.folderDownloaded.Hide()
+	} else {
+		a.folderDownloaded.SetText(r.downloaded)
+		a.folderDownloaded.SetToolTip(r.hint)
+		a.folderDownloaded.Show()
+	}
+	if notify && changed {
+		a.ma.callOnUpdate()
+	}
 }
 
 // fetchFolders returns the folder tree of a character, or of all characters when characterID is 0.
