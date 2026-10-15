@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -334,5 +335,39 @@ func TestCommunicationsReadingPane_Owner(t *testing.T) {
 		a.ReadingPane.set(r)
 		require.NotNil(t, a.ReadingPane.currentNotification)
 		assert.False(t, headerShowsOwner(a.ReadingPane.headerWidget, c.EveCharacter.Name))
+	})
+}
+
+func TestCommunications_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*Communications, *sql.DB) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewUnifiedCommunications(u)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE character_notifications"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.NavigationPane.errorLabel.Visible())
+		assert.Contains(t, a.NavigationPane.errorLabel.Text, "ERROR:")
+
+		a.NavigationPane.update()
+		assert.True(t, a.NavigationPane.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.NavigationPane.errorLabel.SetText("ERROR: failed")
+		a.NavigationPane.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.NavigationPane.errorLabel.Visible())
 	})
 }

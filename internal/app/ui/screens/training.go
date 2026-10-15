@@ -148,7 +148,9 @@ type Training struct {
 	exportButton *xwidget.ContextMenuButton
 	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    latestRun
-	footer       *widget.Label
+	updateRun    latestRun
+	footerLabel  *widget.Label
+	errorLabel   *widget.Label
 	columnSorter *xwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
 	rows         []trainingRow
@@ -266,10 +268,14 @@ func NewTraining(u baseUI) *Training {
 		}})
 	a := &Training{
 		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
-		footer:       widget.NewLabel(""),
+		footerLabel:  widget.NewLabel(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	placeholder := "Search characters"
 	if a.u.IsMobile() {
@@ -354,7 +360,7 @@ func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.main,
@@ -545,9 +551,9 @@ func (a *Training) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoiceOrdered(trainingFilterStatus, trainingStatusOptions()),
@@ -563,6 +569,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 }
 
 func (a *Training) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -570,13 +577,20 @@ func (a *Training) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh training UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 		a.refreshOnUpdate()

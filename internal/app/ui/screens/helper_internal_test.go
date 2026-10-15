@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -8,6 +9,8 @@ import (
 	"fyne.io/fyne/v2/test"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 func TestLatestRun(t *testing.T) {
@@ -62,4 +65,35 @@ func TestClearSelectsSilent(t *testing.T) {
 	texts := renderedTexts(chip)
 	assert.Contains(t, texts, "Category")
 	assert.NotContains(t, texts, "Ship")
+}
+
+func TestSwapReloadedCharacter(t *testing.T) {
+	old := &app.Character{ID: 1}
+	reloaded := &app.Character{ID: 1}
+	cases := []struct {
+		name    string
+		current *app.Character // stored when the swap happens
+		want    bool
+		stored  *app.Character
+	}{
+		{"unchanged", old, true, reloaded},
+		{"replaced by same character", &app.Character{ID: 1}, true, nil}, // keeps the other copy
+		{"replaced by other character", &app.Character{ID: 2}, false, nil},
+		{"removed", nil, false, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var p atomic.Pointer[app.Character]
+			p.Store(tc.current)
+
+			got := swapReloadedCharacter(&p, old, reloaded)
+
+			assert.Equal(t, tc.want, got)
+			want := tc.stored
+			if want == nil {
+				want = tc.current
+			}
+			assert.Same(t, want, p.Load())
+		})
+	}
 }

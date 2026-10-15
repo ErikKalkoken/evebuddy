@@ -35,6 +35,7 @@ type SkillQueue struct {
 	statusResource       fyne.Resource
 	top                  *widget.Label
 	u                    baseUI
+	updateRun            latestRun
 }
 
 // NewSkillQueue returns a new characterSkillQueue for the current character.
@@ -80,7 +81,8 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterChanged.AddListener(func(ctx context.Context, characterID int64) {
-		if a.character.Load().IDOrZero() != characterID {
+		old := a.character.Load()
+		if old.IDOrZero() != characterID {
 			return
 		}
 		c, err := a.u.Character().GetCharacter(ctx, characterID)
@@ -88,10 +90,12 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 			if ctx.Err() != nil {
 				return
 			}
-			slog.Error("characterSkillQueue: update character", "error", err)
+			slog.Error("Failed to reload character for skill queue", "characterID", characterID, "error", err)
 			return
 		}
-		a.character.Store(c)
+		if !a.character.CompareAndSwap(old, c) {
+			return // character changed meanwhile; that change runs its own update
+		}
 		a.Update(ctx)
 	}, a.signalKey)
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
@@ -166,12 +170,17 @@ func (a *SkillQueue) Stop() {
 		a.u.Signals().CurrentCharacterExchanged.RemoveListener(a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.RemoveListener(a.signalKey)
+	a.u.Signals().CharacterChanged.RemoveListener(a.signalKey)
 	a.u.Signals().RefreshTickerExpired.RemoveListener(a.signalKey)
 }
 
 func (a *SkillQueue) Update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = s
 			a.top.Importance = i
 			a.top.Refresh()
@@ -179,9 +188,15 @@ func (a *SkillQueue) Update(ctx context.Context) {
 	}
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.list.Hide()
 			a.emptyInfo.Hide()
 			a.status.Hide()
+			if a.OnUpdate != nil {
+				a.OnUpdate("", "")
+			}
 		})
 	}
 
@@ -206,7 +221,8 @@ func (a *SkillQueue) Update(ctx context.Context) {
 		reset()
 		return
 	}
-	err = a.skillqueue.Update(ctx, a.u.Character(), c.ID)
+	sq := app.NewCharacterSkillqueue()
+	err = sq.Update(ctx, a.u.Character(), c.ID)
 	if err != nil {
 		if ctx.Err() != nil {
 			return
@@ -217,9 +233,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 		return
 	}
 
-	isActive := a.skillqueue.IsActive()
+	isActive := sq.IsActive()
 	if isActive {
-		s := fmt.Sprintf("Total training time: %s", ihumanize.Optional(a.skillqueue.RemainingTime(), "?"))
+		s := fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
 		setTop(s, widget.MediumImportance)
 	} else if c.IsTrainingWatched {
 		setTop("No skill in training", widget.DangerImportance)
@@ -228,6 +244,10 @@ func (a *SkillQueue) Update(ctx context.Context) {
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.skillqueue = sq
 		var r fyne.Resource
 		var s string
 		if isActive {
@@ -245,9 +265,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 		a.status.Show()
 		var s1, s2 string
 		if isActive {
-			if c := a.skillqueue.CompletionP(); c.ValueOrZero() < 1 {
+			if c := sq.CompletionP(); c.ValueOrZero() < 1 {
 				s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
-				s2 = fmt.Sprintf("%s (%s)", a.skillqueue.Active(), s1)
+				s2 = fmt.Sprintf("%s (%s)", sq.Active(), s1)
 			}
 		} else if c.IsTrainingWatched {
 			s1 = "!"
@@ -256,10 +276,7 @@ func (a *SkillQueue) Update(ctx context.Context) {
 		if a.OnUpdate != nil {
 			a.OnUpdate(s1, s2)
 		}
-	})
-
-	fyne.Do(func() {
-		if a.skillqueue.Size() == 0 {
+		if sq.Size() == 0 {
 			a.emptyInfo.Show()
 		} else {
 			a.emptyInfo.Hide()

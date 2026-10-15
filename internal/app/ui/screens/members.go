@@ -37,7 +37,8 @@ type Members struct {
 	corporation  atomic.Pointer[app.Corporation]
 	filterRun    latestRun
 	updateRun    latestRun
-	footer       *widget.Label
+	footerLabel  *widget.Label
+	errorLabel   *widget.Label
 	list         *widget.List
 	rows         []memberRow
 	rowsFiltered []memberRow
@@ -47,11 +48,15 @@ type Members struct {
 
 func NewMembers(s baseUI) *Members {
 	a := &Members{
-		footer: ui.NewLabelWithTruncation(""),
-		u:      s,
+		footerLabel: ui.NewLabelWithTruncation(""),
+		errorLabel:  ui.NewLabelWithWrapping(""),
+		u:           s,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	a.searchEntry = xwidget.NewSearchEntry("Search members", func(s string) {
 		if len(s) == 1 {
@@ -90,7 +95,7 @@ func NewMembers(s baseUI) *Members {
 func (a *Members) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		a.searchEntry,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.list,
@@ -146,9 +151,9 @@ func (a *Members) filterRowsAsync() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			a.rowsFiltered = rows
 			a.list.Refresh()
 		})
@@ -162,21 +167,24 @@ func (a *Members) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.filterRun.start() // discard results of filters still running
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
-			a.searchEntry.SetText("")
+			a.footerLabel.SetText("")
+			a.searchEntry.ClearSilent()
 			a.list.Refresh()
 		})
 	}
-	setTop := func(s string, i widget.Importance) {
+	setError := func(err error) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text, a.footer.Importance = s, i
-			a.footer.Refresh()
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
-
 	}
 	corporation := a.corporation.Load()
 	if corporation == nil {
@@ -186,7 +194,7 @@ func (a *Members) update(ctx context.Context) {
 	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.SectionCorporationMembers)
 	if err != nil {
 		reset()
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	if !hasData {
@@ -199,13 +207,14 @@ func (a *Members) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, corporation.ID, ceoID)
 	if err != nil {
 		reset()
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()
 	})

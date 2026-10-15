@@ -75,6 +75,7 @@ type LoyaltyPoints struct {
 
 	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
+	updateRun        latestRun
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
@@ -334,6 +335,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 }
 
 func (a *LoyaltyPoints) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	data, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -341,6 +343,9 @@ func (a *LoyaltyPoints) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh loyaltyPoints UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = "ERROR: " + a.u.ErrorDisplay(err)
 			a.top.Importance = widget.DangerImportance
 			a.top.Refresh()
@@ -351,6 +356,9 @@ func (a *LoyaltyPoints) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.data = data
 		a.filterTreeAsync()
 		a.top.Hide()

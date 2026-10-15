@@ -113,7 +113,9 @@ type ContractSlots struct {
 	corporationSlots  bool
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
-	footer            *widget.Label
+	updateRun         latestRun
+	footerLabel       *widget.Label
+	errorLabel        *widget.Label
 	rows              []contractSlotRow
 	rowsFiltered      []contractSlotRow
 	selectCorporation *kxwidget.FilterChipSelect // select chips only on desktop
@@ -186,10 +188,13 @@ func NewContractSlots(u baseUI, corporationSlots bool) *ContractSlots {
 	a := &ContractSlots{
 		columnSorter:     xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		corporationSlots: corporationSlots,
-		footer:           ui.NewLabelWithWrapping(""),
+		footerLabel:      ui.NewLabelWithWrapping(""),
+		errorLabel:       ui.NewLabelWithWrapping(""),
 		u:                u,
 	}
 	a.ExtendBaseWidget(a)
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
 			columns,
@@ -281,7 +286,7 @@ func (a *ContractSlots) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		top = container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectFreeSlots, a.selectTag))
 	}
-	c := container.NewBorder(top, a.footer, nil, nil, a.body)
+	c := container.NewBorder(top, container.NewVBox(a.errorLabel, a.footerLabel), nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -381,9 +386,9 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoice(contractSlotsFilterCorporation, corporationOptions),
@@ -401,6 +406,7 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 }
 
 func (a *ContractSlots) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rows, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -408,13 +414,20 @@ func (a *ContractSlots) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 	})

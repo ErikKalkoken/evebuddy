@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -46,6 +47,15 @@ type latestRun struct{ n atomic.Int64 }
 func (l *latestRun) start() func() bool {
 	n := l.n.Add(1)
 	return func() bool { return l.n.Load() == n }
+}
+
+// swapReloadedCharacter stores a reloaded character unless it was replaced meanwhile.
+// It reports false when the current character is now a different one.
+func swapReloadedCharacter(p *atomic.Pointer[app.Character], old, reloaded *app.Character) bool {
+	if p.CompareAndSwap(old, reloaded) {
+		return true
+	}
+	return p.Load().IDOrZero() == reloaded.ID
 }
 
 // showWhenLoaded hides content behind a delayed spinner until load returns

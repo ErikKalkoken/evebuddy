@@ -80,7 +80,9 @@ type Augmentations struct {
 	collapseBranches *ttwidget.Button
 	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
-	footer           *widget.Label
+	updateRun        latestRun
+	footerLabel      *widget.Label
+	errorLabel       *widget.Label
 	selectImplants   *kxwidget.FilterChipSelect // select chips only on desktop
 	selectTag        *kxwidget.FilterChipSelect
 	tree             *xwidget.Tree[augmentationNode]
@@ -90,10 +92,14 @@ type Augmentations struct {
 
 func NewAugmentations(u baseUI) *Augmentations {
 	a := &Augmentations{
-		footer: ui.NewLabelWithTruncation(""),
-		u:      u,
+		footerLabel: ui.NewLabelWithTruncation(""),
+		errorLabel:  ui.NewLabelWithWrapping(""),
+		u:           u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 	a.tree = a.makeTree()
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
@@ -143,7 +149,7 @@ func (a *Augmentations) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.tree,
@@ -217,9 +223,9 @@ func (a *Augmentations) filterTreeAsync() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoiceOrdered(augmentationsFilterImplants, augmentationsImplantsOptions()),
@@ -234,6 +240,7 @@ func (a *Augmentations) filterTreeAsync() {
 }
 
 func (a *Augmentations) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	td, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -241,13 +248,20 @@ func (a *Augmentations) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh augmentations UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.treeData = td
 		a.filterTreeAsync()
 	})

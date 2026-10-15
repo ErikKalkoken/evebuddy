@@ -107,7 +107,9 @@ type CharacterOverview struct {
 
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
-	footer            *widget.Label
+	updateRun         latestRun
+	footerLabel       *widget.Label
+	errorLabel        *widget.Label
 	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
 	loadInfo          *widget.Label
 	main              fyne.CanvasObject
@@ -170,12 +172,16 @@ func NewCharacterOverview(u baseUI) *CharacterOverview {
 	info.Importance = widget.LowImportance
 
 	a := &CharacterOverview{
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, "Character", xwidget.SortAsc),
 		loadInfo:     info,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	placeholder := "Search characters and systems"
 	if a.u.IsMobile() {
@@ -275,7 +281,7 @@ func (a *CharacterOverview) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		container.NewStack(a.loadInfo, a.main),
@@ -414,9 +420,9 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoice(characterOverviewFilterAlliance, allianceOptions),
@@ -439,17 +445,25 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 }
 
 func (a *CharacterOverview) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
 	}
-	setFooter := func(s string, i widget.Importance) {
+	setError := func(err error) {
 		fyne.Do(func() {
-			a.footer.Text = s
-			a.footer.Importance = i
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	rows, err := a.fetchRows(ctx)
@@ -458,11 +472,15 @@ func (a *CharacterOverview) update(ctx context.Context) {
 			return
 		}
 		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		slog.Error("Failed to refresh overview UI", "err", err)
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.loadInfo.Hide()
 		a.filterRowsAsync("")

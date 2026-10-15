@@ -35,8 +35,7 @@ func (s *CharacterService) ListJumpClones(ctx context.Context, characterID int64
 // It returns empty when a jump could not be calculated.
 func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Character) (optional.Optional[time.Time], error) {
 	var z optional.Optional[time.Time]
-	lastJump, ok := c.LastCloneJumpAt.Value()
-	if !ok {
+	if c.LastCloneJumpAt.IsEmpty() {
 		return z, nil
 	}
 
@@ -50,11 +49,7 @@ func (s *CharacterService) calcNextCloneJump(ctx context.Context, c *app.Charact
 		skillLevel = sk.ActiveSkillLevel
 	}
 
-	nextJump := lastJump.Add(time.Duration(24-skillLevel) * time.Hour)
-	if nextJump.Before(time.Now()) {
-		return optional.New(time.Time{}), nil
-	}
-	return optional.New(nextJump), nil
+	return app.CalcNextCloneJump(c.LastCloneJumpAt, skillLevel, time.Now()), nil
 }
 
 // TODO: Consolidate with updating home in separate function

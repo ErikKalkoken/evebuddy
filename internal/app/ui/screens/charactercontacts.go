@@ -87,7 +87,9 @@ type CharacterContacts struct {
 	columnSorter   *xwidget.ColumnSorter[characterContactRow]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
-	footer         *widget.Label
+	updateRun      latestRun
+	footerLabel    *widget.Label
+	errorLabel     *widget.Label
 	list           fyne.CanvasObject
 	rows           []characterContactRow
 	rowsFiltered   []characterContactRow
@@ -119,11 +121,15 @@ func NewCharacterContacts(u baseUI) *CharacterContacts {
 	)
 	a := &CharacterContacts{
 		columnSorter: columnSorter,
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	// filters
 	placeholder := "Search contacts"
@@ -221,7 +227,7 @@ func (a *CharacterContacts) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.list,
@@ -382,9 +388,9 @@ func (a *CharacterContacts) filterRowsAsync() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				// options without choices are shown as disabled
 				orNone := func(has bool, options []string) []string {
@@ -436,17 +442,38 @@ func (a *CharacterContacts) filterRowsAsync() {
 }
 
 func (a *CharacterContacts) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rest := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.filterRun.start() // discard results of filters still running
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync()
+			xslices.Clear(&a.rowsFiltered)
+			a.footerLabel.SetText("")
+			a.list.Refresh()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.footer.Text = s
-			a.footer.Importance = i
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.footerLabel.Text = s
+			a.footerLabel.Importance = i
+			a.footerLabel.Refresh()
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	characterID := a.character.Load().IDOrZero()
@@ -458,7 +485,7 @@ func (a *CharacterContacts) update(ctx context.Context) {
 	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterContacts)
 	if err != nil {
 		rest()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	if !hasData {
@@ -469,10 +496,14 @@ func (a *CharacterContacts) update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, characterID)
 	if err != nil {
 		rest()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()
 	})

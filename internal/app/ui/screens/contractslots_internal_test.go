@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -85,5 +86,42 @@ func TestContractSlots_Filter(t *testing.T) {
 			contractSlotsFilterFreeSlots:   "",
 			contractSlotsFilterTag:         "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestContractSlots_ErrorDisplay(t *testing.T) {
+	newContractSlots := func(t *testing.T, st *storage.Storage) *ContractSlots {
+		return NewContractSlots(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), false)
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newContractSlots(t, st)
+		a.rows = []contractSlotRow{{characterID: 1, free: 2, total: 2}}
+		a.filterRowsAsync("")
+		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.selectFreeSlots.SetSelected(contractSlotsFreeNone)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.footerLabel.Text, "Showing")
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newContractSlots(t, st)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

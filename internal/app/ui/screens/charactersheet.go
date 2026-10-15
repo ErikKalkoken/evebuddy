@@ -26,22 +26,24 @@ import (
 type CharacterSheet struct {
 	widget.BaseWidget
 
-	bloodline   *ui.InfoLink
-	born        *widget.Label
-	character   atomic.Pointer[app.Character]
-	faction     *ui.InfoLink
-	home        *ui.InfoLink
-	lastLoginAt *widget.Label
-	location    *ui.InfoLink
-	name        *ui.InfoLink
-	portrait    *xwidget.TappableImage
-	race        *ui.InfoLink
-	security    *widget.Label
-	ship        *ui.InfoLink
-	skillpoints *widget.Label
-	tags        *widget.Label
-	u           baseUI
-	wealth      *widget.Label
+	bloodlineLink    *ui.InfoLink
+	bornLabel        *widget.Label
+	character        atomic.Pointer[app.Character]
+	errorLabel       *widget.Label
+	factionLink      *ui.InfoLink
+	homeLink         *ui.InfoLink
+	lastLoginAtLabel *widget.Label
+	locationLink     *ui.InfoLink
+	nameLink         *ui.InfoLink
+	portraitImage    *xwidget.TappableImage
+	raceLink         *ui.InfoLink
+	securityLabel    *widget.Label
+	shipLink         *ui.InfoLink
+	skillpointsLabel *widget.Label
+	tagsLabel        *widget.Label
+	u                baseUI
+	updateRun        latestRun
+	wealthLabel      *widget.Label
 }
 
 func NewCharacterSheet(u baseUI) *CharacterSheet {
@@ -59,23 +61,27 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	portrait.SetToolTip("Show details")
 	a := &CharacterSheet{
-		bloodline:   makeInfoLink(),
-		born:        makeLabel(),
-		faction:     makeInfoLink(),
-		home:        makeInfoLink(),
-		lastLoginAt: makeLabel(),
-		location:    makeInfoLink(),
-		name:        makeInfoLink(),
-		portrait:    portrait,
-		race:        makeInfoLink(),
-		security:    makeLabel(),
-		ship:        makeInfoLink(),
-		skillpoints: makeLabel(),
-		tags:        makeLabel(),
-		u:           u,
-		wealth:      makeLabel(),
+		bloodlineLink:    makeInfoLink(),
+		bornLabel:        makeLabel(),
+		errorLabel:       ui.NewLabelWithWrapping(""),
+		factionLink:      makeInfoLink(),
+		homeLink:         makeInfoLink(),
+		lastLoginAtLabel: makeLabel(),
+		locationLink:     makeInfoLink(),
+		nameLink:         makeInfoLink(),
+		portraitImage:    portrait,
+		raceLink:         makeInfoLink(),
+		securityLabel:    makeLabel(),
+		shipLink:         makeInfoLink(),
+		skillpointsLabel: makeLabel(),
+		tagsLabel:        makeLabel(),
+		u:                u,
+		wealthLabel:      makeLabel(),
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -108,7 +114,7 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 				a.update(ctx)
 			}
 		case app.SectionEveCorporations:
-			if arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
+			if c.EveCharacter != nil && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update(ctx)
 			}
 		case app.SectionEveMarketPrices:
@@ -122,28 +128,28 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 
 func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 	main := widget.NewForm(
-		widget.NewFormItem("Name", a.name),
-		widget.NewFormItem("Born", a.born),
-		widget.NewFormItem("Race", a.race),
-		widget.NewFormItem("Bloodline", a.bloodline),
-		widget.NewFormItem("Faction", a.faction),
-		widget.NewFormItem("Home Station", a.home),
-		widget.NewFormItem("Security Status", a.security),
-		widget.NewFormItem("Wealth", a.wealth),
-		widget.NewFormItem("Total Skill Points", a.skillpoints),
-		widget.NewFormItem("Ship", a.ship),
-		widget.NewFormItem("Location", a.location),
-		widget.NewFormItem("Last Login", a.lastLoginAt),
-		widget.NewFormItem("Tags", a.tags),
+		widget.NewFormItem("Name", a.nameLink),
+		widget.NewFormItem("Born", a.bornLabel),
+		widget.NewFormItem("Race", a.raceLink),
+		widget.NewFormItem("Bloodline", a.bloodlineLink),
+		widget.NewFormItem("Faction", a.factionLink),
+		widget.NewFormItem("Home Station", a.homeLink),
+		widget.NewFormItem("Security Status", a.securityLabel),
+		widget.NewFormItem("Wealth", a.wealthLabel),
+		widget.NewFormItem("Total Skill Points", a.skillpointsLabel),
+		widget.NewFormItem("Ship", a.shipLink),
+		widget.NewFormItem("Location", a.locationLink),
+		widget.NewFormItem("Last Login", a.lastLoginAtLabel),
+		widget.NewFormItem("Tags", a.tagsLabel),
 	)
 	main.Orientation = widget.Adaptive
 
 	portrait := container.NewVBox(
-		container.NewPadded(a.portrait),
+		container.NewPadded(a.portraitImage),
 	)
 	c := container.NewBorder(
 		nil,
-		nil,
+		a.errorLabel,
 		nil,
 		portrait,
 		container.NewVScroll(main),
@@ -155,35 +161,55 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterSheet) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	clearAll := func() {
 		fyne.Do(func() {
-			a.bloodline.Clear()
-			a.born.SetText("")
-			a.faction.Clear()
-			a.home.Clear()
-			a.lastLoginAt.SetText("")
-			a.location.Clear()
-			a.name.Clear()
-			a.portrait.SetResource(icons.BlankSvg)
-			a.race.Clear()
-			a.security.SetText("")
-			a.ship.Clear()
-			a.skillpoints.SetText("")
-			a.tags.SetText("")
-			a.wealth.SetText("")
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.Hide()
+			a.bloodlineLink.Clear()
+			a.bornLabel.SetText("")
+			a.factionLink.Clear()
+			a.homeLink.Clear()
+			a.lastLoginAtLabel.SetText("")
+			a.locationLink.Clear()
+			a.nameLink.Clear()
+			a.portraitImage.SetResource(icons.BlankSvg)
+			a.raceLink.Clear()
+			a.securityLabel.SetText("")
+			a.shipLink.Clear()
+			a.skillpointsLabel.SetText("")
+			a.tagsLabel.SetText("")
+			a.wealthLabel.SetText("")
 		})
 	}
-	c := a.character.Load()
-	if c == nil || c.EveCharacter == nil {
+	old := a.character.Load()
+	if old == nil || old.EveCharacter == nil {
 		clearAll()
 		return
 	}
-	c2, err := a.u.Character().GetCharacter(ctx, c.ID)
+	c, err := a.u.Character().GetCharacter(ctx, old.ID)
 	if err != nil {
 		if ctx.Err() != nil {
 			return
 		}
 		slog.Error("Failed to fetch character for sheet", "err", err)
+		clearAll()
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
+		})
+		return
+	}
+	if !swapReloadedCharacter(&a.character, old, c) {
+		return // character switched meanwhile; that switch runs its own update
+	}
+	if c.EveCharacter == nil {
 		clearAll()
 		return
 	}
@@ -223,70 +249,60 @@ func (a *CharacterSheet) update(ctx context.Context) {
 			shipType = et
 		}
 	}
-	a.character.Store(c2)
-	c = c2
 
 	fyne.Do(func() {
-		a.name.Set(c.EveCharacter.ToEveEntity())
-		a.portrait.OnTapped = func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
+		a.nameLink.Set(c.EveCharacter.ToEveEntity())
+		a.portraitImage.OnTapped = func() {
 			a.u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
 		}
-		a.race.SetRace(c.EveCharacter.Race)
-		a.born.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
-		a.security.SetText(c.EveCharacter.SecurityStatus.StringFunc("?", func(v float64) string {
+		a.u.EVEImage().CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
+			if !isLatest() {
+				return
+			}
+			a.portraitImage.SetResource(r)
+		})
+		a.raceLink.SetRace(c.EveCharacter.Race)
+		if v, ok := c.EveCharacter.Bloodline.Value(); ok {
+			a.bloodlineLink.SetBloodline(v)
+		} else {
+			a.bloodlineLink.Clear()
+		}
+		if v, ok := c.EveCharacter.Faction.Value(); ok {
+			a.factionLink.Set(v)
+		} else {
+			a.factionLink.Clear()
+		}
+		a.bornLabel.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
+		a.securityLabel.SetText(c.EveCharacter.SecurityStatus.StringFunc("?", func(v float64) string {
 			return fmt.Sprintf("%.1f", v)
 		}))
-
-		a.lastLoginAt.SetText(c.LastLoginAt.StringFunc("?", func(v time.Time) string {
+		a.lastLoginAtLabel.SetText(c.LastLoginAt.StringFunc("?", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))
-	})
-	fyne.Do(func() {
-		a.u.EVEImage().CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
-			a.portrait.SetResource(r)
-		})
-		if location == nil {
-			a.location.Clear()
-			return
+		if home != nil {
+			a.homeLink.SetLocation(home)
+		} else {
+			a.homeLink.Clear()
 		}
-		a.location.SetLocation(location)
-	})
-	fyne.Do(func() {
-		v, ok := c.EveCharacter.Bloodline.Value()
-		if !ok {
-			a.bloodline.Clear()
-			return
+		if location != nil {
+			a.locationLink.SetLocation(location)
+		} else {
+			a.locationLink.Clear()
 		}
-		a.bloodline.SetBloodline(v)
-	})
-	fyne.Do(func() {
-		if shipType == nil {
-			a.ship.Clear()
-			return
+		if shipType != nil {
+			a.shipLink.Set(shipType.ToEveEntity())
+		} else {
+			a.shipLink.Clear()
 		}
-		a.ship.Set(shipType.ToEveEntity())
-	})
-	fyne.Do(func() {
-		if home == nil {
-			a.home.Clear()
-			return
-		}
-		a.home.SetLocation(home)
-	})
-	fyne.Do(func() {
-		a.skillpoints.SetText(ihumanize.OptionalWithComma(c.TrainedSP, "?"))
+		a.skillpointsLabel.SetText(ihumanize.OptionalWithComma(c.TrainedSP, "?"))
 		v := optional.SumNonEmpty(c.AssetValue, c.WalletBalance)
-		a.wealth.SetText(v.StringFunc("?", func(v float64) string {
+		a.wealthLabel.SetText(v.StringFunc("?", func(v float64) string {
 			return humanize.Comma(int64(v))
 		}) + " ISK")
-	})
-	fyne.Do(func() {
-		faction, ok := c.EveCharacter.Faction.Value()
-		if !ok {
-			a.faction.Clear()
-			return
-		}
-		a.faction.Set(faction)
 	})
 
 	var s string
@@ -295,7 +311,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		slog.Error("character sheet: update", "characterID", c.ID, "error", "err")
+		slog.Error("character sheet: update", "characterID", c.ID, "error", err)
 		s = "?"
 	} else {
 		if tags.Size() == 0 {
@@ -305,6 +321,9 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 	}
 	fyne.Do(func() {
-		a.tags.SetText(s)
+		if !isLatest() {
+			return
+		}
+		a.tagsLabel.SetText(s)
 	})
 }

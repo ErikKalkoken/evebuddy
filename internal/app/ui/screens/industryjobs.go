@@ -184,16 +184,42 @@ func (r industryJobRow) statusDisplay() []widget.RichTextSegment {
 	})
 }
 
+// industryJobsReadyCount returns the number of ready jobs installed by the user's characters.
+func industryJobsReadyCount(rows []industryJobRow) int {
+	var n int
+	for _, r := range rows {
+		if r.isInstallerMe && r.statusCalculated() == app.JobReady {
+			n++
+		}
+	}
+	return n
+}
+
+// industryJobsReadyCountAll returns the number of ready jobs of all installers.
+func industryJobsReadyCountAll(rows []industryJobRow) int {
+	var n int
+	for _, r := range rows {
+		if r.statusCalculated() == app.JobReady {
+			n++
+		}
+	}
+	return n
+}
+
 type IndustryJobs struct {
 	widget.BaseWidget
 
 	OnUpdate func(count int)
 
+	readyCount    int // last count reported to OnUpdate
+	readyCountAll int // ready jobs of all installers, to detect finished jobs
+
 	body            fyne.CanvasObject
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
 	updateRun       latestRun
-	footer          *widget.Label
+	footerLabel     *widget.Label
+	errorLabel      *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
@@ -324,12 +350,16 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		},
 	}})
 	a := &IndustryJobs{
-		footer:         ui.NewLabelWithWrapping(""),
+		footerLabel:    ui.NewLabelWithWrapping(""),
+		errorLabel:     ui.NewLabelWithWrapping(""),
 		columnSorter:   xwidget.NewColumnSorter(columns, "End date", xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
@@ -444,9 +474,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		})
 	}
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.body.Refresh()
-		})
+		fyne.Do(a.refreshTimeDependent)
 	})
 	return a
 }
@@ -475,7 +503,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.body,
@@ -657,9 +685,9 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
 					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterOwner, industryJobsOwnerOptions()),
@@ -702,28 +730,46 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
-	var readyCount int
-	for _, j := range jobs {
-		if j.status == app.JobReady && j.isInstallerMe {
-			readyCount++
-		}
-	}
+	readyCount := industryJobsReadyCount(jobs)
+	readyCountAll := industryJobsReadyCountAll(jobs)
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.rows = jobs
 		a.filterRowsAsync("")
+		a.readyCount = readyCount
+		a.readyCountAll = readyCountAll
 		if a.OnUpdate != nil {
 			a.OnUpdate(readyCount)
 		}
 	})
+}
+
+// refreshTimeDependent updates list, filter and badge for jobs that finished since the last update.
+// Must run on the main thread.
+func (a *IndustryJobs) refreshTimeDependent() {
+	if n := industryJobsReadyCountAll(a.rows); n != a.readyCountAll {
+		a.readyCountAll = n
+		a.filterRowsAsync("") // a job finished, so status filters may change
+	} else {
+		a.body.Refresh() // remaining time
+	}
+	n := industryJobsReadyCount(a.rows)
+	if n == a.readyCount {
+		return
+	}
+	a.readyCount = n
+	if a.OnUpdate != nil {
+		a.OnUpdate(n)
+	}
 }
 
 func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {

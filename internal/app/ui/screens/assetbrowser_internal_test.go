@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -696,14 +698,55 @@ func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
 
 		a.Navigation.searchEntry.SetText("jita")
 
-		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footerLabel.Text)
 	})
 	t.Run("should not crash when changing category", func(t *testing.T) {
 		a := newBrowser(t)
 
 		a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
 
-		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footerLabel.Text)
+	})
+}
+
+func TestAssetBrowser_ErrorDisplay(t *testing.T) {
+	newBrowser := func(t *testing.T) (*AssetBrowser, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.character.Store(c)
+		return a, db
+	}
+	t.Run("shows error and clears assets when update fails", func(t *testing.T) {
+		a, db := newBrowser(t)
+		a.Update(t.Context())
+		if _, err := db.Exec("DROP TABLE character_assets"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.Update(t.Context())
+		assert.True(t, a.Navigation.errorLabel.Visible())
+		assert.Contains(t, a.Navigation.errorLabel.Text, "ERROR:")
+		assert.Equal(t, "", a.Navigation.footerLabel.Text)
+
+		a.Navigation.filterLocationsAsync()
+		assert.True(t, a.Navigation.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newBrowser(t)
+		a.Navigation.errorLabel.SetText("ERROR: failed")
+		a.Navigation.errorLabel.Show()
+
+		a.Update(t.Context())
+		assert.False(t, a.Navigation.errorLabel.Visible())
 	})
 }
 
@@ -1288,4 +1331,75 @@ func TestAssetBrowser_FilterLocationType(t *testing.T) {
 			assert.Empty(t, topLocations(a))
 		})
 	}
+}
+
+func TestAssetBrowser_ClearDiscardsPreviousAssets(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const alphaID = 60000001
+	item := createCharacterAsset(assetParams{Quantity: 1, LocationID: alphaID})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{item}, locations)
+	newBrowser := func(t *testing.T) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	t.Run("filtering after clear does not restore previous assets", func(t *testing.T) {
+		a := newBrowser(t)
+		a.Navigation.searchEntry.SetText("alpha") // shows a filtered copy, so the cached tree survives clear
+		a.Navigation.filterLocationsAsync()
+		a.Navigation.clear()
+
+		a.Navigation.filterLocationsAsync()
+
+		assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil))
+	})
+	t.Run("clear discards running loads and filters", func(t *testing.T) {
+		a := newBrowser(t)
+		isUpdateLatest := a.Navigation.updateRun.start()
+		isFilterLatest := a.Navigation.filterRun.start()
+
+		a.Navigation.clear()
+
+		assert.False(t, isUpdateLatest())
+		assert.False(t, isFilterLatest())
+	})
+}
+
+func TestAssetBrowser_FailedSwitchClearsPreviousAssets(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newCharacter := func() *app.Character {
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		return c
+	}
+	cA := newCharacter()
+	factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: cA.ID})
+	cB := newCharacter()
+	a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.character.Store(cA)
+	a.Update(t.Context())
+	require.Positive(t, a.Navigation.locations.Data().ChildrenCount(nil))
+	if _, err := db.Exec("DROP TABLE character_assets"); err != nil { // let loading assets fail
+		t.Fatal(err)
+	}
+
+	a.character.Store(cB)
+	a.Update(t.Context())
+
+	assert.True(t, a.Navigation.errorLabel.Visible())
+	assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil))
+	a.Navigation.filterLocationsAsync()
+	assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil), "filtering does not restore previous assets")
 }

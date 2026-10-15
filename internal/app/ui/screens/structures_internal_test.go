@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -178,4 +179,38 @@ func TestStructures_RefreshTicker(t *testing.T) {
 	u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
 	assert.Len(t, a.rows, 1)
+}
+
+func TestStructures_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*Structures, *sql.DB) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewUnifiedStructures(u)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE corporation_structures"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.filterRowsAsync("")
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
+	})
 }

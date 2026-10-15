@@ -71,13 +71,6 @@ type CharacterAttributes struct {
 	Willpower     int64
 }
 
-type CharacterImplant struct {
-	CharacterID int64
-	EveType     *EveType
-	ID          int64
-	SlotNum     int // 0 = unknown
-}
-
 // A Role is the in-game role of a character in a corporation.
 type Role uint
 
@@ -213,30 +206,6 @@ type CharacterRole struct {
 	CharacterID int64
 	Role        Role
 	Granted     bool
-}
-
-type CharacterJumpClone struct {
-	CharacterID int64
-	ID          int64
-	Implants    []*CharacterJumpCloneImplant
-	CloneID     int64
-	Location    *EveLocationShort
-	Name        optional.Optional[string]
-	Region      *EntityShort
-}
-
-type CharacterJumpClone2 struct {
-	Character     *EntityShort
-	ImplantsCount int
-	ID            int64
-	CloneID       int64
-	Location      *EveLocation
-}
-
-type CharacterJumpCloneImplant struct {
-	ID      int64
-	EveType *EveType
-	SlotNum int // 0 = unknown
 }
 
 type CharacterLoyaltyPointEntry struct {

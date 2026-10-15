@@ -64,6 +64,7 @@ type Communications struct {
 	forCharacter atomic.Bool
 	rows         []notificationRow
 	u            baseUI
+	updateRun    latestRun
 }
 
 func NewCommunicationsForCharacter(u baseUI) *Communications {
@@ -138,8 +139,13 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Communications) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.NavigationPane.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.NavigationPane.update()
 			a.NavigationPane.folderList.UnselectAll()
@@ -152,8 +158,21 @@ func (a *Communications) update(ctx context.Context) {
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.footerLabel.Text, a.NavigationPane.footerLabel.Importance = s, i
 			a.NavigationPane.footerLabel.Refresh()
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.NavigationPane.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.NavigationPane.errorLabel.Show()
+			a.NavigationPane.Refresh()
 		})
 	}
 
@@ -168,7 +187,7 @@ func (a *Communications) update(ctx context.Context) {
 		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
 		if err != nil {
 			reset()
-			setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			setError(err)
 			return
 		}
 		if !hasData {
@@ -180,11 +199,15 @@ func (a *Communications) update(ctx context.Context) {
 	rows, _, err := a.fetchRows(ctx, characterID)
 	if err != nil {
 		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.NavigationPane.errorLabel.Hide()
 		// keep the filter snapshot, so rows don't vanish from an active Unread/Read filter
 		snapshot := make(map[int64]bool, len(a.rows))
 		for _, r := range a.rows {
@@ -295,20 +318,24 @@ type communicationsNavigationPane struct {
 	folderList  *widget.List
 	folders     []notificationFolder
 	footerLabel *widget.Label
+	errorLabel  *widget.Label
 }
 
 func newCommunicationsNavigationPane(co *Communications) *communicationsNavigationPane {
 	a := &communicationsNavigationPane{
 		footerLabel: widget.NewLabel(""),
+		errorLabel:  ui.NewLabelWithWrapping(""),
 		co:          co,
 	}
 	a.ExtendBaseWidget(a)
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 	a.folderList = a.makeFolderList()
 	return a
 }
 
 func (a *communicationsNavigationPane) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(nil, a.footerLabel, nil, nil, a.folderList)
+	c := container.NewBorder(nil, container.NewVBox(a.errorLabel, a.footerLabel), nil, nil, a.folderList)
 	return widget.NewSimpleRenderer(c)
 }
 

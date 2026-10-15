@@ -56,6 +56,7 @@ type AssetBrowser struct {
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
 	u              baseUI
+	updateRun      latestRun
 }
 
 func NewCharacterBrowser(u baseUI) *AssetBrowser {
@@ -117,14 +118,21 @@ func (a *AssetBrowser) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AssetBrowser) Update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.Navigation.clear()
 			a.Selected.clear()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.Navigation.setFooter(s, i)
 		})
 	}
@@ -133,7 +141,14 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to update asset browser", "error", err)
-		setFooter(a.u.ErrorDisplay(err), widget.DangerImportance)
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.Navigation.clear() // also hides the error label
+			a.Selected.clear()
+			a.Navigation.setError(err)
+		})
 	}
 	el, err := a.u.EVEUniverse().ListLocations(ctx)
 	if err != nil {
@@ -194,9 +209,16 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 		at = asset.NewFromCharacterAssets(assets, el)
 	}
 	fyne.DoAndWait(func() {
+		if !isLatest() {
+			return
+		}
+		a.Navigation.errorLabel.Hide()
 		a.characterNames = names
 		a.at = at
 	})
+	if !isLatest() {
+		return
+	}
 	a.Navigation.update(ctx, at.Locations())
 }
 
@@ -276,19 +298,25 @@ type browserNavigation struct {
 	filterChip    *xwidget.FilterChipCompact
 	filteredTrees map[assetFilter]filteredTree
 	filterRun     latestRun
+	updateRun     latestRun
 	filters       []assetFilter
 	locations     *xwidget.Tree[containerNode]
 	searchEntry   *xwidget.SearchEntry
-	footer        *widget.Label
+	footerLabel   *widget.Label
+	errorLabel    *widget.Label
 }
 
 func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 	a := &browserNavigation{
 		b:             b,
 		filteredTrees: make(map[assetFilter]filteredTree),
-		footer:        ui.NewLabelWithWrapping(""),
+		footerLabel:   ui.NewLabelWithWrapping(""),
+		errorLabel:    ui.NewLabelWithWrapping(""),
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	a.searchEntry = xwidget.NewSearchEntry("Search locations", func(_ string) {
 		a.filterLocationsAsync()
@@ -358,7 +386,7 @@ func newBrowserNavigation(b *AssetBrowser) *browserNavigation {
 func (a *browserNavigation) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewBorder(
 		container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.collapseAll), a.searchEntry),
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.locations,
@@ -384,13 +412,19 @@ func (a *browserNavigation) resetFilters() {
 }
 
 func (a *browserNavigation) clear() {
+	// discard loads and filters still running, and assets of the previous owner
+	a.updateRun.start()
+	a.filterRun.start()
+	a.filteredTrees = make(map[assetFilter]filteredTree)
 	a.locations.Clear()
 	a.locations.UnselectAll()
-	a.footer.SetText("")
+	a.footerLabel.SetText("")
+	a.errorLabel.Hide()
 	a.searchEntry.ClearSilent()
 }
 
 func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
+	isLatest := a.updateRun.start()
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.b.forCorporation)
@@ -406,6 +440,9 @@ func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 		}
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.filteredTrees = filteredTrees
 		a.filterLocationsAsync()
 	})
@@ -735,9 +772,15 @@ func (a *browserNavigation) nodeLookup(n *asset.Node) (*containerNode, bool) {
 }
 
 func (a *browserNavigation) setFooter(s string, i widget.Importance) {
-	a.footer.Text = s
-	a.footer.Importance = i
-	a.footer.Refresh()
+	a.footerLabel.Text = s
+	a.footerLabel.Importance = i
+	a.footerLabel.Refresh()
+}
+
+func (a *browserNavigation) setError(err error) {
+	a.errorLabel.SetText("ERROR: " + a.b.u.ErrorDisplay(err))
+	a.errorLabel.Show()
+	a.Refresh()
 }
 
 func (a *browserNavigation) selectContainer(cn *containerNode) {

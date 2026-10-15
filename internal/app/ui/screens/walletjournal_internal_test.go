@@ -1,12 +1,14 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -92,5 +94,67 @@ func TestWalletJournal_Filter(t *testing.T) {
 		a := newWalletJournal(t, true)
 		a.searchEntry.SetText("escrow")
 		assert.ElementsMatch(t, []int64{2}, refIDs(a))
+	})
+}
+
+func TestWalletJournal_KeepsStatusWithoutCharacter(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewCharacterWalletJournal(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	var pending []func() // run background work later, like the real app
+	orig := runAsync
+	runAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { runAsync = orig })
+	a.filterRowsAsync("") // a filter still running from before
+
+	a.Update(t.Context())
+	for _, f := range pending {
+		f()
+	}
+
+	assert.Equal(t, "No character", a.footerLabel.Text)
+	assert.Empty(t, a.rowsFiltered)
+}
+
+func TestWalletJournal_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*WalletJournal, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewCharacterWalletJournal(u)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletJournal,
+		})
+		a.character.Store(c)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE character_wallet_journal_entries"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.Update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.filterRowsAsync("")
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.Update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }
