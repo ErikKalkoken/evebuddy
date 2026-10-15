@@ -1232,6 +1232,9 @@ func (a *mailsMessagePane) fetchRows(ctx context.Context, f *mailFolderNode) ([]
 type mailsReadingPane struct {
 	widget.BaseWidget
 
+	// OnCleared is called on the main thread when a shown or requested mail is cleared.
+	OnCleared func()
+
 	bodyLabel    *widget.Label
 	headerWidget *MailHeaderWidget
 	ma           *Mails
@@ -1360,7 +1363,7 @@ func (a *mailsReadingPane) makeToolbar() *widget.Toolbar {
 
 // showMail displays the mail of a row and discards results from earlier requests.
 func (a *mailsReadingPane) showMail(r mailRow) {
-	a.clear()
+	a.reset() // a replaced mail is not a cleared one
 	if r.characterID == 0 {
 		return
 	}
@@ -1381,12 +1384,16 @@ func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
 	return a.requested.characterID == characterID && a.requested.mailID == mailID
 }
 
-// IsEmpty reports whether no mail is shown or requested.
-func (a *mailsReadingPane) IsEmpty() bool {
-	return a.requested.mailID == 0
+// clear removes the mail and notifies OnCleared if one was shown or requested.
+func (a *mailsReadingPane) clear() {
+	hadMail := a.requested.mailID != 0
+	a.reset()
+	if hadMail && a.OnCleared != nil {
+		a.OnCleared()
+	}
 }
 
-func (a *mailsReadingPane) clear() {
+func (a *mailsReadingPane) reset() {
 	a.mail = nil
 	a.requested.characterID, a.requested.mailID = 0, 0
 	a.subjectLabel.SetText("")

@@ -98,7 +98,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
 					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
 						fyne.Do(func() {
-							if characterNav.Current() == readingPage { // may already be popped by OnUpdate
+							if characterNav.Current() == readingPage { // may already be popped by OnCleared
 								characterNav.Pop()
 							}
 						})
@@ -187,9 +187,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 		mailMenu.Items = u.characterMails.NavigationPane.MakeFolderMenu()
 		mailMenu.Refresh()
-
-		// Leave the reading page only when its mail is gone, never on other pages.
-		if readingPage != nil && characterNav.Current() == readingPage && u.characterMails.ReadingPane.IsEmpty() {
+	}
+	u.characterMails.ReadingPane.OnCleared = func() {
+		if readingPage != nil && characterNav.Current() == readingPage {
 			characterNav.Pop()
 		}
 	}
@@ -915,25 +915,32 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	}
 
 	unifiedMailMenu := fyne.NewMenu("")
+	var unifiedReadingPage *xwidget.AppBar
+	u.unifiedMails.ReadingPane.OnCleared = func() {
+		if unifiedReadingPage != nil && homeNav.Current() == unifiedReadingPage {
+			homeNav.Pop()
+		}
+	}
 	navItemUnifiedMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
 			u.unifiedMails.MessagePane.OnSelected = func() {
-				homeNav.PushAndHideNavBar(
-					xwidget.NewAppBar(
-						"Mail",
-						u.unifiedMails.ReadingPane,
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
-						xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
-							fyne.Do(func() {
+				unifiedReadingPage = xwidget.NewAppBar(
+					"Mail",
+					u.unifiedMails.ReadingPane,
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
+						fyne.Do(func() {
+							if homeNav.Current() == unifiedReadingPage { // may already be popped by OnCleared
 								homeNav.Pop()
-							})
-						})),
-					),
+							}
+						})
+					})),
 				)
+				homeNav.PushAndHideNavBar(unifiedReadingPage)
 			}
 			var compose *xwidget.Button
 			compose = xwidget.NewIconButton(theme.DocumentCreateIcon(), func() {

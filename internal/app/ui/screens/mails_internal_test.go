@@ -583,6 +583,8 @@ func TestUnifiedMails(t *testing.T) {
 		})
 		require.NotEqual(t, -1, idx)
 		p := f.a.ReadingPane
+		var cleared int
+		p.OnCleared = func() { cleared++ }
 		p.showMail(mp.rowsFiltered[idx])
 		require.NoError(t, f.st.DeleteCharacterMail(t.Context(), f.c2.ID, 42))
 
@@ -590,6 +592,7 @@ func TestUnifiedMails(t *testing.T) {
 
 		assert.Equal(t, []int64{f.c1.ID}, characterIDs(f.a))
 		assert.Zero(t, p.requested.mailID)
+		assert.Equal(t, 1, cleared)
 	})
 	t.Run("is refreshed when a mail is read in the character screen", func(t *testing.T) {
 		f := setup(t)
@@ -782,18 +785,34 @@ func TestMails_DownloadProgress(t *testing.T) {
 	})
 }
 
-func TestMailsReadingPane_IsEmpty(t *testing.T) {
+func TestMailsReadingPane_OnCleared(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	c := factory.CreateCharacterFull()
-	m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
-	a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
-	p := a.ReadingPane
-	assert.True(t, p.IsEmpty())
-
-	p.showMail(mailRow{characterID: c.ID, mailID: m.MailID})
-	assert.False(t, p.IsEmpty())
-
-	p.clear()
-	assert.True(t, p.IsEmpty())
+	m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	setup := func(t *testing.T) (*mailsReadingPane, *int) {
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		var cleared int
+		a.ReadingPane.OnCleared = func() { cleared++ }
+		return a.ReadingPane, &cleared
+	}
+	t.Run("fires when a shown mail is cleared", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.showMail(mailRow{characterID: c.ID, mailID: m1.MailID})
+		p.clear()
+		assert.Equal(t, 1, *cleared)
+	})
+	t.Run("does not fire when already empty", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.clear()
+		assert.Zero(t, *cleared)
+	})
+	t.Run("does not fire when another mail is shown", func(t *testing.T) {
+		p, cleared := setup(t)
+		p.showMail(mailRow{characterID: c.ID, mailID: m1.MailID})
+		p.showMail(mailRow{characterID: c.ID, mailID: m2.MailID})
+		assert.Zero(t, *cleared)
+		assert.Equal(t, m2.MailID, p.requested.mailID)
+	})
 }
