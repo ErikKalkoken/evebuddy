@@ -882,7 +882,7 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 		return nil, err
 	}
 	// Remove duplicate oo2 between the user's own characters
-	oo2 := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
+	oo2 := xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
 		return a.ContractID == b.ContractID &&
 			a.Type == b.Type &&
 			a.Issuer.ID == b.Issuer.ID &&

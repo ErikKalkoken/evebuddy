@@ -18,6 +18,19 @@ func Deduplicate[S ~[]E, E comparable](s S) []E {
 	return slices.Clip(s2)
 }
 
+// DeduplicateFunc is like [Deduplicate] but uses an equality function to compare elements.
+// It keeps the first occurrence of each element.
+func DeduplicateFunc[S ~[]E, E any](s S, eq func(a, b E) bool) []E {
+	s2 := make([]E, 0, len(s))
+	for _, v := range s {
+		if slices.ContainsFunc(s2, func(x E) bool { return eq(x, v) }) {
+			continue
+		}
+		s2 = append(s2, v)
+	}
+	return slices.Clip(s2)
+}
+
 // Filter returns a new slice containing the elements where applied function f returned true.
 func Filter[S ~[]E, E any](s S, f func(E) bool) []E {
 	s2 := make([]E, 0, len(s))
