@@ -140,6 +140,8 @@ func (cs ContractStatus) String() string {
 // ContractStatusActive defines which status is considered active.
 var ContractStatusActive = set.Of(ContractStatusOutstanding, ContractStatusInProgress)
 
+// IsFinished reports whether a contract has reached a final state that is kept after it drops out of ESI.
+// Reversed counts as finished here, although the UI shows it under ContractCategoryOther.
 func (cs ContractStatus) IsFinished() bool {
 	switch cs {
 	case
@@ -221,14 +223,6 @@ type CharacterContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CharacterContract) Category() ContractCategory {
-	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
-}
-
-func (cs CharacterContract) IsExpired() bool {
-	return contractIsExpired(cs.DateExpired)
-}
-
 func (cs CharacterContract) IssuerEffective() *EveEntity {
 	if cs.ForCorporation {
 		return cs.IssuerCorporation
@@ -290,14 +284,6 @@ type CorporationContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CorporationContract) Category() ContractCategory {
-	return contractCategory(cs.Status, cs.DateExpired, cs.DateAccepted, cs.DaysToComplete, time.Now())
-}
-
-func (cs CorporationContract) IsExpired() bool {
-	return contractIsExpired(cs.DateExpired)
-}
-
 func (cs CorporationContract) IssuerEffective() *EveEntity {
 	if cs.ForCorporation {
 		return cs.IssuerCorporation
@@ -327,34 +313,61 @@ type CorporationContractItem struct {
 	Type        *EveType
 }
 
-func contractCategory(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) ContractCategory {
+// ContractStateAt returns the category of a contract at the given time and
+// whether it has expired (outstanding only) or is overdue (in progress only).
+// A contract only requires attention when issuerIsMine is true for an expired contract
+// or acceptorIsMine is true for an overdue one.
+// Corporation roles (e.g. Contract Manager, Director) are not checked.
+func ContractStateAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) (category ContractCategory, isExpired, isOverdue bool) {
 	switch status {
 	case ContractStatusOutstanding:
-		if dateExpired.Before(now) {
-			return ContractCategoryRequiresAttention
+		isExpired = ContractIsExpiredAt(dateExpired, now)
+		switch {
+		case !isExpired:
+			category = ContractCategoryOutstanding
+		case issuerIsMine:
+			category = ContractCategoryRequiresAttention
+		default:
+			category = ContractCategoryOther
 		}
-		return ContractCategoryOutstanding
 	case ContractStatusInProgress:
-		accepted, ok1 := dateAccepted.Value()
-		days, ok2 := daysToComplete.Value()
-		if ok1 && ok2 && accepted.AddDate(0, 0, int(days)).Before(now) {
-			return ContractCategoryRequiresAttention // overdue
+		isOverdue = ContractIsOverdueAt(dateAccepted, daysToComplete, now)
+		if isOverdue && acceptorIsMine {
+			category = ContractCategoryRequiresAttention
+		} else {
+			category = ContractCategoryInProgress
 		}
-		return ContractCategoryInProgress
-	case ContractStatusFailed, ContractStatusRejected:
-		return ContractCategoryRequiresAttention
 	case
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
-		ContractStatusFinishedIssuer,
-		ContractStatusReversed:
-		return ContractCategoryFinished
+		ContractStatusFinishedIssuer:
+		category = ContractCategoryFinished
+	default:
+		category = ContractCategoryOther
 	}
-	return ContractCategoryOther
+	return category, isExpired, isOverdue
 }
 
-func contractIsExpired(expired time.Time) bool {
-	return expired.Before(time.Now())
+// ContractIsExpiredAt reports whether a contract has expired at the given time.
+func ContractIsExpiredAt(dateExpired, now time.Time) bool {
+	return dateExpired.Before(now)
+}
+
+// ContractDeliveryDeadline returns when an accepted contract must be completed.
+// It reports false when the contract has no such deadline.
+func ContractDeliveryDeadline(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (time.Time, bool) {
+	accepted, ok1 := dateAccepted.Value()
+	days, ok2 := daysToComplete.Value()
+	if !ok1 || !ok2 {
+		return time.Time{}, false
+	}
+	return accepted.AddDate(0, 0, int(days)), true
+}
+
+// ContractIsOverdueAt reports whether an accepted contract has passed its deadline at the given time.
+func ContractIsOverdueAt(dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], now time.Time) bool {
+	deadline, ok := ContractDeliveryDeadline(dateAccepted, daysToComplete)
+	return ok && deadline.Before(now)
 }
 func contractNameDisplay(ct ContractType, start, end optional.Optional[*EntityShort], volume optional.Optional[float64], items []string) string {
 	if ct == ContractTypeCourier {

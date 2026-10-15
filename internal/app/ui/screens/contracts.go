@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -77,127 +78,125 @@ func (f contractsFilter) match(r contractRow) bool {
 }
 
 type contractRow struct {
-	acceptor           optional.Optional[*app.EveEntity]
-	assignee           optional.Optional[*app.EveEntity]
-	assigneeName       string
-	availability       app.ContractAvailability
-	buyout             optional.Optional[float64]
-	category           app.ContractCategory
-	collateral         optional.Optional[float64]
-	contractID         int64
-	contractType       app.ContractType
-	dateAccepted       optional.Optional[time.Time]
-	dateCompleted      optional.Optional[time.Time]
-	dateExpired        time.Time
-	dateExpiredDisplay []widget.RichTextSegment
-	dateIssued         time.Time
-	daysToComplete     optional.Optional[int64]
-	endLocation        optional.Optional[*app.EveLocationShort]
-	isCorporation      bool
-	isExpired          bool // TODO: make dynamic
-	issuer             *app.EveEntity
-	issuerName         string
-	name               string
-	objectID           int64
-	ownerID            int64
-	ownerName          string
-	price              optional.Optional[float64]
-	reward             optional.Optional[float64]
-	searchTarget       string
-	startLocation      optional.Optional[*app.EveLocationShort]
-	status             app.ContractStatus
-	statusDisplay      []widget.RichTextSegment
-	statusText         string
-	tags               set.Set[string]
-	title              string
-	typeName           string
-	volume             optional.Optional[float64]
+	acceptor        optional.Optional[*app.EveEntity]
+	acceptorIsMine  bool // accepted by one of the user's characters
+	assignee        optional.Optional[*app.EveEntity]
+	assigneeName    string
+	availability    app.ContractAvailability
+	buyout          optional.Optional[float64]
+	category        app.ContractCategory
+	collateral      optional.Optional[float64]
+	contractID      int64
+	contractType    app.ContractType
+	dateAccepted    optional.Optional[time.Time]
+	dateCompleted   optional.Optional[time.Time]
+	dateExpired     time.Time
+	dateIssued      time.Time
+	daysToComplete  optional.Optional[int64]
+	endLocation     optional.Optional[*app.EveLocationShort]
+	isCorporation   bool
+	isExpired       bool
+	isOverdue       bool
+	deadline        optional.Optional[time.Time] // the deadline relevant for the current status
+	deadlineKind    contractDeadlineKind
+	timeLeftDisplay []widget.RichTextSegment
+	timeLeftText    string
+	issuer          *app.EveEntity
+	issuerIsMine    bool // issued by one of the user's characters
+	issuerName      string
+	name            string
+	objectID        int64
+	ownerID         int64
+	ownerName       string
+	price           optional.Optional[float64]
+	reward          optional.Optional[float64]
+	searchTarget    string
+	startLocation   optional.Optional[*app.EveLocationShort]
+	status          app.ContractStatus
+	statusDisplay   []widget.RichTextSegment
+	statusText      string
+	tags            set.Set[string]
+	title           string
+	typeName        string
+	volume          optional.Optional[float64]
 }
 
-func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string) contractRow {
+func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	category := o.Category()
-	return contractRow{
-		acceptor:           o.Acceptor,
-		assignee:           o.Assignee,
-		assigneeName:       assigneeName,
-		availability:       o.Availability,
-		buyout:             o.Buyout,
-		category:           category,
-		collateral:         o.Collateral,
-		contractID:         o.ContractID,
-		contractType:       o.Type,
-		dateAccepted:       o.DateAccepted,
-		dateCompleted:      o.DateCompleted,
-		dateExpired:        o.DateExpired,
-		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
-		dateIssued:         o.DateIssued,
-		daysToComplete:     o.DaysToComplete,
-		endLocation:        o.EndLocation,
-		isCorporation:      false,
-		isExpired:          o.IsExpired(),
-		issuer:             o.IssuerEffective(),
-		issuerName:         o.IssuerEffective().Name,
-		name:               o.NameDisplay(),
-		objectID:           o.ID,
-		ownerID:            o.CharacterID,
-		ownerName:          characterName(o.CharacterID),
-		price:              o.Price,
-		reward:             o.Reward,
-		searchTarget:       makeSearchTarget(o.Items, o.Title),
-		startLocation:      o.StartLocation,
-		status:             o.Status,
-		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         contractStatusText(o.Status, category),
-		title:              o.Title.ValueOrFallback("-"),
-		typeName:           o.Type.Display(),
-		volume:             o.Volume,
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		isCorporation:  false,
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        o.CharacterID,
+		ownerName:      characterName(o.CharacterID),
+		price:          o.Price,
+		reward:         o.Reward,
+		searchTarget:   makeSearchTarget(o.Items, o.Title),
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
 	}
+	r.init(o.IssuerEffective().ID, o.Acceptor, myCharacterIDs, myCorporationIDs, time.Now())
+	return r
 }
 
-func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation) contractRow {
+func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	category := o.Category()
-	return contractRow{
-		acceptor:           o.Acceptor,
-		assignee:           o.Assignee,
-		assigneeName:       assigneeName,
-		availability:       o.Availability,
-		buyout:             o.Buyout,
-		category:           category,
-		collateral:         o.Collateral,
-		contractID:         o.ContractID,
-		contractType:       o.Type,
-		dateAccepted:       o.DateAccepted,
-		dateCompleted:      o.DateCompleted,
-		dateExpired:        o.DateExpired,
-		dateExpiredDisplay: makeDateExpiredDisplay(o.IsExpired(), o.DateExpired),
-		dateIssued:         o.DateIssued,
-		daysToComplete:     o.DaysToComplete,
-		endLocation:        o.EndLocation,
-		isCorporation:      true,
-		isExpired:          o.IsExpired(),
-		issuer:             o.IssuerEffective(),
-		issuerName:         o.IssuerEffective().Name,
-		name:               o.NameDisplay(),
-		objectID:           o.ID,
-		ownerID:            corporation.ID,
-		ownerName:          corporation.NameOrZero(),
-		price:              o.Price,
-		reward:             o.Reward,
-		searchTarget:       makeSearchTarget(o.Items, o.Title),
-		startLocation:      o.StartLocation,
-		status:             o.Status,
-		statusDisplay:      makeContractStatusDisplay(o.Status, category),
-		statusText:         contractStatusText(o.Status, category),
-		title:              o.Title.ValueOrFallback("-"),
-		typeName:           o.Type.Display(),
-		volume:             o.Volume,
+	r := contractRow{
+		acceptor:       o.Acceptor,
+		assignee:       o.Assignee,
+		assigneeName:   assigneeName,
+		availability:   o.Availability,
+		buyout:         o.Buyout,
+		collateral:     o.Collateral,
+		contractID:     o.ContractID,
+		contractType:   o.Type,
+		dateAccepted:   o.DateAccepted,
+		dateCompleted:  o.DateCompleted,
+		dateExpired:    o.DateExpired,
+		dateIssued:     o.DateIssued,
+		daysToComplete: o.DaysToComplete,
+		endLocation:    o.EndLocation,
+		isCorporation:  true,
+		issuer:         o.IssuerEffective(),
+		issuerName:     o.IssuerEffective().Name,
+		name:           o.NameDisplay(),
+		objectID:       o.ID,
+		ownerID:        corporation.ID,
+		ownerName:      corporation.NameOrZero(),
+		price:          o.Price,
+		reward:         o.Reward,
+		searchTarget:   makeSearchTarget(o.Items, o.Title),
+		startLocation:  o.StartLocation,
+		status:         o.Status,
+		title:          o.Title.ValueOrFallback("-"),
+		typeName:       o.Type.Display(),
+		volume:         o.Volume,
 	}
+	r.init(o.IssuerEffective().ID, o.Acceptor, myCharacterIDs, myCorporationIDs, time.Now())
+	return r
 }
 
 func makeSearchTarget(items []string, title optional.Optional[string]) string {
@@ -211,42 +210,153 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 	return strings.Join(token, "~")
 }
 
-// contractStatusText returns the status and explains why it requires attention
-// when the status alone does not.
-func contractStatusText(status app.ContractStatus, category app.ContractCategory) string {
-	s := status.Display()
-	if category != app.ContractCategoryRequiresAttention {
-		return s
+// init sets the derived fields of a new row. It must be called once after the row is created.
+// Contracts issued or accepted for one of the user's corporations count as the user's.
+func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEntity], myCharacterIDs, myCorporationIDs set.Set[int64], now time.Time) {
+	myIDs := set.Union(myCharacterIDs, myCorporationIDs)
+	r.issuerIsMine = myIDs.Contains(issuerID)
+	r.acceptorIsMine = optional.Map(acceptor, false, func(v *app.EveEntity) bool {
+		return myIDs.Contains(v.ID)
+	})
+	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+	r.updateTimeDependent(now)
+}
+
+// updateTimeDependent recomputes the fields which change with time
+// and reports whether any of them changed.
+func (r *contractRow) updateTimeDependent(now time.Time) bool {
+	category, isExpired, isOverdue := app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
+	timeLeft, isPassed := contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
+	statusChanged := category != r.category || isExpired != r.isExpired || isOverdue != r.isOverdue
+	if !statusChanged && timeLeft == r.timeLeftText {
+		return false
 	}
-	switch status {
-	case app.ContractStatusOutstanding:
+	if statusChanged {
+		r.category = category
+		r.isExpired = isExpired
+		r.isOverdue = isOverdue
+		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
+		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
+	}
+	r.timeLeftText = timeLeft
+	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
+	return true
+}
+
+// contractsAttentionCount returns how many rows require attention.
+func contractsAttentionCount(rows []contractRow) int {
+	var n int
+	for _, r := range rows {
+		if r.category == app.ContractCategoryRequiresAttention {
+			n++
+		}
+	}
+	return n
+}
+
+// contractStatusText returns the status and notes when an open contract
+// has passed its deadline.
+func contractStatusText(status app.ContractStatus, isExpired, isOverdue bool) string {
+	s := status.Display()
+	switch {
+	case status == app.ContractStatusOutstanding && isExpired:
 		return s + " (expired)"
-	case app.ContractStatusInProgress:
+	case status == app.ContractStatusInProgress && isOverdue:
 		return s + " (overdue)"
 	}
 	return s
 }
 
-// makeContractStatusDisplay returns the status in the color of its category.
-func makeContractStatusDisplay(status app.ContractStatus, category app.ContractCategory) []widget.RichTextSegment {
-	return xwidget.RichTextSegmentsFromText(contractStatusText(status, category), widget.RichTextStyle{
+// makeContractStatusDisplay returns the status text in the color of its category.
+func makeContractStatusDisplay(text string, category app.ContractCategory) []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: category.Color(),
 	})
 }
 
-func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.RichTextSegment {
-	var text string
-	var color fyne.ThemeColorName
-	if isExpired {
-		text = "EXPIRED"
-		color = theme.ColorNameError
-	} else {
-		text = ihumanize.RelTime(dateExpired)
-		color = theme.ColorNameForeground
+// contractDeadlineKind is the kind of deadline relevant for a contract.
+type contractDeadlineKind uint8
+
+const (
+	contractDeadlineNone     contractDeadlineKind = iota
+	contractDeadlineExpiry                        // contract must be accepted before it expires
+	contractDeadlineDelivery                      // accepted contract must be completed in time
+)
+
+// label returns a short description of the deadline.
+func (k contractDeadlineKind) label() string {
+	switch k {
+	case contractDeadlineExpiry:
+		return "Expires"
+	case contractDeadlineDelivery:
+		return "Due"
+	}
+	return ""
+}
+
+// passedText returns the text to show once the deadline has passed.
+func (k contractDeadlineKind) passedText() string {
+	switch k {
+	case contractDeadlineExpiry:
+		return "EXPIRED"
+	case contractDeadlineDelivery:
+		return "OVERDUE"
+	}
+	return ""
+}
+
+// contractDeadline returns the deadline relevant for a status and its kind:
+// the expiry for outstanding contracts and the delivery deadline for accepted couriers.
+// Closed contracts have no deadline. The expiry no longer applies once a contract is accepted.
+func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (optional.Optional[time.Time], contractDeadlineKind) {
+	switch status {
+	case app.ContractStatusOutstanding:
+		return optional.New(dateExpired), contractDeadlineExpiry
+	case app.ContractStatusInProgress:
+		if v, ok := app.ContractDeliveryDeadline(dateAccepted, daysToComplete); ok {
+			return optional.New(v), contractDeadlineDelivery
+		}
+	}
+	return optional.Optional[time.Time]{}, contractDeadlineNone
+}
+
+// contractTimeLeftText returns the time left until the deadline
+// or the passed text when it is over. It also reports whether the deadline has passed.
+func contractTimeLeftText(deadline optional.Optional[time.Time], passed string, now time.Time) (string, bool) {
+	v, ok := deadline.Value()
+	if !ok {
+		return "", false
+	}
+	if v.Before(now) {
+		return passed, true
+	}
+	return ihumanize.Duration(v.Sub(now)), false
+}
+
+// makeTimeLeftDisplay returns the time left text, in red when the deadline has passed.
+func makeTimeLeftDisplay(text string, isPassed bool) []widget.RichTextSegment {
+	if !isPassed {
+		return xwidget.RichTextSegmentsFromText(text)
 	}
 	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-		ColorName: color,
+		ColorName: theme.ColorNameError,
 	})
+}
+
+// compareContractDeadlines compares two deadlines.
+// Missing deadlines sort last in ascending order (and first in descending order).
+func compareContractDeadlines(a, b optional.Optional[time.Time]) int {
+	x, okA := a.Value()
+	y, okB := b.Value()
+	switch {
+	case !okA && !okB:
+		return 0
+	case !okA:
+		return 1
+	case !okB:
+		return -1
+	}
+	return x.Compare(y)
 }
 
 // Contracts is a UI element for showing Contracts.
@@ -254,14 +364,18 @@ func makeDateExpiredDisplay(isExpired bool, dateExpired time.Time) []widget.Rich
 type Contracts struct {
 	widget.BaseWidget
 
-	OnUpdate func(open int)
+	OnUpdate func(attention int)
+
+	attentionCount int // last count reported to OnUpdate
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
-	footer         *widget.Label
+	updateRun      latestRun
+	footerLabel    *widget.Label
+	errorLabel     *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []contractRow
 	rowsFiltered   []contractRow
@@ -342,10 +456,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		Label: "Time Left",
 		Width: 100,
 		Sort: func(a, b contractRow) int {
-			return a.dateExpired.Compare(b.dateExpired)
+			return compareContractDeadlines(a.deadline, b.deadline)
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).Set(r.dateExpiredDisplay)
+			co.(*xwidget.RichText).Set(r.timeLeftDisplay)
 		},
 	}, {
 		Label: "Description",
@@ -360,10 +474,14 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	a := &Contracts{
 		forCorporation: forCorporation,
 		columnSorter:   xwidget.NewColumnSorter(columns, "Date Issued", xwidget.SortDesc),
-		footer:         ui.NewLabelWithTruncation(""),
+		footerLabel:    ui.NewLabelWithTruncation(""),
+		errorLabel:     ui.NewLabelWithTruncation(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
@@ -428,10 +546,6 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 	})
 
 	// Signals
-	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
-		a.update(ctx)
-	})
-
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
@@ -456,7 +570,17 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			}
 			a.update(ctx)
 		})
+		// Which contracts require attention depends on the user's characters.
+		a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+			a.update(ctx)
+		})
+		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+			a.update(ctx)
+		})
 	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterContracts {
 				a.update(ctx)
@@ -472,6 +596,15 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.update(ctx)
 		})
 	}
+	// Which contracts require attention depends on the corporations of the user's characters.
+	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(func() {
+			a.refreshTimeDependent(time.Now())
+		})
+	})
 	return a
 }
 
@@ -497,7 +630,7 @@ func (a *Contracts) CreateRenderer() fyne.WidgetRenderer {
 
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.body,
@@ -568,10 +701,14 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 			}
 			main[3].(*widget.Label).SetText(assignee)
 
-			main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
-				xwidget.RichTextSegmentsFromText("Expires "),
-				r.dateExpiredDisplay,
-			))
+			if r.deadlineKind == contractDeadlineNone {
+				main[4].(*xwidget.RichText).Set(xwidget.RichTextSegmentsFromText(""))
+			} else {
+				main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
+					xwidget.RichTextSegmentsFromText(r.deadlineKind.label()+" "),
+					r.timeLeftDisplay,
+				))
+			}
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -627,9 +764,9 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
 					xwidget.NewFilterOptionMultiChoice(contractsFilterType, typeOptions),
@@ -653,6 +790,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 }
 
 func (a *Contracts) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
@@ -666,25 +804,51 @@ func (a *Contracts) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
-	var openCount int
-	for _, r := range rows {
-		if r.category.IsOpen() {
-			openCount++
-		}
-	}
+	attentionCount := contractsAttentionCount(rows)
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
+		a.attentionCount = attentionCount
 		if a.OnUpdate != nil {
-			a.OnUpdate(openCount)
+			a.OnUpdate(attentionCount)
 		}
 	})
+}
+
+// refreshTimeDependent updates the time dependent fields of all rows,
+// so that list and badge stay current without new data. Must run on the main thread.
+func (a *Contracts) refreshTimeDependent(now time.Time) {
+	var changed bool
+	for i := range a.rows {
+		if a.rows[i].updateTimeDependent(now) {
+			changed = true
+		}
+	}
+	if !changed {
+		return
+	}
+	a.filterRowsAsync("")
+	n := contractsAttentionCount(a.rows)
+	if n == a.attentionCount {
+		return
+	}
+	a.attentionCount = n
+	if a.OnUpdate != nil {
+		a.OnUpdate(n)
+	}
 }
 
 func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, error) {
@@ -696,9 +860,17 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	if err != nil {
 		return nil, err
 	}
+	myCharacterIDs, err := a.u.Character().ListCharacterIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	myCorporationIDs, err := a.u.Character().ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []contractRow
 	for _, c := range oo {
-		r := newContractRowForCorporation(c, corporation)
+		r := newContractRowForCorporation(c, corporation, myCharacterIDs, myCorporationIDs)
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -710,7 +882,7 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 		return nil, err
 	}
 	// Remove duplicate oo2 between the user's own characters
-	oo2 := slices.CompactFunc(oo, func(a, b *app.CharacterContract) bool {
+	oo2 := xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
 		return a.ContractID == b.ContractID &&
 			a.Type == b.Type &&
 			a.Issuer.ID == b.Issuer.ID &&
@@ -721,12 +893,17 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	if err != nil {
 		return nil, err
 	}
+	myCharacterIDs := set.Collect(maps.Keys(characters))
+	myCorporationIDs, err := a.u.Character().ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []contractRow
 	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
 			return characters[id]
-		})
+		}, myCharacterIDs, myCorporationIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)

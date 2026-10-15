@@ -2,6 +2,7 @@ package xslices_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,6 +57,29 @@ func TestDeduplicate(t *testing.T) {
 		got := xslices.Deduplicate(s)
 		want := []string{}
 		assert.ElementsMatch(t, want, got)
+	})
+}
+
+func TestDeduplicateFunc(t *testing.T) {
+	eq := func(a, b string) bool {
+		return strings.EqualFold(a, b)
+	}
+	t.Run("can remove duplicate elements which are not adjacent", func(t *testing.T) {
+		s := []string{"b", "a", "B"}
+		got := xslices.DeduplicateFunc(s, eq)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can process slices with no duplicates", func(t *testing.T) {
+		s := []string{"b", "a"}
+		got := xslices.DeduplicateFunc(s, eq)
+		want := []string{"b", "a"}
+		assert.Equal(t, want, got)
+	})
+	t.Run("can process empty slice", func(t *testing.T) {
+		s := []string{}
+		got := xslices.DeduplicateFunc(s, eq)
+		assert.Empty(t, got)
 	})
 }
 

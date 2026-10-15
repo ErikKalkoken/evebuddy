@@ -36,6 +36,7 @@ type Members struct {
 
 	corporation  atomic.Pointer[app.Corporation]
 	filterRun    latestRun
+	updateRun    latestRun
 	footer       *widget.Label
 	list         *widget.List
 	rows         []memberRow
@@ -74,6 +75,13 @@ func NewMembers(s baseUI) *Members {
 		if arg.Section != app.SectionCorporationMembers {
 			return
 		}
+		a.update(ctx)
+	})
+	// Which members are owned depends on the user's characters.
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 	})
 	return a
@@ -148,8 +156,12 @@ func (a *Members) filterRowsAsync() {
 }
 
 func (a *Members) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
 			a.searchEntry.SetText("")
@@ -158,6 +170,9 @@ func (a *Members) update(ctx context.Context) {
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text, a.footer.Importance = s, i
 			a.footer.Refresh()
 		})
@@ -188,6 +203,9 @@ func (a *Members) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.rows = rows
 		a.filterRowsAsync()
 	})

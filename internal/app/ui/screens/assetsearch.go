@@ -470,10 +470,6 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	})
 
 	// Signals
-	a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
-		a.update(ctx)
-	})
-
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
@@ -506,6 +502,9 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			a.update(ctx)
 		})
 	} else {
+		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
+			a.update(ctx)
+		})
 		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 			if arg.Section == app.SectionCharacterAssets {
 				a.update(ctx)
