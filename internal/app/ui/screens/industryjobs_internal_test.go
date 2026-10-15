@@ -294,3 +294,90 @@ func TestIndustryJobs_ErrorDisplay(t *testing.T) {
 		assert.False(t, a.errorLabel.Visible())
 	})
 }
+
+func TestIndustryJobsReadyCount(t *testing.T) {
+	past := time.Now().Add(-time.Hour)
+	future := time.Now().Add(time.Hour)
+	cases := []struct {
+		name string
+		row  industryJobRow
+		want int
+	}{
+		{"ready", industryJobRow{status: app.JobReady, isInstallerMe: true}, 1},
+		{"active and finished", industryJobRow{status: app.JobActive, endDate: past, isInstallerMe: true}, 1},
+		{"active with time left", industryJobRow{status: app.JobActive, endDate: future, isInstallerMe: true}, 0},
+		{"ready but installed by others", industryJobRow{status: app.JobReady}, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, industryJobsReadyCount([]industryJobRow{tc.row}))
+		})
+	}
+}
+
+func TestIndustryJobs_RefreshTimeDependent(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newIndustryJobs := func(t *testing.T) (*IndustryJobs, *[]int) {
+		a := NewJobsForOverview(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		rows := []industryJobRow{
+			{jobID: 1, activity: app.Manufacturing, isInstallerMe: true, status: app.JobActive, endDate: time.Now().Add(time.Hour)},
+			{jobID: 2, activity: app.Manufacturing, isInstallerMe: true, status: app.JobActive, endDate: time.Now().Add(time.Hour)},
+		}
+		a.rows = rows
+		a.readyCount = industryJobsReadyCount(rows)
+		a.readyCountAll = industryJobsReadyCountAll(rows)
+		a.selectStatus.SetSelected(industryStatusInProgress)
+		var calls []int
+		a.OnUpdate = func(count int) {
+			calls = append(calls, count)
+		}
+		return a, &calls
+	}
+	t.Run("updates badge and filter when a job finished", func(t *testing.T) {
+		a, calls := newIndustryJobs(t)
+		require.Len(t, a.rowsFiltered, 2)
+		a.rows[0].endDate = time.Now().Add(-time.Second) // finished since the last update
+
+		a.refreshTimeDependent()
+
+		assert.Equal(t, []int{1}, *calls)
+		assert.ElementsMatch(t, []int64{2}, xslices.Map(a.rowsFiltered, func(r industryJobRow) int64 {
+			return r.jobID
+		}))
+	})
+	t.Run("does not report unchanged count", func(t *testing.T) {
+		a, calls := newIndustryJobs(t)
+
+		a.refreshTimeDependent()
+
+		assert.Empty(t, *calls)
+	})
+}
+
+func TestIndustryJobs_UpdateCountsFinishedJobsAsReady(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	ec := factory.CreateEveCharacter()
+	character := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+	factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+		CharacterID: character.ID,
+		EndDate:     time.Now().Add(-time.Hour), // finished, but not yet reported as ready
+		Status:      app.JobActive,
+	})
+	a := NewJobsForOverview(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	var got int
+	a.OnUpdate = func(count int) {
+		got = count
+	}
+
+	a.update(t.Context())
+
+	assert.Equal(t, 1, got)
+}

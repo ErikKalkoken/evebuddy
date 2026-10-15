@@ -184,10 +184,35 @@ func (r industryJobRow) statusDisplay() []widget.RichTextSegment {
 	})
 }
 
+// industryJobsReadyCount returns the number of ready jobs installed by the user's characters.
+func industryJobsReadyCount(rows []industryJobRow) int {
+	var n int
+	for _, r := range rows {
+		if r.isInstallerMe && r.statusCalculated() == app.JobReady {
+			n++
+		}
+	}
+	return n
+}
+
+// industryJobsReadyCountAll returns the number of ready jobs of all installers.
+func industryJobsReadyCountAll(rows []industryJobRow) int {
+	var n int
+	for _, r := range rows {
+		if r.statusCalculated() == app.JobReady {
+			n++
+		}
+	}
+	return n
+}
+
 type IndustryJobs struct {
 	widget.BaseWidget
 
 	OnUpdate func(count int)
+
+	readyCount    int // last count reported to OnUpdate
+	readyCountAll int // ready jobs of all installers, to detect finished jobs
 
 	body            fyne.CanvasObject
 	filterChip      *xwidget.FilterChipCompact // only on mobile
@@ -449,9 +474,7 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		})
 	}
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(func() {
-			a.body.Refresh()
-		})
+		fyne.Do(a.refreshTimeDependent)
 	})
 	return a
 }
@@ -713,12 +736,8 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		})
 		return
 	}
-	var readyCount int
-	for _, j := range jobs {
-		if j.status == app.JobReady && j.isInstallerMe {
-			readyCount++
-		}
-	}
+	readyCount := industryJobsReadyCount(jobs)
+	readyCountAll := industryJobsReadyCountAll(jobs)
 	fyne.Do(func() {
 		if !isLatest() {
 			return
@@ -726,10 +745,31 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		a.errorLabel.Hide()
 		a.rows = jobs
 		a.filterRowsAsync("")
+		a.readyCount = readyCount
+		a.readyCountAll = readyCountAll
 		if a.OnUpdate != nil {
 			a.OnUpdate(readyCount)
 		}
 	})
+}
+
+// refreshTimeDependent updates list, filter and badge for jobs that finished since the last update.
+// Must run on the main thread.
+func (a *IndustryJobs) refreshTimeDependent() {
+	if n := industryJobsReadyCountAll(a.rows); n != a.readyCountAll {
+		a.readyCountAll = n
+		a.filterRowsAsync("") // a job finished, so status filters may change
+	} else {
+		a.body.Refresh() // remaining time
+	}
+	n := industryJobsReadyCount(a.rows)
+	if n == a.readyCount {
+		return
+	}
+	a.readyCount = n
+	if a.OnUpdate != nil {
+		a.OnUpdate(n)
+	}
 }
 
 func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow, error) {
