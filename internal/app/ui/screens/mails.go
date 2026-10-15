@@ -203,13 +203,14 @@ func (a *Mails) update(ctx context.Context) {
 	a.NavigationPane.downloadedRun.start()
 	a.bodiesComplete.Store(false)
 	clearAll := func() {
+		// stored now, not queued, so a newer update's counts are not overwritten
+		a.unreadCount.Store(0)
+		a.missingPercent.Store(0)
 		fyne.Do(func() {
 			a.NavigationPane.clear()
 			a.MessagePane.currentFolder.Store(nil)
 			a.MessagePane.clear()
 			a.ReadingPane.clear()
-			a.unreadCount.Store(0) // so a later OnUpdate does not report the previous character
-			a.missingPercent.Store(0)
 			a.callOnUpdate()
 		})
 	}
