@@ -381,6 +381,7 @@ type Contracts struct {
 	corporation    atomic.Pointer[app.Corporation]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
+	updateRun      latestRun
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
@@ -793,6 +794,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 }
 
 func (a *Contracts) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
@@ -806,6 +808,9 @@ func (a *Contracts) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh contracts UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -814,6 +819,9 @@ func (a *Contracts) update(ctx context.Context) {
 	}
 	attentionCount := contractsAttentionCount(rows)
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

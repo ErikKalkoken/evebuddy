@@ -192,6 +192,7 @@ type IndustryJobs struct {
 	body            fyne.CanvasObject
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
+	updateRun       latestRun
 	footer          *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
@@ -684,6 +685,7 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 }
 
 func (a *IndustryJobs) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {
@@ -697,6 +699,9 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
 			a.footer.Importance = widget.DangerImportance
 			a.footer.Refresh()
@@ -710,6 +715,9 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		}
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.rows = jobs
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
