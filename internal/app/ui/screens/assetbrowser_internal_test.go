@@ -1331,3 +1331,40 @@ func TestAssetBrowser_FilterLocationType(t *testing.T) {
 		})
 	}
 }
+
+func TestAssetBrowser_ClearDiscardsPreviousAssets(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const alphaID = 60000001
+	item := createCharacterAsset(assetParams{Quantity: 1, LocationID: alphaID})
+	locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{item}, locations)
+	newBrowser := func(t *testing.T) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	t.Run("filtering after clear does not restore previous assets", func(t *testing.T) {
+		a := newBrowser(t)
+		a.Navigation.searchEntry.SetText("alpha") // shows a filtered copy, so the cached tree survives clear
+		a.Navigation.filterLocationsAsync()
+		a.Navigation.clear()
+
+		a.Navigation.filterLocationsAsync()
+
+		assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil))
+	})
+	t.Run("clear discards running loads and filters", func(t *testing.T) {
+		a := newBrowser(t)
+		isUpdateLatest := a.Navigation.updateRun.start()
+		isFilterLatest := a.Navigation.filterRun.start()
+
+		a.Navigation.clear()
+
+		assert.False(t, isUpdateLatest())
+		assert.False(t, isFilterLatest())
+	})
+}
