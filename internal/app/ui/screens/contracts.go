@@ -156,10 +156,7 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
-	r.setDeadline()
-	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
-	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
-	r.updateTimeDependent(time.Now())
+	r.init(o.Issuer.ID, o.Acceptor, myCharacterIDs, time.Now())
 	return r
 }
 
@@ -198,10 +195,7 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
-	r.setDeadline()
-	r.issuerIsMine = myCharacterIDs.Contains(o.Issuer.ID)
-	r.acceptorIsMine = isMyEntity(o.Acceptor, myCharacterIDs)
-	r.updateTimeDependent(time.Now())
+	r.init(o.Issuer.ID, o.Acceptor, myCharacterIDs, time.Now())
 	return r
 }
 
@@ -216,16 +210,14 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 	return strings.Join(token, "~")
 }
 
-// isMyEntity reports whether an entity is one of the user's characters.
-func isMyEntity(o optional.Optional[*app.EveEntity], myCharacterIDs set.Set[int64]) bool {
-	v, ok := o.Value()
-	return ok && myCharacterIDs.Contains(v.ID)
-}
-
-// setDeadline sets the deadline relevant for the status of the contract.
-// It must be called once after the row is created.
-func (r *contractRow) setDeadline() {
+// init sets the derived fields of a new row. It must be called once after the row is created.
+func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEntity], myCharacterIDs set.Set[int64], now time.Time) {
+	r.issuerIsMine = myCharacterIDs.Contains(issuerID)
+	r.acceptorIsMine = optional.Map(acceptor, false, func(v *app.EveEntity) bool {
+		return myCharacterIDs.Contains(v.ID)
+	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+	r.updateTimeDependent(now)
 }
 
 // updateTimeDependent recomputes the fields which change with time
@@ -244,6 +236,9 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 		r.isExpired = isExpired
 		r.isOverdue = isOverdue
 		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
+		r.statusDisplay = xwidget.RichTextSegmentsFromText(r.statusText, widget.RichTextStyle{
+			ColorName: category.Color(),
+		})
 		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
 	}
 	r.timeLeftText = timeLeft
@@ -352,7 +347,8 @@ func makeTimeLeftDisplay(text string, isPassed bool) []widget.RichTextSegment {
 	})
 }
 
-// compareContractDeadlines compares two deadlines. Missing deadlines sort last.
+// compareContractDeadlines compares two deadlines.
+// Missing deadlines sort last in ascending order (and first in descending order).
 func compareContractDeadlines(a, b optional.Optional[time.Time]) int {
 	x, okA := a.Value()
 	y, okB := b.Value()

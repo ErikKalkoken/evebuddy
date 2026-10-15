@@ -258,12 +258,22 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 	})
 }
 
+// Test values for rows created with init.
+const (
+	myID    = 1 // one of the user's characters
+	otherID = 2 // someone else
+)
+
+var (
+	myIDs      = set.Of[int64](myID)
+	noAcceptor = optional.Optional[*app.EveEntity]{}
+)
+
 func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	now := time.Now()
 	t.Run("outstanding becomes expired", func(t *testing.T) {
-		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
-		r.setDeadline()
-		assert.True(t, r.updateTimeDependent(now))
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		r.init(myID, noAcceptor, myIDs, now)
 		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
 		assert.False(t, r.isExpired)
 		assert.False(t, r.updateTimeDependent(now))
@@ -275,13 +285,11 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	t.Run("in progress becomes overdue", func(t *testing.T) {
 		r := contractRow{
 			status:         app.ContractStatusInProgress,
-			acceptorIsMine: true,
 			dateAccepted:   optional.New(now),
 			dateExpired:    now.Add(time.Hour),
 			daysToComplete: optional.New[int64](3),
 		}
-		r.setDeadline()
-		r.updateTimeDependent(now)
+		r.init(otherID, optional.New(&app.EveEntity{ID: myID}), myIDs, now)
 		assert.Equal(t, app.ContractCategoryInProgress, r.category)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
@@ -290,9 +298,8 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
 	})
 	t.Run("time left changes with time", func(t *testing.T) {
-		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour), issuerIsMine: true}
-		r.setDeadline()
-		r.updateTimeDependent(now)
+		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour)}
+		r.init(myID, noAcceptor, myIDs, now)
 		assert.Equal(t, "3h 0m", r.timeLeftText)
 		assert.False(t, r.updateTimeDependent(now.Add(10*time.Second)), "no change within a minute")
 		assert.True(t, r.updateTimeDependent(now.Add(5*time.Minute)))
@@ -301,8 +308,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	})
 	t.Run("expired contract of others does not require attention", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
-		r.setDeadline()
-		r.updateTimeDependent(now)
+		r.init(otherID, noAcceptor, myIDs, now)
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
 		assert.Equal(t, app.ContractCategoryOther, r.category)
 		assert.Equal(t, "Outstanding (expired)", r.statusText)
@@ -314,8 +320,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 			dateExpired:    now.Add(time.Hour),
 			daysToComplete: optional.New[int64](3),
 		}
-		r.setDeadline()
-		r.updateTimeDependent(now)
+		r.init(myID, optional.New(&app.EveEntity{ID: otherID}), myIDs, now)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		assert.Equal(t, app.ContractCategoryInProgress, r.category)
 		assert.Equal(t, "In Progress (overdue)", r.statusText)
@@ -327,12 +332,11 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 	defer db.Close()
 	now := time.Now()
 	rows := []contractRow{
-		{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true},
-		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2), issuerIsMine: true},
+		{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)},
+		{contractID: 2, status: app.ContractStatusOutstanding, dateExpired: now.AddDate(0, 0, 2)},
 	}
 	for i := range rows {
-		rows[i].setDeadline()
-		rows[i].updateTimeDependent(now)
+		rows[i].init(myID, noAcceptor, myIDs, now)
 	}
 	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
 		App:     test.NewTempApp(t),
@@ -505,9 +509,8 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		defer db.Close()
 		a := newContracts(t, st)
 		now := time.Now()
-		r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
-		r.setDeadline()
-		r.updateTimeDependent(now)
+		r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
+		r.init(myID, noAcceptor, myIDs, now)
 		a.rows = []contractRow{r}
 		a.filterRowsAsync("")
 		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
