@@ -307,7 +307,7 @@ func (k contractDeadlineKind) passedText() string {
 
 // contractDeadline returns the deadline relevant for a status and its kind:
 // the expiry for outstanding contracts and the delivery deadline for accepted couriers.
-// Finished and other closed contracts have no deadline.
+// Closed contracts have no deadline. The expiry no longer applies once a contract is accepted.
 func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64]) (optional.Optional[time.Time], contractDeadlineKind) {
 	switch status {
 	case app.ContractStatusOutstanding:
@@ -316,7 +316,6 @@ func contractDeadline(status app.ContractStatus, dateExpired time.Time, dateAcce
 		if v, ok := app.ContractDeliveryDeadline(dateAccepted, daysToComplete); ok {
 			return optional.New(v), contractDeadlineDelivery
 		}
-		return optional.New(dateExpired), contractDeadlineExpiry
 	}
 	return optional.Optional[time.Time]{}, contractDeadlineNone
 }

@@ -439,7 +439,7 @@ func TestContractDeadline(t *testing.T) {
 	}{
 		{"outstanding", app.ContractStatusOutstanding, none, days, optional.New(expired), contractDeadlineExpiry},
 		{"in progress courier", app.ContractStatusInProgress, accepted, days, optional.New(accepted.MustValue().AddDate(0, 0, 1)), contractDeadlineDelivery},
-		{"in progress without delivery data", app.ContractStatusInProgress, none, noDays, optional.New(expired), contractDeadlineExpiry},
+		{"in progress without delivery data", app.ContractStatusInProgress, none, noDays, none, contractDeadlineNone},
 		{"finished", app.ContractStatusFinished, accepted, days, none, contractDeadlineNone},
 		{"failed", app.ContractStatusFailed, accepted, days, none, contractDeadlineNone},
 	} {
