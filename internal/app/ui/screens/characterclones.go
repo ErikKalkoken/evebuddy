@@ -53,8 +53,10 @@ type CharacterClones struct {
 	cloneTree   *xwidget.Tree[characterCloneNode]
 	errorLabel  *widget.Label
 	footerLabel *widget.Label
+	topRun      latestRun
 	topText     *xwidget.RichText
 	u           baseUI
+	updateRun   latestRun
 }
 
 func NewCharacterClones(u baseUI) *CharacterClones {
@@ -120,16 +122,18 @@ func (a *CharacterClones) makeTree() *xwidget.Tree[characterCloneNode] {
 }
 
 func (a *CharacterClones) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		fyne.Do(func() {
-			a.topText.SetWithText("No character", widget.RichTextStyle{
-				ColorName: theme.ColorNameDisabled,
-			})
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.Hide()
 			a.footerLabel.SetText("")
 			a.cloneTree.Clear()
 		})
+		a.refreshTop(ctx)
 		return
 	}
 
@@ -140,6 +144,9 @@ func (a *CharacterClones) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -149,6 +156,9 @@ func (a *CharacterClones) update(ctx context.Context) {
 
 	footer := fmt.Sprintf("%s clones", ihumanize.Comma(td.ChildrenCount(nil)))
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.footerLabel.SetText(footer)
 		a.cloneTree.Set(td)
@@ -205,8 +215,12 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xw
 }
 
 func (a *CharacterClones) refreshTop(ctx context.Context) {
+	isLatest := a.topRun.start()
 	setTop := func(text string, color fyne.ThemeColorName) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			ts := &widget.TextSegment{
 				Text: text,
 				Style: widget.RichTextStyle{
@@ -217,22 +231,31 @@ func (a *CharacterClones) refreshTop(ctx context.Context) {
 		})
 	}
 
-	c := a.character.Load()
-	if c == nil {
+	characterID := a.character.Load().IDOrZero()
+	if characterID == 0 {
 		setTop("No character", theme.ColorNameDisabled)
 		return
 	}
-	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterJumpClones)
-	if err != nil {
+	reportError := func(err error) {
 		if ctx.Err() != nil {
 			return
 		}
-		slog.Error("Failed to refresh jump clones header", "characterID", c.ID, "error", err)
+		slog.Error("Failed to refresh jump clones header", "characterID", characterID, "error", err)
 		setTop("ERROR: "+a.u.ErrorDisplay(err), theme.ColorNameError)
+	}
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterJumpClones)
+	if err != nil {
+		reportError(err)
 		return
 	}
 	if !hasData {
 		setTop("Waiting for character data to be loaded...", theme.ColorNameWarning)
+		return
+	}
+	// reload for current jump times; the stored character is not refreshed on jumps
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
+	if err != nil {
+		reportError(err)
 		return
 	}
 
@@ -258,6 +281,9 @@ func (a *CharacterClones) refreshTop(ctx context.Context) {
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		style := widget.RichTextStyle{
 			ColorName: theme.ColorNameForeground,
 		}

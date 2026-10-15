@@ -2,6 +2,7 @@ package screens
 
 import (
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCharacterClones_Update(t *testing.T) {
@@ -63,5 +65,42 @@ func TestCharacterClones_Update(t *testing.T) {
 		a.refreshTop(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.topText.String(), "Next available jump:")
+	})
+}
+
+func TestCharacterClones_RefreshTop(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newClones := func(t *testing.T) *CharacterClones {
+		return NewCharacterClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+	}
+	t.Run("shows jump available once cooldown is over", func(t *testing.T) {
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			LastCloneJumpAt: optional.New(time.Now().Add(-48 * time.Hour)),
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterJumpClones,
+		})
+		stale := *c
+		stale.NextCloneJump = optional.New(time.Now().Add(time.Hour)) // computed before the cooldown ended
+		a := newClones(t)
+		a.character.Store(&stale)
+
+		a.refreshTop(t.Context())
+
+		assert.Contains(t, a.topText.String(), "Next available jump: NOW")
+	})
+	t.Run("shows no character", func(t *testing.T) {
+		a := newClones(t)
+		a.footerLabel.SetText("2 clones")
+
+		a.update(t.Context())
+
+		assert.Equal(t, "No character", a.topText.String())
+		assert.Equal(t, "", a.footerLabel.Text)
 	})
 }
