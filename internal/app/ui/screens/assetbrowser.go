@@ -145,6 +145,8 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.Navigation.clear() // also hides the error label
+			a.Selected.clear()
 			a.Navigation.setError(err)
 		})
 	}
