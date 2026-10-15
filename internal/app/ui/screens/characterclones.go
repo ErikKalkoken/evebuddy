@@ -161,10 +161,13 @@ func (a *CharacterClones) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.footerLabel.SetText("")
+			a.cloneTree.Clear()
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
 		})
+		a.loadJumpInfo(ctx)
 		return
 	}
 

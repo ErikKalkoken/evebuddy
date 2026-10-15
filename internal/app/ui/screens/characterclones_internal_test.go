@@ -50,7 +50,7 @@ func TestCharacterClones_Update(t *testing.T) {
 
 		assert.False(t, a.errorLabel.Visible())
 	})
-	t.Run("shows error when update fails and keeps it on refresh", func(t *testing.T) {
+	t.Run("shows error and clears clones when update fails", func(t *testing.T) {
 		a := newClones(t)
 		a.update(t.Context())
 		if _, err := db.Exec("DROP TABLE character_jump_clone_implants"); err != nil { // let the next update fail
@@ -60,7 +60,8 @@ func TestCharacterClones_Update(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
-		assert.Equal(t, "2 clones", a.footerLabel.Text, "keeps last count")
+		assert.Equal(t, "", a.footerLabel.Text)
+		assert.Equal(t, 0, a.cloneTree.Data().ChildrenCount(nil))
 
 		a.refreshTop()
 		assert.True(t, a.errorLabel.Visible())
@@ -158,4 +159,40 @@ func TestCharacterClones_RefreshTop(t *testing.T) {
 		assert.Equal(t, "No character", a.topText.String())
 		assert.Equal(t, "", a.footerLabel.Text)
 	})
+}
+
+func TestCharacterClones_FailedSwitch(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newCharacter := func(lastJump time.Duration) *app.Character {
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			LastCloneJumpAt: optional.New(time.Now().Add(-lastJump)),
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterJumpClones,
+		})
+		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: c.ID})
+		return c
+	}
+	cA := newCharacter(48 * time.Hour) // jump available now
+	cB := newCharacter(time.Hour)
+	a := NewCharacterClones(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.character.Store(cA)
+	a.update(t.Context())
+	assert.Contains(t, a.topText.String(), "Next available jump: NOW")
+	if _, err := db.Exec("DROP TABLE character_jump_clone_implants"); err != nil { // let loading clones fail
+		t.Fatal(err)
+	}
+
+	a.character.Store(cB)
+	a.update(t.Context())
+
+	assert.True(t, a.errorLabel.Visible())
+	assert.Equal(t, 0, a.cloneTree.Data().ChildrenCount(nil))
+	assert.Contains(t, a.topText.String(), "Next available jump:")
+	assert.NotContains(t, a.topText.String(), "NOW", "shows header of current character")
 }
