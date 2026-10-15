@@ -26,20 +26,21 @@ import (
 type CorporationSheet struct {
 	widget.BaseWidget
 
-	alliance    *ui.InfoLink
-	ceo         *ui.InfoLink
-	character   atomic.Pointer[app.Character]
-	corporation atomic.Pointer[app.Corporation]
-	faction     *ui.InfoLink
-	home        *ui.InfoLink
-	isCorpMode  bool
-	logo        *xwidget.TappableImage
-	members     *widget.Label
-	name        *ui.InfoLink
-	roles       *widget.Label
-	taxRate     *widget.Label
-	ticker      *widget.Label
-	u           baseUI
+	allianceLink *ui.InfoLink
+	ceoLink      *ui.InfoLink
+	character    atomic.Pointer[app.Character]
+	corporation  atomic.Pointer[app.Corporation]
+	factionLink  *ui.InfoLink
+	homeLink     *ui.InfoLink
+	isCorpMode   bool
+	logoImage    *xwidget.TappableImage
+	membersLabel *widget.Label
+	nameLink     *ui.InfoLink
+	rolesLabel   *widget.Label
+	taxRateLabel *widget.Label
+	tickerLabel  *widget.Label
+	u            baseUI
+	updateRun    latestRun
 }
 
 func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
@@ -56,18 +57,18 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 		return ui.NewInfoLink(u.InfoViewer())
 	}
 	a := &CorporationSheet{
-		alliance:   makeInfoLabel(),
-		ceo:        makeInfoLabel(),
-		faction:    makeInfoLabel(),
-		home:       makeInfoLabel(),
-		isCorpMode: isCorpMode,
-		logo:       logo,
-		members:    makeLabel(),
-		name:       makeInfoLabel(),
-		roles:      makeLabel(),
-		taxRate:    makeLabel(),
-		ticker:     makeLabel(),
-		u:          u,
+		allianceLink: makeInfoLabel(),
+		ceoLink:      makeInfoLabel(),
+		factionLink:  makeInfoLabel(),
+		homeLink:     makeInfoLabel(),
+		isCorpMode:   isCorpMode,
+		logoImage:    logo,
+		membersLabel: makeLabel(),
+		nameLink:     makeInfoLabel(),
+		rolesLabel:   makeLabel(),
+		taxRateLabel: makeLabel(),
+		tickerLabel:  makeLabel(),
+		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -96,7 +97,7 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 			if c == nil {
 				return
 			}
-			if arg.Section == app.SectionEveCorporations && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
+			if c.EveCharacter != nil && arg.Section == app.SectionEveCorporations && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
 				a.update(ctx)
 			}
 		})
@@ -106,21 +107,21 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 
 func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	items := []*widget.FormItem{
-		widget.NewFormItem("Name", a.name),
-		widget.NewFormItem("Ticker", a.ticker),
-		widget.NewFormItem("Alliance", a.alliance),
-		widget.NewFormItem("Faction", a.faction),
-		widget.NewFormItem("CEO", a.ceo),
-		widget.NewFormItem("Member Count", a.members),
-		widget.NewFormItem("Home station", a.home),
-		widget.NewFormItem("Tax Rate", a.taxRate),
+		widget.NewFormItem("Name", a.nameLink),
+		widget.NewFormItem("Ticker", a.tickerLabel),
+		widget.NewFormItem("Alliance", a.allianceLink),
+		widget.NewFormItem("Faction", a.factionLink),
+		widget.NewFormItem("CEO", a.ceoLink),
+		widget.NewFormItem("Member Count", a.membersLabel),
+		widget.NewFormItem("Home station", a.homeLink),
+		widget.NewFormItem("Tax Rate", a.taxRateLabel),
 	}
 	if !a.isCorpMode {
-		items = slices.Insert(items, 2, widget.NewFormItem("Roles", a.roles))
+		items = slices.Insert(items, 2, widget.NewFormItem("Roles", a.rolesLabel))
 	}
 	main := widget.NewForm(items...)
 	main.Orientation = widget.Adaptive
-	portraitDesktop := container.NewVBox(container.NewPadded(a.logo))
+	portraitDesktop := container.NewVBox(container.NewPadded(a.logoImage))
 	c := container.NewBorder(
 		nil,
 		nil,
@@ -135,104 +136,109 @@ func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CorporationSheet) update(ctx context.Context) {
-	var corporation *app.EveCorporation
+	isLatest := a.updateRun.start()
+	clearAll := func() {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.allianceLink.Clear()
+			a.ceoLink.Clear()
+			a.factionLink.Clear()
+			a.homeLink.Clear()
+			a.logoImage.SetResource(icons.BlankSvg)
+			a.membersLabel.SetText("")
+			a.nameLink.Clear()
+			a.rolesLabel.SetText("")
+			a.taxRateLabel.SetText("")
+			a.tickerLabel.SetText("")
+		})
+	}
+	var corporationID int64
+	var roles string
 	if a.isCorpMode {
-		if c := a.corporation.Load(); c != nil {
-			corporation = c.EveCorporation
-		}
+		corporationID = a.corporation.Load().IDOrZero()
 	} else {
 		character := a.character.Load()
-		if character != nil && character.EveCharacter != nil {
-			var roles string
-			oo, err := a.u.Character().ListRoles(ctx, character.ID)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to fetch roles", "error", err)
-				roles = "ERROR: " + a.u.ErrorDisplay(err)
-			} else {
-				x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
-					return x.Granted
-				}), func(x app.CharacterRole) string {
-					return x.Role.Display()
-				}))
-				if len(x) == 0 {
-					roles = "-"
-				} else {
-					roles = strings.Join(x, "\n")
-				}
+		if character == nil || character.EveCharacter == nil {
+			clearAll()
+			return
+		}
+		corporationID = character.EveCharacter.Corporation.ID
+		oo, err := a.u.Character().ListRoles(ctx, character.ID)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
 			}
-			fyne.Do(func() {
-				a.roles.SetText(roles)
-			})
-			corporationID := character.EveCharacter.Corporation.ID
-			c, err := a.u.EVEUniverse().GetCorporation(ctx, corporationID)
-			if errors.Is(err, app.ErrNotFound) {
-				// ignore
-			} else if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
+			slog.Error("Failed to fetch roles", "error", err)
+			roles = "ERROR: " + a.u.ErrorDisplay(err)
+		} else {
+			x := slices.Sorted(xiter.Map(xiter.FilterSlice(oo, func(x app.CharacterRole) bool {
+				return x.Granted
+			}), func(x app.CharacterRole) string {
+				return x.Role.Display()
+			}))
+			if len(x) == 0 {
+				roles = "-"
 			} else {
-				corporation = c
+				roles = strings.Join(x, "\n")
 			}
 		}
 	}
-	if corporation == nil {
-		fyne.Do(func() {
-			a.alliance.Clear()
-			a.ceo.Clear()
-			a.faction.Clear()
-			a.home.Clear()
-			a.logo.SetResource(icons.BlankSvg)
-			a.members.SetText("")
-			a.name.Clear()
-			a.roles.SetText("")
-			a.taxRate.SetText("")
-			a.ticker.SetText("")
-		})
+	if corporationID == 0 {
+		clearAll()
+		return
+	}
+	corporation, err := a.u.EVEUniverse().GetCorporation(ctx, corporationID)
+	if err != nil {
+		if errors.Is(err, app.ErrNotFound) {
+			clearAll()
+			return
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
+		clearAll()
 		return
 	}
 	fyne.Do(func() {
-		a.name.Set(corporation.ToEveEntity())
-		a.logo.OnTapped = func() {
+		if !isLatest() {
+			return
+		}
+		a.nameLink.Set(corporation.ToEveEntity())
+		a.logoImage.OnTapped = func() {
 			a.u.InfoViewer().Show(corporation.ToEveEntity())
 		}
-		a.members.SetText(humanize.Comma(corporation.MemberCount))
-		a.taxRate.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
-		a.ticker.SetText(corporation.Ticker)
 		a.u.EVEImage().CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
-			a.logo.SetResource(r)
+			if !isLatest() {
+				return
+			}
+			a.logoImage.SetResource(r)
 		})
-	})
-	fyne.Do(func() {
+		a.rolesLabel.SetText(roles)
+		a.membersLabel.SetText(humanize.Comma(corporation.MemberCount))
+		a.taxRateLabel.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
+		a.tickerLabel.SetText(corporation.Ticker)
 		if alliance, ok := corporation.Alliance.Value(); ok {
-			a.alliance.Set(alliance)
+			a.allianceLink.Set(alliance)
 		} else {
-			a.alliance.Clear()
+			a.allianceLink.Clear()
 		}
-	})
-	fyne.Do(func() {
 		if faction, ok := corporation.Faction.Value(); ok {
-			a.faction.Set(faction)
+			a.factionLink.Set(faction)
 		} else {
-			a.faction.Clear()
+			a.factionLink.Clear()
 		}
-	})
-	fyne.Do(func() {
 		if ceo, ok := corporation.Ceo.Value(); ok {
-			a.ceo.Set(ceo)
+			a.ceoLink.Set(ceo)
 		} else {
-			a.ceo.Clear()
+			a.ceoLink.Clear()
 		}
-	})
-	fyne.Do(func() {
 		if home, ok := corporation.HomeStation.Value(); ok {
-			a.home.Set(home)
+			a.homeLink.Set(home)
 		} else {
-			a.home.Clear()
+			a.homeLink.Clear()
 		}
 	})
 }
