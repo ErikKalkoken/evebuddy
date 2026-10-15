@@ -440,8 +440,8 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
-	if !a.character.CompareAndSwap(old, c) {
-		return // character changed meanwhile; that change runs its own update
+	if !swapReloadedCharacter(&a.character, old, c) {
+		return // character switched meanwhile; that switch runs its own update
 	}
 
 	skills, err := a.u.Character().ListSkills(ctx, characterID)

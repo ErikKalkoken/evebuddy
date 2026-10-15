@@ -197,8 +197,8 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			setError(err)
 			return
 		}
-		if !a.character.CompareAndSwap(old, character) {
-			return // character changed meanwhile; that change runs its own update
+		if !swapReloadedCharacter(&a.character, old, character) {
+			return // character switched meanwhile; that switch runs its own update
 		}
 		if character.EveCharacter == nil {
 			clearAll()

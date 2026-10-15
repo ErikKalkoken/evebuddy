@@ -206,8 +206,8 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		})
 		return
 	}
-	if !a.character.CompareAndSwap(old, c) {
-		return // character changed meanwhile; that change runs its own update
+	if !swapReloadedCharacter(&a.character, old, c) {
+		return // character switched meanwhile; that switch runs its own update
 	}
 	var home *app.EveLocation
 	if v, ok := c.HomeLocationID.Value(); ok {
