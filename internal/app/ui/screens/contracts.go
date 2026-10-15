@@ -234,9 +234,6 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 		r.isExpired = isExpired
 		r.isOverdue = isOverdue
 		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
-		r.statusDisplay = xwidget.RichTextSegmentsFromText(r.statusText, widget.RichTextStyle{
-			ColorName: category.Color(),
-		})
 		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
 	}
 	r.timeLeftText = timeLeft
