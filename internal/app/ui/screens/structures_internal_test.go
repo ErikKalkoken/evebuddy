@@ -189,18 +189,29 @@ func TestStructures_Filter(t *testing.T) {
 func TestStructures_RefreshTicker(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	u := testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	})
 	c := factory.CreateCorporation()
 	factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
-	a := NewStructuresForCorporation(u)
-	a.corporation.Store(c)
+	for _, tc := range []struct {
+		name string
+		new  func(u baseUI) *Structures
+	}{
+		{"corporation", NewStructuresForCorporation},
+		{"unified", NewUnifiedStructures},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u := testdouble.NewUIFake(testdouble.UIParams{
+				App:     test.NewTempApp(t),
+				Storage: st,
+			})
+			a := tc.new(u)
+			a.corporation.Store(c)
+			require.Equal(t, 1, u.Signals().RefreshTickerExpired.Len())
 
-	u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+			u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-	assert.Empty(t, a.rows) // ticker only redraws, it must not reload from storage
+			assert.Empty(t, a.rows) // ticker only redraws, it must not reload from storage
+		})
+	}
 }
 
 func TestStructures_ErrorDisplay(t *testing.T) {

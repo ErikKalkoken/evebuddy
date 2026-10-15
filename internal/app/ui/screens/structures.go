@@ -342,9 +342,6 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 			}
 			a.update(ctx)
 		})
-		a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-			fyne.Do(a.main.Refresh)
-		})
 	} else {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
 			a.update(ctx)
@@ -361,6 +358,9 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 			a.update(ctx)
 		})
 	}
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(a.main.Refresh)
+	})
 	return a
 }
 
