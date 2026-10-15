@@ -261,9 +261,12 @@ func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.filterRun.start() // discard results of filters still running
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync()
+			xslices.Clear(&a.rowsFiltered)
+			a.footerLabel.SetText("")
+			a.list.Refresh()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {

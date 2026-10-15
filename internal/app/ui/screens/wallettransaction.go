@@ -536,9 +536,12 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.filterRun.start() // discard results of filters still running
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync("")
+			xslices.Clear(&a.rowsFiltered)
+			a.footerLabel.SetText("")
+			a.body.Refresh()
 		})
 	}
 	character := a.character.Load()
@@ -646,9 +649,12 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.filterRun.start() // discard results of filters still running
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
-			a.filterRowsAsync("")
+			xslices.Clear(&a.rowsFiltered)
+			a.footerLabel.SetText("")
+			a.body.Refresh()
 		})
 	}
 	corporation := a.corporation.Load()

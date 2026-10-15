@@ -94,3 +94,25 @@ func TestWalletJournal_Filter(t *testing.T) {
 		assert.ElementsMatch(t, []int64{2}, refIDs(a))
 	})
 }
+
+func TestWalletJournal_KeepsStatusWithoutCharacter(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewCharacterWalletJournal(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	var pending []func() // run background work later, like the real app
+	orig := runAsync
+	runAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { runAsync = orig })
+	a.filterRowsAsync("") // a filter still running from before
+
+	a.Update(t.Context())
+	for _, f := range pending {
+		f()
+	}
+
+	assert.Equal(t, "No character", a.footerLabel.Text)
+	assert.Empty(t, a.rowsFiltered)
+}
