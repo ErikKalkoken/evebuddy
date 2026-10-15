@@ -64,6 +64,7 @@ type Communications struct {
 	forCharacter atomic.Bool
 	rows         []notificationRow
 	u            baseUI
+	updateRun    latestRun
 }
 
 func NewCommunicationsForCharacter(u baseUI) *Communications {
@@ -138,8 +139,12 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Communications) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.NavigationPane.update()
@@ -153,12 +158,18 @@ func (a *Communications) update(ctx context.Context) {
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.footerLabel.Text, a.NavigationPane.footerLabel.Importance = s, i
 			a.NavigationPane.footerLabel.Refresh()
 		})
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.NavigationPane.errorLabel.Show()
 			a.NavigationPane.Refresh()
@@ -193,6 +204,9 @@ func (a *Communications) update(ctx context.Context) {
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.NavigationPane.errorLabel.Hide()
 		// keep the filter snapshot, so rows don't vanish from an active Unread/Read filter
 		snapshot := make(map[int64]bool, len(a.rows))

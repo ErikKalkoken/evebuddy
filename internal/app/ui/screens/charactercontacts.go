@@ -87,6 +87,7 @@ type CharacterContacts struct {
 	columnSorter   *xwidget.ColumnSorter[characterContactRow]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
+	updateRun      latestRun
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	list           fyne.CanvasObject
@@ -441,8 +442,12 @@ func (a *CharacterContacts) filterRowsAsync() {
 }
 
 func (a *CharacterContacts) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rest := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
@@ -450,6 +455,9 @@ func (a *CharacterContacts) update(ctx context.Context) {
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footerLabel.Text = s
 			a.footerLabel.Importance = i
 			a.footerLabel.Refresh()
@@ -457,6 +465,9 @@ func (a *CharacterContacts) update(ctx context.Context) {
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -486,6 +497,9 @@ func (a *CharacterContacts) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()

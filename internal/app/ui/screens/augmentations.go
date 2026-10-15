@@ -80,6 +80,7 @@ type Augmentations struct {
 	collapseBranches *ttwidget.Button
 	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
+	updateRun        latestRun
 	footerLabel      *widget.Label
 	errorLabel       *widget.Label
 	selectImplants   *kxwidget.FilterChipSelect // select chips only on desktop
@@ -239,6 +240,7 @@ func (a *Augmentations) filterTreeAsync() {
 }
 
 func (a *Augmentations) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	td, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -246,6 +248,9 @@ func (a *Augmentations) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh augmentations UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -253,6 +258,9 @@ func (a *Augmentations) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.treeData = td
 		a.filterTreeAsync()

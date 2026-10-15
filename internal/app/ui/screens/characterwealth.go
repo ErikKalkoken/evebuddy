@@ -126,6 +126,7 @@ type CharacterWealth struct {
 	details                      *characterWealthDetails
 	filterChip                   *xwidget.FilterChipCompact // only on mobile
 	filterRun                    latestRun
+	updateRun                    latestRun
 	footer                       *widget.Label
 	overviewEmpty                *widget.Label
 	overviewGrid                 *fyne.Container
@@ -284,6 +285,7 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterWealth) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rows, total, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -291,6 +293,9 @@ func (a *CharacterWealth) update(ctx context.Context) {
 		}
 		slog.Error("Failed to fetch data for wealth", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
 			a.topLabel.Importance = widget.DangerImportance
 			a.topLabel.Refresh()
@@ -299,6 +304,9 @@ func (a *CharacterWealth) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.topLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()
@@ -312,6 +320,9 @@ func (a *CharacterWealth) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		if a.OnUpdate != nil {
 			a.OnUpdate(total)
 		}

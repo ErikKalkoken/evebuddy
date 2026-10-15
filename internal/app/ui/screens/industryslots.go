@@ -117,6 +117,7 @@ type IndustrySlots struct {
 	body            fyne.CanvasObject
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
+	updateRun       latestRun
 	footerLabel     *widget.Label
 	errorLabel      *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industrySlotRow]
@@ -429,6 +430,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 }
 
 func (a *IndustrySlots) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rows, err := a.fetchData(ctx, a.slotType)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -436,6 +438,9 @@ func (a *IndustrySlots) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh industrySlots UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -443,6 +448,9 @@ func (a *IndustrySlots) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

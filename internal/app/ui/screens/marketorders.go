@@ -168,6 +168,7 @@ type MarketOrders struct {
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
 	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    latestRun
+	updateRun    latestRun
 	footerLabel  *widget.Label
 	errorLabel   *widget.Label
 	isBuyOrders  bool
@@ -522,6 +523,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 }
 
 func (a *MarketOrders) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -529,6 +531,9 @@ func (a *MarketOrders) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh locations UI", "err", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -536,6 +541,9 @@ func (a *MarketOrders) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

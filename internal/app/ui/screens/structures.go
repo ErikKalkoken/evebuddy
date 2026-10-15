@@ -126,6 +126,7 @@ type Structures struct {
 	corporation       atomic.Pointer[app.Corporation]
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
+	updateRun         latestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	forCorporation    bool
@@ -467,8 +468,12 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 }
 
 func (a *Structures) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
@@ -481,6 +486,9 @@ func (a *Structures) update(ctx context.Context) {
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
 		reset()
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -494,6 +502,9 @@ func (a *Structures) update(ctx context.Context) {
 		}
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

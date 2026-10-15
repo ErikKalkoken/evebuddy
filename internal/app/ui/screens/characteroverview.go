@@ -107,6 +107,7 @@ type CharacterOverview struct {
 
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
+	updateRun         latestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
@@ -444,8 +445,12 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 }
 
 func (a *CharacterOverview) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
@@ -453,6 +458,9 @@ func (a *CharacterOverview) update(ctx context.Context) {
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -469,6 +477,9 @@ func (a *CharacterOverview) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.loadInfo.Hide()

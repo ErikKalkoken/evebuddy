@@ -101,6 +101,7 @@ type SkillSearch struct {
 	columnSorter    *xwidget.ColumnSorter[skillSearchRow]
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
+	updateRun       latestRun
 	footer          *widget.Label
 	rows            []skillSearchRow
 	rowsFiltered    []skillSearchRow
@@ -395,14 +396,21 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 }
 
 func (a *SkillSearch) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = s
 			a.top.Importance = i
 			a.top.Refresh()
@@ -422,6 +430,9 @@ func (a *SkillSearch) update(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.top.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

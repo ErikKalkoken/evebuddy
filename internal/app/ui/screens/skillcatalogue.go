@@ -97,6 +97,7 @@ type SkillCatalogue struct {
 	columnSorter   *xwidget.ColumnSorter[skillCatalogueRow]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
+	updateRun      latestRun
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
@@ -367,8 +368,12 @@ func (a *SkillCatalogue) filterRowsAsync() {
 }
 
 func (a *SkillCatalogue) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	setTop := func(t string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = t
 			a.top.Importance = i
 			a.top.Refresh()
@@ -377,6 +382,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
 		})
@@ -431,7 +439,6 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
-	a.character.Store(c)
 
 	skills, err := a.u.Character().ListSkills(ctx, characterID)
 	if err != nil {
@@ -490,6 +497,10 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 	setTop(top, widget.MediumImportance)
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.character.Store(c)
 		a.rows = rows
 		a.filterRowsAsync()
 	})

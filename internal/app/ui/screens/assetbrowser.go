@@ -56,6 +56,7 @@ type AssetBrowser struct {
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
 	u              baseUI
+	updateRun      latestRun
 }
 
 func NewCharacterBrowser(u baseUI) *AssetBrowser {
@@ -117,14 +118,21 @@ func (a *AssetBrowser) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AssetBrowser) Update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.Navigation.clear()
 			a.Selected.clear()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.Navigation.setFooter(s, i)
 		})
 	}
@@ -134,6 +142,9 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 		}
 		slog.Error("Failed to update asset browser", "error", err)
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.Navigation.setError(err)
 		})
 	}
@@ -196,10 +207,16 @@ func (a *AssetBrowser) Update(ctx context.Context) {
 		at = asset.NewFromCharacterAssets(assets, el)
 	}
 	fyne.DoAndWait(func() {
+		if !isLatest() {
+			return
+		}
 		a.Navigation.errorLabel.Hide()
 		a.characterNames = names
 		a.at = at
 	})
+	if !isLatest() {
+		return
+	}
 	a.Navigation.update(ctx, at.Locations())
 }
 
@@ -279,6 +296,7 @@ type browserNavigation struct {
 	filterChip    *xwidget.FilterChipCompact
 	filteredTrees map[assetFilter]filteredTree
 	filterRun     latestRun
+	updateRun     latestRun
 	filters       []assetFilter
 	locations     *xwidget.Tree[containerNode]
 	searchEntry   *xwidget.SearchEntry
@@ -400,6 +418,7 @@ func (a *browserNavigation) clear() {
 }
 
 func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
+	isLatest := a.updateRun.start()
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.b.forCorporation)
@@ -415,6 +434,9 @@ func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
 		}
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.filteredTrees = filteredTrees
 		a.filterLocationsAsync()
 	})

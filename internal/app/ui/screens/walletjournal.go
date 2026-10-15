@@ -104,6 +104,7 @@ type WalletJournal struct {
 	division        app.Division
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
+	updateRun       latestRun
 	footerLabel     *widget.Label
 	errorLabel      *widget.Label
 	rows            []walletJournalRow
@@ -427,14 +428,21 @@ func (a *WalletJournal) Update(ctx context.Context) {
 }
 
 func (a *WalletJournal) updateCharacter(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footerLabel.Text, a.footerLabel.Importance = s, i
 			a.footerLabel.Refresh()
 		})
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -442,6 +450,9 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	}
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
@@ -471,6 +482,9 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
@@ -517,14 +531,21 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.C
 }
 
 func (a *WalletJournal) updateCorporation(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.footerLabel.Text, a.footerLabel.Importance = s, i
 			a.footerLabel.Refresh()
 		})
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -532,6 +553,9 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 	}
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
@@ -561,6 +585,9 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")

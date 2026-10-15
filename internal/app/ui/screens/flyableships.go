@@ -70,6 +70,7 @@ type FlyableShips struct {
 	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
 	filterChip    *xwidget.FilterChipCompact // only on mobile
 	filterRun     latestRun
+	updateRun     latestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	imageCache    xsync.Map[string, image.Image]
@@ -285,8 +286,12 @@ func (a *FlyableShips) filterRowsAsync() {
 }
 
 func (a *FlyableShips) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			a.searchEntry.Disable()
 			a.searchEntry.SetText("")
@@ -301,6 +306,9 @@ func (a *FlyableShips) update(ctx context.Context) {
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = s
 			a.top.Importance = i
 			a.top.Refresh()
@@ -375,6 +383,9 @@ func (a *FlyableShips) update(ctx context.Context) {
 	setTop(text, widget.MediumImportance)
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.rows = rows
 		a.searchEntry.Enable()
 		a.filterRowsAsync()
