@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -152,4 +153,26 @@ func TestSkillCatalogue_Filter(t *testing.T) {
 		a.searchEntry.SetText("navi")
 		assert.ElementsMatch(t, []int64{2}, typeIDs(a))
 	})
+}
+
+func TestSkillCatalogue_UpdateStoresReloadedCharacter(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{Section: app.SectionEveTypes})
+	c := factory.CreateCharacterFull()
+	factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		CharacterID: c.ID,
+		Section:     app.SectionCharacterSkills,
+	})
+	a := NewSkillCatalogue(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.character.Store(c)
+
+	a.update(t.Context())
+
+	got := a.character.Load()
+	assert.NotSame(t, c, got)
+	assert.Equal(t, c.ID, got.ID)
 }

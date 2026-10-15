@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -51,8 +52,7 @@ func TestCorporationSheet_Update(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		err := st.UpdateCharacterRoles(t.Context(), c.ID, set.Of(app.RoleAccountant, app.RoleAuditor))
 		require.NoError(t, err)
-		ec, err := st.GetEveCorporation(t.Context(), c.EveCharacter.Corporation.ID)
-		require.NoError(t, err)
+		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: c.EveCharacter.Corporation.ID})
 		a := newSheet(t, false)
 		a.character.Store(c)
 
@@ -75,4 +75,29 @@ func TestCorporationSheet_Update(t *testing.T) {
 		assert.Equal(t, "", a.tickerLabel.Text)
 		assert.Equal(t, "", a.rolesLabel.Text)
 	})
+}
+
+func TestCorporationSheet_CharacterChangedCorporation(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	c := factory.CreateCharacterFull()
+	ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{ID: c.EveCharacter.Corporation.ID})
+	stale := *c // character as stored before joining its current corporation
+	staleEveCharacter := *c.EveCharacter
+	staleEveCharacter.Corporation = factory.CreateEveEntityCorporation()
+	stale.EveCharacter = &staleEveCharacter
+	a := NewCorporationSheet(u, false)
+	a.character.Store(&stale)
+
+	u.Signals().EveUniverseSectionChanged.Emit(t.Context(), app.EveUniverseSectionUpdated{
+		Section: app.SectionEveCharacters,
+		Changed: set.Of(c.ID),
+	})
+
+	assert.Equal(t, ec.Name, infoLinkText(t, a.nameLink))
+	assert.Equal(t, ec.ID, a.character.Load().EveCharacter.Corporation.ID)
 }

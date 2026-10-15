@@ -406,7 +406,8 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		return
 	}
 
-	characterID := a.character.Load().IDOrZero()
+	old := a.character.Load()
+	characterID := old.IDOrZero()
 	if characterID == 0 {
 		reset()
 		setTop("No character", widget.LowImportance)
@@ -438,6 +439,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
+	}
+	if !a.character.CompareAndSwap(old, c) {
+		return // character changed meanwhile; that change runs its own update
 	}
 
 	skills, err := a.u.Character().ListSkills(ctx, characterID)
@@ -500,7 +504,6 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
-		a.character.Store(c)
 		a.rows = rows
 		a.filterRowsAsync()
 	})

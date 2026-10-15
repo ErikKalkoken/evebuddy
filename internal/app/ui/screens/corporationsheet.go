@@ -97,8 +97,15 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 			if c == nil {
 				return
 			}
-			if c.EveCharacter != nil && arg.Section == app.SectionEveCorporations && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
-				a.update(ctx)
+			switch arg.Section {
+			case app.SectionEveCharacters:
+				if arg.Changed.Contains(c.ID) {
+					a.update(ctx) // character may have changed corporation
+				}
+			case app.SectionEveCorporations:
+				if c.EveCharacter != nil && arg.Changed.Contains(c.EveCharacter.Corporation.ID) {
+					a.update(ctx)
+				}
 			}
 		})
 	}
@@ -159,8 +166,24 @@ func (a *CorporationSheet) update(ctx context.Context) {
 	if a.isCorpMode {
 		corporationID = a.corporation.Load().IDOrZero()
 	} else {
-		character := a.character.Load()
-		if character == nil || character.EveCharacter == nil {
+		old := a.character.Load()
+		if old == nil {
+			clearAll()
+			return
+		}
+		character, err := a.u.Character().GetCharacter(ctx, old.ID)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("Failed to fetch character for corporation sheet", "characterID", old.ID, "error", err)
+			clearAll()
+			return
+		}
+		if !a.character.CompareAndSwap(old, character) {
+			return // character changed meanwhile; that change runs its own update
+		}
+		if character.EveCharacter == nil {
 			clearAll()
 			return
 		}
