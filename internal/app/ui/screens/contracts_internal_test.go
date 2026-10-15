@@ -454,28 +454,6 @@ func TestMakeContractDateString(t *testing.T) {
 	assert.Equal(t, d.Format(app.DateTimeFormat)+" (OVERDUE)", makeContractDateString(d, makeContractDeadlineNote(d, true, "OVERDUE")))
 }
 
-func TestContracts_RefreshTimeDependent_KeepsErrorFooter(t *testing.T) {
-	db, st, _ := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	now := time.Now()
-	r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
-	r.setDeadline()
-	r.updateTimeDependent(now)
-	a := NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	}))
-	a.rows = []contractRow{r}
-	a.filterRowsAsync("")
-	a.updateFailed = true
-	a.footer.Text = "ERROR: failed"
-
-	a.refreshTimeDependent(now.Add(2 * time.Hour))
-
-	assert.Equal(t, "ERROR: failed", a.footer.Text)
-	assert.Equal(t, app.ContractCategoryOutstanding, a.rows[0].category)
-}
-
 func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -513,4 +491,47 @@ func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
 	}
 	u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
 	assert.Equal(t, 0, got, "reloaded after the issuer was removed")
+}
+
+func TestContracts_ErrorDisplay(t *testing.T) {
+	newContracts := func(t *testing.T, st *storage.Storage) *Contracts {
+		return NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+	}
+	t.Run("shows error when update fails and keeps it on refresh and filtering", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newContracts(t, st)
+		now := time.Now()
+		r := contractRow{contractID: 1, status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour), issuerIsMine: true}
+		r.setDeadline()
+		r.updateTimeDependent(now)
+		a.rows = []contractRow{r}
+		a.filterRowsAsync("")
+		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.refreshTimeDependent(now.Add(2 * time.Hour))
+		assert.Equal(t, app.ContractCategoryRequiresAttention, a.rows[0].category, "refresh continues with last rows")
+		a.selectStatus.SetSelected(contractsStatusAll)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.footerLabel.Text, "Showing")
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newContracts(t, st)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
+	})
 }
