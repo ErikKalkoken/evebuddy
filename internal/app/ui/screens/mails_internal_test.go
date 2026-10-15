@@ -781,3 +781,19 @@ func TestMails_DownloadProgress(t *testing.T) {
 		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
 	})
 }
+
+func TestMailsReadingPane_IsEmpty(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	c := factory.CreateCharacterFull()
+	m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+	a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+	p := a.ReadingPane
+	assert.True(t, p.IsEmpty())
+
+	p.showMail(mailRow{characterID: c.ID, mailID: m.MailID})
+	assert.False(t, p.IsEmpty())
+
+	p.clear()
+	assert.True(t, p.IsEmpty())
+}

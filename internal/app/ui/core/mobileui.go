@@ -84,34 +84,34 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	mailMenu := fyne.NewMenu("")
 
-	var mailPage *xwidget.AppBar
+	var readingPage *xwidget.AppBar
 	navItemMail := xwidget.NewNavListItem(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
 			u.characterMails.MessagePane.OnSelected = func() {
-				characterNav.PushAndHideNavBar(
-					newCharacterAppBar(
-						"Mail",
-						u.characterMails.ReadingPane,
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
-						xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
-							fyne.Do(func() {
+				readingPage = newCharacterAppBar(
+					"Mail",
+					u.characterMails.ReadingPane,
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
+						fyne.Do(func() {
+							if characterNav.Current() == readingPage { // may already be popped by OnUpdate
 								characterNav.Pop()
-							})
-						})),
-					),
+							}
+						})
+					})),
 				)
+				characterNav.PushAndHideNavBar(readingPage)
 			}
-			mailPage = newCharacterAppBar(
+			characterNav.Push(newCharacterAppBar(
 				"Mail",
 				u.characterMails.MessagePane,
 				xwidget.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
 				xwidget.NewIconButton(u.characterMails.MakeComposeMessageAction()),
-			)
-			characterNav.Push(mailPage)
+			))
 		},
 	)
 
@@ -188,7 +188,8 @@ func NewMobileUI(params UIParams) *MobileUI {
 		mailMenu.Items = u.characterMails.NavigationPane.MakeFolderMenu()
 		mailMenu.Refresh()
 
-		for !characterNav.IsRoot() && characterNav.Current() != mailPage {
+		// Leave the reading page only when its mail is gone, never on other pages.
+		if readingPage != nil && characterNav.Current() == readingPage && u.characterMails.ReadingPane.IsEmpty() {
 			characterNav.Pop()
 		}
 	}

@@ -1381,6 +1381,11 @@ func (a *mailsReadingPane) isRequested(characterID, mailID int64) bool {
 	return a.requested.characterID == characterID && a.requested.mailID == mailID
 }
 
+// IsEmpty reports whether no mail is shown or requested.
+func (a *mailsReadingPane) IsEmpty() bool {
+	return a.requested.mailID == 0
+}
+
 func (a *mailsReadingPane) clear() {
 	a.mail = nil
 	a.requested.characterID, a.requested.mailID = 0, 0
