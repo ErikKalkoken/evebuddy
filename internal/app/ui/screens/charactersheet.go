@@ -29,6 +29,7 @@ type CharacterSheet struct {
 	bloodlineLink    *ui.InfoLink
 	bornLabel        *widget.Label
 	character        atomic.Pointer[app.Character]
+	errorLabel       *widget.Label
 	factionLink      *ui.InfoLink
 	homeLink         *ui.InfoLink
 	lastLoginAtLabel *widget.Label
@@ -62,6 +63,7 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 	a := &CharacterSheet{
 		bloodlineLink:    makeInfoLink(),
 		bornLabel:        makeLabel(),
+		errorLabel:       ui.NewLabelWithWrapping(""),
 		factionLink:      makeInfoLink(),
 		homeLink:         makeInfoLink(),
 		lastLoginAtLabel: makeLabel(),
@@ -77,6 +79,9 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 		wealthLabel:      makeLabel(),
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -144,7 +149,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 	)
 	c := container.NewBorder(
 		nil,
-		nil,
+		a.errorLabel,
 		nil,
 		portrait,
 		container.NewVScroll(main),
@@ -162,6 +167,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.errorLabel.Hide()
 			a.bloodlineLink.Clear()
 			a.bornLabel.SetText("")
 			a.factionLink.Clear()
@@ -190,6 +196,14 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		slog.Error("Failed to fetch character for sheet", "err", err)
 		clearAll()
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
+		})
 		return
 	}
 	if !a.character.CompareAndSwap(old, c) {
@@ -236,6 +250,7 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.nameLink.Set(c.EveCharacter.ToEveEntity())
 		a.portraitImage.OnTapped = func() {
 			a.u.InfoViewer().Show(c.EveCharacter.ToEveEntity())

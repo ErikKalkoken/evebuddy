@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -81,5 +82,40 @@ func TestCharacterSheet_Update(t *testing.T) {
 		assert.Equal(t, "", infoLinkText(t, a.nameLink))
 		assert.Equal(t, "", infoLinkText(t, a.shipLink))
 		assert.Equal(t, "", a.bornLabel.Text)
+	})
+}
+
+func TestCharacterSheet_ErrorDisplay(t *testing.T) {
+	newSheet := func(t *testing.T) (*CharacterSheet, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewCharacterSheet(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.character.Store(factory.CreateCharacterFull())
+		return a, db
+	}
+	t.Run("clears sheet and shows error when loading fails", func(t *testing.T) {
+		a, db := newSheet(t)
+		a.update(t.Context())
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Equal(t, "", infoLinkText(t, a.nameLink))
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newSheet(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

@@ -90,7 +90,7 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 			if ctx.Err() != nil {
 				return
 			}
-			slog.Error("characterSkillQueue: update character", "error", err)
+			slog.Error("Failed to reload character for skill queue", "characterID", characterID, "error", err)
 			return
 		}
 		if !a.character.CompareAndSwap(old, c) {
