@@ -48,3 +48,26 @@ func TestMembers_ErrorDisplay(t *testing.T) {
 		assert.False(t, a.errorLabel.Visible())
 	})
 }
+
+func TestMembers_ResetClearsFooter(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewMembers(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	a.rows = []memberRow{{id: 1, name: "Alpha"}, {id: 2, name: "Bravo"}}
+	var pending []func() // run background work later, like the real app
+	orig := runAsync
+	runAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { runAsync = orig })
+	a.filterRowsAsync() // a filter still running from before
+
+	a.update(t.Context()) // no corporation
+	for _, f := range pending {
+		f()
+	}
+
+	assert.Equal(t, "", a.footerLabel.Text)
+	assert.Empty(t, a.rowsFiltered)
+}

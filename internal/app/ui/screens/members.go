@@ -49,7 +49,7 @@ type Members struct {
 func NewMembers(s baseUI) *Members {
 	a := &Members{
 		footerLabel: ui.NewLabelWithTruncation(""),
-		errorLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:  ui.NewLabelWithWrapping(""),
 		u:           s,
 	}
 	a.list = a.makeList()
@@ -167,10 +167,12 @@ func (a *Members) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.filterRun.start() // discard results of filters still running
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
-			a.searchEntry.SetText("")
+			a.footerLabel.SetText("")
+			a.searchEntry.ClearSilent()
 			a.list.Refresh()
 		})
 	}
