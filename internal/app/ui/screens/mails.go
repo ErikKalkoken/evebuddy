@@ -172,6 +172,7 @@ func newMails(u baseUI, forCharacter bool) *Mails {
 		if s == mailsUpdated {
 			a.NavigationPane.updateUnreadCounts(ctx)
 			a.MessagePane.update(ctx)
+			a.NavigationPane.updateDownloaded(ctx, true) // ticks may be skipping it
 		}
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
@@ -207,6 +208,9 @@ func (a *Mails) update(ctx context.Context) {
 			a.MessagePane.currentFolder.Store(nil)
 			a.MessagePane.clear()
 			a.ReadingPane.clear()
+			a.unreadCount.Store(0) // so a later OnUpdate does not report the previous character
+			a.missingPercent.Store(0)
+			a.callOnUpdate()
 		})
 	}
 	setStatus := func(s string, i widget.Importance) {

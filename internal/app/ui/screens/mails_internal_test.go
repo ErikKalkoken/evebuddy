@@ -683,6 +683,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 		factory testutil.Factory
 		missing []int // values received by OnUpdate
 		st      *storage.Storage
+		unread  []int // values received by OnUpdate
 	}
 	setup := func(t *testing.T) *env {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -690,8 +691,9 @@ func TestMails_DownloadProgress(t *testing.T) {
 		e := &env{c: factory.CreateCharacterFull(), db: db, factory: factory, st: st}
 		e.a = NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		e.a.character.Store(e.c)
-		e.a.OnUpdate = func(_, missing int) {
+		e.a.OnUpdate = func(unread, missing int) {
 			e.missing = append(e.missing, missing)
+			e.unread = append(e.unread, unread)
 		}
 		return e
 	}
@@ -811,6 +813,35 @@ func TestMails_DownloadProgress(t *testing.T) {
 		assert.Equal(t, "2 total", p.folderTotal.Text)
 		assert.Equal(t, "50%", p.folderDownloaded.Text)
 		assert.Equal(t, []int{50}, e.missing)
+	})
+	t.Run("mail change refreshes total when complete", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		m := e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		require.True(t, e.a.bodiesComplete.Load())
+		require.Equal(t, "2 total", e.a.NavigationPane.folderTotal.Text)
+		require.NoError(t, e.st.DeleteCharacterMail(t.Context(), e.c.ID, m.MailID))
+
+		e.a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("early return does not report previous character", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+		e.a.unreadCount.Store(5)
+		e.a.character.Store(e.factory.CreateCharacterFull()) // mail data not loaded yet
+
+		e.a.update(t.Context())
+		tick(t, e.a)
+
+		require.NotEmpty(t, e.unread)
+		assert.Equal(t, 0, e.unread[len(e.unread)-1])
+		assert.Equal(t, 0, e.missing[len(e.missing)-1])
+		assert.Zero(t, e.a.unreadCount.Load())
 	})
 	t.Run("OnUpdate once per update", func(t *testing.T) {
 		e := setup(t)
