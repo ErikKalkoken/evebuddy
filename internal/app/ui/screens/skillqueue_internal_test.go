@@ -102,3 +102,22 @@ func TestSkillQueue_CharacterChanged(t *testing.T) {
 		assert.Same(t, c, a.character.Load())
 	})
 }
+
+func TestSkillQueue_ClearsStatusWithoutData(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	a := NewQueueWithCharacter(u, factory.CreateCharacter())
+	gotShort, gotLong := "42%", "Skill (42%)" // status of a previous character
+	a.OnUpdate = func(statusShort, statusLong string) {
+		gotShort, gotLong = statusShort, statusLong
+	}
+
+	a.Update(t.Context())
+
+	assert.Equal(t, "", gotShort)
+	assert.Equal(t, "", gotLong)
+}

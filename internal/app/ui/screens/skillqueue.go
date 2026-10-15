@@ -194,6 +194,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			a.list.Hide()
 			a.emptyInfo.Hide()
 			a.status.Hide()
+			if a.OnUpdate != nil {
+				a.OnUpdate("", "")
+			}
 		})
 	}
 
