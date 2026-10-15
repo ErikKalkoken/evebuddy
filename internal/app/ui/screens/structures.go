@@ -102,8 +102,13 @@ func (r structureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 	var text string
 	var color fyne.ThemeColorName
 	if v, ok := r.fuelExpires.Value(); ok {
-		color = theme.ColorNameForeground
-		text = ihumanize.Duration(time.Until(v))
+		if d := time.Until(v); d > 0 {
+			color = theme.ColorNameForeground
+			text = ihumanize.Duration(d)
+		} else {
+			color = theme.ColorNameWarning
+			text = "EXPIRED"
+		}
 	} else {
 		color = theme.ColorNameWarning
 		text = "Low Power"
@@ -120,7 +125,7 @@ func (r structureRow) stateText() string {
 		return r.stateShort
 	}
 	d := time.Until(v)
-	if d < 0 {
+	if d <= 0 {
 		return r.stateShort + ": EXPIRED"
 	}
 	return r.stateShort + ": " + ihumanize.Duration(d)

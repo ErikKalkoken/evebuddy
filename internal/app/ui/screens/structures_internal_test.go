@@ -7,7 +7,10 @@ import (
 	"testing/synctest"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,8 +75,35 @@ func TestStructureRow_StateText(t *testing.T) {
 			time.Sleep(time.Hour)
 			assert.Equal(t, "Armor: 2h 0m", r.stateText())
 
+			time.Sleep(2 * time.Hour)
+			assert.Equal(t, "Armor: EXPIRED", r.stateText()) // exactly at the end
+		})
+	})
+}
+
+func TestStructureRow_FuelExpiresDisplay(t *testing.T) {
+	display := func(r structureRow) (string, fyne.ThemeColorName) {
+		segs := r.fuelExpiresDisplay()
+		require.Len(t, segs, 1)
+		s := segs[0].(*widget.TextSegment)
+		return s.Text, s.Style.ColorName
+	}
+	t.Run("low power", func(t *testing.T) {
+		text, color := display(structureRow{})
+		assert.Equal(t, "Low Power", text)
+		assert.Equal(t, theme.ColorNameWarning, color)
+	})
+	t.Run("counts down and expires", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r := structureRow{fuelExpires: optional.New(time.Now().Add(3 * time.Hour))}
+			text, color := display(r)
+			assert.Equal(t, "3h 0m", text)
+			assert.Equal(t, theme.ColorNameForeground, color)
+
 			time.Sleep(3 * time.Hour)
-			assert.Equal(t, "Armor: EXPIRED", r.stateText())
+			text, color = display(r)
+			assert.Equal(t, "EXPIRED", text)
+			assert.Equal(t, theme.ColorNameWarning, color)
 		})
 	})
 }
@@ -192,11 +222,12 @@ func TestStructures_RefreshTicker(t *testing.T) {
 	c := factory.CreateCorporation()
 	factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
 	for _, tc := range []struct {
-		name string
-		new  func(u baseUI) *Structures
+		name           string
+		new            func(u baseUI) *Structures
+		forCorporation bool
 	}{
-		{"corporation", NewStructuresForCorporation},
-		{"unified", NewUnifiedStructures},
+		{"corporation", NewStructuresForCorporation, true},
+		{"unified", NewUnifiedStructures, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			u := testdouble.NewUIFake(testdouble.UIParams{
@@ -204,7 +235,9 @@ func TestStructures_RefreshTicker(t *testing.T) {
 				Storage: st,
 			})
 			a := tc.new(u)
-			a.corporation.Store(c)
+			if tc.forCorporation {
+				a.corporation.Store(c)
+			}
 			require.Equal(t, 1, u.Signals().RefreshTickerExpired.Len())
 
 			u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
