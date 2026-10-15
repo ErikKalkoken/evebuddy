@@ -2,6 +2,7 @@ package screens
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync/atomic"
@@ -20,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -46,6 +48,14 @@ func (n characterCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d-%d", n.characterID, n.jumpCloneID, n.implantTypeID)
 }
 
+// cloneJumpInfo holds the inputs for the next clone jump of a character.
+// The zero value means nothing is loaded.
+type cloneJumpInfo struct {
+	characterID int64
+	lastJumpAt  optional.Optional[time.Time]
+	skillLevel  int64 // Infomorph Synchronizing
+}
+
 type CharacterClones struct {
 	widget.BaseWidget
 
@@ -53,6 +63,7 @@ type CharacterClones struct {
 	cloneTree   *xwidget.Tree[characterCloneNode]
 	errorLabel  *widget.Label
 	footerLabel *widget.Label
+	jumpInfo    cloneJumpInfo // only accessed on the main thread
 	topRun      latestRun
 	topText     *xwidget.RichText
 	u           baseUI
@@ -83,12 +94,15 @@ func NewCharacterClones(u baseUI) *CharacterClones {
 		if a.character.Load().IDOrZero() != arg.CharacterID {
 			return
 		}
-		if arg.Section == app.SectionCharacterJumpClones {
+		switch arg.Section {
+		case app.SectionCharacterJumpClones:
 			a.update(ctx)
+		case app.SectionCharacterSkills:
+			a.loadJumpInfo(ctx) // skill level shortens the jump cooldown
 		}
 	})
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		a.refreshTop(ctx)
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		a.refreshTop()
 	})
 	return a
 }
@@ -133,7 +147,7 @@ func (a *CharacterClones) update(ctx context.Context) {
 			a.footerLabel.SetText("")
 			a.cloneTree.Clear()
 		})
-		a.refreshTop(ctx)
+		a.loadJumpInfo(ctx)
 		return
 	}
 
@@ -163,7 +177,7 @@ func (a *CharacterClones) update(ctx context.Context) {
 		a.footerLabel.SetText(footer)
 		a.cloneTree.Set(td)
 	})
-	a.refreshTop(ctx)
+	a.loadJumpInfo(ctx)
 }
 
 func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xwidget.TreeData[characterCloneNode], error) {
@@ -214,13 +228,15 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xw
 	return td, err
 }
 
-func (a *CharacterClones) refreshTop(ctx context.Context) {
+// loadJumpInfo loads the inputs for the next clone jump and shows them in the header.
+func (a *CharacterClones) loadJumpInfo(ctx context.Context) {
 	isLatest := a.topRun.start()
 	setTop := func(text string, color fyne.ThemeColorName) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
+			a.jumpInfo = cloneJumpInfo{}
 			ts := &widget.TextSegment{
 				Text: text,
 				Style: widget.RichTextStyle{
@@ -252,17 +268,53 @@ func (a *CharacterClones) refreshTop(ctx context.Context) {
 		setTop("Waiting for character data to be loaded...", theme.ColorNameWarning)
 		return
 	}
-	// reload for current jump times; the stored character is not refreshed on jumps
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
 		reportError(err)
 		return
 	}
+	var skillLevel int64
+	sk, err := a.u.Character().GetSkill(ctx, characterID, app.EveTypeInfomorphSynchronizing)
+	if errors.Is(err, app.ErrNotFound) {
+		skillLevel = 0
+	} else if err != nil {
+		reportError(err)
+		return
+	} else {
+		skillLevel = sk.ActiveSkillLevel
+	}
+	info := cloneJumpInfo{
+		characterID: characterID,
+		lastJumpAt:  c.LastCloneJumpAt,
+		skillLevel:  skillLevel,
+	}
+	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.jumpInfo = info
+		a.showJumpInfo(info)
+	})
+}
 
+// refreshTop updates the header from the loaded jump info, e.g. to show elapsed time.
+func (a *CharacterClones) refreshTop() {
+	fyne.Do(func() {
+		id := a.jumpInfo.characterID
+		if id == 0 || id != a.character.Load().IDOrZero() {
+			return // nothing loaded yet or header shows a status
+		}
+		a.showJumpInfo(a.jumpInfo)
+	})
+}
+
+// showJumpInfo shows the next and last clone jump in the header.
+// Must be called on the main thread.
+func (a *CharacterClones) showJumpInfo(info cloneJumpInfo) {
 	var nextJumpColor fyne.ThemeColorName
 	var nextJump, lastJump string
 
-	v, ok := c.NextCloneJump.Value()
+	v, ok := app.CalcNextCloneJump(info.lastJumpAt, info.skillLevel, time.Now()).Value()
 	if !ok {
 		nextJump = "?"
 		nextJumpColor = theme.ColorNameForeground
@@ -274,40 +326,35 @@ func (a *CharacterClones) refreshTop(ctx context.Context) {
 		nextJumpColor = theme.ColorNameError
 	}
 
-	if v, ok := c.LastCloneJumpAt.Value(); !ok {
+	if v, ok := info.lastJumpAt.Value(); !ok {
 		lastJump = "?"
 	} else {
 		lastJump = humanize.Time(v)
 	}
 
-	fyne.Do(func() {
-		if !isLatest() {
-			return
-		}
-		style := widget.RichTextStyle{
-			ColorName: theme.ColorNameForeground,
-		}
-		styleInline := style
-		styleInline.Inline = true
-		segs := []widget.RichTextSegment{
-			&widget.TextSegment{
-				Text:  "Next available jump: ",
-				Style: styleInline,
+	style := widget.RichTextStyle{
+		ColorName: theme.ColorNameForeground,
+	}
+	styleInline := style
+	styleInline.Inline = true
+	segs := []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text:  "Next available jump: ",
+			Style: styleInline,
+		},
+		&widget.TextSegment{
+			Text: nextJump,
+			Style: widget.RichTextStyle{
+				ColorName: nextJumpColor,
+				Inline:    true,
 			},
-			&widget.TextSegment{
-				Text: nextJump,
-				Style: widget.RichTextStyle{
-					ColorName: nextJumpColor,
-					Inline:    true,
-				},
-			},
-			&widget.TextSegment{
-				Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
-				Style: style,
-			},
-		}
-		a.topText.Set(segs)
-	})
+		},
+		&widget.TextSegment{
+			Text:  fmt.Sprintf(" • Last jump: %s", lastJump),
+			Style: style,
+		},
+	}
+	a.topText.Set(segs)
 }
 
 type characterJumpCloneItem struct {

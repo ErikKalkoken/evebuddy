@@ -62,7 +62,7 @@ func TestCharacterClones_Update(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Equal(t, "2 clones", a.footerLabel.Text, "keeps last count")
 
-		a.refreshTop(t.Context())
+		a.refreshTop()
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.topText.String(), "Next available jump:")
 	})
@@ -90,9 +90,64 @@ func TestCharacterClones_RefreshTop(t *testing.T) {
 		a := newClones(t)
 		a.character.Store(&stale)
 
-		a.refreshTop(t.Context())
+		a.update(t.Context())
 
 		assert.Contains(t, a.topText.String(), "Next available jump: NOW")
+	})
+	t.Run("refreshes header without database access", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			LastCloneJumpAt: optional.New(time.Now().Add(-48 * time.Hour)),
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterJumpClones,
+		})
+		a := NewCharacterClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.character.Store(c)
+		a.update(t.Context())
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // any database access would fail now
+			t.Fatal(err)
+		}
+		a.topText.SetWithText("")
+
+		a.refreshTop()
+
+		assert.Contains(t, a.topText.String(), "Next available jump: NOW")
+	})
+	t.Run("reloads skill level when skills change", func(t *testing.T) {
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			LastCloneJumpAt: optional.New(time.Now().Add(-20 * time.Hour)),
+		})
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterJumpClones,
+		})
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewCharacterClones(u)
+		a.character.Store(c)
+		a.update(t.Context())
+		assert.NotContains(t, a.topText.String(), "NOW")
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeInfomorphSynchronizing})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:      c.ID,
+			TypeID:           app.EveTypeInfomorphSynchronizing,
+			ActiveSkillLevel: 5,
+		})
+
+		u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkills,
+		})
+
+		assert.Contains(t, a.topText.String(), "Next available jump: NOW") // 19h cooldown with level 5
 	})
 	t.Run("shows no character", func(t *testing.T) {
 		a := newClones(t)
