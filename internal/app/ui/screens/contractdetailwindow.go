@@ -247,6 +247,10 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 				}
 			case app.ContractTypeAuction:
+				var auctionExpiresNote string
+				if r.status == app.ContractStatusOutstanding {
+					auctionExpiresNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
+				}
 				var currentBid string
 				if totalBids == 0 {
 					currentBid = "(None)"
@@ -257,7 +261,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")))},
+					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, auctionExpiresNote))},
 				})
 			}
 

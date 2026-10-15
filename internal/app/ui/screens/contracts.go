@@ -223,9 +223,7 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 // updateTimeDependent recomputes the fields which change with time
 // and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {
-	category := app.ContractCategoryAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
-	isExpired := app.ContractIsExpiredAt(r.dateExpired, now)
-	isOverdue := r.deadlineKind == contractDeadlineDelivery && r.deadline.MustValue().Before(now)
+	category, isExpired, isOverdue := app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
 	timeLeft, isPassed := contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
 	statusChanged := category != r.category || isExpired != r.isExpired || isOverdue != r.isOverdue
 	if !statusChanged && timeLeft == r.timeLeftText {

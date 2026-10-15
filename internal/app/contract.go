@@ -313,32 +313,39 @@ type CorporationContractItem struct {
 	Type        *EveType
 }
 
-// ContractCategoryAt returns the category of a contract at the given time.
+// ContractStateAt returns the category of a contract at the given time and
+// whether it has expired (outstanding only) or is overdue (in progress only).
 // A contract only requires attention when one of the user's characters must act:
 // the issuer of an expired contract or the acceptor of an overdue one.
 // Corporation roles (e.g. Contract Manager, Director) are not checked.
-func ContractCategoryAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) ContractCategory {
+func ContractStateAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) (category ContractCategory, isExpired, isOverdue bool) {
 	switch status {
 	case ContractStatusOutstanding:
-		if !ContractIsExpiredAt(dateExpired, now) {
-			return ContractCategoryOutstanding
+		isExpired = ContractIsExpiredAt(dateExpired, now)
+		switch {
+		case !isExpired:
+			category = ContractCategoryOutstanding
+		case issuerIsMine:
+			category = ContractCategoryRequiresAttention
+		default:
+			category = ContractCategoryOther
 		}
-		if issuerIsMine {
-			return ContractCategoryRequiresAttention
-		}
-		return ContractCategoryOther
 	case ContractStatusInProgress:
-		if ContractIsOverdueAt(dateAccepted, daysToComplete, now) && acceptorIsMine {
-			return ContractCategoryRequiresAttention
+		isOverdue = ContractIsOverdueAt(dateAccepted, daysToComplete, now)
+		if isOverdue && acceptorIsMine {
+			category = ContractCategoryRequiresAttention
+		} else {
+			category = ContractCategoryInProgress
 		}
-		return ContractCategoryInProgress
 	case
 		ContractStatusFinished,
 		ContractStatusFinishedContractor,
 		ContractStatusFinishedIssuer:
-		return ContractCategoryFinished
+		category = ContractCategoryFinished
+	default:
+		category = ContractCategoryOther
 	}
-	return ContractCategoryOther
+	return category, isExpired, isOverdue
 }
 
 // ContractIsExpiredAt reports whether a contract has expired at the given time.
