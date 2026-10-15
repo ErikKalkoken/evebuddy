@@ -4,8 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"testing/synctest"
+	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -54,6 +60,52 @@ func TestStructuresFilter_Match(t *testing.T) {
 			assert.Equal(t, tc.want, tc.filter.match(tc.row))
 		})
 	}
+}
+
+func TestStructureRow_StateText(t *testing.T) {
+	t.Run("no timer", func(t *testing.T) {
+		r := structureRow{stateShort: "Online"}
+		assert.Equal(t, "Online", r.stateText())
+	})
+	t.Run("counts down and expires", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r := structureRow{stateShort: "Armor", stateTimerEnd: optional.New(time.Now().Add(3 * time.Hour))}
+			assert.Equal(t, "Armor: 3h 0m", r.stateText())
+
+			time.Sleep(time.Hour)
+			assert.Equal(t, "Armor: 2h 0m", r.stateText())
+
+			time.Sleep(2 * time.Hour)
+			assert.Equal(t, "Armor: EXPIRED", r.stateText()) // exactly at the end
+		})
+	})
+}
+
+func TestStructureRow_FuelExpiresDisplay(t *testing.T) {
+	display := func(r structureRow) (string, fyne.ThemeColorName) {
+		segs := r.fuelExpiresDisplay()
+		require.Len(t, segs, 1)
+		s := segs[0].(*widget.TextSegment)
+		return s.Text, s.Style.ColorName
+	}
+	t.Run("low power", func(t *testing.T) {
+		text, color := display(structureRow{})
+		assert.Equal(t, "Low Power", text)
+		assert.Equal(t, theme.ColorNameWarning, color)
+	})
+	t.Run("counts down and expires", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r := structureRow{fuelExpires: optional.New(time.Now().Add(3 * time.Hour))}
+			text, color := display(r)
+			assert.Equal(t, "3h 0m", text)
+			assert.Equal(t, theme.ColorNameForeground, color)
+
+			time.Sleep(3 * time.Hour)
+			text, color = display(r)
+			assert.Equal(t, "EXPIRED", text)
+			assert.Equal(t, theme.ColorNameWarning, color)
+		})
+	})
 }
 
 func TestStructures_Filter(t *testing.T) {
@@ -167,18 +219,32 @@ func TestStructures_Filter(t *testing.T) {
 func TestStructures_RefreshTicker(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
-	u := testdouble.NewUIFake(testdouble.UIParams{
-		App:     test.NewTempApp(t),
-		Storage: st,
-	})
 	c := factory.CreateCorporation()
 	factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c.ID})
-	a := NewStructuresForCorporation(u)
-	a.corporation.Store(c)
+	for _, tc := range []struct {
+		name           string
+		new            func(u baseUI) *Structures
+		forCorporation bool
+	}{
+		{"corporation", NewStructuresForCorporation, true},
+		{"unified", NewUnifiedStructures, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u := testdouble.NewUIFake(testdouble.UIParams{
+				App:     test.NewTempApp(t),
+				Storage: st,
+			})
+			a := tc.new(u)
+			if tc.forCorporation {
+				a.corporation.Store(c)
+			}
+			require.Equal(t, 1, u.Signals().RefreshTickerExpired.Len())
 
-	u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+			u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-	assert.Len(t, a.rows, 1)
+			assert.Empty(t, a.rows) // ticker only redraws, it must not reload from storage
+		})
+	}
 }
 
 func TestStructures_ErrorDisplay(t *testing.T) {
