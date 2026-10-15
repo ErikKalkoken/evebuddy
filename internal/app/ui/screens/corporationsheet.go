@@ -30,6 +30,7 @@ type CorporationSheet struct {
 	ceoLink      *ui.InfoLink
 	character    atomic.Pointer[app.Character]
 	corporation  atomic.Pointer[app.Corporation]
+	errorLabel   *widget.Label
 	factionLink  *ui.InfoLink
 	homeLink     *ui.InfoLink
 	isCorpMode   bool
@@ -59,6 +60,7 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 	a := &CorporationSheet{
 		allianceLink: makeInfoLabel(),
 		ceoLink:      makeInfoLabel(),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		factionLink:  makeInfoLabel(),
 		homeLink:     makeInfoLabel(),
 		isCorpMode:   isCorpMode,
@@ -71,6 +73,9 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	// signals
 	if isCorpMode {
@@ -131,7 +136,7 @@ func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	portraitDesktop := container.NewVBox(container.NewPadded(a.logoImage))
 	c := container.NewBorder(
 		nil,
-		nil,
+		a.errorLabel,
 		nil,
 		portraitDesktop,
 		main,
@@ -149,6 +154,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.errorLabel.Hide()
 			a.allianceLink.Clear()
 			a.ceoLink.Clear()
 			a.factionLink.Clear()
@@ -159,6 +165,16 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			a.rolesLabel.SetText("")
 			a.taxRateLabel.SetText("")
 			a.tickerLabel.SetText("")
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	var corporationID int64
@@ -178,6 +194,7 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			}
 			slog.Error("Failed to fetch character for corporation sheet", "characterID", old.ID, "error", err)
 			clearAll()
+			setError(err)
 			return
 		}
 		if !a.character.CompareAndSwap(old, character) {
@@ -223,12 +240,14 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		}
 		slog.Error("Failed to fetch eve corporation", "id", corporationID, "error", err)
 		clearAll()
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.nameLink.Set(corporation.ToEveEntity())
 		a.logoImage.OnTapped = func() {
 			a.u.InfoViewer().Show(corporation.ToEveEntity())

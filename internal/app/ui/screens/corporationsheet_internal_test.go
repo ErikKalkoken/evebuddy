@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"slices"
 	"strings"
 	"testing"
@@ -100,4 +101,39 @@ func TestCorporationSheet_CharacterChangedCorporation(t *testing.T) {
 
 	assert.Equal(t, ec.Name, infoLinkText(t, a.nameLink))
 	assert.Equal(t, ec.ID, a.character.Load().EveCharacter.Corporation.ID)
+}
+
+func TestCorporationSheet_ErrorDisplay(t *testing.T) {
+	newSheet := func(t *testing.T) (*CorporationSheet, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewCorporationSheet(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), true)
+		a.corporation.Store(factory.CreateCorporation())
+		return a, db
+	}
+	t.Run("clears sheet and shows error when loading fails", func(t *testing.T) {
+		a, db := newSheet(t)
+		a.update(t.Context())
+		if _, err := db.Exec("DROP TABLE eve_corporations"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Equal(t, "", infoLinkText(t, a.nameLink))
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newSheet(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+
+		assert.False(t, a.errorLabel.Visible())
+	})
 }
