@@ -547,6 +547,81 @@ func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
 	assert.Equal(t, 0, got, "reloaded after the issuer was removed")
 }
 
+func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	newUI := func(t *testing.T) *testdouble.UIFake {
+		return testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+	}
+	// addCharacterToCorporation adds a character to a corporation without emitting signals.
+	addCharacterToCorporation := func(corporationID int64) {
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: corporationID})
+		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+	}
+	t.Run("characters", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		ecOwn := factory.CreateEveCorporation()
+		ec := factory.CreateEveCorporation()
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ecOwn.ID})
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:    c.ID,
+			Status:         app.ContractStatusInProgress,
+			AcceptorID:     ec.ID,
+			DateAccepted:   optional.New(time.Now().AddDate(0, 0, -4)),
+			DaysToComplete: optional.New[int64](3),
+		})
+		u := newUI(t)
+		a := NewContractsForCharacters(u)
+		var got int
+		a.OnUpdate = func(attention int) {
+			got = attention
+		}
+		a.update(t.Context())
+		assert.Equal(t, 0, got, "accepted for another corporation")
+
+		addCharacterToCorporation(ec.ID)
+		u.Signals().CorporationsChanged.Emit(t.Context(), struct{}{})
+		assert.Equal(t, 1, got, "reloaded after the acceptor became one of the user's corporations")
+	})
+	t.Run("corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		if _, err := st.GetOrCreateEveEntity(t.Context(), storage.CreateEveEntityParams{
+			ID:       ec.ID,
+			Name:     ec.Name,
+			Category: app.EveEntityCorporation,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		member := factory.CreateEveEntityCharacter()
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  corporation.ID,
+			Status:         app.ContractStatusOutstanding,
+			DateExpired:    time.Now().Add(-time.Hour),
+			ForCorporation: true,
+			IssuerID:       member.ID,
+		})
+		u := newUI(t)
+		a := NewContractsForCorporation(u)
+		a.corporation.Store(corporation)
+		var got int
+		a.OnUpdate = func(attention int) {
+			got = attention
+		}
+		a.update(t.Context())
+		assert.Equal(t, 0, got, "issued for a corporation without the user's characters")
+
+		addCharacterToCorporation(ec.ID)
+		u.Signals().CorporationsChanged.Emit(t.Context(), struct{}{})
+		assert.Equal(t, 1, got, "reloaded after the issuer became one of the user's corporations")
+	})
+}
+
 func TestContracts_ErrorDisplay(t *testing.T) {
 	newContracts := func(t *testing.T, st *storage.Storage) *Contracts {
 		return NewContractsForCharacters(testdouble.NewUIFake(testdouble.UIParams{

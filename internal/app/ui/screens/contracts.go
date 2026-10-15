@@ -597,6 +597,10 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.update(ctx)
 		})
 	}
+	// Which contracts require attention depends on the corporations of the user's characters.
+	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
 		fyne.Do(func() {
 			a.refreshTimeDependent(time.Now())
