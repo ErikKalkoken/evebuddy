@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
@@ -13,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -54,6 +57,25 @@ func TestStructuresFilter_Match(t *testing.T) {
 			assert.Equal(t, tc.want, tc.filter.match(tc.row))
 		})
 	}
+}
+
+func TestStructureRow_StateText(t *testing.T) {
+	t.Run("no timer", func(t *testing.T) {
+		r := structureRow{stateShort: "Online"}
+		assert.Equal(t, "Online", r.stateText())
+	})
+	t.Run("counts down and expires", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r := structureRow{stateShort: "Armor", stateTimerEnd: optional.New(time.Now().Add(3 * time.Hour))}
+			assert.Equal(t, "Armor: 3h 0m", r.stateText())
+
+			time.Sleep(time.Hour)
+			assert.Equal(t, "Armor: 2h 0m", r.stateText())
+
+			time.Sleep(3 * time.Hour)
+			assert.Equal(t, "Armor: EXPIRED", r.stateText())
+		})
+	})
 }
 
 func TestStructures_Filter(t *testing.T) {
@@ -178,7 +200,7 @@ func TestStructures_RefreshTicker(t *testing.T) {
 
 	u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-	assert.Len(t, a.rows, 1)
+	assert.Empty(t, a.rows) // ticker only redraws, it must not reload from storage
 }
 
 func TestStructures_ErrorDisplay(t *testing.T) {

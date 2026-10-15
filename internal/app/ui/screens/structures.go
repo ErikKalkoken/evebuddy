@@ -90,7 +90,8 @@ type structureRow struct {
 	solarSystemName    string
 	stateColor         fyne.ThemeColorName
 	stateDisplay       string
-	stateText          string
+	stateShort         string
+	stateTimerEnd      optional.Optional[time.Time]
 	structureID        int64
 	structureName      string
 	typeID             int64
@@ -110,6 +111,19 @@ func (r structureRow) fuelExpiresDisplay() []widget.RichTextSegment {
 	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
 		ColorName: color,
 	})
+}
+
+// stateText returns the short state with the time remaining on its timer, if any.
+func (r structureRow) stateText() string {
+	v, ok := r.stateTimerEnd.Value()
+	if !ok {
+		return r.stateShort
+	}
+	d := time.Until(v)
+	if d < 0 {
+		return r.stateShort + ": EXPIRED"
+	}
+	return r.stateShort + ": " + ihumanize.Duration(d)
 }
 
 // setSearchTarget sets the text the search entry matches against.
@@ -186,7 +200,7 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 		Label: "State",
 		Width: 150,
 		Update: func(r structureRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.stateText, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.stateText(), widget.RichTextStyle{
 				ColorName: r.stateColor,
 			})
 		},
@@ -251,7 +265,7 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 				case "Owner":
 					return xwidget.RichTextSegmentsFromText(r.corporationName)
 				case "State":
-					return xwidget.RichTextSegmentsFromText(r.stateText, widget.RichTextStyle{
+					return xwidget.RichTextSegmentsFromText(r.stateText(), widget.RichTextStyle{
 						ColorName: r.stateColor,
 					})
 				case "Services":
@@ -328,8 +342,8 @@ func newStructuresForCorporation(u baseUI, forCorporation bool) *Structures {
 			}
 			a.update(ctx)
 		})
-		a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-			a.update(ctx)
+		a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+			fyne.Do(a.main.Refresh)
 		})
 	} else {
 		a.u.Signals().AppInit.AddListener(func(ctx context.Context, _ struct{}) {
@@ -539,17 +553,6 @@ func (a *Structures) fetchData(ctx context.Context) ([]structureRow, error) {
 	}
 	rows := make([]structureRow, len(structures))
 	for i, s := range structures {
-		stateText := s.State.DisplayShort()
-		if v, ok := s.StateTimerEnd.Value(); ok {
-			var x string
-			d := time.Until(v)
-			if d >= 0 {
-				x = ihumanize.Duration(d)
-			} else {
-				x = "EXPIRED"
-			}
-			stateText += ": " + x
-		}
 		services := set.Collect(xiter.Map(xiter.FilterSlice(s.Services, func(x *app.StructureService) bool {
 			return x.State == app.StructureServiceStateOnline
 		}), func(x *app.StructureService) string {
@@ -574,7 +577,8 @@ func (a *Structures) fetchData(ctx context.Context) ([]structureRow, error) {
 			solarSystemName:    s.System.Name,
 			stateColor:         s.State.Color(),
 			stateDisplay:       s.State.Display(),
-			stateText:          stateText,
+			stateShort:         s.State.DisplayShort(),
+			stateTimerEnd:      s.StateTimerEnd,
 			structureID:        s.StructureID,
 			structureName:      s.DisplayName(),
 			typeID:             s.Type.ID,
