@@ -363,18 +363,17 @@ func (s *CharacterService) DownloadMissingMailBodies(ctx context.Context, charac
 	return aborted, nil
 }
 
-// TODO: Refactor into one DB call
-
+// DownloadedBodiesPercentage returns the total number of mails and the number of mails without body for a character.
 func (s *CharacterService) DownloadedBodiesPercentage(ctx context.Context, characterID int64) (total int, missing int, err error) {
-	m2, err := s.st.ListCharacterMailsWithoutBody(ctx, characterID)
+	total, err = s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	t2, err := s.st.ListCharacterMailIDs(ctx, characterID)
+	missing, err = s.st.CountCharacterMailsWithoutBody(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	return t2.Size(), m2.Size(), nil
+	return total, missing, nil
 }
 
 // AllDownloadedBodiesPercentage returns the total number of mails and the number of mails without body for all characters.

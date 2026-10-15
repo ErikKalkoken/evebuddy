@@ -107,6 +107,15 @@ FROM
 WHERE
     character_mails.character_id = ?;
 
+-- name: CountCharacterMailsWithoutBody :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    character_mails.character_id = ?
+    AND body_2 IS NULL;
+
 -- name: GetAllCharactersMailLabelUnreadCounts :many
 SELECT
     label_id,

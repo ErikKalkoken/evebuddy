@@ -11,6 +11,23 @@ import (
 	"time"
 )
 
+const countCharacterMailsWithoutBody = `-- name: CountCharacterMailsWithoutBody :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    character_mails.character_id = ?
+    AND body_2 IS NULL
+`
+
+func (q *Queries) CountCharacterMailsWithoutBody(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countCharacterMailsWithoutBody, characterID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMail = `-- name: CreateMail :one
 INSERT INTO
     character_mails (

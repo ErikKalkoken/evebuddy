@@ -98,6 +98,7 @@ type Mails struct {
 	NavigationPane *mailsNavigationPane
 	ReadingPane    *mailsReadingPane
 
+	bodiesComplete    atomic.Bool // all mail bodies downloaded, so ticks can skip the check
 	character         atomic.Pointer[app.Character]
 	composeCharacters []app.EntityShort // senders offered for new mails in unified mode
 	composeMenu       *fyne.Menu
@@ -174,6 +175,9 @@ func newMails(u baseUI, forCharacter bool) *Mails {
 		}
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
+		if a.bodiesComplete.Load() {
+			return // new mails go through update, which checks again
+		}
 		a.NavigationPane.updateDownloaded(ctx)
 	})
 	return a
@@ -491,7 +495,7 @@ func (a *mailsNavigationPane) setStatus(s string, i widget.Importance) {
 func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 	var total2, downloaded, hint string
 	var missingPercent int
-	var canceled bool
+	var canceled, complete bool
 	func() {
 		var total, missing int
 		var err error
@@ -513,6 +517,7 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 			total2 = "ERROR"
 			return
 		}
+		complete = missing == 0
 		p := message.NewPrinter(language.English)
 		total2 = p.Sprintf("%d total", total)
 		if total == 0 || missing == 0 {
@@ -526,17 +531,20 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 	if canceled {
 		return
 	}
-	a.ma.missingPercent.Store(int64(missingPercent))
+	a.ma.bodiesComplete.Store(complete)
+	changed := a.ma.missingPercent.Swap(int64(missingPercent)) != int64(missingPercent)
 	fyne.Do(func() {
 		a.folderTotal.SetText(total2)
 		if downloaded == "" {
 			a.folderDownloaded.Hide()
-			return
+		} else {
+			a.folderDownloaded.SetText(downloaded)
+			a.folderDownloaded.SetToolTip(hint)
+			a.folderDownloaded.Show()
 		}
-		a.folderDownloaded.SetText(downloaded)
-		a.folderDownloaded.SetToolTip(hint)
-		a.folderDownloaded.Show()
-		a.ma.callOnUpdate()
+		if changed {
+			a.ma.callOnUpdate()
+		}
 	})
 }
 

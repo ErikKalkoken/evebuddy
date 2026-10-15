@@ -411,6 +411,34 @@ func TestMailCounts(t *testing.T) {
 	})
 }
 
+func TestCountCharacterMailsWithoutBody(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("counts only mails without body", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: character.ID})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: character.ID})
+		factory.CreateCharacterMail() // other character
+		// when
+		got, err := st.CountCharacterMailsWithoutBody(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 1, got)
+	})
+	t.Run("character has no mail", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCharacterMail() // other character
+		// when
+		got, err := st.CountCharacterMailsWithoutBody(ctx, character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
+}
+
 func TestAllCharactersMails(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

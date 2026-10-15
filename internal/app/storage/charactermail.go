@@ -143,6 +143,15 @@ func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int64)
 	return int(count), err
 }
 
+// CountCharacterMailsWithoutBody returns the number of mails of a character without a body.
+func (st *Storage) CountCharacterMailsWithoutBody(ctx context.Context, characterID int64) (int, error) {
+	count, err := st.qRO.CountCharacterMailsWithoutBody(ctx, characterID)
+	if err != nil {
+		return 0, fmt.Errorf("count mails without body for character %d: %w", characterID, err)
+	}
+	return int(count), nil
+}
+
 func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCharacterMail: character %d, mail ID %d: %w", characterID, mailID, err)

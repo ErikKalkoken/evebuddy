@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"slices"
@@ -668,5 +669,115 @@ func TestUnifiedMails_ComposeMenu(t *testing.T) {
 		u.Signals().CharacterAdded.Emit(t.Context(), c)
 		assert.Contains(t, labels(), c.EveCharacter.Name)
 		assert.Len(t, a.composeCharacters, 3)
+	})
+}
+
+func TestMails_DownloadProgress(t *testing.T) {
+	type env struct {
+		a       *Mails
+		c       *app.Character
+		db      *sql.DB
+		factory testutil.Factory
+		missing []int // values received by OnUpdate
+		st      *storage.Storage
+	}
+	setup := func(t *testing.T) *env {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		e := &env{c: factory.CreateCharacterFull(), db: db, factory: factory, st: st}
+		e.a = NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		e.a.character.Store(e.c)
+		e.a.OnUpdate = func(_, missing int) {
+			e.missing = append(e.missing, missing)
+		}
+		return e
+	}
+	// setupHalfDownloaded returns an env with one of two mail bodies downloaded and the missing mail's ID.
+	setupHalfDownloaded := func(t *testing.T) (*env, int64) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		m := e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context())
+		return e, m.MailID
+	}
+	dropMails := func(t *testing.T, db *sql.DB) {
+		if _, err := db.Exec("DROP TABLE character_mails"); err != nil { // let the next check fail
+			t.Fatal(err)
+		}
+	}
+	tick := func(t *testing.T, a *Mails) {
+		a.u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+	}
+
+	t.Run("shows percentage while bodies are missing", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.Equal(t, "50%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.Equal(t, []int{50}, e.missing)
+		assert.False(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("reports completion", func(t *testing.T) {
+		e, mailID := setupHalfDownloaded(t)
+		err := e.st.UpdateCharacterMailSetBody(t.Context(), e.c.ID, mailID, optional.New("body"))
+		require.NoError(t, err)
+
+		e.a.NavigationPane.updateDownloaded(t.Context())
+
+		assert.False(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.Equal(t, []int{50, 0}, e.missing)
+		assert.True(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("does not call OnUpdate when unchanged", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		e.a.NavigationPane.updateDownloaded(t.Context())
+		assert.Equal(t, []int{50}, e.missing)
+	})
+	t.Run("tick skips check when complete", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context())
+		require.True(t, e.a.bodiesComplete.Load())
+		dropMails(t, e.db)
+
+		tick(t, e.a)
+
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("tick checks while bodies are missing", func(t *testing.T) {
+		e, _ := setupHalfDownloaded(t)
+		dropMails(t, e.db)
+
+		tick(t, e.a)
+
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+	})
+	t.Run("tick retries after error", func(t *testing.T) {
+		e := setup(t)
+		dropMails(t, e.db)
+		e.a.NavigationPane.updateDownloaded(t.Context())
+		require.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		e.a.NavigationPane.folderTotal.SetText("")
+
+		tick(t, e.a)
+
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		assert.False(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("update resets completion", func(t *testing.T) {
+		e := setup(t)
+		e.factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: e.c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		e.a.NavigationPane.updateDownloaded(t.Context())
+		require.True(t, e.a.bodiesComplete.Load())
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.update(t.Context())
+
+		assert.False(t, e.a.bodiesComplete.Load())
+		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
 	})
 }

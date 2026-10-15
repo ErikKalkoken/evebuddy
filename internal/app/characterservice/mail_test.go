@@ -508,4 +508,61 @@ func TestDownloadedBodiesPercentage(t *testing.T) {
 		assert.Equal(t, 1, total)
 		assert.Equal(t, 1, missing)
 	})
+	t.Run("ignores mails with body and other characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		factory.CreateCharacterMail()         // other character
+		factory.CreateCharacterMailWithBody() // other character
+		// when
+		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 2, total)
+		assert.Equal(t, 1, missing)
+	})
+	t.Run("no mails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0, total)
+		assert.Equal(t, 0, missing)
+	})
+}
+
+func TestAllDownloadedBodiesPercentage(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("counts mails of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID})
+		// when
+		total, missing, err := s.AllDownloadedBodiesPercentage(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Equal(t, 2, missing)
+	})
+	t.Run("no mails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		total, missing, err := s.AllDownloadedBodiesPercentage(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0, total)
+		assert.Equal(t, 0, missing)
+	})
 }
