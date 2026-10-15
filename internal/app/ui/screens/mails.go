@@ -1304,7 +1304,7 @@ func (a *mailsReadingPane) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
+func (a *mailsReadingPane) MakeDeleteAction() (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		// callback runs off the main thread, so it must not read a.mail
 		m := a.mail
@@ -1337,10 +1337,7 @@ func (a *mailsReadingPane) MakeDeleteAction(onSuccess func()) (fyne.Resource, fu
 					a.ma.u.DisplaySnackbar(fmt.Sprintf("Failed to delete mail \"%s\": %s", subject, a.ma.u.ErrorDisplay(err)))
 					return
 				}
-				a.ma.mailsChanged(ctx, m.CharacterID)
-				if onSuccess != nil {
-					onSuccess()
-				}
+				a.ma.mailsChanged(ctx, m.CharacterID) // clears the reading pane, which calls OnCleared
 				a.ma.u.DisplaySnackbar(fmt.Sprintf("Mail \"%s\" deleted", subject))
 			}, a.ma.u.MainWindow(),
 		)
@@ -1386,7 +1383,7 @@ func (a *mailsReadingPane) makeToolbar() *widget.Toolbar {
 			fyne.CurrentApp().Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(a.MakeDeleteAction(nil)),
+		widget.NewToolbarAction(a.MakeDeleteAction()),
 	)
 	return toolbar
 }

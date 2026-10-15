@@ -882,6 +882,38 @@ func TestMailsReadingPane_OnCleared(t *testing.T) {
 		p.clear()
 		assert.Zero(t, *cleared)
 	})
+	t.Run("fires when the shown mail is deleted", func(t *testing.T) {
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.True(t, slices.ContainsFunc(a.MessagePane.rowsFiltered, func(r mailRow) bool {
+			return r.mailID == m.MailID
+		}), "mail must be listed, else the pane is cleared regardless of the delete")
+		var cleared int
+		a.ReadingPane.OnCleared = func() { cleared++ }
+		a.ReadingPane.showMail(mailRow{characterID: c.ID, mailID: m.MailID})
+		a.MessagePane.update(t.Context())
+		require.Zero(t, cleared, "listed mail must stay shown")
+		require.NoError(t, st.DeleteCharacterMail(t.Context(), c.ID, m.MailID))
+
+		a.mailsChanged(t.Context(), c.ID) // what the delete action does on success
+
+		assert.Equal(t, 1, cleared)
+	})
 	t.Run("does not fire when another mail is shown", func(t *testing.T) {
 		p, cleared := setup(t)
 		p.showMail(mailRow{characterID: c.ID, mailID: m1.MailID})

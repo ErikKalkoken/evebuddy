@@ -96,13 +96,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAction()),
 					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeReplyAllAction()),
 					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeForwardAction()),
-					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction(func() {
-						fyne.Do(func() {
-							if characterNav.Current() == readingPage { // may already be popped by OnCleared
-								characterNav.Pop()
-							}
-						})
-					})),
+					xwidget.NewIconButton(u.characterMails.ReadingPane.MakeDeleteAction()),
 				)
 				characterNav.PushAndHideNavBar(readingPage)
 			}
@@ -932,13 +926,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAction()),
 					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeReplyAllAction()),
 					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeForwardAction()),
-					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction(func() {
-						fyne.Do(func() {
-							if homeNav.Current() == unifiedReadingPage { // may already be popped by OnCleared
-								homeNav.Pop()
-							}
-						})
-					})),
+					xwidget.NewIconButton(u.unifiedMails.ReadingPane.MakeDeleteAction()),
 				)
 				homeNav.PushAndHideNavBar(unifiedReadingPage)
 			}
