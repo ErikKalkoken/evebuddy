@@ -38,6 +38,7 @@ type CharacterAttributes struct {
 	list      *widget.List
 	top       *widget.Label
 	u         baseUI
+	updateRun latestRun
 }
 
 func NewCharacterAttributes(s baseUI) *CharacterAttributes {
@@ -90,14 +91,21 @@ func (a *CharacterAttributes) makeAttributeList() *widget.List {
 }
 
 func (a *CharacterAttributes) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.rows)
 			a.list.Refresh()
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text, a.top.Importance = s, i
 			a.top.Refresh()
 		})
@@ -129,6 +137,9 @@ func (a *CharacterAttributes) update(ctx context.Context) {
 	}
 	setTop(fmt.Sprintf("Total points: %d", total), widget.MediumImportance)
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.rows = attributes
 		a.list.Refresh()
 	})

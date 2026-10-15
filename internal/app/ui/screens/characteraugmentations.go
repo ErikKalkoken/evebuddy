@@ -28,6 +28,7 @@ type CharacterAugmentations struct {
 	list      *widget.List
 	top       *widget.Label
 	u         baseUI
+	updateRun latestRun
 }
 
 func NewCharacterAugmentations(s baseUI) *CharacterAugmentations {
@@ -83,14 +84,21 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 }
 
 func (a *CharacterAugmentations) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			xslices.Clear(&a.implants)
 			a.list.Refresh()
 		})
 	}
 	setTop := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.top.Text = s
 			a.top.Importance = i
 			a.top.Refresh()
@@ -124,6 +132,9 @@ func (a *CharacterAugmentations) update(ctx context.Context) {
 
 	setTop(fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance)
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.implants = implants
 		a.list.Refresh()
 	})

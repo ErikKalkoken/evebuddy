@@ -29,6 +29,7 @@ type CharacterWallet struct {
 	transactions  *WalletTransactions
 	loyaltyPoints *CharacterLoyaltyPoints
 	u             baseUI
+	updateRun     latestRun
 }
 
 func NewCharacterWallet(u baseUI) *CharacterWallet {
@@ -92,8 +93,12 @@ func (a *CharacterWallet) Update(ctx context.Context) {
 }
 
 func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	reset := func() {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			if a.OnBalanceUpdate != nil {
 				a.OnBalanceUpdate(optional.Optional[float64]{})
 			}
@@ -101,6 +106,9 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 	}
 	setBalance := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.balanceLabel.Text, a.balanceLabel.Importance = s, i
 			a.balanceLabel.Refresh()
 		})
@@ -153,6 +161,9 @@ func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
 	s := humanize.FormatFloat(ui.FloatFormatISK, balance) + " ISK"
 	setBalance(s, widget.MediumImportance)
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		if a.OnBalanceUpdate != nil {
 			a.OnBalanceUpdate(optional.New(balance))
 		}
