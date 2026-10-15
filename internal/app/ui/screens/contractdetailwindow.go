@@ -53,10 +53,15 @@ func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 			reportError(err)
 			return
 		}
+		myCorporationIDs, err := u.Character().ListCharacterCorporationIDs(ctx)
+		if err != nil {
+			reportError(err)
+			return
+		}
 		fyne.Do(func() {
 			ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
 				return c.NameOrZero()
-			}, myCharacterIDs))
+			}, myCharacterIDs, myCorporationIDs))
 		})
 	}()
 }

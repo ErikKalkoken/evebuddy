@@ -121,7 +121,7 @@ type contractRow struct {
 	volume          optional.Optional[float64]
 }
 
-func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs set.Set[int64]) contractRow {
+func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
@@ -156,11 +156,11 @@ func newContractRowForCharacter(o *app.CharacterContract, characterName func(int
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
-	r.init(o.Issuer.ID, o.Acceptor, myCharacterIDs, time.Now())
+	r.init(o.IssuerEffective().ID, o.Acceptor, myCharacterIDs, myCorporationIDs, time.Now())
 	return r
 }
 
-func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation, myCharacterIDs set.Set[int64]) contractRow {
+func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
@@ -195,7 +195,7 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		typeName:       o.Type.Display(),
 		volume:         o.Volume,
 	}
-	r.init(o.Issuer.ID, o.Acceptor, myCharacterIDs, time.Now())
+	r.init(o.IssuerEffective().ID, o.Acceptor, myCharacterIDs, myCorporationIDs, time.Now())
 	return r
 }
 
@@ -211,10 +211,12 @@ func makeSearchTarget(items []string, title optional.Optional[string]) string {
 }
 
 // init sets the derived fields of a new row. It must be called once after the row is created.
-func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEntity], myCharacterIDs set.Set[int64], now time.Time) {
-	r.issuerIsMine = myCharacterIDs.Contains(issuerID)
+// Contracts issued or accepted for one of the user's corporations count as the user's.
+func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEntity], myCharacterIDs, myCorporationIDs set.Set[int64], now time.Time) {
+	myIDs := set.Union(myCharacterIDs, myCorporationIDs)
+	r.issuerIsMine = myIDs.Contains(issuerID)
 	r.acceptorIsMine = optional.Map(acceptor, false, func(v *app.EveEntity) bool {
-		return myCharacterIDs.Contains(v.ID)
+		return myIDs.Contains(v.ID)
 	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
 	r.updateTimeDependent(now)
@@ -859,9 +861,13 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	if err != nil {
 		return nil, err
 	}
+	myCorporationIDs, err := a.u.Character().ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []contractRow
 	for _, c := range oo {
-		r := newContractRowForCorporation(c, corporation, myCharacterIDs)
+		r := newContractRowForCorporation(c, corporation, myCharacterIDs, myCorporationIDs)
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -885,12 +891,16 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 		return nil, err
 	}
 	myCharacterIDs := set.Collect(maps.Keys(characters))
+	myCorporationIDs, err := a.u.Character().ListCharacterCorporationIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var rows []contractRow
 	tagsByCharacter := make(map[int64]set.Set[string])
 	for _, c := range oo2 {
 		r := newContractRowForCharacter(c, func(id int64) string {
 			return characters[id]
-		}, myCharacterIDs)
+		}, myCharacterIDs, myCorporationIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)

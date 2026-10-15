@@ -315,8 +315,8 @@ type CorporationContractItem struct {
 
 // ContractStateAt returns the category of a contract at the given time and
 // whether it has expired (outstanding only) or is overdue (in progress only).
-// A contract only requires attention when one of the user's characters must act:
-// the issuer of an expired contract or the acceptor of an overdue one.
+// A contract only requires attention when issuerIsMine is true for an expired contract
+// or acceptorIsMine is true for an overdue one.
 // Corporation roles (e.g. Contract Manager, Director) are not checked.
 func ContractStateAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) (category ContractCategory, isExpired, isOverdue bool) {
 	switch status {
