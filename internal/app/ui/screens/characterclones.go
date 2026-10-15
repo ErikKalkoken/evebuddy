@@ -49,21 +49,28 @@ func (n characterCloneNode) UID() widget.TreeNodeID {
 type CharacterClones struct {
 	widget.BaseWidget
 
-	character atomic.Pointer[app.Character]
-	top       *xwidget.RichText
-	tree      *xwidget.Tree[characterCloneNode]
-	u         baseUI
+	character   atomic.Pointer[app.Character]
+	cloneTree   *xwidget.Tree[characterCloneNode]
+	errorLabel  *widget.Label
+	footerLabel *widget.Label
+	topText     *xwidget.RichText
+	u           baseUI
 }
 
 func NewCharacterClones(u baseUI) *CharacterClones {
-	top := xwidget.NewRichText()
-	top.Wrapping = fyne.TextWrapWord
 	a := &CharacterClones{
-		top: top,
-		u:   u,
+		errorLabel:  ui.NewLabelWithWrapping(""),
+		footerLabel: ui.NewLabelWithTruncation(""),
+		topText:     xwidget.NewRichText(),
+		u:           u,
 	}
 	a.ExtendBaseWidget(a)
-	a.tree = a.makeTree()
+
+	a.topText.Wrapping = fyne.TextWrapWord
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
+
+	a.cloneTree = a.makeTree()
 
 	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
@@ -79,16 +86,13 @@ func NewCharacterClones(u baseUI) *CharacterClones {
 		}
 	})
 	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		fyne.Do(func() {
-			n := a.tree.Data().ChildrenCount(nil)
-			go a.refreshTop(ctx, n)
-		})
+		a.refreshTop(ctx)
 	})
 	return a
 }
 
 func (a *CharacterClones) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(a.top, nil, nil, nil, a.tree)
+	c := container.NewBorder(a.topText, container.NewVBox(a.errorLabel, a.footerLabel), nil, nil, a.cloneTree)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -119,10 +123,12 @@ func (a *CharacterClones) update(ctx context.Context) {
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		fyne.Do(func() {
-			a.top.SetWithText("No character", widget.RichTextStyle{
+			a.topText.SetWithText("No character", widget.RichTextStyle{
 				ColorName: theme.ColorNameDisabled,
 			})
-			a.tree.Clear()
+			a.errorLabel.Hide()
+			a.footerLabel.SetText("")
+			a.cloneTree.Clear()
 		})
 		return
 	}
@@ -134,18 +140,20 @@ func (a *CharacterClones) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		fyne.Do(func() {
-			a.top.Set(xwidget.RichTextSegmentsFromText("ERROR: "+a.u.ErrorDisplay(err), widget.RichTextStyle{
-				ColorName: theme.ColorNameError,
-			}))
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
 
-	n := td.ChildrenCount(nil)
+	footer := fmt.Sprintf("%s clones", ihumanize.Comma(td.ChildrenCount(nil)))
 	fyne.Do(func() {
-		a.tree.Set(td)
+		a.errorLabel.Hide()
+		a.footerLabel.SetText(footer)
+		a.cloneTree.Set(td)
 	})
-	a.refreshTop(ctx, n)
+	a.refreshTop(ctx)
 }
 
 func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xwidget.TreeData[characterCloneNode], error) {
@@ -196,7 +204,7 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xw
 	return td, err
 }
 
-func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
+func (a *CharacterClones) refreshTop(ctx context.Context) {
 	setTop := func(text string, color fyne.ThemeColorName) {
 		fyne.Do(func() {
 			ts := &widget.TextSegment{
@@ -205,7 +213,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 					ColorName: color,
 				},
 			}
-			a.top.Set([]widget.RichTextSegment{ts})
+			a.topText.Set([]widget.RichTextSegment{ts})
 		})
 	}
 
@@ -220,7 +228,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 			return
 		}
 		slog.Error("Failed to refresh jump clones header", "characterID", c.ID, "error", err)
-		setTop("Error: "+a.u.ErrorDisplay(err), theme.ColorNameError)
+		setTop("ERROR: "+a.u.ErrorDisplay(err), theme.ColorNameError)
 		return
 	}
 	if !hasData {
@@ -257,7 +265,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 		styleInline.Inline = true
 		segs := []widget.RichTextSegment{
 			&widget.TextSegment{
-				Text:  fmt.Sprintf("%d clones • Next available jump: ", cloneCount),
+				Text:  "Next available jump: ",
 				Style: styleInline,
 			},
 			&widget.TextSegment{
@@ -272,7 +280,7 @@ func (a *CharacterClones) refreshTop(ctx context.Context, cloneCount int) {
 				Style: style,
 			},
 		}
-		a.top.Set(segs)
+		a.topText.Set(segs)
 	})
 }
 
