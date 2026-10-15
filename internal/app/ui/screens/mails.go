@@ -504,9 +504,9 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context) {
 			if characterID == 0 {
 				return
 			}
-			total, missing, err = a.ma.u.Character().DownloadedBodiesPercentage(ctx, characterID)
+			total, missing, err = a.ma.u.Character().CountMailsWithoutBody(ctx, characterID)
 		} else {
-			total, missing, err = a.ma.u.Character().AllDownloadedBodiesPercentage(ctx)
+			total, missing, err = a.ma.u.Character().CountAllMailsWithoutBody(ctx)
 		}
 		if app.IsContextCanceled(ctx, err) {
 			canceled = true
@@ -673,29 +673,29 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 	var unreadCount int
 	var err error
 	if characterID != 0 {
-		labelUnreadCounts, err = cs.GetMailLabelUnreadCounts(ctx, characterID)
+		labelUnreadCounts, err = cs.CountMailsUnreadByLabel(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
-		listUnreadCounts, err = cs.GetMailListUnreadCounts(ctx, characterID)
+		listUnreadCounts, err = cs.CountMailsUnreadByList(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
 		// summing label and list counts would count mails with several labels or lists repeatedly
-		_, unreadCount, err = cs.GetMailCounts(ctx, characterID)
+		_, unreadCount, err = cs.CountMails(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
 	} else {
-		labelUnreadCounts, err = cs.GetAllMailLabelUnreadCounts(ctx)
+		labelUnreadCounts, err = cs.CountAllMailsUnreadByLabel(ctx)
 		if err != nil {
 			return 0, err
 		}
-		listUnreadCounts, err = cs.GetAllMailListUnreadCounts(ctx)
+		listUnreadCounts, err = cs.CountAllMailsUnreadByList(ctx)
 		if err != nil {
 			return 0, err
 		}
-		_, unreadCount, err = cs.GetAllMailCounts(ctx)
+		_, unreadCount, err = cs.CountAllMails(ctx)
 		if err != nil {
 			return 0, err
 		}

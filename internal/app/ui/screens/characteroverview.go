@@ -579,7 +579,7 @@ func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 		}
 		r.ship.Set(et)
 	}
-	total, unread, err := a.u.Character().GetMailCounts(ctx, c.ID)
+	total, unread, err := a.u.Character().CountMails(ctx, c.ID)
 	if err != nil {
 		return r, err
 	}

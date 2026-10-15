@@ -331,7 +331,7 @@ func TestSetMailReadLocal(t *testing.T) {
 	})
 }
 
-func TestGetAllMailUnreadCount(t *testing.T) {
+func TestCountAllMailsUnread(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -342,14 +342,14 @@ func TestGetAllMailUnreadCount(t *testing.T) {
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(true)})
 		// when
-		got, err := s.GetAllMailUnreadCount(t.Context())
+		got, err := s.CountAllMailsUnread(t.Context())
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 1, got)
 	})
 }
 
-func TestGetMailCounts(t *testing.T) {
+func TestCountMails(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -360,7 +360,7 @@ func TestGetMailCounts(t *testing.T) {
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(true)})
 		// when
-		total, unread, err := s.GetMailCounts(t.Context(), c.ID)
+		total, unread, err := s.CountMails(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 2, total)
@@ -368,7 +368,7 @@ func TestGetMailCounts(t *testing.T) {
 	})
 }
 
-func TestGetMailLabelUnreadCounts(t *testing.T) {
+func TestCountMailsUnreadByLabel(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -383,14 +383,14 @@ func TestGetMailLabelUnreadCounts(t *testing.T) {
 			LabelIDs:    []int64{label.LabelID},
 		})
 		// when
-		got, err := s.GetMailLabelUnreadCounts(t.Context(), c.ID)
+		got, err := s.CountMailsUnreadByLabel(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 1, got[label.LabelID])
 	})
 }
 
-func TestGetMailListUnreadCounts(t *testing.T) {
+func TestCountMailsUnreadByList(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -405,7 +405,7 @@ func TestGetMailListUnreadCounts(t *testing.T) {
 			RecipientIDs: []int64{list.ID},
 		})
 		// when
-		got, err := s.GetMailListUnreadCounts(t.Context(), c.ID)
+		got, err := s.CountMailsUnreadByList(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 1, got[list.ID])
@@ -492,7 +492,7 @@ func TestListMailHeadersForListOrdered(t *testing.T) {
 	})
 }
 
-func TestDownloadedBodiesPercentage(t *testing.T) {
+func TestCountMailsWithoutBody(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -502,7 +502,7 @@ func TestDownloadedBodiesPercentage(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID}) // no body
 		// when
-		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		total, missing, err := s.CountMailsWithoutBody(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 1, total)
@@ -517,7 +517,7 @@ func TestDownloadedBodiesPercentage(t *testing.T) {
 		factory.CreateCharacterMail()         // other character
 		factory.CreateCharacterMailWithBody() // other character
 		// when
-		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		total, missing, err := s.CountMailsWithoutBody(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 2, total)
@@ -528,7 +528,7 @@ func TestDownloadedBodiesPercentage(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		total, missing, err := s.DownloadedBodiesPercentage(t.Context(), c.ID)
+		total, missing, err := s.CountMailsWithoutBody(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0, total)
@@ -536,7 +536,7 @@ func TestDownloadedBodiesPercentage(t *testing.T) {
 	})
 }
 
-func TestAllDownloadedBodiesPercentage(t *testing.T) {
+func TestCountAllMailsWithoutBody(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
@@ -549,7 +549,7 @@ func TestAllDownloadedBodiesPercentage(t *testing.T) {
 		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: c1.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID})
 		// when
-		total, missing, err := s.AllDownloadedBodiesPercentage(t.Context())
+		total, missing, err := s.CountAllMailsWithoutBody(t.Context())
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 3, total)
@@ -559,7 +559,7 @@ func TestAllDownloadedBodiesPercentage(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		// when
-		total, missing, err := s.AllDownloadedBodiesPercentage(t.Context())
+		total, missing, err := s.CountAllMailsWithoutBody(t.Context())
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0, total)

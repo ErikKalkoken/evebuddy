@@ -11,6 +11,257 @@ import (
 	"time"
 )
 
+const countAllCharactersMails = `-- name: CountAllCharactersMails :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+`
+
+func (q *Queries) CountAllCharactersMails(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAllCharactersMails)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countAllCharactersMailsUnread = `-- name: CountAllCharactersMailsUnread :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    is_read IS FALSE
+`
+
+func (q *Queries) CountAllCharactersMailsUnread(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAllCharactersMailsUnread)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countAllCharactersMailsUnreadByLabel = `-- name: CountAllCharactersMailsUnreadByLabel :many
+SELECT
+    label_id,
+    COUNT(cm.id) AS unread_count_2
+FROM
+    character_mail_labels cml
+    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    is_read IS FALSE
+GROUP BY
+    label_id
+`
+
+type CountAllCharactersMailsUnreadByLabelRow struct {
+	LabelID      int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) CountAllCharactersMailsUnreadByLabel(ctx context.Context) ([]CountAllCharactersMailsUnreadByLabelRow, error) {
+	rows, err := q.db.QueryContext(ctx, countAllCharactersMailsUnreadByLabel)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountAllCharactersMailsUnreadByLabelRow
+	for rows.Next() {
+		var i CountAllCharactersMailsUnreadByLabelRow
+		if err := rows.Scan(&i.LabelID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countAllCharactersMailsUnreadByList = `-- name: CountAllCharactersMailsUnreadByList :many
+SELECT
+    eve_entities.id AS list_id,
+    COUNT(cm.id) as unread_count_2
+FROM
+    character_mails cm
+    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
+    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
+WHERE
+    eve_entities.category = "mail_list"
+    AND cm.is_read IS FALSE
+GROUP BY
+    eve_entities.id
+`
+
+type CountAllCharactersMailsUnreadByListRow struct {
+	ListID       int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) CountAllCharactersMailsUnreadByList(ctx context.Context) ([]CountAllCharactersMailsUnreadByListRow, error) {
+	rows, err := q.db.QueryContext(ctx, countAllCharactersMailsUnreadByList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountAllCharactersMailsUnreadByListRow
+	for rows.Next() {
+		var i CountAllCharactersMailsUnreadByListRow
+		if err := rows.Scan(&i.ListID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countAllCharactersMailsWithoutBody = `-- name: CountAllCharactersMailsWithoutBody :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    body_2 IS NULL
+`
+
+func (q *Queries) CountAllCharactersMailsWithoutBody(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAllCharactersMailsWithoutBody)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countCharacterMails = `-- name: CountCharacterMails :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    character_mails.character_id = ?
+`
+
+func (q *Queries) CountCharacterMails(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countCharacterMails, characterID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countCharacterMailsUnread = `-- name: CountCharacterMailsUnread :one
+SELECT
+    COUNT(*)
+FROM
+    character_mails
+WHERE
+    character_mails.character_id = ?
+    AND is_read IS FALSE
+`
+
+func (q *Queries) CountCharacterMailsUnread(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countCharacterMailsUnread, characterID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countCharacterMailsUnreadByLabel = `-- name: CountCharacterMailsUnreadByLabel :many
+SELECT
+    label_id,
+    COUNT(cm.id) AS unread_count_2
+FROM
+    character_mail_labels cml
+    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    cml.character_id = ?
+    AND is_read IS FALSE
+GROUP BY
+    label_id
+`
+
+type CountCharacterMailsUnreadByLabelRow struct {
+	LabelID      int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) CountCharacterMailsUnreadByLabel(ctx context.Context, characterID int64) ([]CountCharacterMailsUnreadByLabelRow, error) {
+	rows, err := q.db.QueryContext(ctx, countCharacterMailsUnreadByLabel, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountCharacterMailsUnreadByLabelRow
+	for rows.Next() {
+		var i CountCharacterMailsUnreadByLabelRow
+		if err := rows.Scan(&i.LabelID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countCharacterMailsUnreadByList = `-- name: CountCharacterMailsUnreadByList :many
+SELECT
+    eve_entities.id AS list_id,
+    COUNT(cm.id) as unread_count_2
+FROM
+    character_mails cm
+    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
+    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
+WHERE
+    character_id = ?
+    AND eve_entities.category = "mail_list"
+    AND cm.is_read IS FALSE
+GROUP BY
+    eve_entities.id
+`
+
+type CountCharacterMailsUnreadByListRow struct {
+	ListID       int64
+	UnreadCount2 int64
+}
+
+func (q *Queries) CountCharacterMailsUnreadByList(ctx context.Context, characterID int64) ([]CountCharacterMailsUnreadByListRow, error) {
+	rows, err := q.db.QueryContext(ctx, countCharacterMailsUnreadByList, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountCharacterMailsUnreadByListRow
+	for rows.Next() {
+		var i CountCharacterMailsUnreadByListRow
+		if err := rows.Scan(&i.ListID, &i.UnreadCount2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countCharacterMailsWithoutBody = `-- name: CountCharacterMailsWithoutBody :one
 SELECT
     COUNT(*)
@@ -147,180 +398,6 @@ func (q *Queries) DeleteMailCharacterMailLabels(ctx context.Context, characterMa
 	return err
 }
 
-const getAllCharactersMailLabelUnreadCounts = `-- name: GetAllCharactersMailLabelUnreadCounts :many
-SELECT
-    label_id,
-    COUNT(cm.id) AS unread_count_2
-FROM
-    character_mail_labels cml
-    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
-    JOIN character_mails cm ON cm.id = cmml.character_mail_id
-WHERE
-    is_read IS FALSE
-GROUP BY
-    label_id
-`
-
-type GetAllCharactersMailLabelUnreadCountsRow struct {
-	LabelID      int64
-	UnreadCount2 int64
-}
-
-func (q *Queries) GetAllCharactersMailLabelUnreadCounts(ctx context.Context) ([]GetAllCharactersMailLabelUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCharactersMailLabelUnreadCounts)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllCharactersMailLabelUnreadCountsRow
-	for rows.Next() {
-		var i GetAllCharactersMailLabelUnreadCountsRow
-		if err := rows.Scan(&i.LabelID, &i.UnreadCount2); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllCharactersMailListUnreadCounts = `-- name: GetAllCharactersMailListUnreadCounts :many
-SELECT
-    eve_entities.id AS list_id,
-    COUNT(cm.id) as unread_count_2
-FROM
-    character_mails cm
-    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
-    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
-WHERE
-    eve_entities.category = "mail_list"
-    AND cm.is_read IS FALSE
-GROUP BY
-    eve_entities.id
-`
-
-type GetAllCharactersMailListUnreadCountsRow struct {
-	ListID       int64
-	UnreadCount2 int64
-}
-
-func (q *Queries) GetAllCharactersMailListUnreadCounts(ctx context.Context) ([]GetAllCharactersMailListUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCharactersMailListUnreadCounts)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllCharactersMailListUnreadCountsRow
-	for rows.Next() {
-		var i GetAllCharactersMailListUnreadCountsRow
-		if err := rows.Scan(&i.ListID, &i.UnreadCount2); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllMailCount = `-- name: GetAllMailCount :one
-SELECT
-    COUNT(*)
-FROM
-    character_mails
-`
-
-func (q *Queries) GetAllMailCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getAllMailCount)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const getAllMailUnreadCount = `-- name: GetAllMailUnreadCount :one
-SELECT
-    COUNT(*)
-FROM
-    character_mails
-WHERE
-    is_read IS FALSE
-`
-
-func (q *Queries) GetAllMailUnreadCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getAllMailUnreadCount)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const getAllMailWithoutBodyCount = `-- name: GetAllMailWithoutBodyCount :one
-SELECT
-    COUNT(*)
-FROM
-    character_mails
-WHERE
-    body_2 IS NULL
-`
-
-func (q *Queries) GetAllMailWithoutBodyCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getAllMailWithoutBodyCount)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const getCharacterMailLabelUnreadCounts = `-- name: GetCharacterMailLabelUnreadCounts :many
-SELECT
-    label_id,
-    COUNT(cm.id) AS unread_count_2
-FROM
-    character_mail_labels cml
-    JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
-    JOIN character_mails cm ON cm.id = cmml.character_mail_id
-WHERE
-    cml.character_id = ?
-    AND is_read IS FALSE
-GROUP BY
-    label_id
-`
-
-type GetCharacterMailLabelUnreadCountsRow struct {
-	LabelID      int64
-	UnreadCount2 int64
-}
-
-func (q *Queries) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int64) ([]GetCharacterMailLabelUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCharacterMailLabelUnreadCounts, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetCharacterMailLabelUnreadCountsRow
-	for rows.Next() {
-		var i GetCharacterMailLabelUnreadCountsRow
-		if err := rows.Scan(&i.LabelID, &i.UnreadCount2); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getCharacterMailLabels = `-- name: GetCharacterMailLabels :many
 SELECT
     character_mail_labels.id, character_mail_labels.character_id, character_mail_labels.color, character_mail_labels.label_id, character_mail_labels.name, character_mail_labels.unread_count
@@ -348,50 +425,6 @@ func (q *Queries) GetCharacterMailLabels(ctx context.Context, characterMailID in
 			&i.Name,
 			&i.UnreadCount,
 		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getCharacterMailListUnreadCounts = `-- name: GetCharacterMailListUnreadCounts :many
-SELECT
-    eve_entities.id AS list_id,
-    COUNT(cm.id) as unread_count_2
-FROM
-    character_mails cm
-    JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
-    JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
-WHERE
-    character_id = ?
-    AND eve_entities.category = "mail_list"
-    AND cm.is_read IS FALSE
-GROUP BY
-    eve_entities.id
-`
-
-type GetCharacterMailListUnreadCountsRow struct {
-	ListID       int64
-	UnreadCount2 int64
-}
-
-func (q *Queries) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int64) ([]GetCharacterMailListUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCharacterMailListUnreadCounts, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetCharacterMailListUnreadCountsRow
-	for rows.Next() {
-		var i GetCharacterMailListUnreadCountsRow
-		if err := rows.Scan(&i.ListID, &i.UnreadCount2); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -448,22 +481,6 @@ func (q *Queries) GetMail(ctx context.Context, arg GetMailParams) (GetMailRow, e
 	return i, err
 }
 
-const getMailCount = `-- name: GetMailCount :one
-SELECT
-    COUNT(*)
-FROM
-    character_mails
-WHERE
-    character_mails.character_id = ?
-`
-
-func (q *Queries) GetMailCount(ctx context.Context, characterID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getMailCount, characterID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const getMailRecipients = `-- name: GetMailRecipients :many
 SELECT
     eve_entities.id, eve_entities.category, eve_entities.name
@@ -495,23 +512,6 @@ func (q *Queries) GetMailRecipients(ctx context.Context, mailID int64) ([]EveEnt
 		return nil, err
 	}
 	return items, nil
-}
-
-const getMailUnreadCount = `-- name: GetMailUnreadCount :one
-SELECT
-    COUNT(*)
-FROM
-    character_mails
-WHERE
-    character_mails.character_id = ?
-    AND is_read IS FALSE
-`
-
-func (q *Queries) GetMailUnreadCount(ctx context.Context, characterID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getMailUnreadCount, characterID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
 }
 
 const listAllMailsForLabelOrdered = `-- name: ListAllMailsForLabelOrdered :many

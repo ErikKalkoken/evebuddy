@@ -935,7 +935,7 @@ func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	if !u.settings.SysTrayEnabled() {
 		return
 	}
-	n, err := u.cs.GetAllMailUnreadCount(ctx)
+	n, err := u.cs.CountAllMailsUnread(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return

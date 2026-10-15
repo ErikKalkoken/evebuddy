@@ -68,7 +68,7 @@ FROM
 WHERE
     character_mail_id = ?;
 
--- name: GetMailUnreadCount :one
+-- name: CountCharacterMailsUnread :one
 SELECT
     COUNT(*)
 FROM
@@ -77,7 +77,7 @@ WHERE
     character_mails.character_id = ?
     AND is_read IS FALSE;
 
--- name: GetAllMailUnreadCount :one
+-- name: CountAllCharactersMailsUnread :one
 SELECT
     COUNT(*)
 FROM
@@ -85,13 +85,13 @@ FROM
 WHERE
     is_read IS FALSE;
 
--- name: GetAllMailCount :one
+-- name: CountAllCharactersMails :one
 SELECT
     COUNT(*)
 FROM
     character_mails;
 
--- name: GetAllMailWithoutBodyCount :one
+-- name: CountAllCharactersMailsWithoutBody :one
 SELECT
     COUNT(*)
 FROM
@@ -99,7 +99,7 @@ FROM
 WHERE
     body_2 IS NULL;
 
--- name: GetMailCount :one
+-- name: CountCharacterMails :one
 SELECT
     COUNT(*)
 FROM
@@ -116,7 +116,7 @@ WHERE
     character_mails.character_id = ?
     AND body_2 IS NULL;
 
--- name: GetAllCharactersMailLabelUnreadCounts :many
+-- name: CountAllCharactersMailsUnreadByLabel :many
 SELECT
     label_id,
     COUNT(cm.id) AS unread_count_2
@@ -129,7 +129,7 @@ WHERE
 GROUP BY
     label_id;
 
--- name: GetAllCharactersMailListUnreadCounts :many
+-- name: CountAllCharactersMailsUnreadByList :many
 SELECT
     eve_entities.id AS list_id,
     COUNT(cm.id) as unread_count_2
@@ -143,7 +143,7 @@ WHERE
 GROUP BY
     eve_entities.id;
 
--- name: GetCharacterMailLabelUnreadCounts :many
+-- name: CountCharacterMailsUnreadByLabel :many
 SELECT
     label_id,
     COUNT(cm.id) AS unread_count_2
@@ -157,7 +157,7 @@ WHERE
 GROUP BY
     label_id;
 
--- name: GetCharacterMailListUnreadCounts :many
+-- name: CountCharacterMailsUnreadByList :many
 SELECT
     eve_entities.id AS list_id,
     COUNT(cm.id) as unread_count_2
