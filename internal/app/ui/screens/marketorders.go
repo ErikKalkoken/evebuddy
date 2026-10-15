@@ -168,7 +168,8 @@ type MarketOrders struct {
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
 	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    latestRun
-	footer       *widget.Label
+	footerLabel  *widget.Label
+	errorLabel   *widget.Label
 	isBuyOrders  bool
 	main         fyne.CanvasObject
 	rows         []marketOrderRow
@@ -259,11 +260,15 @@ func NewMarketOrders(u baseUI, isBuyOrders bool) *MarketOrders {
 		}})
 	a := &MarketOrders{
 		columnSorter: xwidget.NewColumnSorter(columns, "Type", xwidget.SortAsc),
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		isBuyOrders:  isBuyOrders,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if !a.u.IsMobile() {
 		a.main = xwidget.MakeDataTable(
@@ -358,7 +363,7 @@ func (a *MarketOrders) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	c := container.NewBorder(
 		top,
-		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), a.footer),
+		container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), container.NewVBox(a.errorLabel, a.footerLabel)),
 		nil,
 		nil,
 		a.main,
@@ -494,9 +499,9 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoiceWithSearch(marketOrdersFilterType, typeOptions),
@@ -524,13 +529,14 @@ func (a *MarketOrders) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh locations UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 	})

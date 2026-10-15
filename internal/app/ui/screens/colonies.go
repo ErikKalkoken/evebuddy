@@ -170,7 +170,8 @@ type Colonies struct {
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
-	footer            *widget.Label
+	footerLabel       *widget.Label
+	errorLabel        *widget.Label
 	forecastRun       latestRun
 	rows              []colonyRow
 	rowsGen           int // incremented when Update replaces rows
@@ -290,11 +291,15 @@ func NewColonies(u baseUI) *Colonies {
 		},
 	}})
 	a := &Colonies{
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, "Work ends", xwidget.SortAsc),
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
@@ -396,7 +401,7 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		container.NewBorder(nil, nil, nil, a.helpButton, a.footer),
+		container.NewVBox(a.errorLabel, container.NewBorder(nil, nil, nil, a.helpButton, a.footerLabel)),
 		nil,
 		nil,
 		a.body,
@@ -588,9 +593,9 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionToogle(colonyFilterAttention),
@@ -629,15 +634,20 @@ func (a *Colonies) Update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh colony UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			if !isLatest() {
+				return
+			}
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
+		return
 	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync("")

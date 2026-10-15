@@ -84,7 +84,8 @@ type CorporationOverview struct {
 
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      latestRun
-	footer         *widget.Label
+	footerLabel    *widget.Label
+	errorLabel     *widget.Label
 	columnSorter   *xwidget.ColumnSorter[corporationOverviewRow]
 	loadInfo       *widget.Label
 	main           fyne.CanvasObject
@@ -144,12 +145,16 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 	info.Importance = widget.LowImportance
 
 	a := &CorporationOverview{
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
 		loadInfo:     info,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	placeholder := "Search corporations"
 	if a.u.IsMobile() {
@@ -242,7 +247,7 @@ func (a *CorporationOverview) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		container.NewStack(a.loadInfo, a.main),
@@ -366,9 +371,9 @@ func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoice(corporationOverviewFilterAlliance, allianceOptions),
@@ -387,15 +392,16 @@ func (a *CorporationOverview) filterRowsAsync(sortCol string) {
 func (a *CorporationOverview) update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
 	}
-	setFooter := func(s string, i widget.Importance) {
+	setError := func(err error) {
 		fyne.Do(func() {
-			a.footer.Text = s
-			a.footer.Importance = i
-			a.footer.Refresh()
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	rows, err := a.fetchRows(ctx)
@@ -404,11 +410,12 @@ func (a *CorporationOverview) update(ctx context.Context) {
 			return
 		}
 		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		slog.Error("Failed to refresh corporation overview UI", "err", err)
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.loadInfo.Hide()
 		a.filterRowsAsync("")

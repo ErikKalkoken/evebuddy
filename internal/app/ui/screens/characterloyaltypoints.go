@@ -52,7 +52,8 @@ type CharacterLoyaltyPoints struct {
 
 	filterChip    *xwidget.FilterChipCompact // only on mobile
 	filterRun     latestRun
-	footer        *widget.Label
+	footerLabel   *widget.Label
+	errorLabel    *widget.Label
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[characterLoyaltyPointsRow]
 	list          *widget.List
@@ -81,11 +82,15 @@ func NewCharacterLoyaltyPoints(u baseUI) *CharacterLoyaltyPoints {
 	)
 	a := &CharacterLoyaltyPoints{
 		columnSorter: columnSorter,
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		u:            u,
 	}
 	a.list = a.makeList()
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	// filters
 	placeholder := "Search corporations"
@@ -154,7 +159,7 @@ func (a *CharacterLoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.list,
@@ -234,9 +239,9 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(characterLoyaltyPointsFilterFaction, factionOptions))
 			} else {
@@ -251,15 +256,23 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 	reset := func() {
 		fyne.Do(func() {
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
 	}
 	setFooter := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.footer.Text = s
-			a.footer.Importance = i
-			a.footer.Refresh()
+			a.footerLabel.Text = s
+			a.footerLabel.Importance = i
+			a.footerLabel.Refresh()
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 
@@ -273,7 +286,7 @@ func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterLoyaltyPoints)
 	if err != nil {
 		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	if !hasData {
@@ -285,10 +298,11 @@ func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
 	rows, err := a.fetchRows(ctx, character.ID)
 	if err != nil {
 		reset()
-		setFooter("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()
 	})

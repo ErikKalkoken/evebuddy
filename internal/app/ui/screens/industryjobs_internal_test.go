@@ -257,3 +257,40 @@ func TestIndustryJobs_FilterWidgets(t *testing.T) {
 		})
 	}
 }
+
+func TestIndustryJobs_ErrorDisplay(t *testing.T) {
+	newIndustryJobs := func(t *testing.T, st *storage.Storage) *IndustryJobs {
+		return NewJobsForOverview(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newIndustryJobs(t, st)
+		a.rows = []industryJobRow{{jobID: 1, activity: app.Manufacturing, isInstallerMe: true, status: app.JobReady}}
+		a.filterRowsAsync("")
+		if _, err := db.Exec("DROP TABLE character_industry_jobs"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.selectStatus.SetSelected(industryStatusHistory)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.footerLabel.Text, "Showing")
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := newIndustryJobs(t, st)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
+	})
+}

@@ -110,7 +110,8 @@ type WalletTransactions struct {
 
 	body           fyne.CanvasObject
 	filterRun      latestRun
-	footer         *widget.Label
+	footerLabel    *widget.Label
+	errorLabel     *widget.Label
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
@@ -238,12 +239,16 @@ func newWalletTransaction(u baseUI, d app.Division) *WalletTransactions {
 		},
 	}})
 	a := &WalletTransactions{
-		footer:       ui.NewLabelWithTruncation(""),
+		footerLabel:  ui.NewLabelWithTruncation(""),
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
 		division:     d,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if !a.u.IsMobile() {
 		a.body = xwidget.MakeDataTable(
@@ -318,7 +323,7 @@ func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.body,
@@ -471,9 +476,9 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoiceOrdered(walletTransactionFilterActivity, walletTransactionActivityOptions()),
@@ -507,12 +512,20 @@ func (a *WalletTransactions) Update(ctx context.Context) {
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.footer.Text, a.footer.Importance = s, i
-			a.footer.Refresh()
+			a.footerLabel.Text, a.footerLabel.Importance = s, i
+			a.footerLabel.Refresh()
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	reset := func() {
 		fyne.Do(func() {
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
@@ -526,7 +539,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletTransactions)
 	if err != nil {
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	if !hasData {
@@ -537,10 +550,11 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 	rows, err := a.fetchCharacterRows(ctx, character)
 	if err != nil {
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 	})
@@ -595,12 +609,20 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
-			a.footer.Text, a.footer.Importance = s, i
-			a.footer.Refresh()
+			a.footerLabel.Text, a.footerLabel.Importance = s, i
+			a.footerLabel.Refresh()
+		})
+	}
+	setError := func(err error) {
+		fyne.Do(func() {
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 	}
 	reset := func() {
 		fyne.Do(func() {
+			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
@@ -614,7 +636,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletTransactions(a.division))
 	if err != nil {
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	if !hasData {
@@ -625,10 +647,11 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 	rows, err := a.fetchCorporationRows(ctx, corporation, a.division)
 	if err != nil {
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setError(err)
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 	})

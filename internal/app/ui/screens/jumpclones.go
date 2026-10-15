@@ -88,7 +88,8 @@ type JumpClones struct {
 	body              fyne.CanvasObject
 	filterChip        *xwidget.FilterChipCompact // only on mobile
 	filterRun         latestRun
-	footer            *widget.Label
+	footerLabel       *widget.Label
+	errorLabel        *widget.Label
 	changeOrigin      *ttwidget.Button
 	columnSorter      *xwidget.ColumnSorter[jumpCloneRow]
 	origin            *app.EveSolarSystem
@@ -163,10 +164,14 @@ func NewJumpClones(u baseUI) *JumpClones {
 		columnSorter:   xwidget.NewColumnSorter(columns, "Location", xwidget.SortAsc),
 		originLabel:    ui.NewLabelWithTruncation("(not set)"),
 		originSecurity: xwidget.NewRichText(),
-		footer:         ui.NewLabelWithTruncation(""),
+		footerLabel:    ui.NewLabelWithTruncation(""),
+		errorLabel:     ui.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 	a.originSecurity.Hide()
 	a.changeOrigin = ttwidget.NewButtonWithIcon("", theme.NewThemedResource(icons.MapMarkerSvg), func() {
 		a.setOrigin(a.u.MainWindow())
@@ -282,7 +287,7 @@ func (a *JumpClones) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.body,
@@ -342,9 +347,9 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionMultiChoiceWithSearch(jumpClonesFilterRegion, regionOptions),
@@ -372,15 +377,16 @@ func (a *JumpClones) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh clones UI", "err", err)
 		fyne.Do(func() {
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
+			a.errorLabel.Show()
+			a.Refresh()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 		})
 		return
 	}
 	fyne.Do(func() {
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 		if len(rows) > 0 && a.origin != nil {

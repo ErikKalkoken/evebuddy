@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -696,14 +697,55 @@ func TestAssetBrowser_FilterBeforeAssetsLoaded(t *testing.T) {
 
 		a.Navigation.searchEntry.SetText("jita")
 
-		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footerLabel.Text)
 	})
 	t.Run("should not crash when changing category", func(t *testing.T) {
 		a := newBrowser(t)
 
 		a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryDeliveries})
 
-		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footer.Text)
+		assert.Equal(t, "Waiting for data to be loaded...", a.Navigation.footerLabel.Text)
+	})
+}
+
+func TestAssetBrowser_ErrorDisplay(t *testing.T) {
+	newBrowser := func(t *testing.T) (*AssetBrowser, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.character.Store(c)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newBrowser(t)
+		a.Update(t.Context())
+		if _, err := db.Exec("DROP TABLE character_assets"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.Update(t.Context())
+		assert.True(t, a.Navigation.errorLabel.Visible())
+		assert.Contains(t, a.Navigation.errorLabel.Text, "ERROR:")
+
+		a.Navigation.searchEntry.SetText("jita")
+		assert.True(t, a.Navigation.errorLabel.Visible())
+		assert.Contains(t, a.Navigation.footerLabel.Text, "locations")
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newBrowser(t)
+		a.Navigation.errorLabel.SetText("ERROR: failed")
+		a.Navigation.errorLabel.Show()
+
+		a.Update(t.Context())
+		assert.False(t, a.Navigation.errorLabel.Visible())
 	})
 }
 

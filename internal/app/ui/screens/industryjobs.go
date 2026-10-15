@@ -193,7 +193,8 @@ type IndustryJobs struct {
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       latestRun
 	updateRun       latestRun
-	footer          *widget.Label
+	footerLabel     *widget.Label
+	errorLabel      *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
 	corporation     atomic.Pointer[app.Corporation]
 	forCorporation  bool
@@ -324,12 +325,16 @@ func newIndustryJobs(u baseUI, forCorporation bool) *IndustryJobs {
 		},
 	}})
 	a := &IndustryJobs{
-		footer:         ui.NewLabelWithWrapping(""),
+		footerLabel:    ui.NewLabelWithWrapping(""),
+		errorLabel:     ui.NewLabelWithWrapping(""),
 		columnSorter:   xwidget.NewColumnSorter(columns, "End date", xwidget.SortDesc),
 		forCorporation: forCorporation,
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.errorLabel.Importance = widget.DangerImportance
+	a.errorLabel.Hide()
 
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
@@ -475,7 +480,7 @@ func (a *IndustryJobs) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		topBox,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.body,
@@ -657,9 +662,9 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
 					xwidget.NewFilterOptionMultiChoiceOrdered(industryJobsFilterOwner, industryJobsOwnerOptions()),
@@ -702,9 +707,9 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err))
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
+			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
+			a.errorLabel.Show()
+			a.Refresh()
 		})
 		return
 	}
@@ -718,6 +723,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
+		a.errorLabel.Hide()
 		a.rows = jobs
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {

@@ -295,9 +295,6 @@ func (a *CharacterWealth) update(ctx context.Context) {
 			a.topLabel.Importance = widget.DangerImportance
 			a.topLabel.Refresh()
 			a.topLabel.Show()
-			a.footer.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.footer.Importance = widget.DangerImportance
-			a.footer.Refresh()
 		})
 		return
 	}
