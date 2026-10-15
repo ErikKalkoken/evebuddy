@@ -2,6 +2,7 @@ package screens
 
 import (
 	"bytes"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -208,5 +209,39 @@ func TestTraining_FilterWidgets(t *testing.T) {
 			trainingFilterStatus: "",
 			trainingFilterTag:    "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestTraining_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*Training, *sql.DB) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewTraining(u)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.filterRowsAsync("")
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

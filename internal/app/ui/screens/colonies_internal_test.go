@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -273,5 +274,39 @@ func TestColonyRow_SetForecast(t *testing.T) {
 		r.setForecast(&app.ColonyForecast{Status: app.ColonyExtracting})
 		_, ok := grayscalePlanetIconCache.Load(iconID)
 		assert.False(t, ok)
+	})
+}
+
+func TestColonies_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*Colonies, *sql.DB) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewColonies(u)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE character_planets"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.Update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.filterRowsAsync("")
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.Update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

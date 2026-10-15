@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -133,4 +134,44 @@ func TestCharacterContacts_KeepsStatusWithoutCharacter(t *testing.T) {
 
 	assert.Equal(t, "No character", a.footerLabel.Text)
 	assert.Empty(t, a.rowsFiltered)
+}
+
+func TestCharacterContacts_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*CharacterContacts, *sql.DB) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewCharacterContacts(u)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterContacts,
+		})
+		a.character.Store(c)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE character_contacts"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+
+		a.filterRowsAsync()
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
+	})
 }

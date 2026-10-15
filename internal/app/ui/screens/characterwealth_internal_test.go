@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"database/sql"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -353,5 +354,39 @@ func TestCharacterWealth_Filter(t *testing.T) {
 			characterWealthFilterCorporation: "",
 			characterWealthFilterTag:         "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestCharacterWealth_ErrorDisplay(t *testing.T) {
+	newScreen := func(t *testing.T) (*CharacterWealth, *sql.DB) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		a := NewCharacterWealth(u)
+		return a, db
+	}
+	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+		a, db := newScreen(t)
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.topLabel.Visible())
+		assert.Contains(t, a.topLabel.Text, "Failed to fetch data")
+
+		a.filterRowsAsync()
+		assert.True(t, a.topLabel.Visible())
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _ := newScreen(t)
+		a.topLabel.SetText("ERROR: failed")
+		a.topLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.topLabel.Visible())
 	})
 }
