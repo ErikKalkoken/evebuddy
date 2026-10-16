@@ -377,12 +377,42 @@ func TestContractTopBid(t *testing.T) {
 		xassert.Equal(t, true, ok)
 		xassert.Equal(t, b2, got)
 	})
-	t.Run("should return first of equal bids", func(t *testing.T) {
-		b1 := &app.ContractBid{BidID: 1, Amount: 100}
-		b2 := &app.ContractBid{BidID: 2, Amount: 100}
+	t.Run("should return earliest of equal bids", func(t *testing.T) {
+		early := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+		late := early.Add(time.Hour)
+		cases := []struct {
+			name   string
+			winner *app.ContractBid
+			other  *app.ContractBid
+		}{
+			{
+				"earlier date",
+				&app.ContractBid{BidID: 2, Amount: 100, DateBid: early},
+				&app.ContractBid{BidID: 1, Amount: 100, DateBid: late},
+			},
+			{
+				"same date, lower ID",
+				&app.ContractBid{BidID: 1, Amount: 100, DateBid: early},
+				&app.ContractBid{BidID: 2, Amount: 100, DateBid: early},
+			},
+		}
+		for _, tc := range cases {
+			for _, bids := range [][]*app.ContractBid{{tc.winner, tc.other}, {tc.other, tc.winner}} {
+				t.Run(tc.name, func(t *testing.T) {
+					got, ok := app.ContractTopBid(bids)
+					xassert.Equal(t, true, ok)
+					xassert.Equal(t, tc.winner, got)
+				})
+			}
+		}
+	})
+	t.Run("should prefer higher amount over earlier date", func(t *testing.T) {
+		early := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+		b1 := &app.ContractBid{BidID: 1, Amount: 100, DateBid: early}
+		b2 := &app.ContractBid{BidID: 2, Amount: 200, DateBid: early.Add(time.Hour)}
 		got, ok := app.ContractTopBid([]*app.ContractBid{b1, b2})
 		xassert.Equal(t, true, ok)
-		xassert.Equal(t, b1, got)
+		xassert.Equal(t, b2, got)
 	})
 	t.Run("should report when there are no bids", func(t *testing.T) {
 		_, ok := app.ContractTopBid(nil)

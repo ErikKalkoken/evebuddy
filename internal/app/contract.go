@@ -1,7 +1,9 @@
 package app
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -267,15 +269,19 @@ type ContractBid struct {
 }
 
 // ContractTopBid returns the highest bid and reports whether there was one.
-// The first of several equal bids wins.
+// Of several equal bids the earliest one wins.
 func ContractTopBid(bids []*ContractBid) (*ContractBid, bool) {
-	var top *ContractBid
-	for _, b := range bids {
-		if top == nil || b.Amount > top.Amount {
-			top = b
-		}
+	if len(bids) == 0 {
+		return nil, false
 	}
-	return top, top != nil
+	top := slices.MaxFunc(bids, func(a, b *ContractBid) int {
+		return cmp.Or(
+			cmp.Compare(a.Amount, b.Amount),
+			b.DateBid.Compare(a.DateBid),  // earlier bid wins
+			cmp.Compare(b.BidID, a.BidID), // then lower ID
+		)
+	})
+	return top, true
 }
 
 type ContractItem struct {
