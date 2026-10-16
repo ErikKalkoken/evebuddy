@@ -334,7 +334,30 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	})
 }
 
-func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
+func TestNewContractRow_Owner(t *testing.T) {
+	o := &app.Contract{
+		ID:         7,
+		ContractID: 42,
+		Issuer:     &app.EveEntity{ID: otherID},
+		Status:     app.ContractStatusOutstanding,
+	}
+	t.Run("character", func(t *testing.T) {
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.EqualValues(t, myID, r.ownerID)
+		assert.Equal(t, "Bruce", r.ownerName)
+		assert.False(t, r.isCorporation)
+		assert.EqualValues(t, 7, r.objectID)
+		assert.EqualValues(t, 42, r.contractID)
+	})
+	t.Run("corporation", func(t *testing.T) {
+		r := newContractRow(o, myCorpID, "Wayne Enterprises", true, myIDs, myCorpIDs)
+		assert.EqualValues(t, myCorpID, r.ownerID)
+		assert.Equal(t, "Wayne Enterprises", r.ownerName)
+		assert.True(t, r.isCorporation)
+	})
+}
+
+func TestNewContractRow_RequiresAttention(t *testing.T) {
 	now := time.Now()
 	corporation := &app.Corporation{ID: myCorpID}
 	myCorp := &app.EveEntity{ID: myCorpID, Category: app.EveEntityCorporation}
@@ -349,7 +372,7 @@ func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
 				Status:            app.ContractStatusOutstanding,
 			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 	})
 	t.Run("expired personal contract of a corporation member", func(t *testing.T) {
@@ -362,7 +385,7 @@ func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
 				Status:            app.ContractStatusOutstanding,
 			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryOther, r.category)
 	})
 	t.Run("overdue contract accepted for my corporation", func(t *testing.T) {
@@ -378,7 +401,7 @@ func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
 				Type:              app.ContractTypeCourier,
 			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 	})
 }

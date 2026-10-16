@@ -15,19 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
-
-type contractItem struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int64
-	RawQuantity optional.Optional[int64]
-	RecordID    int64
-	Type        *app.EveType
-}
 
 // ShowCharacterContract2 shows the details of a character contract in a window.
 func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
@@ -59,96 +48,13 @@ func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 			return
 		}
 		fyne.Do(func() {
-			ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
-				return c.NameOrZero()
-			}, myCharacterIDs, myCorporationIDs))
+			ShowContract(u, newContractRow(&o.Contract, o.CharacterID, c.NameOrZero(), false, myCharacterIDs, myCorporationIDs))
 		})
 	}()
 }
 
-// ShowCharacterContract shows the details of a character contract in a window.
-func ShowCharacterContract(u baseUI, r contractRow) {
-	showContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Character().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Character().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Character().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.ContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
-}
-
-// ShowCorporationContract shows the details of a corporation contract in a window.
-func ShowCorporationContract(u baseUI, r contractRow) {
-	showContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Corporation().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Corporation().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Corporation().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.ContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
-}
-
-func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context) (int, float64, error), fetchItems func(context.Context) ([]contractItem, error)) {
+// ShowContract shows the details of a character or corporation contract in a window.
+func ShowContract(u baseUI, r contractRow) {
 	title := fmt.Sprintf("Contract #%d", r.contractID)
 	windowID := fmt.Sprintf("contract-%d-%d", r.ownerID, r.contractID)
 	w, created := u.GetOrCreateWindow(windowID, title, r.ownerName)
@@ -164,12 +70,12 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			})
 		}
 		ctx := context.Background()
-		totalBids, topBidAmount, err := fetchBids(ctx)
+		totalBids, topBidAmount, err := fetchContractBids(ctx, u, r)
 		if err != nil {
 			reportError(err)
 			return
 		}
-		items, err := fetchItems(ctx)
+		items, err := fetchContractItems(ctx, u, r)
 		if err != nil {
 			reportError(err)
 			return
@@ -272,7 +178,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 
 			makeItemsInfo := func() (fyne.CanvasObject, error) {
 				vb := container.NewVBox()
-				var itemsIncluded, itemsRequested []contractItem
+				var itemsIncluded, itemsRequested []*app.ContractItem
 				for _, it := range items {
 					if it.IsIncluded {
 						itemsIncluded = append(itemsIncluded, it)
@@ -280,7 +186,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 						itemsRequested = append(itemsRequested, it)
 					}
 				}
-				makeItem := func(it contractItem) fyne.CanvasObject {
+				makeItem := func(it *app.ContractItem) fyne.CanvasObject {
 					c := container.NewHBox(
 						ui.MakeLinkLabel(it.Type.Name, func() {
 							u.InfoViewer().ShowType(it.Type.ID, r.ownerID)
@@ -372,4 +278,35 @@ func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(in
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
+}
+
+// fetchContractBids returns the number of bids and the amount of the top bid for an auction.
+func fetchContractBids(ctx context.Context, u baseUI, r contractRow) (int, float64, error) {
+	if r.contractType != app.ContractTypeAuction {
+		return 0, 0, nil
+	}
+	countBids, topBid := u.Character().CountContractBids, u.Character().GetContractTopBid
+	if r.isCorporation {
+		countBids, topBid = u.Corporation().CountContractBids, u.Corporation().GetContractTopBid
+	}
+	count, err := countBids(ctx, r.objectID)
+	if err != nil {
+		return 0, 0, err
+	}
+	top, err := topBid(ctx, r.objectID)
+	if err != nil {
+		return 0, 0, err
+	}
+	return count, top.Amount, nil
+}
+
+// fetchContractItems returns the items of a contract, if its type has items.
+func fetchContractItems(ctx context.Context, u baseUI, r contractRow) ([]*app.ContractItem, error) {
+	if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+		return nil, nil
+	}
+	if r.isCorporation {
+		return u.Corporation().ListContractItems(ctx, r.objectID)
+	}
+	return u.Character().ListContractItems(ctx, r.objectID)
 }
