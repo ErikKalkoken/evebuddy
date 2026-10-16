@@ -26,14 +26,14 @@ type SkillQueue struct {
 	OnUpdate func(statusShort, statusLong string)
 
 	character            atomic.Pointer[app.Character]
-	emptyInfo            *widget.Label
-	list                 *widget.List
+	emptyLabel           *widget.Label
 	showCurrentCharacter bool
 	signalKey            string
+	skillList            *widget.List
 	skillqueue           *app.CharacterSkillqueue
-	status               *ttwidget.Icon
+	statusIcon           *ttwidget.Icon
 	statusResource       fyne.Resource
-	top                  *widget.Label
+	topLabel             *widget.Label
 	u                    baseUI
 	updateRun            latestRun
 }
@@ -46,23 +46,23 @@ func NewSkillQueue(u baseUI) *SkillQueue {
 // NewQueueWithCharacter returns a new characterSkillQueue for character c.
 // This type of skillqueue is meant to be temporary.
 func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
-	emptyInfo := widget.NewLabel("Queue is empty")
-	emptyInfo.Importance = widget.LowImportance
-	emptyInfo.Hide()
-	statusResources := theme.MediaRecordIcon()
+	statusResource := theme.MediaRecordIcon()
 	a := &SkillQueue{
-		emptyInfo:            emptyInfo,
+		emptyLabel:           widget.NewLabel("Queue is empty"),
 		showCurrentCharacter: c == nil,
 		signalKey:            u.Signals().UniqueKey(),
 		skillqueue:           app.NewCharacterSkillqueue(),
-		statusResource:       statusResources,
-		status:               ttwidget.NewIcon(theme.NewDisabledResource(statusResources)),
-		top:                  ui.NewLabelWithWrapping(""),
+		statusIcon:           ttwidget.NewIcon(theme.NewDisabledResource(statusResource)),
+		statusResource:       statusResource,
+		topLabel:             ui.NewLabelWithWrapping(""),
 		u:                    u,
 	}
 	a.ExtendBaseWidget(a)
+
 	a.character.Store(c)
-	a.list = a.makeSkillQueue()
+	a.emptyLabel.Importance = widget.LowImportance
+	a.emptyLabel.Hide()
+	a.skillList = a.makeSkillList()
 
 	// Signals
 	if a.showCurrentCharacter {
@@ -106,16 +106,16 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 
 func (a *SkillQueue) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewBorder(nil, nil, a.status, nil, a.top),
+		container.NewBorder(nil, nil, a.statusIcon, nil, a.topLabel),
 		nil,
 		nil,
 		nil,
-		container.NewStack(a.emptyInfo, a.list),
+		container.NewStack(a.emptyLabel, a.skillList),
 	)
 	return widget.NewSimpleRenderer(c)
 }
 
-func (a *SkillQueue) makeSkillQueue() *widget.List {
+func (a *SkillQueue) makeSkillList() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return a.skillqueue.Size()
@@ -181,9 +181,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.top.Text = s
-			a.top.Importance = i
-			a.top.Refresh()
+			a.topLabel.Text = s
+			a.topLabel.Importance = i
+			a.topLabel.Refresh()
 		})
 	}
 	reset := func() {
@@ -192,9 +192,9 @@ func (a *SkillQueue) Update(ctx context.Context) {
 				return
 			}
 			a.skillqueue = app.NewCharacterSkillqueue()
-			a.list.Hide()
-			a.emptyInfo.Hide()
-			a.status.Hide()
+			a.skillList.Hide()
+			a.emptyLabel.Hide()
+			a.statusIcon.Hide()
 			if a.OnUpdate != nil {
 				a.OnUpdate("", "")
 			}
@@ -253,16 +253,16 @@ func (a *SkillQueue) refreshTimeDependent() {
 	sq := a.skillqueue
 	isActive := sq.IsActive()
 	if isActive {
-		a.top.Text = fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
-		a.top.Importance = widget.MediumImportance
+		a.topLabel.Text = fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
+		a.topLabel.Importance = widget.MediumImportance
 	} else if c.IsTrainingWatched {
-		a.top.Text = "No skill in training"
-		a.top.Importance = widget.DangerImportance
+		a.topLabel.Text = "No skill in training"
+		a.topLabel.Importance = widget.DangerImportance
 	} else {
-		a.top.Text = "Training not active"
-		a.top.Importance = widget.MediumImportance
+		a.topLabel.Text = "Training not active"
+		a.topLabel.Importance = widget.MediumImportance
 	}
-	a.top.Refresh()
+	a.topLabel.Refresh()
 
 	var r fyne.Resource
 	var s string
@@ -276,9 +276,9 @@ func (a *SkillQueue) refreshTimeDependent() {
 		r = theme.NewDisabledResource(a.statusResource)
 		s = "Training is not active"
 	}
-	a.status.SetResource(r)
-	a.status.SetToolTip(s)
-	a.status.Show()
+	a.statusIcon.SetResource(r)
+	a.statusIcon.SetToolTip(s)
+	a.statusIcon.Show()
 	var s1, s2 string
 	if isActive {
 		if c := sq.CompletionP(); c.ValueOrZero() < 1 {
@@ -293,12 +293,12 @@ func (a *SkillQueue) refreshTimeDependent() {
 		a.OnUpdate(s1, s2)
 	}
 	if sq.Size() == 0 {
-		a.emptyInfo.Show()
+		a.emptyLabel.Show()
 	} else {
-		a.emptyInfo.Hide()
+		a.emptyLabel.Hide()
 	}
-	a.list.Refresh()
-	a.list.Show()
+	a.skillList.Refresh()
+	a.skillList.Show()
 }
 
 func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, characterName string) {

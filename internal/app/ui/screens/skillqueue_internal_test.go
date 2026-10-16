@@ -74,11 +74,11 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Equal(t, "No character", a.top.Text)
-		assert.Equal(t, widget.LowImportance, a.top.Importance)
-		assert.False(t, a.list.Visible())
-		assert.False(t, a.emptyInfo.Visible())
-		assert.False(t, a.status.Visible())
+		assert.Equal(t, "No character", a.topLabel.Text)
+		assert.Equal(t, widget.LowImportance, a.topLabel.Importance)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.emptyLabel.Visible())
+		assert.False(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
 	t.Run("section not loaded", func(t *testing.T) {
@@ -86,11 +86,11 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Equal(t, "Waiting for character data to be loaded...", a.top.Text)
-		assert.Equal(t, widget.WarningImportance, a.top.Importance)
-		assert.False(t, a.list.Visible())
-		assert.False(t, a.emptyInfo.Visible())
-		assert.False(t, a.status.Visible())
+		assert.Equal(t, "Waiting for character data to be loaded...", a.topLabel.Text)
+		assert.Equal(t, widget.WarningImportance, a.topLabel.Importance)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.emptyLabel.Visible())
+		assert.False(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
 	t.Run("empty queue and training not watched", func(t *testing.T) {
@@ -100,11 +100,11 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Equal(t, "Training not active", a.top.Text)
-		assert.Equal(t, widget.MediumImportance, a.top.Importance)
-		assert.Equal(t, 0, a.list.Length())
-		assert.True(t, a.emptyInfo.Visible())
-		assert.True(t, a.status.Visible())
+		assert.Equal(t, "Training not active", a.topLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.topLabel.Importance)
+		assert.Equal(t, 0, a.skillList.Length())
+		assert.True(t, a.emptyLabel.Visible())
+		assert.True(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
 	t.Run("empty queue and training watched", func(t *testing.T) {
@@ -114,9 +114,9 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Equal(t, "No skill in training", a.top.Text)
-		assert.Equal(t, widget.DangerImportance, a.top.Importance)
-		assert.True(t, a.emptyInfo.Visible())
+		assert.Equal(t, "No skill in training", a.topLabel.Text)
+		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
+		assert.True(t, a.emptyLabel.Visible())
 		assert.Equal(t, skillQueueStatus{"!", "No skill in training"}, *status)
 	})
 	t.Run("active training", func(t *testing.T) {
@@ -127,12 +127,12 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Contains(t, a.top.Text, "Total training time:")
-		assert.Equal(t, widget.MediumImportance, a.top.Importance)
-		assert.Equal(t, 2, a.list.Length())
-		assert.True(t, a.list.Visible())
-		assert.False(t, a.emptyInfo.Visible())
-		assert.True(t, a.status.Visible())
+		assert.Contains(t, a.topLabel.Text, "Total training time:")
+		assert.Equal(t, widget.MediumImportance, a.topLabel.Importance)
+		assert.Equal(t, 2, a.skillList.Length())
+		assert.True(t, a.skillList.Visible())
+		assert.False(t, a.emptyLabel.Visible())
+		assert.True(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{"25%", "Alpha III (25%)"}, *status)
 	})
 	t.Run("finished queue and training watched", func(t *testing.T) {
@@ -148,10 +148,10 @@ func TestSkillQueue_Update(t *testing.T) {
 
 		a.Update(t.Context())
 
-		assert.Equal(t, "No skill in training", a.top.Text)
-		assert.Equal(t, widget.DangerImportance, a.top.Importance)
-		assert.Equal(t, 1, a.list.Length())
-		assert.False(t, a.emptyInfo.Visible())
+		assert.Equal(t, "No skill in training", a.topLabel.Text)
+		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
+		assert.Equal(t, 1, a.skillList.Length())
+		assert.False(t, a.emptyLabel.Visible())
 		assert.Equal(t, skillQueueStatus{"!", "No skill in training"}, *status)
 	})
 }
@@ -176,7 +176,7 @@ func TestSkillQueue_CharacterSectionChanged(t *testing.T) {
 			Section:     app.SectionCharacterSkillqueue,
 		})
 
-		assert.Equal(t, 2, a.list.Length())
+		assert.Equal(t, 2, a.skillList.Length())
 	})
 	t.Run("ignores other sections", func(t *testing.T) {
 		a, u, c := setup(t)
@@ -186,7 +186,7 @@ func TestSkillQueue_CharacterSectionChanged(t *testing.T) {
 			Section:     app.SectionCharacterAssets,
 		})
 
-		assert.Equal(t, 1, a.list.Length())
+		assert.Equal(t, 1, a.skillList.Length())
 	})
 	t.Run("ignores other characters", func(t *testing.T) {
 		a, u, _ := setup(t)
@@ -197,7 +197,7 @@ func TestSkillQueue_CharacterSectionChanged(t *testing.T) {
 			Section:     app.SectionCharacterSkillqueue,
 		})
 
-		assert.Equal(t, 1, a.list.Length())
+		assert.Equal(t, 1, a.skillList.Length())
 	})
 }
 
@@ -213,7 +213,7 @@ func TestSkillQueue_CurrentCharacterExchanged(t *testing.T) {
 		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 
 		assert.Same(t, c, a.character.Load())
-		assert.Equal(t, 2, a.list.Length())
+		assert.Equal(t, 2, a.skillList.Length())
 	})
 	t.Run("queue for fixed character ignores exchange", func(t *testing.T) {
 		fixed := factory.CreateCharacterFull()
@@ -234,9 +234,9 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 
 		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-		assert.Equal(t, "Waiting for character data to be loaded...", a.top.Text)
-		assert.False(t, a.list.Visible())
-		assert.False(t, a.status.Visible())
+		assert.Equal(t, "Waiting for character data to be loaded...", a.topLabel.Text)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
 	t.Run("does not reload the queue", func(t *testing.T) {
@@ -249,7 +249,7 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 
 		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-		assert.Equal(t, 1, a.list.Length())
+		assert.Equal(t, 1, a.skillList.Length())
 	})
 	t.Run("keeps time dependent status current", func(t *testing.T) {
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
@@ -269,13 +269,13 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 		shiftQueue(2 * time.Hour)
 		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 		assert.Equal(t, skillQueueStatus{"75%", "Alpha III (75%)"}, *status)
-		assert.Contains(t, a.top.Text, "Total training time:")
+		assert.Contains(t, a.topLabel.Text, "Total training time:")
 
 		shiftQueue(10 * time.Hour)
 		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 		assert.Equal(t, skillQueueStatus{"!", "No skill in training"}, *status)
-		assert.Equal(t, "No skill in training", a.top.Text)
-		assert.Equal(t, widget.DangerImportance, a.top.Importance)
+		assert.Equal(t, "No skill in training", a.topLabel.Text)
+		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
 	})
 	t.Run("does not show queue again after reset", func(t *testing.T) {
 		c := factory.CreateCharacterFull()
@@ -283,14 +283,14 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 		createActiveSkillqueue(factory, c.ID)
 		a, u, status := newSkillQueueForTest(t, st, nil)
 		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
-		assert.True(t, a.list.Visible())
+		assert.True(t, a.skillList.Visible())
 		u.Signals().CurrentCharacterExchanged.Emit(t.Context(), factory.CreateCharacterFull())
 
 		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
 
-		assert.Equal(t, "Waiting for character data to be loaded...", a.top.Text)
-		assert.False(t, a.list.Visible())
-		assert.False(t, a.status.Visible())
+		assert.Equal(t, "Waiting for character data to be loaded...", a.topLabel.Text)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
 }
@@ -349,12 +349,12 @@ func TestSkillQueue_CharacterChanged(t *testing.T) {
 		a, u, c := newQueue(t)
 		createSkillqueueSection(factory, c.ID)
 		a.Update(t.Context())
-		assert.Equal(t, "Training not active", a.top.Text)
+		assert.Equal(t, "Training not active", a.topLabel.Text)
 		err := st.UpdateCharacterIsTrainingWatched(t.Context(), c.ID, true)
 		require.NoError(t, err)
 
 		u.Signals().CharacterChanged.Emit(t.Context(), c.ID)
 
-		assert.Equal(t, "No skill in training", a.top.Text)
+		assert.Equal(t, "No skill in training", a.topLabel.Text)
 	})
 }
