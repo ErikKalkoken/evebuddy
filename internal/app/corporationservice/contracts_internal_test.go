@@ -46,49 +46,34 @@ func TestGetContract(t *testing.T) {
 	})
 }
 
-func TestCountContractBids(t *testing.T) {
+func TestGetContractBidSummary(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
-	t.Run("can count bids for a contract", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		o := factory.CreateCorporationContract()
-		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID})
-		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID})
-		got, err := s.CountContractBids(ctx, o.ID)
-		require.NoError(t, err)
-		assert.Equal(t, 2, got)
-	})
-	t.Run("returns zero when contract has no bids", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		o := factory.CreateCorporationContract()
-		got, err := s.CountContractBids(ctx, o.ID)
-		require.NoError(t, err)
-		assert.Equal(t, 0, got)
-	})
-}
-
-func TestGetContractTopBid(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
-	t.Run("returns the bid with the highest amount", func(t *testing.T) {
+	t.Run("should return count and top bid", func(t *testing.T) {
+		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
 		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100})
 		top := factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 500})
 		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 200})
-		got, err := s.GetContractTopBid(ctx, o.ID)
+		// when
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
+		// then
 		require.NoError(t, err)
-		xassert.Equal(t, top.BidID, got.BidID)
+		assert.Equal(t, 3, count)
+		xassert.Equal(t, top.BidID, got.MustValue().BidID)
 	})
-	t.Run("should return error when contract has no bids", func(t *testing.T) {
+	t.Run("should return no top bid when contract has no bids", func(t *testing.T) {
+		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
-		_, err := s.GetContractTopBid(ctx, o.ID)
-		assert.ErrorIs(t, err, app.ErrNotFound)
+		// when
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0, count)
+		xassert.Empty(t, got)
 	})
 }
 

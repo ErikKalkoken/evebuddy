@@ -286,22 +286,15 @@ func fetchContractBids(ctx context.Context, u baseUI, r contractRow) (int, float
 	if r.contractType != app.ContractTypeAuction {
 		return 0, 0, nil
 	}
-	countBids, topBid := u.Character().CountContractBids, u.Character().GetContractTopBid
+	f := u.Character().GetContractBidSummary
 	if r.isCorporation {
-		countBids, topBid = u.Corporation().CountContractBids, u.Corporation().GetContractTopBid
+		f = u.Corporation().GetContractBidSummary
 	}
-	count, err := countBids(ctx, r.objectID)
+	count, top, err := f(ctx, r.objectID)
 	if err != nil {
 		return 0, 0, err
 	}
-	if count == 0 {
-		return 0, 0, nil
-	}
-	top, err := topBid(ctx, r.objectID)
-	if err != nil {
-		return 0, 0, err
-	}
-	return count, top.Amount, nil
+	return count, optional.Map(top, 0, func(x *app.ContractBid) float64 { return x.Amount }), nil
 }
 
 // fetchContractItems returns the items of a contract, if its type has items.

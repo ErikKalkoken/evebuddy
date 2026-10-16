@@ -354,48 +354,34 @@ func TestGetContract(t *testing.T) {
 	})
 }
 
-func TestCountContractBids(t *testing.T) {
+func TestGetContractBidSummary(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("can count bids for a contract", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		o := factory.CreateCharacterContract()
-		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID})
-		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID})
-		// when
-		got, err := s.CountContractBids(t.Context(), o.ID)
-		// then
-		require.NoError(t, err)
-		assert.Equal(t, 2, got)
-	})
-}
-
-func TestGetContractTopBid(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("can return top bid for a contract", func(t *testing.T) {
+	t.Run("should return count and top bid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
 		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100})
 		top := factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 500})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 200})
 		// when
-		got, err := s.GetContractTopBid(t.Context(), o.ID)
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, top.BidID, got.BidID)
+		assert.Equal(t, 3, count)
+		xassert.Equal(t, top.BidID, got.MustValue().BidID)
 	})
-	t.Run("should return own error when contract has no bids", func(t *testing.T) {
+	t.Run("should return no top bid when contract has no bids", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
 		// when
-		_, err := s.GetContractTopBid(t.Context(), o.ID)
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
 		// then
-		assert.ErrorIs(t, err, app.ErrNotFound)
+		require.NoError(t, err)
+		assert.Equal(t, 0, count)
+		xassert.Empty(t, got)
 	})
 }
 

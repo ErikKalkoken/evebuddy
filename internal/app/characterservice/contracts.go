@@ -26,24 +26,17 @@ func (s *CharacterService) GetContract(ctx context.Context, characterID, contrac
 	return s.st.GetCharacterContract(ctx, characterID, contractID)
 }
 
-func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
-	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
-	if err != nil {
-		return 0, err
-	}
-	return x.Size(), nil
-}
-
-func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.ContractBid, error) {
+// GetContractBidSummary returns the number of bids on a contract and its top bid, if any.
+func (s *CharacterService) GetContractBidSummary(ctx context.Context, contractID int64) (int, optional.Optional[*app.ContractBid], error) {
 	bids, err := s.st.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
-		return nil, err
+		return 0, optional.Optional[*app.ContractBid]{}, err
 	}
 	top, ok := app.ContractTopBid(bids)
 	if !ok {
-		return nil, app.ErrNotFound
+		return 0, optional.Optional[*app.ContractBid]{}, nil
 	}
-	return top, nil
+	return len(bids), optional.New(top), nil
 }
 
 func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
