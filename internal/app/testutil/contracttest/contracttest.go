@@ -330,6 +330,63 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 		xassert.Equal(t, map[int64]float64{1: 100, 2: 200}, got)
 	})
 
+	t.Run("should store bids of a new auction", func(t *testing.T) {
+		// given
+		const contractID = 42
+		fx := setup(t)
+		bidder := factory.CreateEveEntityCharacter()
+		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
+		registerDetails(fx, contractID, "bids", []map[string]any{
+			{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
+		})
+		// when
+		err := o.Sync(ctx, fx.OwnerID)
+		// then
+		require.NoError(t, err)
+		c, err := o.GetContract(ctx, fx.OwnerID, contractID)
+		require.NoError(t, err)
+		bids, err := o.ListBids(ctx, c.ID)
+		require.NoError(t, err)
+		want := []*app.ContractBid{{
+			ContractID: c.ID,
+			Amount:     123.5,
+			BidID:      7,
+			Bidder:     bidder,
+			DateBid:    time.Date(2017, 1, 1, 10, 10, 10, 0, time.UTC),
+		}}
+		xassert.Equal(t, want, bids)
+	})
+
+	t.Run("should not update unchanged contract", func(t *testing.T) {
+		// given
+		fx := setup(t)
+		local := o.CreateContract(t, fx.OwnerID, CreateParams{
+			Status: app.ContractStatusOutstanding,
+			Type:   app.ContractTypeCourier,
+		})
+		registerContracts(fx, esiContract(fx, local.ContractID, map[string]any{"type": "courier"}))
+		// when
+		err := o.Sync(ctx, fx.OwnerID)
+		// then
+		require.NoError(t, err)
+		c, err := o.GetContract(ctx, fx.OwnerID, local.ContractID)
+		require.NoError(t, err)
+		xassert.Equal(t, local.UpdatedAt, c.UpdatedAt)
+	})
+
+	t.Run("should not create new contract which ESI reports as deleted", func(t *testing.T) {
+		// given
+		fx := setup(t)
+		registerContracts(fx, esiContract(fx, 42, map[string]any{"status": "deleted"}))
+		// when
+		err := o.Sync(ctx, fx.OwnerID)
+		// then
+		require.NoError(t, err)
+		ids, err := o.ListContractIDs(ctx, fx.OwnerID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, ids.Size())
+	})
+
 	t.Run("should handle local contracts missing in ESI response", func(t *testing.T) {
 		cases := []struct {
 			status   app.ContractStatus
