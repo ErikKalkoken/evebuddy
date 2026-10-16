@@ -315,7 +315,15 @@ func (u *UIFake) Corporation() *corporationservice.CorporationService {
 }
 
 func (u *UIFake) DestroyWindow(id string) bool {
-	return true
+	if id == "" {
+		return false
+	}
+	if w, ok := u.windows[id]; ok {
+		w.Close()
+		delete(u.windows, id)
+		return true
+	}
+	return false
 }
 func (u *UIFake) ErrorDisplay(err error) string {
 	return err.Error()

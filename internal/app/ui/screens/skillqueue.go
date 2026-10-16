@@ -77,14 +77,6 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 			a.character.Store(c)
 			a.Update(ctx)
 		}, a.signalKey)
-	} else {
-		a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
-			if c.IDOrZero() != a.character.Load().IDOrZero() {
-				return
-			}
-			a.character.Store(nil)
-			a.Update(ctx) // shows the no-character message
-		}, a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		if a.character.Load().IDOrZero() != arg.CharacterID {
@@ -197,8 +189,6 @@ func (a *SkillQueue) makeSkillList() *widget.List {
 func (a *SkillQueue) Stop() {
 	if a.showCurrentCharacter {
 		a.u.Signals().CurrentCharacterExchanged.RemoveListener(a.signalKey)
-	} else {
-		a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 	}
 	a.u.Signals().CharacterSectionChanged.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterChanged.RemoveListener(a.signalKey)

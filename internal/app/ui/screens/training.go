@@ -333,7 +333,10 @@ func NewTraining(u baseUI) *Training {
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
 	})
-	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, o *app.EntityShort) {
+		fyne.Do(func() {
+			a.u.DestroyWindow(trainingQueueWindowID(o.IDOrZero()))
+		})
 		a.update(ctx)
 	})
 	a.u.Signals().TagsChanged.AddListener(func(ctx context.Context, _ struct{}) {
@@ -708,8 +711,12 @@ func (a *Training) fetchRow(ctx context.Context, c *app.Character) (trainingRow,
 	return r, nil
 }
 
+func trainingQueueWindowID(characterID int64) string {
+	return fmt.Sprintf("skillqueue-%d", characterID)
+}
+
 func (a *Training) showTrainingQueueWindow(r trainingRow) {
-	windowID := fmt.Sprintf("skillqueue-%d", r.characterID)
+	windowID := trainingQueueWindowID(r.characterID)
 	w, ok, onClosed := a.u.GetOrCreateWindowWithOnClosed(windowID, "Skill Queue", r.characterName)
 	if !ok {
 		w.Show()

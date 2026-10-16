@@ -212,6 +212,27 @@ func TestTraining_FilterWidgets(t *testing.T) {
 	})
 }
 
+func TestTraining_CharacterRemoved(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	NewTraining(u)
+	removed := factory.CreateCharacterFull()
+	other := factory.CreateCharacterFull()
+	u.GetOrCreateWindow(trainingQueueWindowID(removed.ID))
+	u.GetOrCreateWindow(trainingQueueWindowID(other.ID))
+
+	u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: removed.ID})
+
+	_, created := u.GetOrCreateWindow(trainingQueueWindowID(removed.ID))
+	assert.True(t, created, "queue window of removed character is closed")
+	_, created = u.GetOrCreateWindow(trainingQueueWindowID(other.ID))
+	assert.False(t, created, "queue window of other character stays open")
+}
+
 func TestTraining_ErrorDisplay(t *testing.T) {
 	newScreen := func(t *testing.T) (*Training, *sql.DB) {
 		db, st, _ := testutil.NewDBOnDisk(t)
