@@ -834,14 +834,6 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	if err != nil {
 		return nil, err
 	}
-	// Remove duplicate oo2 between the user's own characters
-	oo2 := xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
-		return a.ContractID == b.ContractID &&
-			a.Type == b.Type &&
-			a.Issuer.ID == b.Issuer.ID &&
-			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
-			a.DateIssued.Equal(b.DateIssued)
-	})
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
@@ -853,7 +845,7 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	}
 	var rows []contractRow
 	tagsByCharacter := make(map[int64]set.Set[string])
-	for _, c := range oo2 {
+	for _, c := range oo {
 		r := newContractRow(&c.Contract, c.CharacterID, characters[c.CharacterID], false, myCharacterIDs, myCorporationIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {

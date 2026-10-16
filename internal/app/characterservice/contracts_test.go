@@ -403,11 +403,99 @@ func TestListAllContracts(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	dateIssued := time.Now().UTC().Add(-time.Hour)
+	// createCopy stores a copy of the same contract for a character.
+	createCopy := func(characterID, issuerID int64, forCorporation bool) *app.CharacterContract {
+		return factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:    characterID,
+			ContractID:     42,
+			DateIssued:     dateIssued,
+			ForCorporation: forCorporation,
+			IssuerID:       issuerID,
+			Type:           app.ContractTypeItemExchange,
+		})
+	}
 	t.Run("can list contracts across all characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		factory.CreateCharacterContract()
 		factory.CreateCharacterContract()
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+	for _, issuerFirst := range []bool{true, false} {
+		t.Run(fmt.Sprintf("should keep copy of issuer when stored first: %v", issuerFirst), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			issuer := factory.CreateCharacterFull()
+			other := factory.CreateCharacterFull()
+			factory.CreateEveEntityCharacter(app.EveEntity{ID: issuer.ID})
+			if issuerFirst {
+				createCopy(issuer.ID, issuer.ID, false)
+				createCopy(other.ID, issuer.ID, false)
+			} else {
+				createCopy(other.ID, issuer.ID, false)
+				createCopy(issuer.ID, issuer.ID, false)
+			}
+			// when
+			got, err := s.ListAllContracts(t.Context())
+			// then
+			require.NoError(t, err)
+			require.Len(t, got, 1)
+			xassert.Equal(t, issuer.ID, got[0].CharacterID)
+		})
+	}
+	t.Run("should keep copy of issuer for contracts issued for a corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		other := factory.CreateCharacterFull()
+		issuer := factory.CreateCharacterFull()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: issuer.ID})
+		createCopy(other.ID, issuer.ID, true)
+		createCopy(issuer.ID, issuer.ID, true)
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, issuer.ID, got[0].CharacterID)
+	})
+	t.Run("should keep copy of character with lowest ID when issuer is not one of them", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		stranger := factory.CreateEveEntityCharacter()
+		low, high := c1, c2
+		if high.ID < low.ID {
+			low, high = high, low
+		}
+		createCopy(high.ID, stranger.ID, false)
+		createCopy(low.ID, stranger.ID, false)
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, low.ID, got[0].CharacterID)
+	})
+	t.Run("should keep contracts which differ", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		stranger := factory.CreateEveEntityCharacter()
+		createCopy(c1.ID, stranger.ID, false)
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c2.ID,
+			ContractID:  42,
+			DateIssued:  dateIssued,
+			IssuerID:    stranger.ID,
+			Type:        app.ContractTypeCourier, // same ID, different type
+		})
 		// when
 		got, err := s.ListAllContracts(t.Context())
 		// then

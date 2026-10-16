@@ -84,8 +84,32 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 	return nil
 }
 
+// ListAllContracts returns the contracts of all characters.
+// A contract seen by several characters is returned only once:
+// the copy of its issuer or else the copy of the character with the lowest ID.
 func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.CharacterContract, error) {
-	return s.st.ListAllCharacterContracts(ctx)
+	oo, err := s.st.ListAllCharacterContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// sort preferred copies first, so they are kept
+	rank := func(o *app.CharacterContract) int {
+		if o.Issuer != nil && o.Issuer.ID == o.CharacterID {
+			return 0
+		}
+		return 1
+	}
+	slices.SortStableFunc(oo, func(a, b *app.CharacterContract) int {
+		return cmp.Or(cmp.Compare(rank(a), rank(b)), cmp.Compare(a.CharacterID, b.CharacterID))
+	})
+	oo = xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
+		return a.ContractID == b.ContractID &&
+			a.Type == b.Type &&
+			a.Issuer.ID == b.Issuer.ID &&
+			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
+			a.DateIssued.Equal(b.DateIssued)
+	})
+	return oo, nil
 }
 
 func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.ContractItem, error) {
