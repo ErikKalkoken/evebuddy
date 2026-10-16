@@ -93,7 +93,7 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 			slog.Error("Failed to reload character for skill queue", "characterID", characterID, "error", err)
 			return
 		}
-		if !a.character.CompareAndSwap(old, c) {
+		if !swapReloadedCharacter(&a.character, old, c) {
 			return // character changed meanwhile; that change runs its own update
 		}
 		a.Update(ctx)
@@ -176,7 +176,9 @@ func (a *SkillQueue) Stop() {
 
 func (a *SkillQueue) Update(ctx context.Context) {
 	isLatest := a.updateRun.start()
-	setTop := func(s string, i widget.Importance) {
+	// reset shows a message instead of the queue.
+	// Done in one step so a refresh tick can't interleave.
+	reset := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -184,13 +186,6 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			a.topLabel.Text = s
 			a.topLabel.Importance = i
 			a.topLabel.Refresh()
-		})
-	}
-	reset := func() {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
 			a.skillqueue = app.NewCharacterSkillqueue()
 			a.skillList.Hide()
 			a.emptyLabel.Hide()
@@ -203,8 +198,7 @@ func (a *SkillQueue) Update(ctx context.Context) {
 
 	c := a.character.Load()
 	if c == nil {
-		setTop("No character", widget.LowImportance)
-		reset()
+		reset("No character", widget.LowImportance)
 		return
 	}
 	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterSkillqueue)
@@ -213,13 +207,11 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		reset()
+		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	if !hasData {
-		setTop("Waiting for character data to be loaded...", widget.WarningImportance)
-		reset()
+		reset("Waiting for character data to be loaded...", widget.WarningImportance)
 		return
 	}
 	sq := app.NewCharacterSkillqueue()
@@ -229,14 +221,13 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
-		reset()
+		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 
 	fyne.Do(func() {
-		if !isLatest() {
-			return
+		if !isLatest() || a.character.Load().IDOrZero() != c.ID {
+			return // a newer update is pending
 		}
 		a.skillqueue = sq
 		a.refreshTimeDependent()
@@ -281,8 +272,8 @@ func (a *SkillQueue) refreshTimeDependent() {
 	a.statusIcon.Show()
 	var s1, s2 string
 	if isActive {
-		if c := sq.CompletionP(); c.ValueOrZero() < 1 {
-			s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
+		if p := sq.CompletionP(); p.ValueOrZero() < 1 {
+			s1 = fmt.Sprintf("%.0f%%", p.ValueOrZero()*100)
 			s2 = fmt.Sprintf("%s (%s)", sq.Active(), s1)
 		}
 	} else if c.IsTrainingWatched {

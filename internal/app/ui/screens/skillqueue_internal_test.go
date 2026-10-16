@@ -277,6 +277,30 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 		assert.Equal(t, "No skill in training", a.topLabel.Text)
 		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
 	})
+	t.Run("keeps error after failed reload", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t) // own DB, since a table is dropped
+		defer db.Close()
+		c := factory.CreateCharacterFull()
+		createSkillqueueSection(factory, c.ID)
+		createActiveSkillqueue(factory, c.ID)
+		a, u, status := newSkillQueueForTest(t, st, c)
+		a.Update(t.Context())
+		require.True(t, a.skillList.Visible())
+		_, err := db.Exec("DROP TABLE character_skillqueue_items;") // make the reload fail
+		require.NoError(t, err)
+
+		u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterSkillqueue,
+		})
+		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+
+		assert.Contains(t, a.topLabel.Text, "ERROR:")
+		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.statusIcon.Visible())
+		assert.Equal(t, skillQueueStatus{}, *status)
+	})
 	t.Run("does not show queue again after reset", func(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		createSkillqueueSection(factory, c.ID)
