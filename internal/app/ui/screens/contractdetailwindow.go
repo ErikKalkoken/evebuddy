@@ -293,6 +293,9 @@ func fetchContractBids(ctx context.Context, u baseUI, r contractRow) (int, float
 	if err != nil {
 		return 0, 0, err
 	}
+	if count == 0 {
+		return 0, 0, nil
+	}
 	top, err := topBid(ctx, r.objectID)
 	if err != nil {
 		return 0, 0, err
