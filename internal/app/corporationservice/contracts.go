@@ -12,7 +12,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/contractsync"
+	"github.com/ErikKalkoken/evebuddy/internal/app/contract"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -94,11 +94,11 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 			return contracts, nil
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
-			contracts := xslices.Map(data.([]esi.CorporationsCorporationIdContractsGetInner), func(x esi.CorporationsCorporationIdContractsGetInner) contractsync.ESIContract {
-				return contractsync.ESIContract(x)
+			contracts := xslices.Map(data.([]esi.CorporationsCorporationIdContractsGetInner), func(x esi.CorporationsCorporationIdContractsGetInner) contract.ESIContract {
+				return contract.ESIContract(x)
 			})
-			contracts = contractsync.FilterDeleted(contracts)
-			entityIDs, locationIDs := contractsync.RelatedIDs(contracts...)
+			contracts = contract.FilterDeleted(contracts)
+			entityIDs, locationIDs := contract.RelatedIDs(contracts...)
 			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
 				return false, err
@@ -110,7 +110,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 			current := xslices.Map(oo, func(x *app.CorporationContract) *app.Contract {
 				return &x.Contract
 			})
-			newContracts, existingContracts := contractsync.Split(contracts, current)
+			newContracts, existingContracts := contract.Split(contracts, current)
 			slog.Debug("contracts", "current", len(current), "entries", contracts)
 			// create new entries
 			if len(newContracts) > 0 {
@@ -156,7 +156,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 				}
 			}
 			// delete stale local contracts
-			staleIDs := contractsync.StaleIDs(current, contracts)
+			staleIDs := contract.StaleIDs(current, contracts)
 			if err := s.st.DeleteCorporationContracts(ctx, arg.corporationID, staleIDs); err != nil {
 				return false, err
 			}
@@ -164,14 +164,14 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 		})
 }
 
-func (s *CorporationService) createNewContract(ctx context.Context, corporationID int64, c contractsync.ESIContract) error {
+func (s *CorporationService) createNewContract(ctx context.Context, corporationID int64, c contract.ESIContract) error {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
-	entityIDs, locationIDs := contractsync.RelatedIDs(c)
+	entityIDs, locationIDs := contract.RelatedIDs(c)
 	err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
 	if err != nil {
 		return err
 	}
-	availability, status, typ, err := contractsync.ParseESI(c)
+	availability, status, typ, err := contract.ParseESI(c)
 	if err != nil {
 		return err
 	}
@@ -208,10 +208,10 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	if err != nil {
 		return err
 	}
-	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
-		return contractsync.ESIContractItem(x)
+	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contract.ESIContractItem {
+		return contract.ESIContractItem(x)
 	})
-	typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
+	typeIDs := set.Of(xslices.Map(items, func(x contract.ESIContractItem) int64 {
 		return x.TypeId
 	})...)
 	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
@@ -234,8 +234,8 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	return nil
 }
 
-func (s *CorporationService) updateContract(ctx context.Context, corporationID int64, c contractsync.ESIContract) error {
-	status, err := contractsync.ParseStatus(c.Status)
+func (s *CorporationService) updateContract(ctx context.Context, corporationID int64, c contract.ESIContract) error {
+	status, err := contract.ParseStatus(c.Status)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (s *CorporationService) updateContract(ctx context.Context, corporationID i
 	if err != nil {
 		return err
 	}
-	if !contractsync.HasChanged(&o.Contract, c, status) {
+	if !contract.HasChanged(&o.Contract, c, status) {
 		return nil
 	}
 	return s.st.UpdateCorporationContract(ctx, storage.UpdateCorporationContractParams{
@@ -270,8 +270,8 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 	if err != nil {
 		return err
 	}
-	newBids, bidderIDs := contractsync.NewBids(existingBidIDs, xslices.Map(bids, func(x esi.CharactersCharacterIdContractsContractIdBidsGetInner) contractsync.ESIContractBid {
-		return contractsync.ESIContractBid(x)
+	newBids, bidderIDs := contract.NewBids(existingBidIDs, xslices.Map(bids, func(x esi.CharactersCharacterIdContractsContractIdBidsGetInner) contract.ESIContractBid {
+		return contract.ESIContractBid(x)
 	}))
 	if len(newBids) == 0 {
 		return nil

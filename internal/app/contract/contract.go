@@ -1,9 +1,9 @@
-// Package contractsync provides the rules for updating stored contracts from ESI,
+// Package contract provides the rules for updating stored contracts from ESI,
 // which are shared by characters and corporations.
 //
 // Services convert ESI responses for characters and corporations
 // to the ESI types of this package before use.
-package contractsync
+package contract
 
 import (
 	"fmt"
