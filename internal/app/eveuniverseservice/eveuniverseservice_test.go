@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestAddMissingEveEntitiesAndLocations(t *testing.T) {
+func TestAddMissingEntitiesAndLocations(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
@@ -34,7 +34,7 @@ func TestAddMissingEveEntitiesAndLocations(t *testing.T) {
 			}),
 		)
 		// when
-		err := s.AddMissingEveEntitiesAndLocations(ctx, set.Of[int64](47), set.Of[int64]())
+		err := s.AddMissingEntitiesAndLocations(ctx, set.Of[int64](47), set.Of[int64]())
 		// then
 		require.NoError(t, err)
 		o, err := st.GetEveEntity(ctx, 47)
@@ -47,7 +47,7 @@ func TestAddMissingEveEntitiesAndLocations(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		// when
-		err := s.AddMissingEveEntitiesAndLocations(ctx, set.Of[int64](), set.Of[int64]())
+		err := s.AddMissingEntitiesAndLocations(ctx, set.Of[int64](), set.Of[int64]())
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
@@ -58,7 +58,7 @@ func TestAddMissingEveEntitiesAndLocations(t *testing.T) {
 		httpmock.Reset()
 		loc := factory.CreateEveLocationStation()
 		// when
-		err := s.AddMissingEveEntitiesAndLocations(ctx, set.Of[int64](), set.Of(loc.ID))
+		err := s.AddMissingEntitiesAndLocations(ctx, set.Of[int64](), set.Of(loc.ID))
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, httpmock.GetTotalCallCount())

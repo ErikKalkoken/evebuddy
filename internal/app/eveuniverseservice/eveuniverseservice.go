@@ -104,7 +104,7 @@ func (s *EVEUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 	return o, nil
 }
 
-func (s *EVEUniverseService) AddMissingEveEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
+func (s *EVEUniverseService) AddMissingEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
 	g := new(errgroup.Group)
 	if entityIDs.Size() > 0 {
 		g.Go(func() error {

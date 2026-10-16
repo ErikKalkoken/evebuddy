@@ -1,12 +1,14 @@
-// Package contract provides the rules for updating stored contracts from ESI,
+// Package contractsync provides the rules for updating stored contracts from ESI,
 // which are shared by characters and corporations.
 //
 // Services convert ESI responses for characters and corporations
 // to the ESI types of this package before use.
-package contract
+package contractsync
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"time"
 
@@ -92,13 +94,13 @@ type ESIContractBid struct {
 	DateBid  time.Time
 }
 
-// ParseESI returns the availability, status and type of an ESI contract.
-func ParseESI(c ESIContract) (app.ContractAvailability, app.ContractStatus, app.ContractType, error) {
+// ParseESIContract returns the availability, status and type of an ESI contract.
+func ParseESIContract(c ESIContract) (app.ContractAvailability, app.ContractStatus, app.ContractType, error) {
 	availability, ok := availabilityFromESIValue[c.Availability]
 	if !ok {
 		return 0, 0, 0, fmt.Errorf("unknown availability: %s", c.Availability)
 	}
-	status, err := ParseStatus(c.Status)
+	status, err := ParseESIStatus(c.Status)
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -109,8 +111,8 @@ func ParseESI(c ESIContract) (app.ContractAvailability, app.ContractStatus, app.
 	return availability, status, typ, nil
 }
 
-// ParseStatus returns the status for an ESI status value.
-func ParseStatus(s string) (app.ContractStatus, error) {
+// ParseESIStatus returns the status for an ESI status value.
+func ParseESIStatus(s string) (app.ContractStatus, error) {
 	status, ok := statusFromESIValue[s]
 	if !ok {
 		return 0, fmt.Errorf("unknown status: %s", s)
@@ -118,15 +120,15 @@ func ParseStatus(s string) (app.ContractStatus, error) {
 	return status, nil
 }
 
-// FilterDeleted removes contracts which ESI reports as deleted.
-func FilterDeleted(contracts []ESIContract) []ESIContract {
+// RemoveDeleted removes contracts which ESI reports as deleted.
+func RemoveDeleted(contracts []ESIContract) []ESIContract {
 	return slices.DeleteFunc(contracts, func(x ESIContract) bool {
 		return x.Status == "deleted"
 	})
 }
 
-// RelatedIDs returns the IDs of the entities and locations referenced by contracts.
-func RelatedIDs(contracts ...ESIContract) (entityIDs, locationIDs set.Set[int64]) {
+// ExtractEntityAndLocationIDs returns the IDs of the entities and locations referenced by contracts.
+func ExtractEntityAndLocationIDs(contracts []ESIContract) (entityIDs, locationIDs set.Set[int64]) {
 	for _, c := range contracts {
 		entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
 		if c.StartLocationId != nil {
@@ -139,14 +141,21 @@ func RelatedIDs(contracts ...ESIContract) (entityIDs, locationIDs set.Set[int64]
 	return entityIDs, locationIDs
 }
 
-// Split separates contracts into those which are not yet stored and those which are.
-func Split(contracts []ESIContract, current []*app.Contract) (newContracts, existing []ESIContract) {
-	currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.Contract) int64 {
-		return x.ContractID
-	}))
+// existingContract is a contract from ESI and its stored counterpart.
+type existingContract struct {
+	ESI    ESIContract
+	Stored *app.Contract
+}
+
+// split separates contracts into those which are not yet stored and those which are.
+func split(contracts []ESIContract, current []*app.Contract) (newContracts []ESIContract, existing []existingContract) {
+	stored := make(map[int64]*app.Contract, len(current))
+	for _, o := range current {
+		stored[o.ContractID] = o
+	}
 	for _, c := range contracts {
-		if currentIDs.Contains(c.ContractId) {
-			existing = append(existing, c)
+		if o, ok := stored[c.ContractId]; ok {
+			existing = append(existing, existingContract{ESI: c, Stored: o})
 		} else {
 			newContracts = append(newContracts, c)
 		}
@@ -182,9 +191,9 @@ func NewBids(existing set.Set[int64], bids []ESIContractBid) ([]ESIContractBid, 
 	return newBids, bidderIDs
 }
 
-// StaleIDs returns the IDs of stored contracts which are missing in ESI and should be deleted.
+// staleIDs returns the IDs of stored contracts which are missing in ESI and should be deleted.
 // Finished contracts are kept, since ESI drops them after a while.
-func StaleIDs(current []*app.Contract, contracts []ESIContract) set.Set[int64] {
+func staleIDs(current []*app.Contract, contracts []ESIContract) set.Set[int64] {
 	var unfinishedIDs set.Set[int64]
 	for _, o := range current {
 		if !o.Status.IsFinished() {
@@ -195,4 +204,81 @@ func StaleIDs(current []*app.Contract, contracts []ESIContract) set.Set[int64] {
 		return x.ContractId
 	}))
 	return set.Difference(unfinishedIDs, incomingIDs)
+}
+
+// Sync creates, updates and adds bids for contracts from ESI
+// and returns the IDs of stored contracts which have become stale.
+// contracts must already be filtered and their related entities added.
+// Failures for single contracts are logged and skipped, unless ctx is canceled.
+//
+// The callbacks do the owner specific work. create must return the stored ID
+// also when only storing related data failed, so bids can still be added.
+func Sync(
+	ctx context.Context,
+	contracts []ESIContract,
+	current []*app.Contract,
+	create func(ctx context.Context, c ESIContract) (int64, error),
+	update func(ctx context.Context, stored *app.Contract, c ESIContract) error,
+	updateBids func(ctx context.Context, contractPK, contractID int64) error,
+	logAttr slog.Attr,
+) (set.Set[int64], error) {
+	newContracts, existing := split(contracts, current)
+	slog.Debug("contracts", logAttr, "current", len(current), "entries", contracts)
+	contractPKs := make(map[int64]int64) // contract ID -> stored ID
+	for _, o := range current {
+		contractPKs[o.ContractID] = o.ID
+	}
+	// create new entries
+	if len(newContracts) > 0 {
+		var count int
+		for _, c := range newContracts {
+			id, err := create(ctx, c)
+			if id != 0 {
+				contractPKs[c.ContractId] = id
+			}
+			if err != nil {
+				if ctx.Err() != nil {
+					return set.Set[int64]{}, err
+				}
+				slog.Error("create contract", "contract", c, "error", err)
+				continue
+			}
+			count++
+		}
+		slog.Info("Stored new contracts", logAttr, "count", count)
+	}
+	// update existing entries
+	if len(existing) > 0 {
+		var count int
+		for _, x := range existing {
+			if err := update(ctx, x.Stored, x.ESI); err != nil {
+				if ctx.Err() != nil {
+					return set.Set[int64]{}, err
+				}
+				slog.Error("update contract", "contract", x.ESI, "error", err)
+				continue
+			}
+			count++
+		}
+		slog.Info("Updated contracts", logAttr, "count", count)
+	}
+	// add new bids for auctions
+	for _, c := range contracts {
+		if c.Type != "auction" {
+			continue
+		}
+		pk, ok := contractPKs[c.ContractId]
+		if !ok {
+			slog.Debug("Skipping bids for contract which could not be stored", logAttr, "contractID", c.ContractId)
+			continue
+		}
+		if err := updateBids(ctx, pk, c.ContractId); err != nil {
+			if ctx.Err() != nil {
+				return set.Set[int64]{}, err
+			}
+			slog.Error("update contract bids", "contract", c, "error", err)
+			continue
+		}
+	}
+	return staleIDs(current, contracts), nil
 }

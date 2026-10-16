@@ -357,6 +357,32 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 		xassert.Equal(t, want, bids)
 	})
 
+	t.Run("should store bids of a new auction when fetching its items failed", func(t *testing.T) {
+		// given
+		const contractID = 42
+		fx := setup(t)
+		bidder := factory.CreateEveEntityCharacter()
+		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/%s/%d/contracts/%d/items", o.ESIPath, fx.OwnerID, contractID),
+			httpmock.NewErrorResponder(errors.New("items failed")),
+		)
+		registerDetails(fx, contractID, "bids", []map[string]any{
+			{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
+		})
+		// when
+		err := o.Sync(ctx, fx.OwnerID)
+		// then
+		require.NoError(t, err)
+		c, err := o.GetContract(ctx, fx.OwnerID, contractID)
+		require.NoError(t, err)
+		bids, err := o.ListBids(ctx, c.ID)
+		require.NoError(t, err)
+		require.Len(t, bids, 1)
+		xassert.Equal(t, 7, bids[0].BidID)
+	})
+
 	t.Run("should not update unchanged contract", func(t *testing.T) {
 		// given
 		fx := setup(t)
