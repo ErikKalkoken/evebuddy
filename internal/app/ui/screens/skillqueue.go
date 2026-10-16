@@ -28,14 +28,6 @@ type skillQueueState struct {
 	importance widget.Importance
 }
 
-type trainingState uint
-
-const (
-	trainingStateInactive trainingState = iota
-	trainingStateActive
-	trainingStateExpired // watched but nothing in training
-)
-
 type SkillQueue struct {
 	widget.BaseWidget
 
@@ -263,16 +255,10 @@ func (a *SkillQueue) applyState() {
 	}
 
 	sq := st.queue
-	var ts trainingState
-	if sq.IsActive() {
-		ts = trainingStateActive
-	} else if st.character.IsTrainingWatched {
-		ts = trainingStateExpired
-	}
 	var icon fyne.Resource
 	var tooltip, statusShort, statusLong string
-	switch ts {
-	case trainingStateActive:
+	switch {
+	case sq.IsActive():
 		a.topLabel.Text = fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
 		a.topLabel.Importance = widget.MediumImportance
 		icon = theme.NewSuccessThemedResource(a.statusResource)
@@ -281,7 +267,7 @@ func (a *SkillQueue) applyState() {
 			statusShort = fmt.Sprintf("%.0f%%", p.ValueOrZero()*100)
 			statusLong = fmt.Sprintf("%s (%s)", sq.Active(), statusShort)
 		}
-	case trainingStateExpired:
+	case st.character.IsTrainingWatched:
 		a.topLabel.Text = "No skill in training"
 		a.topLabel.Importance = widget.DangerImportance
 		icon = theme.NewErrorThemedResource(a.statusResource)
