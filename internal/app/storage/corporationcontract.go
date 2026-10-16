@@ -197,25 +197,7 @@ func (st *Storage) GetCorporationContract(ctx context.Context, corporationID, co
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	cc := r.CorporationContract
-	acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-	assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-	o := corporationContractFromDBModel(
-		acceptor,
-		assignee,
-		cc,
-		endLocationName(r.EndLocationName),
-		endSolarSystemID(r.EndSolarSystemID),
-		endSolarSystemName(r.EndSolarSystemName),
-		endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
-		issuer(r.EveEntity_2),
-		issuerCorporation(r.EveEntity),
-		r.Items,
-		startLocationName(r.StartLocationName),
-		startSolarSystemID(r.StartSolarSystemID),
-		startSolarSystemName(r.StartSolarSystemName),
-		startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
-	)
+	o := corporationContractFromDBModel(r)
 	return o, nil
 }
 
@@ -234,25 +216,7 @@ func (st *Storage) ListCorporationContracts(ctx context.Context, corporationID i
 	}
 	oo := make([]*app.CorporationContract, len(rows))
 	for i, r := range rows {
-		cc := r.CorporationContract
-		acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = corporationContractFromDBModel(
-			acceptor,
-			assignee,
-			cc,
-			endLocationName(r.EndLocationName),
-			endSolarSystemID(r.EndSolarSystemID),
-			endSolarSystemName(r.EndSolarSystemName),
-			endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
-			issuer(r.EveEntity_2),
-			issuerCorporation(r.EveEntity),
-			r.Items,
-			startLocationName(r.StartLocationName),
-			startSolarSystemID(r.StartSolarSystemID),
-			startSolarSystemName(r.StartSolarSystemName),
-			startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
-		)
+		oo[i] = corporationContractFromDBModel(queries.GetCorporationContractRow(r))
 	}
 	return oo, nil
 }
@@ -306,26 +270,12 @@ func (st *Storage) UpdateCorporationContractNotified(ctx context.Context, id int
 	return nil
 }
 
-func corporationContractFromDBModel(
-	acceptor nullAcceptor,
-	assignee nullAssignee,
-	cc queries.CorporationContract,
-	endLocationName endLocationName,
-	endSolarSystemID endSolarSystemID,
-	endSolarSystemName endSolarSystemName,
-	endSolarSystemSecurity endSolarSystemSecurity,
-	issuer issuer,
-	issuerCorporation issuerCorporation,
-	items any,
-	startLocationName startLocationName,
-	startSolarSystemID startSolarSystemID,
-	startSolarSystemName startSolarSystemName,
-	startSolarSystemSecurity startSolarSystemSecurity,
-) *app.CorporationContract {
+func corporationContractFromDBModel(r queries.GetCorporationContractRow) *app.CorporationContract {
+	cc := r.CorporationContract
 	o2 := &app.CorporationContract{
 		Contract: app.Contract{
-			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
-			Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
+			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}),
+			Assignee:          eveEntityFromNullableDBModel(nullEveEntity{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}),
 			Availability:      contractAvailabilityFromDBValue[cc.Availability],
 			Buyout:            optional.FromZeroValue(cc.Buyout),
 			Collateral:        optional.FromZeroValue(cc.Collateral),
@@ -335,13 +285,17 @@ func corporationContractFromDBModel(
 			DateExpired:       cc.DateExpired,
 			DateIssued:        cc.DateIssued,
 			DaysToComplete:    optional.FromZeroValue(cc.DaysToComplete),
+			EndLocation:       contractLocationFromDBModel(cc.EndLocationID, r.EndLocationName, r.EndSolarSystemSecurityStatus),
+			EndSolarSystem:    contractSolarSystemFromDBModel(r.EndSolarSystemID, r.EndSolarSystemName),
 			ForCorporation:    cc.ForCorporation,
 			ID:                cc.ID,
-			Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
-			IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-			Items:             contractItemNamesFromDBModel(items),
+			Issuer:            eveEntityFromDBModel(r.EveEntity_2),
+			IssuerCorporation: eveEntityFromDBModel(r.EveEntity),
+			Items:             contractItemNamesFromDBModel(r.Items),
 			Price:             optional.FromZeroValue(cc.Price),
 			Reward:            optional.FromZeroValue(cc.Reward),
+			StartLocation:     contractLocationFromDBModel(cc.StartLocationID, r.StartLocationName, r.StartSolarSystemSecurityStatus),
+			StartSolarSystem:  contractSolarSystemFromDBModel(r.StartSolarSystemID, r.StartSolarSystemName),
 			Status:            contractStatusFromDBValue[cc.Status],
 			StatusNotified:    contractStatusFromDBValue[cc.StatusNotified],
 			Title:             optional.FromZeroValue(cc.Title),
@@ -351,19 +305,6 @@ func corporationContractFromDBModel(
 		},
 		CorporationID: cc.CorporationID,
 	}
-	setContractLocationsFromDBModel(
-		&o2.Contract,
-		cc.EndLocationID,
-		endLocationName,
-		endSolarSystemID,
-		endSolarSystemName,
-		endSolarSystemSecurity,
-		cc.StartLocationID,
-		startLocationName,
-		startSolarSystemID,
-		startSolarSystemName,
-		startSolarSystemSecurity,
-	)
 	return o2
 }
 

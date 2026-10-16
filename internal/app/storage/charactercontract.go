@@ -235,25 +235,7 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	cc := r.CharacterContract
-	acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-	assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-	o := characterContractFromDBModel(
-		acceptor,
-		assignee,
-		cc,
-		endLocationName(r.EndLocationName),
-		endSolarSystemID(r.EndSolarSystemID),
-		endSolarSystemName(r.EndSolarSystemName),
-		endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
-		issuer(r.EveEntity_2),
-		issuerCorporation(r.EveEntity),
-		r.Items,
-		startLocationName(r.StartLocationName),
-		startSolarSystemID(r.StartSolarSystemID),
-		startSolarSystemName(r.StartSolarSystemName),
-		startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
-	)
+	o := characterContractFromDBModel(r)
 	return o, nil
 }
 
@@ -278,25 +260,7 @@ func (st *Storage) ListAllCharacterContracts(ctx context.Context) ([]*app.Charac
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
-		cc := r.CharacterContract
-		acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = characterContractFromDBModel(
-			acceptor,
-			assignee,
-			cc,
-			endLocationName(r.EndLocationName),
-			endSolarSystemID(r.EndSolarSystemID),
-			endSolarSystemName(r.EndSolarSystemName),
-			endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
-			issuer(r.EveEntity_2),
-			issuerCorporation(r.EveEntity),
-			r.Items,
-			startLocationName(r.StartLocationName),
-			startSolarSystemID(r.StartSolarSystemID),
-			startSolarSystemName(r.StartSolarSystemName),
-			startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
-		)
+		oo[i] = characterContractFromDBModel(queries.GetCharacterContractRow(r))
 	}
 	return oo, nil
 }
@@ -314,25 +278,7 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int64
 	}
 	oo := make([]*app.CharacterContract, len(rows))
 	for i, r := range rows {
-		cc := r.CharacterContract
-		acceptor := nullAcceptor{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}
-		assignee := nullAssignee{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}
-		oo[i] = characterContractFromDBModel(
-			acceptor,
-			assignee,
-			cc,
-			endLocationName(r.EndLocationName),
-			endSolarSystemID(r.EndSolarSystemID),
-			endSolarSystemName(r.EndSolarSystemName),
-			endSolarSystemSecurity(r.EndSolarSystemSecurityStatus),
-			issuer(r.EveEntity_2),
-			issuerCorporation(r.EveEntity),
-			r.Items,
-			startLocationName(r.StartLocationName),
-			startSolarSystemID(r.StartSolarSystemID),
-			startSolarSystemName(r.StartSolarSystemName),
-			startSolarSystemSecurity(r.StartSolarSystemSecurityStatus),
-		)
+		oo[i] = characterContractFromDBModel(queries.GetCharacterContractRow(r))
 	}
 	return oo, nil
 }
@@ -386,26 +332,12 @@ func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64
 	return nil
 }
 
-func characterContractFromDBModel(
-	acceptor nullAcceptor,
-	assignee nullAssignee,
-	cc queries.CharacterContract,
-	endLocationName endLocationName,
-	endSolarSystemID endSolarSystemID,
-	endSolarSystemName endSolarSystemName,
-	endSolarSystemSecurity endSolarSystemSecurity,
-	issuer issuer,
-	issuerCorporation issuerCorporation,
-	items any,
-	startLocationName startLocationName,
-	startSolarSystemID startSolarSystemID,
-	startSolarSystemName startSolarSystemName,
-	startSolarSystemSecurity startSolarSystemSecurity,
-) *app.CharacterContract {
+func characterContractFromDBModel(r queries.GetCharacterContractRow) *app.CharacterContract {
+	cc := r.CharacterContract
 	o := &app.CharacterContract{
 		Contract: app.Contract{
-			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
-			Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
+			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity{id: cc.AcceptorID, name: r.AcceptorName, category: r.AcceptorCategory}),
+			Assignee:          eveEntityFromNullableDBModel(nullEveEntity{id: cc.AssigneeID, name: r.AssigneeName, category: r.AssigneeCategory}),
 			Availability:      contractAvailabilityFromDBValue[cc.Availability],
 			Buyout:            optional.FromZeroValue(cc.Buyout),
 			Collateral:        optional.FromZeroValue(cc.Collateral),
@@ -415,13 +347,17 @@ func characterContractFromDBModel(
 			DateExpired:       cc.DateExpired,
 			DateIssued:        cc.DateIssued,
 			DaysToComplete:    optional.FromZeroValue(cc.DaysToComplete),
+			EndLocation:       contractLocationFromDBModel(cc.EndLocationID, r.EndLocationName, r.EndSolarSystemSecurityStatus),
+			EndSolarSystem:    contractSolarSystemFromDBModel(r.EndSolarSystemID, r.EndSolarSystemName),
 			ForCorporation:    cc.ForCorporation,
 			ID:                cc.ID,
-			Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
-			IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-			Items:             contractItemNamesFromDBModel(items),
+			Issuer:            eveEntityFromDBModel(r.EveEntity_2),
+			IssuerCorporation: eveEntityFromDBModel(r.EveEntity),
+			Items:             contractItemNamesFromDBModel(r.Items),
 			Price:             optional.FromZeroValue(cc.Price),
 			Reward:            optional.FromZeroValue(cc.Reward),
+			StartLocation:     contractLocationFromDBModel(cc.StartLocationID, r.StartLocationName, r.StartSolarSystemSecurityStatus),
+			StartSolarSystem:  contractSolarSystemFromDBModel(r.StartSolarSystemID, r.StartSolarSystemName),
 			Status:            contractStatusFromDBValue[cc.Status],
 			StatusNotified:    contractStatusFromDBValue[cc.StatusNotified],
 			Title:             optional.FromZeroValue(cc.Title),
@@ -431,19 +367,6 @@ func characterContractFromDBModel(
 		},
 		CharacterID: cc.CharacterID,
 	}
-	setContractLocationsFromDBModel(
-		&o.Contract,
-		cc.EndLocationID,
-		endLocationName,
-		endSolarSystemID,
-		endSolarSystemName,
-		endSolarSystemSecurity,
-		cc.StartLocationID,
-		startLocationName,
-		startSolarSystemID,
-		startSolarSystemName,
-		startSolarSystemSecurity,
-	)
 	return o
 }
 

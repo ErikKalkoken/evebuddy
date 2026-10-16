@@ -97,45 +97,25 @@ func contractItemNamesFromDBModel(items any) []string {
 	return strings.Split(x, ",")
 }
 
-func setContractLocationsFromDBModel(
-	o *app.Contract,
-	endLocationID sql.NullInt64,
-	endLocationName endLocationName,
-	endSolarSystemID endSolarSystemID,
-	endSolarSystemName endSolarSystemName,
-	endSolarSystemSecurity endSolarSystemSecurity,
-	startLocationID sql.NullInt64,
-	startLocationName startLocationName,
-	startSolarSystemID startSolarSystemID,
-	startSolarSystemName startSolarSystemName,
-	startSolarSystemSecurity startSolarSystemSecurity,
-) {
-	if endLocationID.Valid {
-		o.EndLocation = optional.New(&app.EveLocationShort{
-			ID:             endLocationID.Int64,
-			Name:           optional.FromNullString(sql.NullString(endLocationName)),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(endSolarSystemSecurity)),
-		})
+func contractLocationFromDBModel(id sql.NullInt64, name sql.NullString, security sql.NullFloat64) optional.Optional[*app.EveLocationShort] {
+	if !id.Valid {
+		return optional.Optional[*app.EveLocationShort]{}
 	}
-	if startLocationID.Valid {
-		o.StartLocation = optional.New(&app.EveLocationShort{
-			ID:             startLocationID.Int64,
-			Name:           optional.FromNullString(sql.NullString(startLocationName)),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(startSolarSystemSecurity)),
-		})
+	return optional.New(&app.EveLocationShort{
+		ID:             id.Int64,
+		Name:           optional.FromNullString(name),
+		SecurityStatus: optional.FromNullFloat64ToFloat32(security),
+	})
+}
+
+func contractSolarSystemFromDBModel(id sql.NullInt64, name sql.NullString) optional.Optional[*app.EntityShort] {
+	if !id.Valid || !name.Valid {
+		return optional.Optional[*app.EntityShort]{}
 	}
-	if endSolarSystemID.Valid && endSolarSystemName.Valid {
-		o.EndSolarSystem = optional.New(&app.EntityShort{
-			ID:   endSolarSystemID.Int64,
-			Name: endSolarSystemName.String,
-		})
-	}
-	if startSolarSystemID.Valid && startSolarSystemName.Valid {
-		o.StartSolarSystem = optional.New(&app.EntityShort{
-			ID:   startSolarSystemID.Int64,
-			Name: startSolarSystemName.String,
-		})
-	}
+	return optional.New(&app.EntityShort{
+		ID:   id.Int64,
+		Name: name.String,
+	})
 }
 
 // contractBidFromDBModel maps bids of both owners, since their rows have identical fields.

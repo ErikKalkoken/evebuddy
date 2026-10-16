@@ -153,3 +153,62 @@ func TestCalculateContractsEscrow(t *testing.T) {
 		xassert.Equal(t, 0.0, got)
 	})
 }
+
+func TestContractLocations(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+	check := func(t *testing.T, startLocation, endLocation *app.EveLocation, got app.Contract) {
+		t.Helper()
+		for _, x := range []struct {
+			name        string
+			want        *app.EveLocation
+			location    optional.Optional[*app.EveLocationShort]
+			solarSystem optional.Optional[*app.EntityShort]
+		}{
+			{"start", startLocation, got.StartLocation, got.StartSolarSystem},
+			{"end", endLocation, got.EndLocation, got.EndSolarSystem},
+		} {
+			es := x.want.SolarSystem.MustValue()
+			xassert.Equal(t, &app.EveLocationShort{
+				ID:             x.want.ID,
+				Name:           optional.New(x.want.Name),
+				SecurityStatus: optional.New(es.SecurityStatus),
+			}, x.location.MustValue())
+			xassert.Equal(t, &app.EntityShort{ID: es.ID, Name: es.Name}, x.solarSystem.MustValue())
+		}
+	}
+	t.Run("character", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		startLocation := f.CreateEveLocationStructure()
+		endLocation := f.CreateEveLocationStructure()
+		o := f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			StartLocationID: optional.New(startLocation.ID),
+			EndLocationID:   optional.New(endLocation.ID),
+		})
+		got, err := st.GetCharacterContract(t.Context(), o.CharacterID, o.ContractID)
+		require.NoError(t, err)
+		check(t, startLocation, endLocation, got.Contract)
+	})
+	t.Run("corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		startLocation := f.CreateEveLocationStructure()
+		endLocation := f.CreateEveLocationStructure()
+		o := f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			StartLocationID: optional.New(startLocation.ID),
+			EndLocationID:   optional.New(endLocation.ID),
+		})
+		got, err := st.GetCorporationContract(t.Context(), o.CorporationID, o.ContractID)
+		require.NoError(t, err)
+		check(t, startLocation, endLocation, got.Contract)
+	})
+	t.Run("without locations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{Type: app.ContractTypeItemExchange})
+		got, err := st.GetCharacterContract(t.Context(), o.CharacterID, o.ContractID)
+		require.NoError(t, err)
+		xassert.Empty(t, got.StartLocation)
+		xassert.Empty(t, got.EndLocation)
+		xassert.Empty(t, got.StartSolarSystem)
+		xassert.Empty(t, got.EndSolarSystem)
+	})
+}
