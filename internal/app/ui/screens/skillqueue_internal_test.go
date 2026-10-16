@@ -261,7 +261,7 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 
 		// simulate time passing by moving the loaded items back in time
 		shiftQueue := func(d time.Duration) {
-			for qi := range a.skillqueue.All() {
+			for qi := range a.state.queue.All() {
 				qi.StartDate = optional.New(qi.StartDate.ValueOrZero().Add(-d))
 				qi.FinishDate = optional.New(qi.FinishDate.ValueOrZero().Add(-d))
 			}

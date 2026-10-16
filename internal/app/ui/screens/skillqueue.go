@@ -20,6 +20,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
+// skillQueueState is what the screen shows: a message or a loaded queue.
+type skillQueueState struct {
+	character  *app.Character           // owner of queue
+	queue      *app.CharacterSkillqueue // nil when showing a message
+	message    string
+	importance widget.Importance
+}
+
+type trainingState uint
+
+const (
+	trainingStateInactive trainingState = iota
+	trainingStateActive
+	trainingStateExpired // watched but nothing in training
+)
+
 type SkillQueue struct {
 	widget.BaseWidget
 
@@ -30,7 +46,7 @@ type SkillQueue struct {
 	showCurrentCharacter bool
 	signalKey            string
 	skillList            *widget.List
-	skillqueue           *app.CharacterSkillqueue
+	state                skillQueueState // main thread only
 	statusIcon           *ttwidget.Icon
 	statusResource       fyne.Resource
 	topLabel             *widget.Label
@@ -51,7 +67,6 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		emptyLabel:           widget.NewLabel("Queue is empty"),
 		showCurrentCharacter: c == nil,
 		signalKey:            u.Signals().UniqueKey(),
-		skillqueue:           app.NewCharacterSkillqueue(),
 		statusIcon:           ttwidget.NewIcon(theme.NewDisabledResource(statusResource)),
 		statusResource:       statusResource,
 		topLabel:             ui.NewLabelWithWrapping(""),
@@ -99,7 +114,7 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		a.Update(ctx)
 	}, a.signalKey)
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(a.refreshTimeDependent)
+		fyne.Do(a.applyState)
 	}, a.signalKey)
 	return a
 }
@@ -118,7 +133,10 @@ func (a *SkillQueue) CreateRenderer() fyne.WidgetRenderer {
 func (a *SkillQueue) makeSkillList() *widget.List {
 	list := widget.NewList(
 		func() int {
-			return a.skillqueue.Size()
+			if a.state.queue == nil {
+				return 0
+			}
+			return a.state.queue.Size()
 		},
 		func() fyne.CanvasObject {
 			level := xwidget.NewSkillLevel()
@@ -128,7 +146,10 @@ func (a *SkillQueue) makeSkillList() *widget.List {
 			return container.NewBorder(nil, nil, level, nil, NewSkillQueueItem(a.u.IsMobile()))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			qi := a.skillqueue.Item(id)
+			if a.state.queue == nil {
+				return
+			}
+			qi := a.state.queue.Item(id)
 			if qi == nil {
 				return
 			}
@@ -155,11 +176,14 @@ func (a *SkillQueue) makeSkillList() *widget.List {
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
-		q := a.skillqueue.Item(id)
+		if a.state.queue == nil {
+			return
+		}
+		q := a.state.queue.Item(id)
 		if q == nil {
 			return
 		}
-		showSkillInTrainingWindow(a.u, q, a.character.Load().NameOrZero())
+		showSkillInTrainingWindow(a.u, q, a.state.character.NameOrZero())
 	}
 	return list
 }
@@ -176,29 +200,22 @@ func (a *SkillQueue) Stop() {
 
 func (a *SkillQueue) Update(ctx context.Context) {
 	isLatest := a.updateRun.start()
-	// reset shows a message instead of the queue.
-	// Done in one step so a refresh tick can't interleave.
-	reset := func(s string, i widget.Importance) {
+	setState := func(st skillQueueState) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.topLabel.Text = s
-			a.topLabel.Importance = i
-			a.topLabel.Refresh()
-			a.skillqueue = app.NewCharacterSkillqueue()
-			a.skillList.Hide()
-			a.emptyLabel.Hide()
-			a.statusIcon.Hide()
-			if a.OnUpdate != nil {
-				a.OnUpdate("", "")
-			}
+			a.state = st
+			a.applyState()
 		})
+	}
+	showMessage := func(s string, i widget.Importance) {
+		setState(skillQueueState{message: s, importance: i})
 	}
 
 	c := a.character.Load()
 	if c == nil {
-		reset("No character", widget.LowImportance)
+		showMessage("No character", widget.LowImportance)
 		return
 	}
 	hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterSkillqueue)
@@ -207,11 +224,11 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		showMessage("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return
 	}
 	if !hasData {
-		reset("Waiting for character data to be loaded...", widget.WarningImportance)
+		showMessage("Waiting for character data to be loaded...", widget.WarningImportance)
 		return
 	}
 	sq := app.NewCharacterSkillqueue()
@@ -221,67 +238,68 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		showMessage("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	setState(skillQueueState{character: c, queue: sq})
+}
+
+// applyState updates all widgets from the current state.
+// Time dependent values are recalculated, so refresh ticks can call it.
+// Must be called on the main thread.
+func (a *SkillQueue) applyState() {
+	st := a.state
+	if st.queue == nil {
+		a.topLabel.Text = st.message
+		a.topLabel.Importance = st.importance
+		a.topLabel.Refresh()
+		a.skillList.Hide()
+		a.emptyLabel.Hide()
+		a.statusIcon.Hide()
+		if a.OnUpdate != nil {
+			a.OnUpdate("", "")
+		}
 		return
 	}
 
-	fyne.Do(func() {
-		if !isLatest() || a.character.Load().IDOrZero() != c.ID {
-			return // a newer update is pending
-		}
-		a.skillqueue = sq
-		a.refreshTimeDependent()
-	})
-}
-
-// refreshTimeDependent updates the UI from the loaded queue for the current time.
-// Must be called on the main thread.
-func (a *SkillQueue) refreshTimeDependent() {
-	c := a.character.Load()
-	if c == nil || c.ID != a.skillqueue.CharacterID() {
-		return // nothing loaded or a load for another character is pending
+	sq := st.queue
+	var ts trainingState
+	if sq.IsActive() {
+		ts = trainingStateActive
+	} else if st.character.IsTrainingWatched {
+		ts = trainingStateExpired
 	}
-	sq := a.skillqueue
-	isActive := sq.IsActive()
-	if isActive {
+	var icon fyne.Resource
+	var tooltip, statusShort, statusLong string
+	switch ts {
+	case trainingStateActive:
 		a.topLabel.Text = fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
 		a.topLabel.Importance = widget.MediumImportance
-	} else if c.IsTrainingWatched {
+		icon = theme.NewSuccessThemedResource(a.statusResource)
+		tooltip = "Training is active"
+		if p := sq.CompletionP(); p.ValueOrZero() < 1 {
+			statusShort = fmt.Sprintf("%.0f%%", p.ValueOrZero()*100)
+			statusLong = fmt.Sprintf("%s (%s)", sq.Active(), statusShort)
+		}
+	case trainingStateExpired:
 		a.topLabel.Text = "No skill in training"
 		a.topLabel.Importance = widget.DangerImportance
-	} else {
+		icon = theme.NewErrorThemedResource(a.statusResource)
+		tooltip = "Training expired"
+		statusShort = "!"
+		statusLong = "No skill in training"
+	default:
 		a.topLabel.Text = "Training not active"
 		a.topLabel.Importance = widget.MediumImportance
+		icon = theme.NewDisabledResource(a.statusResource)
+		tooltip = "Training is not active"
 	}
 	a.topLabel.Refresh()
-
-	var r fyne.Resource
-	var s string
-	if isActive {
-		r = theme.NewSuccessThemedResource(a.statusResource)
-		s = "Training is active"
-	} else if c.IsTrainingWatched {
-		r = theme.NewErrorThemedResource(a.statusResource)
-		s = "Training expired"
-	} else {
-		r = theme.NewDisabledResource(a.statusResource)
-		s = "Training is not active"
-	}
-	a.statusIcon.SetResource(r)
-	a.statusIcon.SetToolTip(s)
+	a.statusIcon.SetResource(icon)
+	a.statusIcon.SetToolTip(tooltip)
 	a.statusIcon.Show()
-	var s1, s2 string
-	if isActive {
-		if p := sq.CompletionP(); p.ValueOrZero() < 1 {
-			s1 = fmt.Sprintf("%.0f%%", p.ValueOrZero()*100)
-			s2 = fmt.Sprintf("%s (%s)", sq.Active(), s1)
-		}
-	} else if c.IsTrainingWatched {
-		s1 = "!"
-		s2 = "No skill in training"
-	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(s1, s2)
+		a.OnUpdate(statusShort, statusLong)
 	}
 	if sq.Size() == 0 {
 		a.emptyLabel.Show()
