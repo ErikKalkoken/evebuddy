@@ -97,7 +97,7 @@ func ShowContract(u baseUI, r contractRow) {
 				availability = availabilityLabel
 			}
 			fi := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(r.ownerID, r.ownerName, u.InfoViewer().Show)),
+				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner(), u.InfoViewer().Show)),
 				widget.NewFormItem("Description", widget.NewLabel(r.title)),
 				widget.NewFormItem("Type", widget.NewLabel(r.contractType.Display())),
 				widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(r.issuer, u.InfoViewer().Show)),

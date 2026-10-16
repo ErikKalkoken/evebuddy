@@ -87,7 +87,7 @@ func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.Charact
 	}
 	// sort preferred copies first, so they are kept
 	rank := func(o *app.CharacterContract) int {
-		if o.Issuer != nil && o.Issuer.ID == o.CharacterID {
+		if o.Issuer.ID == o.CharacterID {
 			return 0
 		}
 		return 1

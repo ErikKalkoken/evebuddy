@@ -184,6 +184,15 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 	r.updateTimeDependent(now)
 }
 
+// owner returns the character or corporation which owns the contract.
+func (r *contractRow) owner() *app.EveEntity {
+	category := app.EveEntityCharacter
+	if r.isCorporation {
+		category = app.EveEntityCorporation
+	}
+	return &app.EveEntity{ID: r.ownerID, Name: r.ownerName, Category: category}
+}
+
 // updateTimeDependent recomputes the fields which change with time
 // and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {

@@ -346,6 +346,7 @@ func TestNewContractRow_Owner(t *testing.T) {
 		assert.EqualValues(t, myID, r.ownerID)
 		assert.Equal(t, "Bruce", r.ownerName)
 		assert.False(t, r.isCorporation)
+		assert.Equal(t, &app.EveEntity{ID: myID, Name: "Bruce", Category: app.EveEntityCharacter}, r.owner())
 		assert.EqualValues(t, 7, r.objectID)
 		assert.EqualValues(t, 42, r.contractID)
 	})
@@ -354,6 +355,7 @@ func TestNewContractRow_Owner(t *testing.T) {
 		assert.EqualValues(t, myCorpID, r.ownerID)
 		assert.Equal(t, "Wayne Enterprises", r.ownerName)
 		assert.True(t, r.isCorporation)
+		assert.Equal(t, &app.EveEntity{ID: myCorpID, Name: "Wayne Enterprises", Category: app.EveEntityCorporation}, r.owner())
 	})
 }
 
