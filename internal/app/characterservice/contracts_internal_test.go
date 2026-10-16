@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"regexp"
 	"slices"
 	"testing"
@@ -284,6 +285,30 @@ func TestUpdateContractsESI(t *testing.T) {
 		ids, err := st.ListCharacterContractBidIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](7), ids)
+	})
+
+	t.Run("should store a new courier without fetching items", func(t *testing.T) {
+		// given
+		const contractID = 42
+		fx := setup(t)
+		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "courier"}))
+		var itemRequests int
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/%d/items", fx.ownerID, contractID),
+			func(*http.Request) (*http.Response, error) {
+				itemRequests++
+				return nil, errors.New("items failed")
+			},
+		)
+		// when
+		err := update(fx.ownerID)
+		// then
+		require.NoError(t, err)
+		c, err := st.GetCharacterContract(ctx, fx.ownerID, contractID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.ContractTypeCourier, c.Type)
+		xassert.Equal(t, 0, itemRequests)
 	})
 
 	t.Run("should update existing contract", func(t *testing.T) {

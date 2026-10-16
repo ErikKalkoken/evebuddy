@@ -33,7 +33,6 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 		},
 		Types: []string{
 			contractTypeToDBValue[app.ContractTypeAuction],
-			contractTypeToDBValue[app.ContractTypeCourier],
 		},
 	})
 	if errors.Is(err, sql.ErrNoRows) {

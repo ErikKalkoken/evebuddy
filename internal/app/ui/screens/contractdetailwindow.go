@@ -222,7 +222,7 @@ func ShowContract(u baseUI, r contractRow) {
 			f := widget.NewForm(fi...)
 			f.Orientation = widget.Adaptive
 			main := container.NewVBox(f)
-			if r.contractType == app.ContractTypeItemExchange || r.contractType == app.ContractTypeAuction {
+			if r.contractType.HasItems() {
 				main.Add(widget.NewSeparator())
 				x, err := makeItemsInfo()
 				if err != nil {
@@ -299,7 +299,7 @@ func fetchContractBids(ctx context.Context, u baseUI, r contractRow) (int, float
 
 // fetchContractItems returns the items of a contract, if its type has items.
 func fetchContractItems(ctx context.Context, u baseUI, r contractRow) ([]*app.ContractItem, error) {
-	if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
+	if !r.contractType.HasItems() {
 		return nil, nil
 	}
 	if r.isCorporation {

@@ -74,3 +74,39 @@ func TestFetchContractBids(t *testing.T) {
 		assert.Equal(t, 0.0, top)
 	})
 }
+
+func TestFetchContractItems(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	u := testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	})
+	t.Run("character contract with items", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{Type: app.ContractTypeItemExchange})
+		factory.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: o.ID})
+		r := contractRow{contractType: app.ContractTypeItemExchange, objectID: o.ID}
+		items, err := fetchContractItems(t.Context(), u, r)
+		require.NoError(t, err)
+		assert.Len(t, items, 1)
+	})
+	t.Run("corporation contract with items", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{Type: app.ContractTypeItemExchange})
+		factory.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: o.ID})
+		r := contractRow{contractType: app.ContractTypeItemExchange, isCorporation: true, objectID: o.ID}
+		items, err := fetchContractItems(t.Context(), u, r)
+		require.NoError(t, err)
+		assert.Len(t, items, 1)
+	})
+	t.Run("courier contract has no items", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{Type: app.ContractTypeCourier})
+		factory.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: o.ID})
+		r := contractRow{contractType: app.ContractTypeCourier, objectID: o.ID}
+		items, err := fetchContractItems(t.Context(), u, r)
+		require.NoError(t, err)
+		assert.Empty(t, items)
+	})
+}

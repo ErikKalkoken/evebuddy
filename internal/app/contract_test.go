@@ -108,6 +108,21 @@ func TestContractTypeUnknown(t *testing.T) {
 	xassert.Equal(t, "?", app.ContractType(99).String())
 }
 
+func TestContractTypeHasItems(t *testing.T) {
+	cases := map[app.ContractType]bool{
+		app.ContractTypeAuction:      true,
+		app.ContractTypeCourier:      false,
+		app.ContractTypeItemExchange: true,
+		app.ContractTypeLoan:         true,
+		app.ContractTypeUnknown:      true,
+	}
+	for typ, want := range cases {
+		t.Run(typ.String(), func(t *testing.T) {
+			xassert.Equal(t, want, typ.HasItems())
+		})
+	}
+}
+
 func TestContractTypeDisplay(t *testing.T) {
 	xassert.Equal(t, "Auction", app.ContractTypeAuction.Display())
 }

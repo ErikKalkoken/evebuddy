@@ -403,15 +403,15 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 		want         float64
 	}{
 		{
-			name:         "should include courier outstanding contract",
+			name:         "should exclude courier contract",
 			contractType: app.ContractTypeCourier,
 			status:       app.ContractStatusOutstanding,
 			price:        10.0,
-			want:         10.0,
+			want:         0,
 		},
 		{
-			name:         "should include in progress courier contract",
-			contractType: app.ContractTypeCourier,
+			name:         "should include in progress auction contract",
+			contractType: app.ContractTypeAuction,
 			status:       app.ContractStatusInProgress,
 			price:        10.0,
 			want:         10.0,
@@ -424,8 +424,8 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			want:         10.0,
 		},
 		{
-			name:         "should exclude finished courier contract",
-			contractType: app.ContractTypeCourier,
+			name:         "should exclude finished auction contract",
+			contractType: app.ContractTypeAuction,
 			status:       app.ContractStatusFinished,
 			price:        10.0,
 			want:         0,

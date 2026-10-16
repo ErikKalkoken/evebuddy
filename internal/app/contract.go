@@ -179,6 +179,12 @@ var cct2String = map[ContractType]string{
 	ContractTypeUnknown:      "unknown",
 }
 
+// HasItems reports whether contracts of this type can have items in ESI.
+// ESI does not return the items of courier contracts.
+func (cct ContractType) HasItems() bool {
+	return cct != ContractTypeCourier
+}
+
 func (cct ContractType) Display() string {
 	return xstrings.Title(cct.String())
 }
