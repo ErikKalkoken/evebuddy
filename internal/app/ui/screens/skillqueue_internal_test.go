@@ -332,6 +332,52 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 	})
 }
 
+func TestSkillQueue_CharacterRemoved(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	setup := func(t *testing.T) (*SkillQueue, *testdouble.UIFake, *app.Character, *skillQueueStatus) {
+		c := factory.CreateCharacterFull()
+		createSkillqueueSection(factory, c.ID)
+		createActiveSkillqueue(factory, c.ID)
+		a, u, status := newSkillQueueForTest(t, st, c)
+		a.Update(t.Context())
+		require.True(t, a.skillList.Visible())
+		return a, u, c, status
+	}
+	t.Run("clears queue when its character is removed", func(t *testing.T) {
+		a, u, c, status := setup(t)
+
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
+		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+
+		assert.Equal(t, "No character", a.topLabel.Text)
+		assert.False(t, a.skillList.Visible())
+		assert.False(t, a.statusIcon.Visible())
+		assert.Equal(t, skillQueueStatus{}, *status)
+	})
+	t.Run("ignores removal of other characters", func(t *testing.T) {
+		a, u, c, status := setup(t)
+		other := factory.CreateCharacterFull()
+
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: other.ID})
+
+		assert.Same(t, c, a.character.Load())
+		assert.True(t, a.skillList.Visible())
+		assert.Equal(t, skillQueueStatus{"25%", "Alpha III (25%)"}, *status)
+	})
+	t.Run("queue for current character does not listen", func(t *testing.T) {
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		before := u.Signals().CharacterRemoved.Len()
+
+		NewSkillQueue(u)
+
+		assert.Equal(t, before, u.Signals().CharacterRemoved.Len())
+	})
+}
+
 func TestSkillQueue_Stop(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -343,6 +389,7 @@ func TestSkillQueue_Stop(t *testing.T) {
 	listenerCounts := func() []int {
 		return []int{
 			s.CharacterChanged.Len(),
+			s.CharacterRemoved.Len(),
 			s.CharacterSectionChanged.Len(),
 			s.CurrentCharacterExchanged.Len(),
 			s.RefreshTickerExpired.Len(),
