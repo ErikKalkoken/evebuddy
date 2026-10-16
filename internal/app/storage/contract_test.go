@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
@@ -85,4 +86,70 @@ func TestContractEnumsRoundTrip(t *testing.T) {
 			xassert.Equal(t, tc.typ, got.Type)
 		})
 	}
+}
+
+func TestCalculateContractsEscrow(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+	t.Run("should sum courier collateral and winning bids of a character", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacterFull()
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(100.0),
+			Status:      app.ContractStatusInProgress,
+		})
+		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Type:        app.ContractTypeAuction,
+			Status:      app.ContractStatusInProgress,
+		})
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
+			Amount:     12.5,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 112.5, got)
+	})
+	t.Run("should return zero for character without contracts", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacterFull()
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0.0, got)
+	})
+	t.Run("should sum courier collateral and winning bids of a corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(100.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Type:          app.ContractTypeAuction,
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
+			Amount:     12.5,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 112.5, got)
+	})
+	t.Run("should return zero for corporation without contracts", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0.0, got)
+	})
 }

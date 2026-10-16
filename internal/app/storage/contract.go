@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 var contractAvailabilityFromDBValue = map[string]app.ContractAvailability{
@@ -55,6 +56,19 @@ func init() {
 	for k, v := range contractTypeFromDBValue {
 		contractTypeToDBValue[v] = k
 	}
+}
+
+// Contract statuses in which collateral or bids are held in escrow.
+var (
+	contractEscrowCourierStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
+	contractEscrowAuctionStatuses = []app.ContractStatus{app.ContractStatusInProgress}
+)
+
+// contractStatusesToDBValues returns the DB values for statuses.
+func contractStatusesToDBValues(statuses []app.ContractStatus) []string {
+	return xslices.Map(statuses, func(x app.ContractStatus) string {
+		return contractStatusToDBValue[x]
+	})
 }
 
 type CreateContractBidParams struct {

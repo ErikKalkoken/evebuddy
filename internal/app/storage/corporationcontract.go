@@ -44,6 +44,20 @@ type CreateCorporationContractParams struct {
 	Volume              optional.Optional[float64]
 }
 
+// CalculateCorporationContractsEscrow returns the ISK held in escrow for a corporation's
+// courier collateral and winning auction bids.
+func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
+	v1, err := st.CalculateCorporationContractsCourierEscrow(ctx, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	v2, err := st.CalculateCorporationContractsAuctionEscrow(ctx, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return v1 + v2, nil
+}
+
 func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Context, corporationID int64) (float64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CalculateCorporationContractsCourierEscrow: %d: %w", corporationID, err)
@@ -54,10 +68,7 @@ func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Contex
 	v, err := st.qRO.CalculateCorporationContractsCourierEscrow(ctx, queries.CalculateCorporationContractsCourierEscrowParams{
 		CorporationID: corporationID,
 		Type:          contractTypeToDBValue[app.ContractTypeCourier],
-		Status: []string{
-			contractStatusToDBValue[app.ContractStatusOutstanding],
-			contractStatusToDBValue[app.ContractStatusInProgress],
-		},
+		Status:        contractStatusesToDBValues(contractEscrowCourierStatuses),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
@@ -78,9 +89,7 @@ func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Contex
 	}
 	v, err := st.qRO.CalculateCorporationContractsAuctionEscrow(ctx, queries.CalculateCorporationContractsAuctionEscrowParams{
 		CorporationID: corporationID,
-		Status: []string{
-			contractStatusToDBValue[app.ContractStatusInProgress],
-		},
+		Status:        contractStatusesToDBValues(contractEscrowAuctionStatuses),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil

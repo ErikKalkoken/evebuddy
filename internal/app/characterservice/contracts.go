@@ -434,15 +434,11 @@ func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterI
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)
 	}
-	v1, err := s.st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
+	v, err := s.st.CalculateCharacterContractsEscrow(ctx, characterID)
 	if err != nil {
 		return wrapErr(err)
 	}
-	v2, err := s.st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
-	if err != nil {
-		return wrapErr(err)
-	}
-	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1+v2))
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v))
 	if err != nil {
 		return wrapErr(err)
 	}
