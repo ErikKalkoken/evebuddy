@@ -7,6 +7,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -92,6 +94,10 @@ func TestContractStatusPredicates(t *testing.T) {
 			xassert.Equal(t, tc.wantFinished, tc.status.IsFinished())
 		})
 	}
+}
+
+func TestContractStatusActive(t *testing.T) {
+	xassert.Equal(t, set.Of(app.ContractStatusOutstanding, app.ContractStatusInProgress), app.ContractStatusActive)
 }
 
 func TestContractType(t *testing.T) {
@@ -241,6 +247,27 @@ func TestContractNameDisplay(t *testing.T) {
 				Volume: optional.New[float64](42),
 			},
 			"? >> ? (42 m3)",
+		},
+		{
+			"courier without volume",
+			&app.CharacterContract{
+				Type: app.ContractTypeCourier,
+				StartSolarSystem: optional.New(&app.EntityShort{
+					Name: "start",
+				}),
+				EndSolarSystem: optional.New(&app.EntityShort{
+					Name: "end",
+				}),
+			},
+			"start >> end",
+		},
+		{
+			"courier ignores items",
+			&app.CharacterContract{
+				Type:  app.ContractTypeCourier,
+				Items: []string{"Jupiter"},
+			},
+			"? >> ?",
 		},
 		{
 			"single item exchange",

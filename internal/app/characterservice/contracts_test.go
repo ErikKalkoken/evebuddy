@@ -1,6 +1,7 @@
 package characterservice_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -432,4 +433,55 @@ func TestListContractItems(t *testing.T) {
 			assert.Equal(t, item.RecordID, got[0].RecordID)
 		}
 	})
+}
+
+func TestNotifyUpdatedContractsMessage(t *testing.T) {
+	db, st, f := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	earliest := time.Now().UTC().Add(-6 * time.Hour)
+	cases := []struct {
+		name   string
+		status app.ContractStatus
+		typ    app.ContractType
+		want   string // content with %s for the contract name
+	}{
+		{"courier accepted", app.ContractStatusInProgress, app.ContractTypeCourier, "Contract '%s' has been accepted by Bruce"},
+		{"courier delivered", app.ContractStatusFinished, app.ContractTypeCourier, "Contract '%s' has been delivered"},
+		{"courier failed", app.ContractStatusFailed, app.ContractTypeCourier, "Contract '%s' has been failed by Bruce"},
+		{"item exchange accepted", app.ContractStatusFinished, app.ContractTypeItemExchange, "Contract '%s' has been accepted by Bruce"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			acceptor := f.CreateEveEntityCharacter(app.EveEntity{ID: 42, Name: "Bruce"})
+			c := f.CreateCharacterFull()
+			o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+				AcceptorID:  acceptor.ID,
+				CharacterID: c.ID,
+				Status:      tc.status,
+				Type:        tc.typ,
+				UpdatedAt:   time.Now().UTC(),
+			})
+			var titles, contents []string
+			notify := func(title, content string) {
+				titles = append(titles, title)
+				contents = append(contents, content)
+			}
+			// when
+			err := s.NotifyUpdatedContracts(t.Context(), c.ID, earliest, notify)
+			// then
+			require.NoError(t, err)
+			xassert.Equal(t, []string{c.EveCharacter.Name + ": Contract updated"}, titles)
+			xassert.Equal(t, []string{fmt.Sprintf(tc.want, o.NameDisplay())}, contents)
+			o2, err := st.GetCharacterContract(t.Context(), c.ID, o.ContractID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.status, o2.StatusNotified)
+			// a second run must not notify again
+			err = s.NotifyUpdatedContracts(t.Context(), c.ID, earliest, notify)
+			require.NoError(t, err)
+			assert.Len(t, contents, 1)
+		})
+	}
 }

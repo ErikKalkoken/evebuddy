@@ -15,8 +15,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/contracttest"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestGetContract(t *testing.T) {
@@ -101,6 +104,80 @@ func TestListCorporationContracts(t *testing.T) {
 		require.NoError(t, err)
 		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContract) int64 { return x.ID }))
 		xassert.Equal(t, set.Of(o1.ID, o2.ID), ids)
+	})
+}
+
+func TestListActiveCorporationContracts(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("should count outstanding and in progress contracts of a corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		for _, status := range []app.ContractStatus{
+			app.ContractStatusOutstanding,
+			app.ContractStatusInProgress,
+			app.ContractStatusFinished,
+			app.ContractStatusFailed,
+			app.ContractStatusCancelled,
+		} {
+			factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID: c.ID,
+				Status:        status,
+			})
+		}
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			Status: app.ContractStatusOutstanding,
+		})
+		// when
+		got, err := s.ListActiveCorporationContracts(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 2, got)
+	})
+}
+
+func TestCalculateContractsEscrow(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("should sum courier collateral and winning auction bids", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		factory.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(100.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Type:          app.ContractTypeAuction,
+			Status:        app.ContractStatusInProgress,
+		})
+		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			Amount:     12.5,
+			BidderID:   c.ID,
+			ContractID: o.ID,
+		})
+		// when
+		got, err := s.CalculateContractsEscrow(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 112.5, got)
+	})
+	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		got, err := s.CalculateContractsEscrow(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0.0, got)
 	})
 }
 
@@ -531,5 +608,76 @@ func TestUpdateContractESI(t *testing.T) {
 		got, err := st.ListCorporationContractIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(o2.ContractID, o3.ContractID, o4.ContractID), got)
+	})
+}
+
+func TestUpdateContractsESIShared(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+		AccessToken: "accessToken",
+	}}})
+	contracttest.RunUpdateContractsESITests(t, db, factory, contracttest.Owner{
+		ESIPath: "corporations",
+		Setup: func(t *testing.T) contracttest.Fixture {
+			c := factory.CreateCorporation()
+			factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+			return contracttest.Fixture{
+				OwnerID:             c.ID,
+				IssuerID:            c.ID,
+				IssuerCorporationID: c.ID,
+			}
+		},
+		Sync: func(ctx context.Context, corporationID int64) error {
+			_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+				corporationID: corporationID,
+				forceUpdate:   true,
+				section:       app.SectionCorporationContracts,
+			})
+			return err
+		},
+		CreateContract: func(t *testing.T, corporationID int64, arg contracttest.CreateParams) contracttest.Contract {
+			o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID: corporationID,
+				Status:        arg.Status,
+				Type:          arg.Type,
+			})
+			return contracttest.FromCorporationContract(o)
+		},
+		CreateBid: func(t *testing.T, contractPK, bidID int64, amount float64) {
+			factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+				Amount:     amount,
+				BidID:      bidID,
+				ContractID: contractPK,
+			})
+		},
+		GetContract: func(ctx context.Context, corporationID, contractID int64) (contracttest.Contract, error) {
+			o, err := st.GetCorporationContract(ctx, corporationID, contractID)
+			if err != nil {
+				return contracttest.Contract{}, err
+			}
+			return contracttest.FromCorporationContract(o), nil
+		},
+		ListContractIDs: st.ListCorporationContractIDs,
+		ListItems: func(ctx context.Context, contractPK int64) ([]contracttest.Item, error) {
+			oo, err := st.ListCorporationContractItems(ctx, contractPK)
+			if err != nil {
+				return nil, err
+			}
+			return xslices.Map(oo, func(x *app.CorporationContractItem) contracttest.Item {
+				return contracttest.Item(*x)
+			}), nil
+		},
+		ListBids: func(ctx context.Context, contractPK int64) ([]contracttest.Bid, error) {
+			oo, err := st.ListCorporationContractBids(ctx, contractPK)
+			if err != nil {
+				return nil, err
+			}
+			return xslices.Map(oo, func(x *app.CorporationContractBid) contracttest.Bid {
+				return contracttest.Bid(*x)
+			}), nil
+		},
 	})
 }
