@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type CreateCorporationContractParams struct {
@@ -87,18 +88,17 @@ func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Contex
 	if corporationID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCorporationContractsAuctionEscrow(ctx, queries.CalculateCorporationContractsAuctionEscrowParams{
+	rows, err := st.qRO.ListCorporationContractBidsForEscrow(ctx, queries.ListCorporationContractBidsForEscrowParams{
 		CorporationID: corporationID,
 		Status:        contractStatusesToDBValues(contractEscrowAuctionStatuses),
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v.TotalWinningBids)
-	return v2.ValueOrZero(), nil
+	bids := xslices.Map(rows, func(r queries.ListCorporationContractBidsForEscrowRow) contractBidDBModel {
+		return contractBidDBModel(r.CorporationContractBid)
+	})
+	return sumWinningBids(bids, corporationID), nil
 }
 
 func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.ContractStatus]) (int64, error) {
@@ -341,7 +341,7 @@ func (st *Storage) GetCorporationContractBid(ctx context.Context, contractID int
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := contractBidFromDBModel(queries.CharacterContractBid(r.CorporationContractBid), r.EveEntity)
+	o := contractBidFromDBModel(contractBidDBModel(r.CorporationContractBid), r.EveEntity)
 	return o, err
 }
 
@@ -352,7 +352,7 @@ func (st *Storage) ListCorporationContractBids(ctx context.Context, contractID i
 	}
 	oo := make([]*app.ContractBid, len(rows))
 	for i, r := range rows {
-		oo[i] = contractBidFromDBModel(queries.CharacterContractBid(r.CorporationContractBid), r.EveEntity)
+		oo[i] = contractBidFromDBModel(contractBidDBModel(r.CorporationContractBid), r.EveEntity)
 	}
 	return oo, nil
 }
@@ -400,7 +400,7 @@ func (st *Storage) GetCorporationContractItem(ctx context.Context, contractID, r
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := contractItemFromDBModel(queries.CharacterContractItem(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
+	o := contractItemFromDBModel(contractItemDBModel(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
 	return o, err
 }
 
@@ -411,7 +411,7 @@ func (st *Storage) ListCorporationContractItems(ctx context.Context, contractID 
 	}
 	oo := make([]*app.ContractItem, len(rows))
 	for i, r := range rows {
-		oo[i] = contractItemFromDBModel(queries.CharacterContractItem(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
+		oo[i] = contractItemFromDBModel(contractItemDBModel(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }

@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -211,4 +212,51 @@ func TestContractLocations(t *testing.T) {
 		xassert.Empty(t, got.StartSolarSystem)
 		xassert.Empty(t, got.EndSolarSystem)
 	})
+}
+
+func TestCalculateContractsAuctionEscrowTiedBids(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+	early := time.Now().UTC().Add(-2 * time.Hour)
+	late := early.Add(time.Hour)
+	cases := []struct {
+		name      string
+		ownerDate time.Time
+		otherDate time.Time
+		want      float64
+	}{
+		{"should count tied bid when owner bid first", early, late, 100},
+		{"should not count tied bid when other bidder bid first", late, early, 0},
+	}
+	for _, tc := range cases {
+		t.Run("character: "+tc.name, func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			c := f.CreateCharacterFull()
+			o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+				CharacterID: c.ID,
+				Type:        app.ContractTypeAuction,
+				Status:      app.ContractStatusInProgress,
+			})
+			f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, BidderID: c.ID, DateBid: tc.ownerDate})
+			f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, DateBid: tc.otherDate})
+			got, err := st.CalculateCharacterContractsAuctionEscrow(t.Context(), c.ID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.want, got)
+		})
+		t.Run("corporation: "+tc.name, func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			c := f.CreateCorporation()
+			f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID: c.ID,
+				Type:          app.ContractTypeAuction,
+				Status:        app.ContractStatusInProgress,
+			})
+			f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, BidderID: c.ID, DateBid: tc.ownerDate})
+			f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, DateBid: tc.otherDate})
+			got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.want, got)
+		})
+	}
 }

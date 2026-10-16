@@ -25,27 +25,15 @@ WHERE
     AND type = ?
     AND status IN (sqlc.slice('status'));
 
--- name: CalculateCharacterContractsAuctionEscrow :one
+-- name: ListCharacterContractBidsForEscrow :many
 SELECT
-    bidder_id,
-    SUM(amount) AS total_winning_bids
+    sqlc.embed(ccb)
 FROM
-    character_contract_bids AS main_bids
-    JOIN character_contracts cc ON cc.id = main_bids.contract_id
+    character_contract_bids ccb
+    JOIN character_contracts cc ON cc.id = ccb.contract_id
 WHERE
-    amount = (
-        SELECT
-            MAX(amount)
-        FROM
-            character_contract_bids
-        WHERE
-            contract_id = main_bids.contract_id
-    )
-    AND main_bids.bidder_id = cc.character_id
-    AND cc.character_id = ?
-    AND cc.status IN (sqlc.slice('status'))
-GROUP BY
-    main_bids.bidder_id;
+    cc.character_id = ?
+    AND cc.status IN (sqlc.slice('status'));
 
 -- name: CountCharactersOutstandingPersonalContracts :many
 SELECT

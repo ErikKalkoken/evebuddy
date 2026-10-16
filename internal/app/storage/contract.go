@@ -71,6 +71,51 @@ func contractStatusesToDBValues(statuses []app.ContractStatus) []string {
 	})
 }
 
+// contractBidDBModel has the same fields as the bid rows of both owners,
+// so they can be converted directly.
+type contractBidDBModel struct {
+	ID         int64
+	ContractID int64
+	Amount     float64
+	BidID      int64
+	BidderID   int64
+	DateBid    time.Time
+}
+
+// contractItemDBModel has the same fields as the item rows of both owners,
+// so they can be converted directly.
+type contractItemDBModel struct {
+	ID          int64
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int64
+	RawQuantity int64
+	RecordID    int64
+	TypeID      int64
+}
+
+// sumWinningBids returns the sum of the top bids which an owner holds, per contract.
+func sumWinningBids(bids []contractBidDBModel, ownerID int64) float64 {
+	byContract := make(map[int64][]*app.ContractBid)
+	for _, b := range bids {
+		byContract[b.ContractID] = append(byContract[b.ContractID], &app.ContractBid{
+			ContractID: b.ContractID,
+			Amount:     b.Amount,
+			BidID:      b.BidID,
+			Bidder:     &app.EveEntity{ID: b.BidderID},
+			DateBid:    b.DateBid,
+		})
+	}
+	var total float64
+	for _, bb := range byContract {
+		if top, ok := app.ContractTopBid(bb); ok && top.Bidder.ID == ownerID {
+			total += top.Amount
+		}
+	}
+	return total
+}
+
 type CreateContractBidParams struct {
 	Amount     float64
 	BidderID   int64
@@ -118,8 +163,8 @@ func contractSolarSystemFromDBModel(id sql.NullInt64, name sql.NullString) optio
 	})
 }
 
-// contractBidFromDBModel maps bids of both owners, since their rows have identical fields.
-func contractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.ContractBid {
+// contractBidFromDBModel maps bids of both owners.
+func contractBidFromDBModel(o contractBidDBModel, e queries.EveEntity) *app.ContractBid {
 	return &app.ContractBid{
 		ContractID: o.ContractID,
 		Amount:     o.Amount,
@@ -129,8 +174,8 @@ func contractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity)
 	}
 }
 
-// contractItemFromDBModel maps items of both owners, since their rows have identical fields.
-func contractItemFromDBModel(o queries.CharacterContractItem, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.ContractItem {
+// contractItemFromDBModel maps items of both owners.
+func contractItemFromDBModel(o contractItemDBModel, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.ContractItem {
 	return &app.ContractItem{
 		ContractID:  o.ContractID,
 		IsIncluded:  o.IsIncluded,
