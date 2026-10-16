@@ -98,8 +98,8 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		}
 		a.Update(ctx)
 	}, a.signalKey)
-	a.u.Signals().RefreshTickerExpired.AddListener(func(ctx context.Context, _ struct{}) {
-		a.Update(ctx)
+	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
+		fyne.Do(a.refreshTimeDependent)
 	}, a.signalKey)
 	return a
 }
@@ -191,6 +191,7 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.skillqueue = app.NewCharacterSkillqueue()
 			a.list.Hide()
 			a.emptyInfo.Hide()
 			a.status.Hide()
@@ -233,57 +234,71 @@ func (a *SkillQueue) Update(ctx context.Context) {
 		return
 	}
 
-	isActive := sq.IsActive()
-	if isActive {
-		s := fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
-		setTop(s, widget.MediumImportance)
-	} else if c.IsTrainingWatched {
-		setTop("No skill in training", widget.DangerImportance)
-	} else {
-		setTop("Training not active", widget.MediumImportance)
-	}
-
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
 		a.skillqueue = sq
-		var r fyne.Resource
-		var s string
-		if isActive {
-			r = theme.NewSuccessThemedResource(a.statusResource)
-			s = "Training is active"
-		} else if c.IsTrainingWatched {
-			r = theme.NewErrorThemedResource(a.statusResource)
-			s = "Training expired"
-		} else {
-			r = theme.NewDisabledResource(a.statusResource)
-			s = "Training is not active"
-		}
-		a.status.SetResource(r)
-		a.status.SetToolTip(s)
-		a.status.Show()
-		var s1, s2 string
-		if isActive {
-			if c := sq.CompletionP(); c.ValueOrZero() < 1 {
-				s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
-				s2 = fmt.Sprintf("%s (%s)", sq.Active(), s1)
-			}
-		} else if c.IsTrainingWatched {
-			s1 = "!"
-			s2 = "No skill in training"
-		}
-		if a.OnUpdate != nil {
-			a.OnUpdate(s1, s2)
-		}
-		if sq.Size() == 0 {
-			a.emptyInfo.Show()
-		} else {
-			a.emptyInfo.Hide()
-		}
-		a.list.Refresh()
-		a.list.Show()
+		a.refreshTimeDependent()
 	})
+}
+
+// refreshTimeDependent updates the UI from the loaded queue for the current time.
+// Must be called on the main thread.
+func (a *SkillQueue) refreshTimeDependent() {
+	c := a.character.Load()
+	if c == nil || c.ID != a.skillqueue.CharacterID() {
+		return // nothing loaded or a load for another character is pending
+	}
+	sq := a.skillqueue
+	isActive := sq.IsActive()
+	if isActive {
+		a.top.Text = fmt.Sprintf("Total training time: %s", ihumanize.Optional(sq.RemainingTime(), "?"))
+		a.top.Importance = widget.MediumImportance
+	} else if c.IsTrainingWatched {
+		a.top.Text = "No skill in training"
+		a.top.Importance = widget.DangerImportance
+	} else {
+		a.top.Text = "Training not active"
+		a.top.Importance = widget.MediumImportance
+	}
+	a.top.Refresh()
+
+	var r fyne.Resource
+	var s string
+	if isActive {
+		r = theme.NewSuccessThemedResource(a.statusResource)
+		s = "Training is active"
+	} else if c.IsTrainingWatched {
+		r = theme.NewErrorThemedResource(a.statusResource)
+		s = "Training expired"
+	} else {
+		r = theme.NewDisabledResource(a.statusResource)
+		s = "Training is not active"
+	}
+	a.status.SetResource(r)
+	a.status.SetToolTip(s)
+	a.status.Show()
+	var s1, s2 string
+	if isActive {
+		if c := sq.CompletionP(); c.ValueOrZero() < 1 {
+			s1 = fmt.Sprintf("%.0f%%", c.ValueOrZero()*100)
+			s2 = fmt.Sprintf("%s (%s)", sq.Active(), s1)
+		}
+	} else if c.IsTrainingWatched {
+		s1 = "!"
+		s2 = "No skill in training"
+	}
+	if a.OnUpdate != nil {
+		a.OnUpdate(s1, s2)
+	}
+	if sq.Size() == 0 {
+		a.emptyInfo.Show()
+	} else {
+		a.emptyInfo.Hide()
+	}
+	a.list.Refresh()
+	a.list.Show()
 }
 
 func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, characterName string) {
