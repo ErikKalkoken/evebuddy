@@ -189,15 +189,14 @@ func (cct ContractType) String() string {
 	return s
 }
 
-// TODO: Consolidate "Contract" into base struct
-
-type CharacterContract struct {
+// Contract represents a generic contract in EVE Online.
+// Code specific to an owner should use CharacterContract or CorporationContract.
+type Contract struct {
 	ID                int64
 	Acceptor          optional.Optional[*EveEntity]
 	Assignee          optional.Optional[*EveEntity]
 	Availability      ContractAvailability
 	Buyout            optional.Optional[float64]
-	CharacterID       int64
 	Collateral        optional.Optional[float64]
 	ContractID        int64
 	DateAccepted      optional.Optional[time.Time]
@@ -223,18 +222,43 @@ type CharacterContract struct {
 	Volume            optional.Optional[float64]
 }
 
-func (cs CharacterContract) IssuerEffective() *EveEntity {
-	if cs.ForCorporation {
-		return cs.IssuerCorporation
+func (c Contract) IssuerEffective() *EveEntity {
+	if c.ForCorporation {
+		return c.IssuerCorporation
 	}
-	return cs.Issuer
+	return c.Issuer
 }
 
-func (cs CharacterContract) NameDisplay() string {
-	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
+func (c Contract) NameDisplay() string {
+	return contractNameDisplay(c.Type, c.StartSolarSystem, c.EndSolarSystem, c.Volume, c.Items)
 }
 
-type CharacterContractBid struct {
+// UpdateNotification returns the text for notifying about the current status of a contract.
+// It returns an empty string when the status is not notified.
+func (c Contract) UpdateNotification() string {
+	name := "'" + c.NameDisplay() + "'"
+	acceptorName := c.Acceptor.StringFunc("?", func(v *EveEntity) string {
+		return v.Name
+	})
+	switch c.Type {
+	case ContractTypeCourier:
+		switch c.Status {
+		case ContractStatusInProgress:
+			return fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
+		case ContractStatusFinished:
+			return fmt.Sprintf("Contract %s has been delivered", name)
+		case ContractStatusFailed:
+			return fmt.Sprintf("Contract %s has been failed by %s", name, acceptorName)
+		}
+	case ContractTypeItemExchange:
+		if c.Status == ContractStatusFinished {
+			return fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
+		}
+	}
+	return ""
+}
+
+type ContractBid struct {
 	ContractID int64
 	Amount     float64
 	BidID      int64
@@ -242,7 +266,19 @@ type CharacterContractBid struct {
 	DateBid    time.Time
 }
 
-type CharacterContractItem struct {
+// ContractTopBid returns the highest bid and reports whether there was one.
+// The first of several equal bids wins.
+func ContractTopBid(bids []*ContractBid) (*ContractBid, bool) {
+	var top *ContractBid
+	for _, b := range bids {
+		if top == nil || b.Amount > top.Amount {
+			top = b
+		}
+	}
+	return top, top != nil
+}
+
+type ContractItem struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
@@ -250,67 +286,16 @@ type CharacterContractItem struct {
 	RawQuantity optional.Optional[int64]
 	RecordID    int64
 	Type        *EveType
+}
+
+type CharacterContract struct {
+	Contract
+	CharacterID int64
 }
 
 type CorporationContract struct {
-	ID                int64
-	Acceptor          optional.Optional[*EveEntity]
-	Assignee          optional.Optional[*EveEntity]
-	Availability      ContractAvailability
-	Buyout            optional.Optional[float64]
-	CorporationID     int64
-	Collateral        optional.Optional[float64]
-	ContractID        int64
-	DateAccepted      optional.Optional[time.Time]
-	DateCompleted     optional.Optional[time.Time]
-	DateExpired       time.Time
-	DateIssued        time.Time
-	DaysToComplete    optional.Optional[int64]
-	EndLocation       optional.Optional[*EveLocationShort]
-	EndSolarSystem    optional.Optional[*EntityShort]
-	ForCorporation    bool
-	Issuer            *EveEntity
-	IssuerCorporation *EveEntity
-	Items             []string
-	Price             optional.Optional[float64]
-	Reward            optional.Optional[float64]
-	StartLocation     optional.Optional[*EveLocationShort]
-	StartSolarSystem  optional.Optional[*EntityShort]
-	Status            ContractStatus
-	StatusNotified    ContractStatus
-	Title             optional.Optional[string]
-	Type              ContractType
-	UpdatedAt         time.Time
-	Volume            optional.Optional[float64]
-}
-
-func (cs CorporationContract) IssuerEffective() *EveEntity {
-	if cs.ForCorporation {
-		return cs.IssuerCorporation
-	}
-	return cs.Issuer
-}
-
-func (cs CorporationContract) NameDisplay() string {
-	return contractNameDisplay(cs.Type, cs.StartSolarSystem, cs.EndSolarSystem, cs.Volume, cs.Items)
-}
-
-type CorporationContractBid struct {
-	ContractID int64
-	Amount     float64
-	BidID      int64
-	Bidder     *EveEntity
-	DateBid    time.Time
-}
-
-type CorporationContractItem struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int64
-	RawQuantity optional.Optional[int64]
-	RecordID    int64
-	Type        *EveType
+	Contract
+	CorporationID int64
 }
 
 // ContractStateAt returns the category of a contract at the given time and

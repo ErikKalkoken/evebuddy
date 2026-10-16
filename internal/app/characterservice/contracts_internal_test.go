@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestUpdateContractESI(t *testing.T) {
@@ -566,13 +565,13 @@ func TestUpdateContractsESIShared(t *testing.T) {
 			})
 			return err
 		},
-		CreateContract: func(t *testing.T, characterID int64, arg contracttest.CreateParams) contracttest.Contract {
+		CreateContract: func(t *testing.T, characterID int64, arg contracttest.CreateParams) *app.Contract {
 			o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 				CharacterID: characterID,
 				Status:      arg.Status,
 				Type:        arg.Type,
 			})
-			return contracttest.FromCharacterContract(o)
+			return &o.Contract
 		},
 		CreateBid: func(t *testing.T, contractPK, bidID int64, amount float64) {
 			factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
@@ -581,32 +580,16 @@ func TestUpdateContractsESIShared(t *testing.T) {
 				ContractID: contractPK,
 			})
 		},
-		GetContract: func(ctx context.Context, characterID, contractID int64) (contracttest.Contract, error) {
+		GetContract: func(ctx context.Context, characterID, contractID int64) (*app.Contract, error) {
 			o, err := st.GetCharacterContract(ctx, characterID, contractID)
 			if err != nil {
-				return contracttest.Contract{}, err
+				return nil, err
 			}
-			return contracttest.FromCharacterContract(o), nil
+			return &o.Contract, nil
 		},
 		ListContractIDs: st.ListCharacterContractIDs,
-		ListItems: func(ctx context.Context, contractPK int64) ([]contracttest.Item, error) {
-			oo, err := st.ListCharacterContractItems(ctx, contractPK)
-			if err != nil {
-				return nil, err
-			}
-			return xslices.Map(oo, func(x *app.CharacterContractItem) contracttest.Item {
-				return contracttest.Item(*x)
-			}), nil
-		},
-		ListBids: func(ctx context.Context, contractPK int64) ([]contracttest.Bid, error) {
-			oo, err := st.ListCharacterContractBids(ctx, contractPK)
-			if err != nil {
-				return nil, err
-			}
-			return xslices.Map(oo, func(x *app.CharacterContractBid) contracttest.Bid {
-				return contracttest.Bid(*x)
-			}), nil
-		},
+		ListItems:       st.ListCharacterContractItems,
+		ListBids:        st.ListCharacterContractBids,
 	})
 }
 

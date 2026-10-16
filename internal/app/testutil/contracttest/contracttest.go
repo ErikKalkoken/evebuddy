@@ -24,112 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-// Contract holds the contract fields shared by both owners.
-type Contract struct {
-	ID                int64
-	Acceptor          optional.Optional[*app.EveEntity]
-	Assignee          optional.Optional[*app.EveEntity]
-	Availability      app.ContractAvailability
-	Buyout            optional.Optional[float64]
-	Collateral        optional.Optional[float64]
-	ContractID        int64
-	DateAccepted      optional.Optional[time.Time]
-	DateCompleted     optional.Optional[time.Time]
-	DateExpired       time.Time
-	DateIssued        time.Time
-	DaysToComplete    optional.Optional[int64]
-	EndLocation       optional.Optional[*app.EveLocationShort]
-	ForCorporation    bool
-	Issuer            *app.EveEntity
-	IssuerCorporation *app.EveEntity
-	Price             optional.Optional[float64]
-	Reward            optional.Optional[float64]
-	StartLocation     optional.Optional[*app.EveLocationShort]
-	Status            app.ContractStatus
-	Title             optional.Optional[string]
-	Type              app.ContractType
-	UpdatedAt         time.Time
-	Volume            optional.Optional[float64]
-}
-
-func FromCharacterContract(o *app.CharacterContract) Contract {
-	return Contract{
-		ID:                o.ID,
-		Acceptor:          o.Acceptor,
-		Assignee:          o.Assignee,
-		Availability:      o.Availability,
-		Buyout:            o.Buyout,
-		Collateral:        o.Collateral,
-		ContractID:        o.ContractID,
-		DateAccepted:      o.DateAccepted,
-		DateCompleted:     o.DateCompleted,
-		DateExpired:       o.DateExpired,
-		DateIssued:        o.DateIssued,
-		DaysToComplete:    o.DaysToComplete,
-		EndLocation:       o.EndLocation,
-		ForCorporation:    o.ForCorporation,
-		Issuer:            o.Issuer,
-		IssuerCorporation: o.IssuerCorporation,
-		Price:             o.Price,
-		Reward:            o.Reward,
-		StartLocation:     o.StartLocation,
-		Status:            o.Status,
-		Title:             o.Title,
-		Type:              o.Type,
-		UpdatedAt:         o.UpdatedAt,
-		Volume:            o.Volume,
-	}
-}
-
-func FromCorporationContract(o *app.CorporationContract) Contract {
-	return Contract{
-		ID:                o.ID,
-		Acceptor:          o.Acceptor,
-		Assignee:          o.Assignee,
-		Availability:      o.Availability,
-		Buyout:            o.Buyout,
-		Collateral:        o.Collateral,
-		ContractID:        o.ContractID,
-		DateAccepted:      o.DateAccepted,
-		DateCompleted:     o.DateCompleted,
-		DateExpired:       o.DateExpired,
-		DateIssued:        o.DateIssued,
-		DaysToComplete:    o.DaysToComplete,
-		EndLocation:       o.EndLocation,
-		ForCorporation:    o.ForCorporation,
-		Issuer:            o.Issuer,
-		IssuerCorporation: o.IssuerCorporation,
-		Price:             o.Price,
-		Reward:            o.Reward,
-		StartLocation:     o.StartLocation,
-		Status:            o.Status,
-		Title:             o.Title,
-		Type:              o.Type,
-		UpdatedAt:         o.UpdatedAt,
-		Volume:            o.Volume,
-	}
-}
-
-// Item has the same layout as the owner specific item types, so they can be converted directly.
-type Item struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int64
-	RawQuantity optional.Optional[int64]
-	RecordID    int64
-	Type        *app.EveType
-}
-
-// Bid has the same layout as the owner specific bid types, so they can be converted directly.
-type Bid struct {
-	ContractID int64
-	Amount     float64
-	BidID      int64
-	Bidder     *app.EveEntity
-	DateBid    time.Time
-}
-
 // Fixture describes a newly created owner.
 type Fixture struct {
 	OwnerID             int64
@@ -148,12 +42,12 @@ type Owner struct {
 	ESIPath         string // first segment of the owner's ESI routes, e.g. "characters"
 	Setup           func(t *testing.T) Fixture
 	Sync            func(ctx context.Context, ownerID int64) error // forced contracts update from ESI
-	CreateContract  func(t *testing.T, ownerID int64, arg CreateParams) Contract
+	CreateContract  func(t *testing.T, ownerID int64, arg CreateParams) *app.Contract
 	CreateBid       func(t *testing.T, contractPK, bidID int64, amount float64)
-	GetContract     func(ctx context.Context, ownerID, contractID int64) (Contract, error)
+	GetContract     func(ctx context.Context, ownerID, contractID int64) (*app.Contract, error)
 	ListContractIDs func(ctx context.Context, ownerID int64) (set.Set[int64], error)
-	ListItems       func(ctx context.Context, contractPK int64) ([]Item, error)
-	ListBids        func(ctx context.Context, contractPK int64) ([]Bid, error)
+	ListItems       func(ctx context.Context, contractPK int64) ([]*app.ContractItem, error)
+	ListBids        func(ctx context.Context, contractPK int64) ([]*app.ContractBid, error)
 }
 
 // RunUpdateContractsESITests runs the contract update tests against an owner.
@@ -262,10 +156,10 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 		xassert.EqualOptional(t, 6.5, c.Volume)
 		items, err := o.ListItems(ctx, c.ID)
 		require.NoError(t, err)
-		slices.SortFunc(items, func(a, b Item) int {
+		slices.SortFunc(items, func(a, b *app.ContractItem) int {
 			return int(a.RecordID - b.RecordID)
 		})
-		want := []Item{
+		want := []*app.ContractItem{
 			{
 				ContractID:  c.ID,
 				IsIncluded:  false,
@@ -348,14 +242,14 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 		cases := []struct {
 			name   string
 			fields func() map[string]any
-			check  func(t *testing.T, c Contract)
+			check  func(t *testing.T, c *app.Contract)
 		}{
 			{
 				"acceptor",
 				func() map[string]any {
 					return map[string]any{"acceptor_id": factory.CreateEveEntityCharacter().ID}
 				},
-				func(t *testing.T, c Contract) {
+				func(t *testing.T, c *app.Contract) {
 					xassert.NotEmpty(t, c.Acceptor)
 				},
 			},
@@ -364,7 +258,7 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 				func() map[string]any {
 					return map[string]any{"date_accepted": "2017-06-06T13:12:32Z"}
 				},
-				func(t *testing.T, c Contract) {
+				func(t *testing.T, c *app.Contract) {
 					xassert.EqualOptional(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), c.DateAccepted)
 				},
 			},
@@ -373,7 +267,7 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 				func() map[string]any {
 					return map[string]any{"date_completed": "2017-06-07T13:12:32Z"}
 				},
-				func(t *testing.T, c Contract) {
+				func(t *testing.T, c *app.Contract) {
 					xassert.EqualOptional(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), c.DateCompleted)
 				},
 			},
@@ -382,7 +276,7 @@ func RunUpdateContractsESITests(t *testing.T, db *sql.DB, factory testutil.Facto
 				func() map[string]any {
 					return map[string]any{"status": "in_progress"}
 				},
-				func(t *testing.T, c Contract) {
+				func(t *testing.T, c *app.Contract) {
 					xassert.Equal(t, app.ContractStatusInProgress, c.Status)
 				},
 			},

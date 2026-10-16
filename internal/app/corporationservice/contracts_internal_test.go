@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestGetContract(t *testing.T) {
@@ -193,7 +192,7 @@ func TestListContractItems(t *testing.T) {
 		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
 		got, err := s.ListContractItems(ctx, o.ID)
 		require.NoError(t, err)
-		ids := set.Collect(xiter.MapSlice(got, func(x *app.CorporationContractItem) int64 { return x.RecordID }))
+		ids := set.Collect(xiter.MapSlice(got, func(x *app.ContractItem) int64 { return x.RecordID }))
 		xassert.Equal(t, set.Of(i1.RecordID, i2.RecordID), ids)
 	})
 }
@@ -638,13 +637,13 @@ func TestUpdateContractsESIShared(t *testing.T) {
 			})
 			return err
 		},
-		CreateContract: func(t *testing.T, corporationID int64, arg contracttest.CreateParams) contracttest.Contract {
+		CreateContract: func(t *testing.T, corporationID int64, arg contracttest.CreateParams) *app.Contract {
 			o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 				CorporationID: corporationID,
 				Status:        arg.Status,
 				Type:          arg.Type,
 			})
-			return contracttest.FromCorporationContract(o)
+			return &o.Contract
 		},
 		CreateBid: func(t *testing.T, contractPK, bidID int64, amount float64) {
 			factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
@@ -653,31 +652,15 @@ func TestUpdateContractsESIShared(t *testing.T) {
 				ContractID: contractPK,
 			})
 		},
-		GetContract: func(ctx context.Context, corporationID, contractID int64) (contracttest.Contract, error) {
+		GetContract: func(ctx context.Context, corporationID, contractID int64) (*app.Contract, error) {
 			o, err := st.GetCorporationContract(ctx, corporationID, contractID)
 			if err != nil {
-				return contracttest.Contract{}, err
+				return nil, err
 			}
-			return contracttest.FromCorporationContract(o), nil
+			return &o.Contract, nil
 		},
 		ListContractIDs: st.ListCorporationContractIDs,
-		ListItems: func(ctx context.Context, contractPK int64) ([]contracttest.Item, error) {
-			oo, err := st.ListCorporationContractItems(ctx, contractPK)
-			if err != nil {
-				return nil, err
-			}
-			return xslices.Map(oo, func(x *app.CorporationContractItem) contracttest.Item {
-				return contracttest.Item(*x)
-			}), nil
-		},
-		ListBids: func(ctx context.Context, contractPK int64) ([]contracttest.Bid, error) {
-			oo, err := st.ListCorporationContractBids(ctx, contractPK)
-			if err != nil {
-				return nil, err
-			}
-			return xslices.Map(oo, func(x *app.CorporationContractBid) contracttest.Bid {
-				return contracttest.Bid(*x)
-			}), nil
-		},
+		ListItems:       st.ListCorporationContractItems,
+		ListBids:        st.ListCorporationContractBids,
 	})
 }

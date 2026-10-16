@@ -453,31 +453,33 @@ func characterContractFromDBModel(
 		items2 = strings.Split(x, ",")
 	}
 	o := &app.CharacterContract{
-		Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
-		Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
-		Availability:      characterContractAvailabilityFromDBValue[cc.Availability],
-		Buyout:            optional.FromZeroValue(cc.Buyout),
-		CharacterID:       cc.CharacterID,
-		Collateral:        optional.FromZeroValue(cc.Collateral),
-		ContractID:        cc.ContractID,
-		DateAccepted:      optional.FromNullTime(cc.DateAccepted),
-		DateCompleted:     optional.FromNullTime(cc.DateCompleted),
-		DateExpired:       cc.DateExpired,
-		DateIssued:        cc.DateIssued,
-		DaysToComplete:    optional.FromZeroValue(cc.DaysToComplete),
-		ForCorporation:    cc.ForCorporation,
-		ID:                cc.ID,
-		Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
-		IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-		Items:             items2,
-		Price:             optional.FromZeroValue(cc.Price),
-		Reward:            optional.FromZeroValue(cc.Reward),
-		Status:            characterContractStatusFromDBValue[cc.Status],
-		StatusNotified:    characterContractStatusFromDBValue[cc.StatusNotified],
-		Title:             optional.FromZeroValue(cc.Title),
-		Type:              characterContractTypeFromDBValue[cc.Type],
-		UpdatedAt:         cc.UpdatedAt,
-		Volume:            optional.FromZeroValue(cc.Volume),
+		Contract: app.Contract{
+			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
+			Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
+			Availability:      characterContractAvailabilityFromDBValue[cc.Availability],
+			Buyout:            optional.FromZeroValue(cc.Buyout),
+			Collateral:        optional.FromZeroValue(cc.Collateral),
+			ContractID:        cc.ContractID,
+			DateAccepted:      optional.FromNullTime(cc.DateAccepted),
+			DateCompleted:     optional.FromNullTime(cc.DateCompleted),
+			DateExpired:       cc.DateExpired,
+			DateIssued:        cc.DateIssued,
+			DaysToComplete:    optional.FromZeroValue(cc.DaysToComplete),
+			ForCorporation:    cc.ForCorporation,
+			ID:                cc.ID,
+			Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
+			IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
+			Items:             items2,
+			Price:             optional.FromZeroValue(cc.Price),
+			Reward:            optional.FromZeroValue(cc.Reward),
+			Status:            characterContractStatusFromDBValue[cc.Status],
+			StatusNotified:    characterContractStatusFromDBValue[cc.StatusNotified],
+			Title:             optional.FromZeroValue(cc.Title),
+			Type:              characterContractTypeFromDBValue[cc.Type],
+			UpdatedAt:         cc.UpdatedAt,
+			Volume:            optional.FromZeroValue(cc.Volume),
+		},
+		CharacterID: cc.CharacterID,
 	}
 	if cc.EndLocationID.Valid {
 		o.EndLocation = optional.New(&app.EveLocationShort{
@@ -535,7 +537,7 @@ func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCha
 	return nil
 }
 
-func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64, bidID int64) (*app.CharacterContractBid, error) {
+func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64, bidID int64) (*app.ContractBid, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterContractBid %d %d: %w", contractID, bidID, err)
 	}
@@ -553,12 +555,12 @@ func (st *Storage) GetCharacterContractBid(ctx context.Context, contractID int64
 	return o, err
 }
 
-func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int64) ([]*app.CharacterContractBid, error) {
+func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int64) ([]*app.ContractBid, error) {
 	rows, err := st.qRO.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list bids for contract %d: %w", contractID, err)
 	}
-	oo := make([]*app.CharacterContractBid, len(rows))
+	oo := make([]*app.ContractBid, len(rows))
 	for i, r := range rows {
 		oo[i] = characterContractBidFromDBModel(r.CharacterContractBid, r.EveEntity)
 	}
@@ -573,8 +575,8 @@ func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID i
 	return set.Collect(slices.Values(ids)), err
 }
 
-func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.CharacterContractBid {
-	o2 := &app.CharacterContractBid{
+func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.ContractBid {
+	o2 := &app.ContractBid{
 		ContractID: o.ContractID,
 		Amount:     o.Amount,
 		BidID:      o.BidID,
@@ -615,7 +617,7 @@ func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateCh
 	return nil
 }
 
-func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, recordID int64) (*app.CharacterContractItem, error) {
+func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, recordID int64) (*app.ContractItem, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterContractItem %d %d: %w", contractID, recordID, err)
 	}
@@ -633,12 +635,12 @@ func (st *Storage) GetCharacterContractItem(ctx context.Context, contractID, rec
 	return o, err
 }
 
-func (st *Storage) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+func (st *Storage) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.ContractItem, error) {
 	rows, err := st.qRO.ListCharacterContractItems(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list items for contract %d: %w", contractID, err)
 	}
-	oo := make([]*app.CharacterContractItem, len(rows))
+	oo := make([]*app.ContractItem, len(rows))
 	for i, r := range rows {
 		oo[i] = characterContractItemFromDBModel(r.CharacterContractItem, r.EveType, r.EveGroup, r.EveCategory)
 	}
@@ -650,8 +652,8 @@ func characterContractItemFromDBModel(
 	t queries.EveType,
 	g queries.EveGroup,
 	c queries.EveCategory,
-) *app.CharacterContractItem {
-	o2 := &app.CharacterContractItem{
+) *app.ContractItem {
+	o2 := &app.ContractItem{
 		ContractID:  o.ContractID,
 		IsIncluded:  o.IsIncluded,
 		IsSingleton: o.IsSingleton,

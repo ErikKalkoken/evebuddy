@@ -380,7 +380,7 @@ func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterC
 	return f.CreateCharacterContract(arg)
 }
 
-func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
+func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.ContractBid {
 	ctx := context.Background()
 	var arg storage.CreateCharacterContractBidParams
 	if len(args) > 0 {
@@ -418,7 +418,7 @@ func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContr
 	return o
 }
 
-func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
+func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.ContractItem {
 	ctx := context.Background()
 	var arg storage.CreateCharacterContractItemParams
 	if len(args) > 0 {
@@ -1504,7 +1504,7 @@ func (f Factory) CreateCorporationContractCourier(args ...storage.CreateCorporat
 	return f.CreateCorporationContract(arg)
 }
 
-func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationContractBidParams) *app.CorporationContractBid {
+func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationContractBidParams) *app.ContractBid {
 	ctx := context.Background()
 	var arg storage.CreateCorporationContractBidParams
 	if len(args) > 0 {
@@ -1542,7 +1542,7 @@ func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationC
 	return o
 }
 
-func (f Factory) CreateCorporationContractItem(args ...storage.CreateCorporationContractItemParams) *app.CorporationContractItem {
+func (f Factory) CreateCorporationContractItem(args ...storage.CreateCorporationContractItemParams) *app.ContractItem {
 	ctx := context.Background()
 	var arg storage.CreateCorporationContractItemParams
 	if len(args) > 0 {

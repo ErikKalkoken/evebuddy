@@ -91,7 +91,7 @@ func ShowCharacterContract(u baseUI, r contractRow) {
 			if err != nil {
 				return nil, err
 			}
-			items := xslices.Map(oo, func(x *app.CharacterContractItem) contractItem {
+			items := xslices.Map(oo, func(x *app.ContractItem) contractItem {
 				return contractItem{
 					ContractID:  x.ContractID,
 					IsIncluded:  x.IsIncluded,
@@ -132,7 +132,7 @@ func ShowCorporationContract(u baseUI, r contractRow) {
 			if err != nil {
 				return nil, err
 			}
-			items := xslices.Map(oo, func(x *app.CorporationContractItem) contractItem {
+			items := xslices.Map(oo, func(x *app.ContractItem) contractItem {
 				return contractItem{
 					ContractID:  x.ContractID,
 					IsIncluded:  x.IsIncluded,

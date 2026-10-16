@@ -341,36 +341,42 @@ func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
 	corpMember := &app.EveEntity{ID: otherID, Category: app.EveEntityCharacter}
 	t.Run("expired contract issued for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			DateExpired:       now.Add(-time.Hour),
-			ForCorporation:    true,
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusOutstanding,
+			Contract: app.Contract{
+				DateExpired:       now.Add(-time.Hour),
+				ForCorporation:    true,
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusOutstanding,
+			},
 		}
 		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 	})
 	t.Run("expired personal contract of a corporation member", func(t *testing.T) {
 		o := &app.CorporationContract{
-			DateExpired:       now.Add(-time.Hour),
-			ForCorporation:    false,
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusOutstanding,
+			Contract: app.Contract{
+				DateExpired:       now.Add(-time.Hour),
+				ForCorporation:    false,
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusOutstanding,
+			},
 		}
 		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryOther, r.category)
 	})
 	t.Run("overdue contract accepted for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			Acceptor:          optional.New(myCorp),
-			DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
-			DateExpired:       now.AddDate(0, 0, 10),
-			DaysToComplete:    optional.New[int64](1),
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusInProgress,
-			Type:              app.ContractTypeCourier,
+			Contract: app.Contract{
+				Acceptor:          optional.New(myCorp),
+				DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
+				DateExpired:       now.AddDate(0, 0, 10),
+				DaysToComplete:    optional.New[int64](1),
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusInProgress,
+				Type:              app.ContractTypeCourier,
+			},
 		}
 		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)

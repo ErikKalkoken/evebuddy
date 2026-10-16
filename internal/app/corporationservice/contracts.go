@@ -32,21 +32,14 @@ func (s *CorporationService) CountContractBids(ctx context.Context, contractID i
 	return x.Size(), nil
 }
 
-func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CorporationContractBid, error) {
+func (s *CorporationService) GetContractTopBid(ctx context.Context, contractID int64) (*app.ContractBid, error) {
 	bids, err := s.st.ListCorporationContractBids(ctx, contractID)
 	if err != nil {
 		return nil, err
 	}
-	if len(bids) == 0 {
+	top, ok := app.ContractTopBid(bids)
+	if !ok {
 		return nil, app.ErrNotFound
-	}
-	var maximum float64
-	var top *app.CorporationContractBid
-	for _, b := range bids {
-		if top == nil || b.Amount > maximum {
-			top = b
-			maximum = b.Amount
-		}
 	}
 	return top, nil
 }
@@ -60,7 +53,7 @@ func (s *CorporationService) ListActiveCorporationContracts(ctx context.Context,
 	return s.st.CountCorporationContractsWithStatus(ctx, corporationID, app.ContractStatusActive)
 }
 
-func (s *CorporationService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CorporationContractItem, error) {
+func (s *CorporationService) ListContractItems(ctx context.Context, contractID int64) ([]*app.ContractItem, error) {
 	return s.st.ListCorporationContractItems(ctx, contractID)
 }
 

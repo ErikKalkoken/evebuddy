@@ -34,21 +34,14 @@ func (s *CharacterService) CountContractBids(ctx context.Context, contractID int
 	return x.Size(), nil
 }
 
-func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CharacterContractBid, error) {
+func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.ContractBid, error) {
 	bids, err := s.st.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
 		return nil, err
 	}
-	if len(bids) == 0 {
+	top, ok := app.ContractTopBid(bids)
+	if !ok {
 		return nil, app.ErrNotFound
-	}
-	var maximum float64
-	var top *app.CharacterContractBid
-	for _, b := range bids {
-		if top == nil || b.Amount > maximum {
-			top = b
-			maximum = b.Amount
-		}
 	}
 	return top, nil
 }
@@ -73,27 +66,7 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 			if v, ok := c.Acceptor.Value(); ok && v.ID == characterID {
 				continue // ignore status changed caused by the current character
 			}
-			var content string
-			name := "'" + c.NameDisplay() + "'"
-			acceptorName := c.Acceptor.StringFunc("?", func(v *app.EveEntity) string {
-				return v.Name
-			})
-			switch c.Type {
-			case app.ContractTypeCourier:
-				switch c.Status {
-				case app.ContractStatusInProgress:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been delivered", name)
-				case app.ContractStatusFailed:
-					content = fmt.Sprintf("Contract %s has been failed by %s", name, acceptorName)
-				}
-			case app.ContractTypeItemExchange:
-				switch c.Status {
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				}
-			}
+			content := c.UpdateNotification()
 			if content == "" {
 				continue
 			}
@@ -115,7 +88,7 @@ func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.Charact
 	return s.st.ListAllCharacterContracts(ctx)
 }
 
-func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.ContractItem, error) {
 	return s.st.ListCharacterContractItems(ctx, contractID)
 }
 

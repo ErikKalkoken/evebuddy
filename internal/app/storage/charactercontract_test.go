@@ -318,7 +318,7 @@ func TestCharacterContractBid(t *testing.T) {
 		oo, err := st.ListCharacterContractBids(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractBid) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractBid) int64 {
 			return x.BidID
 		}))
 		want := set.Of(b1.BidID, b2.BidID)
@@ -381,7 +381,7 @@ func TestCharacterContractItem(t *testing.T) {
 		oo, err := st.ListCharacterContractItems(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractItem) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractItem) int64 {
 			return x.RecordID
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
