@@ -522,7 +522,7 @@ func TestUpdateContractsEscrow(t *testing.T) {
 		Type:        app.ContractTypeAuction,
 		Status:      app.ContractStatusInProgress,
 	})
-	factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+	factory.CreateCharacterContractBid(storage.CreateContractBidParams{
 		Amount:     12.3,
 		BidderID:   c.ID,
 		ContractID: o.ID,
@@ -574,7 +574,7 @@ func TestUpdateContractsESIShared(t *testing.T) {
 			return &o.Contract
 		},
 		CreateBid: func(t *testing.T, contractPK, bidID int64, amount float64) {
-			factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+			factory.CreateCharacterContractBid(storage.CreateContractBidParams{
 				Amount:     amount,
 				BidID:      bidID,
 				ContractID: contractPK,

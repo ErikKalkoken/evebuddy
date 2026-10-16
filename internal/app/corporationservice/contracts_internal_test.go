@@ -50,8 +50,8 @@ func TestCountContractBids(t *testing.T) {
 	t.Run("can count bids for a contract", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
-		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
-		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID})
+		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID})
+		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID})
 		got, err := s.CountContractBids(ctx, o.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 2, got)
@@ -73,9 +73,9 @@ func TestGetContractTopBid(t *testing.T) {
 	t.Run("returns the bid with the highest amount", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
-		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 100})
-		top := factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 500})
-		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: o.ID, Amount: 200})
+		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100})
+		top := factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 500})
+		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 200})
 		got, err := s.GetContractTopBid(ctx, o.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, top.BidID, got.BidID)
@@ -157,7 +157,7 @@ func TestCalculateContractsEscrow(t *testing.T) {
 			Type:          app.ContractTypeAuction,
 			Status:        app.ContractStatusInProgress,
 		})
-		factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		factory.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.5,
 			BidderID:   c.ID,
 			ContractID: o.ID,
@@ -188,8 +188,8 @@ func TestListContractItems(t *testing.T) {
 	t.Run("can list items for a contract", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCorporationContract()
-		i1 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
-		i2 := factory.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: o.ID})
+		i1 := factory.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: o.ID})
+		i2 := factory.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: o.ID})
 		got, err := s.ListContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		ids := set.Collect(xiter.MapSlice(got, func(x *app.ContractItem) int64 { return x.RecordID }))
@@ -646,7 +646,7 @@ func TestUpdateContractsESIShared(t *testing.T) {
 			return &o.Contract
 		},
 		CreateBid: func(t *testing.T, contractPK, bidID int64, amount float64) {
-			factory.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+			factory.CreateCorporationContractBid(storage.CreateContractBidParams{
 				Amount:     amount,
 				BidID:      bidID,
 				ContractID: contractPK,

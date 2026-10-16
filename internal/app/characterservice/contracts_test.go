@@ -362,8 +362,8 @@ func TestCountContractBids(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID})
 		// when
 		got, err := s.CountContractBids(t.Context(), o.ID)
 		// then
@@ -380,8 +380,8 @@ func TestGetContractTopBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 100})
-		top := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 500})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100})
+		top := factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 500})
 		// when
 		got, err := s.GetContractTopBid(t.Context(), o.ID)
 		// then
@@ -424,7 +424,7 @@ func TestListContractItems(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		item := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: o.ID})
+		item := factory.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: o.ID})
 		// when
 		got, err := s.ListContractItems(t.Context(), o.ID)
 		// then

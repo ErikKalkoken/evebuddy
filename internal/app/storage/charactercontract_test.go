@@ -124,7 +124,7 @@ func TestCharacterContract(t *testing.T) {
 			Type:                app.ContractTypeItemExchange,
 		})
 		require.NoError(t, err)
-		err2 := st.CreateCharacterContractItem(t.Context(), storage.CreateCharacterContractItemParams{
+		err2 := st.CreateCharacterContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID: id,
 			IsIncluded: true,
 			Quantity:   1,
@@ -290,7 +290,7 @@ func TestCharacterContractBid(t *testing.T) {
 			bidID  = 12345
 		)
 		dateBid := time.Now().UTC()
-		arg := storage.CreateCharacterContractBidParams{
+		arg := storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     amount,
 			BidID:      bidID,
@@ -312,8 +312,8 @@ func TestCharacterContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		b1 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCharacterContractBids(t.Context(), c.ID)
 		// then
@@ -329,8 +329,8 @@ func TestCharacterContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		b1 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		got, err := st.ListCharacterContractBidIDs(t.Context(), c.ID)
 		// then
@@ -349,7 +349,7 @@ func TestCharacterContractItem(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
 		et := f.CreateEveType()
-		arg := storage.CreateCharacterContractItemParams{
+		arg := storage.CreateContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -375,8 +375,8 @@ func TestCharacterContractItem(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		i1 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
-		i2 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
+		i1 := f.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: c.ID})
+		i2 := f.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCharacterContractItems(t.Context(), c.ID)
 		// then
@@ -446,7 +446,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 				Status:      tc.status,
 				Type:        tc.contractType,
 			})
-			u := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			u := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 				ContractID: o.ID,
 				IsIncluded: true,
 				Quantity:   1,
@@ -474,7 +474,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		u1 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		u1 := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o1.ID,
 			IsIncluded: true,
 			Quantity:   1,
@@ -488,7 +488,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		u2 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		u2 := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o2.ID,
 			IsIncluded: true,
 			Quantity:   2,
@@ -525,7 +525,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o1.ID,
 			IsIncluded: true,
 			Quantity:   1,
@@ -630,12 +630,12 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 			Type:        app.ContractTypeAuction,
 			Status:      app.ContractStatusInProgress,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     3,
 			ContractID: o.ID,
 		})
@@ -657,12 +657,12 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 			Type:        app.ContractTypeAuction,
 			Status:      app.ContractStatusInProgress,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     15,
 			ContractID: o.ID,
 		})

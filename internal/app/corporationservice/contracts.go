@@ -288,7 +288,7 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 		return err
 	}
 	for _, it := range items {
-		arg := storage.CreateCorporationContractItemParams{
+		err := s.st.CreateCorporationContractItem(ctx, storage.CreateContractItemParams{
 			ContractID:  id,
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
@@ -296,8 +296,8 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 			RawQuantity: optional.FromPtr(it.RawQuantity),
 			RecordID:    it.RecordId,
 			TypeID:      it.TypeId,
-		}
-		if err := s.st.CreateCorporationContractItem(ctx, arg); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -371,14 +371,14 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 		}
 	}
 	for _, b := range newBids {
-		arg := storage.CreateCorporationContractBidParams{
+		err := s.st.CreateCorporationContractBid(ctx, storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     b.Amount,
 			BidID:      b.BidId,
 			BidderID:   b.BidderId,
 			DateBid:    b.DateBid,
-		}
-		if err := s.st.CreateCorporationContractBid(ctx, arg); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 	}

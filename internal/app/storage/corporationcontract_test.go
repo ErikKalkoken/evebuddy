@@ -124,7 +124,7 @@ func TestCorporationContract(t *testing.T) {
 			Type:                app.ContractTypeItemExchange,
 		})
 		require.NoError(t, err)
-		err2 := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
+		err2 := st.CreateCorporationContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID: id,
 			IsIncluded: true,
 			Quantity:   1,
@@ -327,7 +327,7 @@ func TestCorporationContractBid(t *testing.T) {
 			bidID  = 12345
 		)
 		dateBid := time.Now().UTC()
-		arg := storage.CreateCorporationContractBidParams{
+		arg := storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     amount,
 			BidID:      bidID,
@@ -348,8 +348,8 @@ func TestCorporationContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCorporationContractBids(t.Context(), c.ID)
 		// then
@@ -364,8 +364,8 @@ func TestCorporationContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		got, err := st.ListCorporationContractBidIDs(t.Context(), c.ID)
 		// then
@@ -386,7 +386,7 @@ func TestCorporationContractItem(t *testing.T) {
 		et := f.CreateEveType()
 
 		// when
-		err := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
+		err := st.CreateCorporationContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -411,8 +411,8 @@ func TestCorporationContractItem(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		i1 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
-		i2 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+		i1 := f.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: c.ID})
+		i2 := f.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: c.ID})
 
 		// when
 		oo, err := st.ListCorporationContractItems(t.Context(), c.ID)
@@ -503,12 +503,12 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 			Type:          app.ContractTypeAuction,
 			Status:        app.ContractStatusInProgress,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     3,
 			ContractID: o.ID,
 		})
@@ -530,12 +530,12 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 			Type:          app.ContractTypeAuction,
 			Status:        app.ContractStatusInProgress,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     15,
 			ContractID: o.ID,
 		})

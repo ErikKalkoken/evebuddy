@@ -441,7 +441,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		return err
 	}
 	for _, it := range items {
-		err := s.st.CreateCharacterContractItem(ctx, storage.CreateCharacterContractItemParams{
+		err := s.st.CreateCharacterContractItem(ctx, storage.CreateContractItemParams{
 			ContractID:  id,
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
@@ -523,14 +523,14 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 		}
 	}
 	for _, b := range newBids {
-		arg := storage.CreateCharacterContractBidParams{
+		err := s.st.CreateCharacterContractBid(ctx, storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     b.Amount,
 			BidID:      b.BidId,
 			BidderID:   b.BidderId,
 			DateBid:    b.DateBid,
-		}
-		if err := s.st.CreateCharacterContractBid(ctx, arg); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 	}

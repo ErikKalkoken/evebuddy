@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -16,53 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-var corporationContractAvailabilityFromDBValue = map[string]app.ContractAvailability{
-	"":            app.ContractAvailabilityUndefined,
-	"alliance":    app.ContractAvailabilityAlliance,
-	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPrivate,
-	"public":      app.ContractAvailabilityPublic,
-}
-
-var corporationContractStatusFromDBValue = map[string]app.ContractStatus{
-	"":                    app.ContractStatusUndefined,
-	"cancelled":           app.ContractStatusCancelled,
-	"deleted":             app.ContractStatusDeleted,
-	"failed":              app.ContractStatusFailed,
-	"finished_contractor": app.ContractStatusFinishedContractor,
-	"finished_issuer":     app.ContractStatusFinishedIssuer,
-	"finished":            app.ContractStatusFinished,
-	"in_progress":         app.ContractStatusInProgress,
-	"outstanding":         app.ContractStatusOutstanding,
-	"rejected":            app.ContractStatusRejected,
-	"reversed":            app.ContractStatusReversed,
-}
-
-var corporationContractTypeFromDBValue = map[string]app.ContractType{
-	"":              app.ContractTypeUndefined,
-	"auction":       app.ContractTypeAuction,
-	"courier":       app.ContractTypeCourier,
-	"item_exchange": app.ContractTypeItemExchange,
-	"loan":          app.ContractTypeLoan,
-	"unknown":       app.ContractTypeUnknown,
-}
-
-var corporationContractAvailabilityToDBValue = map[app.ContractAvailability]string{}
-var corporationContractStatusToDBValue = map[app.ContractStatus]string{}
-var corporationContractTypeToDBValue = map[app.ContractType]string{}
-
-func init() {
-	for k, v := range corporationContractAvailabilityFromDBValue {
-		corporationContractAvailabilityToDBValue[v] = k
-	}
-	for k, v := range corporationContractStatusFromDBValue {
-		corporationContractStatusToDBValue[v] = k
-	}
-	for k, v := range corporationContractTypeFromDBValue {
-		corporationContractTypeToDBValue[v] = k
-	}
-}
 
 type CreateCorporationContractParams struct {
 	AcceptorID          int64
@@ -101,10 +53,10 @@ func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Contex
 	}
 	v, err := st.qRO.CalculateCorporationContractsCourierEscrow(ctx, queries.CalculateCorporationContractsCourierEscrowParams{
 		CorporationID: corporationID,
-		Type:          corporationContractTypeToDBValue[app.ContractTypeCourier],
+		Type:          contractTypeToDBValue[app.ContractTypeCourier],
 		Status: []string{
-			corporationContractStatusToDBValue[app.ContractStatusOutstanding],
-			corporationContractStatusToDBValue[app.ContractStatusInProgress],
+			contractStatusToDBValue[app.ContractStatusOutstanding],
+			contractStatusToDBValue[app.ContractStatusInProgress],
 		},
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -127,7 +79,7 @@ func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Contex
 	v, err := st.qRO.CalculateCorporationContractsAuctionEscrow(ctx, queries.CalculateCorporationContractsAuctionEscrowParams{
 		CorporationID: corporationID,
 		Status: []string{
-			corporationContractStatusToDBValue[app.ContractStatusInProgress],
+			contractStatusToDBValue[app.ContractStatusInProgress],
 		},
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -149,7 +101,7 @@ func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corp
 	}
 	var statuses2 []string
 	for s := range statuses.All() {
-		statuses2 = append(statuses2, corporationContractStatusToDBValue[s])
+		statuses2 = append(statuses2, contractStatusToDBValue[s])
 	}
 	v, err := st.qRO.CountCorporationContractsWithStatus(ctx, queries.CountCorporationContractsWithStatusParams{
 		CorporationID: corporationID,
@@ -174,7 +126,7 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 	id, err := st.qRW.CreateCorporationContract(ctx, queries.CreateCorporationContractParams{
 		AcceptorID:          NewNullInt64(arg.AcceptorID),
 		AssigneeID:          NewNullInt64(arg.AssigneeID),
-		Availability:        corporationContractAvailabilityToDBValue[arg.Availability],
+		Availability:        contractAvailabilityToDBValue[arg.Availability],
 		Buyout:              arg.Buyout.ValueOrZero(),
 		CorporationID:       arg.CorporationID,
 		Collateral:          arg.Collateral.ValueOrZero(),
@@ -191,10 +143,10 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 		Price:               arg.Price.ValueOrZero(),
 		Reward:              arg.Reward.ValueOrZero(),
 		StartLocationID:     optional.ToNullInt64(arg.StartLocationID),
-		Status:              corporationContractStatusToDBValue[arg.Status],
-		StatusNotified:      corporationContractStatusToDBValue[arg.StatusNotified],
+		Status:              contractStatusToDBValue[arg.Status],
+		StatusNotified:      contractStatusToDBValue[arg.StatusNotified],
 		Title:               arg.Title.ValueOrZero(),
-		Type:                corporationContractTypeToDBValue[arg.Type],
+		Type:                contractTypeToDBValue[arg.Type],
 		UpdatedAt:           arg.UpdatedAt,
 		Volume:              arg.Volume.ValueOrZero(),
 	})
@@ -206,7 +158,7 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 
 func (st *Storage) DeleteCorporationContracts(ctx context.Context, corporationID int64, contractIDs set.Set[int64]) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationContracts for character %d and contract IDs: %s: %w", corporationID, contractIDs, err)
+		return fmt.Errorf("DeleteCorporationContracts for corporation %d and contract IDs: %s: %w", corporationID, contractIDs, err)
 	}
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
@@ -317,7 +269,7 @@ func (st *Storage) UpdateCorporationContract(ctx context.Context, arg UpdateCorp
 		ContractID:    arg.ContractID,
 		DateAccepted:  optional.ToNullTime(arg.DateAccepted),
 		DateCompleted: optional.ToNullTime(arg.DateCompleted),
-		Status:        corporationContractStatusToDBValue[arg.Status],
+		Status:        contractStatusToDBValue[arg.Status],
 		UpdatedAt:     time.Now().UTC(),
 		AcceptorID:    NewNullInt64(arg.AcceptorID),
 	})
@@ -334,16 +286,9 @@ func (st *Storage) UpdateCorporationContractNotified(ctx context.Context, id int
 	if id == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	var statusNotified string
-	for k, v := range corporationContractStatusFromDBValue {
-		if v == status {
-			statusNotified = k
-			break
-		}
-	}
 	err := st.qRW.UpdateCorporationContractNotified(ctx, queries.UpdateCorporationContractNotifiedParams{
 		ID:             id,
-		StatusNotified: statusNotified,
+		StatusNotified: contractStatusToDBValue[status],
 		UpdatedAt:      time.Now().UTC(),
 	})
 	if err != nil {
@@ -368,15 +313,11 @@ func corporationContractFromDBModel(
 	startSolarSystemName startSolarSystemName,
 	startSolarSystemSecurity startSolarSystemSecurity,
 ) *app.CorporationContract {
-	var items2 []string
-	if x, ok := items.(string); ok && x != "" {
-		items2 = strings.Split(x, ",")
-	}
 	o2 := &app.CorporationContract{
 		Contract: app.Contract{
 			Acceptor:          eveEntityFromNullableDBModel(nullEveEntity(acceptor)),
 			Assignee:          eveEntityFromNullableDBModel(nullEveEntity(assignee)),
-			Availability:      corporationContractAvailabilityFromDBValue[cc.Availability],
+			Availability:      contractAvailabilityFromDBValue[cc.Availability],
 			Buyout:            optional.FromZeroValue(cc.Buyout),
 			Collateral:        optional.FromZeroValue(cc.Collateral),
 			ContractID:        cc.ContractID,
@@ -389,56 +330,35 @@ func corporationContractFromDBModel(
 			ID:                cc.ID,
 			Issuer:            eveEntityFromDBModel(queries.EveEntity(issuer)),
 			IssuerCorporation: eveEntityFromDBModel(queries.EveEntity(issuerCorporation)),
-			Items:             items2,
+			Items:             contractItemNamesFromDBModel(items),
 			Price:             optional.FromZeroValue(cc.Price),
 			Reward:            optional.FromZeroValue(cc.Reward),
-			Status:            corporationContractStatusFromDBValue[cc.Status],
-			StatusNotified:    corporationContractStatusFromDBValue[cc.StatusNotified],
+			Status:            contractStatusFromDBValue[cc.Status],
+			StatusNotified:    contractStatusFromDBValue[cc.StatusNotified],
 			Title:             optional.FromZeroValue(cc.Title),
-			Type:              corporationContractTypeFromDBValue[cc.Type],
+			Type:              contractTypeFromDBValue[cc.Type],
 			UpdatedAt:         cc.UpdatedAt,
 			Volume:            optional.FromZeroValue(cc.Volume),
 		},
 		CorporationID: cc.CorporationID,
 	}
-	if cc.EndLocationID.Valid {
-		o2.EndLocation = optional.New(&app.EveLocationShort{
-			ID:             cc.EndLocationID.Int64,
-			Name:           optional.FromNullString(sql.NullString(endLocationName)),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(endSolarSystemSecurity)),
-		})
-	}
-	if cc.StartLocationID.Valid {
-		o2.StartLocation = optional.New(&app.EveLocationShort{
-			ID:             cc.StartLocationID.Int64,
-			Name:           optional.FromNullString(sql.NullString(startLocationName)),
-			SecurityStatus: optional.FromNullFloat64ToFloat32(sql.NullFloat64(startSolarSystemSecurity)),
-		})
-	}
-	if endSolarSystemID.Valid && endSolarSystemName.Valid {
-		o2.EndSolarSystem = optional.New(&app.EntityShort{
-			ID:   endSolarSystemID.Int64,
-			Name: endSolarSystemName.String,
-		})
-	}
-	if startSolarSystemID.Valid && startSolarSystemName.Valid {
-		o2.StartSolarSystem = optional.New(&app.EntityShort{
-			ID:   startSolarSystemID.Int64,
-			Name: startSolarSystemName.String,
-		})
-	}
+	setContractLocationsFromDBModel(
+		&o2.Contract,
+		cc.EndLocationID,
+		endLocationName,
+		endSolarSystemID,
+		endSolarSystemName,
+		endSolarSystemSecurity,
+		cc.StartLocationID,
+		startLocationName,
+		startSolarSystemID,
+		startSolarSystemName,
+		startSolarSystemSecurity,
+	)
 	return o2
 }
 
-type CreateCorporationContractBidParams struct {
-	Amount     float64
-	BidderID   int64
-	BidID      int64
-	ContractID int64
-	DateBid    time.Time
-}
-
-func (st *Storage) CreateCorporationContractBid(ctx context.Context, arg CreateCorporationContractBidParams) error {
+func (st *Storage) CreateCorporationContractBid(ctx context.Context, arg CreateContractBidParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationContractBid %+v: %w", arg, err)
 	}
@@ -471,7 +391,7 @@ func (st *Storage) GetCorporationContractBid(ctx context.Context, contractID int
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := corporationContractBidFromDBModel(r.CorporationContractBid, r.EveEntity)
+	o := contractBidFromDBModel(queries.CharacterContractBid(r.CorporationContractBid), r.EveEntity)
 	return o, err
 }
 
@@ -482,7 +402,7 @@ func (st *Storage) ListCorporationContractBids(ctx context.Context, contractID i
 	}
 	oo := make([]*app.ContractBid, len(rows))
 	for i, r := range rows {
-		oo[i] = corporationContractBidFromDBModel(r.CorporationContractBid, r.EveEntity)
+		oo[i] = contractBidFromDBModel(queries.CharacterContractBid(r.CorporationContractBid), r.EveEntity)
 	}
 	return oo, nil
 }
@@ -495,28 +415,7 @@ func (st *Storage) ListCorporationContractBidIDs(ctx context.Context, contractID
 	return set.Collect(slices.Values(ids)), err
 }
 
-func corporationContractBidFromDBModel(o queries.CorporationContractBid, e queries.EveEntity) *app.ContractBid {
-	o2 := &app.ContractBid{
-		ContractID: o.ContractID,
-		Amount:     o.Amount,
-		BidID:      o.BidID,
-		Bidder:     eveEntityFromDBModel(e),
-		DateBid:    o.DateBid,
-	}
-	return o2
-}
-
-type CreateCorporationContractItemParams struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int64
-	RawQuantity optional.Optional[int64]
-	RecordID    int64
-	TypeID      int64
-}
-
-func (st *Storage) CreateCorporationContractItem(ctx context.Context, arg CreateCorporationContractItemParams) error {
+func (st *Storage) CreateCorporationContractItem(ctx context.Context, arg CreateContractItemParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationContractItem %+v: %w", arg, err)
 	}
@@ -551,7 +450,7 @@ func (st *Storage) GetCorporationContractItem(ctx context.Context, contractID, r
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
 	}
-	o := corporationContractItemFromDBModel(r.CorporationContractItem, r.EveType, r.EveGroup, r.EveCategory)
+	o := contractItemFromDBModel(queries.CharacterContractItem(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
 	return o, err
 }
 
@@ -562,20 +461,7 @@ func (st *Storage) ListCorporationContractItems(ctx context.Context, contractID 
 	}
 	oo := make([]*app.ContractItem, len(rows))
 	for i, r := range rows {
-		oo[i] = corporationContractItemFromDBModel(r.CorporationContractItem, r.EveType, r.EveGroup, r.EveCategory)
+		oo[i] = contractItemFromDBModel(queries.CharacterContractItem(r.CorporationContractItem), r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
-}
-
-func corporationContractItemFromDBModel(o queries.CorporationContractItem, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.ContractItem {
-	o2 := &app.ContractItem{
-		ContractID:  o.ContractID,
-		IsIncluded:  o.IsIncluded,
-		IsSingleton: o.IsSingleton,
-		Quantity:    o.Quantity,
-		RawQuantity: optional.FromZeroValue(o.RawQuantity),
-		RecordID:    o.RecordID,
-		Type:        eveTypeFromDBModel(t, g, c),
-	}
-	return o2
 }
