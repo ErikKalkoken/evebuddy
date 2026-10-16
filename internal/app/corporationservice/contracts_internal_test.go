@@ -371,17 +371,15 @@ func TestUpdateContractsESI(t *testing.T) {
 		xassert.Equal(t, set.Of[int64](1, 2), ids)
 	})
 
-	t.Run("should store bids of a new auction when fetching its items failed", func(t *testing.T) {
+	t.Run("should store a new contract only after its items could be fetched", func(t *testing.T) {
 		// given
 		const contractID = 42
 		fx := setup(t)
+		et := factory.CreateEveType()
 		bidder := factory.CreateEveEntityCharacter()
 		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/items", fx.ownerID, contractID),
-			httpmock.NewErrorResponder(errors.New("items failed")),
-		)
+		itemsURL := fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/items", fx.ownerID, contractID)
+		httpmock.RegisterResponder("GET", itemsURL, httpmock.NewErrorResponder(errors.New("items failed")))
 		registerDetails(fx, contractID, "bids", []map[string]any{
 			{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
 		})
@@ -389,8 +387,20 @@ func TestUpdateContractsESI(t *testing.T) {
 		err := update(fx.ownerID)
 		// then
 		require.NoError(t, err)
+		_, err = st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		require.ErrorIs(t, err, app.ErrNotFound)
+		// when ESI works again
+		registerDetails(fx, contractID, "items", []map[string]any{
+			{"is_included": true, "is_singleton": false, "quantity": 1, "record_id": 7, "type_id": et.ID},
+		})
+		err = update(fx.ownerID)
+		// then
+		require.NoError(t, err)
 		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
 		require.NoError(t, err)
+		items, err := st.ListCorporationContractItems(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 1, len(items))
 		ids, err := st.ListCorporationContractBidIDs(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](7), ids)

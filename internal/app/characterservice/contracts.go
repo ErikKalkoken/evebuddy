@@ -315,6 +315,20 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	if err != nil {
 		return 0, err
 	}
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
+	items2, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId).Execute()
+	if err != nil {
+		return 0, err
+	}
+	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
+		return contractsync.ESIContractItem(x)
+	})
+	typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
+		return x.TypeId
+	})...)
+	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+		return 0, err
+	}
 	id, err := s.st.CreateCharacterContract(ctx, storage.CreateCharacterContractParams{
 		AcceptorID:          c.AcceptorId,
 		AssigneeID:          c.AssigneeId,
@@ -342,20 +356,6 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	})
 	if err != nil {
 		return 0, err
-	}
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
-	items2, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId).Execute()
-	if err != nil {
-		return id, err
-	}
-	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
-		return contractsync.ESIContractItem(x)
-	})
-	typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
-		return x.TypeId
-	})...)
-	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
-		return id, err
 	}
 	for _, it := range items {
 		err := s.st.CreateCharacterContractItem(ctx, storage.CreateContractItemParams{

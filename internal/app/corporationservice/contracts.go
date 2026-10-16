@@ -131,6 +131,20 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	if err != nil {
 		return 0, err
 	}
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdItems")
+	items2, _, err := s.esiClient.ContractsAPI.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID).Execute()
+	if err != nil {
+		return 0, err
+	}
+	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
+		return contractsync.ESIContractItem(x)
+	})
+	typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
+		return x.TypeId
+	})...)
+	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+		return 0, err
+	}
 	id, err := s.st.CreateCorporationContract(ctx, storage.CreateCorporationContractParams{
 		AcceptorID:          c.AcceptorId,
 		AssigneeID:          c.AssigneeId,
@@ -158,20 +172,6 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	})
 	if err != nil {
 		return 0, err
-	}
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdItems")
-	items2, _, err := s.esiClient.ContractsAPI.GetCorporationsCorporationIdContractsContractIdItems(ctx, c.ContractId, corporationID).Execute()
-	if err != nil {
-		return id, err
-	}
-	items := xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
-		return contractsync.ESIContractItem(x)
-	})
-	typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
-		return x.TypeId
-	})...)
-	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
-		return id, err
 	}
 	for _, it := range items {
 		err := s.st.CreateCorporationContractItem(ctx, storage.CreateContractItemParams{
