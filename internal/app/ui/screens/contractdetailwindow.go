@@ -18,8 +18,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// ShowCharacterContract2 shows the details of a character contract in a window.
-func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
+// ShowCharacterContractByID shows the details of a character contract in a window.
+// Use ShowContract when the contract row is already available.
+func ShowCharacterContractByID(u baseUI, characterID, contractID int64) {
 	reportError := func(err error) {
 		fyne.Do(func() {
 			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
