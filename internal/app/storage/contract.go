@@ -2,6 +2,8 @@ package storage
 
 import (
 	"database/sql"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -61,7 +63,7 @@ func init() {
 // Contract statuses in which collateral or bids are held in escrow.
 var (
 	contractEscrowCourierStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
-	contractEscrowAuctionStatuses = []app.ContractStatus{app.ContractStatusInProgress}
+	contractEscrowAuctionStatuses = []app.ContractStatus{app.ContractStatusOutstanding} // auctions never become in progress
 )
 
 // contractStatusesToDBValues returns the DB values for statuses.
@@ -108,8 +110,9 @@ func sumWinningBids(bids []contractBidDBModel, ownerID int64) float64 {
 		})
 	}
 	var total float64
-	for _, bb := range byContract {
-		if top, ok := app.ContractTopBid(bb); ok && top.Bidder.ID == ownerID {
+	// fixed order so the float sum is the same on every call
+	for _, id := range slices.Sorted(maps.Keys(byContract)) {
+		if top, ok := app.ContractTopBid(byContract[id]); ok && top.Bidder.ID == ownerID {
 			total += top.Amount
 		}
 	}

@@ -14,7 +14,7 @@ import (
 	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	contractsync "github.com/ErikKalkoken/evebuddy/internal/app/contractsync"
+	"github.com/ErikKalkoken/evebuddy/internal/app/contractsync"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"

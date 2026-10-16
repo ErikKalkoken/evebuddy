@@ -145,7 +145,7 @@ func TestCalculateContractsEscrow(t *testing.T) {
 		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
 		factory.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.5,

@@ -501,7 +501,7 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
 		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
@@ -521,6 +521,35 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		assert.Equal(t, 12.3, got)
 	})
 
+	for _, status := range []app.ContractStatus{
+		app.ContractStatusInProgress,
+		app.ContractStatusFinishedContractor,
+		app.ContractStatusFinished,
+	} {
+		t.Run("should not include auction with status "+status.String(), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := f.CreateCorporation()
+			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID: c.ID,
+				Type:          app.ContractTypeAuction,
+				Status:        status,
+			})
+			f.CreateCorporationContractBid(storage.CreateContractBidParams{
+				Amount:     12.3,
+				BidderID:   c.ID,
+				ContractID: o.ID,
+			})
+
+			// when
+			got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, got)
+		})
+	}
+
 	t.Run("should not include when own bid is not highest", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -528,7 +557,7 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
 		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,

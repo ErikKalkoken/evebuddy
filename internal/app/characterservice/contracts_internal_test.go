@@ -49,7 +49,7 @@ func TestUpdateContractsEscrow(t *testing.T) {
 	o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 		CharacterID: c.ID,
 		Type:        app.ContractTypeAuction,
-		Status:      app.ContractStatusInProgress,
+		Status:      app.ContractStatusOutstanding,
 	})
 	factory.CreateCharacterContractBid(storage.CreateContractBidParams{
 		Amount:     12.3,

@@ -104,7 +104,7 @@ func TestCalculateContractsEscrow(t *testing.T) {
 		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: c.ID,
 			Type:        app.ContractTypeAuction,
-			Status:      app.ContractStatusInProgress,
+			Status:      app.ContractStatusOutstanding,
 		})
 		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     12.5,
@@ -135,7 +135,7 @@ func TestCalculateContractsEscrow(t *testing.T) {
 		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
 		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.5,
@@ -235,7 +235,7 @@ func TestCalculateContractsAuctionEscrowTiedBids(t *testing.T) {
 			o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
 				CharacterID: c.ID,
 				Type:        app.ContractTypeAuction,
-				Status:      app.ContractStatusInProgress,
+				Status:      app.ContractStatusOutstanding,
 			})
 			f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, BidderID: c.ID, DateBid: tc.ownerDate})
 			f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, DateBid: tc.otherDate})
@@ -250,7 +250,7 @@ func TestCalculateContractsAuctionEscrowTiedBids(t *testing.T) {
 			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 				CorporationID: c.ID,
 				Type:          app.ContractTypeAuction,
-				Status:        app.ContractStatusInProgress,
+				Status:        app.ContractStatusOutstanding,
 			})
 			f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, BidderID: c.ID, DateBid: tc.ownerDate})
 			f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100, DateBid: tc.otherDate})
