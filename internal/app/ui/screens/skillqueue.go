@@ -106,7 +106,12 @@ func NewQueueWithCharacter(u baseUI, c *app.Character) *SkillQueue {
 		a.Update(ctx)
 	}, a.signalKey)
 	a.u.Signals().RefreshTickerExpired.AddListener(func(_ context.Context, _ struct{}) {
-		fyne.Do(a.applyState)
+		fyne.Do(func() {
+			if a.state.queue == nil {
+				return // messages don't change over time
+			}
+			a.applyState()
+		})
 	}, a.signalKey)
 	return a
 }

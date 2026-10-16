@@ -239,6 +239,19 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 		assert.False(t, a.statusIcon.Visible())
 		assert.Equal(t, skillQueueStatus{}, *status)
 	})
+	t.Run("does nothing while showing a message", func(t *testing.T) {
+		a, u, _ := newSkillQueueForTest(t, st, factory.CreateCharacterFull())
+		a.Update(t.Context())
+		var called bool
+		a.OnUpdate = func(_, _ string) {
+			called = true
+		}
+
+		u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+
+		assert.False(t, called)
+		assert.Equal(t, "Waiting for character data to be loaded...", a.topLabel.Text)
+	})
 	t.Run("does not reload the queue", func(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		createSkillqueueSection(factory, c.ID)
