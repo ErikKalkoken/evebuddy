@@ -380,9 +380,9 @@ func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterC
 	return f.CreateCharacterContract(arg)
 }
 
-func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
+func (f Factory) CreateCharacterContractBid(args ...storage.CreateContractBidParams) *app.ContractBid {
 	ctx := context.Background()
-	var arg storage.CreateCharacterContractBidParams
+	var arg storage.CreateContractBidParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -418,9 +418,9 @@ func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContr
 	return o
 }
 
-func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
+func (f Factory) CreateCharacterContractItem(args ...storage.CreateContractItemParams) *app.ContractItem {
 	ctx := context.Background()
-	var arg storage.CreateCharacterContractItemParams
+	var arg storage.CreateContractItemParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1504,9 +1504,9 @@ func (f Factory) CreateCorporationContractCourier(args ...storage.CreateCorporat
 	return f.CreateCorporationContract(arg)
 }
 
-func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationContractBidParams) *app.CorporationContractBid {
+func (f Factory) CreateCorporationContractBid(args ...storage.CreateContractBidParams) *app.ContractBid {
 	ctx := context.Background()
-	var arg storage.CreateCorporationContractBidParams
+	var arg storage.CreateContractBidParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1542,9 +1542,9 @@ func (f Factory) CreateCorporationContractBid(args ...storage.CreateCorporationC
 	return o
 }
 
-func (f Factory) CreateCorporationContractItem(args ...storage.CreateCorporationContractItemParams) *app.CorporationContractItem {
+func (f Factory) CreateCorporationContractItem(args ...storage.CreateContractItemParams) *app.ContractItem {
 	ctx := context.Background()
-	var arg storage.CreateCorporationContractItemParams
+	var arg storage.CreateContractItemParams
 	if len(args) > 0 {
 		arg = args[0]
 	}

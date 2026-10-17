@@ -121,49 +121,14 @@ type contractRow struct {
 	volume          optional.Optional[float64]
 }
 
-func newContractRowForCharacter(o *app.CharacterContract, characterName func(int64) string, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
+// newContractRow returns a new row for a contract of a character or corporation.
+func newContractRow(o *app.Contract, ownerID int64, ownerName string, isCorporation bool, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
-	r := contractRow{
-		acceptor:       o.Acceptor,
-		assignee:       o.Assignee,
-		assigneeName:   assigneeName,
-		availability:   o.Availability,
-		buyout:         o.Buyout,
-		collateral:     o.Collateral,
-		contractID:     o.ContractID,
-		contractType:   o.Type,
-		dateAccepted:   o.DateAccepted,
-		dateCompleted:  o.DateCompleted,
-		dateExpired:    o.DateExpired,
-		dateIssued:     o.DateIssued,
-		daysToComplete: o.DaysToComplete,
-		endLocation:    o.EndLocation,
-		isCorporation:  false,
-		issuer:         o.IssuerEffective(),
-		issuerName:     o.IssuerEffective().Name,
-		name:           o.NameDisplay(),
-		objectID:       o.ID,
-		ownerID:        o.CharacterID,
-		ownerName:      characterName(o.CharacterID),
-		price:          o.Price,
-		reward:         o.Reward,
-		searchTarget:   makeSearchTarget(o.Items, o.Title),
-		startLocation:  o.StartLocation,
-		status:         o.Status,
-		title:          o.Title.ValueOrFallback("-"),
-		typeName:       o.Type.Display(),
-		volume:         o.Volume,
+	if assigneeName == "" && o.Availability == app.ContractAvailabilityPublic {
+		assigneeName = "[Public]" // brackets so it can't be mistaken for a character name
 	}
-	r.init(o.IssuerEffective().ID, o.Acceptor, myCharacterIDs, myCorporationIDs, time.Now())
-	return r
-}
-
-func newContractRowForCorporation(o *app.CorporationContract, corporation *app.Corporation, myCharacterIDs, myCorporationIDs set.Set[int64]) contractRow {
-	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
-		return v.Name
-	})
 	r := contractRow{
 		acceptor:       o.Acceptor,
 		assignee:       o.Assignee,
@@ -179,13 +144,13 @@ func newContractRowForCorporation(o *app.CorporationContract, corporation *app.C
 		dateIssued:     o.DateIssued,
 		daysToComplete: o.DaysToComplete,
 		endLocation:    o.EndLocation,
-		isCorporation:  true,
+		isCorporation:  isCorporation,
 		issuer:         o.IssuerEffective(),
 		issuerName:     o.IssuerEffective().Name,
 		name:           o.NameDisplay(),
 		objectID:       o.ID,
-		ownerID:        corporation.ID,
-		ownerName:      corporation.NameOrZero(),
+		ownerID:        ownerID,
+		ownerName:      ownerName,
 		price:          o.Price,
 		reward:         o.Reward,
 		searchTarget:   makeSearchTarget(o.Items, o.Title),
@@ -220,6 +185,15 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
 	r.updateTimeDependent(now)
+}
+
+// owner returns the character or corporation which owns the contract.
+func (r *contractRow) owner() *app.EveEntity {
+	category := app.EveEntityCharacter
+	if r.isCorporation {
+		category = app.EveEntityCorporation
+	}
+	return &app.EveEntity{ID: r.ownerID, Name: r.ownerName, Category: category}
 }
 
 // updateTimeDependent recomputes the fields which change with time
@@ -497,11 +471,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 			a.columnSorter,
 			a.filterRowsAsync,
 			func(_ int, r contractRow) {
-				if a.forCorporation {
-					ShowCorporationContract(a.u, r)
-				} else {
-					ShowCharacterContract(a.u, r)
-				}
+				ShowContract(a.u, r)
 			},
 		)
 	}
@@ -716,12 +686,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 		if id < 0 || id >= len(a.rowsFiltered) {
 			return
 		}
-		r := a.rowsFiltered[id]
-		if a.forCorporation {
-			ShowCorporationContract(a.u, r)
-		} else {
-			ShowCharacterContract(a.u, r)
-		}
+		ShowContract(a.u, a.rowsFiltered[id])
 	}
 	return l
 }
@@ -870,7 +835,7 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	}
 	var rows []contractRow
 	for _, c := range oo {
-		r := newContractRowForCorporation(c, corporation, myCharacterIDs, myCorporationIDs)
+		r := newContractRow(&c.Contract, corporation.ID, corporation.NameOrZero(), true, myCharacterIDs, myCorporationIDs)
 		rows = append(rows, r)
 	}
 	return rows, nil
@@ -881,14 +846,6 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	if err != nil {
 		return nil, err
 	}
-	// Remove duplicate oo2 between the user's own characters
-	oo2 := xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
-		return a.ContractID == b.ContractID &&
-			a.Type == b.Type &&
-			a.Issuer.ID == b.Issuer.ID &&
-			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
-			a.DateIssued.Equal(b.DateIssued)
-	})
 	characters, err := a.u.Character().CharacterNames(ctx)
 	if err != nil {
 		return nil, err
@@ -900,10 +857,8 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	}
 	var rows []contractRow
 	tagsByCharacter := make(map[int64]set.Set[string])
-	for _, c := range oo2 {
-		r := newContractRowForCharacter(c, func(id int64) string {
-			return characters[id]
-		}, myCharacterIDs, myCorporationIDs)
+	for _, c := range oo {
+		r := newContractRow(&c.Contract, c.CharacterID, characters[c.CharacterID], false, myCharacterIDs, myCorporationIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {
 			tags, err = a.u.Character().ListTagsForCharacter(ctx, c.CharacterID)

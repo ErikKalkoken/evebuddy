@@ -1,6 +1,7 @@
 package characterservice_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -353,48 +354,34 @@ func TestGetContract(t *testing.T) {
 	})
 }
 
-func TestCountContractBids(t *testing.T) {
+func TestGetContractBidSummary(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("can count bids for a contract", func(t *testing.T) {
+	t.Run("should return count and top bid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 100})
+		top := factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 500})
+		factory.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: o.ID, Amount: 200})
 		// when
-		got, err := s.CountContractBids(t.Context(), o.ID)
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 2, got)
+		assert.Equal(t, 3, count)
+		xassert.Equal(t, top.BidID, got.MustValue().BidID)
 	})
-}
-
-func TestGetContractTopBid(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	t.Run("can return top bid for a contract", func(t *testing.T) {
+	t.Run("should return no top bid when contract has no bids", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 100})
-		top := factory.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: o.ID, Amount: 500})
 		// when
-		got, err := s.GetContractTopBid(t.Context(), o.ID)
+		count, got, err := s.GetContractBidSummary(t.Context(), o.ID)
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, top.BidID, got.BidID)
-	})
-	t.Run("should return own error when contract has no bids", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		o := factory.CreateCharacterContract()
-		// when
-		_, err := s.GetContractTopBid(t.Context(), o.ID)
-		// then
-		assert.ErrorIs(t, err, app.ErrNotFound)
+		assert.Equal(t, 0, count)
+		xassert.Empty(t, got)
 	})
 }
 
@@ -402,11 +389,99 @@ func TestListAllContracts(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	dateIssued := time.Now().UTC().Add(-time.Hour)
+	// createCopy stores a copy of the same contract for a character.
+	createCopy := func(characterID, issuerID int64, forCorporation bool) *app.CharacterContract {
+		return factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:    characterID,
+			ContractID:     42,
+			DateIssued:     dateIssued,
+			ForCorporation: forCorporation,
+			IssuerID:       issuerID,
+			Type:           app.ContractTypeItemExchange,
+		})
+	}
 	t.Run("can list contracts across all characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		factory.CreateCharacterContract()
 		factory.CreateCharacterContract()
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 2)
+	})
+	for _, issuerFirst := range []bool{true, false} {
+		t.Run(fmt.Sprintf("should keep copy of issuer when stored first: %v", issuerFirst), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			issuer := factory.CreateCharacterFull()
+			other := factory.CreateCharacterFull()
+			factory.CreateEveEntityCharacter(app.EveEntity{ID: issuer.ID})
+			if issuerFirst {
+				createCopy(issuer.ID, issuer.ID, false)
+				createCopy(other.ID, issuer.ID, false)
+			} else {
+				createCopy(other.ID, issuer.ID, false)
+				createCopy(issuer.ID, issuer.ID, false)
+			}
+			// when
+			got, err := s.ListAllContracts(t.Context())
+			// then
+			require.NoError(t, err)
+			require.Len(t, got, 1)
+			xassert.Equal(t, issuer.ID, got[0].CharacterID)
+		})
+	}
+	t.Run("should keep copy of issuer for contracts issued for a corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		other := factory.CreateCharacterFull()
+		issuer := factory.CreateCharacterFull()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: issuer.ID})
+		createCopy(other.ID, issuer.ID, true)
+		createCopy(issuer.ID, issuer.ID, true)
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, issuer.ID, got[0].CharacterID)
+	})
+	t.Run("should keep copy of character with lowest ID when issuer is not one of them", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		stranger := factory.CreateEveEntityCharacter()
+		low, high := c1, c2
+		if high.ID < low.ID {
+			low, high = high, low
+		}
+		createCopy(high.ID, stranger.ID, false)
+		createCopy(low.ID, stranger.ID, false)
+		// when
+		got, err := s.ListAllContracts(t.Context())
+		// then
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		xassert.Equal(t, low.ID, got[0].CharacterID)
+	})
+	t.Run("should keep contracts which differ", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		stranger := factory.CreateEveEntityCharacter()
+		createCopy(c1.ID, stranger.ID, false)
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c2.ID,
+			ContractID:  42,
+			DateIssued:  dateIssued,
+			IssuerID:    stranger.ID,
+			Type:        app.ContractTypeCourier, // same ID, different type
+		})
 		// when
 		got, err := s.ListAllContracts(t.Context())
 		// then
@@ -423,7 +498,7 @@ func TestListContractItems(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		o := factory.CreateCharacterContract()
-		item := factory.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: o.ID})
+		item := factory.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: o.ID})
 		// when
 		got, err := s.ListContractItems(t.Context(), o.ID)
 		// then
@@ -432,4 +507,55 @@ func TestListContractItems(t *testing.T) {
 			assert.Equal(t, item.RecordID, got[0].RecordID)
 		}
 	})
+}
+
+func TestNotifyUpdatedContractsMessage(t *testing.T) {
+	db, st, f := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	earliest := time.Now().UTC().Add(-6 * time.Hour)
+	cases := []struct {
+		name   string
+		status app.ContractStatus
+		typ    app.ContractType
+		want   string // content with %s for the contract name
+	}{
+		{"courier accepted", app.ContractStatusInProgress, app.ContractTypeCourier, "Contract '%s' has been accepted by Bruce"},
+		{"courier delivered", app.ContractStatusFinished, app.ContractTypeCourier, "Contract '%s' has been delivered"},
+		{"courier failed", app.ContractStatusFailed, app.ContractTypeCourier, "Contract '%s' has been failed by Bruce"},
+		{"item exchange accepted", app.ContractStatusFinished, app.ContractTypeItemExchange, "Contract '%s' has been accepted by Bruce"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			acceptor := f.CreateEveEntityCharacter(app.EveEntity{ID: 42, Name: "Bruce"})
+			c := f.CreateCharacterFull()
+			o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+				AcceptorID:  acceptor.ID,
+				CharacterID: c.ID,
+				Status:      tc.status,
+				Type:        tc.typ,
+				UpdatedAt:   time.Now().UTC(),
+			})
+			var titles, contents []string
+			notify := func(title, content string) {
+				titles = append(titles, title)
+				contents = append(contents, content)
+			}
+			// when
+			err := s.NotifyUpdatedContracts(t.Context(), c.ID, earliest, notify)
+			// then
+			require.NoError(t, err)
+			xassert.Equal(t, []string{c.EveCharacter.Name + ": Contract updated"}, titles)
+			xassert.Equal(t, []string{fmt.Sprintf(tc.want, o.NameDisplay())}, contents)
+			o2, err := st.GetCharacterContract(t.Context(), c.ID, o.ContractID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.status, o2.StatusNotified)
+			// a second run must not notify again
+			err = s.NotifyUpdatedContracts(t.Context(), c.ID, earliest, notify)
+			require.NoError(t, err)
+			assert.Len(t, contents, 1)
+		})
+	}
 }

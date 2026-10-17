@@ -124,7 +124,7 @@ func TestCorporationContract(t *testing.T) {
 			Type:                app.ContractTypeItemExchange,
 		})
 		require.NoError(t, err)
-		err2 := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
+		err2 := st.CreateCorporationContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID: id,
 			IsIncluded: true,
 			Quantity:   1,
@@ -327,7 +327,7 @@ func TestCorporationContractBid(t *testing.T) {
 			bidID  = 12345
 		)
 		dateBid := time.Now().UTC()
-		arg := storage.CreateCorporationContractBidParams{
+		arg := storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     amount,
 			BidID:      bidID,
@@ -348,13 +348,13 @@ func TestCorporationContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCorporationContractBids(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractBid) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractBid) int64 {
 			return x.BidID
 		}))
 		want := set.Of(b1.BidID, b2.BidID)
@@ -364,8 +364,8 @@ func TestCorporationContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		b1 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		got, err := st.ListCorporationContractBidIDs(t.Context(), c.ID)
 		// then
@@ -386,7 +386,7 @@ func TestCorporationContractItem(t *testing.T) {
 		et := f.CreateEveType()
 
 		// when
-		err := st.CreateCorporationContractItem(t.Context(), storage.CreateCorporationContractItemParams{
+		err := st.CreateCorporationContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -411,15 +411,15 @@ func TestCorporationContractItem(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporationContract()
-		i1 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
-		i2 := f.CreateCorporationContractItem(storage.CreateCorporationContractItemParams{ContractID: c.ID})
+		i1 := f.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: c.ID})
+		i2 := f.CreateCorporationContractItem(storage.CreateContractItemParams{ContractID: c.ID})
 
 		// when
 		oo, err := st.ListCorporationContractItems(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CorporationContractItem) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractItem) int64 {
 			return x.RecordID
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
@@ -501,14 +501,14 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     3,
 			ContractID: o.ID,
 		})
@@ -521,6 +521,35 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		assert.Equal(t, 12.3, got)
 	})
 
+	for _, status := range []app.ContractStatus{
+		app.ContractStatusInProgress,
+		app.ContractStatusFinishedContractor,
+		app.ContractStatusFinished,
+	} {
+		t.Run("should not include auction with status "+status.String(), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := f.CreateCorporation()
+			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID: c.ID,
+				Type:          app.ContractTypeAuction,
+				Status:        status,
+			})
+			f.CreateCorporationContractBid(storage.CreateContractBidParams{
+				Amount:     12.3,
+				BidderID:   c.ID,
+				ContractID: o.ID,
+			})
+
+			// when
+			got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, got)
+		})
+	}
+
 	t.Run("should not include when own bid is not highest", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -528,14 +557,14 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusInProgress,
+			Status:        app.ContractStatusOutstanding,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCorporationContractBid(storage.CreateCorporationContractBidParams{
+		f.CreateCorporationContractBid(storage.CreateContractBidParams{
 			Amount:     15,
 			ContractID: o.ID,
 		})

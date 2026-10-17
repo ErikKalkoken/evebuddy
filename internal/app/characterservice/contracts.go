@@ -14,10 +14,10 @@ import (
 	"github.com/fnt-eve/goesi-openapi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/contractsync"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -26,31 +26,17 @@ func (s *CharacterService) GetContract(ctx context.Context, characterID, contrac
 	return s.st.GetCharacterContract(ctx, characterID, contractID)
 }
 
-func (s *CharacterService) CountContractBids(ctx context.Context, contractID int64) (int, error) {
-	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
-	if err != nil {
-		return 0, err
-	}
-	return x.Size(), nil
-}
-
-func (s *CharacterService) GetContractTopBid(ctx context.Context, contractID int64) (*app.CharacterContractBid, error) {
+// GetContractBidSummary returns the number of bids on a contract and its top bid, if any.
+func (s *CharacterService) GetContractBidSummary(ctx context.Context, contractID int64) (int, optional.Optional[*app.ContractBid], error) {
 	bids, err := s.st.ListCharacterContractBids(ctx, contractID)
 	if err != nil {
-		return nil, err
+		return 0, optional.Optional[*app.ContractBid]{}, err
 	}
-	if len(bids) == 0 {
-		return nil, app.ErrNotFound
+	top, ok := app.ContractTopBid(bids)
+	if !ok {
+		return 0, optional.Optional[*app.ContractBid]{}, nil
 	}
-	var maximum float64
-	var top *app.CharacterContractBid
-	for _, b := range bids {
-		if top == nil || b.Amount > maximum {
-			top = b
-			maximum = b.Amount
-		}
-	}
-	return top, nil
+	return len(bids), optional.New(top), nil
 }
 
 func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
@@ -73,27 +59,7 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 			if v, ok := c.Acceptor.Value(); ok && v.ID == characterID {
 				continue // ignore status changed caused by the current character
 			}
-			var content string
-			name := "'" + c.NameDisplay() + "'"
-			acceptorName := c.Acceptor.StringFunc("?", func(v *app.EveEntity) string {
-				return v.Name
-			})
-			switch c.Type {
-			case app.ContractTypeCourier:
-				switch c.Status {
-				case app.ContractStatusInProgress:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been delivered", name)
-				case app.ContractStatusFailed:
-					content = fmt.Sprintf("Contract %s has been failed by %s", name, acceptorName)
-				}
-			case app.ContractTypeItemExchange:
-				switch c.Status {
-				case app.ContractStatusFinished:
-					content = fmt.Sprintf("Contract %s has been accepted by %s", name, acceptorName)
-				}
-			}
+			content := c.UpdateNotification()
 			if content == "" {
 				continue
 			}
@@ -111,11 +77,35 @@ func (s *CharacterService) NotifyUpdatedContracts(ctx context.Context, character
 	return nil
 }
 
+// ListAllContracts returns the contracts of all characters.
+// A contract seen by several characters is returned only once:
+// the copy of its issuer or else the copy of the character with the lowest ID.
 func (s *CharacterService) ListAllContracts(ctx context.Context) ([]*app.CharacterContract, error) {
-	return s.st.ListAllCharacterContracts(ctx)
+	oo, err := s.st.ListAllCharacterContracts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// sort preferred copies first, so they are kept
+	rank := func(o *app.CharacterContract) int {
+		if o.Issuer.ID == o.CharacterID {
+			return 0
+		}
+		return 1
+	}
+	slices.SortStableFunc(oo, func(a, b *app.CharacterContract) int {
+		return cmp.Or(cmp.Compare(rank(a), rank(b)), cmp.Compare(a.CharacterID, b.CharacterID))
+	})
+	oo = xslices.DeduplicateFunc(oo, func(a, b *app.CharacterContract) bool {
+		return a.ContractID == b.ContractID &&
+			a.Type == b.Type &&
+			a.Issuer.ID == b.Issuer.ID &&
+			optional.EqualFunc(a.Assignee, b.Assignee, func(x, y *app.EveEntity) bool { return x.ID == y.ID }) &&
+			a.DateIssued.Equal(b.DateIssued)
+	})
+	return oo, nil
 }
 
-func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+func (s *CharacterService) ListContractItems(ctx context.Context, contractID int64) ([]*app.ContractItem, error) {
 	return s.st.ListCharacterContractItems(ctx, contractID)
 }
 
@@ -228,41 +218,13 @@ func (s *CharacterService) ListAllCharacterContractSlotsCorporation(ctx context.
 	return slots2, nil
 }
 
-var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
-	"alliance":    app.ContractAvailabilityAlliance,
-	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPrivate,
-	"public":      app.ContractAvailabilityPublic,
-}
-
-var contractStatusFromESIValue = map[string]app.ContractStatus{
-	"cancelled":           app.ContractStatusCancelled,
-	"deleted":             app.ContractStatusDeleted,
-	"failed":              app.ContractStatusFailed,
-	"finished_contractor": app.ContractStatusFinishedContractor,
-	"finished_issuer":     app.ContractStatusFinishedIssuer,
-	"finished":            app.ContractStatusFinished,
-	"in_progress":         app.ContractStatusInProgress,
-	"outstanding":         app.ContractStatusOutstanding,
-	"rejected":            app.ContractStatusRejected,
-	"reversed":            app.ContractStatusReversed,
-}
-
-var contractTypeFromESIValue = map[string]app.ContractType{
-	"auction":       app.ContractTypeAuction,
-	"courier":       app.ContractTypeCourier,
-	"item_exchange": app.ContractTypeItemExchange,
-	"loan":          app.ContractTypeLoan,
-	"unknown":       app.ContractTypeUnknown,
-}
-
-// updateContractsESI updates the wallet journal from ESI and reports whether it has changed.
+// updateContractsESI updates the contracts from ESI and reports whether they have changed.
 func (s *CharacterService) updateContractsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
 	if arg.section != app.SectionCharacterContracts {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	changed, err := s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true, // skipping change detection because it can not detect new bids
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
 			contracts, err := xgoesi.FetchPages(
@@ -280,103 +242,44 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			return contracts, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			contracts := data.([]esi.CharactersCharacterIdContractsGetInner)
-			// filter out unwanted contracts
-			contracts = slices.DeleteFunc(contracts, func(x esi.CharactersCharacterIdContractsGetInner) bool {
-				return x.Status == "deleted"
+			contracts := xslices.Map(data.([]esi.CharactersCharacterIdContractsGetInner), func(x esi.CharactersCharacterIdContractsGetInner) contractsync.ESIContract {
+				return contractsync.ESIContract(x)
 			})
-			// fetch missing eve entities
-			var entityIDs set.Set[int64]
-			var locationIDs set.Set[int64]
-			for _, c := range contracts {
-				entityIDs.Add(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-				if c.StartLocationId != nil {
-					locationIDs.Add(*c.StartLocationId)
-				}
-				if c.EndLocationId != nil {
-					locationIDs.Add(*c.EndLocationId)
-				}
-			}
-			err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
+			contracts = contractsync.RemoveDeleted(contracts)
+			entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs(contracts)
+			err := s.eus.AddMissingEntitiesAndLocations(ctx, entityIDs, locationIDs)
 			if err != nil {
 				return false, err
 			}
-			// identify new contracts
-			current, err := s.st.ListCharacterContracts(ctx, characterID)
+			oo, err := s.st.ListCharacterContracts(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
-			currentIDs := set.Collect(xiter.MapSlice(current, func(x *app.CharacterContract) int64 {
-				return x.ContractID
-			}))
-			var existingContracts, newContracts []esi.CharactersCharacterIdContractsGetInner
-			for _, c := range contracts {
-				if currentIDs.Contains(c.ContractId) {
-					existingContracts = append(existingContracts, c)
-				} else {
-					newContracts = append(newContracts, c)
-				}
+			current := xslices.Map(oo, func(x *app.CharacterContract) *app.Contract {
+				return &x.Contract
+			})
+			staleIDs, changed, err := contractsync.Sync(
+				ctx,
+				contracts,
+				current,
+				func(ctx context.Context, c contractsync.ESIContract) (int64, error) {
+					return s.createNewContract(ctx, characterID, c)
+				},
+				func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) (bool, error) {
+					return s.updateContract(ctx, characterID, o, c)
+				},
+				func(ctx context.Context, contractPK, contractID int64) (bool, error) {
+					return s.updateContractBids(ctx, characterID, contractPK, contractID)
+				},
+				slog.Int64("characterID", characterID),
+			)
+			if err != nil {
+				return false, err
 			}
-			slog.Debug("contracts", "current", currentIDs, "entries", contracts)
-			// create new entries
-			if len(newContracts) > 0 {
-				var count int
-				for _, c := range newContracts {
-					if err := s.createNewContract(ctx, characterID, c); err != nil {
-						if ctx.Err() != nil {
-							return false, err
-						}
-						slog.Error("create contract", "contract", c, "error", err)
-						continue
-					}
-					count++
-				}
-				slog.Info("Stored new contracts", "characterID", characterID, "count", count)
-			}
-			if len(existingContracts) > 0 {
-				var count int
-				for _, c := range existingContracts {
-					if err := s.updateContract(ctx, characterID, c); err != nil {
-						if ctx.Err() != nil {
-							return false, err
-						}
-						slog.Error("update contract", "contract", c, "error", err)
-						continue
-					}
-					count++
-				}
-				slog.Info("Updated contracts", "characterID", characterID, "count", count)
-			}
-			// add new bids for auctions
-			for _, c := range contracts {
-				if c.Type != "auction" {
-					continue
-				}
-				err := s.updateContractBids(ctx, characterID, c.ContractId)
-				if err != nil {
-					if ctx.Err() != nil {
-						return false, err
-					}
-					slog.Error("update contract bids", "contract", c, "error", err)
-					continue
-				}
-			}
-			// delete stale local contracts
-			var unfinishedIDs set.Set[int64]
-			for _, o := range current {
-				if !o.Status.IsFinished() {
-					unfinishedIDs.Add(o.ContractID)
-				}
-			}
-			incomingIDs := set.Collect(xiter.MapSlice(contracts, func(x esi.CharactersCharacterIdContractsGetInner) int64 {
-				return x.ContractId
-			}))
-			staleIDs := set.Difference(unfinishedIDs, incomingIDs)
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
 				return false, err
 			}
-
-			return true, nil
+			return changed, nil
 		},
 	)
 	if err != nil {
@@ -401,31 +304,35 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 	return changed, nil
 }
 
-func (s *CharacterService) createNewContract(ctx context.Context, characterID int64, c esi.CharactersCharacterIdContractsGetInner) error {
+// createNewContract stores a new contract with its items and returns its ID.
+// The ID is also returned when only storing the items failed.
+func (s *CharacterService) createNewContract(ctx context.Context, characterID int64, c contractsync.ESIContract) (int64, error) {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
-	entityIDs := set.Of(c.AcceptorId, c.AssigneeId, c.IssuerId, c.IssuerCorporationId)
-	var locationIDs set.Set[int64]
-	if c.StartLocationId != nil {
-		locationIDs.Add(*c.StartLocationId)
-	}
-	if c.EndLocationId != nil {
-		locationIDs.Add(*c.EndLocationId)
-	}
-	err := s.eus.AddMissingEveEntitiesAndLocations(ctx, entityIDs, locationIDs)
+	entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs([]contractsync.ESIContract{c})
+	err := s.eus.AddMissingEntitiesAndLocations(ctx, entityIDs, locationIDs)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	availability, ok := contractAvailabilityFromESIValue[c.Availability]
-	if !ok {
-		return fmt.Errorf("unknown availability: %s", c.Availability)
+	availability, status, typ, err := contractsync.ParseESIContract(c)
+	if err != nil {
+		return 0, err
 	}
-	status, ok := contractStatusFromESIValue[c.Status]
-	if !ok {
-		return fmt.Errorf("unknown status: %s", c.Status)
-	}
-	typ, ok := contractTypeFromESIValue[c.Type]
-	if !ok {
-		return fmt.Errorf("unknown type: %s", c.Type)
+	var items []contractsync.ESIContractItem
+	if typ.HasItems() {
+		ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
+		items2, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId).Execute()
+		if err != nil {
+			return 0, err
+		}
+		items = xslices.Map(items2, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) contractsync.ESIContractItem {
+			return contractsync.ESIContractItem(x)
+		})
+		typeIDs := set.Of(xslices.Map(items, func(x contractsync.ESIContractItem) int64 {
+			return x.TypeId
+		})...)
+		if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+			return 0, err
+		}
 	}
 	id, err := s.st.CreateCharacterContract(ctx, storage.CreateCharacterContractParams{
 		AcceptorID:          c.AcceptorId,
@@ -453,22 +360,10 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		Volume:              optional.FromPtr(c.Volume),
 	})
 	if err != nil {
-		return err
-	}
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdItems")
-	items, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId).Execute()
-	if err != nil {
-		return err
-	}
-	typeIDs := set.Of(xslices.Map(items, func(x esi.CharactersCharacterIdContractsContractIdItemsGetInner) int64 {
-		return x.TypeId
-
-	})...)
-	if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
-		return err
+		return 0, err
 	}
 	for _, it := range items {
-		err := s.st.CreateCharacterContractItem(ctx, storage.CreateCharacterContractItemParams{
+		err := s.st.CreateCharacterContractItem(ctx, storage.CreateContractItemParams{
 			ContractID:  id,
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
@@ -478,29 +373,20 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 			TypeID:      it.TypeId,
 		})
 		if err != nil {
-			return err
+			return id, err
 		}
 	}
-	return nil
+	return id, nil
 }
 
-func (s *CharacterService) updateContract(ctx context.Context, characterID int64, c esi.CharactersCharacterIdContractsGetInner) error {
-	status, ok := contractStatusFromESIValue[c.Status]
-	if !ok {
-		return fmt.Errorf("unknown status: %s", c.Status)
-	}
-	o, err := s.st.GetCharacterContract(ctx, characterID, c.ContractId)
+// updateContract updates a stored contract from ESI and reports whether it has changed.
+func (s *CharacterService) updateContract(ctx context.Context, characterID int64, o *app.Contract, c contractsync.ESIContract) (bool, error) {
+	status, err := contractsync.ParseESIStatus(c.Status)
 	if err != nil {
-		return err
+		return false, err
 	}
-	acceptorID := optional.Map(o.Acceptor, 0, func(x *app.EveEntity) int64 {
-		return x.ID
-	})
-	if c.AcceptorId == acceptorID &&
-		optional.Equal2(optional.FromPtr(c.DateAccepted), o.DateAccepted) &&
-		optional.Equal2(optional.FromPtr(c.DateCompleted), o.DateCompleted) &&
-		o.Status == contractStatusFromESIValue[c.Status] {
-		return nil
+	if !contractsync.HasChanged(o, c, status) {
+		return false, nil
 	}
 	err = s.st.UpdateCharacterContract(ctx, storage.UpdateCharacterContractParams{
 		AcceptorID:    c.AcceptorId,
@@ -511,60 +397,50 @@ func (s *CharacterService) updateContract(ctx context.Context, characterID int64
 		Status:        status,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
-func (s *CharacterService) updateContractBids(ctx context.Context, characterID, contractID int64) error {
-	c, err := s.st.GetCharacterContract(ctx, characterID, contractID)
+// updateContractBids stores new bids of an auction from ESI and reports whether there were any.
+func (s *CharacterService) updateContractBids(ctx context.Context, characterID, contractPK, contractID int64) (bool, error) {
+	existingBidIDs, err := s.st.ListCharacterContractBidIDs(ctx, contractPK)
 	if err != nil {
-		return err
+		return false, err
 	}
-	existingBidIDs, err := s.st.ListCharacterContractBidIDs(ctx, c.ID)
-	if err != nil {
-		return err
-	}
+	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdBids")
 	bids, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdBids(ctx, characterID, contractID).Execute()
 	if err != nil {
-		return err
+		return false, err
 	}
-	var newBids []esi.CharactersCharacterIdContractsContractIdBidsGetInner
-	for _, b := range bids {
-		if !existingBidIDs.Contains(b.BidId) {
-			newBids = append(newBids, b)
-		}
-	}
+	newBids, bidderIDs := contractsync.NewBids(existingBidIDs, xslices.Map(bids, func(x esi.CharactersCharacterIdContractsContractIdBidsGetInner) contractsync.ESIContractBid {
+		return contractsync.ESIContractBid(x)
+	}))
 	if len(newBids) == 0 {
-		return nil
+		return false, nil
 	}
-	var eeIDs set.Set[int64]
-	for _, b := range newBids {
-		if b.BidderId != 0 {
-			eeIDs.Add(b.BidderId)
-		}
-	}
-	if eeIDs.Size() > 0 {
-		if _, err = s.eus.AddMissingEntities(ctx, eeIDs); err != nil {
-			return err
+	if bidderIDs.Size() > 0 {
+		if _, err = s.eus.AddMissingEntities(ctx, bidderIDs); err != nil {
+			return false, err
 		}
 	}
 	for _, b := range newBids {
-		arg := storage.CreateCharacterContractBidParams{
-			ContractID: c.ID,
+		err := s.st.CreateCharacterContractBid(ctx, storage.CreateContractBidParams{
+			ContractID: contractPK,
 			Amount:     b.Amount,
 			BidID:      b.BidId,
 			BidderID:   b.BidderId,
 			DateBid:    b.DateBid,
-		}
-		if err := s.st.CreateCharacterContractBid(ctx, arg); err != nil {
-			return err
+		})
+		if err != nil {
+			return false, err
 		}
 	}
 	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
-	return nil
+	return true, nil
 }
 
+// updateContractItemsValue recalculates and stores the value of the character's contract items.
 func (s *CharacterService) updateContractItemsValue(ctx context.Context, characterID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractItemsValue: %d: %w", characterID, err)
@@ -583,19 +459,16 @@ func (s *CharacterService) updateContractItemsValue(ctx context.Context, charact
 	return nil
 }
 
+// updateContractsEscrow recalculates and stores the character's contract escrow.
 func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)
 	}
-	v1, err := s.st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
+	v, err := s.st.CalculateCharacterContractsEscrow(ctx, characterID)
 	if err != nil {
 		return wrapErr(err)
 	}
-	v2, err := s.st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
-	if err != nil {
-		return wrapErr(err)
-	}
-	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v1+v2))
+	err = s.st.UpdateCharacterContractsEscrow(ctx, characterID, optional.New(v))
 	if err != nil {
 		return wrapErr(err)
 	}

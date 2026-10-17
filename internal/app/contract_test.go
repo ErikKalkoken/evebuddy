@@ -7,6 +7,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 
+	"github.com/ErikKalkoken/go-set"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -94,12 +96,31 @@ func TestContractStatusPredicates(t *testing.T) {
 	}
 }
 
+func TestContractStatusActive(t *testing.T) {
+	xassert.Equal(t, set.Of(app.ContractStatusOutstanding, app.ContractStatusInProgress), app.ContractStatusActive)
+}
+
 func TestContractType(t *testing.T) {
 	xassert.Equal(t, "auction", app.ContractTypeAuction.String())
 }
 
 func TestContractTypeUnknown(t *testing.T) {
 	xassert.Equal(t, "?", app.ContractType(99).String())
+}
+
+func TestContractTypeHasItems(t *testing.T) {
+	cases := map[app.ContractType]bool{
+		app.ContractTypeAuction:      true,
+		app.ContractTypeCourier:      false,
+		app.ContractTypeItemExchange: true,
+		app.ContractTypeLoan:         true,
+		app.ContractTypeUnknown:      true,
+	}
+	for typ, want := range cases {
+		t.Run(typ.String(), func(t *testing.T) {
+			xassert.Equal(t, want, typ.HasItems())
+		})
+	}
 }
 
 func TestContractTypeDisplay(t *testing.T) {
@@ -189,40 +210,28 @@ func TestContractIsOverdueAt(t *testing.T) {
 	xassert.Equal(t, false, app.ContractIsOverdueAt(optional.Optional[time.Time]{}, optional.New[int64](3), now))
 }
 
-func TestCharacterContractIssuerEffective(t *testing.T) {
+func TestContractIssuerEffective(t *testing.T) {
 	issuer := &app.EveEntity{ID: 1, Name: "Issuer"}
 	issuerCorp := &app.EveEntity{ID: 2, Name: "Issuer Corp"}
 	t.Run("for corporation", func(t *testing.T) {
-		cc := app.CharacterContract{ForCorporation: true, Issuer: issuer, IssuerCorporation: issuerCorp}
-		xassert.Equal(t, issuerCorp, cc.IssuerEffective())
-		corp := app.CorporationContract{ForCorporation: true, Issuer: issuer, IssuerCorporation: issuerCorp}
-		xassert.Equal(t, issuerCorp, corp.IssuerEffective())
+		c := app.Contract{ForCorporation: true, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuerCorp, c.IssuerEffective())
 	})
 	t.Run("for character", func(t *testing.T) {
-		cc := app.CharacterContract{ForCorporation: false, Issuer: issuer, IssuerCorporation: issuerCorp}
-		xassert.Equal(t, issuer, cc.IssuerEffective())
-		corp := app.CorporationContract{ForCorporation: false, Issuer: issuer, IssuerCorporation: issuerCorp}
-		xassert.Equal(t, issuer, corp.IssuerEffective())
+		c := app.Contract{ForCorporation: false, Issuer: issuer, IssuerCorporation: issuerCorp}
+		xassert.Equal(t, issuer, c.IssuerEffective())
 	})
-}
-
-func TestCorporationContractNameDisplay(t *testing.T) {
-	cc := app.CorporationContract{
-		Type:  app.ContractTypeItemExchange,
-		Items: []string{"Jupiter"},
-	}
-	xassert.Equal(t, "Jupiter", cc.NameDisplay())
 }
 
 func TestContractNameDisplay(t *testing.T) {
 	cases := []struct {
 		name     string
-		contract *app.CharacterContract
+		contract *app.Contract
 		want     string
 	}{
 		{
 			"normal courier",
-			&app.CharacterContract{
+			&app.Contract{
 				Type: app.ContractTypeCourier,
 				StartSolarSystem: optional.New(&app.EntityShort{
 					Name: "start",
@@ -236,15 +245,36 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"broken courier",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:   app.ContractTypeCourier,
 				Volume: optional.New[float64](42),
 			},
 			"? >> ? (42 m3)",
 		},
 		{
+			"courier without volume",
+			&app.Contract{
+				Type: app.ContractTypeCourier,
+				StartSolarSystem: optional.New(&app.EntityShort{
+					Name: "start",
+				}),
+				EndSolarSystem: optional.New(&app.EntityShort{
+					Name: "end",
+				}),
+			},
+			"start >> end",
+		},
+		{
+			"courier ignores items",
+			&app.Contract{
+				Type:  app.ContractTypeCourier,
+				Items: []string{"Jupiter"},
+			},
+			"? >> ?",
+		},
+		{
 			"single item exchange",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:  app.ContractTypeItemExchange,
 				Items: []string{"Jupiter"},
 			},
@@ -252,7 +282,7 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"multiple item exchange",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:  app.ContractTypeItemExchange,
 				Items: []string{"Jupiter", "Mars"},
 			},
@@ -260,7 +290,7 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"single auction",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:  app.ContractTypeAuction,
 				Items: []string{"Jupiter"},
 			},
@@ -268,7 +298,7 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"multiple auction",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:  app.ContractTypeAuction,
 				Items: []string{"Jupiter", "Mars"},
 			},
@@ -276,7 +306,7 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"single item with empty name",
-			&app.CharacterContract{
+			&app.Contract{
 				Type:  app.ContractTypeItemExchange,
 				Items: []string{""},
 			},
@@ -284,7 +314,7 @@ func TestContractNameDisplay(t *testing.T) {
 		},
 		{
 			"no items",
-			&app.CharacterContract{
+			&app.Contract{
 				Type: app.ContractTypeItemExchange,
 			},
 			"[Empty]",
@@ -298,50 +328,109 @@ func TestContractNameDisplay(t *testing.T) {
 	}
 }
 
-func TestCharacterContractDisplayName(t *testing.T) {
+func TestContractUpdateNotification(t *testing.T) {
+	acceptor := optional.New(&app.EveEntity{Name: "Bruce"})
 	cases := []struct {
 		name     string
-		contract *app.CharacterContract
+		contract app.Contract
 		want     string
 	}{
 		{
-			"courier contract",
-			&app.CharacterContract{
-				Type:             app.ContractTypeCourier,
-				Volume:           optional.New[float64](10),
-				StartSolarSystem: optional.New(&app.EntityShort{Name: "Start"}),
-				EndSolarSystem:   optional.New(&app.EntityShort{Name: "End"}),
-			},
-			"Start >> End (10 m3)",
+			"courier accepted",
+			app.Contract{Type: app.ContractTypeCourier, Status: app.ContractStatusInProgress, Acceptor: acceptor},
+			"Contract '? >> ?' has been accepted by Bruce",
 		},
 		{
-			"courier contract without solar systems",
-			&app.CharacterContract{
-				Type:   app.ContractTypeCourier,
-				Volume: optional.New[float64](10),
-			},
-			"? >> ? (10 m3)",
+			"courier delivered",
+			app.Contract{Type: app.ContractTypeCourier, Status: app.ContractStatusFinished, Acceptor: acceptor},
+			"Contract '? >> ?' has been delivered",
 		},
 		{
-			"non-courier contract with multiple items",
-			&app.CharacterContract{
-				Type:  app.ContractTypeItemExchange,
-				Items: []string{"first", "second"},
-			},
-			"[Multiple Items]",
+			"courier failed",
+			app.Contract{Type: app.ContractTypeCourier, Status: app.ContractStatusFailed, Acceptor: acceptor},
+			"Contract '? >> ?' has been failed by Bruce",
 		},
 		{
-			"non-courier contract with single items",
-			&app.CharacterContract{
-				Type:  app.ContractTypeItemExchange,
-				Items: []string{"first"},
-			},
-			"first",
+			"courier accepted without acceptor",
+			app.Contract{Type: app.ContractTypeCourier, Status: app.ContractStatusInProgress},
+			"Contract '? >> ?' has been accepted by ?",
+		},
+		{
+			"courier outstanding",
+			app.Contract{Type: app.ContractTypeCourier, Status: app.ContractStatusOutstanding},
+			"",
+		},
+		{
+			"item exchange accepted",
+			app.Contract{Type: app.ContractTypeItemExchange, Status: app.ContractStatusFinished, Acceptor: acceptor, Items: []string{"Jupiter"}},
+			"Contract 'Jupiter' has been accepted by Bruce",
+		},
+		{
+			"item exchange outstanding",
+			app.Contract{Type: app.ContractTypeItemExchange, Status: app.ContractStatusOutstanding, Items: []string{"Jupiter"}},
+			"",
+		},
+		{
+			"auction finished",
+			app.Contract{Type: app.ContractTypeAuction, Status: app.ContractStatusFinished, Acceptor: acceptor, Items: []string{"Jupiter"}},
+			"",
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			xassert.Equal(t, tc.want, tc.contract.NameDisplay())
+			xassert.Equal(t, tc.want, tc.contract.UpdateNotification())
 		})
 	}
+}
+
+func TestContractTopBid(t *testing.T) {
+	t.Run("should return highest bid", func(t *testing.T) {
+		b1 := &app.ContractBid{BidID: 1, Amount: 100}
+		b2 := &app.ContractBid{BidID: 2, Amount: 300}
+		b3 := &app.ContractBid{BidID: 3, Amount: 200}
+		got, ok := app.ContractTopBid([]*app.ContractBid{b1, b2, b3})
+		xassert.Equal(t, true, ok)
+		xassert.Equal(t, b2, got)
+	})
+	t.Run("should return earliest of equal bids", func(t *testing.T) {
+		early := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+		late := early.Add(time.Hour)
+		cases := []struct {
+			name   string
+			winner *app.ContractBid
+			other  *app.ContractBid
+		}{
+			{
+				"earlier date",
+				&app.ContractBid{BidID: 2, Amount: 100, DateBid: early},
+				&app.ContractBid{BidID: 1, Amount: 100, DateBid: late},
+			},
+			{
+				"same date, lower ID",
+				&app.ContractBid{BidID: 1, Amount: 100, DateBid: early},
+				&app.ContractBid{BidID: 2, Amount: 100, DateBid: early},
+			},
+		}
+		for _, tc := range cases {
+			for _, bids := range [][]*app.ContractBid{{tc.winner, tc.other}, {tc.other, tc.winner}} {
+				t.Run(tc.name, func(t *testing.T) {
+					got, ok := app.ContractTopBid(bids)
+					xassert.Equal(t, true, ok)
+					xassert.Equal(t, tc.winner, got)
+				})
+			}
+		}
+	})
+	t.Run("should prefer higher amount over earlier date", func(t *testing.T) {
+		early := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+		b1 := &app.ContractBid{BidID: 1, Amount: 100, DateBid: early}
+		b2 := &app.ContractBid{BidID: 2, Amount: 200, DateBid: early.Add(time.Hour)}
+		got, ok := app.ContractTopBid([]*app.ContractBid{b1, b2})
+		xassert.Equal(t, true, ok)
+		xassert.Equal(t, b2, got)
+	})
+	t.Run("should report when there are no bids", func(t *testing.T) {
+		_, ok := app.ContractTopBid(nil)
+		xassert.Equal(t, false, ok)
+	})
 }

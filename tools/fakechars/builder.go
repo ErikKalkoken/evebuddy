@@ -305,7 +305,7 @@ func (b *CharacterBuilder) createContracts() {
 			Price:       optional.New(float64(rand.IntN(10_000_000*100)) / 100),
 		})
 		for range contractItems {
-			b.f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			b.f.CreateCharacterContractItem(storage.CreateContractItemParams{
 				ContractID: o.ID,
 				TypeID:     b.randomType().ID,
 				IsIncluded: true,

@@ -334,45 +334,107 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	})
 }
 
-func TestNewContractRowForCorporation_RequiresAttention(t *testing.T) {
+func TestNewContractRow_Owner(t *testing.T) {
+	o := &app.Contract{
+		ID:         7,
+		ContractID: 42,
+		Issuer:     &app.EveEntity{ID: otherID},
+		Status:     app.ContractStatusOutstanding,
+	}
+	t.Run("character", func(t *testing.T) {
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.EqualValues(t, myID, r.ownerID)
+		assert.Equal(t, "Bruce", r.ownerName)
+		assert.False(t, r.isCorporation)
+		assert.Equal(t, &app.EveEntity{ID: myID, Name: "Bruce", Category: app.EveEntityCharacter}, r.owner())
+		assert.EqualValues(t, 7, r.objectID)
+		assert.EqualValues(t, 42, r.contractID)
+	})
+	t.Run("corporation", func(t *testing.T) {
+		r := newContractRow(o, myCorpID, "Wayne Enterprises", true, myIDs, myCorpIDs)
+		assert.EqualValues(t, myCorpID, r.ownerID)
+		assert.Equal(t, "Wayne Enterprises", r.ownerName)
+		assert.True(t, r.isCorporation)
+		assert.Equal(t, &app.EveEntity{ID: myCorpID, Name: "Wayne Enterprises", Category: app.EveEntityCorporation}, r.owner())
+	})
+}
+
+func TestNewContractRow_Assignee(t *testing.T) {
+	t.Run("public contract without assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Availability: app.ContractAvailabilityPublic,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "[Public]", r.assigneeName)
+	})
+	t.Run("private contract with assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Assignee:     optional.New(&app.EveEntity{ID: myID, Name: "Bruce"}),
+			Availability: app.ContractAvailabilityPrivate,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "Bruce", r.assigneeName)
+	})
+	t.Run("non-public contract without assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Availability: app.ContractAvailabilityCorporation,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "", r.assigneeName)
+	})
+}
+
+func TestNewContractRow_RequiresAttention(t *testing.T) {
 	now := time.Now()
 	corporation := &app.Corporation{ID: myCorpID}
 	myCorp := &app.EveEntity{ID: myCorpID, Category: app.EveEntityCorporation}
 	corpMember := &app.EveEntity{ID: otherID, Category: app.EveEntityCharacter}
 	t.Run("expired contract issued for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			DateExpired:       now.Add(-time.Hour),
-			ForCorporation:    true,
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusOutstanding,
+			Contract: app.Contract{
+				DateExpired:       now.Add(-time.Hour),
+				ForCorporation:    true,
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusOutstanding,
+			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 	})
 	t.Run("expired personal contract of a corporation member", func(t *testing.T) {
 		o := &app.CorporationContract{
-			DateExpired:       now.Add(-time.Hour),
-			ForCorporation:    false,
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusOutstanding,
+			Contract: app.Contract{
+				DateExpired:       now.Add(-time.Hour),
+				ForCorporation:    false,
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusOutstanding,
+			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryOther, r.category)
 	})
 	t.Run("overdue contract accepted for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			Acceptor:          optional.New(myCorp),
-			DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
-			DateExpired:       now.AddDate(0, 0, 10),
-			DaysToComplete:    optional.New[int64](1),
-			Issuer:            corpMember,
-			IssuerCorporation: myCorp,
-			Status:            app.ContractStatusInProgress,
-			Type:              app.ContractTypeCourier,
+			Contract: app.Contract{
+				Acceptor:          optional.New(myCorp),
+				DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
+				DateExpired:       now.AddDate(0, 0, 10),
+				DaysToComplete:    optional.New[int64](1),
+				Issuer:            corpMember,
+				IssuerCorporation: myCorp,
+				Status:            app.ContractStatusInProgress,
+				Type:              app.ContractTypeCourier,
+			},
 		}
-		r := newContractRowForCorporation(o, corporation, myIDs, myCorpIDs)
+		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
 	})
 }

@@ -124,7 +124,7 @@ func TestCharacterContract(t *testing.T) {
 			Type:                app.ContractTypeItemExchange,
 		})
 		require.NoError(t, err)
-		err2 := st.CreateCharacterContractItem(t.Context(), storage.CreateCharacterContractItemParams{
+		err2 := st.CreateCharacterContractItem(t.Context(), storage.CreateContractItemParams{
 			ContractID: id,
 			IsIncluded: true,
 			Quantity:   1,
@@ -290,7 +290,7 @@ func TestCharacterContractBid(t *testing.T) {
 			bidID  = 12345
 		)
 		dateBid := time.Now().UTC()
-		arg := storage.CreateCharacterContractBidParams{
+		arg := storage.CreateContractBidParams{
 			ContractID: c.ID,
 			Amount:     amount,
 			BidID:      bidID,
@@ -312,13 +312,13 @@ func TestCharacterContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		b1 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCharacterContractBids(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractBid) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractBid) int64 {
 			return x.BidID
 		}))
 		want := set.Of(b1.BidID, b2.BidID)
@@ -329,8 +329,8 @@ func TestCharacterContractBid(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		b1 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
-		b2 := f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{ContractID: c.ID})
+		b1 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
+		b2 := f.CreateCharacterContractBid(storage.CreateContractBidParams{ContractID: c.ID})
 		// when
 		got, err := st.ListCharacterContractBidIDs(t.Context(), c.ID)
 		// then
@@ -349,7 +349,7 @@ func TestCharacterContractItem(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
 		et := f.CreateEveType()
-		arg := storage.CreateCharacterContractItemParams{
+		arg := storage.CreateContractItemParams{
 			ContractID:  c.ID,
 			IsIncluded:  true,
 			IsSingleton: true,
@@ -375,13 +375,13 @@ func TestCharacterContractItem(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacterContract()
-		i1 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
-		i2 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{ContractID: c.ID})
+		i1 := f.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: c.ID})
+		i2 := f.CreateCharacterContractItem(storage.CreateContractItemParams{ContractID: c.ID})
 		// when
 		oo, err := st.ListCharacterContractItems(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterContractItem) int64 {
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.ContractItem) int64 {
 			return x.RecordID
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
@@ -403,15 +403,15 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 		want         float64
 	}{
 		{
-			name:         "should include courier outstanding contract",
+			name:         "should exclude courier contract",
 			contractType: app.ContractTypeCourier,
 			status:       app.ContractStatusOutstanding,
 			price:        10.0,
-			want:         10.0,
+			want:         0,
 		},
 		{
-			name:         "should include in progress courier contract",
-			contractType: app.ContractTypeCourier,
+			name:         "should include in progress auction contract",
+			contractType: app.ContractTypeAuction,
 			status:       app.ContractStatusInProgress,
 			price:        10.0,
 			want:         10.0,
@@ -424,8 +424,8 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			want:         10.0,
 		},
 		{
-			name:         "should exclude finished courier contract",
-			contractType: app.ContractTypeCourier,
+			name:         "should exclude finished auction contract",
+			contractType: app.ContractTypeAuction,
 			status:       app.ContractStatusFinished,
 			price:        10.0,
 			want:         0,
@@ -446,7 +446,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 				Status:      tc.status,
 				Type:        tc.contractType,
 			})
-			u := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+			u := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 				ContractID: o.ID,
 				IsIncluded: true,
 				Quantity:   1,
@@ -474,7 +474,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		u1 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		u1 := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o1.ID,
 			IsIncluded: true,
 			Quantity:   1,
@@ -488,7 +488,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		u2 := f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		u2 := f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o2.ID,
 			IsIncluded: true,
 			Quantity:   2,
@@ -525,7 +525,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			Status:      app.ContractStatusOutstanding,
 			Type:        app.ContractTypeAuction,
 		})
-		f.CreateCharacterContractItem(storage.CreateCharacterContractItemParams{
+		f.CreateCharacterContractItem(storage.CreateContractItemParams{
 			ContractID: o1.ID,
 			IsIncluded: true,
 			Quantity:   1,
@@ -628,14 +628,14 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: c.ID,
 			Type:        app.ContractTypeAuction,
-			Status:      app.ContractStatusInProgress,
+			Status:      app.ContractStatusOutstanding,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     3,
 			ContractID: o.ID,
 		})
@@ -648,6 +648,35 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 		assert.Equal(t, 12.3, got)
 	})
 
+	for _, status := range []app.ContractStatus{
+		app.ContractStatusInProgress,
+		app.ContractStatusFinishedContractor,
+		app.ContractStatusFinished,
+	} {
+		t.Run("should not include auction with status "+status.String(), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := f.CreateCharacter()
+			o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+				CharacterID: c.ID,
+				Type:        app.ContractTypeAuction,
+				Status:      status,
+			})
+			f.CreateCharacterContractBid(storage.CreateContractBidParams{
+				Amount:     12.3,
+				BidderID:   c.ID,
+				ContractID: o.ID,
+			})
+
+			// when
+			got, err := st.CalculateCharacterContractsAuctionEscrow(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, got)
+		})
+	}
+
 	t.Run("should not include when own bid is not highest", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -655,14 +684,14 @@ func TestCalculateCharacterContractsAuctionEscrow(t *testing.T) {
 		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID: c.ID,
 			Type:        app.ContractTypeAuction,
-			Status:      app.ContractStatusInProgress,
+			Status:      app.ContractStatusOutstanding,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     12.3,
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCharacterContractBid(storage.CreateCharacterContractBidParams{
+		f.CreateCharacterContractBid(storage.CreateContractBidParams{
 			Amount:     15,
 			ContractID: o.ID,
 		})

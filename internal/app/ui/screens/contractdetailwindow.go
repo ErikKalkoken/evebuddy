@@ -15,22 +15,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-type contractItem struct {
-	ContractID  int64
-	IsIncluded  bool
-	IsSingleton bool
-	Quantity    int64
-	RawQuantity optional.Optional[int64]
-	RecordID    int64
-	Type        *app.EveType
-}
-
-// ShowCharacterContract2 shows the details of a character contract in a window.
-func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
+// ShowCharacterContractByID shows the details of a character contract in a window.
+// Use ShowContract when the contract row is already available.
+func ShowCharacterContractByID(u baseUI, characterID, contractID int64) {
 	reportError := func(err error) {
 		fyne.Do(func() {
 			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
@@ -59,96 +49,13 @@ func ShowCharacterContract2(u baseUI, characterID, contractID int64) {
 			return
 		}
 		fyne.Do(func() {
-			ShowCharacterContract(u, newContractRowForCharacter(o, func(_ int64) string {
-				return c.NameOrZero()
-			}, myCharacterIDs, myCorporationIDs))
+			ShowContract(u, newContractRow(&o.Contract, o.CharacterID, c.NameOrZero(), false, myCharacterIDs, myCorporationIDs))
 		})
 	}()
 }
 
-// ShowCharacterContract shows the details of a character contract in a window.
-func ShowCharacterContract(u baseUI, r contractRow) {
-	showContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Character().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Character().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Character().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.CharacterContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
-}
-
-// ShowCorporationContract shows the details of a corporation contract in a window.
-func ShowCorporationContract(u baseUI, r contractRow) {
-	showContractDetails(u, r,
-		func(ctx context.Context) (int, float64, error) {
-			if r.contractType != app.ContractTypeAuction {
-				return 0, 0, nil
-			}
-			count, err := u.Corporation().CountContractBids(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			topBid, err := u.Corporation().GetContractTopBid(ctx, r.objectID)
-			if err != nil {
-				return 0, 0, err
-			}
-			return count, topBid.Amount, nil
-		},
-		func(ctx context.Context) ([]contractItem, error) {
-			if r.contractType != app.ContractTypeAuction && r.contractType != app.ContractTypeItemExchange {
-				return nil, nil
-			}
-			oo, err := u.Corporation().ListContractItems(ctx, r.objectID)
-			if err != nil {
-				return nil, err
-			}
-			items := xslices.Map(oo, func(x *app.CorporationContractItem) contractItem {
-				return contractItem{
-					ContractID:  x.ContractID,
-					IsIncluded:  x.IsIncluded,
-					IsSingleton: x.IsIncluded,
-					Quantity:    x.Quantity,
-					RawQuantity: x.RawQuantity,
-					RecordID:    x.RecordID,
-					Type:        x.Type,
-				}
-			})
-			return items, nil
-		},
-	)
-}
-
-func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context) (int, float64, error), fetchItems func(context.Context) ([]contractItem, error)) {
+// ShowContract shows the details of a character or corporation contract in a window.
+func ShowContract(u baseUI, r contractRow) {
 	title := fmt.Sprintf("Contract #%d", r.contractID)
 	windowID := fmt.Sprintf("contract-%d-%d", r.ownerID, r.contractID)
 	w, created := u.GetOrCreateWindow(windowID, title, r.ownerName)
@@ -164,12 +71,12 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			})
 		}
 		ctx := context.Background()
-		totalBids, topBidAmount, err := fetchBids(ctx)
+		totalBids, topBidAmount, err := fetchContractBids(ctx, u, r)
 		if err != nil {
 			reportError(err)
 			return
 		}
-		items, err := fetchItems(ctx)
+		items, err := fetchContractItems(ctx, u, r)
 		if err != nil {
 			reportError(err)
 			return
@@ -190,7 +97,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 				availability = availabilityLabel
 			}
 			fi := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(r.ownerID, r.ownerName, u.InfoViewer().Show)),
+				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner(), u.InfoViewer().Show)),
 				widget.NewFormItem("Description", widget.NewLabel(r.title)),
 				widget.NewFormItem("Type", widget.NewLabel(r.contractType.Display())),
 				widget.NewFormItem("Issued By", ui.MakeEveEntityActionLabel(r.issuer, u.InfoViewer().Show)),
@@ -256,23 +163,26 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 				if r.status == app.ContractStatusOutstanding {
 					auctionExpiresNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
-				var currentBid string
-				if totalBids == 0 {
-					currentBid = "(None)"
-				} else {
-					currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(topBidAmount), totalBids)
+				var highestBid string
+				switch totalBids {
+				case 0:
+					highestBid = "(None)"
+				case 1:
+					highestBid = fmt.Sprintf("%s (1 bid)", ui.FormatISKAmount(topBidAmount))
+				default:
+					highestBid = fmt.Sprintf("%s (%d bids)", ui.FormatISKAmount(topBidAmount), totalBids)
 				}
 				fi = slices.Concat(fi, []*widget.FormItem{
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
+					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("(None)", ui.FormatISKAmount))},
+					{Text: "Highest Bid", Widget: widget.NewLabel(highestBid)},
 					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, auctionExpiresNote))},
 				})
 			}
 
 			makeItemsInfo := func() (fyne.CanvasObject, error) {
 				vb := container.NewVBox()
-				var itemsIncluded, itemsRequested []contractItem
+				var itemsIncluded, itemsRequested []*app.ContractItem
 				for _, it := range items {
 					if it.IsIncluded {
 						itemsIncluded = append(itemsIncluded, it)
@@ -280,7 +190,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 						itemsRequested = append(itemsRequested, it)
 					}
 				}
-				makeItem := func(it contractItem) fyne.CanvasObject {
+				makeItem := func(it *app.ContractItem) fyne.CanvasObject {
 					c := container.NewHBox(
 						ui.MakeLinkLabel(it.Type.Name, func() {
 							u.InfoViewer().ShowType(it.Type.ID, r.ownerID)
@@ -315,7 +225,7 @@ func showContractDetails(u baseUI, r contractRow, fetchBids func(context.Context
 			f := widget.NewForm(fi...)
 			f.Orientation = widget.Adaptive
 			main := container.NewVBox(f)
-			if r.contractType == app.ContractTypeItemExchange || r.contractType == app.ContractTypeAuction {
+			if r.contractType.HasItems() {
 				main.Add(widget.NewSeparator())
 				x, err := makeItemsInfo()
 				if err != nil {
@@ -372,4 +282,31 @@ func makeLocationLabel2(o optional.Optional[*app.EveLocationShort], show func(in
 	})
 	x.Wrapping = fyne.TextWrapWord
 	return x
+}
+
+// fetchContractBids returns the number of bids and the amount of the top bid for an auction.
+func fetchContractBids(ctx context.Context, u baseUI, r contractRow) (int, float64, error) {
+	if r.contractType != app.ContractTypeAuction {
+		return 0, 0, nil
+	}
+	f := u.Character().GetContractBidSummary
+	if r.isCorporation {
+		f = u.Corporation().GetContractBidSummary
+	}
+	count, top, err := f(ctx, r.objectID)
+	if err != nil {
+		return 0, 0, err
+	}
+	return count, optional.Map(top, 0, func(x *app.ContractBid) float64 { return x.Amount }), nil
+}
+
+// fetchContractItems returns the items of a contract, if its type has items.
+func fetchContractItems(ctx context.Context, u baseUI, r contractRow) ([]*app.ContractItem, error) {
+	if !r.contractType.HasItems() {
+		return nil, nil
+	}
+	if r.isCorporation {
+		return u.Corporation().ListContractItems(ctx, r.objectID)
+	}
+	return u.Character().ListContractItems(ctx, r.objectID)
 }
