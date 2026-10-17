@@ -203,12 +203,13 @@ func (a *Mails) update(ctx context.Context) {
 	a.NavigationPane.downloadedRun.start()
 	a.bodiesComplete.Store(false)
 	clearAll := func() {
-		// stored now, not queued, so a newer update's counts are not overwritten
+		// stored now, not queued, so a newer update's state is not overwritten
 		a.unreadCount.Store(0)
 		a.missingPercent.Store(0)
+		a.MessagePane.currentFolder.Store(nil)
+		a.MessagePane.updateRun.start() // discards message pane updates still loading
 		fyne.Do(func() {
 			a.NavigationPane.clear()
-			a.MessagePane.currentFolder.Store(nil)
 			a.MessagePane.clear()
 			a.MessagePane.setCharactersLoaded(0, 0)
 			a.ReadingPane.clear()
@@ -542,6 +543,27 @@ func (a *mailsNavigationPane) updateDownloaded(ctx context.Context, notify bool)
 	})
 }
 
+// applyDownloaded shows a download state unless a newer check was started.
+// Must be called on the main thread.
+func (a *mailsNavigationPane) applyDownloaded(isLatest func() bool, r mailsDownloaded, notify bool) {
+	if !isLatest() {
+		return
+	}
+	a.ma.bodiesComplete.Store(r.complete)
+	changed := a.ma.missingPercent.Swap(int64(r.missingPercent)) != int64(r.missingPercent)
+	a.folderTotal.SetText(r.total)
+	if r.downloaded == "" {
+		a.folderDownloaded.Hide()
+	} else {
+		a.folderDownloaded.SetText(r.downloaded)
+		a.folderDownloaded.SetToolTip(r.hint)
+		a.folderDownloaded.Show()
+	}
+	if notify && changed {
+		a.ma.callOnUpdate()
+	}
+}
+
 // fetchDownloaded returns the current download state. It reports false when canceled.
 func (a *mailsNavigationPane) fetchDownloaded(ctx context.Context) (mailsDownloaded, bool) {
 	var r mailsDownloaded
@@ -575,27 +597,6 @@ func (a *mailsNavigationPane) fetchDownloaded(ctx context.Context) (mailsDownloa
 	r.downloaded = fmt.Sprintf("%d%%", 100-r.missingPercent)
 	r.hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
 	return r, true
-}
-
-// applyDownloaded shows a download state unless a newer check was started.
-// Must be called on the main thread.
-func (a *mailsNavigationPane) applyDownloaded(isLatest func() bool, r mailsDownloaded, notify bool) {
-	if !isLatest() {
-		return
-	}
-	a.ma.bodiesComplete.Store(r.complete)
-	changed := a.ma.missingPercent.Swap(int64(r.missingPercent)) != int64(r.missingPercent)
-	a.folderTotal.SetText(r.total)
-	if r.downloaded == "" {
-		a.folderDownloaded.Hide()
-	} else {
-		a.folderDownloaded.SetText(r.downloaded)
-		a.folderDownloaded.SetToolTip(r.hint)
-		a.folderDownloaded.Show()
-	}
-	if notify && changed {
-		a.ma.callOnUpdate()
-	}
 }
 
 // fetchFolders returns the folder tree of a character, or of all characters when characterID is 0.
@@ -905,6 +906,7 @@ type mailsMessagePane struct {
 	searchEntry   *xwidget.SearchEntry
 	sortButton    *kxwidget.SortChip
 	topLabel      *widget.Label
+	updateRun     latestRun
 }
 
 func newMailsMessagePane(ma *Mails) *mailsMessagePane {
@@ -1112,15 +1114,18 @@ func (a *mailsMessagePane) updateIsRead() {
 
 // update refreshes the headers for the current folder.
 func (a *mailsMessagePane) update(ctx context.Context) {
+	isLatest := a.updateRun.start()
 	folder := a.currentFolder.Load()
 	reset := func() {
-		fyne.Do(func() {
-			a.clear()
-			a.ma.ReadingPane.clear()
-		})
+		a.clear()
+		a.ma.ReadingPane.clear()
 	}
 	if folder == nil {
-		reset()
+		fyne.Do(func() {
+			if isLatest() {
+				reset()
+			}
+		})
 		return
 	}
 
@@ -1130,32 +1135,43 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
-		reset() // first, because it hides the error
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			reset() // first, because it hides the error
 			a.setError(err)
 		})
 		return
 	}
-
 	fyne.Do(func() {
-		if a.rowsFolderUID == folder.UID() {
-			snapshot := make(map[int64]bool, len(a.rows))
-			for _, r := range a.rows {
-				snapshot[r.id] = r.isRead
-			}
-			for i, r := range rows {
-				if v, ok := snapshot[r.id]; ok {
-					rows[i].isRead = v
-				}
+		a.applyRows(isLatest, folder, rows)
+	})
+}
+
+// applyRows shows the headers of a folder unless a newer update was started.
+// Must be called on the main thread.
+func (a *mailsMessagePane) applyRows(isLatest func() bool, folder *mailFolderNode, rows []mailRow) {
+	if !isLatest() {
+		return
+	}
+	if a.rowsFolderUID == folder.UID() {
+		snapshot := make(map[int64]bool, len(a.rows))
+		for _, r := range a.rows {
+			snapshot[r.id] = r.isRead
+		}
+		for i, r := range rows {
+			if v, ok := snapshot[r.id]; ok {
+				rows[i].isRead = v
 			}
 		}
-		a.errorLabel.Hide()
-		a.setControlsEnabled(true)
-		a.topLabel.SetText(folder.Name)
-		a.rows = rows
-		a.rowsFolderUID = folder.UID()
-		a.filterRowsAsync()
-	})
+	}
+	a.errorLabel.Hide()
+	a.setControlsEnabled(true)
+	a.topLabel.SetText(folder.Name)
+	a.rows = rows
+	a.rowsFolderUID = folder.UID()
+	a.filterRowsAsync()
 }
 
 func (a *mailsMessagePane) filterRowsAsync() {

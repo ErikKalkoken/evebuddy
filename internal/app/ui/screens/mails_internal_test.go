@@ -1075,3 +1075,69 @@ func TestUnifiedMails_Status(t *testing.T) {
 		assert.False(t, a.MessagePane.loadingLabel.Visible())
 	})
 }
+
+func TestMailsMessagePane_UpdateRun(t *testing.T) {
+	t.Run("discards outdated rows", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: 1, Name: "Inbox", Type: folderNodeInbox}
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1}, {id: 2, mailID: 2}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Len(t, mp.rows, 2)
+		assert.Len(t, mp.rowsFiltered, 2)
+	})
+	t.Run("does not revert read state with outdated rows", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: 1, Name: "Inbox", Type: folderNodeInbox}
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1, isRead: true, isRead2: true}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		require.Len(t, mp.rowsFiltered, 1)
+		assert.True(t, mp.rowsFiltered[0].isRead2)
+	})
+	t.Run("keeps newer folder on fast folder switch", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: 1, Name: "Inbox", Type: folderNodeInbox}
+		sent := &mailFolderNode{CharacterID: 1, Name: "Sent", Type: folderNodeSent}
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, sent, []mailRow{{id: 2, mailID: 2}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Equal(t, "Sent", mp.topLabel.Text)
+		assert.Equal(t, sent.UID(), mp.rowsFolderUID)
+	})
+	t.Run("clearing discards a pending update", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull() // mail data not loaded yet
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		pending := mp.updateRun.start()
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		mp.applyRows(pending, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Empty(t, mp.rows)
+		assert.Equal(t, "?", mp.topLabel.Text)
+		assert.Equal(t, "Waiting for mail data to be loaded...", mp.footerLabel.Text)
+		assert.True(t, mp.searchEntry.Disabled())
+	})
+}
