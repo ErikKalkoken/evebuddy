@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -479,6 +480,11 @@ func TestUnifiedMails(t *testing.T) {
 	}
 	createCharacter := func(factory testutil.Factory) *app.Character {
 		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
 		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
 			LabelID:     app.MailLabelInbox,
@@ -613,7 +619,8 @@ func TestUnifiedMails(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		a := NewUnifiedMails(u)
 		u.Signals().AppInit.Emit(t.Context(), struct{}{})
-		assert.Equal(t, "No characters", a.NavigationPane.folderStatus.Text)
+		assert.Equal(t, "No characters", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.Nil(t, a.MessagePane.currentFolder.Load())
 	})
 }
@@ -643,6 +650,13 @@ func TestUnifiedMails_ComposeMenu(t *testing.T) {
 	defer db.Close()
 	c1 := factory.CreateCharacterFull()
 	c2 := factory.CreateCharacterFull()
+	for _, c := range []*app.Character{c1, c2} {
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+	}
 	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 	a := NewUnifiedMails(u)
 	labels := func() []string {
@@ -720,6 +734,18 @@ func TestMails_DownloadProgress(t *testing.T) {
 		assert.Equal(t, "50%", e.a.NavigationPane.folderDownloaded.Text)
 		assert.Equal(t, []int{50}, e.missing)
 		assert.False(t, e.a.bodiesComplete.Load())
+	})
+	t.Run("rounds missing percentage up", func(t *testing.T) {
+		e := setup(t)
+		for range 100 {
+			e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		}
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+
+		assert.Equal(t, "99%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.Equal(t, []int{1}, e.missing)
 	})
 	t.Run("reports completion", func(t *testing.T) {
 		e, mailID := setupHalfDownloaded(t)
@@ -920,5 +946,312 @@ func TestMailsReadingPane_OnCleared(t *testing.T) {
 		p.showMail(mailRow{characterID: c.ID, mailID: m2.MailID})
 		assert.Zero(t, *cleared)
 		assert.Equal(t, m2.MailID, p.requested.mailID)
+	})
+}
+
+func TestMails_Status(t *testing.T) {
+	t.Run("shows status and disables controls except compose when data is not loaded", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+		assert.Equal(t, "?", a.MessagePane.topLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.True(t, a.MessagePane.filterChip.Disabled())
+		assert.True(t, a.MessagePane.sortButton.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("shows folder and enables controls once data is loaded", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+
+		assert.Equal(t, "Inbox", a.MessagePane.topLabel.Text)
+		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.MessagePane.footerLabel.Importance)
+		assert.False(t, a.MessagePane.searchEntry.Disabled())
+		assert.False(t, a.MessagePane.filterChip.Disabled())
+		assert.False(t, a.MessagePane.sortButton.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("disables controls when there is no character", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), nil)
+
+		assert.Equal(t, "No character", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+	t.Run("keeps search when disabling controls", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.MessagePane.setControlsEnabled(true)
+		a.MessagePane.searchEntry.SetText("alpha")
+
+		a.MessagePane.setControlsEnabled(false)
+
+		assert.Equal(t, "alpha", a.MessagePane.searchEntry.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+	t.Run("keeps status when mails change elsewhere", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+
+		a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+	t.Run("clears mails on error", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int64{app.MailLabelInbox}})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Len(t, a.MessagePane.rows, 1)
+		a.MessagePane.searchEntry.SetText("alpha")
+		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
+			t.Fatal(err)
+		}
+
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+
+		assert.Empty(t, a.MessagePane.rows)
+		assert.Empty(t, a.MessagePane.rowsFiltered)
+		assert.Nil(t, a.MessagePane.currentFolder.Load())
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.True(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("keeps error when mails change elsewhere", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
+			t.Fatal(err)
+		}
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.True(t, a.MessagePane.errorLabel.Visible())
+
+		a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+}
+
+func TestUnifiedMails_Status(t *testing.T) {
+	t.Run("shows status and disables controls except compose when no character has data", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		factory.CreateCharacterFull()
+		factory.CreateCharacterFull()
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+
+		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+		assert.False(t, a.MessagePane.loadingLabel.Visible())
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("enables controls and shows loaded characters when some have data", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c1 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterFull()
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+
+		assert.True(t, a.MessagePane.loadingLabel.Visible())
+		assert.Equal(t, "1/2 characters loaded", a.MessagePane.loadingLabel.Text)
+		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
+		assert.False(t, a.MessagePane.searchEntry.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("hides loaded characters once all have data", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c1 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		c2 := factory.CreateCharacterFull()
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		require.True(t, a.MessagePane.loadingLabel.Visible())
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c2.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c2.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+
+		assert.False(t, a.MessagePane.loadingLabel.Visible())
+	})
+}
+
+func TestMailsMessagePane_UpdateRun(t *testing.T) {
+	t.Run("discards outdated rows", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c)
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		mp.currentFolder.Store(inbox)
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1}, {id: 2, mailID: 2}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Len(t, mp.rows, 2)
+		assert.Len(t, mp.rowsFiltered, 2)
+	})
+	t.Run("does not revert read state with outdated rows", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c)
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		mp.currentFolder.Store(inbox)
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1, isRead: true, isRead2: true}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		require.Len(t, mp.rowsFiltered, 1)
+		assert.True(t, mp.rowsFiltered[0].isRead2)
+	})
+	t.Run("keeps newer folder on fast folder switch", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c)
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		sent := &mailFolderNode{CharacterID: c.ID, Name: "Sent", Type: folderNodeSent}
+		mp.currentFolder.Store(sent)
+		older := mp.updateRun.start()
+		newer := mp.updateRun.start()
+		mp.applyRows(newer, sent, []mailRow{{id: 2, mailID: 2}})
+
+		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Equal(t, "Sent", mp.topLabel.Text)
+		assert.Equal(t, sent.UID(), mp.rowsFolderUID)
+	})
+	t.Run("clearing discards a pending update", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull() // mail data not loaded yet
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		pending := mp.updateRun.start()
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		mp.applyRows(pending, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Empty(t, mp.rows)
+		assert.Equal(t, "?", mp.topLabel.Text)
+		assert.Equal(t, "Waiting for mail data to be loaded...", mp.footerLabel.Text)
+		assert.True(t, mp.searchEntry.Disabled())
+	})
+	t.Run("discards rows of another character", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c2)
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c1.ID, Name: "Inbox", Type: folderNodeInbox}
+		mp.currentFolder.Store(inbox) // stored late by an outdated update
+		latest := mp.updateRun.start()
+
+		mp.applyRows(latest, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Empty(t, mp.rows)
+		assert.Equal(t, "?", mp.topLabel.Text)
+	})
+	t.Run("discards rows of a folder that is no longer current", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c)
+		mp := a.MessagePane
+		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
+		sent := &mailFolderNode{CharacterID: c.ID, Name: "Sent", Type: folderNodeSent}
+		mp.currentFolder.Store(sent)
+		latest := mp.updateRun.start()
+
+		mp.applyRows(latest, inbox, []mailRow{{id: 1, mailID: 1}})
+
+		assert.Empty(t, mp.rows)
+		assert.Equal(t, "?", mp.topLabel.Text)
 	})
 }

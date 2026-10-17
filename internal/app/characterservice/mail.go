@@ -51,19 +51,6 @@ func (s *CharacterService) CountAllMailsUnread(ctx context.Context) (int, error)
 	return s.st.CountAllCharactersMailsUnread(ctx)
 }
 
-// CountAllMails returns the total and unread number of mails for all characters.
-func (s *CharacterService) CountAllMails(ctx context.Context) (int, int, error) {
-	total, err := s.st.CountAllCharactersMails(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	unread, err := s.st.CountAllCharactersMailsUnread(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	return total, unread, nil
-}
-
 func (s *CharacterService) CountAllMailsUnreadByLabel(ctx context.Context) (map[int64]int, error) {
 	return s.st.CountAllCharactersMailsUnreadByLabel(ctx)
 }
@@ -83,6 +70,10 @@ func (s *CharacterService) CountMails(ctx context.Context, characterID int64) (i
 		return 0, 0, err
 	}
 	return total, unread, nil
+}
+
+func (s *CharacterService) CountMailsUnread(ctx context.Context, characterID int64) (int, error) {
+	return s.st.CountCharacterMailsUnread(ctx, characterID)
 }
 
 func (s *CharacterService) CountMailsUnreadByLabel(ctx context.Context, characterID int64) (map[int64]int, error) {

@@ -327,7 +327,7 @@ func (s *CharacterService) updateCharacterSectionAndRefreshIfNeeded(ctx context.
 	wg.Wait()
 }
 
-// HasSection reports whether a section exists at all for a character.
+// HasSection reports whether a section has been completed at least once for a character.
 func (s *CharacterService) HasSection(ctx context.Context, characterID int64, section app.CharacterSection) (bool, error) {
 	x, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
 	if errors.Is(err, app.ErrNotFound) {
@@ -337,6 +337,11 @@ func (s *CharacterService) HasSection(ctx context.Context, characterID int64, se
 		return false, err
 	}
 	return !x.IsMissing(), nil
+}
+
+// CountCharactersWithSection returns the number of characters for which a section has been completed at least once.
+func (s *CharacterService) CountCharactersWithSection(ctx context.Context, section app.CharacterSection) (int, error) {
+	return s.st.CountCharactersWithSection(ctx, section)
 }
 
 type characterSectionUpdateParams struct {

@@ -72,6 +72,37 @@ func TestCharacterService_HasSection(t *testing.T) {
 	})
 }
 
+func TestCharacterService_CountCharactersWithSection(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	section := app.SectionCharacterImplants
+	ctx := context.Background()
+	t.Run("should count characters with complete section only", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c1 := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     section,
+		})
+		c2 := factory.CreateCharacter()
+		_, err := st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: c2.ID,
+			Section:     section,
+			CompletedAt: &sql.NullTime{},
+		})
+		require.NoError(t, err)
+		factory.CreateCharacter()
+		// when
+		got, err := s.CountCharactersWithSection(ctx, section)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got)
+	})
+}
+
 func TestCharacterService_Init(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

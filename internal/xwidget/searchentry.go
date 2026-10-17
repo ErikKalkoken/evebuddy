@@ -1,6 +1,7 @@
 package xwidget
 
 import (
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -12,6 +13,9 @@ type SearchEntry struct {
 	widget.Entry
 	clearButton *TappableIcon
 }
+
+// The disabled state lives in Entry, which also provides Disabled.
+var _ fyne.Disableable = (*SearchEntry)(nil)
 
 // NewSearchEntry returns a new SearchEntry widget.
 func NewSearchEntry(placeholder string, changed func(string)) *SearchEntry {
@@ -27,6 +31,18 @@ func NewSearchEntry(placeholder string, changed func(string)) *SearchEntry {
 	w.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), w.clearButton)
 	w.SetOnChanged(changed)
 	return w
+}
+
+// Disable disables the entry including its clear button.
+func (w *SearchEntry) Disable() {
+	w.Entry.Disable()
+	w.clearButton.Disable()
+}
+
+// Enable enables the entry including its clear button.
+func (w *SearchEntry) Enable() {
+	w.Entry.Enable()
+	w.clearButton.Enable()
 }
 
 // ClearSilent clears the entry without calling OnChanged.

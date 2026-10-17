@@ -36,6 +36,15 @@ func (st *Storage) ClearCharacterSectionStatusStartedAt(ctx context.Context) ([]
 	return oo, nil
 }
 
+// CountCharactersWithSection returns the number of characters for which a section has been completed at least once.
+func (st *Storage) CountCharactersWithSection(ctx context.Context, section app.CharacterSection) (int, error) {
+	count, err := st.qRO.CountCharactersWithSection(ctx, section.String())
+	if err != nil {
+		return 0, fmt.Errorf("count characters with section %s: %w", section, err)
+	}
+	return int(count), nil
+}
+
 func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int64, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
 		CharacterID: characterID,

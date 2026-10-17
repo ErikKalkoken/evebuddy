@@ -368,6 +368,25 @@ func TestCountMails(t *testing.T) {
 	})
 }
 
+func TestCountMailsUnread(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("can return unread mail count for a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(false)})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, IsRead: optional.New(true)})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{IsRead: optional.New(false)}) // other character
+		// when
+		got, err := s.CountMailsUnread(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got)
+	})
+}
+
 func TestCountMailsUnreadByLabel(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
