@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -613,7 +614,8 @@ func TestUnifiedMails(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		a := NewUnifiedMails(u)
 		u.Signals().AppInit.Emit(t.Context(), struct{}{})
-		assert.Equal(t, "No characters", a.NavigationPane.folderStatus.Text)
+		assert.Equal(t, "No characters", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.Nil(t, a.MessagePane.currentFolder.Load())
 	})
 }
@@ -920,5 +922,69 @@ func TestMailsReadingPane_OnCleared(t *testing.T) {
 		p.showMail(mailRow{characterID: c.ID, mailID: m2.MailID})
 		assert.Zero(t, *cleared)
 		assert.Equal(t, m2.MailID, p.requested.mailID)
+	})
+}
+
+func TestMails_Status(t *testing.T) {
+	t.Run("shows status and disables controls when data is not loaded", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+		assert.Equal(t, "?", a.MessagePane.topLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.True(t, a.MessagePane.filterChip.Disabled())
+		assert.True(t, a.MessagePane.sortButton.Disabled())
+		assert.True(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("shows folder and enables controls once data is loaded", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+
+		assert.Equal(t, "Inbox", a.MessagePane.topLabel.Text)
+		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.MessagePane.footerLabel.Importance)
+		assert.False(t, a.MessagePane.searchEntry.Disabled())
+		assert.False(t, a.MessagePane.filterChip.Disabled())
+		assert.False(t, a.MessagePane.sortButton.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("disables controls when there is no character", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), nil)
+
+		assert.Equal(t, "No character", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+	t.Run("clears search when disabling controls", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.MessagePane.setControlsEnabled(true)
+		a.MessagePane.searchEntry.SetText("alpha")
+
+		a.MessagePane.setControlsEnabled(false)
+
+		assert.Empty(t, a.MessagePane.searchEntry.Text)
 	})
 }
