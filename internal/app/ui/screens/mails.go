@@ -234,6 +234,7 @@ func (a *Mails) update(ctx context.Context) {
 		})
 	}
 	setError := func(err error) {
+		clearAll() // so no outdated mails are shown with the error
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -1153,12 +1154,7 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 		a.ma.ReadingPane.clear()
 	}
 	if folder == nil {
-		fyne.Do(func() {
-			if isLatest() {
-				reset()
-			}
-		})
-		return
+		return // cleared by Mails.update, which also shows the status
 	}
 
 	rows, err := a.fetchRows(ctx, folder)

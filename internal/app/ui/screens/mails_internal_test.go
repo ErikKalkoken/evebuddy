@@ -1011,6 +1011,76 @@ func TestMails_Status(t *testing.T) {
 
 		assert.Empty(t, a.MessagePane.searchEntry.Text)
 	})
+	t.Run("keeps status when mails change elsewhere", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+
+		a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
+	t.Run("clears mails on error", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     app.MailLabelInbox,
+			Name:        optional.New("Inbox"),
+		})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int64{app.MailLabelInbox}})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.Len(t, a.MessagePane.rows, 1)
+		a.MessagePane.searchEntry.SetText("alpha")
+		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
+			t.Fatal(err)
+		}
+
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+
+		assert.Empty(t, a.MessagePane.rows)
+		assert.Empty(t, a.MessagePane.rowsFiltered)
+		assert.Nil(t, a.MessagePane.currentFolder.Load())
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.True(t, a.NavigationPane.compose.Disabled())
+	})
+	t.Run("keeps error when mails change elsewhere", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
+			t.Fatal(err)
+		}
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		require.True(t, a.MessagePane.errorLabel.Visible())
+
+		a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
+
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
+	})
 }
 
 func TestUnifiedMails_Status(t *testing.T) {
