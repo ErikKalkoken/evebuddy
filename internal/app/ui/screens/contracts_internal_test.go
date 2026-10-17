@@ -359,6 +359,37 @@ func TestNewContractRow_Owner(t *testing.T) {
 	})
 }
 
+func TestNewContractRow_Assignee(t *testing.T) {
+	t.Run("public contract without assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Availability: app.ContractAvailabilityPublic,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "[Public]", r.assigneeName)
+	})
+	t.Run("private contract with assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Assignee:     optional.New(&app.EveEntity{ID: myID, Name: "Bruce"}),
+			Availability: app.ContractAvailabilityPrivate,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "Bruce", r.assigneeName)
+	})
+	t.Run("non-public contract without assignee", func(t *testing.T) {
+		o := &app.Contract{
+			Availability: app.ContractAvailabilityCorporation,
+			Issuer:       &app.EveEntity{ID: otherID},
+			Status:       app.ContractStatusOutstanding,
+		}
+		r := newContractRow(o, myID, "Bruce", false, myIDs, myCorpIDs)
+		assert.Equal(t, "", r.assigneeName)
+	})
+}
+
 func TestNewContractRow_RequiresAttention(t *testing.T) {
 	now := time.Now()
 	corporation := &app.Corporation{ID: myCorpID}

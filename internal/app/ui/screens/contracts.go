@@ -126,6 +126,9 @@ func newContractRow(o *app.Contract, ownerID int64, ownerName string, isCorporat
 	assigneeName := o.Assignee.StringFunc("", func(v *app.EveEntity) string {
 		return v.Name
 	})
+	if assigneeName == "" && o.Availability == app.ContractAvailabilityPublic {
+		assigneeName = "[Public]" // brackets so it can't be mistaken for a character name
+	}
 	r := contractRow{
 		acceptor:       o.Acceptor,
 		assignee:       o.Assignee,
