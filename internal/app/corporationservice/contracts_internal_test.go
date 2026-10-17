@@ -5,9 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
-	"regexp"
 	"slices"
 	"testing"
 	"time"
@@ -196,151 +194,147 @@ func TestUpdateContractsESI(t *testing.T) {
 	s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
 		AccessToken: "accessToken",
 	}}})
-	type fixture struct {
-		ownerID, issuerID, issuerCorporationID int64
-	}
-	setup := func(t *testing.T) fixture {
+
+	t.Run("should store all fields of a new contract", func(t *testing.T) {
+		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCorporation()
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
-		fx := fixture{ownerID: c.ID, issuerID: c.ID, issuerCorporationID: c.ID}
-		empty := httpmock.NewJsonResponderOrPanic(200, []map[string]any{})
-		base := fmt.Sprintf(`^https://esi\.evetech\.net/corporations/%d/contracts/\d+/`, fx.ownerID)
-		httpmock.RegisterRegexpResponder("GET", regexp.MustCompile(base+"items"), empty)
-		httpmock.RegisterRegexpResponder("GET", regexp.MustCompile(base+"bids"), empty)
-		return fx
-	}
-	// esiContract returns an ESI contract with defaults for all required fields.
-	esiContract := func(fx fixture, contractID int64, fields map[string]any) map[string]any {
-		m := map[string]any{
-			"acceptor_id":           0,
-			"assignee_id":           0,
-			"availability":          "public",
-			"contract_id":           contractID,
-			"date_expired":          "2017-06-13T13:12:32Z",
-			"date_issued":           "2017-06-05T13:12:32Z",
-			"for_corporation":       false,
-			"issuer_corporation_id": fx.issuerCorporationID,
-			"issuer_id":             fx.issuerID,
-			"status":                "outstanding",
-			"type":                  "item_exchange",
-		}
-		maps.Copy(m, fields)
-		return m
-	}
-	registerContracts := func(fx fixture, contracts ...map[string]any) {
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", fx.ownerID),
-			httpmock.NewJsonResponderOrPanic(200, contracts),
-		)
-	}
-	registerDetails := func(fx fixture, contractID int64, kind string, data []map[string]any) {
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/%s", fx.ownerID, contractID, kind),
-			httpmock.NewJsonResponderOrPanic(200, data),
-		)
-	}
-	update := func(ownerID int64) error {
-		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
-			corporationID: ownerID,
-			forceUpdate:   true,
-			section:       app.SectionCorporationContracts,
-		})
-		return err
-	}
-
-	t.Run("should store all fields of a new contract", func(t *testing.T) {
-		// given
-		const contractID = 42
-		fx := setup(t)
 		acceptor := factory.CreateEveEntityCharacter()
 		assignee := factory.CreateEveEntityCorporation()
 		startLocation := factory.CreateEveLocationStructure()
 		endLocation := factory.CreateEveLocationStructure()
 		et := factory.CreateEveType()
-		registerContracts(fx, esiContract(fx, contractID, map[string]any{
-			"acceptor_id":       acceptor.ID,
-			"assignee_id":       assignee.ID,
-			"availability":      "personal",
-			"buyout":            1.5,
-			"collateral":        2.5,
-			"date_accepted":     "2017-06-06T13:12:32Z",
-			"date_completed":    "2017-06-07T13:12:32Z",
-			"days_to_complete":  3,
-			"end_location_id":   endLocation.ID,
-			"for_corporation":   true,
-			"price":             4.5,
-			"reward":            5.5,
-			"start_location_id": startLocation.ID,
-			"status":            "in_progress",
-			"title":             "My title",
-			"volume":            6.5,
-		}))
-		registerDetails(fx, contractID, "items", []map[string]any{
-			{"is_included": false, "is_singleton": true, "quantity": 1, "raw_quantity": -1, "record_id": 7, "type_id": et.ID},
-			{"is_included": true, "is_singleton": false, "quantity": 3, "record_id": 8, "type_id": et.ID},
-		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           acceptor.ID,
+				"assignee_id":           assignee.ID,
+				"availability":          "personal",
+				"buyout":                1.5,
+				"collateral":            2.5,
+				"contract_id":           42,
+				"date_accepted":         "2017-06-06T13:12:32Z",
+				"date_completed":        "2017-06-07T13:12:32Z",
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"days_to_complete":      3,
+				"end_location_id":       endLocation.ID,
+				"for_corporation":       true,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"price":                 4.5,
+				"reward":                5.5,
+				"start_location_id":     startLocation.ID,
+				"status":                "in_progress",
+				"title":                 "My title",
+				"type":                  "item_exchange",
+				"volume":                6.5,
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/items", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"is_included": false, "is_singleton": true, "quantity": 1, "raw_quantity": -1, "record_id": 7, "type_id": et.ID},
+				{"is_included": true, "is_singleton": false, "quantity": 3, "record_id": 8, "type_id": et.ID},
+			}),
+		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		xassert.EqualOptional(t, acceptor, c.Acceptor)
-		xassert.EqualOptional(t, assignee, c.Assignee)
-		xassert.Equal(t, app.ContractAvailabilityPrivate, c.Availability)
-		xassert.EqualOptional(t, 1.5, c.Buyout)
-		xassert.EqualOptional(t, 2.5, c.Collateral)
-		xassert.EqualOptional(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), c.DateAccepted)
-		xassert.EqualOptional(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), c.DateCompleted)
-		xassert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), c.DateExpired)
-		xassert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), c.DateIssued)
-		xassert.EqualOptional(t, 3, c.DaysToComplete)
-		xassert.Equal(t, endLocation.ID, c.EndLocation.MustValue().ID)
-		xassert.Equal(t, true, c.ForCorporation)
-		xassert.Equal(t, fx.issuerID, c.Issuer.ID)
-		xassert.Equal(t, fx.issuerCorporationID, c.IssuerCorporation.ID)
-		xassert.EqualOptional(t, 4.5, c.Price)
-		xassert.EqualOptional(t, 5.5, c.Reward)
-		xassert.Equal(t, startLocation.ID, c.StartLocation.MustValue().ID)
-		xassert.Equal(t, app.ContractStatusInProgress, c.Status)
-		xassert.EqualOptional(t, "My title", c.Title)
-		xassert.Equal(t, app.ContractTypeItemExchange, c.Type)
-		xassert.EqualOptional(t, 6.5, c.Volume)
-		items, err := st.ListCorporationContractItems(ctx, c.ID)
+		xassert.EqualOptional(t, acceptor, o.Acceptor)
+		xassert.EqualOptional(t, assignee, o.Assignee)
+		xassert.Equal(t, app.ContractAvailabilityPrivate, o.Availability)
+		xassert.EqualOptional(t, 1.5, o.Buyout)
+		xassert.EqualOptional(t, 2.5, o.Collateral)
+		xassert.EqualOptional(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o.DateAccepted)
+		xassert.EqualOptional(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o.DateCompleted)
+		xassert.Equal(t, time.Date(2017, 6, 13, 13, 12, 32, 0, time.UTC), o.DateExpired)
+		xassert.Equal(t, time.Date(2017, 6, 5, 13, 12, 32, 0, time.UTC), o.DateIssued)
+		xassert.EqualOptional(t, 3, o.DaysToComplete)
+		xassert.Equal(t, endLocation.ID, o.EndLocation.MustValue().ID)
+		xassert.Equal(t, true, o.ForCorporation)
+		xassert.Equal(t, c.ID, o.Issuer.ID)
+		xassert.Equal(t, c.ID, o.IssuerCorporation.ID)
+		xassert.EqualOptional(t, 4.5, o.Price)
+		xassert.EqualOptional(t, 5.5, o.Reward)
+		xassert.Equal(t, startLocation.ID, o.StartLocation.MustValue().ID)
+		xassert.Equal(t, app.ContractStatusInProgress, o.Status)
+		xassert.EqualOptional(t, "My title", o.Title)
+		xassert.Equal(t, app.ContractTypeItemExchange, o.Type)
+		xassert.EqualOptional(t, 6.5, o.Volume)
+		items, err := st.ListCorporationContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		slices.SortFunc(items, func(a, b *app.ContractItem) int {
 			return cmp.Compare(a.RecordID, b.RecordID)
 		})
 		want := []*app.ContractItem{
-			{ContractID: c.ID, IsIncluded: false, IsSingleton: true, Quantity: 1, RawQuantity: optional.New[int64](-1), RecordID: 7, Type: et},
-			{ContractID: c.ID, IsIncluded: true, IsSingleton: false, Quantity: 3, RecordID: 8, Type: et},
+			{ContractID: o.ID, IsIncluded: false, IsSingleton: true, Quantity: 1, RawQuantity: optional.New[int64](-1), RecordID: 7, Type: et},
+			{ContractID: o.ID, IsIncluded: true, IsSingleton: false, Quantity: 3, RecordID: 8, Type: et},
 		}
 		xassert.Equal(t, want, items)
 	})
 
 	t.Run("should store bids of a new auction", func(t *testing.T) {
 		// given
-		const contractID = 42
-		fx := setup(t)
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		bidder := factory.CreateEveEntityCharacter()
-		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
-		registerDetails(fx, contractID, "bids", []map[string]any{
-			{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
-		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           42,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "auction",
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/items", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/bids", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
+			}),
+		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		bids, err := st.ListCorporationContractBids(ctx, c.ID)
+		bids, err := st.ListCorporationContractBids(ctx, o.ID)
 		require.NoError(t, err)
 		want := []*app.ContractBid{{
-			ContractID: c.ID,
+			ContractID: o.ID,
 			Amount:     123.5,
 			BidID:      7,
 			Bidder:     bidder,
@@ -351,20 +345,48 @@ func TestUpdateContractsESI(t *testing.T) {
 
 	t.Run("should add only new bids to an existing auction", func(t *testing.T) {
 		// given
-		fx := setup(t)
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		local := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: fx.ownerID,
+			CorporationID: c.ID,
+			Status:        app.ContractStatusOutstanding,
 			Type:          app.ContractTypeAuction,
 		})
 		factory.CreateCorporationContractBid(storage.CreateContractBidParams{ContractID: local.ID, BidID: 1, Amount: 100})
 		bidder := factory.CreateEveEntityCharacter()
-		registerContracts(fx, esiContract(fx, local.ContractID, map[string]any{"type": "auction"}))
-		registerDetails(fx, local.ContractID, "bids", []map[string]any{
-			{"amount": 100, "bid_id": 1, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
-			{"amount": 200, "bid_id": 2, "bidder_id": bidder.ID, "date_bid": "2017-01-02T10:10:10Z"},
-		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           local.ContractID,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "auction",
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/bids", c.ID, local.ContractID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"amount": 100, "bid_id": 1, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
+				{"amount": 200, "bid_id": 2, "bidder_id": bidder.ID, "date_bid": "2017-01-02T10:10:10Z"},
+			}),
+		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
 		ids, err := st.ListCorporationContractBidIDs(ctx, local.ID)
@@ -374,148 +396,265 @@ func TestUpdateContractsESI(t *testing.T) {
 
 	t.Run("should store new bids when the contract list is unchanged", func(t *testing.T) {
 		// given
-		const contractID = 42
-		fx := setup(t)
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		bidder := factory.CreateEveEntityCharacter()
-		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           42,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "auction",
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/items", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		bidsURL := fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/bids", c.ID)
 		bid1 := map[string]any{"amount": 100, "bid_id": 1, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"}
 		bid2 := map[string]any{"amount": 200, "bid_id": 2, "bidder_id": bidder.ID, "date_bid": "2017-01-02T10:10:10Z"}
-		registerDetails(fx, contractID, "bids", []map[string]any{bid1})
-		updateUnforced := func() bool {
-			changed, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
-				corporationID: fx.ownerID,
-				section:       app.SectionCorporationContracts,
-			})
-			require.NoError(t, err)
-			return changed
+		httpmock.RegisterResponder("GET", bidsURL, httpmock.NewJsonResponderOrPanic(200, []map[string]any{bid1}))
+		arg := corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationContracts,
 		}
-		xassert.Equal(t, true, updateUnforced())
-		// when
-		registerDetails(fx, contractID, "bids", []map[string]any{bid1, bid2})
-		changed := updateUnforced()
-		// then
-		xassert.Equal(t, true, changed)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		changed, err := s.updateContractsESI(ctx, arg)
 		require.NoError(t, err)
-		ids, err := st.ListCorporationContractBidIDs(ctx, c.ID)
+		xassert.Equal(t, true, changed)
+		// when
+		httpmock.RegisterResponder("GET", bidsURL, httpmock.NewJsonResponderOrPanic(200, []map[string]any{bid1, bid2}))
+		changed, err = s.updateContractsESI(ctx, arg)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, true, changed)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
+		require.NoError(t, err)
+		ids, err := st.ListCorporationContractBidIDs(ctx, o.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](1, 2), ids)
 		// when nothing is new
-		changed = updateUnforced()
+		changed, err = s.updateContractsESI(ctx, arg)
 		// then
+		require.NoError(t, err)
 		xassert.Equal(t, false, changed)
 	})
 
 	t.Run("should store a new contract only after its items could be fetched", func(t *testing.T) {
 		// given
-		const contractID = 42
-		fx := setup(t)
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		et := factory.CreateEveType()
 		bidder := factory.CreateEveEntityCharacter()
-		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
-		itemsURL := fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/items", fx.ownerID, contractID)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           42,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "auction",
+			}}),
+		)
+		itemsURL := fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/items", c.ID)
 		httpmock.RegisterResponder("GET", itemsURL, httpmock.NewErrorResponder(errors.New("items failed")))
-		registerDetails(fx, contractID, "bids", []map[string]any{
-			{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
-		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/bids", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"amount": 123.5, "bid_id": 7, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"},
+			}),
+		)
+		arg := corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		}
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, arg)
 		// then
 		require.NoError(t, err)
-		_, err = st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		_, err = st.GetCorporationContract(ctx, c.ID, 42)
 		require.ErrorIs(t, err, app.ErrNotFound)
 		// when ESI works again
-		registerDetails(fx, contractID, "items", []map[string]any{
+		httpmock.RegisterResponder("GET", itemsURL, httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 			{"is_included": true, "is_singleton": false, "quantity": 1, "record_id": 7, "type_id": et.ID},
-		})
-		err = update(fx.ownerID)
+		}))
+		_, err = s.updateContractsESI(ctx, arg)
 		// then
 		require.NoError(t, err)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		items, err := st.ListCorporationContractItems(ctx, c.ID)
+		items, err := st.ListCorporationContractItems(ctx, o.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, len(items))
-		ids, err := st.ListCorporationContractBidIDs(ctx, c.ID)
+		ids, err := st.ListCorporationContractBidIDs(ctx, o.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](7), ids)
 	})
 
 	t.Run("should store a new courier without fetching items", func(t *testing.T) {
 		// given
-		const contractID = 42
-		fx := setup(t)
-		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "courier"}))
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           42,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "courier",
+			}}),
+		)
 		var itemRequests int
 		httpmock.RegisterResponder(
 			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/%d/items", fx.ownerID, contractID),
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts/42/items", c.ID),
 			func(*http.Request) (*http.Response, error) {
 				itemRequests++
 				return nil, errors.New("items failed")
 			},
 		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, contractID)
+		o, err := st.GetCorporationContract(ctx, c.ID, 42)
 		require.NoError(t, err)
-		xassert.Equal(t, app.ContractTypeCourier, c.Type)
+		xassert.Equal(t, app.ContractTypeCourier, o.Type)
 		xassert.Equal(t, 0, itemRequests)
 	})
 
 	t.Run("should update existing contract", func(t *testing.T) {
 		// given
-		fx := setup(t)
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		local := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: fx.ownerID,
+			CorporationID: c.ID,
 			Status:        app.ContractStatusOutstanding,
 			Type:          app.ContractTypeCourier,
 		})
 		acceptor := factory.CreateEveEntityCharacter()
-		registerContracts(fx, esiContract(fx, local.ContractID, map[string]any{
-			"acceptor_id":    acceptor.ID,
-			"date_accepted":  "2017-06-06T13:12:32Z",
-			"date_completed": "2017-06-07T13:12:32Z",
-			"status":         "finished",
-			"type":           "courier",
-		}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           acceptor.ID,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           local.ContractID,
+				"date_accepted":         "2017-06-06T13:12:32Z",
+				"date_completed":        "2017-06-07T13:12:32Z",
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "finished",
+				"type":                  "courier",
+			}}),
+		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
-		c, err := st.GetCorporationContract(ctx, fx.ownerID, local.ContractID)
+		o, err := st.GetCorporationContract(ctx, c.ID, local.ContractID)
 		require.NoError(t, err)
-		xassert.EqualOptional(t, acceptor, c.Acceptor)
-		xassert.EqualOptional(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), c.DateAccepted)
-		xassert.EqualOptional(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), c.DateCompleted)
-		xassert.Equal(t, app.ContractStatusFinished, c.Status)
+		xassert.EqualOptional(t, acceptor, o.Acceptor)
+		xassert.EqualOptional(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o.DateAccepted)
+		xassert.EqualOptional(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o.DateCompleted)
+		xassert.Equal(t, app.ContractStatusFinished, o.Status)
 	})
 
 	t.Run("should delete stale and deleted contracts but keep finished ones", func(t *testing.T) {
 		// given
-		fx := setup(t)
-		create := func(status app.ContractStatus) int64 {
-			return factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-				CorporationID: fx.ownerID,
-				Status:        status,
-				Type:          app.ContractTypeCourier,
-			}).ContractID
-		}
-		deleted := create(app.ContractStatusOutstanding)
-		create(app.ContractStatusInProgress) // missing in ESI
-		finished := create(app.ContractStatusFinished)
-		registerContracts(fx, esiContract(fx, deleted, map[string]any{
-			"status": "deleted",
-			"type":   "courier",
-		}))
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		deleted := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Status:        app.ContractStatusOutstanding,
+			Type:          app.ContractTypeCourier,
+		})
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{ // missing in ESI
+			CorporationID: c.ID,
+			Status:        app.ContractStatusInProgress,
+			Type:          app.ContractTypeCourier,
+		})
+		finished := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			Status:        app.ContractStatusFinished,
+			Type:          app.ContractTypeCourier,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           deleted.ContractID,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.ID,
+				"issuer_id":             c.ID,
+				"status":                "deleted",
+				"type":                  "courier",
+			}}),
+		)
 		// when
-		err := update(fx.ownerID)
+		_, err := s.updateContractsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			forceUpdate:   true,
+			section:       app.SectionCorporationContracts,
+		})
 		// then
 		require.NoError(t, err)
-		ids, err := st.ListCorporationContractIDs(ctx, fx.ownerID)
+		ids, err := st.ListCorporationContractIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, set.Of(finished), ids)
+		xassert.Equal(t, set.Of(finished.ContractID), ids)
 	})
 }
