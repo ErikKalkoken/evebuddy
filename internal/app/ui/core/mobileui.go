@@ -322,7 +322,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	u.corporationContracts.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%d contracts need attention", count)
+			badge = ihumanize.Plural(count, "contract needs", "contracts need") + " attention"
 		}
 		corpContractsNav.Supporting = badge
 		corpContractsNav.Refresh()
@@ -330,7 +330,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	u.corporationIndyJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+			badge = ihumanize.Plural(count, "job", "jobs") + " ready"
 		}
 		corpIndustryNav.Supporting = badge
 		corpIndustryNav.Refresh()
@@ -338,7 +338,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	u.corporationStructures.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%s structures reinforced", ihumanize.Comma(count))
+			badge = ihumanize.Plural(count, "structure", "structures") + " reinforced"
 		}
 		corpStructuresNav.Supporting = badge
 		corpStructuresNav.Refresh()
@@ -638,7 +638,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			return
 		}
 		fyne.Do(func() {
-			navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", ids.Size())
+			navItemManageCharacters.Supporting = ihumanize.Plural(ids.Size(), "character", "characters")
 			navItemManageCharacters.Refresh()
 		})
 	}
@@ -795,7 +795,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	u.industryJobs.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%s jobs ready", ihumanize.Comma(count))
+			badge = ihumanize.Plural(count, "job", "jobs") + " ready"
 		}
 		navItemIndustry.Supporting = badge
 		navItemIndustry.Refresh()
@@ -819,7 +819,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	u.contractList.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%d contracts need attention", count)
+			badge = ihumanize.Plural(count, "contract needs", "contracts need") + " attention"
 		}
 		navItemContracts.Supporting = badge
 		navItemContracts.Refresh()
@@ -859,7 +859,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.characterOverview.OnUpdate = func(characters int) {
-		navItemCharacters.Supporting = fmt.Sprintf("%d characters", characters)
+		navItemCharacters.Supporting = ihumanize.Plural(characters, "character", "characters")
 		navItemCharacters.Refresh()
 	}
 
@@ -871,7 +871,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.corporationOverview.OnUpdate = func(corporations int) {
-		navItemCorporations.Supporting = fmt.Sprintf("%d corporations", corporations)
+		navItemCorporations.Supporting = ihumanize.Plural(corporations, "corporation", "corporations")
 		navItemCorporations.Refresh()
 	}
 
@@ -969,7 +969,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	u.unifiedStructures.OnUpdate = func(count int) {
 		var badge string
 		if count > 0 {
-			badge = fmt.Sprintf("%s structures reinforced", ihumanize.Comma(count))
+			badge = ihumanize.Plural(count, "structure", "structures") + " reinforced"
 		}
 		navItemUnifiedStructures.Supporting = badge
 		navItemUnifiedStructures.Refresh()
