@@ -77,6 +77,25 @@ func TestGameSearch_Init(t *testing.T) {
 		assert.Equal(t, "Search New Eden", a.searchEntry.PlaceHolder)
 		assert.True(t, a.clearRecent.Visible())
 	})
+	t.Run("does not save picks after loading fails", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		e := factory.CreateEveEntity()
+		picked := factory.CreateEveEntity()
+		u.Settings().SetRecentSearches([]int64{e.ID})
+		a := NewGameSearch(u)
+		if _, err := db.Exec("DROP TABLE eve_entities"); err != nil { // let loading fail
+			t.Fatal(err)
+		}
+		a.init(t.Context())
+
+		a.recentItems = append([]*app.EveEntity{picked}, a.recentItems...) // as when picking a result
+		a.storeRecentItems()
+
+		assert.Equal(t, []int64{picked.ID}, ids(a.recentItems))
+		assert.Equal(t, []int64{e.ID}, u.Settings().RecentSearches())
+	})
 	t.Run("prunes unknown IDs", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })

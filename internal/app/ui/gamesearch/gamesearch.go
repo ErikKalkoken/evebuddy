@@ -77,6 +77,7 @@ type GameSearch struct {
 	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
 	recentItems         []*app.EveEntity
+	recentLoadFailed    bool
 	recentPage          *fyne.Container
 	resultCount         *widget.Label
 	results             *xwidget.Tree[searchResultNode]
@@ -206,6 +207,7 @@ func (a *GameSearch) init(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.recentItems = ee
+		a.recentLoadFailed = err != nil
 		if err == nil && len(ee) < len(ids) {
 			a.storeRecentItems() // prune unknown IDs
 		}
@@ -250,6 +252,9 @@ func (a *GameSearch) ToogleOptions(enabled bool) {
 }
 
 func (a *GameSearch) storeRecentItems() {
+	if a.recentLoadFailed {
+		return // keep the saved list, as it could not be loaded
+	}
 	ids := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
 		return x.ID
 	})
