@@ -206,28 +206,32 @@ func staleIDs(current []*app.Contract, contracts []ESIContract) set.Set[int64] {
 	return set.Difference(unfinishedIDs, incomingIDs)
 }
 
-// Sync creates, updates and adds bids for contracts from ESI
-// and returns the IDs of stored contracts which have become stale.
+// Sync creates, updates and adds bids for contracts from ESI.
+// It returns the IDs of stored contracts which have become stale
+// and reports whether anything has changed.
 // contracts must already be filtered and their related entities added.
 // Failures for single contracts are logged and skipped, unless ctx is canceled.
 //
-// The callbacks do the owner specific work. create must return the stored ID
-// also when only storing related data failed, so bids can still be added.
+// The callbacks do the owner specific work and report whether they stored anything.
+// create must return the stored ID also when only storing related data failed,
+// so bids can still be added.
+// Bids are only fetched for auctions which can still have new bids.
 func Sync(
 	ctx context.Context,
 	contracts []ESIContract,
 	current []*app.Contract,
 	create func(ctx context.Context, c ESIContract) (int64, error),
-	update func(ctx context.Context, stored *app.Contract, c ESIContract) error,
-	updateBids func(ctx context.Context, contractPK, contractID int64) error,
+	update func(ctx context.Context, stored *app.Contract, c ESIContract) (bool, error),
+	updateBids func(ctx context.Context, contractPK, contractID int64) (bool, error),
 	logAttr slog.Attr,
-) (set.Set[int64], error) {
+) (set.Set[int64], bool, error) {
 	newContracts, existing := split(contracts, current)
 	slog.Debug("contracts", logAttr, "current", len(current), "entries", contracts)
 	contractPKs := make(map[int64]int64) // contract ID -> stored ID
 	for _, o := range current {
 		contractPKs[o.ContractID] = o.ID
 	}
+	var changedIDs set.Set[int64] // contracts created or updated in this run
 	// create new entries
 	if len(newContracts) > 0 {
 		var count int
@@ -235,10 +239,11 @@ func Sync(
 			id, err := create(ctx, c)
 			if id != 0 {
 				contractPKs[c.ContractId] = id
+				changedIDs.Add(c.ContractId)
 			}
 			if err != nil {
 				if ctx.Err() != nil {
-					return set.Set[int64]{}, err
+					return set.Set[int64]{}, false, err
 				}
 				slog.Error("create contract", "contract", c, "error", err)
 				continue
@@ -251,20 +256,28 @@ func Sync(
 	if len(existing) > 0 {
 		var count int
 		for _, x := range existing {
-			if err := update(ctx, x.Stored, x.ESI); err != nil {
+			changed, err := update(ctx, x.Stored, x.ESI)
+			if err != nil {
 				if ctx.Err() != nil {
-					return set.Set[int64]{}, err
+					return set.Set[int64]{}, false, err
 				}
 				slog.Error("update contract", "contract", x.ESI, "error", err)
 				continue
 			}
-			count++
+			if changed {
+				changedIDs.Add(x.ESI.ContractId)
+				count++
+			}
 		}
-		slog.Info("Updated contracts", logAttr, "count", count)
+		if count > 0 {
+			slog.Info("Updated contracts", logAttr, "count", count)
+		}
 	}
 	// add new bids for auctions
+	var hasNewBids bool
 	for _, c := range contracts {
-		if c.Type != "auction" {
+		// changed auctions can have bids from before they were finished
+		if c.Type != "auction" || (c.Status != "outstanding" && !changedIDs.Contains(c.ContractId)) {
 			continue
 		}
 		pk, ok := contractPKs[c.ContractId]
@@ -272,13 +285,18 @@ func Sync(
 			slog.Debug("Skipping bids for contract which could not be stored", logAttr, "contractID", c.ContractId)
 			continue
 		}
-		if err := updateBids(ctx, pk, c.ContractId); err != nil {
+		added, err := updateBids(ctx, pk, c.ContractId)
+		if err != nil {
 			if ctx.Err() != nil {
-				return set.Set[int64]{}, err
+				return set.Set[int64]{}, false, err
 			}
 			slog.Error("update contract bids", "contract", c, "error", err)
 			continue
 		}
+		if added {
+			hasNewBids = true
+		}
 	}
-	return staleIDs(current, contracts), nil
+	stale := staleIDs(current, contracts)
+	return stale, changedIDs.Size() > 0 || hasNewBids || stale.Size() > 0, nil
 }

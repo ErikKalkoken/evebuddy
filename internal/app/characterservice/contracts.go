@@ -224,7 +224,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	changed, err := s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true, // skipping change detection because it can not detect new bids
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContracts")
 			contracts, err := xgoesi.FetchPages(
@@ -258,17 +258,17 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			current := xslices.Map(oo, func(x *app.CharacterContract) *app.Contract {
 				return &x.Contract
 			})
-			staleIDs, err := contractsync.Sync(
+			staleIDs, changed, err := contractsync.Sync(
 				ctx,
 				contracts,
 				current,
 				func(ctx context.Context, c contractsync.ESIContract) (int64, error) {
 					return s.createNewContract(ctx, characterID, c)
 				},
-				func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) error {
+				func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) (bool, error) {
 					return s.updateContract(ctx, characterID, o, c)
 				},
-				func(ctx context.Context, contractPK, contractID int64) error {
+				func(ctx context.Context, contractPK, contractID int64) (bool, error) {
 					return s.updateContractBids(ctx, characterID, contractPK, contractID)
 				},
 				slog.Int64("characterID", characterID),
@@ -279,7 +279,7 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 			if err := s.st.DeleteCharacterContracts(ctx, characterID, staleIDs); err != nil {
 				return false, err
 			}
-			return true, nil
+			return changed, nil
 		},
 	)
 	if err != nil {
@@ -304,6 +304,8 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 	return changed, nil
 }
 
+// createNewContract stores a new contract with its items and returns its ID.
+// The ID is also returned when only storing the items failed.
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int64, c contractsync.ESIContract) (int64, error) {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs([]contractsync.ESIContract{c})
@@ -377,15 +379,16 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 	return id, nil
 }
 
-func (s *CharacterService) updateContract(ctx context.Context, characterID int64, o *app.Contract, c contractsync.ESIContract) error {
+// updateContract updates a stored contract from ESI and reports whether it has changed.
+func (s *CharacterService) updateContract(ctx context.Context, characterID int64, o *app.Contract, c contractsync.ESIContract) (bool, error) {
 	status, err := contractsync.ParseESIStatus(c.Status)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !contractsync.HasChanged(o, c, status) {
-		return nil
+		return false, nil
 	}
-	return s.st.UpdateCharacterContract(ctx, storage.UpdateCharacterContractParams{
+	err = s.st.UpdateCharacterContract(ctx, storage.UpdateCharacterContractParams{
 		AcceptorID:    c.AcceptorId,
 		DateAccepted:  optional.FromPtr(c.DateAccepted),
 		DateCompleted: optional.FromPtr(c.DateCompleted),
@@ -393,27 +396,32 @@ func (s *CharacterService) updateContract(ctx context.Context, characterID int64
 		ContractID:    c.ContractId,
 		Status:        status,
 	})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func (s *CharacterService) updateContractBids(ctx context.Context, characterID, contractPK, contractID int64) error {
+// updateContractBids stores new bids of an auction from ESI and reports whether there were any.
+func (s *CharacterService) updateContractBids(ctx context.Context, characterID, contractPK, contractID int64) (bool, error) {
 	existingBidIDs, err := s.st.ListCharacterContractBidIDs(ctx, contractPK)
 	if err != nil {
-		return err
+		return false, err
 	}
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdContractsContractIdBids")
 	bids, _, err := s.esiClient.ContractsAPI.GetCharactersCharacterIdContractsContractIdBids(ctx, characterID, contractID).Execute()
 	if err != nil {
-		return err
+		return false, err
 	}
 	newBids, bidderIDs := contractsync.NewBids(existingBidIDs, xslices.Map(bids, func(x esi.CharactersCharacterIdContractsContractIdBidsGetInner) contractsync.ESIContractBid {
 		return contractsync.ESIContractBid(x)
 	}))
 	if len(newBids) == 0 {
-		return nil
+		return false, nil
 	}
 	if bidderIDs.Size() > 0 {
 		if _, err = s.eus.AddMissingEntities(ctx, bidderIDs); err != nil {
-			return err
+			return false, err
 		}
 	}
 	for _, b := range newBids {
@@ -425,13 +433,14 @@ func (s *CharacterService) updateContractBids(ctx context.Context, characterID, 
 			DateBid:    b.DateBid,
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 	slog.Info("created contract bids", "characterID", characterID, "contract", contractID, "count", len(newBids))
-	return nil
+	return true, nil
 }
 
+// updateContractItemsValue recalculates and stores the value of the character's contract items.
 func (s *CharacterService) updateContractItemsValue(ctx context.Context, characterID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractItemsValue: %d: %w", characterID, err)
@@ -450,6 +459,7 @@ func (s *CharacterService) updateContractItemsValue(ctx context.Context, charact
 	return nil
 }
 
+// updateContractsEscrow recalculates and stores the character's contract escrow.
 func (s *CharacterService) updateContractsEscrow(ctx context.Context, characterID int64) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateContractsEscrow: %d: %w", characterID, err)

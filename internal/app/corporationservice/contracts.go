@@ -61,7 +61,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true, // skipping change detection because it can not detect new bids
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContracts")
 			contracts, err := xgoesi.FetchPages(
@@ -95,17 +95,17 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 			current := xslices.Map(oo, func(x *app.CorporationContract) *app.Contract {
 				return &x.Contract
 			})
-			staleIDs, err := contractsync.Sync(
+			staleIDs, changed, err := contractsync.Sync(
 				ctx,
 				contracts,
 				current,
 				func(ctx context.Context, c contractsync.ESIContract) (int64, error) {
 					return s.createNewContract(ctx, arg.corporationID, c)
 				},
-				func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) error {
+				func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) (bool, error) {
 					return s.updateContract(ctx, arg.corporationID, o, c)
 				},
-				func(ctx context.Context, contractPK, contractID int64) error {
+				func(ctx context.Context, contractPK, contractID int64) (bool, error) {
 					return s.updateContractBids(ctx, arg.corporationID, contractPK, contractID)
 				},
 				slog.Int64("corporationID", arg.corporationID),
@@ -116,10 +116,12 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 			if err := s.st.DeleteCorporationContracts(ctx, arg.corporationID, staleIDs); err != nil {
 				return false, err
 			}
-			return true, nil
+			return changed, nil
 		})
 }
 
+// createNewContract stores a new contract with its items and returns its ID.
+// The ID is also returned when only storing the items failed.
 func (s *CorporationService) createNewContract(ctx context.Context, corporationID int64, c contractsync.ESIContract) (int64, error) {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs([]contractsync.ESIContract{c})
@@ -193,15 +195,16 @@ func (s *CorporationService) createNewContract(ctx context.Context, corporationI
 	return id, nil
 }
 
-func (s *CorporationService) updateContract(ctx context.Context, corporationID int64, o *app.Contract, c contractsync.ESIContract) error {
+// updateContract updates a stored contract from ESI and reports whether it has changed.
+func (s *CorporationService) updateContract(ctx context.Context, corporationID int64, o *app.Contract, c contractsync.ESIContract) (bool, error) {
 	status, err := contractsync.ParseESIStatus(c.Status)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !contractsync.HasChanged(o, c, status) {
-		return nil
+		return false, nil
 	}
-	return s.st.UpdateCorporationContract(ctx, storage.UpdateCorporationContractParams{
+	err = s.st.UpdateCorporationContract(ctx, storage.UpdateCorporationContractParams{
 		AcceptorID:    c.AcceptorId,
 		DateAccepted:  optional.FromPtr(c.DateAccepted),
 		DateCompleted: optional.FromPtr(c.DateCompleted),
@@ -209,27 +212,32 @@ func (s *CorporationService) updateContract(ctx context.Context, corporationID i
 		ContractID:    c.ContractId,
 		Status:        status,
 	})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func (s *CorporationService) updateContractBids(ctx context.Context, corporationID, contractPK, contractID int64) error {
+// updateContractBids stores new bids of an auction from ESI and reports whether there were any.
+func (s *CorporationService) updateContractBids(ctx context.Context, corporationID, contractPK, contractID int64) (bool, error) {
 	existingBidIDs, err := s.st.ListCorporationContractBidIDs(ctx, contractPK)
 	if err != nil {
-		return err
+		return false, err
 	}
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdContractsContractIdBids")
 	bids, _, err := s.esiClient.ContractsAPI.GetCorporationsCorporationIdContractsContractIdBids(ctx, contractID, corporationID).Execute()
 	if err != nil {
-		return err
+		return false, err
 	}
 	newBids, bidderIDs := contractsync.NewBids(existingBidIDs, xslices.Map(bids, func(x esi.CharactersCharacterIdContractsContractIdBidsGetInner) contractsync.ESIContractBid {
 		return contractsync.ESIContractBid(x)
 	}))
 	if len(newBids) == 0 {
-		return nil
+		return false, nil
 	}
 	if bidderIDs.Size() > 0 {
 		if _, err = s.eus.AddMissingEntities(ctx, bidderIDs); err != nil {
-			return err
+			return false, err
 		}
 	}
 	for _, b := range newBids {
@@ -241,9 +249,9 @@ func (s *CorporationService) updateContractBids(ctx context.Context, corporation
 			DateBid:    b.DateBid,
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 	slog.Info("created contract bids", "corporationID", corporationID, "contract", contractID, "count", len(newBids))
-	return nil
+	return true, nil
 }

@@ -252,6 +252,40 @@ func TestUpdateContractsESI(t *testing.T) {
 		xassert.Equal(t, set.Of[int64](1, 2), ids)
 	})
 
+	t.Run("should store new bids when the contract list is unchanged", func(t *testing.T) {
+		// given
+		const contractID = 42
+		fx := setup(t)
+		bidder := factory.CreateEveEntityCharacter()
+		registerContracts(fx, esiContract(fx, contractID, map[string]any{"type": "auction"}))
+		bid1 := map[string]any{"amount": 100, "bid_id": 1, "bidder_id": bidder.ID, "date_bid": "2017-01-01T10:10:10Z"}
+		bid2 := map[string]any{"amount": 200, "bid_id": 2, "bidder_id": bidder.ID, "date_bid": "2017-01-02T10:10:10Z"}
+		registerDetails(fx, contractID, "bids", []map[string]any{bid1})
+		updateUnforced := func() bool {
+			changed, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+				characterID: fx.ownerID,
+				section:     app.SectionCharacterContracts,
+			})
+			require.NoError(t, err)
+			return changed
+		}
+		xassert.Equal(t, true, updateUnforced())
+		// when
+		registerDetails(fx, contractID, "bids", []map[string]any{bid1, bid2})
+		changed := updateUnforced()
+		// then
+		xassert.Equal(t, true, changed)
+		c, err := st.GetCharacterContract(ctx, fx.ownerID, contractID)
+		require.NoError(t, err)
+		ids, err := st.ListCharacterContractBidIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), ids)
+		// when nothing is new
+		changed = updateUnforced()
+		// then
+		xassert.Equal(t, false, changed)
+	})
+
 	t.Run("should store a new contract only after its items could be fetched", func(t *testing.T) {
 		// given
 		const contractID = 42

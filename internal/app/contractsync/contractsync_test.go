@@ -200,6 +200,8 @@ type syncRecorder struct {
 	failCreate set.Set[int64]
 	failUpdate set.Set[int64]
 	failBids   set.Set[int64]
+	unchanged  set.Set[int64] // update finds nothing to change
+	newBids    set.Set[int64] // updateBids stores new bids
 	itemsFail  set.Set[int64] // contract row is stored, but adding related data fails
 	nextID     int64
 	onCreate   func()
@@ -227,24 +229,24 @@ func (r *syncRecorder) create(ctx context.Context, c contractsync.ESIContract) (
 	return 100 + r.nextID, nil
 }
 
-func (r *syncRecorder) update(ctx context.Context, stored *app.Contract, c contractsync.ESIContract) error {
+func (r *syncRecorder) update(ctx context.Context, stored *app.Contract, c contractsync.ESIContract) (bool, error) {
 	if r.failUpdate.Contains(c.ContractId) {
-		return errors.New("update failed")
+		return false, errors.New("update failed")
 	}
 	r.updated[c.ContractId] = stored.ID
-	return nil
+	return !r.unchanged.Contains(c.ContractId), nil
 }
 
-func (r *syncRecorder) updateBids(ctx context.Context, contractPK, contractID int64) error {
+func (r *syncRecorder) updateBids(ctx context.Context, contractPK, contractID int64) (bool, error) {
 	if r.failBids.Contains(contractID) {
-		return errors.New("bids failed")
+		return false, errors.New("bids failed")
 	}
 	r.bids[contractID] = contractPK
-	return nil
+	return r.newBids.Contains(contractID), nil
 }
 
 // sync runs Sync with the recorder's callbacks.
-func (r *syncRecorder) sync(ctx context.Context, contracts []contractsync.ESIContract, current []*app.Contract) (set.Set[int64], error) {
+func (r *syncRecorder) sync(ctx context.Context, contracts []contractsync.ESIContract, current []*app.Contract) (set.Set[int64], bool, error) {
 	return contractsync.Sync(ctx, contracts, current, r.create, r.update, r.updateBids, slog.Int64("characterID", 1))
 }
 
@@ -256,7 +258,7 @@ func TestSync(t *testing.T) {
 			{ID: 13, ContractID: 3, Status: app.ContractStatusOutstanding},
 		}
 		contracts := []contractsync.ESIContract{{ContractId: 1}, {ContractId: 2}, {ContractId: 3}}
-		staleIDs, err := r.sync(t.Context(), contracts, current)
+		staleIDs, _, err := r.sync(t.Context(), contracts, current)
 		require.NoError(t, err)
 		xassert.Equal(t, []int64{1}, r.created)
 		xassert.Equal(t, map[int64]int64{2: 12, 3: 13}, r.updated)
@@ -266,19 +268,69 @@ func TestSync(t *testing.T) {
 		r := newSyncRecorder()
 		current := []*app.Contract{{ID: 11, ContractID: 2, Status: app.ContractStatusOutstanding}}
 		contracts := []contractsync.ESIContract{
-			{ContractId: 1, Type: "auction"},
-			{ContractId: 2, Type: "auction"},
-			{ContractId: 3, Type: "courier"},
+			{ContractId: 1, Type: "auction", Status: "outstanding"},
+			{ContractId: 2, Type: "auction", Status: "outstanding"},
+			{ContractId: 3, Type: "courier", Status: "outstanding"},
 		}
-		_, err := r.sync(t.Context(), contracts, current)
+		_, _, err := r.sync(t.Context(), contracts, current)
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int64{1: 101, 2: 11}, r.bids)
+	})
+	t.Run("should fetch bids only for auctions which can have new bids", func(t *testing.T) {
+		r := newSyncRecorder()
+		r.unchanged = set.Of[int64](2, 4)
+		current := []*app.Contract{
+			{ID: 12, ContractID: 2, Status: app.ContractStatusFinished},
+			{ID: 13, ContractID: 3, Status: app.ContractStatusOutstanding},
+			{ID: 14, ContractID: 4, Status: app.ContractStatusOutstanding},
+		}
+		contracts := []contractsync.ESIContract{
+			{ContractId: 1, Type: "auction", Status: "finished"},    // new
+			{ContractId: 2, Type: "auction", Status: "finished"},    // unchanged
+			{ContractId: 3, Type: "auction", Status: "finished"},    // has just finished
+			{ContractId: 4, Type: "auction", Status: "outstanding"}, // unchanged
+		}
+		_, _, err := r.sync(t.Context(), contracts, current)
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]int64{1: 101, 3: 13, 4: 14}, r.bids)
+	})
+	t.Run("should report whether anything has changed", func(t *testing.T) {
+		stored := &app.Contract{ID: 11, ContractID: 1, Status: app.ContractStatusOutstanding}
+		auction := contractsync.ESIContract{ContractId: 1, Type: "auction", Status: "outstanding"}
+		cases := []struct {
+			name      string
+			unchanged bool
+			newBids   bool
+			current   []*app.Contract
+			contracts []contractsync.ESIContract
+			want      bool
+		}{
+			{"nothing", true, false, []*app.Contract{stored}, []contractsync.ESIContract{auction}, false},
+			{"created", true, false, nil, []contractsync.ESIContract{auction}, true},
+			{"updated", false, false, []*app.Contract{stored}, []contractsync.ESIContract{auction}, true},
+			{"new bids", true, true, []*app.Contract{stored}, []contractsync.ESIContract{auction}, true},
+			{"stale", true, false, []*app.Contract{stored}, nil, true},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				r := newSyncRecorder()
+				if tc.unchanged {
+					r.unchanged = set.Of[int64](1)
+				}
+				if tc.newBids {
+					r.newBids = set.Of[int64](1)
+				}
+				_, changed, err := r.sync(t.Context(), tc.contracts, tc.current)
+				require.NoError(t, err)
+				xassert.Equal(t, tc.want, changed)
+			})
+		}
 	})
 	t.Run("should add bids for new auction when only storing related data failed", func(t *testing.T) {
 		r := newSyncRecorder()
 		r.itemsFail = set.Of[int64](1)
 		contracts := []contractsync.ESIContract{{ContractId: 1, Type: "auction"}}
-		_, err := r.sync(t.Context(), contracts, nil)
+		_, _, err := r.sync(t.Context(), contracts, nil)
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]int64{1: 101}, r.bids)
 	})
@@ -286,7 +338,7 @@ func TestSync(t *testing.T) {
 		r := newSyncRecorder()
 		r.failCreate = set.Of[int64](1)
 		contracts := []contractsync.ESIContract{{ContractId: 1, Type: "auction"}}
-		_, err := r.sync(t.Context(), contracts, nil)
+		_, _, err := r.sync(t.Context(), contracts, nil)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, len(r.bids))
 	})
@@ -307,7 +359,7 @@ func TestSync(t *testing.T) {
 			{ContractId: 5, Type: "auction"},
 			{ContractId: 6, Type: "auction"},
 		}
-		_, err := r.sync(t.Context(), contracts, current)
+		_, _, err := r.sync(t.Context(), contracts, current)
 		require.NoError(t, err)
 		xassert.Equal(t, []int64{2, 5, 6}, r.created)
 		xassert.Equal(t, map[int64]int64{4: 14}, r.updated)
@@ -320,7 +372,7 @@ func TestSync(t *testing.T) {
 		r.failCreate = set.Of[int64](1)
 		r.onCreate = cancel
 		contracts := []contractsync.ESIContract{{ContractId: 1}, {ContractId: 2}}
-		_, err := r.sync(ctx, contracts, nil)
+		_, _, err := r.sync(ctx, contracts, nil)
 		require.Error(t, err)
 		xassert.Equal(t, 0, len(r.created))
 	})
@@ -332,7 +384,7 @@ func TestSync(t *testing.T) {
 			{ID: 13, ContractID: 3, Status: app.ContractStatusOutstanding},
 		}
 		contracts := []contractsync.ESIContract{{ContractId: 3}}
-		staleIDs, err := r.sync(t.Context(), contracts, current)
+		staleIDs, _, err := r.sync(t.Context(), contracts, current)
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](1), staleIDs)
 	})
