@@ -327,7 +327,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 	clearCache := settingAction{
 		Label: "Clear cache",
 		Action: func() {
-			ui.ShowProgressConfirm(
+			ui.ShowLoadingConfirm(
 				a.u,
 				"Clear Cache?",
 				"This will clear the cache",
@@ -408,7 +408,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 }
 
 func (a *settings) showDeleteFileDialog(name, path string) {
-	ui.ShowProgressConfirm(
+	ui.ShowLoadingConfirm(
 		a.u,
 		"Delete File?",
 		fmt.Sprintf("This will permanently delete the %s", name),

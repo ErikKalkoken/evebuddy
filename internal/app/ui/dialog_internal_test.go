@@ -23,10 +23,10 @@ func (r jobRunnerFake) Go(job func(ctx context.Context)) bool {
 	return true
 }
 
-func TestProgressConfirm(t *testing.T) {
+func TestLoadingConfirm(t *testing.T) {
 	test.NewTempApp(t)
 	confirm := func(r JobRunner) (called, done bool) {
-		_, b := newProgressConfirm(r, "title", "message", "OK", widget.DangerImportance, func(ctx context.Context) {
+		_, b := newLoadingConfirm(r, "title", "message", "OK", widget.DangerImportance, func(ctx context.Context) {
 			called = true
 		}, test.NewWindow(nil))
 		b.OnAction(func() { done = true })

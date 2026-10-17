@@ -182,6 +182,23 @@ func TestComma(t *testing.T) {
 	assert.Equal(t, "1,234", humanize.Comma(uint64(1234)))
 }
 
+func TestPlural(t *testing.T) {
+	var cases = []struct {
+		count int
+		want  string
+	}{
+		{0, "0 jobs"},
+		{1, "1 job"},
+		{2, "2 jobs"},
+		{1234, "1,234 jobs"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.want, func(t *testing.T) {
+			assert.Equal(t, tc.want, humanize.Plural(tc.count, "job", "jobs"))
+		})
+	}
+}
+
 func TestTimeWithFallback(t *testing.T) {
 	x := time.Now().Add(-21 * 24 * time.Hour)
 	assert.Equal(t, "3 weeks ago", humanize.TimeWithFallback(x, ""))

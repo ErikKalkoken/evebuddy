@@ -118,6 +118,14 @@ func Comma[T constraints.Integer](x T) string {
 	return humanize.Comma(int64(x))
 }
 
+// Plural returns the count with commas and the word form matching the count, e.g. "1 job" or "1,234 jobs".
+func Plural[T constraints.Integer](count T, singular, plural string) string {
+	if count == 1 {
+		return "1 " + singular
+	}
+	return Comma(count) + " " + plural
+}
+
 // Optional returns a string representation of on optional value when set
 // or the fallback when not set.
 func Optional[T any](o optional.Optional[T], fallback string) string {

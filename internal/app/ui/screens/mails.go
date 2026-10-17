@@ -1313,7 +1313,7 @@ func (a *mailsReadingPane) MakeDeleteAction() (fyne.Resource, func()) {
 			return
 		}
 		subject := xstrings.TruncateWithSuffix(m.Subject.ValueOrFallback("?"), 50, 0)
-		ui.ShowProgressConfirm(
+		ui.ShowLoadingConfirm(
 			a.ma.u,
 			"Delete mail?",
 			fmt.Sprintf(
