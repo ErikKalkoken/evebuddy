@@ -571,7 +571,7 @@ func (a *mailsNavigationPane) fetchDownloaded(ctx context.Context) (mailsDownloa
 	if total == 0 || missing == 0 {
 		return r, true
 	}
-	r.missingPercent = int(float64(missing) / float64(total) * 100)
+	r.missingPercent = (missing*100 + total - 1) / total // rounded up, so it never shows 100% while mails are missing
 	r.downloaded = fmt.Sprintf("%d%%", 100-r.missingPercent)
 	r.hint = p.Sprintf("%d / %d mails downloaded", total-missing, total)
 	return r, true

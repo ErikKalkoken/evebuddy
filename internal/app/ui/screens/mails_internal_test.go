@@ -735,6 +735,18 @@ func TestMails_DownloadProgress(t *testing.T) {
 		assert.Equal(t, []int{50}, e.missing)
 		assert.False(t, e.a.bodiesComplete.Load())
 	})
+	t.Run("rounds missing percentage up", func(t *testing.T) {
+		e := setup(t)
+		for range 100 {
+			e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+		}
+		e.factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
+
+		e.a.NavigationPane.updateDownloaded(t.Context(), true)
+
+		assert.Equal(t, "99%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.Equal(t, []int{1}, e.missing)
+	})
 	t.Run("reports completion", func(t *testing.T) {
 		e, mailID := setupHalfDownloaded(t)
 		err := e.st.UpdateCharacterMailSetBody(t.Context(), e.c.ID, mailID, optional.New("body"))
