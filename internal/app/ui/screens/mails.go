@@ -1166,7 +1166,7 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 		}
 		slog.Error("Failed to refresh mail headers UI", "characterID", folder.CharacterID, "folder", folder.Name, "err", err)
 		fyne.Do(func() {
-			if !isLatest() {
+			if !isLatest() || !a.isCurrentFolder(folder) {
 				return
 			}
 			reset() // first, because it hides the error
@@ -1179,10 +1179,10 @@ func (a *mailsMessagePane) update(ctx context.Context) {
 	})
 }
 
-// applyRows shows the headers of a folder unless a newer update was started.
-// Must be called on the main thread.
+// applyRows shows the headers of a folder unless a newer update was started
+// or the folder is no longer shown. Must be called on the main thread.
 func (a *mailsMessagePane) applyRows(isLatest func() bool, folder *mailFolderNode, rows []mailRow) {
-	if !isLatest() {
+	if !isLatest() || !a.isCurrentFolder(folder) {
 		return
 	}
 	if a.rowsFolderUID == folder.UID() {
@@ -1202,6 +1202,15 @@ func (a *mailsMessagePane) applyRows(isLatest func() bool, folder *mailFolderNod
 	a.rows = rows
 	a.rowsFolderUID = folder.UID()
 	a.filterRowsAsync()
+}
+
+// isCurrentFolder reports whether folder is still the one to show, e.g. not of a previous character.
+func (a *mailsMessagePane) isCurrentFolder(folder *mailFolderNode) bool {
+	current := a.currentFolder.Load()
+	if current == nil || current.UID() != folder.UID() {
+		return false
+	}
+	return !a.ma.forCharacter || folder.CharacterID == a.ma.character.Load().IDOrZero()
 }
 
 func (a *mailsMessagePane) filterRowsAsync() {
