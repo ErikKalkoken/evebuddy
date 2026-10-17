@@ -163,16 +163,19 @@ func ShowContract(u baseUI, r contractRow) {
 				if r.status == app.ContractStatusOutstanding {
 					auctionExpiresNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
-				var currentBid string
-				if totalBids == 0 {
-					currentBid = "(None)"
-				} else {
-					currentBid = fmt.Sprintf("%s (%d bids so far)", ui.FormatISKAmount(topBidAmount), totalBids)
+				var highestBid string
+				switch totalBids {
+				case 0:
+					highestBid = "(None)"
+				case 1:
+					highestBid = fmt.Sprintf("%s (1 bid)", ui.FormatISKAmount(topBidAmount))
+				default:
+					highestBid = fmt.Sprintf("%s (%d bids)", ui.FormatISKAmount(topBidAmount), totalBids)
 				}
 				fi = slices.Concat(fi, []*widget.FormItem{
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("?", ui.FormatISKAmount))},
-					{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
+					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("(None)", ui.FormatISKAmount))},
+					{Text: "Highest Bid", Widget: widget.NewLabel(highestBid)},
 					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, auctionExpiresNote))},
 				})
 			}
