@@ -95,7 +95,7 @@ func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *manageTags) deleteTags() {
-	ui.ShowProgressConfirm(
+	ui.ShowLoadingConfirm(
 		a.cw.u,
 		"Delete all tags?",
 		"This will permanently remove all tags",
@@ -304,7 +304,7 @@ func (a *manageTags) makeTagList() *widget.List {
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
-				ui.ShowProgressConfirm(
+				ui.ShowLoadingConfirm(
 					a.cw.u,
 					"Delete Tag?",
 					"This will permanently delete tag \""+tag.Name+"\"",

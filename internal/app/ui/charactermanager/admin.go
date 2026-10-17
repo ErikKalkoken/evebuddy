@@ -242,7 +242,7 @@ func (a *admin) showAddCharacterDialog() {
 }
 
 func (a *admin) showDeleteDialog(r adminRow) {
-	ui.ShowProgressConfirm(
+	ui.ShowLoadingConfirm(
 		a.cw.u,
 		"Delete Character?",
 		fmt.Sprintf("%s will be permanently removed from this app", r.characterName),
