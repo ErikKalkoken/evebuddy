@@ -950,7 +950,7 @@ func TestMailsReadingPane_OnCleared(t *testing.T) {
 }
 
 func TestMails_Status(t *testing.T) {
-	t.Run("shows status and disables controls when data is not loaded", func(t *testing.T) {
+	t.Run("shows status and disables controls except compose when data is not loaded", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		c := factory.CreateCharacterFull()
@@ -963,7 +963,7 @@ func TestMails_Status(t *testing.T) {
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.True(t, a.MessagePane.filterChip.Disabled())
 		assert.True(t, a.MessagePane.sortButton.Disabled())
-		assert.True(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
 	})
 	t.Run("shows folder and enables controls once data is loaded", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -1084,7 +1084,7 @@ func TestMails_Status(t *testing.T) {
 }
 
 func TestUnifiedMails_Status(t *testing.T) {
-	t.Run("shows status and disables controls when no character has data", func(t *testing.T) {
+	t.Run("shows status and disables controls except compose when no character has data", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		factory.CreateCharacterFull()
@@ -1096,7 +1096,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
 		assert.False(t, a.MessagePane.loadingLabel.Visible())
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
-		assert.True(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.NavigationPane.compose.Disabled())
 	})
 	t.Run("enables controls and shows loaded characters when some have data", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)

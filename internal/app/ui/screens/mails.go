@@ -233,6 +233,16 @@ func (a *Mails) update(ctx context.Context) {
 			a.MessagePane.setInfo(s, i)
 		})
 	}
+	setWaiting := func() {
+		clearAll()
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.NavigationPane.compose.Enable() // sending does not need mail data
+			a.MessagePane.setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
+		})
+	}
 	setError := func(err error) {
 		clearAll() // so no outdated mails are shown with the error
 		fyne.Do(func() {
@@ -261,8 +271,7 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		if !hasData {
-			clearAll()
-			setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
+			setWaiting()
 			return
 		}
 	} else {
@@ -310,8 +319,7 @@ func (a *Mails) update(ctx context.Context) {
 			}
 		}
 		if loaded == 0 {
-			clearAll()
-			setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
+			setWaiting()
 			return
 		}
 		fyne.Do(func() {
