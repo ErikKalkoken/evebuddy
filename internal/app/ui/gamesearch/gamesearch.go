@@ -70,6 +70,7 @@ type GameSearch struct {
 	widget.BaseWidget
 
 	categories          *kxwidget.FilterChipGroup
+	clearRecent         *widget.Hyperlink
 	defaultCategories   []string
 	searchEntry         *xwidget.SearchEntry
 	iconCache           xsync.Map[int64, fyne.Resource]
@@ -115,7 +116,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.results = a.makeResults()
 
 	a.searchEntry = xwidget.NewSearchEntry(
-		"Search New Eden",
+		"Loading...",
 		func(s string) {
 			if s == "" {
 				a.Reset()
@@ -126,6 +127,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 			go a.DoSearch(context.Background(), s)
 		},
 	)
+	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
 
 	// p := theme.Padding()
 	// a.searchEntry.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), kxwidget.NewTappableIcon(theme.CancelIcon(), func() {
@@ -166,14 +168,16 @@ func NewGameSearch(u baseUI) *GameSearch {
 		nil,
 		a.results,
 	)
-	clearRecent := widget.NewHyperlink("Clear", nil)
-	clearRecent.OnTapped = func() {
+	a.resultsPage.Hide()
+	a.clearRecent = widget.NewHyperlink("Clear", nil)
+	a.clearRecent.OnTapped = func() {
 		xslices.Clear(&a.recentItems)
 		a.recent.Refresh()
 		a.storeRecentItems()
 	}
+	a.clearRecent.Hide() // until init
 	a.recentPage = container.NewBorder(
-		container.NewHBox(widget.NewLabel("Recent searches"), layout.NewSpacer(), clearRecent),
+		container.NewHBox(widget.NewLabel("Recent searches"), layout.NewSpacer(), a.clearRecent),
 		nil,
 		nil,
 		nil,
@@ -189,33 +193,26 @@ func NewGameSearch(u baseUI) *GameSearch {
 
 func (a *GameSearch) init(ctx context.Context) {
 	ids := a.u.Settings().RecentSearches()
-	if len(ids) == 0 {
-		return
-	}
-	ee, err := a.u.EVEUniverse().ListExistingEntitiesForIDs(ctx, ids)
-	if ctx.Err() != nil {
-		return // shutting down
-	}
-	if err != nil {
-		slog.Error("failed to load recent items from settings", "error", err)
-		return
+	var ee []*app.EveEntity
+	var err error
+	if len(ids) > 0 {
+		ee, err = a.u.EVEUniverse().ListExistingEntitiesForIDs(ctx, ids)
+		if ctx.Err() != nil {
+			return // shutting down
+		}
+		if err != nil {
+			slog.Error("failed to load recent items from settings", "error", err)
+		}
 	}
 	fyne.Do(func() {
-		// keep searches picked while loading in front, as they are the newest
-		picked := set.Of(xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
-			return x.ID
-		})...)
-		a.recentItems = append(a.recentItems, slices.DeleteFunc(ee, func(x *app.EveEntity) bool {
-			return picked.Contains(x.ID)
-		})...)
-		current := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
-			return x.ID
-		})
-		if !slices.Equal(current, ids) {
-			a.storeRecentItems() // prune unknown IDs and keep picked searches
+		a.recentItems = ee
+		if err == nil && len(ee) < len(ids) {
+			a.storeRecentItems() // prune unknown IDs
 		}
 		a.recent.Refresh()
-		a.showRecent()
+		a.searchEntry.SetPlaceHolder("Search New Eden")
+		a.searchEntry.Enable()
+		a.clearRecent.Show()
 	})
 }
 
@@ -399,10 +396,6 @@ func (a *GameSearch) clearResults() {
 func (a *GameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
-}
-
-func (a *GameSearch) SetEntry(s string) {
-	a.searchEntry.SetText(s)
 }
 
 func (a *GameSearch) DoSearch(ctx context.Context, search string) {
