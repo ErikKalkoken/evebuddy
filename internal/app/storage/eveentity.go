@@ -164,17 +164,9 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 	if len(ids) == 0 {
 		return []*app.EveEntity{}, nil
 	}
-	var rows []queries.EveEntity
-	for idsChunk := range slices.Chunk(ids, st.MaxIDsPerQuery) {
-		r, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
-		if err != nil {
-			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
-		}
-		rows = slices.Concat(rows, r)
-	}
-	m := make(map[int64]*app.EveEntity)
-	for _, r := range rows {
-		m[int64(r.ID)] = eveEntityFromDBModel(r)
+	m, err := st.mapEveEntitiesForIDs(ctx, ids)
+	if err != nil {
+		return nil, err
 	}
 	var oo []*app.EveEntity
 	for _, id := range ids {
@@ -185,6 +177,41 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 		oo = append(oo, o)
 	}
 	return oo, nil
+}
+
+// ListExistingEveEntitiesForIDs returns a slice of EveEntities in the same order as ids.
+// IDs without an EveEntity are skipped.
+func (st *Storage) ListExistingEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
+	if len(ids) == 0 {
+		return []*app.EveEntity{}, nil
+	}
+	m, err := st.mapEveEntitiesForIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	oo := []*app.EveEntity{}
+	for _, id := range ids {
+		o, found := m[id]
+		if !found {
+			continue
+		}
+		oo = append(oo, o)
+	}
+	return oo, nil
+}
+
+func (st *Storage) mapEveEntitiesForIDs(ctx context.Context, ids []int64) (map[int64]*app.EveEntity, error) {
+	m := make(map[int64]*app.EveEntity)
+	for idsChunk := range slices.Chunk(ids, st.MaxIDsPerQuery) {
+		rows, err := st.qRO.ListEveEntitiesForIDs(ctx, idsChunk)
+		if err != nil {
+			return nil, fmt.Errorf("list eve entities for %d ids: %w", len(idsChunk), err)
+		}
+		for _, r := range rows {
+			m[int64(r.ID)] = eveEntityFromDBModel(r)
+		}
+	}
+	return m, nil
 }
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.

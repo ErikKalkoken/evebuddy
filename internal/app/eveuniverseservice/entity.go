@@ -197,8 +197,10 @@ func (s *EVEUniverseService) ListEntitiesByPartialName(ctx context.Context, part
 	return s.st.ListEveEntitiesByPartialName(ctx, partial)
 }
 
-func (s *EVEUniverseService) ListEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
-	return s.st.ListEveEntitiesForIDs(ctx, ids)
+// ListExistingEntitiesForIDs returns EveEntities in the same order as ids.
+// IDs without an EveEntity in the database are skipped.
+func (s *EVEUniverseService) ListExistingEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {
+	return s.st.ListExistingEveEntitiesForIDs(ctx, ids)
 }
 
 func (s *EVEUniverseService) UpdateAllEntitiesESI(ctx context.Context) (set.Set[int64], error) {

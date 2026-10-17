@@ -273,6 +273,62 @@ func TestListEveEntitiesForIDs(t *testing.T) {
 	})
 }
 
+func TestListExistingEveEntitiesForIDs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return objs with matching ids in requested order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
+		factory.CreateEveEntity(app.EveEntity{ID: 2})
+		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		factory.CreateEveEntity(app.EveEntity{ID: 4})
+		// when
+		ee, err := st.ListExistingEveEntitiesForIDs(ctx, []int64{4, 1, 3})
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{4, 1, 3}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should skip ids without object", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateEveEntity(app.EveEntity{ID: 1})
+		factory.CreateEveEntity(app.EveEntity{ID: 3})
+		// when
+		ee, err := st.ListExistingEveEntitiesForIDs(ctx, []int64{2, 3, 4, 1})
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(a *app.EveEntity) int64 {
+			return a.ID
+		})
+		want := []int64{3, 1}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should return empty slice when no object can be found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		ee, err := st.ListExistingEveEntitiesForIDs(ctx, []int64{1, 2})
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, ee)
+	})
+	t.Run("should return empty slice when called with no ids", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		ee, err := st.ListExistingEveEntitiesForIDs(ctx, []int64{})
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, ee)
+	})
+}
+
 func TestListEveEntities(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

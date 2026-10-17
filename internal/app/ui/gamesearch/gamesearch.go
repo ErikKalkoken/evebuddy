@@ -3,7 +3,6 @@ package gamesearch
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -193,16 +192,9 @@ func (a *GameSearch) init(ctx context.Context) {
 	if len(ids) == 0 {
 		return
 	}
-	ee, err := a.u.EVEUniverse().ListEntitiesForIDs(ctx, ids)
+	ee, err := a.u.EVEUniverse().ListExistingEntitiesForIDs(ctx, ids)
 	if ctx.Err() != nil {
 		return // shutting down
-	}
-	if errors.Is(err, app.ErrNotFound) {
-		fyne.Do(func() {
-			xslices.Clear(&a.recentItems)
-			a.recent.Refresh()
-		})
-		return
 	}
 	if err != nil {
 		slog.Error("failed to load recent items from settings", "error", err)
@@ -210,6 +202,9 @@ func (a *GameSearch) init(ctx context.Context) {
 	}
 	fyne.Do(func() {
 		a.recentItems = ee
+		if len(ee) < len(ids) {
+			a.storeRecentItems() // prune unknown IDs
+		}
 		a.recent.Refresh()
 		a.showRecent()
 	})
