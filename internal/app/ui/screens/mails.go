@@ -732,7 +732,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 			return 0, err
 		}
 		// summing label and list counts would count mails with several labels or lists repeatedly
-		_, unreadCount, err = cs.CountMails(ctx, characterID)
+		unreadCount, err = cs.CountMailsUnread(ctx, characterID)
 		if err != nil {
 			return 0, err
 		}
@@ -745,7 +745,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 		if err != nil {
 			return 0, err
 		}
-		_, unreadCount, err = cs.CountAllMails(ctx)
+		unreadCount, err = cs.CountAllMailsUnread(ctx)
 		if err != nil {
 			return 0, err
 		}
