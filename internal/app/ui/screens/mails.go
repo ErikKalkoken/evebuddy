@@ -225,6 +225,7 @@ func (a *Mails) update(ctx context.Context) {
 		})
 	}
 	setInfo := func(s string, i widget.Importance) {
+		clearAll()
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -257,7 +258,6 @@ func (a *Mails) update(ctx context.Context) {
 	if a.forCharacter {
 		characterID = a.character.Load().IDOrZero()
 		if characterID == 0 {
-			clearAll()
 			setInfo("No character", widget.LowImportance)
 			return
 		}
@@ -299,7 +299,6 @@ func (a *Mails) update(ctx context.Context) {
 			a.composeMenu = a.makeComposeMenu()
 		})
 		if len(characters) == 0 {
-			clearAll()
 			setInfo("No characters", widget.LowImportance)
 			return
 		}
