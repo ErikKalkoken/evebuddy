@@ -201,9 +201,18 @@ func (a *GameSearch) init(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
-		a.recentItems = ee
-		if len(ee) < len(ids) {
-			a.storeRecentItems() // prune unknown IDs
+		// keep searches picked while loading in front, as they are the newest
+		picked := set.Of(xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
+			return x.ID
+		})...)
+		a.recentItems = append(a.recentItems, slices.DeleteFunc(ee, func(x *app.EveEntity) bool {
+			return picked.Contains(x.ID)
+		})...)
+		current := xslices.Map(a.recentItems, func(x *app.EveEntity) int64 {
+			return x.ID
+		})
+		if !slices.Equal(current, ids) {
+			a.storeRecentItems() // prune unknown IDs and keep picked searches
 		}
 		a.recent.Refresh()
 		a.showRecent()
