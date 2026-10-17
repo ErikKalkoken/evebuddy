@@ -123,7 +123,7 @@ func ParseESIStatus(s string) (app.ContractStatus, error) {
 // RemoveDeleted removes contracts which ESI reports as deleted.
 func RemoveDeleted(contracts []ESIContract) []ESIContract {
 	return slices.DeleteFunc(contracts, func(x ESIContract) bool {
-		return x.Status == "deleted"
+		return statusFromESIValue[x.Status] == app.ContractStatusDeleted
 	})
 }
 
@@ -277,7 +277,9 @@ func Sync(
 	var hasNewBids bool
 	for _, c := range contracts {
 		// changed auctions can have bids from before they were finished
-		if c.Type != "auction" || (c.Status != "outstanding" && !changedIDs.Contains(c.ContractId)) {
+		isAuction := typeFromESIValue[c.Type] == app.ContractTypeAuction
+		isOutstanding := statusFromESIValue[c.Status] == app.ContractStatusOutstanding
+		if !isAuction || (!isOutstanding && !changedIDs.Contains(c.ContractId)) {
 			continue
 		}
 		pk, ok := contractPKs[c.ContractId]
