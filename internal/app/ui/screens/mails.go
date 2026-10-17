@@ -107,6 +107,7 @@ type Mails struct {
 	sig               *singleinstance.Group
 	u                 baseUI
 	unreadCount       atomic.Int64
+	updateRun         latestRun
 }
 
 func NewMailsForCharacter(u baseUI) *Mails {
@@ -202,13 +203,20 @@ func (a *Mails) update(ctx context.Context) {
 	// discard running checks and keep ticks checking, also when returning early
 	a.NavigationPane.downloadedRun.start()
 	a.bodiesComplete.Store(false)
+	isLatest := a.updateRun.start()
 	clearAll := func() {
+		if !isLatest() {
+			return
+		}
 		// stored now, not queued, so a newer update's state is not overwritten
 		a.unreadCount.Store(0)
 		a.missingPercent.Store(0)
 		a.MessagePane.currentFolder.Store(nil)
 		a.MessagePane.updateRun.start() // discards message pane updates still loading
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.clear()
 			a.MessagePane.clear()
 			a.MessagePane.setCharactersLoaded(0, 0)
@@ -218,12 +226,18 @@ func (a *Mails) update(ctx context.Context) {
 	}
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.compose.Disable()
 			a.MessagePane.setInfo(s, i)
 		})
 	}
 	setError := func(err error) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.NavigationPane.compose.Disable()
 			a.MessagePane.setError(err)
 		})
@@ -268,6 +282,9 @@ func (a *Mails) update(ctx context.Context) {
 			return strings.Compare(a.Name, b.Name)
 		})
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.composeCharacters = characters
 			a.composeMenu = a.makeComposeMenu()
 		})
@@ -297,6 +314,9 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.MessagePane.setCharactersLoaded(loaded, len(characters))
 		})
 	}
@@ -325,8 +345,14 @@ func (a *Mails) update(ctx context.Context) {
 		}
 	}
 	isSameFolder := current != nil && current.UID() == folder.UID()
+	if !isLatest() {
+		return
+	}
 	a.MessagePane.currentFolder.Store(folder) // before set, so re-selecting the node is a no-op
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.NavigationPane.set(td, folder)
 	})
 	if isSameFolder {
@@ -334,9 +360,15 @@ func (a *Mails) update(ctx context.Context) {
 	} else {
 		a.MessagePane.setCurrentFolder(ctx, folder)
 	}
+	if !isLatest() {
+		return
+	}
 	a.unreadCount.Store(int64(unread))
 	a.NavigationPane.updateDownloaded(ctx, false) // OnUpdate is called below
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.callOnUpdate()
 	})
 }
