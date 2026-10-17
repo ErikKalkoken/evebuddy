@@ -71,6 +71,7 @@ func newProgressConfirm(
 		d.Hide()
 	})
 	confirm := kxwidget.NewLoadingButton(confirmLabel, theme.ConfirmIcon(), func(done func()) {
+		dismiss.Disable()
 		ok := u.Go(func(ctx context.Context) {
 			callback(ctx)
 			if ctx.Err() != nil {
@@ -105,7 +106,11 @@ func newProgressConfirm(
 		),
 		parent,
 	)
-	xdesktop.DisableShortcutsForDialog(d, parent)
+	// No Escape handler, so the dialog can't be closed while the action is running
+	xdesktop.DisableShortcuts(parent)
+	d.SetOnClosed(func() {
+		xdesktop.EnableShortcuts(parent)
+	})
 	return d, confirm
 }
 
