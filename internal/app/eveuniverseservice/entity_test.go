@@ -38,7 +38,7 @@ func TestListEntitiesByPartialName(t *testing.T) {
 	})
 }
 
-func TestListEntitiesForIDs(t *testing.T) {
+func TestListExistingEntitiesForIDs(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
@@ -49,10 +49,21 @@ func TestListEntitiesForIDs(t *testing.T) {
 		e2 := factory.CreateEveEntity()
 		factory.CreateEveEntity()
 		// when
-		oo, err := s.ListEntitiesForIDs(t.Context(), []int64{e1.ID, e2.ID})
+		oo, err := s.ListExistingEntitiesForIDs(t.Context(), []int64{e1.ID, e2.ID})
 		// then
 		require.NoError(t, err)
 		assert.ElementsMatch(t, []*app.EveEntity{e1, e2}, oo)
+	})
+	t.Run("should skip unknown IDs and keep order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		e1 := factory.CreateEveEntity()
+		e2 := factory.CreateEveEntity()
+		// when
+		oo, err := s.ListExistingEntitiesForIDs(t.Context(), []int64{e2.ID, 999_999_999, e1.ID})
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, []*app.EveEntity{e2, e1}, oo)
 	})
 }
 
