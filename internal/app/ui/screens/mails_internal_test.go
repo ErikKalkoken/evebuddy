@@ -1000,7 +1000,7 @@ func TestMails_Status(t *testing.T) {
 		assert.Equal(t, "No character", a.MessagePane.footerLabel.Text)
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 	})
-	t.Run("clears search when disabling controls", func(t *testing.T) {
+	t.Run("keeps search when disabling controls", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
@@ -1009,7 +1009,8 @@ func TestMails_Status(t *testing.T) {
 
 		a.MessagePane.setControlsEnabled(false)
 
-		assert.Empty(t, a.MessagePane.searchEntry.Text)
+		assert.Equal(t, "alpha", a.MessagePane.searchEntry.Text)
+		assert.True(t, a.MessagePane.searchEntry.Disabled())
 	})
 	t.Run("keeps status when mails change elsewhere", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)

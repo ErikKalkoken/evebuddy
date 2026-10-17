@@ -1101,7 +1101,6 @@ func (a *mailsMessagePane) setControlsEnabled(enabled bool) {
 		a.sortButton.Enable()
 		return
 	}
-	a.searchEntry.ClearSilent() // its clear button stays tappable when disabled
 	a.searchEntry.Disable()
 	a.filterChip.Disable()
 	a.sortButton.Disable()
