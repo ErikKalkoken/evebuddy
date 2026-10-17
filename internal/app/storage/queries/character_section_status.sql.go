@@ -54,6 +54,23 @@ func (q *Queries) ClearCharacterSectionStatusStartedAt(ctx context.Context) ([]C
 	return items, nil
 }
 
+const countCharactersWithSection = `-- name: CountCharactersWithSection :one
+SELECT
+    COUNT(*)
+FROM
+    character_section_status
+WHERE
+    section_id = ?
+    AND completed_at IS NOT NULL
+`
+
+func (q *Queries) CountCharactersWithSection(ctx context.Context, sectionID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countCharactersWithSection, sectionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getCharacterSectionStatus = `-- name: GetCharacterSectionStatus :one
 SELECT
     id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at

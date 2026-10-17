@@ -7,6 +7,15 @@ WHERE
     character_id = ?
     AND section_id = ?;
 
+-- name: CountCharactersWithSection :one
+SELECT
+    COUNT(*)
+FROM
+    character_section_status
+WHERE
+    section_id = ?
+    AND completed_at IS NOT NULL;
+
 -- name: ListCharacterSectionStatus :many
 SELECT
     *

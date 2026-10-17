@@ -339,6 +339,11 @@ func (s *CharacterService) HasSection(ctx context.Context, characterID int64, se
 	return !x.IsMissing(), nil
 }
 
+// CountCharactersWithSection returns the number of characters for which a section exists.
+func (s *CharacterService) CountCharactersWithSection(ctx context.Context, section app.CharacterSection) (int, error) {
+	return s.st.CountCharactersWithSection(ctx, section)
+}
+
 type characterSectionUpdateParams struct {
 	characterID int64
 	forceUpdate bool

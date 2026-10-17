@@ -303,20 +303,14 @@ func (a *Mails) update(ctx context.Context) {
 			setInfo("No characters", widget.LowImportance)
 			return
 		}
-		var loaded int
-		for _, c := range characters {
-			hasData, err := a.u.Character().HasSection(ctx, c.ID, app.SectionCharacterMailHeaders)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to build mail tree", "character", c.ID, "error", err)
-				setError(err)
+		loaded, err := a.u.Character().CountCharactersWithSection(ctx, app.SectionCharacterMailHeaders)
+		if err != nil {
+			if ctx.Err() != nil {
 				return
 			}
-			if hasData {
-				loaded++
-			}
+			slog.Error("Failed to build mail tree", "error", err)
+			setError(err)
+			return
 		}
 		if loaded == 0 {
 			setWaiting()

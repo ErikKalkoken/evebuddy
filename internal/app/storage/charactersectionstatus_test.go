@@ -37,6 +37,33 @@ func TestCharacterSectionStatus(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, oo, 2)
 	})
+	t.Run("can count characters with completed section", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
+		c2 := factory.CreateCharacterFull()
+		x := "error"
+		_, err := st.UpdateOrCreateCharacterSectionStatus(ctx, storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID:  c2.ID,
+			Section:      app.SectionCharacterMailHeaders,
+			ErrorMessage: &x,
+		}) // never completed
+		require.NoError(t, err)
+		c3 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c3.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// when
+		got, err := st.CountCharactersWithSection(ctx, app.SectionCharacterMailHeaders)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, got)
+	})
 	t.Run("can set from scratch", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
