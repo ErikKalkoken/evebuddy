@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -384,13 +385,25 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		}
 
 		a.update(t.Context())
-		assert.True(t, a.errorLabel.Visible())
-		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.Equal(t, widget.DangerImportance, a.statusLabel.Importance)
+		assert.False(t, a.overviewGrid.Visible())
 		assert.Empty(t, a.rows)
 		assert.True(t, netWorth.IsEmpty())
 
 		a.filterRowsAsync()
-		assert.True(t, a.errorLabel.Visible())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+	})
+	t.Run("shows empty text in status label when there are no characters", func(t *testing.T) {
+		a, _ := newScreen(t)
+
+		a.update(t.Context())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Equal(t, "No characters", a.statusLabel.Text)
+		assert.Equal(t, widget.LowImportance, a.statusLabel.Importance)
+		assert.False(t, a.overviewGrid.Visible())
 	})
 	t.Run("shows error on desktop", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
@@ -406,9 +419,9 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		}
 
 		a.update(t.Context())
-		assert.True(t, a.errorLabel.Visible())
-		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
-		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
 	})
 	t.Run("shows error on mobile", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
@@ -425,16 +438,16 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		}
 
 		a.update(t.Context())
-		assert.True(t, a.errorLabel.Visible())
-		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
-		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
 	})
 	t.Run("hides error after successful update", func(t *testing.T) {
 		a, _ := newScreen(t)
-		a.errorLabel.SetText("ERROR: failed")
-		a.errorLabel.Show()
+		a.showStatus("ERROR: failed", widget.DangerImportance)
 
 		a.update(t.Context())
-		assert.False(t, a.errorLabel.Visible())
+		assert.NotContains(t, a.statusLabel.Text, "ERROR")
+		assert.NotEqual(t, widget.DangerImportance, a.statusLabel.Importance)
 	})
 }
