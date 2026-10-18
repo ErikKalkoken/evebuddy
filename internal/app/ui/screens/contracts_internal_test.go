@@ -691,7 +691,7 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 			Storage: st,
 		}))
 	}
-	t.Run("shows error when update fails and keeps it on refresh and filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		defer db.Close()
 		a := newContracts(t, st)
@@ -700,6 +700,11 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		r.init(myID, noAcceptor, myIDs, myCorpIDs, now)
 		a.rows = []contractRow{r}
 		a.filterRowsAsync("")
+		a.attentionCount = 1
+		attention := -1
+		a.OnUpdate = func(n int) {
+			attention = n
+		}
 		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -707,9 +712,10 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+		assert.Empty(t, a.rowsFiltered)
+		assert.Equal(t, 0, attention)
 
-		a.refreshTimeDependent(now.Add(2 * time.Hour))
-		assert.Equal(t, app.ContractCategoryRequiresAttention, a.rows[0].category, "refresh continues with last rows")
 		a.selectStatus.SetSelected(contractsStatusAll)
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.footerLabel.Text, "Showing")

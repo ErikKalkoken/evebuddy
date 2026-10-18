@@ -714,6 +714,20 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 
 func (a *IndustryJobs) update(ctx context.Context) {
 	isLatest := a.updateRun.start()
+	reset := func() {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync("")
+			a.readyCount = 0
+			a.readyCountAll = 0
+			if a.OnUpdate != nil {
+				a.OnUpdate(0)
+			}
+		})
+	}
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {
@@ -726,6 +740,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh industry jobs UI", "err", err)
+		reset()
 		fyne.Do(func() {
 			if !isLatest() {
 				return

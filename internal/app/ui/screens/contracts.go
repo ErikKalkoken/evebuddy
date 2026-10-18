@@ -756,6 +756,19 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 
 func (a *Contracts) update(ctx context.Context) {
 	isLatest := a.updateRun.start()
+	reset := func() {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync("")
+			a.attentionCount = 0
+			if a.OnUpdate != nil {
+				a.OnUpdate(0)
+			}
+		})
+	}
 	var err error
 	var rows []contractRow
 	if a.forCorporation {
@@ -768,6 +781,7 @@ func (a *Contracts) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh contracts UI", "err", err)
+		reset()
 		fyne.Do(func() {
 			if !isLatest() {
 				return
