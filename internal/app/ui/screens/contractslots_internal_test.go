@@ -96,7 +96,7 @@ func TestContractSlots_ErrorDisplay(t *testing.T) {
 			Storage: st,
 		}), false)
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		defer db.Close()
 		a := newContractSlots(t, st)
@@ -109,6 +109,7 @@ func TestContractSlots_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
 
 		a.selectFreeSlots.SetSelected(contractSlotsFreeNone)
 		assert.True(t, a.errorLabel.Visible())

@@ -116,7 +116,6 @@ type CharacterWealth struct {
 
 	OnUpdate func(totalNetWorth optional.Optional[float64])
 
-	breakdownEmpty               *widget.Label
 	characterBreakdownCard       *chartCard
 	characterBreakdownChart      *fyneline.BarChart[characterWealthValue]
 	characterBreakdownTitleLabel *widget.Label
@@ -127,15 +126,15 @@ type CharacterWealth struct {
 	filterChip                   *xwidget.FilterChipCompact // only on mobile
 	filterRun                    latestRun
 	updateRun                    latestRun
+	updateErr                    error // error of the last update
 	footer                       *widget.Label
-	overviewEmpty                *widget.Label
 	overviewGrid                 *fyne.Container
 	rows                         []characterWealthRow
 	selectAlliance               *kxwidget.FilterChipSelect // select chips only on desktop
 	selectCorporation            *kxwidget.FilterChipSelect
 	selectTag                    *kxwidget.FilterChipSelect
 	helpButton                   *xwidget.Button
-	topLabel                     *widget.Label
+	statusLabel                  *widget.Label
 	totalSplitCard               *chartCard
 	totalSplitChart              *fyneline.ArcChart[namedValue]
 	totalSplitTitleLabel         *widget.Label
@@ -159,7 +158,7 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 		),
 		characterSplitTitleLabel: newChartTitleLabel(),
 		footer:                   widget.NewLabel(""),
-		topLabel:                 ui.NewLabelWithWrapping(""),
+		statusLabel:              ui.NewLabelWithWrapping(""),
 		totalSplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
 			sliceLabel,
@@ -169,7 +168,7 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 		details:              newCharacterWealthDetails(u),
 	}
 	a.ExtendBaseWidget(a)
-	a.topLabel.Hide()
+	a.statusLabel.Hide()
 
 	a.characterBreakdownChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 	a.characterBreakdownChart.SetOrientation(fyneline.BarHorizontal)
@@ -195,15 +194,6 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 	a.characterSplitCard = newChartCard(a.characterSplitTitleLabel, newSeriesLegend(), a.characterSplitChart)
 	a.totalSplitCard = newChartCard(a.totalSplitTitleLabel, totalLegend, a.totalSplitChart)
 	a.overviewGrid = container.NewAdaptiveGrid(2, a.totalSplitCard, a.characterSplitCard)
-
-	newEmptyLabel := func() *widget.Label {
-		l := widget.NewLabel("")
-		l.Importance = widget.LowImportance
-		l.Hide()
-		return l
-	}
-	a.overviewEmpty = newEmptyLabel()
-	a.breakdownEmpty = newEmptyLabel()
 
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
@@ -257,26 +247,19 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 
 func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	tabs := container.NewAppTabs(
-		ui.NewTabItem(
-			"Overview",
-			container.NewStack(a.overviewGrid, container.NewCenter(a.overviewEmpty)),
-		),
-		ui.NewTabItem(
-			"Characters",
-			container.NewStack(a.characterBreakdownCard, container.NewCenter(a.breakdownEmpty)),
-		),
+		ui.NewTabItem("Overview", a.overviewGrid),
+		ui.NewTabItem("Characters", a.characterBreakdownCard),
 		ui.NewTabItem("Details", a.details),
 	)
 	var top fyne.CanvasObject
 	if !a.u.IsMobile() {
-		filterBar := container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
-		top = container.NewVBox(a.topLabel, filterBar)
+		top = container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
 	} else {
 		top = container.NewHBox(a.filterChip)
 	}
 	c := container.NewBorder(
 		top,
-		container.NewHBox(a.footer, layout.NewSpacer(), a.helpButton),
+		container.NewVBox(a.statusLabel, container.NewHBox(a.footer, layout.NewSpacer(), a.helpButton)),
 		nil,
 		nil,
 		tabs,
@@ -296,34 +279,30 @@ func (a *CharacterWealth) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
-			a.topLabel.Importance = widget.DangerImportance
-			a.topLabel.Refresh()
-			a.topLabel.Show()
+			xslices.Clear(&a.rows)
+			a.updateErr = err
+			a.showStatus(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
+			a.filterRowsAsync()
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[float64]{})
+			}
 		})
 		return
 	}
-	fyne.Do(func() {
-		if !isLatest() {
-			return
-		}
-		a.topLabel.Hide()
-		a.rows = rows
-		a.filterRowsAsync()
-	})
-
-	// Only report when there is wealth data to show.
+	// Checked before handing over rows, so this goroutine no longer reads them.
 	hasWealth := slices.ContainsFunc(rows, func(r characterWealthRow) bool {
 		return !r.total.IsEmpty()
 	})
-	if !hasWealth {
-		return
-	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
-		if a.OnUpdate != nil {
+		a.updateErr = nil
+		a.showStatus("", widget.LowImportance)
+		a.rows = rows
+		a.filterRowsAsync()
+		// Only report when there is wealth data to show.
+		if hasWealth && a.OnUpdate != nil {
 			a.OnUpdate(total)
 		}
 	})
@@ -344,6 +323,8 @@ func (a *CharacterWealth) currentFilter() (tag, corporation, alliance string) {
 func (a *CharacterWealth) filterRowsAsync() {
 	isLatest := a.filterRun.start()
 	rows := slices.Clone(a.rows)
+	// An error takes priority over the empty text.
+	hasError := a.updateErr != nil
 	tag, corporation, alliance := a.currentFilter()
 	isFiltered := alliance != "" || corporation != "" || tag != ""
 
@@ -382,7 +363,10 @@ func (a *CharacterWealth) filterRowsAsync() {
 				if !isLatest() {
 					return
 				}
-				a.setChartsEmpty(text)
+				a.setChartsVisible(false)
+				if !hasError {
+					a.showStatus(text, widget.LowImportance)
+				}
 			})
 			return
 		}
@@ -390,28 +374,37 @@ func (a *CharacterWealth) filterRowsAsync() {
 		if !isLatest() {
 			return // skip chart updates for outdated results
 		}
-		a.updateCharacterBreakdown(chartRows)
-		a.updateCharacterSplit(chartRows)
-		a.updateTotalSplit(chartRows)
+		a.updateCharacterBreakdown(chartRows, isLatest)
+		a.updateCharacterSplit(chartRows, isLatest)
+		a.updateTotalSplit(chartRows, isLatest)
 		// Queued after the chart updates, so no stale data is shown.
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.setChartsEmpty("")
+			a.setChartsVisible(true)
+			a.showStatus("", widget.LowImportance)
 		})
 	})
 }
 
-// setChartsEmpty replaces the charts with text, or shows them again when text is empty.
+// showStatus shows text in the status label or hides it when text is empty.
 // Must be called on the main thread.
-func (a *CharacterWealth) setChartsEmpty(text string) {
-	for _, l := range []*widget.Label{a.overviewEmpty, a.breakdownEmpty} {
-		l.SetText(text)
-		l.Hidden = text == ""
-		l.Refresh()
-	}
+func (a *CharacterWealth) showStatus(text string, importance widget.Importance) {
 	if text == "" {
+		a.statusLabel.Hide()
+		return
+	}
+	a.statusLabel.Text = text
+	a.statusLabel.Importance = importance
+	a.statusLabel.Refresh()
+	a.statusLabel.Show()
+}
+
+// setChartsVisible shows or hides the charts.
+// Must be called on the main thread.
+func (a *CharacterWealth) setChartsVisible(visible bool) {
+	if visible {
 		a.overviewGrid.Show()
 		a.characterBreakdownCard.Show()
 	} else {
@@ -435,7 +428,7 @@ func wealthEmptyText(isFiltered bool, filteredCount, chartCount int) string {
 	}
 }
 
-func (a *CharacterWealth) updateCharacterBreakdown(rows []characterWealthRow) {
+func (a *CharacterWealth) updateCharacterBreakdown(rows []characterWealthRow, isLatest func() bool) {
 	var total float64
 	d := make([]characterWealthValue, 0, len(rows))
 	for _, r := range rows {
@@ -457,6 +450,9 @@ func (a *CharacterWealth) updateCharacterBreakdown(rows []characterWealthRow) {
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.characterBreakdownChart.SetValueAxis(fyneline.NewNumericAxis().
 			WithFormatter(wealthAxisValueFormatter).
 			WithDomain(0, axisMax).
@@ -466,7 +462,7 @@ func (a *CharacterWealth) updateCharacterBreakdown(rows []characterWealthRow) {
 	})
 }
 
-func (a *CharacterWealth) updateCharacterSplit(rows []characterWealthRow) {
+func (a *CharacterWealth) updateCharacterSplit(rows []characterWealthRow, isLatest func() bool) {
 	var total float64
 	d := make([]namedValue, 0, len(rows))
 	for _, r := range rows {
@@ -482,13 +478,16 @@ func (a *CharacterWealth) updateCharacterSplit(rows []characterWealthRow) {
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.characterSplitChart.SetData(d)
 		a.characterSplitCard.legend.SetEntries(entries...)
 		a.characterSplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Character - Total: %.1f B", total))
 	})
 }
 
-func (a *CharacterWealth) updateTotalSplit(rows []characterWealthRow) {
+func (a *CharacterWealth) updateTotalSplit(rows []characterWealthRow, isLatest func() bool) {
 	var assets, wallets, contracts, orders, total float64
 	for _, r := range rows {
 		assets += wealthBillions(r.combinedAssets)
@@ -505,6 +504,9 @@ func (a *CharacterWealth) updateTotalSplit(rows []characterWealthRow) {
 	}
 
 	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
 		a.totalSplitChart.SetData(d)
 		title := fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total)
 		a.totalSplitTitleLabel.SetText(title)

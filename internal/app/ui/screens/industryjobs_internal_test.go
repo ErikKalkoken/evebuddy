@@ -265,12 +265,18 @@ func TestIndustryJobs_ErrorDisplay(t *testing.T) {
 			Storage: st,
 		}))
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		defer db.Close()
 		a := newIndustryJobs(t, st)
 		a.rows = []industryJobRow{{jobID: 1, activity: app.Manufacturing, isInstallerMe: true, status: app.JobReady}}
 		a.filterRowsAsync("")
+		a.readyCount = 1
+		a.readyCountAll = 1
+		ready := -1
+		a.OnUpdate = func(n int) {
+			ready = n
+		}
 		if _, err := db.Exec("DROP TABLE character_industry_jobs"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -278,6 +284,10 @@ func TestIndustryJobs_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+		assert.Empty(t, a.rowsFiltered)
+		assert.Equal(t, 0, ready)
+		assert.Equal(t, 0, a.readyCountAll)
 
 		a.selectStatus.SetSelected(industryStatusHistory)
 		assert.True(t, a.errorLabel.Visible())

@@ -730,6 +730,13 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync("")
+			a.readyCount = 0
+			a.readyCountAll = 0
+			if a.OnUpdate != nil {
+				a.OnUpdate(0)
+			}
 			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
 			a.errorLabel.Show()
 			a.Refresh()

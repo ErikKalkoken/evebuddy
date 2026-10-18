@@ -251,6 +251,8 @@ func (a *Augmentations) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			a.treeData = xwidget.NewTreeData[augmentationNode]()
+			a.filterTreeAsync()
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()

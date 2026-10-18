@@ -2,9 +2,12 @@ package screens
 
 import (
 	"database/sql"
+	"slices"
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -358,35 +361,93 @@ func TestCharacterWealth_Filter(t *testing.T) {
 }
 
 func TestCharacterWealth_ErrorDisplay(t *testing.T) {
-	newScreen := func(t *testing.T) (*CharacterWealth, *sql.DB) {
-		db, st, _ := testutil.NewDBOnDisk(t)
+	newScreen := func(t *testing.T) (*CharacterWealth, *sql.DB, testutil.Factory) {
+		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		u := testdouble.NewUIFake(testdouble.UIParams{
 			App:     test.NewTempApp(t),
 			Storage: st,
 		})
 		a := NewCharacterWealth(u)
-		return a, db
+		return a, db, factory
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
-		a, db := newScreen(t)
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
+		a, db, factory := newScreen(t)
+		factory.CreateCharacterFull()
+		a.update(t.Context())
+		require.True(t, a.overviewGrid.Visible())
+		netWorth := optional.New(1.0)
+		a.OnUpdate = func(v optional.Optional[float64]) {
+			netWorth = v
+		}
 		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
 
 		a.update(t.Context())
-		assert.True(t, a.topLabel.Visible())
-		assert.Contains(t, a.topLabel.Text, "Failed to fetch data")
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.Equal(t, widget.DangerImportance, a.statusLabel.Importance)
+		assert.False(t, a.overviewGrid.Visible())
+		assert.Empty(t, a.rows)
+		assert.True(t, netWorth.IsEmpty())
 
 		a.filterRowsAsync()
-		assert.True(t, a.topLabel.Visible())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
 	})
-	t.Run("hides error after successful update", func(t *testing.T) {
-		a, _ := newScreen(t)
-		a.topLabel.SetText("ERROR: failed")
-		a.topLabel.Show()
+	t.Run("shows empty text in status label when there are no characters", func(t *testing.T) {
+		a, _, _ := newScreen(t)
 
 		a.update(t.Context())
-		assert.False(t, a.topLabel.Visible())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Equal(t, "No characters", a.statusLabel.Text)
+		assert.Equal(t, widget.LowImportance, a.statusLabel.Importance)
+		assert.False(t, a.overviewGrid.Visible())
+	})
+	t.Run("shows error on desktop", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
+	})
+	t.Run("shows error on mobile", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		a, _, _ := newScreen(t)
+		a.showStatus("ERROR: failed", widget.DangerImportance)
+
+		a.update(t.Context())
+		assert.NotContains(t, a.statusLabel.Text, "ERROR")
+		assert.NotEqual(t, widget.DangerImportance, a.statusLabel.Importance)
 	})
 }

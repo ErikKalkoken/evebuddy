@@ -91,8 +91,14 @@ func TestAugmentations_ErrorDisplay(t *testing.T) {
 		a := NewAugmentations(u)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears tree when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		td := xwidget.NewTreeData[augmentationNode]()
+		if err := td.Add(nil, &augmentationNode{characterID: 1, characterName: "Bruce"}, false); err != nil {
+			t.Fatal(err)
+		}
+		a.treeData = td
+		a.filterTreeAsync()
 		if _, err := db.Exec("DROP TABLE character_implants"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -100,6 +106,7 @@ func TestAugmentations_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Equal(t, 0, a.treeData.ChildrenCount(nil))
 
 		a.filterTreeAsync()
 		assert.True(t, a.errorLabel.Visible())
