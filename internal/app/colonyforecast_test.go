@@ -20,6 +20,7 @@ func TestColonyStatusString(t *testing.T) {
 
 func TestColonyStatusDisplay(t *testing.T) {
 	xassert.Equal(t, "Needs Attention", app.ColonyNeedsAttention.Display())
+	xassert.Equal(t, "No Activity", app.ColonyNoActivity.Display())
 }
 
 func TestColonyStatusColor(t *testing.T) {
@@ -28,34 +29,16 @@ func TestColonyStatusColor(t *testing.T) {
 		want fyne.ThemeColorName
 	}{
 		{app.ColonyNotSetup, theme.ColorNameError},
-		{app.ColonyNeedsAttention, theme.ColorNameError},
-		{app.ColonyIdle, theme.ColorNameWarning},
+		{app.ColonyStopped, theme.ColorNameError},
+		{app.ColonyNeedsAttention, theme.ColorNameWarning},
 		{app.ColonyProducing, theme.ColorNameForeground},
 		{app.ColonyExtracting, theme.ColorNameForeground},
+		{app.ColonyNoActivity, theme.ColorNamePlaceHolder},
 		{app.ColonyStatusUndefined, theme.ColorNameForeground},
 	}
 	for _, tc := range cases {
 		t.Run(tc.s.String(), func(t *testing.T) {
 			xassert.Equal(t, tc.want, tc.s.Color())
-		})
-	}
-}
-
-func TestColonyStatusIsWorking(t *testing.T) {
-	cases := []struct {
-		s    app.ColonyStatus
-		want bool
-	}{
-		{app.ColonyStatusUndefined, false},
-		{app.ColonyNotSetup, false},
-		{app.ColonyNeedsAttention, false},
-		{app.ColonyIdle, false},
-		{app.ColonyProducing, true},
-		{app.ColonyExtracting, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.s.String(), func(t *testing.T) {
-			xassert.Equal(t, tc.want, tc.s.IsWorking())
 		})
 	}
 }
@@ -67,10 +50,11 @@ func TestColonyStatusIsProblem(t *testing.T) {
 	}{
 		{app.ColonyStatusUndefined, false},
 		{app.ColonyNotSetup, true},
+		{app.ColonyStopped, true},
 		{app.ColonyNeedsAttention, true},
-		{app.ColonyIdle, false},
 		{app.ColonyProducing, false},
 		{app.ColonyExtracting, false},
+		{app.ColonyNoActivity, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.s.String(), func(t *testing.T) {

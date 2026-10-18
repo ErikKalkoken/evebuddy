@@ -118,6 +118,7 @@ func TestColonyDetails(t *testing.T) {
 	t.Run("should show colony status", func(t *testing.T) {
 		// factory without input route makes the colony not setup
 		assert.Contains(t, a.statusText.String(), app.ColonyNotSetup.Display())
+		assert.Contains(t, a.statusText.String(), " · stops "+expiry.Format(app.DateTimeFormat))
 	})
 	t.Run("should name pins with designator", func(t *testing.T) {
 		r := rowByType(t, pinTypeExtractor)
@@ -251,9 +252,9 @@ func TestColonyDetails(t *testing.T) {
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
 		a.icon.icon.Resource = nil
 		a.refreshForecast()
-		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // colony is not setup
+		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), false) // not setup, but still extracting
 		assert.Equal(t, want, a.icon.icon.Resource)
-		assert.True(t, a.icon.attention.Visible())
+		assert.False(t, a.icon.attention.Visible())
 	})
 	t.Run("should not restore colony on refresh after a failed update", func(t *testing.T) {
 		a.characterID.Store(0)

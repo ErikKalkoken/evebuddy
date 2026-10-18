@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
-// ColonyForecastHorizon is how far ahead a forecast looks for when a colony stops working.
+// ColonyForecastHorizon is how far ahead a forecast looks for when a colony stops working completely.
 const ColonyForecastHorizon = 30 * 24 * time.Hour
 
 // ColonyForecast is the estimated state of a PI colony at a point in time,
@@ -18,9 +18,11 @@ const ColonyForecastHorizon = 30 * 24 * time.Hour
 type ColonyForecast struct {
 	Pins               map[int64]*PinForecast // by pin ID
 	Status             ColonyStatus
+	Stopped            bool                         // has extractors or factories, but none is active and none will become active again
+	StoppedAt          optional.Optional[time.Time] // when the colony stopped working completely, if it was active after the snapshot
 	Time               time.Time                    // time of the forecast
 	ValidUntil         optional.Optional[time.Time] // forecast stays the same until then, except for the horizon; empty when nothing changes anymore
-	WorkEndsAt         optional.Optional[time.Time] // when the colony stops working, if within the horizon
+	WorkEndsAt         optional.Optional[time.Time] // when the colony stops working completely, if within the horizon
 	WorksBeyondHorizon bool                         // colony is still working at the horizon
 }
 
@@ -63,20 +65,22 @@ type ColonyStatus uint
 const (
 	ColonyStatusUndefined ColonyStatus = iota
 	ColonyNotSetup
+	ColonyStopped
 	ColonyNeedsAttention
-	ColonyIdle
 	ColonyProducing
 	ColonyExtracting
+	ColonyNoActivity
 )
 
 func (s ColonyStatus) String() string {
 	m := map[ColonyStatus]string{
 		ColonyStatusUndefined: "undefined",
 		ColonyNotSetup:        "not setup",
+		ColonyStopped:         "stopped",
 		ColonyNeedsAttention:  "needs attention",
-		ColonyIdle:            "idle",
 		ColonyProducing:       "producing",
 		ColonyExtracting:      "extracting",
+		ColonyNoActivity:      "no activity",
 	}
 	x, ok := m[s]
 	if !ok {
@@ -90,23 +94,20 @@ func (s ColonyStatus) Display() string {
 }
 
 func (s ColonyStatus) Color() fyne.ThemeColorName {
-	if s.IsProblem() {
+	switch s {
+	case ColonyNotSetup, ColonyStopped:
 		return theme.ColorNameError
-	}
-	if s == ColonyIdle {
+	case ColonyNeedsAttention:
 		return theme.ColorNameWarning
+	case ColonyNoActivity:
+		return theme.ColorNamePlaceHolder
 	}
 	return theme.ColorNameForeground
 }
 
 // IsProblem reports whether the colony needs the player's attention.
 func (s ColonyStatus) IsProblem() bool {
-	return s == ColonyNeedsAttention || s == ColonyNotSetup
-}
-
-// IsWorking reports whether the colony is extracting or producing.
-func (s ColonyStatus) IsWorking() bool {
-	return s == ColonyProducing || s == ColonyExtracting
+	return s == ColonyNotSetup || s == ColonyStopped || s == ColonyNeedsAttention
 }
 
 // PinStatus is the status of a planet pin.

@@ -504,7 +504,7 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMe
 	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
 		defaultValue: a.u.Settings().NotifyPIEnabled(),
 		label:        "Planetary Industry",
-		hint:         "Whether to notify when a PI colony stops working",
+		hint:         "Whether to notify when a PI colony has stopped completely",
 		getter:       a.u.Settings().NotifyPIEnabled,
 		onChanged: func(on bool) {
 			a.u.Settings().SetNotifyPIEnabled(on)

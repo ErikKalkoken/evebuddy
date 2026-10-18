@@ -144,6 +144,11 @@ func (p *pin) isFactory() bool {
 	return p.kind == kindFactory
 }
 
+// isProducer reports whether p is an extractor or factory.
+func (p *pin) isProducer() bool {
+	return p.kind == kindExtractor || p.isFactory()
+}
+
 func (p *pin) cycle() time.Duration {
 	switch p.kind {
 	case kindExtractor:

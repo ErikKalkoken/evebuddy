@@ -76,13 +76,15 @@ func TestForecast_Aborted(t *testing.T) {
 		assert.False(t, f.WorksBeyondHorizon)
 		assert.Contains(t, buf.String(), "Colony simulation aborted")
 	})
-	t.Run("should report no work end from WorkEndsAt when aborted", func(t *testing.T) {
+	t.Run("should report no stop time when aborted", func(t *testing.T) {
 		setMaxEvents(t, 10)
 		buf := captureLog(t)
-		assert.True(t, WorkEndsAt(cp, t0.Add(30*24*time.Hour)).IsEmpty())
+		f := Forecast(cp, t0.Add(30*24*time.Hour))
+		assert.True(t, f.StoppedAt.IsEmpty())
 		assert.Contains(t, buf.String(), "Colony simulation aborted")
 	})
-	t.Run("should report work end when not aborted", func(t *testing.T) {
-		assert.Equal(t, optional.New(t0.Add(20*24*time.Hour)), WorkEndsAt(cp, t0.Add(30*24*time.Hour)))
+	t.Run("should report stop time when not aborted", func(t *testing.T) {
+		f := Forecast(cp, t0.Add(30*24*time.Hour))
+		assert.Equal(t, optional.New(t0.Add(20*24*time.Hour)), f.StoppedAt)
 	})
 }

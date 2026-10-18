@@ -19,7 +19,7 @@ type runResult uint
 
 const (
 	runCompleted runResult = iota // reached the given time
-	runWorkEnded                  // the colony stopped working
+	runWorkEnded                  // the colony stopped working completely
 	runAborted                    // exceeded the event limit
 )
 
@@ -38,16 +38,17 @@ type sortedRoute struct {
 
 // simulation is a simulation of a PI colony.
 type simulation struct {
-	pins    map[int64]*pin
-	pinIDs  []int64 // sorted for deterministic iteration
-	routes  []route // sorted by ID
-	simTime time.Time
-	volumes map[int64]float64 // m3 per unit by type ID
-	atRest  bool              // nothing can change anymore, see isAtRest
-
-	queue     eventQueue
-	scheduled map[int64]event // currently valid event by pin ID
-	seq       uint64
+	atRest        bool              // nothing can change anymore, see isAtRest
+	lastActiveEnd time.Time         // when an extractor or factory last stopped being active
+	pinIDs        []int64           // sorted for deterministic iteration
+	pins          map[int64]*pin    // by pin ID
+	queue         eventQueue        // pending pin runs, ordered by time
+	routes        []route           // sorted by ID
+	scheduled     map[int64]event   // currently valid event by pin ID
+	seq           uint64            // sequence number of the last scheduled event
+	simTime       time.Time         // current time of the simulation
+	started       bool              // events at the snapshot time were processed
+	volumes       map[int64]float64 // m3 per unit by type ID
 }
 
 // newSimulation returns a new simulation of a colony, starting at the time of its last snapshot.
@@ -98,27 +99,28 @@ func newSimulation(cp *app.CharacterPlanet) *simulation {
 // runUntil advances the simulation to t.
 // It reports whether the simulation completed normally.
 func (s *simulation) runUntil(t time.Time) bool {
-	if !t.After(s.simTime) {
+	if t.Before(s.simTime) || s.started && t.Equal(s.simTime) {
 		return true
 	}
 	_, r := s.run(t, false)
 	return r != runAborted
 }
 
-// runUntilWorkEnds advances the simulation until the colony stops working
-// and returns the time when that happened.
+// runUntilWorkEnds advances the simulation until the colony stops working completely
+// and returns the time when the last extractor or factory stopped being active,
+// which is zero when none was active after the snapshot.
 // It returns [runCompleted] when the colony is still working at the horizon.
 func (s *simulation) runUntilWorkEnds(horizon time.Time) (time.Time, runResult) {
 	return s.run(horizon, true)
 }
 
 // forecast returns the state of the colony at the current simulation time.
+// The colony status is not set, because it depends on the future, see [colonyStatus].
 func (s *simulation) forecast() *app.ColonyForecast {
-	status, pinStatuses := s.colonyStatus(s.simTime)
+	pinStatuses := s.pinStatuses(s.simTime)
 	f := &app.ColonyForecast{
-		Pins:   make(map[int64]*app.PinForecast, len(s.pins)),
-		Status: status,
-		Time:   s.simTime,
+		Pins: make(map[int64]*app.PinForecast, len(s.pins)),
+		Time: s.simTime,
 	}
 	for _, id := range s.pinIDs {
 		p := s.pins[id]
@@ -177,12 +179,15 @@ func (s *simulation) nextChange() (time.Time, bool) {
 	return next, !next.IsZero()
 }
 
-// run runs the simulation until the given time or until the colony stops working.
-// It returns the simulation time at the end and why it stopped.
+// run runs the simulation until the given time or until the colony stops working completely.
+// It returns the simulation time at the end and why it stopped,
+// or the work end when the colony stopped working, see [simulation.runUntilWorkEnds].
+// To tell whether the colony has stopped, it runs past until while no extractor or factory is active.
 func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runResult) {
+	s.started = true
 	if s.atRest {
 		if untilWorkEnds {
-			return s.simTime, runWorkEnded
+			return s.lastActiveEnd, runWorkEnded
 		}
 		s.simTime = until
 		return until, runCompleted
@@ -190,7 +195,7 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 	s.queue = eventQueue{}
 	s.scheduled = make(map[int64]event)
 	for _, id := range s.pinIDs {
-		if p := s.pins[id]; p.canRun(until) {
+		if p := s.pins[id]; p.canRun(until) || (untilWorkEnds && p.isRunnable()) {
 			s.schedulePin(p)
 		}
 	}
@@ -204,33 +209,53 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 		}
 		delete(s.scheduled, e.pinID)
 		// check once all events at the current time are done
-		if e.time.After(s.simTime) {
+		// unlike RIFT, idle factories at rest do not run anymore, which keeps their last run time
+		if e.time.After(s.simTime) && s.isAtRest() {
+			s.atRest = true
 			if untilWorkEnds {
-				if status, _ := s.colonyStatus(s.simTime); !status.IsWorking() {
-					return s.simTime, runWorkEnded
-				}
+				return s.lastActiveEnd, runWorkEnded
 			}
-			// unlike RIFT, idle factories at rest do not run anymore, which keeps their last run time
-			if s.isAtRest() {
-				s.atRest = true
-				s.simTime = until
-				return until, runCompleted
-			}
-		}
-		if e.time.After(until) {
 			s.simTime = until
 			return until, runCompleted
 		}
+		limit := until
+		if e.time.After(until) {
+			if !untilWorkEnds || s.hasActivePin() {
+				s.simTime = until
+				return until, runCompleted
+			}
+			limit = e.time
+		}
 		s.simTime = e.time
-		if p := s.pins[e.pinID]; p.canRun(until) {
+		if p := s.pins[e.pinID]; p.canRun(limit) {
 			s.evaluatePin(p)
 		}
 	}
 	if untilWorkEnds {
-		return s.simTime, runWorkEnded
+		return s.lastActiveEnd, runWorkEnded
 	}
 	s.simTime = until
 	return until, runCompleted
+}
+
+// hasActivePin reports whether an extractor or factory is active.
+func (s *simulation) hasActivePin() bool {
+	for _, p := range s.pins {
+		if p.isProducer() && p.isActiveNow() {
+			return true
+		}
+	}
+	return false
+}
+
+// hasProducer reports whether the colony has an extractor or factory.
+func (s *simulation) hasProducer() bool {
+	for _, p := range s.pins {
+		if p.isProducer() {
+			return true
+		}
+	}
+	return false
 }
 
 // isAtRest reports whether the colony cannot change anymore:
@@ -299,7 +324,11 @@ func (s *simulation) evaluatePin(p *pin) {
 	if !p.canActivate() && !p.isActive {
 		return
 	}
+	wasActive := p.isActiveNow()
 	products := p.run(s.simTime)
+	if wasActive && !p.isActiveNow() {
+		s.lastActiveEnd = s.simTime
+	}
 	if p.isFactory() {
 		s.routeInput(p)
 	}
@@ -458,13 +487,21 @@ func (s *simulation) freeSpace(p *pin) float64 {
 	return p.capacity - s.usedVolume(p)
 }
 
-// colonyStatus returns the status of the colony and of all its pins at now.
-func (s *simulation) colonyStatus(now time.Time) (app.ColonyStatus, map[int64]app.PinStatus) {
+// pinStatuses returns the status of all pins at now.
+func (s *simulation) pinStatuses(now time.Time) map[int64]app.PinStatus {
 	pins := make(map[int64]app.PinStatus, len(s.pins))
-	var hasNotSetup, needsAttention, isExtracting, isProducing bool
 	for id, p := range s.pins {
-		ps := s.pinStatus(p, now)
-		pins[id] = ps
+		pins[id] = s.pinStatus(p, now)
+	}
+	return pins
+}
+
+// colonyStatus returns the status of a colony from the status of its pins,
+// whether it has an extractor or factory, whether it has stopped working completely
+// and whether it was at rest at the time of the pin statuses.
+func colonyStatus(pins []app.PinStatus, hasProducer, stopped, atRest bool) app.ColonyStatus {
+	var hasNotSetup, needsAttention, isExtracting, isProducing bool
+	for _, ps := range pins {
 		switch ps {
 		case app.PinNotSetup, app.PinInputNotRouted, app.PinOutputNotRouted:
 			hasNotSetup = true
@@ -476,20 +513,23 @@ func (s *simulation) colonyStatus(now time.Time) (app.ColonyStatus, map[int64]ap
 			isProducing = true
 		}
 	}
-	var status app.ColonyStatus
 	switch {
+	case !hasProducer:
+		return app.ColonyNoActivity
 	case hasNotSetup:
-		status = app.ColonyNotSetup
+		return app.ColonyNotSetup
+	case stopped:
+		return app.ColonyStopped
 	case needsAttention:
-		status = app.ColonyNeedsAttention
+		return app.ColonyNeedsAttention
 	case isExtracting:
-		status = app.ColonyExtracting
+		return app.ColonyExtracting
 	case isProducing:
-		status = app.ColonyProducing
-	default:
-		status = app.ColonyIdle
+		return app.ColonyProducing
+	case !atRest:
+		return app.ColonyProducing // a factory waiting to pull inputs on its next run
 	}
-	return status, pins
+	return app.ColonyStatusUndefined // at rest implies stopped, so this indicates a bug
 }
 
 func (s *simulation) pinStatus(p *pin, now time.Time) app.PinStatus {

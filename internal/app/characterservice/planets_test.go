@@ -122,7 +122,7 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		xassert.Equal(t, 1, count)
 		assert.Contains(t, content, p.EvePlanet.Name)
 	})
-	t.Run("should notify when storage is full", func(t *testing.T) {
+	t.Run("should not notify when storage is full while the extractor runs", func(t *testing.T) {
 		reset()
 		lastUpdate := now.Add(-4 * time.Hour)
 		p := createColony(colonyParams{
@@ -132,9 +132,23 @@ func TestNotifyStoppedColonies(t *testing.T) {
 			capacity:      500,
 			routeQuantity: 100, // fills the storage after 5 cycles
 		})
+		count, _, _ := notify(t, p.CharacterID)
+		xassert.Equal(t, 0, count)
+	})
+	t.Run("should notify when extractor expired after the storage filled up", func(t *testing.T) {
+		reset()
+		lastUpdate := now.Add(-10 * time.Hour)
+		p := createColony(colonyParams{
+			lastUpdate:    lastUpdate,
+			expiry:        now.Add(-time.Hour),
+			productVolume: 1,
+			capacity:      500,
+			routeQuantity: 100, // fills the storage after 5 cycles
+		})
 		count, _, content := notify(t, p.CharacterID)
 		xassert.Equal(t, 1, count)
-		assert.Contains(t, content, "31-111: "+app.PinStorageFull.Display(), "names the pin") // pin ID 2
+		assert.Contains(t, content, "21-111: "+app.PinExtractorExpired.Display(), "names the pin") // pin ID 1
+		assert.Contains(t, content, "31-111: "+app.PinStorageFull.Display(), "names the pin")      // pin ID 2
 	})
 	t.Run("should not notify while colony is working", func(t *testing.T) {
 		reset()
@@ -241,5 +255,24 @@ func TestNotifyStoppedColonies(t *testing.T) {
 		count, _, content := notify(t, p.CharacterID)
 		xassert.Equal(t, 1, count)
 		assert.Contains(t, content, p.EvePlanet.Name)
+	})
+	t.Run("should notify when not setup colony stopped", func(t *testing.T) {
+		reset()
+		lastUpdate := now.Add(-3 * time.Hour)
+		p := createColony(colonyParams{lastUpdate: lastUpdate, expiry: lastUpdate.Add(time.Hour)})
+		processorGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupProcessors})
+		processorType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: processorGroup.ID})
+		schematic := factory.CreateEveSchematic(storage.CreateEveSchematicParams{ID: 121, Name: "Water"})
+		// factory without routes makes the colony not setup
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+			CharacterPlanetID: p.ID,
+			PinID:             3,
+			TypeID:            processorType.ID,
+			SchematicID:       optional.New(schematic.ID),
+		})
+		count, _, content := notify(t, p.CharacterID)
+		xassert.Equal(t, 1, count)
+		assert.Contains(t, content, app.PinExtractorExpired.Display())
+		assert.Contains(t, content, app.PinInputNotRouted.Display())
 	})
 }

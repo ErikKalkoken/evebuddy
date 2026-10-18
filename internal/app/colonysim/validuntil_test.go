@@ -135,19 +135,26 @@ func FuzzForecast_StableUntilValidUntil(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, seed uint64) {
 		cp, now := randomColony(seed)
+		assert.NotEqual(t, app.ColonyStatusUndefined, colonysim.Forecast(cp, now).Status)
 		assertStableUntilValidUntil(t, cp, now)
 	})
 }
 
-func FuzzWorkEndsAt_MatchesForecast(f *testing.F) {
+func FuzzForecast_StoppedAtMatchesWorkEnd(f *testing.F) {
 	for seed := range uint64(50) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, seed uint64) {
 		cp, _ := randomColony(seed)
-		want := colonysim.Forecast(cp, cp.LastUpdate).WorkEndsAt
-		got := colonysim.WorkEndsAt(cp, cp.LastUpdate.Add(app.ColonyForecastHorizon))
-		assert.Equal(t, want, got)
+		workEndsAt, ok := colonysim.Forecast(cp, cp.LastUpdate).WorkEndsAt.Value()
+		if !ok {
+			return
+		}
+		for _, now := range []time.Time{workEndsAt, workEndsAt.Add(24 * time.Hour)} {
+			f := colonysim.Forecast(cp, now)
+			assert.True(t, f.Stopped, "not stopped at %s", now)
+			assert.Equal(t, optional.New(workEndsAt), f.StoppedAt, "at %s", now)
+		}
 	})
 }
 

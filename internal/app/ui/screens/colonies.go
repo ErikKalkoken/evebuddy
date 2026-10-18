@@ -45,6 +45,7 @@ type colonyRow struct {
 	searchTarget    string
 	solarSystemName string
 	status          app.ColonyStatus
+	stopped         bool // stopped working completely
 	tags            set.Set[string]
 	titleDisplay    []widget.RichTextSegment
 	workEndsAt      optional.Optional[time.Time]
@@ -57,18 +58,21 @@ var colonyBeyondHorizonText = fmt.Sprintf("> %d days", int(app.ColonyForecastHor
 // setForecast updates the row with a new forecast for its colony.
 func (r *colonyRow) setForecast(f *app.ColonyForecast) {
 	r.status = f.Status
+	r.stopped = f.Stopped
 	r.workEndsAt = f.WorkEndsAt
 	r.worksBeyond = f.WorksBeyondHorizon
-	if r.status.IsProblem() {
+	if r.stopped {
 		colonyPlanetIcon(r.planetIconID, true) // fill cache off the main thread
 	}
 }
 
 // compareWorkEnds orders colonies by when they stop working:
-// not working first, then by work end, then working beyond the horizon.
+// not working first, then by work end, then working beyond the horizon, then without activity.
 func (r colonyRow) compareWorkEnds(other colonyRow) int {
 	rank := func(x colonyRow) int {
 		switch {
+		case x.status == app.ColonyNoActivity:
+			return 3
 		case x.worksBeyond:
 			return 2
 		case x.workEndsAt.IsEmpty():
@@ -84,10 +88,6 @@ func (r colonyRow) compareWorkEnds(other colonyRow) int {
 	})
 }
 
-func (r colonyRow) needsAttention() bool {
-	return !r.status.IsWorking()
-}
-
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{
 		ColorName: r.status.Color(),
@@ -96,17 +96,16 @@ func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 }
 
 // statusShort returns a short status, which fits next to the colony name on mobile:
-// the remaining time for working colonies and the status otherwise.
+// the remaining time until work ends in the color of the status, or otherwise the status.
 func (r colonyRow) statusShort(now time.Time) []widget.RichTextSegment {
-	if r.status.IsWorking() {
-		if v, ok := r.workEndsAt.Value(); ok {
-			return xwidget.RichTextSegmentsFromText(ihumanize.Duration(v.Sub(now)))
-		}
-		if r.worksBeyond {
-			return xwidget.RichTextSegmentsFromText(colonyBeyondHorizonText)
-		}
+	style := widget.RichTextStyle{ColorName: r.status.Color()}
+	if v, ok := r.workEndsAt.Value(); ok {
+		return xwidget.RichTextSegmentsFromText(ihumanize.Duration(v.Sub(now)), style)
 	}
-	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{ColorName: r.status.Color()})
+	if r.worksBeyond {
+		return xwidget.RichTextSegmentsFromText(colonyBeyondHorizonText, style)
+	}
+	return xwidget.RichTextSegmentsFromText(r.status.Display(), style)
 }
 
 func (r colonyRow) workEndsDisplay() string {
@@ -193,10 +192,11 @@ type Colonies struct {
 
 // colonyStatusesHelpText explains the colony statuses.
 const colonyStatusesHelpText = `• Extracting: At least one extractor is running.
-• Producing: No extractor is running, but at least one factory is producing.
-• Idle: Nothing is extracting or producing.
-• Needs Attention: An extractor has expired or stopped, or a storage is full.
-• Not Setup: A facility is not configured, e.g. a factory without a schematic or with an input or output not routed.`
+• Producing: No extractor is running, but factories are producing or waiting for inputs.
+• Needs Attention: The colony is still working, but an extractor has expired or stopped, or a storage is full.
+• Stopped: Nothing is extracting or producing anymore, e.g. because all extractors have expired and factories have run out of inputs, or because an extractor never ran.
+• Not Setup: A facility is not configured, e.g. a factory without a schematic or with an input or output not routed.
+• No Activity: The colony has no extractors or factories, shown in game as "No Industrial Activity".`
 
 // colonyEstimateHelpText returns a note explaining that values are estimates.
 func colonyEstimateHelpText(values string) string {
@@ -208,8 +208,8 @@ func coloniesHelpText(isMobile bool) string {
 	var layout, notWorking string
 	if isMobile {
 		layout = `Each colony shows:
-• Planet icon: The type of planet. Grayed out with a red symbol when the colony needs attention or is not set up.
-• Top: The planet the colony is on and the time until work ends, or otherwise the colony's status.
+• Planet icon: The type of planet. Grayed out with a red symbol when the colony has stopped working.
+• Top: The planet the colony is on and the time until work ends in the color of its status, or otherwise the colony's status.
 • Extractor icon: The resources the extractors are set to extract.
 • Factory icon: The products the factories are set to produce.
 • Person icon: The character who owns the colony.`
@@ -221,14 +221,14 @@ Extracting: The resources the extractors are set to extract.
 Producing: The products the factories are set to produce.
 
 Character: The character who owns the colony.`
-		notWorking = ` and "-" when it is not working`
+		notWorking = ` and "-" when it has stopped or has no activity`
 	}
 	return fmt.Sprintf(`%s
 
 Status: The estimated current status of the colony:
 %s
 
-Work ends: When the colony is estimated to stop working, e.g. when the last extractor expires or factories run out of inputs. Shows "%s" when the colony keeps working beyond that%s.
+Work ends: When the colony is estimated to stop working completely, e.g. when the last extractor expires and factories run out of inputs. Shows "%s" when the colony keeps working beyond that%s.
 
 %s`, layout, colonyStatusesHelpText, colonyBeyondHorizonText, notWorking, colonyEstimateHelpText("Status and work end"))
 }
@@ -248,7 +248,7 @@ func NewColonies(u baseUI) *Colonies {
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
 			border[0].(*xwidget.RichText).Set(r.nameDisplay)
-			border[1].(*colonyPlanetSymbol).set(r.planetIconID, r.status.IsProblem())
+			border[1].(*colonyPlanetSymbol).set(r.planetIconID, r.stopped)
 		},
 	}, {
 		Label: "Status",
@@ -498,7 +498,7 @@ func (w *colonyListItem) set(r colonyRow) {
 	muted := widget.RichTextStyle{ColorName: colonyListMutedColor}
 	w.character.SetWithText(r.ownerName, muted)
 	w.extracting.SetWithText(r.extractingText, muted)
-	w.planet.set(r.planetIconID, r.status.IsProblem())
+	w.planet.set(r.planetIconID, r.stopped)
 	w.producing.SetWithText(r.producingText, muted)
 	w.status.Set(r.statusShort(time.Now()))
 	w.title.Set(r.titleDisplay)
@@ -579,14 +579,14 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		producingOptions := slices.Collect(producing2.All())
 
 		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
-		var attention int
+		var notWorking int
 		for _, r := range rows {
-			if r.needsAttention() {
-				attention++
+			if r.stopped {
+				notWorking++
 			}
 		}
-		if attention > 0 {
-			footer += fmt.Sprintf(" • %d not working", attention)
+		if notWorking > 0 {
+			footer += fmt.Sprintf(" • %d not working", notWorking)
 		}
 
 		fyne.Do(func() {
@@ -678,14 +678,14 @@ func (a *Colonies) refreshForecasts() {
 }
 
 func (a *Colonies) setOnUpdate() {
-	var attention int
+	var notWorking int
 	for _, r := range a.rows {
-		if r.needsAttention() {
-			attention++
+		if r.stopped {
+			notWorking++
 		}
 	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.rows), attention)
+		a.OnUpdate(len(a.rows), notWorking)
 	}
 }
 

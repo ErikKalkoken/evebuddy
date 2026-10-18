@@ -130,7 +130,7 @@ func (w *colonyPinWidget) Set(r colonyDetailsRow) {
 }
 
 // colonyPlanetSymbol shows the planet icon of a colony,
-// grayed out and with an attention icon on top when the colony has problems.
+// grayed out and with an attention icon on top when the colony has stopped.
 type colonyPlanetSymbol struct {
 	widget.BaseWidget
 
@@ -166,16 +166,16 @@ func (w *colonyPlanetSymbol) updateAttentionSize() {
 	w.attention.SetMinSize(fyne.NewSquareSize(w.attentionScale * w.Theme().Size(theme.SizeNameInlineIcon)))
 }
 
-// set shows the planet icon with iconID and whether the colony has problems.
-func (w *colonyPlanetSymbol) set(iconID int64, hasProblem bool) {
-	if icon := colonyPlanetIcon(iconID, hasProblem); w.icon.Resource != icon {
+// set shows the planet icon with iconID and whether the colony has stopped.
+func (w *colonyPlanetSymbol) set(iconID int64, stopped bool) {
+	if icon := colonyPlanetIcon(iconID, stopped); w.icon.Resource != icon {
 		w.icon.Resource = icon
 		w.icon.Refresh()
 	}
-	if hasProblem == w.attention.Visible() {
+	if stopped == w.attention.Visible() {
 		return
 	}
-	if hasProblem {
+	if stopped {
 		w.attention.Show()
 		w.Refresh() // needs Refresh after Show; Fyne won't repaint never-visible objects
 	} else {

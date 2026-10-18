@@ -2,6 +2,7 @@ package screens
 
 import (
 	"database/sql"
+	"slices"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestColonies(t *testing.T) {
@@ -81,7 +83,7 @@ func TestColonies(t *testing.T) {
 				assert.True(t, r.workEndsAt.MustValue().Equal(expiry))
 				assert.Equal(t, cp.EvePlanet.Type.IconID.ValueOrZero(), r.planetIconID)
 			} else {
-				assert.Equal(t, app.ColonyIdle, r.status)
+				assert.Equal(t, app.ColonyNoActivity, r.status)
 				assert.True(t, r.workEndsAt.IsEmpty())
 			}
 		}
@@ -140,6 +142,20 @@ func TestColonies(t *testing.T) {
 	})
 }
 
+func TestColonyRow_CompareWorkEnds(t *testing.T) {
+	now := time.Now()
+	stopped := colonyRow{status: app.ColonyStopped, stopped: true}
+	early := colonyRow{status: app.ColonyExtracting, workEndsAt: optional.New(now.Add(time.Hour))}
+	late := colonyRow{status: app.ColonyNeedsAttention, workEndsAt: optional.New(now.Add(2 * time.Hour))}
+	beyond := colonyRow{status: app.ColonyProducing, worksBeyond: true}
+	noActivity := colonyRow{status: app.ColonyNoActivity}
+	rows := []colonyRow{noActivity, beyond, late, stopped, early}
+	slices.SortStableFunc(rows, colonyRow.compareWorkEnds)
+	got := xslices.Map(rows, func(r colonyRow) app.ColonyStatus { return r.status })
+	want := []app.ColonyStatus{app.ColonyStopped, app.ColonyExtracting, app.ColonyNeedsAttention, app.ColonyProducing, app.ColonyNoActivity}
+	assert.Equal(t, want, got)
+}
+
 func TestColonyRow_StatusShort(t *testing.T) {
 	now := time.Now()
 	for _, tc := range []struct {
@@ -152,13 +168,13 @@ func TestColonyRow_StatusShort(t *testing.T) {
 			"working shows remaining time",
 			colonyRow{status: app.ColonyExtracting, workEndsAt: optional.New(now.Add(3 * time.Hour))},
 			"3h 0m",
-			"",
+			app.ColonyExtracting.Color(),
 		},
 		{
 			"working beyond horizon",
 			colonyRow{status: app.ColonyProducing, worksBeyond: true},
 			colonyBeyondHorizonText,
-			"",
+			app.ColonyProducing.Color(),
 		},
 		{
 			"working without end shows status",
@@ -167,22 +183,34 @@ func TestColonyRow_StatusShort(t *testing.T) {
 			app.ColonyExtracting.Color(),
 		},
 		{
-			"idle shows status",
-			colonyRow{status: app.ColonyIdle},
-			app.ColonyIdle.Display(),
-			app.ColonyIdle.Color(),
-		},
-		{
-			"needs attention shows status",
-			colonyRow{status: app.ColonyNeedsAttention},
-			app.ColonyNeedsAttention.Display(),
+			"needs attention shows remaining time in its color",
+			colonyRow{status: app.ColonyNeedsAttention, workEndsAt: optional.New(now.Add(3 * time.Hour))},
+			"3h 0m",
 			app.ColonyNeedsAttention.Color(),
 		},
 		{
-			"not setup shows status",
+			"needs attention beyond horizon in its color",
+			colonyRow{status: app.ColonyNeedsAttention, worksBeyond: true},
+			colonyBeyondHorizonText,
+			app.ColonyNeedsAttention.Color(),
+		},
+		{
+			"not setup shows remaining time in its color",
+			colonyRow{status: app.ColonyNotSetup, workEndsAt: optional.New(now.Add(3 * time.Hour))},
+			"3h 0m",
+			app.ColonyNotSetup.Color(),
+		},
+		{
+			"not setup without end shows status",
 			colonyRow{status: app.ColonyNotSetup},
 			app.ColonyNotSetup.Display(),
 			app.ColonyNotSetup.Color(),
+		},
+		{
+			"stopped shows status",
+			colonyRow{status: app.ColonyStopped, stopped: true},
+			app.ColonyStopped.Display(),
+			app.ColonyStopped.Color(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -197,15 +225,15 @@ func TestColonyRow_StatusShort(t *testing.T) {
 
 func TestColonyListItem(t *testing.T) {
 	test.NewTempApp(t)
-	t.Run("should show attention icon only for colonies with problems", func(t *testing.T) {
+	t.Run("should show attention icon only for stopped colonies", func(t *testing.T) {
 		w := newColonyListItem()
 		win := test.NewWindow(w)
 		t.Cleanup(win.Close)
-		w.set(colonyRow{status: app.ColonyNeedsAttention})
+		w.set(colonyRow{status: app.ColonyStopped, stopped: true})
 		assert.True(t, w.planet.attention.Visible())
 		w.set(colonyRow{status: app.ColonyExtracting}) // row is recycled
 		assert.False(t, w.planet.attention.Visible())
-		w.set(colonyRow{status: app.ColonyIdle})
+		w.set(colonyRow{status: app.ColonyNeedsAttention})
 		assert.False(t, w.planet.attention.Visible())
 	})
 }
@@ -244,7 +272,7 @@ func TestColonyFilter_Match(t *testing.T) {
 		{"produced", colonyFilter{produced: "Oxygen"}, false},
 		{"region", colonyFilter{region: "Domain"}, false},
 		{"solar system", colonyFilter{solarSystem: "Amarr"}, false},
-		{"status", colonyFilter{status: app.ColonyIdle.Display()}, false},
+		{"status", colonyFilter{status: app.ColonyStopped.Display()}, false},
 		{"tag", colonyFilter{tag: "Alt"}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -252,26 +280,26 @@ func TestColonyFilter_Match(t *testing.T) {
 		})
 	}
 	t.Run("attention matches colonies with problems", func(t *testing.T) {
-		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup} {
+		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup, app.ColonyStopped} {
 			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}), s.Display())
 		}
-		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyIdle}))
+		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyProducing}))
 	})
 }
 
 func TestColonyRow_SetForecast(t *testing.T) {
 	const iconID = 1047
-	t.Run("should cache grayscale planet icon for problems", func(t *testing.T) {
+	t.Run("should cache grayscale planet icon when stopped", func(t *testing.T) {
 		grayscalePlanetIconCache.Delete(iconID)
 		r := colonyRow{planetIconID: iconID}
-		r.setForecast(&app.ColonyForecast{Status: app.ColonyNeedsAttention})
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyStopped, Stopped: true})
 		_, ok := grayscalePlanetIconCache.Load(iconID)
 		assert.True(t, ok)
 	})
-	t.Run("should not cache grayscale planet icon when working", func(t *testing.T) {
+	t.Run("should not cache grayscale planet icon when working with problems", func(t *testing.T) {
 		grayscalePlanetIconCache.Delete(iconID)
 		r := colonyRow{planetIconID: iconID}
-		r.setForecast(&app.ColonyForecast{Status: app.ColonyExtracting})
+		r.setForecast(&app.ColonyForecast{Status: app.ColonyNeedsAttention})
 		_, ok := grayscalePlanetIconCache.Load(iconID)
 		assert.False(t, ok)
 	})

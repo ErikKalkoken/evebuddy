@@ -50,7 +50,8 @@ func TestSimulation_ExtractorToStorage(t *testing.T) {
 	})
 	t.Run("should forecast state after expiry", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(5*time.Hour))
-		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
+		assert.Equal(t, app.ColonyStopped, f.Status)
+		assert.True(t, f.Stopped)
 		assert.Equal(t, app.PinExtractorExpired, f.Pins[1].Status)
 		assert.False(t, f.Pins[1].IsActive)
 		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.Pins[1].LastRunTime)
@@ -97,19 +98,22 @@ func TestSimulation_Horizon(t *testing.T) {
 	})
 }
 
-func TestWorkEndsAt(t *testing.T) {
-	t.Run("should report work end beyond the forecast horizon", func(t *testing.T) {
+func TestForecast_StoppedAt(t *testing.T) {
+	t.Run("should report when the colony stopped beyond the forecast horizon", func(t *testing.T) {
 		expiry := t0.Add(40 * 24 * time.Hour)
-		got := colonysim.WorkEndsAt(newExtractorColony(expiry), t0.Add(60*24*time.Hour))
-		assert.Equal(t, optional.New(expiry), got)
+		f := colonysim.Forecast(newExtractorColony(expiry), t0.Add(60*24*time.Hour))
+		assert.True(t, f.Stopped)
+		assert.Equal(t, optional.New(expiry), f.StoppedAt)
 	})
 	t.Run("should report nothing when colony was not working at the snapshot", func(t *testing.T) {
-		got := colonysim.WorkEndsAt(newExtractorColony(t0.Add(-time.Hour)), t0.Add(60*24*time.Hour))
-		assert.True(t, got.IsEmpty())
+		f := colonysim.Forecast(newExtractorColony(t0.Add(-time.Hour)), t0.Add(time.Hour))
+		assert.True(t, f.Stopped)
+		assert.True(t, f.StoppedAt.IsEmpty())
 	})
-	t.Run("should report nothing when colony is still working at until", func(t *testing.T) {
-		got := colonysim.WorkEndsAt(newExtractorColony(t0.Add(40*24*time.Hour)), t0.Add(20*24*time.Hour))
-		assert.True(t, got.IsEmpty())
+	t.Run("should report nothing while colony is still working", func(t *testing.T) {
+		f := colonysim.Forecast(newExtractorColony(t0.Add(40*24*time.Hour)), t0.Add(20*24*time.Hour))
+		assert.False(t, f.Stopped)
+		assert.True(t, f.StoppedAt.IsEmpty())
 	})
 }
 
@@ -132,7 +136,8 @@ func TestSimulation_StorageToFactoryToLaunchpad(t *testing.T) {
 	})
 	t.Run("should forecast state after inputs ran out", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0.Add(3*time.Hour))
-		assert.Equal(t, app.ColonyIdle, f.Status)
+		assert.Equal(t, app.ColonyStopped, f.Status)
+		assert.True(t, f.Stopped)
 		assert.Equal(t, app.PinFactoryIdle, f.Pins[2].Status)
 		assert.Equal(t, map[int64]int64{typeWater: 60}, f.Pins[3].Contents)
 		assert.Empty(t, f.Pins[1].Contents)
@@ -244,9 +249,9 @@ func TestSimulation_ExtractorToStorageToFactory(t *testing.T) {
 		assert.Equal(t, map[int64]int64{typeWater: 120}, f.Pins[4].Contents)
 		assert.Equal(t, int64(2), inputs(f))
 	})
-	t.Run("should end work when extractor expires", func(t *testing.T) {
+	t.Run("should end work when factory has processed the last extracted inputs", func(t *testing.T) {
 		f := colonysim.Forecast(cp, t0)
-		assert.Equal(t, optional.New(t0.Add(4*time.Hour)), f.WorkEndsAt)
+		assert.Equal(t, optional.New(t0.Add(270*time.Minute)), f.WorkEndsAt) // last batch starts at expiry
 	})
 }
 
@@ -597,7 +602,7 @@ func TestForecast_BeforeSnapshot(t *testing.T) {
 	t.Run("should report no work end for colony not working at the snapshot", func(t *testing.T) {
 		cp := newPlanet(t0.Add(-time.Hour))
 		got := colonysim.Forecast(cp, t0.Add(-time.Minute))
-		assert.Equal(t, app.ColonyNeedsAttention, got.Status)
+		assert.Equal(t, app.ColonyStopped, got.Status)
 		assert.True(t, got.WorkEndsAt.IsEmpty())
 		assert.Equal(t, colonysim.Forecast(cp, t0), got)
 	})
@@ -675,7 +680,7 @@ func TestForecast_AtRest(t *testing.T) {
 		now := t0.Add(3 * 365 * 24 * time.Hour)
 		f := colonysim.Forecast(newAbandonedColony(), now)
 		assert.Equal(t, now, f.Time)
-		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
+		assert.Equal(t, app.ColonyStopped, f.Status)
 		assert.Equal(t, app.PinExtractorExpired, f.Pins[1].Status)
 		assert.Equal(t, app.PinFactoryIdle, f.Pins[3].Status)
 		assert.Equal(t, app.PinFactoryIdle, f.Pins[4].Status)
@@ -778,4 +783,141 @@ func BenchmarkForecast_OldIdleColony(b *testing.B) {
 	for b.Loop() {
 		colonysim.Forecast(cp, now)
 	}
+}
+
+func TestForecast_Stopped(t *testing.T) {
+	t.Run("should keep working while storage is full and the extractor runs", func(t *testing.T) {
+		expiry := t0.Add(24 * time.Hour)
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, expiry),
+				newStorage(2, app.EveGroupStorageFacilities, 50),
+			},
+			Routes: []*app.PlanetRoute{newRoute(1, 1, 2, aqueousLiquids, 10_000)},
+		}
+		f := colonysim.Forecast(cp, t0.Add(10*time.Hour))
+		assert.Equal(t, app.PinStorageFull, f.Pins[2].Status)
+		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
+		assert.False(t, f.Stopped)
+		assert.Equal(t, optional.New(expiry), f.WorkEndsAt)
+	})
+	t.Run("should keep working until the last extractor expires", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour)),
+				newExtractor(2, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(8*time.Hour)),
+				newStorage(3, app.EveGroupStorageFacilities, 1_000_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 3, aqueousLiquids, 10_000),
+				newRoute(2, 2, 3, aqueousLiquids, 10_000),
+			},
+		}
+		f := colonysim.Forecast(cp, t0.Add(5*time.Hour))
+		assert.Equal(t, app.ColonyNeedsAttention, f.Status)
+		assert.False(t, f.Stopped)
+		assert.Equal(t, optional.New(t0.Add(8*time.Hour)), f.WorkEndsAt)
+	})
+	t.Run("should keep working while factory waits for inputs from a running extractor", func(t *testing.T) {
+		expiry := t0.Add(4 * time.Hour)
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newExtractor(1, aqueousLiquids, 10, 30*time.Minute, t0, expiry), // never enough for a batch
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+				newFactory(3, schematicWater),
+				newStorage(4, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, aqueousLiquids, 10_000),
+				newRoute(2, 2, 3, aqueousLiquids, 3000),
+				newRoute(3, 3, 4, water, 20),
+			},
+		}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, app.PinFactoryIdle, f.Pins[3].Status)
+		assert.Equal(t, app.ColonyExtracting, f.Status)
+		assert.False(t, f.Stopped)
+		assert.Equal(t, optional.New(expiry), f.WorkEndsAt)
+	})
+	t.Run("should keep working while factory collects inputs over several runs", func(t *testing.T) {
+		// the route delivers a third of a batch per run, so the factory is idle in between
+		cp := newFactoryColony(6000)
+		cp.Routes[0].Quantity = 1000
+		f := colonysim.Forecast(cp, t0.Add(15*time.Minute))
+		assert.False(t, f.Pins[2].IsActive)
+		assert.Equal(t, app.ColonyProducing, f.Status)
+		assert.False(t, f.Stopped)
+		assert.True(t, f.WorkEndsAt.MustValue().After(t0.Add(time.Hour)))
+	})
+	t.Run("should stop when a factory chain has produced its last batch", func(t *testing.T) {
+		// the superconductors factory keeps waiting for water, which never comes
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupStorageFacilities, 12_000,
+					&app.PlanetPinContent{Type: suspendedPlasma, Amount: 6000},
+				),
+				newFactory(2, schematicPlasmoids),
+				newFactory(3, schematicSuperconductors),
+				newStorage(4, app.EveGroupSpaceports, 10_000),
+			},
+			Routes: []*app.PlanetRoute{
+				newRoute(1, 1, 2, suspendedPlasma, 3000),
+				newRoute(2, 2, 3, plasmoids, 20),
+				newRoute(3, 1, 3, water, 40),
+				newRoute(4, 3, 4, superconductors, 5),
+			},
+		}
+		lastProduction := t0.Add(time.Hour)
+		assert.Equal(t, optional.New(lastProduction), colonysim.Forecast(cp, t0).WorkEndsAt)
+		f := colonysim.Forecast(cp, t0.Add(90*time.Minute)) // before the colony is at rest
+		assert.Equal(t, app.ColonyStopped, f.Status)
+		assert.True(t, f.Stopped)
+		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.Equal(t, optional.New(lastProduction), f.StoppedAt)
+	})
+	t.Run("should process the snapshot before forecasting at the snapshot", func(t *testing.T) {
+		f := colonysim.Forecast(newFactoryColony(9000), t0)
+		assert.Equal(t, app.PinProducing, f.Pins[2].Status)
+		assert.True(t, f.Pins[2].IsActive)
+	})
+	t.Run("should report not setup over stopped", func(t *testing.T) {
+		expiry := t0.Add(4 * time.Hour)
+		cp := newExtractorColony(expiry)
+		cp.Pins = append(cp.Pins, newFactory(3, schematicWater)) // inputs not routed
+		f1 := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, app.ColonyNotSetup, f1.Status)
+		assert.False(t, f1.Stopped)
+		assert.Equal(t, optional.New(expiry), f1.WorkEndsAt)
+		f2 := colonysim.Forecast(cp, t0.Add(5*time.Hour))
+		assert.Equal(t, app.ColonyNotSetup, f2.Status)
+		assert.True(t, f2.Stopped)
+	})
+	t.Run("should report no activity for a colony without extractors and factories", func(t *testing.T) {
+		cp := &app.CharacterPlanet{
+			LastUpdate: t0,
+			Pins: []*app.PlanetPin{
+				newStorage(1, app.EveGroupCommandCenters, 500),
+				newStorage(2, app.EveGroupStorageFacilities, 12_000),
+			},
+		}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, app.ColonyNoActivity, f.Status)
+		assert.False(t, f.Stopped)
+		assert.True(t, f.StoppedAt.IsEmpty())
+		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.False(t, f.WorksBeyondHorizon)
+	})
+	t.Run("should report stopped for an extractor which never ran", func(t *testing.T) {
+		cp := newExtractorColony(t0.Add(4 * time.Hour))
+		cp.Pins[0].LastCycleStart = optional.Optional[time.Time]{}
+		f := colonysim.Forecast(cp, t0.Add(time.Hour))
+		assert.Equal(t, app.ColonyStopped, f.Status)
+		assert.True(t, f.Stopped)
+		assert.True(t, f.WorkEndsAt.IsEmpty())
+		assert.True(t, f.StoppedAt.IsEmpty())
+	})
 }
