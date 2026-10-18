@@ -361,21 +361,21 @@ func TestCharacterWealth_Filter(t *testing.T) {
 }
 
 func TestCharacterWealth_ErrorDisplay(t *testing.T) {
-	newScreen := func(t *testing.T) (*CharacterWealth, *sql.DB) {
-		db, st, _ := testutil.NewDBOnDisk(t)
+	newScreen := func(t *testing.T) (*CharacterWealth, *sql.DB, testutil.Factory) {
+		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		u := testdouble.NewUIFake(testdouble.UIParams{
 			App:     test.NewTempApp(t),
 			Storage: st,
 		})
 		a := NewCharacterWealth(u)
-		return a, db
+		return a, db, factory
 	}
 	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
-		a, db := newScreen(t)
-		corp := &app.EveEntity{ID: 1, Name: "Corp A", Category: app.EveEntityCorporation}
-		a.rows = []characterWealthRow{{characterName: "Alpha", corporation: corp}}
-		a.filterRowsAsync()
+		a, db, factory := newScreen(t)
+		factory.CreateCharacterFull()
+		a.update(t.Context())
+		require.True(t, a.overviewGrid.Visible())
 		netWorth := optional.New(1.0)
 		a.OnUpdate = func(v optional.Optional[float64]) {
 			netWorth = v
@@ -397,7 +397,7 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
 	})
 	t.Run("shows empty text in status label when there are no characters", func(t *testing.T) {
-		a, _ := newScreen(t)
+		a, _, _ := newScreen(t)
 
 		a.update(t.Context())
 		assert.True(t, a.statusLabel.Visible())
@@ -443,7 +443,7 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
 	})
 	t.Run("hides error after successful update", func(t *testing.T) {
-		a, _ := newScreen(t)
+		a, _, _ := newScreen(t)
 		a.showStatus("ERROR: failed", widget.DangerImportance)
 
 		a.update(t.Context())

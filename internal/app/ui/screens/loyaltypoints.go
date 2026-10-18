@@ -112,6 +112,7 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	a.errorLabel.Importance = widget.DangerImportance
 	a.errorLabel.Hide()
 	a.tree = a.makeTree()
 	if a.u.IsMobile() {
@@ -344,9 +345,7 @@ func (a *LoyaltyPoints) update(ctx context.Context) {
 			}
 			a.data = nil
 			a.filterTreeAsync()
-			a.errorLabel.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.errorLabel.Importance = widget.DangerImportance
-			a.errorLabel.Refresh()
+			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 		})
 		return
