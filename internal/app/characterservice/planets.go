@@ -85,8 +85,8 @@ func (s *CharacterService) clearForecasts(characterID int64) {
 	})
 }
 
-// NotifyStoppedColonies sends notifications for colonies of a character which stopped working.
-// A colony is notified once per snapshot and only when it was working at the snapshot.
+// NotifyStoppedColonies sends notifications for colonies of a character which stopped working completely.
+// A colony is notified once per snapshot and only when it was active after the snapshot.
 // It will send one notification covering all colonies which stopped working.
 func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterID int64, earliest time.Time, notify func(title, content string)) error {
 	_, err, _ := s.sfg.Do(fmt.Sprintf("NotifyStoppedColonies-%d", characterID), func() (any, error) {
@@ -110,12 +110,11 @@ func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterI
 				continue
 			}
 			f := s.ForecastPlanet(p, now)
-			if f.Status.IsWorking() {
+			if !f.Stopped {
 				continue
 			}
-			// work end is only set when the colony was working at the snapshot
-			workEndsAt, ok := colonysim.WorkEndsAt(p, now).Value()
-			if !ok || workEndsAt.Before(earliest) {
+			stoppedAt, ok := f.StoppedAt.Value()
+			if !ok || stoppedAt.Before(earliest) {
 				continue
 			}
 			var reasons []string
@@ -126,7 +125,7 @@ func (s *CharacterService) NotifyStoppedColonies(ctx context.Context, characterI
 			}
 			slices.Sort(reasons)
 			if len(reasons) == 0 {
-				reasons = append(reasons, app.ColonyIdle.Display())
+				reasons = append(reasons, "No inputs left")
 			}
 			stopped = append(stopped, stoppedPlanet{
 				evePlanetID: p.EvePlanet.ID,

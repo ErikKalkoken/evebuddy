@@ -15,7 +15,7 @@ import (
 )
 
 // Forecast returns the estimated state of a colony at now
-// including when it will stop working within [app.ColonyForecastHorizon]
+// including whether and when it stops working completely within [app.ColonyForecastHorizon]
 // and until when the forecast stays the same.
 func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	if now.Before(cp.LastUpdate) {
@@ -27,6 +27,8 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 		logAborted(cp, s.simTime)
 	}
 	f := s.forecast()
+	atRest := s.isAtRest()
+	hasProducer := s.hasProducer()
 	validUntil, hasChange := s.nextChange()
 	if !ok {
 		validUntil, hasChange = now, true // incomplete, so never reuse
@@ -34,6 +36,10 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	t, r := s.runUntilWorkEnds(now.Add(app.ColonyForecastHorizon))
 	switch r {
 	case runWorkEnded:
+		f.Stopped = hasProducer && !t.After(now)
+		if f.Stopped && t.After(cp.LastUpdate) {
+			f.StoppedAt = optional.New(t)
+		}
 		if t.After(now) {
 			f.WorkEndsAt = optional.New(t)
 			// the work end is only reported while it is in the future
@@ -49,24 +55,12 @@ func Forecast(cp *app.CharacterPlanet, now time.Time) *app.ColonyForecast {
 	if hasChange {
 		f.ValidUntil = optional.New(validUntil)
 	}
-	return f
-}
-
-// WorkEndsAt returns when the colony stops working after its snapshot,
-// if it was working at the snapshot and stops before until.
-// Unlike [Forecast] it is not limited by [app.ColonyForecastHorizon].
-func WorkEndsAt(cp *app.CharacterPlanet, until time.Time) optional.Optional[time.Time] {
-	s := newSimulation(cp)
-	t, r := s.runUntilWorkEnds(until)
-	switch r {
-	case runWorkEnded:
-		if t.After(cp.LastUpdate) {
-			return optional.New(t)
-		}
-	case runAborted:
-		logAborted(cp, t)
+	pinStatuses := make([]app.PinStatus, 0, len(f.Pins))
+	for _, pf := range f.Pins {
+		pinStatuses = append(pinStatuses, pf.Status)
 	}
-	return optional.Optional[time.Time]{}
+	f.Status = colonyStatus(pinStatuses, hasProducer, f.Stopped, atRest)
+	return f
 }
 
 // logAborted logs a simulation which exceeded the event limit, which indicates a bug.

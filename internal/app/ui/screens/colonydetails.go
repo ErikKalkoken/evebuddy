@@ -91,7 +91,7 @@ type colonyDetails struct {
 	u             baseUI
 }
 
-var colonyDetailsHelpText = fmt.Sprintf(`Status: The estimated current status of the colony and when it will stop working.
+var colonyDetailsHelpText = fmt.Sprintf(`Status: The estimated current status of the colony and when it will stop working completely.
 %s
 
 Installations: Each installation shows its estimated current state.
@@ -100,7 +100,7 @@ Symbols:
 • Icon: The type of installation.
 • Outer ring: Green when working, gray when idle or not producing anything, red when it needs attention.
 • Inner ring: The progress of the extractor program or the processor cycle, or how full a storage is.
-• Red symbol and grayed-out planet: The colony needs attention or is not set up.
+• Red symbol and grayed-out planet: The colony has stopped working.
 
 Extractor: The resource being extracted, the time left until the program ends and the date when it ends.
 
@@ -403,12 +403,12 @@ func (a *colonyDetails) refreshForecast() {
 	isLatest := a.forecastRun.start()
 	gen := a.rowsGen
 	runAsync(func() {
-		colonyStatus, status, rows := a.makeRows(cp, time.Now())
+		stopped, status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
 			if !isLatest() || a.rowsGen != gen {
 				return
 			}
-			a.setStatus(cp, colonyStatus, status)
+			a.setStatus(cp, stopped, status)
 			a.rows = rows
 			a.filterRowsAsync()
 		})
@@ -521,7 +521,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
-	colonyStatus, status, rows := a.makeRows(cp, time.Now())
+	stopped, status, rows := a.makeRows(cp, time.Now())
 
 	fyne.Do(func() {
 		if !isLatest() {
@@ -541,7 +541,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		}
 
 		a.colony = cp
-		a.setStatus(cp, colonyStatus, status)
+		a.setStatus(cp, stopped, status)
 		a.rows = rows
 		a.rowsGen++
 		a.filterRowsAsync()
@@ -550,27 +550,36 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 }
 
 // setStatus shows the status of the colony and its planet icon.
-func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, s app.ColonyStatus, display []widget.RichTextSegment) {
+func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, stopped bool, display []widget.RichTextSegment) {
 	a.statusText.Set(display)
-	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), s.IsProblem())
+	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), stopped)
 }
 
-// makeRows returns the colony status, its display and the rows for all pins of a colony forecasted at now.
-func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.ColonyStatus, []widget.RichTextSegment, []colonyDetailsRow) {
+// makeRows returns whether the colony has stopped, the display of its status
+// and the rows for all pins of a colony forecasted at now.
+func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (bool, []widget.RichTextSegment, []colonyDetailsRow) {
 	f := a.u.Character().ForecastPlanet(cp, now)
-	if f.Status.IsProblem() {
+	if f.Stopped {
 		colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), true) // fill cache off the main thread
 	}
 	status := xwidget.RichTextSegmentsFromText(f.Status.Display(), widget.RichTextStyle{
 		ColorName: f.Status.Color(),
 		Inline:    true,
 	})
+	// "until" would read as if a problem ends then
+	hasProblem := f.Status.IsProblem()
 	if v, ok := f.WorkEndsAt.Value(); ok {
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(
-			" until "+v.Format(app.DateTimeFormat),
-		))
+		prefix := " until "
+		if hasProblem {
+			prefix = " · stops "
+		}
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(prefix+v.Format(app.DateTimeFormat)))
 	} else if f.WorksBeyondHorizon {
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(" for "+colonyBeyondHorizonText))
+		prefix := " for "
+		if hasProblem {
+			prefix = " · stops in "
+		}
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(prefix+colonyBeyondHorizonText))
 	}
 	typeNames := cp.TypeNames()
 	typeVolumes := cp.TypeVolumes()
@@ -582,7 +591,7 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (app.Co
 		}
 		rows = append(rows, makeColonyDetailsRow(cp, p, pf, typeNames, typeVolumes, now))
 	}
-	return f.Status, status, rows
+	return f.Stopped, status, rows
 }
 
 // makeColonyDetailsRow returns the summary of an installation, as shown in the list and on its details page.
@@ -686,10 +695,10 @@ func colonyPinProgress(p *app.PlanetPin, pf *app.PinForecast, now time.Time) opt
 	return optional.Optional[float64]{}
 }
 
-// colonyPlanetIcon returns the planet icon for iconID, in grayscale when the colony needs attention.
-func colonyPlanetIcon(iconID int64, needsAttention bool) fyne.Resource {
+// colonyPlanetIcon returns the planet icon for iconID, in grayscale when the colony has stopped.
+func colonyPlanetIcon(iconID int64, stopped bool) fyne.Resource {
 	icon, _ := eveicon.FromID(iconID)
-	if !needsAttention {
+	if !stopped {
 		return icon
 	}
 	if r, ok := grayscalePlanetIconCache.Load(iconID); ok {

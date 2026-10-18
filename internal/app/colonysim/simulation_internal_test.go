@@ -82,85 +82,46 @@ func TestSimulation_Run(t *testing.T) {
 	})
 }
 
-func TestSimulation_ColonyStatus(t *testing.T) {
-	// pins and their routes; the storage is always present
-	type part struct {
-		pin    func() *app.PlanetPin
-		routes []*app.PlanetRoute
-	}
-	activeExtractor := part{
-		pin: func() *app.PlanetPin {
-			return newExtractor(1, aqueousLiquids, 1081, 30*time.Minute, t0, t0.Add(4*time.Hour))
-		},
-		routes: []*app.PlanetRoute{newRoute(1, 1, 10, aqueousLiquids, 10_000)},
-	}
-	expiredExtractor := part{
-		pin: func() *app.PlanetPin {
-			return newExtractor(2, aqueousLiquids, 1081, 30*time.Minute, t0.Add(-4*time.Hour), t0.Add(-time.Hour))
-		},
-		routes: []*app.PlanetRoute{newRoute(2, 2, 10, aqueousLiquids, 10_000)},
-	}
-	notSetupFactory := part{
-		pin: func() *app.PlanetPin {
-			p := newFactory(3, 0)
-			p.Schematic = optional.Optional[*app.EveSchematic]{}
-			return p
-		},
-	}
-	producingFactory := part{
-		pin: func() *app.PlanetPin {
-			p := newFactory(4, schematicWater)
-			p.LastCycleStart = optional.New(t0.Add(-10 * time.Minute))
-			return p
-		},
-		routes: []*app.PlanetRoute{newRoute(3, 10, 4, aqueousLiquids, 3000), newRoute(4, 4, 10, water, 20)},
-	}
-	idleFactory := part{
-		pin:    func() *app.PlanetPin { return newFactory(5, schematicWater) },
-		routes: []*app.PlanetRoute{newRoute(5, 10, 5, aqueousLiquids, 3000), newRoute(6, 5, 10, water, 20)},
-	}
-	fullStorage := part{
-		pin: func() *app.PlanetPin {
-			return newStorage(6, app.EveGroupCommandCenters, 500)
-		},
-		routes: []*app.PlanetRoute{newRoute(7, 1, 6, aqueousLiquids, 100_000)}, // 1000 m3
-	}
+func TestColonyStatus(t *testing.T) {
 	cases := []struct {
-		name  string
-		parts []part
-		want  app.ColonyStatus
+		name        string
+		pins        []app.PinStatus
+		hasProducer bool
+		stopped     bool
+		atRest      bool
+		want        app.ColonyStatus
 	}{
-		{"empty colony", nil, app.ColonyIdle},
-		{"not setup over needs attention", []part{notSetupFactory, expiredExtractor}, app.ColonyNotSetup},
-		{"needs attention over extracting", []part{expiredExtractor, activeExtractor}, app.ColonyNeedsAttention},
-		{"full storage needs attention", []part{activeExtractor, fullStorage}, app.ColonyNeedsAttention},
-		{"extracting over producing", []part{activeExtractor, producingFactory}, app.ColonyExtracting},
-		{"producing over idle", []part{producingFactory, idleFactory}, app.ColonyProducing},
-		{"idle", []part{idleFactory}, app.ColonyIdle},
+		{"empty colony has no activity", nil, false, false, true, app.ColonyNoActivity},
+		{"only storages have no activity", []app.PinStatus{app.PinStatic, app.PinStatic}, false, false, true, app.ColonyNoActivity},
+		{"full storage without producers has no activity", []app.PinStatus{app.PinStorageFull, app.PinStatic}, false, false, true, app.ColonyNoActivity},
+		{"no activity even when stopped", []app.PinStatus{app.PinStatic}, false, true, true, app.ColonyNoActivity},
+		{"not setup over stopped", []app.PinStatus{app.PinNotSetup, app.PinStatic}, true, true, true, app.ColonyNotSetup},
+		{"input not routed is not setup", []app.PinStatus{app.PinInputNotRouted, app.PinExtracting}, true, false, false, app.ColonyNotSetup},
+		{"output not routed is not setup", []app.PinStatus{app.PinOutputNotRouted, app.PinExtracting}, true, false, false, app.ColonyNotSetup},
+		{"stopped over needs attention", []app.PinStatus{app.PinExtractorExpired, app.PinStatic}, true, true, true, app.ColonyStopped},
+		{"stopped during wind-down", []app.PinStatus{app.PinFactoryIdle, app.PinStatic}, true, true, false, app.ColonyStopped},
+		{"needs attention over extracting", []app.PinStatus{app.PinExtractorExpired, app.PinExtracting}, true, false, false, app.ColonyNeedsAttention},
+		{"full storage needs attention", []app.PinStatus{app.PinExtracting, app.PinStorageFull}, true, false, false, app.ColonyNeedsAttention},
+		{"inactive extractor needs attention", []app.PinStatus{app.PinExtractorInactive, app.PinProducing}, true, false, false, app.ColonyNeedsAttention},
+		{"extracting over producing", []app.PinStatus{app.PinExtracting, app.PinProducing}, true, false, false, app.ColonyExtracting},
+		{"producing over idle", []app.PinStatus{app.PinProducing, app.PinFactoryIdle}, true, false, false, app.ColonyProducing},
+		{"producing while a factory waits for inputs", []app.PinStatus{app.PinFactoryIdle, app.PinStatic}, true, false, false, app.ColonyProducing},
+		{"undefined when at rest but not stopped", []app.PinStatus{app.PinFactoryIdle, app.PinStatic}, true, false, true, app.ColonyStatusUndefined},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cp := &app.CharacterPlanet{
-				LastUpdate: t0,
-				Pins:       []*app.PlanetPin{newStorage(10, app.EveGroupStorageFacilities, 12_000)},
-			}
-			for _, x := range tc.parts {
-				cp.Pins = append(cp.Pins, x.pin())
-				cp.Routes = append(cp.Routes, x.routes...)
-			}
-			got, _ := newSimulation(cp).colonyStatus(t0)
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.want, colonyStatus(tc.pins, tc.hasProducer, tc.stopped, tc.atRest))
 		})
 	}
 }
 
 func TestSimulation_RunUntilWorkEnds(t *testing.T) {
-	t.Run("should return work ended when colony is not working", func(t *testing.T) {
+	t.Run("should return when the colony stopped working", func(t *testing.T) {
 		s := newSimulation(newExtractorColony(t0.Add(4 * time.Hour)))
 		s.runUntil(t0.Add(5 * time.Hour))
 		got, r := s.runUntilWorkEnds(t0.Add(24 * time.Hour))
 		assert.Equal(t, runWorkEnded, r)
-		assert.Equal(t, t0.Add(5*time.Hour), got)
+		assert.Equal(t, t0.Add(4*time.Hour), got)
 	})
 	t.Run("should return work ended when colony stops within one cycle of the horizon", func(t *testing.T) {
 		cp := newFactoryColony(9000)
