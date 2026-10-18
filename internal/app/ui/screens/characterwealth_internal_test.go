@@ -2,8 +2,10 @@ package screens
 
 import (
 	"database/sql"
+	"slices"
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
@@ -382,20 +384,57 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		}
 
 		a.update(t.Context())
-		assert.True(t, a.topLabel.Visible())
-		assert.Contains(t, a.topLabel.Text, "Failed to fetch data")
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
 		assert.Empty(t, a.rows)
 		assert.True(t, netWorth.IsEmpty())
 
 		a.filterRowsAsync()
-		assert.True(t, a.topLabel.Visible())
+		assert.True(t, a.errorLabel.Visible())
+	})
+	t.Run("shows error on desktop", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
+	})
+	t.Run("shows error on mobile", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "Failed to fetch data")
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
 	})
 	t.Run("hides error after successful update", func(t *testing.T) {
 		a, _ := newScreen(t)
-		a.topLabel.SetText("ERROR: failed")
-		a.topLabel.Show()
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
 
 		a.update(t.Context())
-		assert.False(t, a.topLabel.Visible())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

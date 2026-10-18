@@ -1,8 +1,10 @@
 package screens
 
 import (
+	"slices"
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
@@ -71,5 +73,81 @@ func TestLoyaltyPoints_Filter(t *testing.T) {
 			loyaltyPointsFilterFaction:   "",
 			loyaltyPointsFilterTag:       "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestLoyaltyPoints_ErrorDisplay(t *testing.T) {
+	t.Run("shows error and clears data when update fails and keeps error on filtering", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewLoyaltyPoints(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		corp := &loyaltyPointsNode{corporationID: 1, corporationName: "Caldari Navy", isCorporation: true}
+		a.data = map[*loyaltyPointsNode][]*loyaltyPointsNode{
+			corp: {{characterID: 1, corporationID: 1, characterName: "Bruce", points: 10}},
+		}
+		a.filterTreeAsync()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR")
+		assert.Equal(t, "Showing 0 / 0 corporations", a.footer.Text)
+
+		a.filterTreeAsync()
+		assert.True(t, a.errorLabel.Visible())
+		assert.Equal(t, "Showing 0 / 0 corporations", a.footer.Text)
+	})
+	t.Run("shows error on desktop", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewLoyaltyPoints(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
+	})
+	t.Run("shows error on mobile", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewLoyaltyPoints(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, a.errorLabel.Visible())
+		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.errorLabel)))
+	})
+	t.Run("hides error after successful update", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewLoyaltyPoints(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.errorLabel.SetText("ERROR: failed")
+		a.errorLabel.Show()
+
+		a.update(t.Context())
+		assert.False(t, a.errorLabel.Visible())
 	})
 }

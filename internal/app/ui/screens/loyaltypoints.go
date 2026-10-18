@@ -76,6 +76,7 @@ type LoyaltyPoints struct {
 	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        latestRun
 	updateRun        latestRun
+	errorLabel       *widget.Label
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
 	columnSorter     *xwidget.ColumnSorter[*loyaltyPointsNode]
@@ -85,14 +86,11 @@ type LoyaltyPoints struct {
 	selectFaction    *kxwidget.FilterChipSelect
 	selectTag        *kxwidget.FilterChipSelect
 	sortChip         *kxwidget.SortChip
-	top              *widget.Label
 	tree             *xwidget.Tree[loyaltyPointsNode]
 	u                baseUI
 }
 
 func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
-	top := widget.NewLabel("")
-	top.Wrapping = fyne.TextWrapWord
 	columnSorter := xwidget.NewColumnSorter(xwidget.NewDataColumns([]xwidget.DataColumn[*loyaltyPointsNode]{{
 		Label: "Corporation",
 		Sort: func(a, b *loyaltyPointsNode) int {
@@ -109,11 +107,12 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 	)
 	a := &LoyaltyPoints{
 		columnSorter: columnSorter,
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		footer:       ui.NewLabelWithTruncation(""),
-		top:          top,
 		u:            u,
 	}
 	a.ExtendBaseWidget(a)
+	a.errorLabel.Hide()
 	a.tree = a.makeTree()
 	if a.u.IsMobile() {
 		a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
@@ -173,10 +172,7 @@ func NewLoyaltyPoints(u baseUI) *LoyaltyPoints {
 func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	var top *fyne.Container
 	if a.u.IsMobile() {
-		top = container.NewVBox(
-			a.top,
-			container.NewBorder(nil, nil, nil, container.NewHBox(a.collapseBranches, a.filterChip, a.sortChip), a.searchEntry),
-		)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.collapseBranches, a.filterChip, a.sortChip), a.searchEntry)
 	} else {
 		leading := container.NewHBox(a.selectFaction, a.selectCharacter, a.selectTag)
 		trailing := container.NewHBox(a.sortChip, a.collapseBranches)
@@ -184,7 +180,7 @@ func (a *LoyaltyPoints) CreateRenderer() fyne.WidgetRenderer {
 	}
 	c := container.NewBorder(
 		top,
-		a.footer,
+		container.NewVBox(a.errorLabel, a.footer),
 		nil,
 		nil,
 		a.tree,
@@ -346,12 +342,12 @@ func (a *LoyaltyPoints) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.top.Text = "ERROR: " + a.u.ErrorDisplay(err)
-			a.top.Importance = widget.DangerImportance
-			a.top.Refresh()
-			a.top.Show()
-			a.tree.Clear()
-			a.tree.CloseAllBranches()
+			a.data = nil
+			a.filterTreeAsync()
+			a.errorLabel.Text = "ERROR: " + a.u.ErrorDisplay(err)
+			a.errorLabel.Importance = widget.DangerImportance
+			a.errorLabel.Refresh()
+			a.errorLabel.Show()
 		})
 		return
 	}
@@ -361,7 +357,7 @@ func (a *LoyaltyPoints) update(ctx context.Context) {
 		}
 		a.data = data
 		a.filterTreeAsync()
-		a.top.Hide()
+		a.errorLabel.Hide()
 	})
 }
 

@@ -135,7 +135,7 @@ type CharacterWealth struct {
 	selectCorporation            *kxwidget.FilterChipSelect
 	selectTag                    *kxwidget.FilterChipSelect
 	helpButton                   *xwidget.Button
-	topLabel                     *widget.Label
+	errorLabel                   *widget.Label
 	totalSplitCard               *chartCard
 	totalSplitChart              *fyneline.ArcChart[namedValue]
 	totalSplitTitleLabel         *widget.Label
@@ -159,7 +159,7 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 		),
 		characterSplitTitleLabel: newChartTitleLabel(),
 		footer:                   widget.NewLabel(""),
-		topLabel:                 ui.NewLabelWithWrapping(""),
+		errorLabel:               ui.NewLabelWithWrapping(""),
 		totalSplitChart: fyneline.NewArcChart([]namedValue(nil),
 			func(v namedValue) float64 { return v.value },
 			sliceLabel,
@@ -169,7 +169,7 @@ func NewCharacterWealth(u baseUI) *CharacterWealth {
 		details:              newCharacterWealthDetails(u),
 	}
 	a.ExtendBaseWidget(a)
-	a.topLabel.Hide()
+	a.errorLabel.Hide()
 
 	a.characterBreakdownChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 	a.characterBreakdownChart.SetOrientation(fyneline.BarHorizontal)
@@ -269,14 +269,13 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 	)
 	var top fyne.CanvasObject
 	if !a.u.IsMobile() {
-		filterBar := container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
-		top = container.NewVBox(a.topLabel, filterBar)
+		top = container.NewHScroll(container.NewHBox(a.selectCorporation, a.selectAlliance, a.selectTag))
 	} else {
 		top = container.NewHBox(a.filterChip)
 	}
 	c := container.NewBorder(
 		top,
-		container.NewHBox(a.footer, layout.NewSpacer(), a.helpButton),
+		container.NewVBox(a.errorLabel, container.NewHBox(a.footer, layout.NewSpacer(), a.helpButton)),
 		nil,
 		nil,
 		tabs,
@@ -301,10 +300,10 @@ func (a *CharacterWealth) update(ctx context.Context) {
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[float64]{})
 			}
-			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
-			a.topLabel.Importance = widget.DangerImportance
-			a.topLabel.Refresh()
-			a.topLabel.Show()
+			a.errorLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
+			a.errorLabel.Importance = widget.DangerImportance
+			a.errorLabel.Refresh()
+			a.errorLabel.Show()
 		})
 		return
 	}
@@ -312,7 +311,7 @@ func (a *CharacterWealth) update(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
-		a.topLabel.Hide()
+		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync()
 	})

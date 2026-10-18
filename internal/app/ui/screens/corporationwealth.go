@@ -40,7 +40,7 @@ type CorporationWealth struct {
 	categorySplitCard       *chartCard
 	categorySplitChart      *fyneline.ArcChart[namedValue]
 	categorySplitTitleLabel *widget.Label
-	top                     *widget.Label
+	statusLabel             *widget.Label
 	u                       baseUI
 	walletsCard             *chartCard
 	walletsChart            *fyneline.BarChart[corporationDivisionValue]
@@ -65,11 +65,11 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 			fyneline.NewBarSeries("Asset Value", func(v corporationDivisionValue) float64 { return v.assetValue }),
 		),
 		assetsTitleLabel: newChartTitleLabel(),
-		top:              ui.NewLabelWithWrapping(""),
+		statusLabel:      ui.NewLabelWithWrapping(""),
 		u:                u,
 	}
 	a.ExtendBaseWidget(a)
-	a.top.Hide()
+	a.statusLabel.Hide()
 
 	configureArcChart(a.categorySplitChart)
 	a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
@@ -113,12 +113,7 @@ func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 		ui.NewTabItem("Wallets", a.walletsCard),
 		ui.NewTabItem("Assets", a.assetsCard),
 	)
-	var c fyne.CanvasObject
-	if !a.u.IsMobile() {
-		c = container.NewBorder(a.top, nil, nil, nil, tabs)
-	} else {
-		c = tabs
-	}
+	c := container.NewBorder(nil, a.statusLabel, nil, nil, tabs)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -136,7 +131,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
 		reset()
-		a.showTop("No corporation", widget.LowImportance)
+		a.showStatus("No corporation", widget.LowImportance)
 		return
 	}
 	hasAssets, hasContracts, hasWallet, err := a.hasAnyData(ctx, corporationID)
@@ -146,12 +141,12 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		}
 		slog.Error("Failed to fetch data for corporation wealth charts", "corporationID", corporationID, "err", err)
 		reset()
-		a.showTop(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
+		a.showStatus(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
 		return
 	}
 	if !hasAssets && !hasContracts && !hasWallet {
 		reset()
-		a.showTop("Waiting for data to be loaded...", widget.WarningImportance)
+		a.showStatus("Waiting for data to be loaded...", widget.WarningImportance)
 		return
 	}
 
@@ -229,7 +224,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		})
 	}
 
-	a.showTop("", widget.LowImportance)
+	a.showStatus("", widget.LowImportance)
 
 	a.updateWallets(rows)
 	a.updateAssets(rows)
@@ -258,16 +253,16 @@ func (a *CorporationWealth) hasAnyData(ctx context.Context, corporationID int64)
 	return hasAssets, hasContracts, hasWallet, nil
 }
 
-func (a *CorporationWealth) showTop(text string, importance widget.Importance) {
+func (a *CorporationWealth) showStatus(text string, importance widget.Importance) {
 	fyne.Do(func() {
 		if text == "" {
-			a.top.Hide()
+			a.statusLabel.Hide()
 			return
 		}
-		a.top.Text = text
-		a.top.Importance = importance
-		a.top.Refresh()
-		a.top.Show()
+		a.statusLabel.Text = text
+		a.statusLabel.Importance = importance
+		a.statusLabel.Refresh()
+		a.statusLabel.Show()
 	})
 }
 
