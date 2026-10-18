@@ -173,6 +173,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		totalWalletBalance += wb.Balance
 	}
 	hangarNames := a.u.Corporation().ListHangarNames(ctx, corporationID)
+	if ctx.Err() != nil {
+		return
+	}
 	for _, d := range app.Divisions {
 		wallet := walletByDivision[d]
 		name := hangarNames[d]
