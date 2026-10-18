@@ -566,20 +566,14 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (bool, 
 		ColorName: f.Status.Color(),
 		Inline:    true,
 	})
-	// "until" would read as if a problem ends then
-	hasProblem := f.Status.IsProblem()
+	untilPrefix, forPrefix := " until ", " for "
+	if f.Status.IsProblem() { // "until" would read as if a problem ends then
+		untilPrefix, forPrefix = " · stops ", " · stops in "
+	}
 	if v, ok := f.WorkEndsAt.Value(); ok {
-		prefix := " until "
-		if hasProblem {
-			prefix = " · stops "
-		}
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(prefix+v.Format(app.DateTimeFormat)))
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(untilPrefix+v.Format(app.DateTimeFormat)))
 	} else if f.WorksBeyondHorizon {
-		prefix := " for "
-		if hasProblem {
-			prefix = " · stops in "
-		}
-		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(prefix+colonyBeyondHorizonText))
+		status = slices.Concat(status, xwidget.RichTextSegmentsFromText(forPrefix+colonyBeyondHorizonText))
 	}
 	typeNames := cp.TypeNames()
 	typeVolumes := cp.TypeVolumes()

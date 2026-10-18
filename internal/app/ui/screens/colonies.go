@@ -88,11 +88,6 @@ func (r colonyRow) compareWorkEnds(other colonyRow) int {
 	})
 }
 
-// notWorking reports whether the colony has stopped, matching the gray planet icon.
-func (r colonyRow) notWorking() bool {
-	return r.stopped
-}
-
 func (r colonyRow) statusDisplay() []widget.RichTextSegment {
 	return xwidget.RichTextSegmentsFromText(r.status.Display(), widget.RichTextStyle{
 		ColorName: r.status.Color(),
@@ -586,7 +581,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
 		var notWorking int
 		for _, r := range rows {
-			if r.notWorking() {
+			if r.stopped {
 				notWorking++
 			}
 		}
@@ -685,7 +680,7 @@ func (a *Colonies) refreshForecasts() {
 func (a *Colonies) setOnUpdate() {
 	var notWorking int
 	for _, r := range a.rows {
-		if r.notWorking() {
+		if r.stopped {
 			notWorking++
 		}
 	}

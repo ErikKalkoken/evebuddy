@@ -156,27 +156,6 @@ func TestColonyRow_CompareWorkEnds(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestColonyRow_NotWorking(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		status  app.ColonyStatus
-		stopped bool
-		want    bool
-	}{
-		{"stopped", app.ColonyStopped, true, true},
-		{"not setup and stopped", app.ColonyNotSetup, true, true},
-		{"not setup and still working", app.ColonyNotSetup, false, false},
-		{"needs attention", app.ColonyNeedsAttention, false, false},
-		{"producing", app.ColonyProducing, false, false},
-		{"extracting", app.ColonyExtracting, false, false},
-		{"no activity", app.ColonyNoActivity, false, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, colonyRow{status: tc.status, stopped: tc.stopped}.notWorking())
-		})
-	}
-}
-
 func TestColonyRow_StatusShort(t *testing.T) {
 	now := time.Now()
 	for _, tc := range []struct {

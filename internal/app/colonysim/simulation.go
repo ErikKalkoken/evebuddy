@@ -241,7 +241,7 @@ func (s *simulation) run(until time.Time, untilWorkEnds bool) (time.Time, runRes
 // hasActivePin reports whether an extractor or factory is active.
 func (s *simulation) hasActivePin() bool {
 	for _, p := range s.pins {
-		if (p.kind == kindExtractor || p.isFactory()) && p.isActiveNow() {
+		if p.isProducer() && p.isActiveNow() {
 			return true
 		}
 	}
@@ -251,7 +251,7 @@ func (s *simulation) hasActivePin() bool {
 // hasProducer reports whether the colony has an extractor or factory.
 func (s *simulation) hasProducer() bool {
 	for _, p := range s.pins {
-		if p.kind == kindExtractor || p.isFactory() {
+		if p.isProducer() {
 			return true
 		}
 	}
