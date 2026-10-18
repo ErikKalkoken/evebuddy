@@ -42,6 +42,7 @@ type CorporationWealth struct {
 	categorySplitTitleLabel *widget.Label
 	statusLabel             *widget.Label
 	u                       baseUI
+	updateRun               latestRun
 	walletsCard             *chartCard
 	walletsChart            *fyneline.BarChart[corporationDivisionValue]
 	walletsTitleLabel       *widget.Label
@@ -118,20 +119,26 @@ func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CorporationWealth) update(ctx context.Context) {
-	reset := func() {
+	isLatest := a.updateRun.start()
+	reset := func(text string, importance widget.Importance) {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.categorySplitChart.SetData(nil)
 			a.categorySplitTitleLabel.SetText("")
+			a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 			a.walletsChart.SetData(nil)
 			a.walletsTitleLabel.SetText("")
+			a.assetsChart.SetValueAxis(fyneline.NewNumericAxis().WithFormatter(wealthAxisValueFormatter))
 			a.assetsChart.SetData(nil)
 			a.assetsTitleLabel.SetText("")
+			a.showStatus(text, importance)
 		})
 	}
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
-		reset()
-		a.showStatus("No corporation", widget.LowImportance)
+		reset("No corporation", widget.LowImportance)
 		return
 	}
 	hasAssets, hasContracts, hasWallet, err := a.hasAnyData(ctx, corporationID)
@@ -140,66 +147,28 @@ func (a *CorporationWealth) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to fetch data for corporation wealth charts", "corporationID", corporationID, "err", err)
-		reset()
-		a.showStatus(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
+		reset(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
 		return
 	}
 	if !hasAssets && !hasContracts && !hasWallet {
-		reset()
-		a.showStatus("Waiting for data to be loaded...", widget.WarningImportance)
+		reset("Waiting for data to be loaded...", widget.WarningImportance)
 		return
 	}
 
-	var totalAssetValue, contractsEscrow float64
-	assetByDivision := make(map[app.Division]float64)
-	if hasAssets {
-		v, err := a.u.Corporation().CalculateAssetTotalValue(ctx, corporationID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to fetch corporation asset value", "corporationID", corporationID, "err", err)
-		} else {
-			totalAssetValue = v
+	v, err := a.fetchValues(ctx, corporationID, hasAssets, hasContracts, hasWallet)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
 		}
-		m, err := a.u.Corporation().CalculateAssetValueByDivision(ctx, corporationID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to fetch corporation asset value by division", "corporationID", corporationID, "err", err)
-		} else {
-			assetByDivision = m
-		}
-	}
-	if hasContracts {
-		v, err := a.u.Corporation().CalculateContractsEscrow(ctx, corporationID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to fetch corporation contracts escrow", "corporationID", corporationID, "err", err)
-		} else {
-			contractsEscrow = v
-		}
-	}
-	var walletBalances []app.CorporationWalletBalanceWithName
-	if hasWallet {
-		wb, err := a.u.Corporation().ListWalletBalances(ctx, corporationID)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to fetch corporation wallet balances", "corporationID", corporationID, "err", err)
-		} else {
-			walletBalances = wb
-		}
+		slog.Error("Failed to fetch values for corporation wealth charts", "corporationID", corporationID, "err", err)
+		reset(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
+		return
 	}
 
 	rows := make([]corporationDivisionValue, 0, len(app.Divisions))
 	var totalWalletBalance float64
 	walletByDivision := make(map[app.Division]corporationWalletEntry)
-	for _, wb := range walletBalances {
+	for _, wb := range v.walletBalances {
 		walletByDivision[app.Division(wb.DivisionID)] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
 		totalWalletBalance += wb.Balance
 	}
@@ -214,7 +183,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		if walletName == "" {
 			walletName = d.DefaultWalletName()
 		}
-		assetValue := assetByDivision[d]
+		assetValue := v.assetByDivision[d]
 		rows = append(rows, corporationDivisionValue{
 			division:      d,
 			name:          name,
@@ -224,11 +193,15 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		})
 	}
 
-	a.showStatus("", widget.LowImportance)
-
-	a.updateWallets(rows)
-	a.updateAssets(rows)
-	a.updateCategorySplit(totalAssetValue, totalWalletBalance, contractsEscrow)
+	fyne.Do(func() {
+		if !isLatest() {
+			return
+		}
+		a.showStatus("", widget.LowImportance)
+		a.updateWallets(rows)
+		a.updateAssets(rows)
+		a.updateCategorySplit(v.totalAssetValue, totalWalletBalance, v.contractsEscrow)
+	})
 }
 
 type corporationWalletEntry struct {
@@ -253,17 +226,51 @@ func (a *CorporationWealth) hasAnyData(ctx context.Context, corporationID int64)
 	return hasAssets, hasContracts, hasWallet, nil
 }
 
-func (a *CorporationWealth) showStatus(text string, importance widget.Importance) {
-	fyne.Do(func() {
-		if text == "" {
-			a.statusLabel.Hide()
-			return
+type corporationWealthValues struct {
+	assetByDivision map[app.Division]float64
+	contractsEscrow float64
+	totalAssetValue float64
+	walletBalances  []app.CorporationWalletBalanceWithName
+}
+
+// fetchValues fetches the values for the sections the corporation has data for.
+func (a *CorporationWealth) fetchValues(ctx context.Context, corporationID int64, hasAssets, hasContracts, hasWallet bool) (corporationWealthValues, error) {
+	var v corporationWealthValues
+	var err error
+	if hasAssets {
+		v.totalAssetValue, err = a.u.Corporation().CalculateAssetTotalValue(ctx, corporationID)
+		if err != nil {
+			return v, fmt.Errorf("asset total value: %w", err)
 		}
-		a.statusLabel.Text = text
-		a.statusLabel.Importance = importance
-		a.statusLabel.Refresh()
-		a.statusLabel.Show()
-	})
+		v.assetByDivision, err = a.u.Corporation().CalculateAssetValueByDivision(ctx, corporationID)
+		if err != nil {
+			return v, fmt.Errorf("asset value by division: %w", err)
+		}
+	}
+	if hasContracts {
+		v.contractsEscrow, err = a.u.Corporation().CalculateContractsEscrow(ctx, corporationID)
+		if err != nil {
+			return v, fmt.Errorf("contracts escrow: %w", err)
+		}
+	}
+	if hasWallet {
+		v.walletBalances, err = a.u.Corporation().ListWalletBalances(ctx, corporationID)
+		if err != nil {
+			return v, fmt.Errorf("wallet balances: %w", err)
+		}
+	}
+	return v, nil
+}
+
+func (a *CorporationWealth) showStatus(text string, importance widget.Importance) {
+	if text == "" {
+		a.statusLabel.Hide()
+		return
+	}
+	a.statusLabel.Text = text
+	a.statusLabel.Importance = importance
+	a.statusLabel.Refresh()
+	a.statusLabel.Show()
 }
 
 func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
@@ -272,14 +279,12 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 		maxValue = max(maxValue, v.walletBalance)
 	}
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
-	fyne.Do(func() {
-		a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().
-			WithFormatter(wealthAxisValueFormatter).
-			WithDomain(0, axisMax).
-			WithTickCount(tickCount))
-		a.walletsChart.SetData(rows)
-		a.walletsTitleLabel.SetText("Wallet Balance by Division")
-	})
+	a.walletsChart.SetValueAxis(fyneline.NewNumericAxis().
+		WithFormatter(wealthAxisValueFormatter).
+		WithDomain(0, axisMax).
+		WithTickCount(tickCount))
+	a.walletsChart.SetData(rows)
+	a.walletsTitleLabel.SetText("Wallet Balance by Division")
 }
 
 func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
@@ -288,14 +293,12 @@ func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
 		maxValue = max(maxValue, v.assetValue)
 	}
 	axisMax, tickCount := niceAxisBounds(maxValue, 5)
-	fyne.Do(func() {
-		a.assetsChart.SetValueAxis(fyneline.NewNumericAxis().
-			WithFormatter(wealthAxisValueFormatter).
-			WithDomain(0, axisMax).
-			WithTickCount(tickCount))
-		a.assetsChart.SetData(rows)
-		a.assetsTitleLabel.SetText("Asset Value by Division")
-	})
+	a.assetsChart.SetValueAxis(fyneline.NewNumericAxis().
+		WithFormatter(wealthAxisValueFormatter).
+		WithDomain(0, axisMax).
+		WithTickCount(tickCount))
+	a.assetsChart.SetData(rows)
+	a.assetsTitleLabel.SetText("Asset Value by Division")
 }
 
 func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBalance, contractsEscrow float64) {
@@ -308,8 +311,6 @@ func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBala
 		{name: "Wallet", value: walletB},
 		{name: corporationWealthContractsLabel, value: contractsB},
 	}
-	fyne.Do(func() {
-		a.categorySplitChart.SetData(d)
-		a.categorySplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total))
-	})
+	a.categorySplitChart.SetData(d)
+	a.categorySplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total))
 }
