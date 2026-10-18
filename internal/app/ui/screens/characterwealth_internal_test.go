@@ -368,8 +368,15 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		a := NewCharacterWealth(u)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		corp := &app.EveEntity{ID: 1, Name: "Corp A", Category: app.EveEntityCorporation}
+		a.rows = []characterWealthRow{{characterName: "Alpha", corporation: corp}}
+		a.filterRowsAsync()
+		netWorth := optional.New(1.0)
+		a.OnUpdate = func(v optional.Optional[float64]) {
+			netWorth = v
+		}
 		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -377,6 +384,8 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.topLabel.Visible())
 		assert.Contains(t, a.topLabel.Text, "Failed to fetch data")
+		assert.Empty(t, a.rows)
+		assert.True(t, netWorth.IsEmpty())
 
 		a.filterRowsAsync()
 		assert.True(t, a.topLabel.Visible())

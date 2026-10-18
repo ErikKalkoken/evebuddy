@@ -488,25 +488,20 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 
 func (a *Structures) update(ctx context.Context) {
 	isLatest := a.updateRun.start()
-	reset := func() {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			xslices.Clear(&a.rows)
-			a.filterRowsAsync("")
-		})
-	}
 	rows, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return
 		}
 		slog.Error("Failed to refresh corporation structures UI", "err", err)
-		reset()
 		fyne.Do(func() {
 			if !isLatest() {
 				return
+			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync("")
+			if a.OnUpdate != nil {
+				a.OnUpdate(0)
 			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()

@@ -98,8 +98,10 @@ func TestIndustrySlots_ErrorDisplay(t *testing.T) {
 		a := NewIndustrySlots(u, app.ManufacturingJob)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		a.rows = []industrySlotRow{{free: 2}}
+		a.filterRowsAsync("")
 		if _, err := db.Exec("DROP TABLE character_industry_jobs"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -107,6 +109,7 @@ func TestIndustrySlots_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

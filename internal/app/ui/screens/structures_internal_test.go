@@ -258,8 +258,14 @@ func TestStructures_ErrorDisplay(t *testing.T) {
 		a := NewUnifiedStructures(u)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		a.rows = []structureRow{{stateShort: "Online"}}
+		a.filterRowsAsync("")
+		reinforced := -1
+		a.OnUpdate = func(n int) {
+			reinforced = n
+		}
 		if _, err := db.Exec("DROP TABLE corporation_structures"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -267,6 +273,9 @@ func TestStructures_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+		assert.Empty(t, a.rowsFiltered)
+		assert.Equal(t, 0, reinforced)
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

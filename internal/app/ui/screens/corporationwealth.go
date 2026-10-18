@@ -123,8 +123,19 @@ func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CorporationWealth) update(ctx context.Context) {
+	reset := func() {
+		fyne.Do(func() {
+			a.categorySplitChart.SetData(nil)
+			a.categorySplitTitleLabel.SetText("")
+			a.walletsChart.SetData(nil)
+			a.walletsTitleLabel.SetText("")
+			a.assetsChart.SetData(nil)
+			a.assetsTitleLabel.SetText("")
+		})
+	}
 	corporationID := a.corporation.Load().IDOrZero()
 	if corporationID == 0 {
+		reset()
 		a.showTop("No corporation", widget.LowImportance)
 		return
 	}
@@ -134,10 +145,12 @@ func (a *CorporationWealth) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to fetch data for corporation wealth charts", "corporationID", corporationID, "err", err)
+		reset()
 		a.showTop(fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err)), widget.DangerImportance)
 		return
 	}
 	if !hasAssets && !hasContracts && !hasWallet {
+		reset()
 		a.showTop("Waiting for data to be loaded...", widget.WarningImportance)
 		return
 	}

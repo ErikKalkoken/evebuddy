@@ -244,8 +244,14 @@ func TestTraining_ErrorDisplay(t *testing.T) {
 		a := NewTraining(u)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		a.rows = []trainingRow{{isWatched: true}}
+		a.filterRowsAsync("")
+		expired := -1
+		a.OnUpdate = func(n int) {
+			expired = n
+		}
 		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -253,6 +259,9 @@ func TestTraining_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+		assert.Empty(t, a.rowsFiltered)
+		assert.Equal(t, 0, expired)
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

@@ -296,6 +296,11 @@ func (a *CharacterWealth) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync()
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[float64]{})
+			}
 			a.topLabel.Text = fmt.Sprintf("Failed to fetch data for charts: %s", a.u.ErrorDisplay(err))
 			a.topLabel.Importance = widget.DangerImportance
 			a.topLabel.Refresh()

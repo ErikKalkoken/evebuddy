@@ -316,8 +316,14 @@ func TestColonies_ErrorDisplay(t *testing.T) {
 		a := NewColonies(u)
 		return a, db
 	}
-	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
+	t.Run("shows error and clears rows when update fails and keeps error on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		a.rows = []colonyRow{{status: app.ColonyStopped, stopped: true}}
+		a.filterRowsAsync("")
+		total, notWorking := -1, -1
+		a.OnUpdate = func(x, n int) {
+			total, notWorking = x, n
+		}
 		if _, err := db.Exec("DROP TABLE character_planets"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -325,6 +331,10 @@ func TestColonies_ErrorDisplay(t *testing.T) {
 		a.Update(t.Context())
 		assert.True(t, a.errorLabel.Visible())
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+		assert.Empty(t, a.rowsFiltered)
+		assert.Equal(t, 0, total)
+		assert.Equal(t, 0, notWorking)
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

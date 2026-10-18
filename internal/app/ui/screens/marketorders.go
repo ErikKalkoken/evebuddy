@@ -534,6 +534,8 @@ func (a *MarketOrders) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			xslices.Clear(&a.rows)
+			a.filterRowsAsync("")
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()

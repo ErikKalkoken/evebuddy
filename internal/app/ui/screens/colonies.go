@@ -637,6 +637,10 @@ func (a *Colonies) Update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
+			xslices.Clear(&a.rows)
+			a.rowsGen++
+			a.filterRowsAsync("")
+			a.setOnUpdate()
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
