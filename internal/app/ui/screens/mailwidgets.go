@@ -83,37 +83,37 @@ func (w *MailHeaderItemWidget) CreateRenderer() fyne.WidgetRenderer {
 type MailHeaderWidget struct {
 	widget.BaseWidget
 
-	from       *kxwidget.TappableLabel
-	icon       *xwidget.TappableImage
-	loadIcon   ui.EveEntityIconLoader
-	recipients *fyne.Container
-	showInfo   func(*app.EveEntity)
-	timestamp  *widget.Label
-	to         *widget.Label
+	fromLabel      *kxwidget.TappableLabel
+	iconImage      *xwidget.TappableImage
+	loadIcon       ui.EveEntityIconLoader
+	recipients     *fyne.Container
+	showInfo       func(*app.EveEntity)
+	timestampLabel *widget.Label
+	toLabel        *widget.Label
 }
 
 func NewMailHeaderWidget(loadIcon ui.EveEntityIconLoader, show func(*app.EveEntity)) *MailHeaderWidget {
 	p := theme.Padding()
 	w := &MailHeaderWidget{
-		from:       kxwidget.NewTappableLabel("", nil),
-		loadIcon:   loadIcon,
-		recipients: container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
-		showInfo:   show,
-		timestamp:  widget.NewLabel(""),
-		to:         widget.NewLabel("to"),
+		fromLabel:      kxwidget.NewTappableLabel("", nil),
+		loadIcon:       loadIcon,
+		recipients:     container.New(layout.NewRowWrapLayoutWithCustomPadding(0, -3*p)),
+		showInfo:       show,
+		timestampLabel: widget.NewLabel(""),
+		toLabel:        widget.NewLabel("to"),
 	}
 	w.ExtendBaseWidget(w)
-	w.from.TextStyle.Bold = true
-	w.icon = xwidget.NewTappableImage(icons.BlankSvg, nil)
-	w.icon.SetFillMode(canvas.ImageFillContain)
-	w.icon.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
-	w.icon.CornerRadius = ui.IconUnitSize / 2
-	w.to.Hide()
+	w.fromLabel.TextStyle.Bold = true
+	w.iconImage = xwidget.NewTappableImage(icons.BlankSvg, nil)
+	w.iconImage.SetFillMode(canvas.ImageFillContain)
+	w.iconImage.SetMinSize(fyne.NewSquareSize(ui.IconUnitSize))
+	w.iconImage.CornerRadius = ui.IconUnitSize / 2
+	w.toLabel.Hide()
 	return w
 }
 
 func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, owner *app.EveEntity, recipients ...*app.EveEntity) {
-	w.timestamp.Text = timestamp.Format(app.DateTimeFormat)
+	w.timestampLabel.Text = timestamp.Format(app.DateTimeFormat)
 	w.recipients.RemoveAll()
 	for _, r := range recipients {
 		x := kxwidget.NewTappableLabel(r.Name, func() {
@@ -128,35 +128,35 @@ func (w *MailHeaderWidget) Set(from *app.EveEntity, timestamp time.Time, owner *
 		x.SetToolTip("Account: " + owner.Name)
 		w.recipients.Add(x)
 	}
-	w.from.Text = from.Name
-	w.from.OnTapped = func() {
+	w.fromLabel.Text = from.Name
+	w.fromLabel.OnTapped = func() {
 		w.showInfo(from)
 	}
-	w.icon.OnTapped = func() {
+	w.iconImage.OnTapped = func() {
 		w.showInfo(from)
 	}
-	w.to.Show()
+	w.toLabel.Show()
 	w.loadIcon(from, ui.IconPixelSize, func(r fyne.Resource) {
-		w.icon.SetResource(r)
+		w.iconImage.SetResource(r)
 	})
 	w.Refresh()
 }
 
 func (w *MailHeaderWidget) Clear() {
-	w.from.Text = ""
-	w.from.OnTapped = nil
+	w.fromLabel.Text = ""
+	w.fromLabel.OnTapped = nil
 	w.recipients.RemoveAll()
-	w.timestamp.Text = ""
-	w.icon.SetResource(icons.BlankSvg)
-	w.icon.OnTapped = nil
-	w.to.Hide()
+	w.timestampLabel.Text = ""
+	w.iconImage.SetResource(icons.BlankSvg)
+	w.iconImage.OnTapped = nil
+	w.toLabel.Hide()
 	w.Refresh()
 }
 
 func (w *MailHeaderWidget) Refresh() {
-	w.from.Refresh()
+	w.fromLabel.Refresh()
 	w.recipients.Refresh()
-	w.timestamp.Refresh()
+	w.timestampLabel.Refresh()
 	w.BaseWidget.Refresh()
 }
 
@@ -164,16 +164,16 @@ func (w *MailHeaderWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	first := container.New(
 		layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
-		container.NewHBox(w.from, w.timestamp),
+		container.NewHBox(w.fromLabel, w.timestampLabel),
 	)
 	second := container.NewBorder(
 		nil,
 		nil,
-		container.NewVBox(w.to),
+		container.NewVBox(w.toLabel),
 		nil,
 		w.recipients,
 	)
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0), first, second)
-	c := container.NewBorder(nil, nil, container.NewPadded(w.icon), nil, main)
+	c := container.NewBorder(nil, nil, container.NewPadded(w.iconImage), nil, main)
 	return widget.NewSimpleRenderer(c)
 }
