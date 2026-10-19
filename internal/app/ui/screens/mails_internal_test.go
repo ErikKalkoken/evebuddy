@@ -1163,6 +1163,61 @@ func TestUnifiedMails_Status(t *testing.T) {
 	})
 }
 
+func TestMails_CharactersLoaded(t *testing.T) {
+	t.Run("reports loaded characters", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c1 := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c1.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		factory.CreateCharacterFull()
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.update(t.Context())
+
+		loaded, total := a.CharactersLoaded()
+		assert.Equal(t, 1, loaded)
+		assert.Equal(t, 2, total)
+	})
+	t.Run("reports loaded characters to OnUpdate while waiting for data", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		factory.CreateCharacterFull()
+		factory.CreateCharacterFull()
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		var loaded, total int
+		a.OnUpdate = func(_, _ int) {
+			loaded, total = a.CharactersLoaded()
+		}
+
+		a.update(t.Context())
+
+		assert.Equal(t, 0, loaded)
+		assert.Equal(t, 2, total)
+	})
+	t.Run("reports nothing for a character", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		a.character.Store(c)
+
+		a.update(t.Context())
+
+		loaded, total := a.CharactersLoaded()
+		assert.Equal(t, 0, loaded)
+		assert.Equal(t, 0, total)
+	})
+}
+
 func TestMailsNavigationPane_SetCharacters(t *testing.T) {
 	t.Run("caps loaded characters at total", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)

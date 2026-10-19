@@ -318,6 +318,9 @@ func (a *Mails) update(ctx context.Context) {
 				return
 			}
 			a.NavigationPane.setCharacters(loaded, len(characters)) // after setWaiting, which clears it
+			if loaded == 0 {
+				a.callOnUpdate() // the update returns early, so OnUpdate would miss the count
+			}
 		})
 		if loaded == 0 {
 			return
@@ -381,6 +384,11 @@ func (a *Mails) mailsChanged(ctx context.Context, characterID int64) {
 	a.u.Signals().DataUpdated.Emit(ctx, mailsUpdated)        // returns after all mail screens are refreshed
 	go a.u.Signals().CharacterChanged.Emit(ctx, characterID) // update character overview
 	a.u.UpdateMailIndicator(ctx)
+}
+
+// CharactersLoaded reports how many characters have mails loaded. Must be called on the main thread.
+func (a *Mails) CharactersLoaded() (loaded, total int) {
+	return a.NavigationPane.charactersLoaded, a.NavigationPane.charactersTotal
 }
 
 func (a *Mails) callOnUpdate() {
@@ -475,6 +483,8 @@ type mailsNavigationPane struct {
 	widget.BaseWidget
 
 	charactersLabel       *widget.Label
+	charactersLoaded      int
+	charactersTotal       int
 	composeButton         *widget.Button
 	downloadedRun         latestRun
 	folderDownloadedLabel *ttwidget.Label
@@ -548,11 +558,15 @@ func (a *mailsNavigationPane) clear() {
 	a.charactersLabel.Text = "?"
 	a.charactersLabel.Importance = widget.MediumImportance
 	a.charactersLabel.Refresh()
+	a.charactersLoaded = 0
+	a.charactersTotal = 0
 }
 
 // setCharacters shows how many characters have mails loaded.
 func (a *mailsNavigationPane) setCharacters(loaded, total int) {
 	loaded = min(loaded, total) // the two counts can race with a deleted character
+	a.charactersLoaded = loaded
+	a.charactersTotal = total
 	a.charactersLabel.Text = fmt.Sprintf("%d / %d characters", loaded, total)
 	if loaded < total {
 		a.charactersLabel.Importance = widget.WarningImportance
