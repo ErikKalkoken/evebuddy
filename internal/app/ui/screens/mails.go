@@ -233,7 +233,7 @@ func (a *Mails) update(ctx context.Context) {
 			a.MessagePane.setInfo(s, i)
 		})
 	}
-	setWaiting := func() {
+	setWaiting := func(characters int) {
 		clearAll()
 		fyne.Do(func() {
 			if !isLatest() {
@@ -241,6 +241,10 @@ func (a *Mails) update(ctx context.Context) {
 			}
 			a.NavigationPane.composeButton.Enable() // sending does not need mail data
 			a.MessagePane.setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
+			if characters > 0 {
+				a.NavigationPane.setCharacters(0, characters)
+				a.callOnUpdate() // clearAll reported before the count was set
+			}
 		})
 	}
 	setError := func(err error) {
@@ -270,7 +274,7 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		if !hasData {
-			setWaiting()
+			setWaiting(0)
 			return
 		}
 	} else {
@@ -311,20 +315,15 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		if loaded == 0 {
-			setWaiting()
+			setWaiting(len(characters))
+			return
 		}
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.NavigationPane.setCharacters(loaded, len(characters)) // after setWaiting, which clears it
-			if loaded == 0 {
-				a.callOnUpdate() // the update returns early, so OnUpdate would miss the count
-			}
+			a.NavigationPane.setCharacters(loaded, len(characters))
 		})
-		if loaded == 0 {
-			return
-		}
 	}
 	td, inbox, err := a.NavigationPane.fetchFolders(ctx, characterID)
 	if err != nil {
