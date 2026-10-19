@@ -1,6 +1,8 @@
 package screens
 
 import (
+	"errors"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -11,6 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestLatestRun(t *testing.T) {
@@ -96,4 +101,72 @@ func TestSwapReloadedCharacter(t *testing.T) {
 			assert.Same(t, want, p.Load())
 		})
 	}
+}
+
+func TestCopyRowsToClipboard(t *testing.T) {
+	t.Run("copies transformed rows to clipboard", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		fyneApp := test.NewTempApp(t)
+		var snackbar []string
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:                 fyneApp,
+			Storage:             st,
+			DisplaySnackbarFunc: func(text string) { snackbar = append(snackbar, text) },
+		})
+		rows := []string{"alpha", "bravo"}
+		// when
+		copyRowsToClipboard(u, "names", rows, func(rows []string) (string, error) {
+			return strings.Join(rows, "\n"), nil
+		})
+		// then
+		xassert.Equal(t, "alpha\nbravo", fyneApp.Clipboard().Content())
+		xassert.Equal(t, []string{"Copied names to clipboard"}, snackbar)
+	})
+	t.Run("reports error when rows can not be transformed", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		fyneApp := test.NewTempApp(t)
+		var snackbar []string
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:                 fyneApp,
+			Storage:             st,
+			DisplaySnackbarFunc: func(text string) { snackbar = append(snackbar, text) },
+		})
+		fyneApp.Clipboard().SetContent("old")
+		// when
+		copyRowsToClipboard(u, "names", []string{"alpha"}, func([]string) (string, error) {
+			return "", errors.New("failed")
+		})
+		// then
+		xassert.Equal(t, "old", fyneApp.Clipboard().Content())
+		xassert.Equal(t, []string{"ERROR: Failed to copy names to clipboard"}, snackbar)
+	})
+	t.Run("copies rows as they were when called", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		fyneApp := test.NewTempApp(t)
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     fyneApp,
+			Storage: st,
+		})
+		var pending []func() // run background work later, like the real app
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		rows := []string{"alpha"}
+		copyRowsToClipboard(u, "names", rows, func(rows []string) (string, error) {
+			return strings.Join(rows, "\n"), nil
+		})
+		rows[0] = "changed"
+		// when
+		for _, f := range pending {
+			f()
+		}
+		// then
+		xassert.Equal(t, "alpha", fyneApp.Clipboard().Content())
+	})
 }

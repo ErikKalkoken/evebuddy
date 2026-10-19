@@ -449,7 +449,7 @@ func (a *JumpClones) updateRoutesAsync() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	a.routeCancel = cancel
-	go func() {
+	runAsync(func() {
 		routes, err := a.u.EVEUniverse().FetchRoutes(ctx, headers)
 		if ctx.Err() != nil {
 			return // superseded
@@ -479,7 +479,7 @@ func (a *JumpClones) updateRoutesAsync() {
 			a.columnSorter.Set("Jumps", xwidget.SortAsc)
 			a.filterRowsAsync("")
 		})
-	}()
+	})
 }
 
 func (a *JumpClones) setOrigin(w fyne.Window) {

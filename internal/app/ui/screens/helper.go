@@ -102,7 +102,7 @@ func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
 // The function can be called in the main thread.
 func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func([]T) (string, error)) {
 	rows2 := slices.Clone(rows)
-	go func() {
+	runAsync(func() {
 		s, err := transform(rows2)
 		if err != nil {
 			slog.Error("Failed to copy to clipboard", "topic", topic, "error", err)
@@ -113,7 +113,7 @@ func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func
 			fyne.CurrentApp().Clipboard().SetContent(s)
 		})
 		u.DisplaySnackbar("Copied " + topic + " to clipboard")
-	}()
+	})
 }
 
 // exportRowsAsCSV exports rows from a datatable to a CSV file.

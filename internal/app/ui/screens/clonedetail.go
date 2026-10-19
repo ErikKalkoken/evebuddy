@@ -29,15 +29,6 @@ func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem,
 	hasOrigin := origin != nil
 	hasRoute := len(r.route) > 0
 
-	var jumps string
-	if !hasOrigin {
-		jumps = "Not calculated"
-	} else if !hasRoute {
-		jumps = "No route found"
-	} else {
-		jumps = fmt.Sprintf("%s (%s)", r.jumps(), routePref.String())
-	}
-
 	location := xwidget.NewTappableRichText(r.jc.Location.DisplayRichText(), func() {
 		u.InfoViewer().ShowLocation(r.jc.Location.ID)
 	})
@@ -77,7 +68,7 @@ func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem,
 		container.New(
 			col,
 			widget.NewLabelWithStyle("Jumps", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			widget.NewLabel(jumps),
+			widget.NewLabel(cloneJumpsDisplay(r, origin, routePref)),
 		),
 		container.New(
 			col,
@@ -135,6 +126,17 @@ func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem,
 	w.Show()
 }
 
+// cloneJumpsDisplay returns the number of jumps to a clone for display.
+func cloneJumpsDisplay(r jumpCloneRow, origin *app.EveSolarSystem, routePref app.EveRoutePreference) string {
+	if origin == nil {
+		return "Not calculated"
+	}
+	if len(r.route) == 0 {
+		return "No route found"
+	}
+	return fmt.Sprintf("%s (%s)", r.jumps(), routePref.String())
+}
+
 func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool, w fyne.Window) *widget.List {
 	var implants []*app.CharacterJumpCloneImplant
 	list := widget.NewList(
@@ -164,7 +166,7 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 		u.InfoViewer().ShowType(r.EveType.ID, characterID)
 	}
 
-	go func() {
+	runAsync(func() {
 		clone, err := u.Character().GetJumpClone(context.Background(), characterID, cloneID)
 		if err != nil {
 			fyne.Do(func() {
@@ -176,7 +178,7 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 			implants = clone.Implants
 			list.Refresh()
 		})
-	}()
+	})
 	return list
 }
 

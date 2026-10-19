@@ -728,7 +728,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		w.Show()
 		return
 	}
-	go func() {
+	runAsync(func() {
 		ctx := context.Background()
 		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
 		if err != nil {
@@ -740,7 +740,9 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		}
 		fyne.Do(func() {
 			sq := NewQueueWithCharacter(a.u, c)
-			go sq.Update(ctx)
+			runAsync(func() {
+				sq.Update(ctx)
+			})
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Content:        sq,
 				EnableTooltips: true,
@@ -756,5 +758,5 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 			})
 			w.Show()
 		})
-	}()
+	})
 }

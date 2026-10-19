@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -250,5 +252,316 @@ func TestAssetSearch_Filter(t *testing.T) {
 		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), factory.CreateCorporation())
 
 		assert.Empty(t, a.currentFilter())
+	})
+}
+
+func TestAssetRow_SetQuantity(t *testing.T) {
+	t.Run("shows singleton with marker", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setQuantity(true, 5)
+		// then
+		xassert.Equal(t, 1, r.quantity)
+		xassert.Equal(t, "1*", r.quantityDisplay)
+	})
+	t.Run("shows quantity of stack", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setQuantity(false, 1234)
+		// then
+		xassert.Equal(t, 1234, r.quantity)
+		xassert.Equal(t, "1,234", r.quantityDisplay)
+	})
+}
+
+func TestAssetRow_SetPrice(t *testing.T) {
+	t.Run("calculates total from price and quantity", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setPrice(optional.New(2.5), 4, optional.New(false))
+		// then
+		xassert.EqualOptional(t, 2.5, r.price)
+		xassert.EqualOptional(t, 10.0, r.total)
+	})
+	t.Run("has no price for blueprint copies", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setPrice(optional.New(2.5), 4, optional.New(true))
+		// then
+		xassert.Empty(t, r.price)
+		xassert.Empty(t, r.total)
+		xassert.Equal(t, "?", r.priceDisplay)
+		xassert.Equal(t, "?", r.totalDisplay)
+	})
+}
+
+func TestAssetSearchForAll_Update(t *testing.T) {
+	t.Run("shows no characters without characters", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		xassert.Equal(t, "No characters", a.top.Text)
+		xassert.Equal(t, widget.LowImportance, a.top.Importance)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows no characters when no character has asset data", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		xassert.Equal(t, "No characters", a.top.Text)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows character assets with owner and tags", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		factory.AddCharacterToTag(factory.CreateCharacterTag("alpha"), c)
+		ca := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		assert.False(t, a.top.Visible())
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, ca.ItemID, a.rows[0].itemID)
+		xassert.Equal(t, c.EveCharacter.Name, a.rows[0].owner.Name)
+		xassert.Equal(t, "alpha", a.rows[0].tagsDisplay)
+		xassert.Equal(t, "Showing 1 / 1 items", a.footer.Text)
+	})
+	t.Run("includes corporation assets without office items", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		corporation := factory.CreateCorporation()
+		ca := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: corporation.ID})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: corporation.ID,
+			EveTypeID:     factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeOffice}).ID,
+		})
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, ca.ItemID, a.rows[0].itemID)
+		xassert.Equal(t, corporation.ID, a.rows[0].owner.ID)
+	})
+	t.Run("shows error when tags can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		if _, err := db.Exec("DROP TABLE characters_character_tags"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		assert.Contains(t, a.top.Text, "ERROR:")
+		xassert.Equal(t, widget.DangerImportance, a.top.Importance)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows error when section status can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		factory.CreateCharacterFull()
+		if _, err := db.Exec("DROP TABLE character_section_status"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		assert.Contains(t, a.top.Text, "ERROR:")
+		xassert.Equal(t, widget.DangerImportance, a.top.Importance)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("updates when assets of a character changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("ignores change of other character section", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// then
+		assert.Empty(t, a.rows)
+	})
+	t.Run("updates when market prices changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterAssets,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().EveUniverseSectionChanged.Emit(t.Context(), app.EveUniverseSectionUpdated{
+			Section: app.SectionEveMarketPrices,
+		})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+}
+
+func TestAssetSearchForCorporation_Update(t *testing.T) {
+	t.Run("shows assets of exchanged corporation", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForCorporation(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCorporation()
+		ca := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		factory.CreateCorporationAsset()
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, ca.ItemID, a.rows[0].itemID)
+	})
+	t.Run("shows no assets without corporation", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForCorporation(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		factory.CreateCorporationAsset()
+		a.rows = []assetRow{{itemID: 1}}
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), nil)
+		// then
+		assert.Empty(t, a.rows)
+	})
+	t.Run("updates when assets of corporation changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForCorporation(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCorporation()
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		a.corporation.Store(c)
+		// when
+		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationAssets,
+		})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("ignores asset change of other corporation", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForCorporation(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCorporation()
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		a.corporation.Store(c)
+		other := factory.CreateCorporation()
+		// when
+		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
+			CorporationID: other.ID,
+			Section:       app.SectionCorporationAssets,
+		})
+		// then
+		assert.Empty(t, a.rows)
 	})
 }

@@ -2,6 +2,8 @@ package screens
 
 import (
 	"database/sql"
+	"fmt"
+	"slices"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -13,9 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -163,5 +167,249 @@ func TestJumpClones_ErrorDisplay(t *testing.T) {
 
 		a.update(t.Context())
 		assert.False(t, a.errorLabel.Visible())
+	})
+}
+
+func TestJumpCloneRow_Jumps(t *testing.T) {
+	t.Run("shows question mark when route is not calculated", func(t *testing.T) {
+		// given
+		r := jumpCloneRow{}
+		// when
+		got := r.jumps()
+		// then
+		xassert.Equal(t, "?", got)
+	})
+	t.Run("shows no route when route is empty", func(t *testing.T) {
+		// given
+		r := jumpCloneRow{route: []*app.EveSolarSystem{}}
+		// when
+		got := r.jumps()
+		// then
+		xassert.Equal(t, "No route", got)
+	})
+	t.Run("shows number of jumps", func(t *testing.T) {
+		// given
+		r := jumpCloneRow{route: []*app.EveSolarSystem{{ID: 1}, {ID: 2}, {ID: 3}}}
+		// when
+		got := r.jumps()
+		// then
+		xassert.Equal(t, "2", got)
+	})
+}
+
+func TestJumpCloneRow_Compare(t *testing.T) {
+	t.Run("sorts by jumps, then not calculated, then no route", func(t *testing.T) {
+		// given
+		noRoute := jumpCloneRow{route: []*app.EveSolarSystem{}}
+		notCalculated := jumpCloneRow{}
+		twoJumps := jumpCloneRow{route: []*app.EveSolarSystem{{ID: 1}, {ID: 2}, {ID: 3}}}
+		zeroJumps := jumpCloneRow{route: []*app.EveSolarSystem{{ID: 1}}}
+		rows := []jumpCloneRow{noRoute, notCalculated, twoJumps, zeroJumps}
+		// when
+		slices.SortFunc(rows, func(a, b jumpCloneRow) int {
+			return a.compare(b)
+		})
+		// then
+		got := xslices.Map(rows, func(r jumpCloneRow) string {
+			return r.jumps()
+		})
+		xassert.Equal(t, []string{"0", "2", "?", "No route"}, got)
+	})
+}
+
+func TestJumpClones_UpdateRoutes(t *testing.T) {
+	makeRow := func(id int64, solarSystemID int64) jumpCloneRow {
+		return jumpCloneRow{
+			jc: &app.CharacterJumpClone2{
+				ID:        id,
+				Character: &app.EntityShort{Name: "Bruce"},
+				Location: &app.EveLocation{
+					SolarSystem: optional.New(&app.EveSolarSystem{
+						ID:            solarSystemID,
+						Constellation: &app.EveConstellation{Region: &app.EveRegion{}},
+					}),
+				},
+			},
+		}
+	}
+	t.Run("calculates routes and sorts by jumps", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		origin := &app.EveSolarSystem{ID: 30000142}
+		a.origin = origin
+		a.rows = []jumpCloneRow{
+			{jc: &app.CharacterJumpClone2{ID: 1, Character: &app.EntityShort{Name: "Bruce"}, Location: &app.EveLocation{}}},
+			makeRow(2, origin.ID),
+		}
+		// when
+		a.updateRoutesAsync()
+		// then
+		got := xslices.Map(a.rowsFiltered, func(r jumpCloneRow) string {
+			return fmt.Sprintf("%d:%s", r.jc.ID, r.jumps())
+		})
+		xassert.Equal(t, []string{"2:0", "1:?"}, got)
+	})
+	t.Run("shows question mark when route was not found", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.origin = &app.EveSolarSystem{ID: 30000142}
+		a.rows = []jumpCloneRow{makeRow(1, 31000001)} // wormhole system
+		// when
+		a.updateRoutesAsync()
+		// then
+		require.Len(t, a.rowsFiltered, 1)
+		xassert.Equal(t, "?", a.rowsFiltered[0].jumps())
+	})
+	t.Run("does nothing without origin", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		route := []*app.EveSolarSystem{{ID: 1}}
+		r := makeRow(1, 30000142)
+		r.route = route
+		a.rows = []jumpCloneRow{r}
+		// when
+		a.updateRoutesAsync()
+		// then
+		xassert.Equal(t, route, a.rows[0].route)
+		assert.Empty(t, a.rowsFiltered)
+	})
+}
+
+func TestJumpClones_Signals(t *testing.T) {
+	t.Run("loads clones with tags when jump clones changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		tag := factory.CreateCharacterTag("alpha")
+		factory.AddCharacterToTag(tag, c)
+		jc := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterJumpClones,
+		})
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, jc.ID, a.rows[0].jc.ID)
+		xassert.Equal(t, set.Of("alpha"), a.rows[0].tags)
+		xassert.Equal(t, "Showing 1 / 1 clones", a.footerLabel.Text)
+	})
+	t.Run("calculates routes when clones are loaded with origin set", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		location := factory.CreateEveLocationStation()
+		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{LocationID: location.ID})
+		a.origin = location.SolarSystem.MustValue()
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			Section: app.SectionCharacterJumpClones,
+		})
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, "0", a.rows[0].jumps())
+	})
+	t.Run("ignores change of other section", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		jc := factory.CreateCharacterJumpClone()
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: jc.CharacterID,
+			Section:     app.SectionCharacterImplants,
+		})
+		// then
+		assert.Empty(t, a.rows)
+	})
+	t.Run("loads clones on app init", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		factory.CreateCharacterJumpClone()
+		// when
+		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("loads clones when character was added", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: c.ID})
+		// when
+		a.u.Signals().CharacterAdded.Emit(t.Context(), c)
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("removes clones when character was removed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.rows = []jumpCloneRow{makeJumpCloneRow(1, "Bruce", "Jita", "The Forge")}
+		c := factory.CreateCharacterFull()
+		// when
+		a.u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
+		// then
+		assert.Empty(t, a.rows)
+	})
+	t.Run("updates tags when tags changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewJumpClones(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{CharacterID: c.ID})
+		a.update(t.Context())
+		factory.AddCharacterToTag(factory.CreateCharacterTag("alpha"), c)
+		// when
+		a.u.Signals().TagsChanged.Emit(t.Context(), struct{}{})
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, set.Of("alpha"), a.rows[0].tags)
 	})
 }

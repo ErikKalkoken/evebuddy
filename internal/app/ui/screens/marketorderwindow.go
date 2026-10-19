@@ -32,20 +32,6 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 	region := ui.MakeLinkLabel(r.regionName, func() {
 		u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityRegion, ID: r.regionID})
 	})
-	var buySell string
-	if r.IsBuyOrder.ValueOrZero() {
-		buySell = "buy"
-	} else {
-		buySell = "sell"
-	}
-
-	var expires string
-	if r.isExpired() {
-		expires = "-"
-	} else {
-		expires = r.expires.Format(app.DateTimeFormat)
-	}
-
 	state := widget.NewLabel(r.stateCorrectedDisplay())
 	state.Importance = r.stateImportance()
 	items := []*widget.FormItem{
@@ -55,12 +41,12 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		)),
 		widget.NewFormItem("Type", item),
 		widget.NewFormItem("Price", widget.NewLabel(ui.FormatISKAmount(r.price))),
-		widget.NewFormItem("Variant", widget.NewLabel(buySell)),
+		widget.NewFormItem("Variant", widget.NewLabel(r.variantDisplay())),
 		widget.NewFormItem("State", state),
 		widget.NewFormItem("Volume Total", widget.NewLabel(ihumanize.Comma(r.volumeTotal))),
 		widget.NewFormItem("Volume Remain", widget.NewLabel(ihumanize.Comma(r.volumeRemain))),
 		widget.NewFormItem("Issued", widget.NewLabel(r.issued.Format(app.DateTimeFormat))),
-		widget.NewFormItem("Expires", widget.NewLabel(expires)),
+		widget.NewFormItem("Expires", widget.NewLabel(r.expiresDisplay())),
 		widget.NewFormItem("Location", ui.MakeLocationLabel(r.location, u.InfoViewer().ShowLocation)),
 		widget.NewFormItem("Region", region),
 	}
@@ -103,6 +89,20 @@ func ShowMarketOrderWindow(u baseUI, r marketOrderRow) {
 		Window: w,
 	})
 	w.Show()
+}
+
+func (r marketOrderRow) variantDisplay() string {
+	if r.IsBuyOrder.ValueOrZero() {
+		return "buy"
+	}
+	return "sell"
+}
+
+func (r marketOrderRow) expiresDisplay() string {
+	if r.isExpired() {
+		return "-"
+	}
+	return r.expires.Format(app.DateTimeFormat)
 }
 
 func makeBoolLabel(v bool) *widget.Label {

@@ -26,7 +26,7 @@ func ShowCharacterContractByID(u baseUI, characterID, contractID int64) {
 			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		})
 	}
-	go func() {
+	runAsync(func() {
 		ctx := context.Background()
 		o, err := u.Character().GetContract(ctx, characterID, contractID)
 		if err != nil {
@@ -51,7 +51,7 @@ func ShowCharacterContractByID(u baseUI, characterID, contractID int64) {
 		fyne.Do(func() {
 			ShowContract(u, newContractRow(&o.Contract, o.CharacterID, c.NameOrZero(), false, myCharacterIDs, myCorporationIDs))
 		})
-	}()
+	})
 }
 
 // ShowContract shows the details of a character or corporation contract in a window.
@@ -63,7 +63,7 @@ func ShowContract(u baseUI, r contractRow) {
 		w.Show()
 		return
 	}
-	go func() {
+	runAsync(func() {
 		reportError := func(err error) {
 			fyne.Do(func() {
 				u.DestroyWindow(windowID)
@@ -163,24 +163,15 @@ func ShowContract(u baseUI, r contractRow) {
 				if r.status == app.ContractStatusOutstanding {
 					auctionExpiresNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
-				var highestBid string
-				switch totalBids {
-				case 0:
-					highestBid = "(None)"
-				case 1:
-					highestBid = fmt.Sprintf("%s (1 bid)", ui.FormatISKAmount(topBidAmount))
-				default:
-					highestBid = fmt.Sprintf("%s (%d bids)", ui.FormatISKAmount(topBidAmount), totalBids)
-				}
 				fi = slices.Concat(fi, []*widget.FormItem{
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("(None)", ui.FormatISKAmount))},
-					{Text: "Highest Bid", Widget: widget.NewLabel(highestBid)},
+					{Text: "Highest Bid", Widget: widget.NewLabel(contractHighestBidDisplay(totalBids, topBidAmount))},
 					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, auctionExpiresNote))},
 				})
 			}
 
-			makeItemsInfo := func() (fyne.CanvasObject, error) {
+			makeItemsInfo := func() fyne.CanvasObject {
 				vb := container.NewVBox()
 				var itemsIncluded, itemsRequested []*app.ContractItem
 				for _, it := range items {
@@ -218,7 +209,7 @@ func ShowContract(u baseUI, r contractRow) {
 						vb.Add(makeItem(it))
 					}
 				}
-				return vb, nil
+				return vb
 			}
 
 			subTitle := fmt.Sprintf("%s (%s)", r.name, r.contractType.Display())
@@ -227,12 +218,7 @@ func ShowContract(u baseUI, r contractRow) {
 			main := container.NewVBox(f)
 			if r.contractType.HasItems() {
 				main.Add(widget.NewSeparator())
-				x, err := makeItemsInfo()
-				if err != nil {
-					reportError(err)
-					return
-				}
-				main.Add(x)
+				main.Add(makeItemsInfo())
 			}
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
 				Title:   subTitle,
@@ -241,7 +227,18 @@ func ShowContract(u baseUI, r contractRow) {
 			})
 			w.Show()
 		})
-	}()
+	})
+}
+
+// contractHighestBidDisplay returns the highest bid of an auction with the number of bids.
+func contractHighestBidDisplay(totalBids int, topBidAmount float64) string {
+	switch totalBids {
+	case 0:
+		return "(None)"
+	case 1:
+		return fmt.Sprintf("%s (1 bid)", ui.FormatISKAmount(topBidAmount))
+	}
+	return fmt.Sprintf("%s (%d bids)", ui.FormatISKAmount(topBidAmount), totalBids)
 }
 
 // makeContractDateString returns a formatted date with an optional note.

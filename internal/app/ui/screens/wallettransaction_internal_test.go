@@ -6,12 +6,15 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -180,5 +183,431 @@ func TestWalletTransactions_ErrorDisplay(t *testing.T) {
 
 		a.Update(t.Context())
 		assert.False(t, a.errorLabel.Visible())
+	})
+}
+
+func TestCharacterWalletTransactions(t *testing.T) {
+	t.Run("shows buy and sell transactions of exchanged character", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWalletTransaction(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		buy := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+			CharacterID: c.ID,
+			IsBuy:       true,
+		})
+		sell := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+			CharacterID: c.ID,
+		})
+		// when
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+		// then
+		got := make(map[int64]widget.Importance)
+		for _, r := range a.rows {
+			got[r.transactionID] = r.totalImportance
+			assert.NotEmpty(t, r.regionName)
+		}
+		want := map[int64]widget.Importance{
+			buy.TransactionID:  widget.DangerImportance,
+			sell.TransactionID: widget.SuccessImportance,
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("updates when transactions of current character changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWalletTransaction(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		a.character.Store(c)
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("ignores change of other character", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCharacterWalletTransaction(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		a.character.Store(c)
+		other := factory.CreateCharacterFull()
+		// when
+		a.u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: other.ID,
+			Section:     app.SectionCharacterWalletTransactions,
+		})
+		// then
+		assert.Empty(t, a.rows)
+	})
+}
+
+func TestCorporationWalletTransactions(t *testing.T) {
+	t.Run("shows transactions of division when corporation is exchanged", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division2)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions2)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions2,
+		})
+		buy := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+			IsBuy:         true,
+		})
+		sell := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		got := make(map[int64]widget.Importance)
+		for _, r := range a.rows {
+			got[r.transactionID] = r.totalImportance
+			xassert.Equal(t, app.Division2, r.division)
+		}
+		want := map[int64]widget.Importance{
+			buy.TransactionID:  widget.DangerImportance,
+			sell.TransactionID: widget.SuccessImportance,
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("shows no corporation when corporation is exchanged to none", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		a.rows = []walletTransactionRow{{transactionID: 1}}
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), nil)
+		// then
+		xassert.Equal(t, "No corporation", a.footerLabel.Text)
+		xassert.Equal(t, widget.LowImportance, a.footerLabel.Importance)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows no data when section was never updated", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		a.rows = []walletTransactionRow{{transactionID: 1}}
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		xassert.Equal(t, "No data", a.footerLabel.Text)
+		xassert.Equal(t, widget.WarningImportance, a.footerLabel.Importance)
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows error when section status can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		if _, err := db.Exec("DROP TABLE corporation_section_status"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+	})
+	t.Run("shows error when transactions can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		if _, err := db.Exec("DROP TABLE corporation_wallet_transactions"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR:")
+		assert.Empty(t, a.rows)
+	})
+	t.Run("updates when transactions of division changed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		a.corporation.Store(c)
+		// when
+		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		// then
+		assert.Len(t, a.rows, 1)
+	})
+	t.Run("ignores change of other division", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		a.corporation.Store(c)
+		// when
+		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions2,
+		})
+		// then
+		assert.Empty(t, a.rows)
+	})
+	t.Run("ignores change of other corporation", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}), app.Division1)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		a.corporation.Store(c)
+		other := factory.CreateCorporation()
+		// when
+		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
+			CorporationID: other.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		// then
+		assert.Empty(t, a.rows)
+	})
+}
+
+func TestShowCharacterWalletTransactionWindowAsync(t *testing.T) {
+	t.Run("can show buy transaction", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		o := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{IsBuy: true})
+		// when
+		ShowCharacterWalletTransactionWindowAsync(u, o.CharacterID, "Bruce", o.TransactionID)
+		// then
+		w, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", o.CharacterID, o.TransactionID))
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("can show sell transaction", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		o := factory.CreateCharacterWalletTransaction()
+		// when
+		ShowCharacterWalletTransactionWindowAsync(u, o.CharacterID, "Bruce", o.TransactionID)
+		// then
+		w, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", o.CharacterID, o.TransactionID))
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("closes window when transaction can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		c := factory.CreateCharacterFull()
+		// when
+		ShowCharacterWalletTransactionWindowAsync(u, c.ID, "Bruce", 42)
+		// then
+		_, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", c.ID, 42))
+		assert.True(t, created)
+	})
+	t.Run("reuses existing window", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		w, _ := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", 7, 42))
+		// when
+		ShowCharacterWalletTransactionWindowAsync(u, 7, "Bruce", 42)
+		// then
+		assert.Nil(t, w.Content())
+	})
+}
+
+func TestShowCorporationWalletTransactionWindowAsync(t *testing.T) {
+	t.Run("can show buy transaction", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			IsBuy:         true,
+		})
+		// when
+		ShowCorporationWalletTransactionWindowAsync(u, c.ID, "Wayne Enterprises", app.Division1, o.TransactionID)
+		// then
+		w, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", c.ID, o.TransactionID))
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("can show sell transaction", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		// when
+		ShowCorporationWalletTransactionWindowAsync(u, c.ID, "Wayne Enterprises", app.Division1, o.TransactionID)
+		// then
+		w, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", c.ID, o.TransactionID))
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("closes window when transaction can not be loaded", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
+		// when
+		ShowCorporationWalletTransactionWindowAsync(u, c.ID, "Wayne Enterprises", app.Division1, 42)
+		// then
+		_, created := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", c.ID, 42))
+		assert.True(t, created)
+	})
+	t.Run("reuses existing window", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		w, _ := u.GetOrCreateWindow(fmt.Sprintf("wallettransaction-%d-%d", 7, 42))
+		// when
+		ShowCorporationWalletTransactionWindowAsync(u, 7, "Wayne Enterprises", app.Division1, 42)
+		// then
+		assert.Nil(t, w.Content())
 	})
 }
