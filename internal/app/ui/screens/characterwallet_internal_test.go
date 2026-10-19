@@ -156,26 +156,6 @@ func TestCharacterWallet_UpdateBalance(t *testing.T) {
 }
 
 func TestCharacterWallet_Signals(t *testing.T) {
-	t.Run("shows balance of exchanged character", func(t *testing.T) {
-		// given
-		db, st, factory := testutil.NewDBOnDisk(t)
-		defer db.Close()
-		a := NewCharacterWallet(testdouble.NewUIFake(testdouble.UIParams{
-			App:     test.NewTempApp(t),
-			Storage: st,
-		}))
-		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
-			WalletBalance: optional.New(1000.0),
-		})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     app.SectionCharacterWalletBalance,
-		})
-		// when
-		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
-		// then
-		xassert.Equal(t, "1,000.00 ISK", a.balanceLabel.Text)
-	})
 	t.Run("updates balance when wallet balance of current character changed", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)

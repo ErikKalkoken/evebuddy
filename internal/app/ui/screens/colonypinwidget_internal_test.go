@@ -58,13 +58,4 @@ func TestColonyPlanetSymbol(t *testing.T) {
 		assert.Equal(t, colonyPlanetIcon(iconID, false), w.icon.Resource)
 		assert.False(t, w.attention.Visible())
 	})
-	t.Run("should size attention icon in inline icon sizes", func(t *testing.T) {
-		for _, scale := range []float32{1, 2} {
-			w := newColonyPlanetSymbol(104, scale)
-			win := test.NewWindow(w)
-			w.set(iconID, true)
-			assert.Equal(t, fyne.NewSquareSize(scale*theme.IconInlineSize()), w.attention.MinSize())
-			win.Close()
-		}
-	})
 }

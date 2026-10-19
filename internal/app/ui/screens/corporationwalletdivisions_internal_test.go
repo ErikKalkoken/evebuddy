@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -13,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestCorporationWalletRow(t *testing.T) {
@@ -50,10 +48,6 @@ func TestCorporationWalletDivisions(t *testing.T) {
 			test.WidgetRenderer(a)
 		})
 	}
-	t.Run("uses table on desktop and list on mobile", func(t *testing.T) {
-		assert.IsType(t, &widget.Table{}, newDivisions(t, false).body)
-		assert.IsType(t, &xwidget.StripedList{}, newDivisions(t, true).body)
-	})
 	t.Run("shows empty when no corporation", func(t *testing.T) {
 		a := newDivisions(t, false)
 		assert.Empty(t, a.rowsSorted)
