@@ -416,6 +416,21 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		refreshCorpWalletBadge()
 	}
 
+	// Hides the total while wealth is not permitted, since the two update independently.
+	var corpWealthTotal optional.Optional[float64]
+	var corpWealthEnabled bool
+	refreshCorpWealthBadge := func() {
+		var s string
+		if corpWealthEnabled {
+			s = formatISKValueShort(corpWealthTotal)
+		}
+		corpWealthItem.SetBadge(s)
+	}
+	u.corporationWealth.OnUpdate = func(total optional.Optional[float64]) {
+		corpWealthTotal = total
+		refreshCorpWealthBadge()
+	}
+
 	// Make overall UI
 	makeTabContent := func(title string, content fyne.CanvasObject) fyne.CanvasObject {
 		header := widget.NewLabel(title)
@@ -570,14 +585,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			}
 			refreshCorpWalletBadge()
 
-			if sections.Contains(app.SectionCorporationAssets) &&
+			corpWealthEnabled = sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
-				sections.Contains(app.SectionCorporationWalletBalances) {
+				sections.Contains(app.SectionCorporationWalletBalances)
+			if corpWealthEnabled {
 				corporationNav.EnableItem(corpWealthItem)
 			} else {
 				corporationNav.DisableItem(corpWealthItem)
 				hasDisabled = true
 			}
+			refreshCorpWealthBadge()
 
 			if hasDisabled {
 				corporationNav.Select(corpSheetItem)

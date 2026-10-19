@@ -350,6 +350,21 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpWalletTotal = total
 		refreshCorpWalletSupporting()
 	}
+	// Hides the total while wealth is not permitted, since the two update independently.
+	var corpWealthTotal optional.Optional[float64]
+	var corpWealthEnabled bool
+	refreshCorpWealthSupporting := func() {
+		var s string
+		if corpWealthEnabled {
+			s = formatISKValue(corpWealthTotal, ui.FloatFormatISKRounded)
+		}
+		corpWealthNav.Supporting = s
+		corpWealthNav.Refresh()
+	}
+	u.corporationWealth.OnUpdate = func(total optional.Optional[float64]) {
+		corpWealthTotal = total
+		refreshCorpWealthSupporting()
+	}
 
 	corpPage := newCorpAppBar("Corporations", corpList)
 	corpNav = xwidget.NewNavigator(corpPage)
@@ -485,9 +500,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
 			setEnabled(corpWalletNav, corpWalletEnabled)
 			refreshCorpWalletSupporting()
-			setEnabled(corpWealthNav, sections.Contains(app.SectionCorporationAssets) &&
+			corpWealthEnabled = sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
-				sections.Contains(app.SectionCorporationWalletBalances))
+				sections.Contains(app.SectionCorporationWalletBalances)
+			setEnabled(corpWealthNav, corpWealthEnabled)
+			refreshCorpWealthSupporting()
 		})
 	}
 

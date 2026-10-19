@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 const (
@@ -31,6 +32,8 @@ type corporationDivisionValue struct {
 
 type CorporationWealth struct {
 	widget.BaseWidget
+
+	OnUpdate func(totalNetWorth optional.Optional[float64])
 
 	corporation atomic.Pointer[app.Corporation]
 
@@ -134,6 +137,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 			a.assetsChart.SetData(nil)
 			a.assetsTitleLabel.SetText("")
 			a.showStatus(text, importance)
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[float64]{})
+			}
 		})
 	}
 	corporationID := a.corporation.Load().IDOrZero()
@@ -204,6 +210,9 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		a.updateWallets(rows)
 		a.updateAssets(rows)
 		a.updateCategorySplit(v.totalAssetValue, totalWalletBalance, v.contractsEscrow)
+		if a.OnUpdate != nil {
+			a.OnUpdate(optional.New(v.totalAssetValue + totalWalletBalance + v.contractsEscrow))
+		}
 	})
 }
 
