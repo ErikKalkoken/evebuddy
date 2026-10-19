@@ -26,11 +26,7 @@ func showIndustryJobWindow(u baseUI, r industryJobRow) {
 
 	activity := fmt.Sprintf("%s (%s)", r.activity.Display(), r.activity.JobType().Display())
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-			r.owner.ID,
-			r.owner.Name,
-			u.InfoViewer().Show,
-		)),
+		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner, u.InfoViewer().Show)),
 		widget.NewFormItem("Blueprint", ui.MakeLinkLabelWithWrap(r.blueprintType.Name, func() {
 			u.InfoViewer().ShowType(r.blueprintType.ID, 0)
 		})),

@@ -469,6 +469,9 @@ func (a *JumpClones) updateRoutesAsync() {
 			m[h.Destination.ID] = route
 		}
 		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return // superseded while queued
+			}
 			for i, r := range a.rows {
 				solarSystem, ok := r.jc.Location.SolarSystem.Value()
 				if !ok {

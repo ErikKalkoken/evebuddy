@@ -46,11 +46,7 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 	path.Wrapping = fyne.TextWrapWord
 
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-			r.owner.ID,
-			r.owner.Name,
-			u.InfoViewer().Show,
-		)),
+		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner, u.InfoViewer().Show)),
 		widget.NewFormItem("Item", item),
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
 		widget.NewFormItem("Category", widget.NewLabel(r.categoryName)),
