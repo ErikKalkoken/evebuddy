@@ -155,22 +155,7 @@ func (a *SkillQueue) makeSkillList() *widget.List {
 			c := co.(*fyne.Container).Objects
 			c[0].(*SkillQueueItem).Set(qi)
 
-			level := c[1].(*xwidget.SkillLevel)
-			var active, trained, queued int64
-			if qi.IsCompleted() {
-				active = qi.FinishedLevel
-				trained = qi.FinishedLevel
-				queued = qi.FinishedLevel
-			} else if qi.IsActive() {
-				active = qi.FinishedLevel - 1
-				trained = qi.FinishedLevel - 1
-				queued = 0
-			} else {
-				active = qi.FinishedLevel - 1
-				trained = qi.FinishedLevel - 1
-				queued = qi.FinishedLevel
-			}
-			level.Set(active, trained, queued)
+			c[1].(*xwidget.SkillLevel).Set(skillQueueItemLevels(qi))
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -312,6 +297,14 @@ func (a *SkillQueue) applyState() {
 	}
 	a.skillList.Refresh()
 	a.skillList.Show()
+}
+
+// skillQueueItemLevels returns the levels to show for a skill in the queue.
+func skillQueueItemLevels(qi *app.CharacterSkillqueueItem) (active, trained, queued int64) {
+	if qi.IsCompleted() {
+		return qi.FinishedLevel, qi.FinishedLevel, qi.FinishedLevel
+	}
+	return qi.FinishedLevel - 1, qi.FinishedLevel - 1, qi.FinishedLevel
 }
 
 func showSkillInTrainingWindow(u baseUI, r *app.CharacterSkillqueueItem, characterName string) {

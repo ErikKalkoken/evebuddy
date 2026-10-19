@@ -449,7 +449,7 @@ func (a *JumpClones) updateRoutesAsync() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	a.routeCancel = cancel
-	go func() {
+	runAsync(func() {
 		routes, err := a.u.EVEUniverse().FetchRoutes(ctx, headers)
 		if ctx.Err() != nil {
 			return // superseded
@@ -469,17 +469,24 @@ func (a *JumpClones) updateRoutesAsync() {
 			m[h.Destination.ID] = route
 		}
 		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return // superseded while queued
+			}
 			for i, r := range a.rows {
 				solarSystem, ok := r.jc.Location.SolarSystem.Value()
 				if !ok {
 					continue
 				}
-				a.rows[i].route = m[solarSystem.ID]
+				route := m[solarSystem.ID]
+				if route == nil {
+					route = []*app.EveSolarSystem{} // requested, but no route found
+				}
+				a.rows[i].route = route
 			}
 			a.columnSorter.Set("Jumps", xwidget.SortAsc)
 			a.filterRowsAsync("")
 		})
-	}()
+	})
 }
 
 func (a *JumpClones) setOrigin(w fyne.Window) {

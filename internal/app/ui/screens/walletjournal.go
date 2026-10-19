@@ -652,7 +652,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 		return
 	}
 
-	go func() {
+	runAsync(func() {
 		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
 			fyne.Do(func() {
@@ -684,10 +684,12 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 				})
 			}
 			// TODO: Add support for industry jobs
+			var hasContext bool
 			if v, ok := o.ContextIDType.Value(); ok {
+				hasContext = true
 				switch v {
 				case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
-					go func() {
+					runAsync(func() {
 						ee, err := u.EVEUniverse().GetOrCreateEntityESI(context.Background(), o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
@@ -698,9 +700,9 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 							contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoViewer().Show)
 							f.Refresh()
 						})
-					}()
+					})
 				case "contract_id":
-					go func() {
+					runAsync(func() {
 						c, err := u.Character().GetContract(context.Background(), characterID, o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
@@ -713,7 +715,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 							})
 							f.Refresh()
 						})
-					}()
+					})
 				case "market_transaction_id":
 					contextItem.Text = "Related market transaction"
 					contextItem.Widget = ui.MakeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID.ValueOrZero()), func() {
@@ -722,7 +724,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 					f.Refresh()
 				case "station_id", "structure_id":
 					contextItem.Text = "Related location"
-					go func() {
+					runAsync(func() {
 						ctx := context.Background()
 						ts, err := u.Character().TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
 						if err != nil {
@@ -739,7 +741,9 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 							contextItem.Widget = ui.MakeLocationLabel(el.ToEveLocationShort(), u.InfoViewer().ShowLocation)
 							f.Refresh()
 						})
-					}()
+					})
+				default:
+					hasContext = false // unsupported types would show "?" forever
 				}
 			}
 			items := []*widget.FormItem{
@@ -777,7 +781,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
 				)
 			}
-			if !o.ContextIDType.IsEmpty() {
+			if hasContext {
 				items = append(items, contextItem)
 			}
 			if u.IsDeveloperMode() {
@@ -794,7 +798,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 			})
 			w.Show()
 		})
-	}()
+	})
 }
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
@@ -807,7 +811,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 		return
 	}
 
-	go func() {
+	runAsync(func() {
 		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
 			fyne.Do(func() {
@@ -825,8 +829,8 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			amount.Importance = importanceISKAmount(o.Amount)
 			reason := o.Reason.ValueOrFallback("-")
 
-			contextDefaultWidget := widget.NewLabel("?")
-			contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
+			// contextDefaultWidget := widget.NewLabel("?")
+			// contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
 			// ctx := context.Background()
 			// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
 			// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
@@ -879,9 +883,8 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			// 	}()
 			// }
 			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					corporationID,
-					corporationName,
+				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
+					&app.EveEntity{ID: corporationID, Name: corporationName, Category: app.EveEntityCorporation},
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
@@ -913,7 +916,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
 				)
 			}
-			items = append(items, contextItem)
+			// items = append(items, contextItem)
 			if u.IsDeveloperMode() {
 				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
 			}
@@ -928,7 +931,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			})
 			w.Show()
 		})
-	}()
+	})
 }
 
 func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {

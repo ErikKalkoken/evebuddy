@@ -943,7 +943,7 @@ func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 	for id := range characters {
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, id)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		tagsPerCharacter[id] = tags
 	}
@@ -1007,7 +1007,6 @@ func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 	}
 	ac := asset.NewFromCorporationAssets(assets, locations)
 	var rows []assetRow
-	var value float64
 	for _, ca := range assets {
 		if ca.Type != nil && ca.Type.ID == app.EveTypeOffice {
 			continue // filter out office item
@@ -1015,7 +1014,6 @@ func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 		r := newCorporationAssetRow(ca, ac, corporationNames[ca.CorporationID])
 		r.searchTarget = strings.ToLower(r.displayName)
 		rows = append(rows, r)
-		value += r.total.ValueOrZero()
 	}
 	return rows, nil
 }

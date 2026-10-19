@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -130,7 +131,7 @@ func (a *CharacterAugmentations) update(ctx context.Context) {
 		return
 	}
 
-	setTop(fmt.Sprintf("%d implants", len(implants)), widget.MediumImportance)
+	setTop(ihumanize.Plural(len(implants), "implant", "implants"), widget.MediumImportance)
 	fyne.Do(func() {
 		if !isLatest() {
 			return

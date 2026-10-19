@@ -42,21 +42,11 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 		region = widget.NewLabel("?")
 	}
 
-	var p string
-	if len(r.locationPath) > 0 {
-		p = strings.Join(r.locationPath, " / ")
-	} else {
-		p = "-"
-	}
-	path := widget.NewLabel(p)
+	path := widget.NewLabel(assetLocationPathDisplay(r))
 	path.Wrapping = fyne.TextWrapWord
 
 	items := []*widget.FormItem{
-		widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-			r.owner.ID,
-			r.owner.Name,
-			u.InfoViewer().Show,
-		)),
+		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner, u.InfoViewer().Show)),
 		widget.NewFormItem("Item", item),
 		widget.NewFormItem("Group", widget.NewLabel(r.groupName)),
 		widget.NewFormItem("Category", widget.NewLabel(r.categoryName)),
@@ -108,4 +98,12 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 		Window:  w,
 	})
 	w.Show()
+}
+
+// assetLocationPathDisplay returns the location path of an asset for display.
+func assetLocationPathDisplay(r assetRow) string {
+	if len(r.locationPath) == 0 {
+		return "-"
+	}
+	return strings.Join(r.locationPath, " / ")
 }

@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,7 +14,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 // skillQueueStatus records the last status reported via OnUpdate.
@@ -393,5 +396,206 @@ func TestSkillQueue_CharacterChanged(t *testing.T) {
 		u.Signals().CharacterChanged.Emit(t.Context(), c.ID)
 
 		assert.Equal(t, "No skill in training", a.topLabel.Text)
+	})
+}
+
+func TestSkillQueueItemLevels(t *testing.T) {
+	now := time.Now()
+	t.Run("shows completed skill as trained", func(t *testing.T) {
+		// given
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 3,
+			StartDate:     optional.New(now.Add(-3 * time.Hour)),
+			FinishDate:    optional.New(now.Add(-time.Hour)),
+		}
+		// when
+		active, trained, queued := skillQueueItemLevels(qi)
+		// then
+		xassert.Equal(t, []int64{3, 3, 3}, []int64{active, trained, queued})
+	})
+	t.Run("shows skill in training with queued level", func(t *testing.T) {
+		// given
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 3,
+			StartDate:     optional.New(now.Add(-time.Hour)),
+			FinishDate:    optional.New(now.Add(time.Hour)),
+		}
+		// when
+		active, trained, queued := skillQueueItemLevels(qi)
+		// then
+		xassert.Equal(t, []int64{2, 2, 3}, []int64{active, trained, queued})
+	})
+	t.Run("shows queued skill with queued level", func(t *testing.T) {
+		// given
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 3,
+			StartDate:     optional.New(now.Add(time.Hour)),
+			FinishDate:    optional.New(now.Add(3 * time.Hour)),
+		}
+		// when
+		active, trained, queued := skillQueueItemLevels(qi)
+		// then
+		xassert.Equal(t, []int64{2, 2, 3}, []int64{active, trained, queued})
+	})
+}
+
+func TestSkillQueueItem_Set(t *testing.T) {
+	now := time.Now()
+	t.Run("shows placeholder without skill", func(t *testing.T) {
+		// given
+		w := NewSkillQueueItem(false)
+		// when
+		w.Set(nil)
+		// then
+		xassert.Equal(t, "N/A", w.name.Text)
+		assert.Empty(t, w.duration.Text)
+		assert.False(t, w.progress.Visible())
+	})
+	t.Run("shows completed skill", func(t *testing.T) {
+		// given
+		w := NewSkillQueueItem(false)
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 3,
+			SkillName:     "Gunnery",
+			StartDate:     optional.New(now.Add(-3 * time.Hour)),
+			FinishDate:    optional.New(now.Add(-time.Hour)),
+		}
+		// when
+		w.Set(qi)
+		// then
+		xassert.Equal(t, "Gunnery III", w.name.Text)
+		xassert.Equal(t, "Completed", w.duration.Text)
+		xassert.Equal(t, widget.LowImportance, w.duration.Importance)
+		assert.False(t, w.progress.Visible())
+	})
+	t.Run("shows skill in training with progress", func(t *testing.T) {
+		// given
+		w := NewSkillQueueItem(false)
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel:   3,
+			SkillName:       "Gunnery",
+			StartDate:       optional.New(now.Add(-time.Hour)),
+			FinishDate:      optional.New(now.Add(time.Hour)),
+			LevelStartSP:    optional.New[int64](0),
+			TrainingStartSP: optional.New[int64](0),
+			LevelEndSP:      optional.New[int64](1000),
+		}
+		// when
+		w.Set(qi)
+		// then
+		assert.NotContains(t, []string{"", "?", "Completed"}, w.duration.Text)
+		xassert.Equal(t, widget.MediumImportance, w.duration.Importance)
+		assert.True(t, w.progress.Visible())
+		assert.InDelta(t, 0.5, w.progress.Value, 0.01)
+	})
+	t.Run("shows duration of queued skill", func(t *testing.T) {
+		// given
+		w := NewSkillQueueItem(false)
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 3,
+			SkillName:     "Gunnery",
+			StartDate:     optional.New(now.Add(time.Hour)),
+			FinishDate:    optional.New(now.Add(3 * time.Hour)),
+		}
+		// when
+		w.Set(qi)
+		// then
+		xassert.Equal(t, ihumanize.Optional(optional.New(2*time.Hour), "?"), w.duration.Text)
+		xassert.Equal(t, widget.MediumImportance, w.duration.Importance)
+		assert.False(t, w.progress.Visible())
+	})
+	t.Run("shows shortened name on mobile", func(t *testing.T) {
+		// given
+		w := NewSkillQueueItem(true)
+		qi := &app.CharacterSkillqueueItem{
+			FinishedLevel: 1,
+			SkillName:     "Large Hybrid Turret Specialization",
+		}
+		// when
+		w.Set(qi)
+		// then
+		xassert.Equal(t, "Large Hybrid Turret Spec. I", w.name.Text)
+	})
+}
+
+func TestSkillQueue_SelectSkill(t *testing.T) {
+	t.Run("shows window of selected skill", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		c := factory.CreateCharacterFull()
+		createSkillqueueSection(factory, c.ID)
+		createActiveSkillqueue(factory, c.ID)
+		a, u, _ := newSkillQueueForTest(t, st, c)
+		a.Update(t.Context())
+		qi := a.state.queue.Item(0)
+		require.NotNil(t, qi)
+		// when
+		a.skillList.Select(0)
+		// then
+		_, created := u.GetOrCreateWindow(fmt.Sprintf("skill-%d-%d", c.ID, qi.SkillID))
+		assert.False(t, created)
+	})
+}
+
+func TestShowSkillInTrainingWindow(t *testing.T) {
+	now := time.Now()
+	t.Run("can show skill in training", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		qi := &app.CharacterSkillqueueItem{
+			CharacterID:   7,
+			FinishedLevel: 3,
+			SkillID:       42,
+			SkillName:     "Gunnery",
+			StartDate:     optional.New(now.Add(-time.Hour)),
+			FinishDate:    optional.New(now.Add(time.Hour)),
+		}
+		// when
+		showSkillInTrainingWindow(u, qi, "Bruce")
+		// then
+		w, created := u.GetOrCreateWindow("skill-7-42")
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("can show queued skill", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		qi := &app.CharacterSkillqueueItem{
+			CharacterID:   7,
+			FinishedLevel: 3,
+			SkillID:       42,
+			SkillName:     "Gunnery",
+		}
+		// when
+		showSkillInTrainingWindow(u, qi, "Bruce")
+		// then
+		w, created := u.GetOrCreateWindow("skill-7-42")
+		assert.False(t, created)
+		assert.NotNil(t, w.Content())
+	})
+	t.Run("reuses existing window", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		w, _ := u.GetOrCreateWindow("skill-7-42")
+		// when
+		showSkillInTrainingWindow(u, &app.CharacterSkillqueueItem{CharacterID: 7, SkillID: 42}, "Bruce")
+		// then
+		assert.Nil(t, w.Content())
 	})
 }

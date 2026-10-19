@@ -3,6 +3,7 @@ package screens
 import (
 	"database/sql"
 	"fmt"
+	"slices"
 	"sync/atomic"
 	"testing"
 
@@ -1402,4 +1403,164 @@ func TestAssetBrowser_FailedSwitchClearsPreviousAssets(t *testing.T) {
 	assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil))
 	a.Navigation.filterLocationsAsync()
 	assert.Equal(t, 0, a.Navigation.locations.Data().ChildrenCount(nil), "filtering does not restore previous assets")
+}
+
+func TestBrowserContainer(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const alphaID = 60000001
+	// newBrowser returns a character browser with a location Alpha,
+	// which has a container, a drone and minerals in its item hangar.
+	newBrowser := func(t *testing.T) (a *AssetBrowser, ac asset.Tree, mineral, cargo, cargoItem *app.CharacterAsset) {
+		mineral = createCharacterAsset(assetParams{Quantity: 5, LocationID: alphaID})
+		mineral.Price = optional.New(10.0)
+		drone := createCharacterAsset(assetParams{Quantity: 1, LocationID: alphaID, Type: droneType()})
+		cargo = createCharacterAsset(assetParams{IsSingleton: true, LocationID: alphaID, Type: cargoContainerType()})
+		cargoItem = createCharacterAsset(assetParams{Quantity: 1, LocationID: cargo.ItemID})
+		locations := []*app.EveLocation{{ID: alphaID, Name: "Alpha"}}
+		ac = asset.NewFromCharacterAssets([]*app.CharacterAsset{mineral, drone, cargo, cargoItem}, locations)
+		a = NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.at = ac
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a, ac, mineral, cargo, cargoItem
+	}
+	hangarOf := func(t *testing.T, a *AssetBrowser, ac asset.Tree, itemID int64) *containerNode {
+		n, ok := ac.Node(itemID)
+		require.True(t, ok)
+		cn, ok := a.Navigation.nodeLookup(n.Parent())
+		require.True(t, ok)
+		return cn
+	}
+	itemNames := func(a *AssetBrowser) []string {
+		return xslices.Map(a.Selected.itemsFiltered, func(it containerItem) string {
+			return it.node.String()
+		})
+	}
+	t.Run("shows items of selected container sorted by name with estimated price", func(t *testing.T) {
+		// given
+		a, ac, mineral, _, _ := newBrowser(t)
+		cn := hangarOf(t, a, ac, mineral.ItemID)
+		// when
+		a.Selected.set(cn)
+		// then
+		xassert.Equal(t, []string{"Container", "Hobgoblin I", "Tritanium"}, itemNames(a))
+		xassert.Equal(t, "3 / 3 items • 50 ISK est. price", a.Selected.footer.Text)
+	})
+	t.Run("shows no estimated price when no item has a price", func(t *testing.T) {
+		// given
+		a, ac, _, _, cargoItem := newBrowser(t)
+		cn := hangarOf(t, a, ac, cargoItem.ItemID)
+		// when
+		a.Selected.set(cn)
+		// then
+		xassert.Equal(t, "1 / 1 items", a.Selected.footer.Text)
+	})
+	t.Run("can search items", func(t *testing.T) {
+		// given
+		a, ac, mineral, _, _ := newBrowser(t)
+		a.Selected.set(hangarOf(t, a, ac, mineral.ItemID))
+		// when
+		a.Selected.searchEntry.SetText("trit")
+		// then
+		xassert.Equal(t, []string{"Tritanium"}, itemNames(a))
+		xassert.Equal(t, "1 / 3 items • 50 ISK est. price", a.Selected.footer.Text)
+	})
+	t.Run("ignores search with single character", func(t *testing.T) {
+		// given
+		a, ac, mineral, _, _ := newBrowser(t)
+		a.Selected.set(hangarOf(t, a, ac, mineral.ItemID))
+		// when
+		a.Selected.searchEntry.SetText("t")
+		// then
+		assert.Len(t, a.Selected.itemsFiltered, 3)
+	})
+	t.Run("opens container when selected in grid", func(t *testing.T) {
+		// given
+		a, ac, mineral, cargo, _ := newBrowser(t)
+		a.Selected.set(hangarOf(t, a, ac, mineral.ItemID))
+		id := slices.Index(itemNames(a), "Container")
+		require.NotEqual(t, -1, id)
+		// when
+		a.Selected.grid.Select(id)
+		// then
+		xassert.Equal(t, []string{"Tritanium"}, itemNames(a))
+		assert.True(t, a.Navigation.locations.IsBranchOpen(hangarOf(t, a, ac, mineral.ItemID).UID()))
+		assert.True(t, a.Navigation.locations.IsBranchOpen(hangarOf(t, a, ac, cargo.ItemID).UID()))
+	})
+	t.Run("shows asset details when item is selected in grid", func(t *testing.T) {
+		// given
+		a, ac, mineral, _, _ := newBrowser(t)
+		a.Selected.set(hangarOf(t, a, ac, mineral.ItemID))
+		id := slices.Index(itemNames(a), "Tritanium")
+		require.NotEqual(t, -1, id)
+		// when
+		a.Selected.grid.Select(id)
+		// then
+		_, created := a.u.GetOrCreateWindow(fmt.Sprintf("asset-%d-%d", mineral.CharacterID, mineral.ItemID))
+		assert.False(t, created)
+	})
+}
+
+func TestBrowserContainer_ShowNodeInfoForCorporation(t *testing.T) {
+	t.Run("shows asset details of corporation asset", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		const alphaID = 60000001
+		item := createCorporationAsset(assetParams{Quantity: 1, LocationID: alphaID})
+		ac := asset.NewFromCorporationAssets([]*app.CorporationAsset{item}, []*app.EveLocation{{ID: alphaID, Name: "Alpha"}})
+		a := NewCorporationBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.at = ac
+		n, ok := ac.Node(item.ItemID)
+		require.True(t, ok)
+		// when
+		a.Selected.showNodeInfo(n)
+		// then
+		_, created := a.u.GetOrCreateWindow(fmt.Sprintf("asset-%d-%d", item.CorporationID, item.ItemID))
+		assert.False(t, created)
+	})
+}
+
+func TestBrowserNavigation_NodeLookup(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	const alphaID = 60000001
+	item := createCharacterAsset(assetParams{Quantity: 1, LocationID: alphaID})
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{item}, []*app.EveLocation{{ID: alphaID, Name: "Alpha"}})
+	newBrowser := func(t *testing.T) *AssetBrowser {
+		a := NewCharacterBrowser(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		a.Navigation.update(t.Context(), ac.Locations())
+		return a
+	}
+	t.Run("finds node in tree of selected category", func(t *testing.T) {
+		// given
+		a := newBrowser(t)
+		a.Navigation.filterChip.SetSelected(map[string]string{assetBrowserFilterCategory: categoryPersonal})
+		n, ok := ac.Node(item.ItemID)
+		require.True(t, ok)
+		// when
+		cn, found := a.Navigation.nodeLookup(n.Parent())
+		// then
+		require.True(t, found)
+		want, ok := findContainer(a.Navigation.locations.Data(), n.Parent())
+		require.True(t, ok)
+		assert.Same(t, want, cn)
+	})
+	t.Run("reports unknown node", func(t *testing.T) {
+		// given
+		a := newBrowser(t)
+		// when
+		_, found := a.Navigation.nodeLookup(&asset.Node{})
+		// then
+		assert.False(t, found)
+	})
 }

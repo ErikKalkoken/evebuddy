@@ -19,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -387,7 +388,7 @@ func (w *augmentationNodeItem) set(n *augmentationNode) {
 			w.iconMain.Refresh()
 		})
 		if n.implantCount > 0 {
-			w.implants.SetText(fmt.Sprintf("%d implants", n.implantCount))
+			w.implants.SetText(ihumanize.Plural(n.implantCount, "implant", "implants"))
 			w.implants.Show()
 		} else {
 			w.implants.Hide()
