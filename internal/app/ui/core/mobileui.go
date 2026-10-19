@@ -170,9 +170,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	u.characterMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if x := formatCountSupporting(unread, func(v int) string {
-			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		}); x != "" {
+		if x := formatCount(unread, formatUnread); x != "" {
 			s = append(s, x)
 		}
 		if missing > 0 {
@@ -191,9 +189,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
-		navItemCommunications.Supporting = formatCountSupporting(count, func(v int) string {
-			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		})
+		navItemCommunications.Supporting = formatCount(count, formatUnread)
 		navItemCommunications.Refresh()
 
 		characterCommunicationsMenu.Items = u.characterCommunications.NavigationPane.MakeFolderMenu()
@@ -318,19 +314,19 @@ func NewMobileUI(params UIParams) *MobileUI {
 		})...,
 	)
 	u.corporationContracts.OnUpdate = func(count optional.Optional[int]) {
-		corpContractsNav.Supporting = formatCountSupporting(count, func(v int) string {
+		corpContractsNav.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
 		})
 		corpContractsNav.Refresh()
 	}
 	u.corporationIndyJobs.OnUpdate = func(count optional.Optional[int]) {
-		corpIndustryNav.Supporting = formatCountSupporting(count, func(v int) string {
+		corpIndustryNav.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "job", "jobs") + " ready"
 		})
 		corpIndustryNav.Refresh()
 	}
 	u.corporationStructures.OnUpdate = func(count optional.Optional[int]) {
-		corpStructuresNav.Supporting = formatCountSupporting(count, func(v int) string {
+		corpStructuresNav.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "structure", "structures") + " reinforced"
 		})
 		corpStructuresNav.Refresh()
@@ -802,7 +798,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.industryJobs.OnUpdate = func(count optional.Optional[int]) {
-		navItemIndustry.Supporting = formatCountSupporting(count, func(v int) string {
+		navItemIndustry.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "job", "jobs") + " ready"
 		})
 		navItemIndustry.Refresh()
@@ -824,7 +820,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.contractList.OnUpdate = func(count optional.Optional[int]) {
-		navItemContracts.Supporting = formatCountSupporting(count, func(v int) string {
+		navItemContracts.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
 		})
 		navItemContracts.Refresh()
@@ -904,9 +900,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
-		navItemUnifiedCommunications.Supporting = formatCountSupporting(count, func(v int) string {
-			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		})
+		navItemUnifiedCommunications.Supporting = formatCount(count, formatUnread)
 		navItemUnifiedCommunications.Refresh()
 
 		unifiedCommunicationsMenu.Items = u.unifiedCommunications.NavigationPane.MakeFolderMenu()
@@ -951,9 +945,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	)
 	u.unifiedMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if x := formatCountSupporting(unread, func(v int) string {
-			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		}); x != "" {
+		if x := formatCount(unread, formatUnread); x != "" {
 			s = append(s, x)
 		}
 		if loaded, total := u.unifiedMails.CharactersLoaded(); loaded < total {
@@ -977,7 +969,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.unifiedStructures.OnUpdate = func(count optional.Optional[int]) {
-		navItemUnifiedStructures.Supporting = formatCountSupporting(count, func(v int) string {
+		navItemUnifiedStructures.Supporting = formatCount(count, func(v int) string {
 			return ihumanize.Plural(v, "structure", "structures") + " reinforced"
 		})
 		navItemUnifiedStructures.Refresh()
@@ -1066,16 +1058,8 @@ func setNavItemSupportingWarning(item *xwidget.NavListItem, count optional.Optio
 	item.Refresh()
 }
 
-// formatCountSupporting returns "?" for an unknown count and nothing for 0.
-func formatCountSupporting(count optional.Optional[int], format func(int) string) string {
-	v, ok := count.Value()
-	if !ok {
-		return "?"
-	}
-	if v == 0 {
-		return ""
-	}
-	return format(v)
+func formatUnread(v int) string {
+	return ihumanize.Comma(v) + " unread"
 }
 
 func formatISKValue(value optional.Optional[float64], format string) string {

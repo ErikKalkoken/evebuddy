@@ -352,29 +352,17 @@ func TestBaseUI_InitKeepsLastSelectionWhenCanceled(t *testing.T) {
 	})
 }
 
-func TestFormatCountBadge(t *testing.T) {
-	t.Run("shows ? when unknown", func(t *testing.T) {
-		assert.Equal(t, "?", formatCountBadge(optional.Optional[int]{}))
-	})
-	t.Run("shows nothing for 0", func(t *testing.T) {
-		assert.Equal(t, "", formatCountBadge(optional.New(0)))
-	})
-	t.Run("shows count", func(t *testing.T) {
-		assert.Equal(t, "1,234", formatCountBadge(optional.New(1234)))
-	})
-}
-
-func TestFormatCountSupporting(t *testing.T) {
+func TestFormatCount(t *testing.T) {
 	format := func(v int) string {
 		return fmt.Sprintf("%d ready", v)
 	}
 	t.Run("shows ? when unknown", func(t *testing.T) {
-		assert.Equal(t, "?", formatCountSupporting(optional.Optional[int]{}, format))
+		assert.Equal(t, "?", formatCount(optional.Optional[int]{}, format))
 	})
 	t.Run("shows nothing for 0", func(t *testing.T) {
-		assert.Equal(t, "", formatCountSupporting(optional.New(0), format))
+		assert.Equal(t, "", formatCount(optional.New(0), format))
 	})
 	t.Run("shows formatted count", func(t *testing.T) {
-		assert.Equal(t, "3 ready", formatCountSupporting(optional.New(3), format))
+		assert.Equal(t, "3 ready", formatCount(optional.New(3), format))
 	})
 }
