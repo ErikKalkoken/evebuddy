@@ -229,7 +229,7 @@ func (a *Mails) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.NavigationPane.compose.Disable()
+			a.NavigationPane.composeButton.Disable()
 			a.MessagePane.setInfo(s, i)
 		})
 	}
@@ -239,7 +239,7 @@ func (a *Mails) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.NavigationPane.compose.Enable() // sending does not need mail data
+			a.NavigationPane.composeButton.Enable() // sending does not need mail data
 			a.MessagePane.setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
 		})
 	}
@@ -249,7 +249,7 @@ func (a *Mails) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.NavigationPane.compose.Disable()
+			a.NavigationPane.composeButton.Disable()
 			a.MessagePane.setError(err)
 		})
 	}
@@ -474,29 +474,29 @@ func (a *Mails) makeComposeMenu() *fyne.Menu {
 type mailsNavigationPane struct {
 	widget.BaseWidget
 
-	charactersLabel  *widget.Label
-	compose          *widget.Button
-	downloadedRun    latestRun
-	folderDownloaded *ttwidget.Label
-	folders          *xwidget.Tree[mailFolderNode]
-	folderTotal      *widget.Label
-	ma               *Mails
+	charactersLabel       *widget.Label
+	composeButton         *widget.Button
+	downloadedRun         latestRun
+	folderDownloadedLabel *ttwidget.Label
+	foldersTree           *xwidget.Tree[mailFolderNode]
+	folderTotalLabel      *widget.Label
+	ma                    *Mails
 }
 
 func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	a := &mailsNavigationPane{
-		charactersLabel:  widget.NewLabel("?"),
-		folderDownloaded: ttwidget.NewLabel(""),
-		folderTotal:      widget.NewLabel("?"),
-		ma:               ma,
+		charactersLabel:       widget.NewLabel("?"),
+		folderDownloadedLabel: ttwidget.NewLabel(""),
+		folderTotalLabel:      widget.NewLabel("?"),
+		ma:                    ma,
 	}
 	a.ExtendBaseWidget(a)
-	a.folders = a.makeFolderTree()
-	a.compose = widget.NewButtonWithIcon("Compose", theme.DocumentCreateIcon(), func() {
-		ma.Compose(a.compose)
+	a.foldersTree = a.makeFolderTree()
+	a.composeButton = widget.NewButtonWithIcon("Compose", theme.DocumentCreateIcon(), func() {
+		ma.Compose(a.composeButton)
 	})
-	a.compose.Importance = widget.HighImportance
-	a.compose.Disable()
+	a.composeButton.Importance = widget.HighImportance
+	a.composeButton.Disable()
 	if ma.forCharacter {
 		a.charactersLabel.Hide()
 	}
@@ -505,15 +505,15 @@ func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 
 func (a *mailsNavigationPane) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
-		container.NewPadded(a.compose),
+		container.NewPadded(a.composeButton),
 		container.New(
 			layout.NewCustomPaddedVBoxLayout(0),
 			a.charactersLabel,
-			container.NewHBox(a.folderTotal, layout.NewSpacer(), a.folderDownloaded),
+			container.NewHBox(a.folderTotalLabel, layout.NewSpacer(), a.folderDownloadedLabel),
 		),
 		nil,
 		nil,
-		a.folders,
+		a.foldersTree,
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -542,9 +542,9 @@ func (a *mailsNavigationPane) makeFolderTree() *xwidget.Tree[mailFolderNode] {
 }
 
 func (a *mailsNavigationPane) clear() {
-	a.folders.Clear()
-	a.folderTotal.SetText("?")
-	a.folderDownloaded.SetText("")
+	a.foldersTree.Clear()
+	a.folderTotalLabel.SetText("?")
+	a.folderDownloadedLabel.SetText("")
 	a.charactersLabel.Text = "?"
 	a.charactersLabel.Importance = widget.MediumImportance
 	a.charactersLabel.Refresh()
@@ -562,21 +562,21 @@ func (a *mailsNavigationPane) setCharacters(loaded, total int) {
 }
 
 func (a *mailsNavigationPane) set(td *xwidget.TreeData[mailFolderNode], selected *mailFolderNode) {
-	a.compose.Enable()
+	a.composeButton.Enable()
 	var openBranches []widget.TreeNodeID
-	a.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
-		if a.folders.IsBranchOpenNode(n) {
+	a.foldersTree.Data().Walk(nil, func(n *mailFolderNode) bool {
+		if a.foldersTree.IsBranchOpenNode(n) {
 			openBranches = append(openBranches, n.UID())
 		}
 		return true
 	})
-	a.folders.Set(td)
+	a.foldersTree.Set(td)
 	for _, uid := range openBranches {
 		if n, ok := td.Node(uid); ok {
-			a.folders.OpenBranchNode(n)
+			a.foldersTree.OpenBranchNode(n)
 		}
 	}
-	a.folders.SelectNode(selected)
+	a.foldersTree.SelectNode(selected)
 }
 
 // mailsDownloaded is the result of a check for downloaded mail bodies.
@@ -609,13 +609,13 @@ func (a *mailsNavigationPane) applyDownloaded(isLatest func() bool, r mailsDownl
 	}
 	a.ma.bodiesComplete.Store(r.complete)
 	changed := a.ma.missingPercent.Swap(int64(r.missingPercent)) != int64(r.missingPercent)
-	a.folderTotal.SetText(r.total)
+	a.folderTotalLabel.SetText(r.total)
 	if r.downloaded == "" {
-		a.folderDownloaded.Hide()
+		a.folderDownloadedLabel.Hide()
 	} else {
-		a.folderDownloaded.SetText(r.downloaded)
-		a.folderDownloaded.SetToolTip(r.hint)
-		a.folderDownloaded.Show()
+		a.folderDownloadedLabel.SetText(r.downloaded)
+		a.folderDownloadedLabel.SetToolTip(r.hint)
+		a.folderDownloadedLabel.Show()
 	}
 	if notify && changed {
 		a.ma.callOnUpdate()
@@ -849,7 +849,7 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 }
 
 func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
-	td := a.folders.Data()
+	td := a.foldersTree.Data()
 	characterID := a.ma.character.Load().IDOrZero()
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
 	if err != nil {
@@ -861,14 +861,14 @@ func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
 	}
 	a.ma.unreadCount.Store(int64(unread))
 	fyne.Do(func() {
-		a.folders.Refresh() // counts changed in place; Set would reset selection and branches
+		a.foldersTree.Refresh() // counts changed in place; Set would reset selection and branches
 		a.ma.callOnUpdate()
 	})
 }
 
 func (a *mailsNavigationPane) MakeFolderMenu() []*fyne.MenuItem {
 	var items1 []*fyne.MenuItem
-	a.folders.Data().Walk(nil, func(f *mailFolderNode) bool {
+	a.foldersTree.Data().Walk(nil, func(f *mailFolderNode) bool {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
@@ -885,39 +885,39 @@ func (a *mailsNavigationPane) MakeFolderMenu() []*fyne.MenuItem {
 type mailFolderItemWidget struct {
 	widget.BaseWidget
 
-	icon   *widget.Icon
-	name   *widget.Label
-	unread *widget.Label
+	icon        *widget.Icon
+	nameLabel   *widget.Label
+	unreadLabel *widget.Label
 }
 
 func newMailFolderItemWidget() *mailFolderItemWidget {
 	w := &mailFolderItemWidget{
-		name:   widget.NewLabel(""),
-		icon:   widget.NewIcon(icons.BlankSvg),
-		unread: widget.NewLabel("999"),
+		nameLabel:   widget.NewLabel(""),
+		icon:        widget.NewIcon(icons.BlankSvg),
+		unreadLabel: widget.NewLabel("999"),
 	}
 	w.ExtendBaseWidget(w)
-	w.name.Truncation = fyne.TextTruncateClip
+	w.nameLabel.Truncation = fyne.TextTruncateClip
 	return w
 }
 
 func (w *mailFolderItemWidget) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(nil, nil, w.icon, w.unread, w.name)
+	c := container.NewBorder(nil, nil, w.icon, w.unreadLabel, w.nameLabel)
 	return widget.NewSimpleRenderer(c)
 }
 
 func (w *mailFolderItemWidget) set(n *mailFolderNode) {
 	w.icon.SetResource(n.icon())
 	if n.UnreadCount == 0 {
-		w.name.TextStyle.Bold = false
-		w.unread.Hide()
+		w.nameLabel.TextStyle.Bold = false
+		w.unreadLabel.Hide()
 	} else {
-		w.name.TextStyle.Bold = true
-		w.unread.SetText(strconv.Itoa(n.UnreadCount))
-		w.unread.Show()
+		w.nameLabel.TextStyle.Bold = true
+		w.unreadLabel.SetText(strconv.Itoa(n.UnreadCount))
+		w.unreadLabel.Show()
 	}
-	w.name.Text = n.Name
-	w.name.Refresh()
+	w.nameLabel.Text = n.Name
+	w.nameLabel.Refresh()
 
 }
 
@@ -961,7 +961,7 @@ type mailsMessagePane struct {
 	rowsFolderUID widget.TreeNodeID // folder the rows were loaded for
 	rowsFiltered  []mailRow
 	searchEntry   *xwidget.SearchEntry
-	sortButton    *kxwidget.SortChip
+	sortChip      *kxwidget.SortChip
 	topLabel      *widget.Label
 	updateRun     latestRun
 }
@@ -1002,7 +1002,7 @@ func newMailsMessagePane(ma *Mails) *mailsMessagePane {
 	a.searchEntry = xwidget.NewSearchEntry("Search mails", func(_ string) {
 		a.filterRowsAsync()
 	})
-	a.sortButton = a.columnSorter.NewSortChip(func() {
+	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync()
 	})
 	a.filterChip = xwidget.NewFilterChipCompact(nil, func(state map[string]string) {
@@ -1026,7 +1026,7 @@ func (a *mailsMessagePane) CreateRenderer() fyne.WidgetRenderer {
 				nil,
 				nil,
 				nil,
-				container.NewHBox(a.filterChip, a.sortButton),
+				container.NewHBox(a.filterChip, a.sortChip),
 				a.searchEntry,
 			),
 		),
@@ -1107,12 +1107,12 @@ func (a *mailsMessagePane) setControlsEnabled(enabled bool) {
 	if enabled {
 		a.searchEntry.Enable()
 		a.filterChip.Enable()
-		a.sortButton.Enable()
+		a.sortChip.Enable()
 		return
 	}
 	a.searchEntry.Disable()
 	a.filterChip.Disable()
-	a.sortButton.Disable()
+	a.sortChip.Disable()
 }
 
 func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFolderNode) {

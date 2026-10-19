@@ -65,7 +65,7 @@ func TestMails_Refresh(t *testing.T) {
 			Storage: st,
 		}))
 		f.a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), f.character)
-		f.a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+		f.a.NavigationPane.foldersTree.Data().Walk(nil, func(n *mailFolderNode) bool {
 			if n.Type == folderNodeInbox {
 				f.inbox = n
 			}
@@ -100,17 +100,17 @@ func TestMails_Refresh(t *testing.T) {
 	t.Run("keeps open branches when new mail arrives", func(t *testing.T) {
 		f := setup(t)
 		var labels *mailFolderNode
-		f.a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+		f.a.NavigationPane.foldersTree.Data().Walk(nil, func(n *mailFolderNode) bool {
 			if n.isBranch() && n.Type == folderNodeLabel {
 				labels = n
 			}
 			return true
 		})
 		require.NotNil(t, labels)
-		f.a.NavigationPane.folders.OpenBranchNode(labels)
+		f.a.NavigationPane.foldersTree.OpenBranchNode(labels)
 		createInboxMail(f)
 		emitMailHeadersChanged(t, f)
-		assert.True(t, f.a.NavigationPane.folders.IsBranchOpenNode(labels))
+		assert.True(t, f.a.NavigationPane.foldersTree.IsBranchOpenNode(labels))
 	})
 	t.Run("clears reading pane when open mail is gone", func(t *testing.T) {
 		f := setup(t)
@@ -307,7 +307,7 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 	t.Run("changing folder with active filter does not filter stale rows", func(t *testing.T) {
 		reset(t)
 		var sent *mailFolderNode
-		a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+		a.NavigationPane.foldersTree.Data().Walk(nil, func(n *mailFolderNode) bool {
 			if n.Type == folderNodeSent {
 				sent = n
 			}
@@ -540,7 +540,7 @@ func TestUnifiedMails(t *testing.T) {
 		f.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		var lists []int64
 		var hasLabels bool
-		f.a.NavigationPane.folders.Data().Walk(nil, func(n *mailFolderNode) bool {
+		f.a.NavigationPane.foldersTree.Data().Walk(nil, func(n *mailFolderNode) bool {
 			if n.Category == nodeCategoryList {
 				lists = append(lists, n.ObjID)
 			}
@@ -551,7 +551,7 @@ func TestUnifiedMails(t *testing.T) {
 		})
 		assert.Equal(t, []int64{f.list.ID}, lists)
 		assert.False(t, hasLabels)
-		assert.True(t, f.a.NavigationPane.compose.Visible())
+		assert.True(t, f.a.NavigationPane.composeButton.Visible())
 	})
 	t.Run("can filter by character", func(t *testing.T) {
 		f := setup(t)
@@ -679,7 +679,7 @@ func TestUnifiedMails_ComposeMenu(t *testing.T) {
 		items := a.composeMenu.Items
 		assert.NotNil(t, items[len(items)-1].Action, "cancel needs an action to close the menu")
 		assert.NotNil(t, items[0].Icon)
-		assert.False(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("includes added character", func(t *testing.T) {
 		c := factory.CreateCharacterFull()
@@ -730,8 +730,8 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 	t.Run("shows percentage while bodies are missing", func(t *testing.T) {
 		e, _ := setupHalfDownloaded(t)
-		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
-		assert.Equal(t, "50%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.True(t, e.a.NavigationPane.folderDownloadedLabel.Visible())
+		assert.Equal(t, "50%", e.a.NavigationPane.folderDownloadedLabel.Text)
 		assert.Equal(t, []int{50}, e.missing)
 		assert.False(t, e.a.bodiesComplete.Load())
 	})
@@ -744,7 +744,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 
-		assert.Equal(t, "99%", e.a.NavigationPane.folderDownloaded.Text)
+		assert.Equal(t, "99%", e.a.NavigationPane.folderDownloadedLabel.Text)
 		assert.Equal(t, []int{1}, e.missing)
 	})
 	t.Run("reports completion", func(t *testing.T) {
@@ -754,7 +754,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 
-		assert.False(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.False(t, e.a.NavigationPane.folderDownloadedLabel.Visible())
 		assert.Equal(t, []int{50, 0}, e.missing)
 		assert.True(t, e.a.bodiesComplete.Load())
 	})
@@ -772,7 +772,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 		tick(t, e.a)
 
-		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotalLabel.Text)
 	})
 	t.Run("tick checks while bodies are missing", func(t *testing.T) {
 		e, _ := setupHalfDownloaded(t)
@@ -780,18 +780,18 @@ func TestMails_DownloadProgress(t *testing.T) {
 
 		tick(t, e.a)
 
-		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotalLabel.Text)
 	})
 	t.Run("tick retries after error", func(t *testing.T) {
 		e := setup(t)
 		dropMails(t, e.db)
 		e.a.NavigationPane.updateDownloaded(t.Context(), true)
-		require.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
-		e.a.NavigationPane.folderTotal.SetText("")
+		require.Equal(t, "ERROR", e.a.NavigationPane.folderTotalLabel.Text)
+		e.a.NavigationPane.folderTotalLabel.SetText("")
 
 		tick(t, e.a)
 
-		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotal.Text)
+		assert.Equal(t, "ERROR", e.a.NavigationPane.folderTotalLabel.Text)
 		assert.False(t, e.a.bodiesComplete.Load())
 	})
 	t.Run("update resets completion", func(t *testing.T) {
@@ -809,7 +809,7 @@ func TestMails_DownloadProgress(t *testing.T) {
 		e.a.update(t.Context())
 
 		assert.False(t, e.a.bodiesComplete.Load())
-		assert.True(t, e.a.NavigationPane.folderDownloaded.Visible())
+		assert.True(t, e.a.NavigationPane.folderDownloadedLabel.Visible())
 	})
 	t.Run("update resets completion on early return", func(t *testing.T) {
 		e := setup(t)
@@ -821,9 +821,9 @@ func TestMails_DownloadProgress(t *testing.T) {
 		e.a.update(t.Context())
 
 		assert.False(t, e.a.bodiesComplete.Load())
-		require.Equal(t, "?", e.a.NavigationPane.folderTotal.Text)
+		require.Equal(t, "?", e.a.NavigationPane.folderTotalLabel.Text)
 		tick(t, e.a)
-		assert.Equal(t, "0 total", e.a.NavigationPane.folderTotal.Text)
+		assert.Equal(t, "0 total", e.a.NavigationPane.folderTotalLabel.Text)
 	})
 	t.Run("discards outdated check", func(t *testing.T) {
 		e := setup(t)
@@ -836,8 +836,8 @@ func TestMails_DownloadProgress(t *testing.T) {
 		p.applyDownloaded(older, mailsDownloaded{total: "1 total", complete: true}, true)
 
 		assert.False(t, e.a.bodiesComplete.Load())
-		assert.Equal(t, "2 total", p.folderTotal.Text)
-		assert.Equal(t, "50%", p.folderDownloaded.Text)
+		assert.Equal(t, "2 total", p.folderTotalLabel.Text)
+		assert.Equal(t, "50%", p.folderDownloadedLabel.Text)
 		assert.Equal(t, []int{50}, e.missing)
 	})
 	t.Run("mail change refreshes total when complete", func(t *testing.T) {
@@ -846,12 +846,12 @@ func TestMails_DownloadProgress(t *testing.T) {
 		m := e.factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{CharacterID: e.c.ID})
 		e.a.NavigationPane.updateDownloaded(t.Context(), true)
 		require.True(t, e.a.bodiesComplete.Load())
-		require.Equal(t, "2 total", e.a.NavigationPane.folderTotal.Text)
+		require.Equal(t, "2 total", e.a.NavigationPane.folderTotalLabel.Text)
 		require.NoError(t, e.st.DeleteCharacterMail(t.Context(), e.c.ID, m.MailID))
 
 		e.a.u.Signals().DataUpdated.Emit(t.Context(), mailsUpdated)
 
-		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotal.Text)
+		assert.Equal(t, "1 total", e.a.NavigationPane.folderTotalLabel.Text)
 	})
 	t.Run("early return does not report previous character", func(t *testing.T) {
 		e := setup(t)
@@ -977,8 +977,8 @@ func TestMails_Status(t *testing.T) {
 		assert.Equal(t, "?", a.MessagePane.topLabel.Text)
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.True(t, a.MessagePane.filterChip.Disabled())
-		assert.True(t, a.MessagePane.sortButton.Disabled())
-		assert.False(t, a.NavigationPane.compose.Disabled())
+		assert.True(t, a.MessagePane.sortChip.Disabled())
+		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("shows folder and enables controls once data is loaded", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -1002,8 +1002,8 @@ func TestMails_Status(t *testing.T) {
 		assert.Equal(t, widget.MediumImportance, a.MessagePane.footerLabel.Importance)
 		assert.False(t, a.MessagePane.searchEntry.Disabled())
 		assert.False(t, a.MessagePane.filterChip.Disabled())
-		assert.False(t, a.MessagePane.sortButton.Disabled())
-		assert.False(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.MessagePane.sortChip.Disabled())
+		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("disables controls when there is no character", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
@@ -1074,7 +1074,7 @@ func TestMails_Status(t *testing.T) {
 		assert.True(t, a.MessagePane.errorLabel.Visible())
 		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
-		assert.True(t, a.NavigationPane.compose.Disabled())
+		assert.True(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("keeps error when mails change elsewhere", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -1112,7 +1112,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
 		assert.Equal(t, "0 / 2 characters", a.NavigationPane.charactersLabel.Text)
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
-		assert.False(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("enables controls and shows loaded characters when some have data", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -1132,7 +1132,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		assert.Equal(t, widget.WarningImportance, a.NavigationPane.charactersLabel.Importance)
 		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
 		assert.False(t, a.MessagePane.searchEntry.Disabled())
-		assert.False(t, a.NavigationPane.compose.Disabled())
+		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
 	t.Run("shows all characters loaded once all have data", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
