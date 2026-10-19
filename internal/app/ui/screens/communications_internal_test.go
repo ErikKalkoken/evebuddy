@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestParseIDs(t *testing.T) {
@@ -351,6 +352,10 @@ func TestCommunications_ErrorDisplay(t *testing.T) {
 	}
 	t.Run("shows error when update fails and keeps it on filtering", func(t *testing.T) {
 		a, db := newScreen(t)
+		unread := optional.New(1)
+		a.OnUpdate = func(v optional.Optional[int]) {
+			unread = v
+		}
 		if _, err := db.Exec("DROP TABLE character_notifications"); err != nil { // let the next update fail
 			t.Fatal(err)
 		}
@@ -358,6 +363,7 @@ func TestCommunications_ErrorDisplay(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, a.NavigationPane.errorLabel.Visible())
 		assert.Contains(t, a.NavigationPane.errorLabel.Text, "ERROR:")
+		assert.True(t, unread.IsEmpty())
 
 		a.NavigationPane.update()
 		assert.True(t, a.NavigationPane.errorLabel.Visible())
@@ -369,5 +375,30 @@ func TestCommunications_ErrorDisplay(t *testing.T) {
 
 		a.update(t.Context())
 		assert.False(t, a.NavigationPane.errorLabel.Visible())
+	})
+	t.Run("reports no unread when there are no notifications", func(t *testing.T) {
+		a, _ := newScreen(t)
+		var unread optional.Optional[int]
+		a.OnUpdate = func(v optional.Optional[int]) {
+			unread = v
+		}
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(0), unread)
+	})
+	t.Run("reports no unread when there is no character", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewCommunicationsForCharacter(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		var unread optional.Optional[int]
+		a.OnUpdate = func(v optional.Optional[int]) {
+			unread = v
+		}
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(0), unread)
 	})
 }

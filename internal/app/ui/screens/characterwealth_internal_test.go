@@ -405,6 +405,16 @@ func TestCharacterWealth_ErrorDisplay(t *testing.T) {
 		assert.Equal(t, widget.LowImportance, a.statusLabel.Importance)
 		assert.False(t, a.overviewGrid.Visible())
 	})
+	t.Run("reports zero net worth when there is no wealth data", func(t *testing.T) {
+		a, _, _ := newScreen(t)
+		var netWorth optional.Optional[float64] // from a failed update
+		a.OnUpdate = func(v optional.Optional[float64]) {
+			netWorth = v
+		}
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(0.0), netWorth)
+	})
 	t.Run("shows error on desktop", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		defer db.Close()

@@ -163,7 +163,8 @@ func (f colonyFilter) match(r colonyRow) bool {
 type Colonies struct {
 	widget.BaseWidget
 
-	OnUpdate func(total, notWorking int)
+	// OnUpdate reports the colonies not working; empty when the update failed.
+	OnUpdate func(notWorking optional.Optional[int])
 
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
@@ -640,7 +641,9 @@ func (a *Colonies) Update(ctx context.Context) {
 			xslices.Clear(&a.rows)
 			a.rowsGen++
 			a.filterRowsAsync("")
-			a.setOnUpdate()
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[int]{})
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -662,6 +665,9 @@ func (a *Colonies) Update(ctx context.Context) {
 // refreshForecasts recalculates the forecasts for all colonies.
 // A refresh never discards rows from Update, but is discarded when Update replaced them.
 func (a *Colonies) refreshForecasts() {
+	if len(a.rows) == 0 {
+		return // keeps the badge of a failed update
+	}
 	isLatest := a.forecastRun.start()
 	gen := a.rowsGen
 	rows := slices.Clone(a.rows)
@@ -689,7 +695,7 @@ func (a *Colonies) setOnUpdate() {
 		}
 	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(len(a.rows), notWorking)
+		a.OnUpdate(optional.New(notWorking))
 	}
 }
 

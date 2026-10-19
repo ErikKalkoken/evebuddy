@@ -68,7 +68,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	u.defineShortcuts()
 
-	formatBadge := func(v, mx int) string {
+	formatBadge := func(count optional.Optional[int], mx int) string {
+		v, ok := count.Value()
+		if !ok {
+			return "?"
+		}
 		if v == 0 {
 			return ""
 		}
@@ -99,7 +103,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	u.wealth.OnUpdate = func(balance optional.Optional[float64]) {
-		wealth.SetBadge(formatISKValueShort(balance))
+		var s string
+		if v, ok := balance.Value(); !ok || v != 0 {
+			s = formatISKValueShort(balance)
+		}
+		wealth.SetBadge(s)
 	}
 
 	const assetsTitle = "Assets"
@@ -121,13 +129,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Communications", u.unifiedCommunications),
 	)
 	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); !ok {
-			s = "?"
-		} else if v > 0 {
-			s = formatBadge(count.ValueOrZero(), 999)
-		}
-		unifiedCommunications.SetBadge(s)
+		unifiedCommunications.SetBadge(formatBadge(count, 999))
 	}
 
 	unifiedMails := xwidget.NewNavDrawerItem(
@@ -135,7 +137,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Mail",
 		newContentPage("Mail", u.unifiedMails),
 	)
-	u.unifiedMails.OnUpdate = func(unread, _ int) {
+	u.unifiedMails.OnUpdate = func(unread optional.Optional[int], _ int) {
 		unifiedMails.SetBadge(formatBadge(unread, 999))
 	}
 
@@ -144,12 +146,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Structures",
 		newContentPage("Structures", u.unifiedStructures),
 	)
-	u.unifiedStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		unifiedStructures.SetBadge(badge)
+	u.unifiedStructures.OnUpdate = func(count optional.Optional[int]) {
+		unifiedStructures.SetBadge(formatCountBadge(count))
 	}
 
 	contracts := xwidget.NewNavDrawerItem(
@@ -163,12 +161,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			)),
 		)),
 	)
-	u.contractList.OnUpdate = func(count int) {
-		var s string
-		if count > 0 {
-			s += ihumanize.Comma(count)
-		}
-		contracts.SetBadge(s)
+	u.contractList.OnUpdate = func(count optional.Optional[int]) {
+		contracts.SetBadge(formatCountBadge(count))
 	}
 
 	overviewColonies := xwidget.NewNavDrawerItem(
@@ -176,12 +170,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Colonies",
 		newContentPage("Colonies", u.colonies),
 	)
-	u.colonies.OnUpdate = func(_, notWorking int) {
-		var s string
-		if notWorking > 0 {
-			s = fmt.Sprint(notWorking)
-		}
-		overviewColonies.SetBadge(s)
+	u.colonies.OnUpdate = func(count optional.Optional[int]) {
+		overviewColonies.SetBadge(formatCountBadge(count))
 	}
 
 	industry := xwidget.NewNavDrawerItem(
@@ -196,12 +186,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			))),
 		),
 	)
-	u.industryJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		industry.SetBadge(badge)
+	u.industryJobs.OnUpdate = func(count optional.Optional[int]) {
+		industry.SetBadge(formatCountBadge(count))
 	}
 
 	marketOrders := xwidget.NewNavDrawerItem(
@@ -226,12 +212,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			ui.NewTabItem("Search", u.skillSearch),
 		), trainingMore),
 	)
-	u.training.OnUpdate = func(expired int) {
-		var badge string
-		if expired > 0 {
-			badge = ihumanize.Comma(expired)
-		}
-		skills.SetBadge(badge)
+	u.training.OnUpdate = func(count optional.Optional[int]) {
+		skills.SetBadge(formatCountBadge(count))
 	}
 
 	homeNav := xwidget.NewNavDrawer(
@@ -274,7 +256,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Mail",
 		newContentPage("Mail", u.characterMails),
 	)
-	u.characterMails.OnUpdate = func(unread, _ int) {
+	u.characterMails.OnUpdate = func(unread optional.Optional[int], _ int) {
 		characterMailNav.SetBadge(formatBadge(unread, 99))
 	}
 	// u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
@@ -287,13 +269,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); !ok {
-			s = "?"
-		} else if v > 0 {
-			s = formatBadge(count.ValueOrZero(), 999)
-		}
-		characterCommunicationsNav.SetBadge(s)
+		characterCommunicationsNav.SetBadge(formatBadge(count, 999))
 	}
 
 	characterSkillsNav := xwidget.NewNavDrawerItem(
@@ -377,12 +353,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Contracts",
 		newContentPage("Contracts", u.corporationContracts),
 	)
-	u.corporationContracts.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpContractsItem.SetBadge(badge)
+	u.corporationContracts.OnUpdate = func(count optional.Optional[int]) {
+		corpContractsItem.SetBadge(formatCountBadge(count))
 	}
 
 	corpIndustryItem := xwidget.NewNavDrawerItem(
@@ -390,12 +362,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Industry",
 		newContentPage("Industry", u.corporationIndyJobs),
 	)
-	u.corporationIndyJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpIndustryItem.SetBadge(badge)
+	u.corporationIndyJobs.OnUpdate = func(count optional.Optional[int]) {
+		corpIndustryItem.SetBadge(formatCountBadge(count))
 	}
 
 	corpStructuresItem := xwidget.NewNavDrawerItem(
@@ -403,12 +371,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Structures",
 		newContentPage("Structures", u.corporationStructures),
 	)
-	u.corporationStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpStructuresItem.SetBadge(badge)
+	u.corporationStructures.OnUpdate = func(count optional.Optional[int]) {
+		corpStructuresItem.SetBadge(formatCountBadge(count))
 	}
 
 	corpSheetItem := xwidget.NewNavDrawerItem(
@@ -890,6 +854,17 @@ func (u *DesktopUI) showUserDataDialog() {
 	d := dialog.NewCustom("User data", "Close", f, u.MainWindow())
 	xdesktop.DisableShortcutsForDialog(d, u.MainWindow())
 	d.Show()
+}
+
+func formatCountBadge(count optional.Optional[int]) string {
+	v, ok := count.Value()
+	if !ok {
+		return "?"
+	}
+	if v == 0 {
+		return ""
+	}
+	return ihumanize.Comma(v)
 }
 
 func formatISKValueShort(value optional.Optional[float64]) string {

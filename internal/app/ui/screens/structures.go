@@ -139,7 +139,8 @@ func (r *structureRow) setSearchTarget() {
 type Structures struct {
 	widget.BaseWidget
 
-	OnUpdate func(count int)
+	// OnUpdate reports the reinforced structures; empty when the update failed.
+	OnUpdate func(count optional.Optional[int])
 
 	columnSorter      *xwidget.ColumnSorter[structureRow]
 	corporation       atomic.Pointer[app.Corporation]
@@ -501,7 +502,7 @@ func (a *Structures) update(ctx context.Context) {
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
 			if a.OnUpdate != nil {
-				a.OnUpdate(0)
+				a.OnUpdate(optional.Optional[int]{})
 			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
@@ -523,7 +524,7 @@ func (a *Structures) update(ctx context.Context) {
 		a.rows = rows
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
-			a.OnUpdate(reinforceCount)
+			a.OnUpdate(optional.New(reinforceCount))
 		}
 	})
 }

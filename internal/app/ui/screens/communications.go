@@ -55,6 +55,7 @@ func (n notificationRow) isGroup(g app.EveNotificationGroup) bool {
 type Communications struct {
 	widget.BaseWidget
 
+	// OnUpdate reports unread notifications; empty when the update failed.
 	OnUpdate       func(count optional.Optional[int])
 	MessagePane    *communicationsMessagePane
 	NavigationPane *communicationsNavigationPane
@@ -140,7 +141,7 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Communications) update(ctx context.Context) {
 	isLatest := a.updateRun.start()
-	reset := func() {
+	reset := func(failed bool) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -151,7 +152,7 @@ func (a *Communications) update(ctx context.Context) {
 			a.NavigationPane.folderList.UnselectAll()
 			a.NavigationPane.folderList.Select(0)
 
-			if a.OnUpdate != nil {
+			if failed && a.OnUpdate != nil { // otherwise update reported 0 unread
 				a.OnUpdate(optional.Optional[int]{})
 			}
 		})
@@ -180,25 +181,25 @@ func (a *Communications) update(ctx context.Context) {
 	if a.forCharacter.Load() {
 		characterID = a.character.Load().IDOrZero()
 		if characterID == 0 {
-			reset()
+			reset(false)
 			setFooter("No character", widget.LowImportance)
 			return
 		}
 		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
 		if err != nil {
-			reset()
+			reset(true)
 			setError(err)
 			return
 		}
 		if !hasData {
-			reset()
+			reset(false)
 			setFooter("No data", widget.WarningImportance)
 			return
 		}
 	}
 	rows, _, err := a.fetchRows(ctx, characterID)
 	if err != nil {
-		reset()
+		reset(true)
 		setError(err)
 		return
 	}
@@ -393,7 +394,7 @@ func (a *communicationsNavigationPane) update() {
 		a.co.MessagePane.update()
 	}
 	if a.co.OnUpdate != nil {
-		a.co.OnUpdate(unreadCount)
+		a.co.OnUpdate(optional.New(unreadCount.ValueOrZero()))
 	}
 }
 

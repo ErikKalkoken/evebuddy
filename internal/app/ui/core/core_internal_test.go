@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -27,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // AppFake is an extension of the Fyne test app which also conforms to the desktop app interface.
@@ -347,5 +349,32 @@ func TestBaseUI_InitKeepsLastSelectionWhenCanceled(t *testing.T) {
 		u.initCorporation(ctx)
 		// then
 		assert.Equal(t, c.ID, u.settings.LastCorporationID())
+	})
+}
+
+func TestFormatCountBadge(t *testing.T) {
+	t.Run("shows ? when unknown", func(t *testing.T) {
+		assert.Equal(t, "?", formatCountBadge(optional.Optional[int]{}))
+	})
+	t.Run("shows nothing for 0", func(t *testing.T) {
+		assert.Equal(t, "", formatCountBadge(optional.New(0)))
+	})
+	t.Run("shows count", func(t *testing.T) {
+		assert.Equal(t, "1,234", formatCountBadge(optional.New(1234)))
+	})
+}
+
+func TestFormatCountSupporting(t *testing.T) {
+	format := func(v int) string {
+		return fmt.Sprintf("%d ready", v)
+	}
+	t.Run("shows ? when unknown", func(t *testing.T) {
+		assert.Equal(t, "?", formatCountSupporting(optional.Optional[int]{}, format))
+	})
+	t.Run("shows nothing for 0", func(t *testing.T) {
+		assert.Equal(t, "", formatCountSupporting(optional.New(0), format))
+	})
+	t.Run("shows formatted count", func(t *testing.T) {
+		assert.Equal(t, "3 ready", formatCountSupporting(optional.New(3), format))
 	})
 }

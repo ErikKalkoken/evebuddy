@@ -312,7 +312,7 @@ func TestSkillQueue_RefreshTicker(t *testing.T) {
 		assert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
 		assert.False(t, a.skillList.Visible())
 		assert.False(t, a.statusIcon.Visible())
-		assert.Equal(t, skillQueueStatus{}, *status)
+		assert.Equal(t, skillQueueStatus{short: "?", long: "?"}, *status)
 	})
 	t.Run("does not show queue again after reset", func(t *testing.T) {
 		c := factory.CreateCharacterFull()

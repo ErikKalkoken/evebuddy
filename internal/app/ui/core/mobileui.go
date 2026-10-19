@@ -168,10 +168,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 		navItemWallet,
 	)
 
-	u.characterMails.OnUpdate = func(unread, missing int) {
+	u.characterMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if unread > 0 {
-			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
+		if x := formatCountSupporting(unread, func(v int) string {
+			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		}); x != "" {
+			s = append(s, x)
 		}
 		if missing > 0 {
 			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))
@@ -189,13 +191,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); ok {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		} else if count.ValueOrZero() > 0 {
-			s = "?"
-		}
-		navItemCommunications.Supporting = s
+		navItemCommunications.Supporting = formatCountSupporting(count, func(v int) string {
+			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		})
 		navItemCommunications.Refresh()
 
 		characterCommunicationsMenu.Items = u.characterCommunications.NavigationPane.MakeFolderMenu()
@@ -319,28 +317,22 @@ func NewMobileUI(params UIParams) *MobileUI {
 			corpWealthNav,
 		})...,
 	)
-	u.corporationContracts.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "contract needs", "contracts need") + " attention"
-		}
-		corpContractsNav.Supporting = badge
+	u.corporationContracts.OnUpdate = func(count optional.Optional[int]) {
+		corpContractsNav.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
+		})
 		corpContractsNav.Refresh()
 	}
-	u.corporationIndyJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "job", "jobs") + " ready"
-		}
-		corpIndustryNav.Supporting = badge
+	u.corporationIndyJobs.OnUpdate = func(count optional.Optional[int]) {
+		corpIndustryNav.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "job", "jobs") + " ready"
+		})
 		corpIndustryNav.Refresh()
 	}
-	u.corporationStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "structure", "structures") + " reinforced"
-		}
-		corpStructuresNav.Supporting = badge
+	u.corporationStructures.OnUpdate = func(count optional.Optional[int]) {
+		corpStructuresNav.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "structure", "structures") + " reinforced"
+		})
 		corpStructuresNav.Refresh()
 	}
 	// Hides the total while the wallets are not permitted, since the two update independently.
@@ -772,7 +764,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			homeNav.PushAndHideNavBar(xwidget.NewAppBar("Colonies", u.colonies))
 		},
 	)
-	u.colonies.OnUpdate = func(_, notWorking int) {
+	u.colonies.OnUpdate = func(notWorking optional.Optional[int]) {
 		setNavItemSupportingWarning(navItemColonies2, notWorking, "not working")
 	}
 
@@ -792,12 +784,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			))
 		},
 	)
-	u.industryJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "job", "jobs") + " ready"
-		}
-		navItemIndustry.Supporting = badge
+	u.industryJobs.OnUpdate = func(count optional.Optional[int]) {
+		navItemIndustry.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "job", "jobs") + " ready"
+		})
 		navItemIndustry.Refresh()
 	}
 
@@ -816,12 +806,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			))
 		},
 	)
-	u.contractList.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "contract needs", "contracts need") + " attention"
-		}
-		navItemContracts.Supporting = badge
+	u.contractList.OnUpdate = func(count optional.Optional[int]) {
+		navItemContracts.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
+		})
 		navItemContracts.Refresh()
 	}
 
@@ -833,7 +821,11 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.wealth.OnUpdate = func(total optional.Optional[float64]) {
-		navItemWealth.Supporting = formatISKValue(total, ui.FloatFormatISKRounded)
+		var s string
+		if v, ok := total.Value(); !ok || v != 0 {
+			s = formatISKValue(total, ui.FloatFormatISKRounded)
+		}
+		navItemWealth.Supporting = s
 		navItemWealth.Refresh()
 	}
 
@@ -895,13 +887,9 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		},
 	)
 	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); ok {
-			s = fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
-		} else if count.ValueOrZero() > 0 {
-			s = "?"
-		}
-		navItemUnifiedCommunications.Supporting = s
+		navItemUnifiedCommunications.Supporting = formatCountSupporting(count, func(v int) string {
+			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		})
 		navItemUnifiedCommunications.Refresh()
 
 		unifiedCommunicationsMenu.Items = u.unifiedCommunications.NavigationPane.MakeFolderMenu()
@@ -944,10 +932,12 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			)
 		},
 	)
-	u.unifiedMails.OnUpdate = func(unread, missing int) {
+	u.unifiedMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if unread > 0 {
-			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
+		if x := formatCountSupporting(unread, func(v int) string {
+			return fmt.Sprintf("%s unread", humanize.Comma(int64(v)))
+		}); x != "" {
+			s = append(s, x)
 		}
 		if loaded, total := u.unifiedMails.CharactersLoaded(); loaded < total {
 			s = append(s, fmt.Sprintf("%d / %d characters loaded", loaded, total))
@@ -969,12 +959,10 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			homeNav.Push(xwidget.NewAppBar("Structures", u.unifiedStructures))
 		},
 	)
-	u.unifiedStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Plural(count, "structure", "structures") + " reinforced"
-		}
-		navItemUnifiedStructures.Supporting = badge
+	u.unifiedStructures.OnUpdate = func(count optional.Optional[int]) {
+		navItemUnifiedStructures.Supporting = formatCountSupporting(count, func(v int) string {
+			return ihumanize.Plural(v, "structure", "structures") + " reinforced"
+		})
 		navItemUnifiedStructures.Refresh()
 	}
 
@@ -991,7 +979,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			)))
 		},
 	)
-	u.training.OnUpdate = func(expired int) {
+	u.training.OnUpdate = func(expired optional.Optional[int]) {
 		setNavItemSupportingWarning(navItemSkills, expired, "expired")
 	}
 
@@ -1044,9 +1032,13 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	return homeNav, status
 }
 
-func setNavItemSupportingWarning(item *xwidget.NavListItem, count int, label string) {
-	if count > 0 {
-		item.Supporting = fmt.Sprintf("%d %s", count, label)
+func setNavItemSupportingWarning(item *xwidget.NavListItem, count optional.Optional[int], label string) {
+	if v, ok := count.Value(); !ok {
+		item.Supporting = "?"
+		item.SupportingImportance = widget.MediumImportance
+		item.Trailing = nil
+	} else if v > 0 {
+		item.Supporting = fmt.Sprintf("%d %s", v, label)
 		item.SupportingImportance = widget.WarningImportance
 		item.Trailing = theme.NewWarningThemedResource(theme.WarningIcon())
 	} else {
@@ -1055,6 +1047,18 @@ func setNavItemSupportingWarning(item *xwidget.NavListItem, count int, label str
 		item.Trailing = nil
 	}
 	item.Refresh()
+}
+
+// formatCountSupporting returns "?" for an unknown count and nothing for 0.
+func formatCountSupporting(count optional.Optional[int], format func(int) string) string {
+	v, ok := count.Value()
+	if !ok {
+		return "?"
+	}
+	if v == 0 {
+		return ""
+	}
+	return format(v)
 }
 
 func formatISKValue(value optional.Optional[float64], format string) string {

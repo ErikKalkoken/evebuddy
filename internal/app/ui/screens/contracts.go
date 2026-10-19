@@ -338,7 +338,8 @@ func compareContractDeadlines(a, b optional.Optional[time.Time]) int {
 type Contracts struct {
 	widget.BaseWidget
 
-	OnUpdate func(attention int)
+	// OnUpdate reports the contracts needing attention; empty when the update failed.
+	OnUpdate func(attention optional.Optional[int])
 
 	attentionCount int // last count reported to OnUpdate
 
@@ -776,7 +777,7 @@ func (a *Contracts) update(ctx context.Context) {
 			a.filterRowsAsync("")
 			a.attentionCount = 0
 			if a.OnUpdate != nil {
-				a.OnUpdate(0)
+				a.OnUpdate(optional.Optional[int]{})
 			}
 			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
 			a.errorLabel.Show()
@@ -794,7 +795,7 @@ func (a *Contracts) update(ctx context.Context) {
 		a.filterRowsAsync("")
 		a.attentionCount = attentionCount
 		if a.OnUpdate != nil {
-			a.OnUpdate(attentionCount)
+			a.OnUpdate(optional.New(attentionCount))
 		}
 	})
 }
@@ -818,7 +819,7 @@ func (a *Contracts) refreshTimeDependent(now time.Time) {
 	}
 	a.attentionCount = n
 	if a.OnUpdate != nil {
-		a.OnUpdate(n)
+		a.OnUpdate(optional.New(n))
 	}
 }
 
