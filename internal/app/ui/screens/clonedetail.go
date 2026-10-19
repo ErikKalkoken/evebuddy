@@ -128,7 +128,7 @@ func showCloneDetailWindow(u baseUI, r jumpCloneRow, origin *app.EveSolarSystem,
 
 // cloneJumpsDisplay returns the number of jumps to a clone for display.
 func cloneJumpsDisplay(r jumpCloneRow, origin *app.EveSolarSystem, routePref app.EveRoutePreference) string {
-	if origin == nil {
+	if origin == nil || r.route == nil {
 		return "Not calculated"
 	}
 	if len(r.route) == 0 {

@@ -23,6 +23,14 @@ func TestCloneJumpsDisplay(t *testing.T) {
 		// then
 		xassert.Equal(t, "Not calculated", got)
 	})
+	t.Run("shows not calculated when route was not requested yet", func(t *testing.T) {
+		// given
+		r := jumpCloneRow{}
+		// when
+		got := cloneJumpsDisplay(r, &app.EveSolarSystem{ID: 1}, app.RouteShorter)
+		// then
+		xassert.Equal(t, "Not calculated", got)
+	})
 	t.Run("shows no route found when route is empty", func(t *testing.T) {
 		// given
 		r := jumpCloneRow{route: []*app.EveSolarSystem{}}

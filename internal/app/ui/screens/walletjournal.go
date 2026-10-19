@@ -684,7 +684,9 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 				})
 			}
 			// TODO: Add support for industry jobs
+			var hasContext bool
 			if v, ok := o.ContextIDType.Value(); ok {
+				hasContext = true
 				switch v {
 				case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
 					runAsync(func() {
@@ -740,6 +742,8 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 							f.Refresh()
 						})
 					})
+				default:
+					hasContext = false // unsupported types would show "?" forever
 				}
 			}
 			items := []*widget.FormItem{
@@ -777,7 +781,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
 				)
 			}
-			if !o.ContextIDType.IsEmpty() {
+			if hasContext {
 				items = append(items, contextItem)
 			}
 			if u.IsDeveloperMode() {
@@ -879,9 +883,8 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 			// 	}()
 			// }
 			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					corporationID,
-					corporationName,
+				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
+					&app.EveEntity{ID: corporationID, Name: corporationName, Category: app.EveEntityCorporation},
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),

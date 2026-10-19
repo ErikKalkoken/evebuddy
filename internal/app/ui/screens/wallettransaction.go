@@ -761,10 +761,10 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, char
 			total := widget.NewLabel(ui.FormatISKAmount(o.Total()))
 			if o.IsBuy {
 				total.Importance = widget.DangerImportance
-				activity = "Buy"
+				activity = marketTransactionActivityBuy
 			} else {
 				total.Importance = widget.SuccessImportance
-				activity = "Sell"
+				activity = marketTransactionActivitySell
 			}
 			items := []*widget.FormItem{
 				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
@@ -837,15 +837,14 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 			totalLabel := widget.NewLabel(ui.FormatISKAmount(o.Total()))
 			if o.IsBuy {
 				totalLabel.Importance = widget.DangerImportance
-				activity = "Buy"
+				activity = marketTransactionActivityBuy
 			} else {
 				totalLabel.Importance = widget.SuccessImportance
-				activity = "Sell"
+				activity = marketTransactionActivitySell
 			}
 			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					corporationID,
-					corporationName,
+				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
+					&app.EveEntity{ID: corporationID, Name: corporationName, Category: app.EveEntityCorporation},
 					u.InfoViewer().Show,
 				)),
 				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
