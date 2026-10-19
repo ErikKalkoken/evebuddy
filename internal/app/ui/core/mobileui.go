@@ -170,7 +170,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 
 	u.characterMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if x := formatCount(unread, formatUnread); x != "" {
+		if x := formatMailUnread(unread); x != "" {
 			s = append(s, x)
 		}
 		if missing > 0 {
@@ -945,7 +945,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	)
 	u.unifiedMails.OnUpdate = func(unread optional.Optional[int], missing int) {
 		var s []string
-		if x := formatCount(unread, formatUnread); x != "" {
+		if x := formatMailUnread(unread); x != "" {
 			s = append(s, x)
 		}
 		if loaded, total := u.unifiedMails.CharactersLoaded(); loaded < total {
@@ -1042,16 +1042,13 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 }
 
 func setNavItemSupportingWarning(item *xwidget.NavListItem, count optional.Optional[int], label string) {
-	if v, ok := count.Value(); !ok {
-		item.Supporting = "?"
-		item.SupportingImportance = widget.MediumImportance
-		item.Trailing = nil
-	} else if v > 0 {
-		item.Supporting = fmt.Sprintf("%d %s", v, label)
+	item.Supporting = formatCount(count, func(v int) string {
+		return ihumanize.Comma(v) + " " + label
+	})
+	if v, ok := count.Value(); ok && v > 0 {
 		item.SupportingImportance = widget.WarningImportance
 		item.Trailing = theme.NewWarningThemedResource(theme.WarningIcon())
 	} else {
-		item.Supporting = ""
 		item.SupportingImportance = widget.MediumImportance
 		item.Trailing = nil
 	}
@@ -1060,6 +1057,14 @@ func setNavItemSupportingWarning(item *xwidget.NavListItem, count optional.Optio
 
 func formatUnread(v int) string {
 	return ihumanize.Comma(v) + " unread"
+}
+
+// formatMailUnread labels an unknown count, since it is shown next to other mail states.
+func formatMailUnread(unread optional.Optional[int]) string {
+	if unread.IsEmpty() {
+		return "? unread"
+	}
+	return formatCount(unread, formatUnread)
 }
 
 func formatISKValue(value optional.Optional[float64], format string) string {

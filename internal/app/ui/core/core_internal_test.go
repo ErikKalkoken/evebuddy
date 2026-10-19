@@ -366,3 +366,15 @@ func TestFormatCount(t *testing.T) {
 		assert.Equal(t, "3 ready", formatCount(optional.New(3), format))
 	})
 }
+
+func TestFormatMailUnread(t *testing.T) {
+	t.Run("shows ? unread when unknown", func(t *testing.T) {
+		assert.Equal(t, "? unread", formatMailUnread(optional.Optional[int]{}))
+	})
+	t.Run("shows nothing for 0", func(t *testing.T) {
+		assert.Equal(t, "", formatMailUnread(optional.New(0)))
+	})
+	t.Run("shows unread count", func(t *testing.T) {
+		assert.Equal(t, "1,234 unread", formatMailUnread(optional.New(1234)))
+	})
+}
