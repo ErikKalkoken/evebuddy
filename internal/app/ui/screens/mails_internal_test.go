@@ -1107,6 +1107,30 @@ func TestMails_Status(t *testing.T) {
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.True(t, unread.IsEmpty())
 	})
+	t.Run("shows error when counting unread mails fails", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		unread := optional.New(1)
+		a.OnUpdate = func(v optional.Optional[int], _ int) {
+			unread = v
+		}
+		if _, err := db.Exec("DROP TABLE character_mail_mail_labels"); err != nil { // let counting fail, but not loading the folders
+			t.Fatal(err)
+		}
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
+		assert.True(t, unread.IsEmpty())
+	})
 }
 
 func TestUnifiedMails_Status(t *testing.T) {

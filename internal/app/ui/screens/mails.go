@@ -346,6 +346,8 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
+		setError(err)
+		return
 	}
 	// keep showing the current folder if it still exists, e.g. after new mail arrived
 	current := a.MessagePane.currentFolder.Load()
@@ -873,7 +875,8 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 }
 
 func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
-	if a.ma.unreadCount.Load() < 0 {
+	old := a.ma.unreadCount.Load()
+	if old < 0 {
 		return // keeps the unknown count of a failed update
 	}
 	td := a.foldersTree.Data()
@@ -886,7 +889,9 @@ func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
 	}
-	a.ma.unreadCount.Store(int64(unread))
+	if !a.ma.unreadCount.CompareAndSwap(old, int64(unread)) {
+		return // an update changed the count meanwhile
+	}
 	fyne.Do(func() {
 		a.foldersTree.Refresh() // counts changed in place; Set would reset selection and branches
 		a.ma.callOnUpdate()

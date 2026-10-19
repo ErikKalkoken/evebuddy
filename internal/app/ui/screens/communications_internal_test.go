@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
@@ -367,6 +368,19 @@ func TestCommunications_ErrorDisplay(t *testing.T) {
 
 		a.NavigationPane.update()
 		assert.True(t, a.NavigationPane.errorLabel.Visible())
+	})
+	t.Run("shows no error when update is canceled", func(t *testing.T) {
+		a, _ := newScreen(t)
+		unread := optional.New(1)
+		a.OnUpdate = func(v optional.Optional[int]) {
+			unread = v
+		}
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		a.update(ctx)
+		assert.False(t, a.NavigationPane.errorLabel.Visible())
+		assert.Equal(t, optional.New(1), unread)
 	})
 	t.Run("hides error after successful update", func(t *testing.T) {
 		a, _ := newScreen(t)

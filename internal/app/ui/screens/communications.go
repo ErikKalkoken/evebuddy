@@ -187,6 +187,9 @@ func (a *Communications) update(ctx context.Context) {
 		}
 		hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterNotifications)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			reset(true)
 			setError(err)
 			return
@@ -199,6 +202,9 @@ func (a *Communications) update(ctx context.Context) {
 	}
 	rows, _, err := a.fetchRows(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset(true)
 		setError(err)
 		return
