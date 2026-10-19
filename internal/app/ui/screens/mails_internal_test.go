@@ -950,6 +950,21 @@ func TestMailsReadingPane_OnCleared(t *testing.T) {
 }
 
 func TestMails_Status(t *testing.T) {
+	t.Run("does not show loaded characters", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		assert.False(t, a.NavigationPane.charactersLabel.Visible())
+	})
 	t.Run("shows status and disables controls except compose when data is not loaded", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
@@ -1095,7 +1110,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 
 		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
-		assert.False(t, a.MessagePane.loadingLabel.Visible())
+		assert.Equal(t, "0 / 2 characters", a.NavigationPane.charactersLabel.Text)
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.False(t, a.NavigationPane.compose.Disabled())
 	})
@@ -1113,13 +1128,13 @@ func TestUnifiedMails_Status(t *testing.T) {
 
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 
-		assert.True(t, a.MessagePane.loadingLabel.Visible())
-		assert.Equal(t, "1/2 characters loaded", a.MessagePane.loadingLabel.Text)
+		assert.Equal(t, "1 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, widget.WarningImportance, a.NavigationPane.charactersLabel.Importance)
 		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
 		assert.False(t, a.MessagePane.searchEntry.Disabled())
 		assert.False(t, a.NavigationPane.compose.Disabled())
 	})
-	t.Run("hides loaded characters once all have data", func(t *testing.T) {
+	t.Run("shows all characters loaded once all have data", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		c1 := factory.CreateCharacterFull()
@@ -1131,7 +1146,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		c2 := factory.CreateCharacterFull()
 		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
-		require.True(t, a.MessagePane.loadingLabel.Visible())
+		require.Equal(t, "1 / 2 characters", a.NavigationPane.charactersLabel.Text)
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c2.ID,
 			Section:     app.SectionCharacterMailHeaders,
@@ -1143,7 +1158,8 @@ func TestUnifiedMails_Status(t *testing.T) {
 			Section:     app.SectionCharacterMailHeaders,
 		})
 
-		assert.False(t, a.MessagePane.loadingLabel.Visible())
+		assert.Equal(t, "2 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.NavigationPane.charactersLabel.Importance)
 	})
 }
 

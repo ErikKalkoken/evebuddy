@@ -219,7 +219,6 @@ func (a *Mails) update(ctx context.Context) {
 			}
 			a.NavigationPane.clear()
 			a.MessagePane.clear()
-			a.MessagePane.setCharactersLoaded(0, 0)
 			a.ReadingPane.clear()
 			a.callOnUpdate()
 		})
@@ -313,14 +312,16 @@ func (a *Mails) update(ctx context.Context) {
 		}
 		if loaded == 0 {
 			setWaiting()
-			return
 		}
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.MessagePane.setCharactersLoaded(loaded, len(characters))
+			a.NavigationPane.setCharacters(loaded, len(characters)) // after setWaiting, which clears it
 		})
+		if loaded == 0 {
+			return
+		}
 	}
 	td, inbox, err := a.NavigationPane.fetchFolders(ctx, characterID)
 	if err != nil {
@@ -473,6 +474,7 @@ func (a *Mails) makeComposeMenu() *fyne.Menu {
 type mailsNavigationPane struct {
 	widget.BaseWidget
 
+	charactersLabel  *widget.Label
 	compose          *widget.Button
 	downloadedRun    latestRun
 	folderDownloaded *ttwidget.Label
@@ -483,6 +485,7 @@ type mailsNavigationPane struct {
 
 func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	a := &mailsNavigationPane{
+		charactersLabel:  widget.NewLabel("?"),
 		folderDownloaded: ttwidget.NewLabel(""),
 		folderTotal:      widget.NewLabel("?"),
 		ma:               ma,
@@ -494,13 +497,20 @@ func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	})
 	a.compose.Importance = widget.HighImportance
 	a.compose.Disable()
+	if ma.forCharacter {
+		a.charactersLabel.Hide()
+	}
 	return a
 }
 
 func (a *mailsNavigationPane) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewPadded(a.compose),
-		container.NewHBox(a.folderTotal, layout.NewSpacer(), a.folderDownloaded),
+		container.New(
+			layout.NewCustomPaddedVBoxLayout(0),
+			a.charactersLabel,
+			container.NewHBox(a.folderTotal, layout.NewSpacer(), a.folderDownloaded),
+		),
 		nil,
 		nil,
 		a.folders,
@@ -535,6 +545,20 @@ func (a *mailsNavigationPane) clear() {
 	a.folders.Clear()
 	a.folderTotal.SetText("?")
 	a.folderDownloaded.SetText("")
+	a.charactersLabel.Text = "?"
+	a.charactersLabel.Importance = widget.MediumImportance
+	a.charactersLabel.Refresh()
+}
+
+// setCharacters shows how many characters have mails loaded.
+func (a *mailsNavigationPane) setCharacters(loaded, total int) {
+	a.charactersLabel.Text = fmt.Sprintf("%d / %d characters", loaded, total)
+	if loaded < total {
+		a.charactersLabel.Importance = widget.WarningImportance
+	} else {
+		a.charactersLabel.Importance = widget.MediumImportance
+	}
+	a.charactersLabel.Refresh()
 }
 
 func (a *mailsNavigationPane) set(td *xwidget.TreeData[mailFolderNode], selected *mailFolderNode) {
@@ -931,7 +955,6 @@ type mailsMessagePane struct {
 	filterRun     latestRun
 	footerLabel   *widget.Label
 	headerList    *widget.List
-	loadingLabel  *widget.Label
 	ma            *Mails
 	reselecting   bool // suppresses OnSelected while restoring the selection
 	rows          []mailRow
@@ -967,15 +990,12 @@ func newMailsMessagePane(ma *Mails) *mailsMessagePane {
 		columnSorter: columnSorter,
 		errorLabel:   ui.NewLabelWithWrapping(""),
 		footerLabel:  ui.NewLabelWithTruncation(""),
-		loadingLabel: ui.NewLabelWithTruncation(""),
 		ma:           ma,
 		topLabel:     widget.NewLabel("?"),
 	}
 	a.ExtendBaseWidget(a)
 	a.errorLabel.Importance = widget.DangerImportance
 	a.errorLabel.Hide()
-	a.loadingLabel.Importance = widget.WarningImportance
-	a.loadingLabel.Hide()
 	a.headerList = a.makeHeaderList()
 	a.topLabel.SizeName = theme.SizeNameSubHeadingText
 	a.topLabel.Truncation = fyne.TextTruncateEllipsis
@@ -1010,7 +1030,7 @@ func (a *mailsMessagePane) CreateRenderer() fyne.WidgetRenderer {
 				a.searchEntry,
 			),
 		),
-		container.New(layout.NewCustomPaddedVBoxLayout(0), a.errorLabel, a.loadingLabel, a.footerLabel),
+		container.New(layout.NewCustomPaddedVBoxLayout(0), a.errorLabel, a.footerLabel),
 		nil,
 		nil,
 		a.headerList,
@@ -1075,16 +1095,6 @@ func (a *mailsMessagePane) setFooter(s string, i widget.Importance) {
 func (a *mailsMessagePane) setInfo(s string, i widget.Importance) {
 	a.setFooter(s, i)
 	a.setControlsEnabled(false)
-}
-
-// setCharactersLoaded shows how many characters have mails loaded, until all have.
-func (a *mailsMessagePane) setCharactersLoaded(loaded, total int) {
-	if loaded >= total {
-		a.loadingLabel.Hide()
-		return
-	}
-	a.loadingLabel.SetText(fmt.Sprintf("%d/%d characters loaded", loaded, total))
-	a.loadingLabel.Show()
 }
 
 func (a *mailsMessagePane) setError(err error) {
