@@ -950,7 +950,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			s = append(s, fmt.Sprintf("%s unread", humanize.Comma(int64(unread))))
 		}
 		if loaded, total := u.unifiedMails.CharactersLoaded(); loaded < total {
-			s = append(s, fmt.Sprintf("%d / %d characters", loaded, total))
+			s = append(s, fmt.Sprintf("%d / %d characters loaded", loaded, total))
 		}
 		if missing > 0 {
 			s = append(s, fmt.Sprintf("%d%% downloaded", 100-missing))

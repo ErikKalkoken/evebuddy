@@ -1110,7 +1110,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 
 		assert.Equal(t, "Waiting for mail data to be loaded...", a.MessagePane.footerLabel.Text)
-		assert.Equal(t, "0 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, "0 / 2 characters loaded", a.NavigationPane.charactersLabel.Text)
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.False(t, a.NavigationPane.composeButton.Disabled())
 	})
@@ -1128,7 +1128,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 
-		assert.Equal(t, "1 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, "1 / 2 characters loaded", a.NavigationPane.charactersLabel.Text)
 		assert.Equal(t, widget.WarningImportance, a.NavigationPane.charactersLabel.Importance)
 		assert.Equal(t, "Showing 0 / 0 messages", a.MessagePane.footerLabel.Text)
 		assert.False(t, a.MessagePane.searchEntry.Disabled())
@@ -1146,7 +1146,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 		c2 := factory.CreateCharacterFull()
 		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
-		require.Equal(t, "1 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		require.Equal(t, "1 / 2 characters loaded", a.NavigationPane.charactersLabel.Text)
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c2.ID,
 			Section:     app.SectionCharacterMailHeaders,
@@ -1158,7 +1158,7 @@ func TestUnifiedMails_Status(t *testing.T) {
 			Section:     app.SectionCharacterMailHeaders,
 		})
 
-		assert.Equal(t, "2 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, "2 / 2 characters loaded", a.NavigationPane.charactersLabel.Text)
 		assert.Equal(t, widget.MediumImportance, a.NavigationPane.charactersLabel.Importance)
 	})
 }
@@ -1226,7 +1226,7 @@ func TestMailsNavigationPane_SetCharacters(t *testing.T) {
 
 		a.NavigationPane.setCharacters(3, 2)
 
-		assert.Equal(t, "2 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, "2 / 2 characters loaded", a.NavigationPane.charactersLabel.Text)
 		assert.Equal(t, widget.MediumImportance, a.NavigationPane.charactersLabel.Importance)
 	})
 }

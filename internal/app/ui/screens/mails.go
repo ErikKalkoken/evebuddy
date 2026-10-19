@@ -241,7 +241,7 @@ func (a *Mails) update(ctx context.Context) {
 			}
 			a.NavigationPane.composeButton.Enable() // sending does not need mail data
 			a.MessagePane.setInfo("Waiting for mail data to be loaded...", widget.WarningImportance)
-			if characters > 0 {
+			if !a.forCharacter {
 				a.NavigationPane.setCharacters(0, characters)
 				a.callOnUpdate() // clearAll reported before the count was set
 			}
@@ -566,7 +566,7 @@ func (a *mailsNavigationPane) setCharacters(loaded, total int) {
 	loaded = min(loaded, total) // the two counts can race with a deleted character
 	a.charactersLoaded = loaded
 	a.charactersTotal = total
-	a.charactersLabel.Text = fmt.Sprintf("%d / %d characters", loaded, total)
+	a.charactersLabel.Text = fmt.Sprintf("%d / %d characters loaded", loaded, total)
 	if loaded < total {
 		a.charactersLabel.Importance = widget.WarningImportance
 	} else {
