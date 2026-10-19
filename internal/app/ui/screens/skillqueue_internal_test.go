@@ -413,7 +413,7 @@ func TestSkillQueueItemLevels(t *testing.T) {
 		// then
 		xassert.Equal(t, []int64{3, 3, 3}, []int64{active, trained, queued})
 	})
-	t.Run("shows skill in training without queued level", func(t *testing.T) {
+	t.Run("shows skill in training with queued level", func(t *testing.T) {
 		// given
 		qi := &app.CharacterSkillqueueItem{
 			FinishedLevel: 3,
@@ -423,7 +423,7 @@ func TestSkillQueueItemLevels(t *testing.T) {
 		// when
 		active, trained, queued := skillQueueItemLevels(qi)
 		// then
-		xassert.Equal(t, []int64{2, 2, 0}, []int64{active, trained, queued})
+		xassert.Equal(t, []int64{2, 2, 3}, []int64{active, trained, queued})
 	})
 	t.Run("shows queued skill with queued level", func(t *testing.T) {
 		// given

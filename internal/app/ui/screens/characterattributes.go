@@ -130,6 +130,11 @@ func (a *CharacterAttributes) update(ctx context.Context) {
 	}
 
 	total, attributes, err := a.fetchData(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		reset()
+		setTop("No data", widget.WarningImportance)
+		return
+	}
 	if err != nil {
 		reset()
 		setTop("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
@@ -146,22 +151,16 @@ func (a *CharacterAttributes) update(ctx context.Context) {
 }
 
 func (a *CharacterAttributes) fetchData(ctx context.Context, characterID int64) (int64, []characterAttributeRow, error) {
-	attributes := make([]characterAttributeRow, 0, 6)
-	if characterID == 0 {
-		return 0, attributes, nil
-	}
 	ca, err := a.u.Character().GetAttributes(ctx, characterID)
-	if errors.Is(err, app.ErrNotFound) {
-		return 0, attributes, nil
-	} else if err != nil {
-		return 0, attributes, err
+	if err != nil {
+		return 0, nil, err
 	}
+	attributes := make([]characterAttributeRow, 6)
 	resPerception := eveicon.FromName(eveicon.Perception)
 	resMemory := eveicon.FromName(eveicon.Memory)
 	resWillpower := eveicon.FromName(eveicon.Willpower)
 	resIntelligence := eveicon.FromName(eveicon.Intelligence)
 	resCharisma := eveicon.FromName(eveicon.Charisma)
-	attributes = attributes[:6]
 	attributes[0] = characterAttributeRow{
 		icon:   resPerception,
 		name:   "Perception",

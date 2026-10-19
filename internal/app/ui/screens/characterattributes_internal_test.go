@@ -77,7 +77,7 @@ func TestCharacterAttributes(t *testing.T) {
 		}
 		xassert.Equal(t, want, got)
 	})
-	t.Run("shows no rows when attributes are missing despite section data", func(t *testing.T) {
+	t.Run("shows no data when attributes are missing despite section data", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		defer db.Close()
@@ -93,7 +93,8 @@ func TestCharacterAttributes(t *testing.T) {
 		// when
 		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 		// then
-		xassert.Equal(t, "Total points: 0", a.top.Text)
+		xassert.Equal(t, "No data", a.top.Text)
+		xassert.Equal(t, widget.WarningImportance, a.top.Importance)
 		assert.Empty(t, a.rows)
 	})
 	t.Run("shows no character when character is exchanged to none", func(t *testing.T) {

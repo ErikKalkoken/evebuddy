@@ -137,7 +137,7 @@ func TestCharacterAugmentations(t *testing.T) {
 			Section:     app.SectionCharacterImplants,
 		})
 		// then
-		xassert.Equal(t, "1 implants", a.top.Text)
+		xassert.Equal(t, "1 implant", a.top.Text)
 		assert.Len(t, a.implants, 1)
 	})
 	t.Run("ignores change of other character", func(t *testing.T) {

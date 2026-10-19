@@ -474,7 +474,11 @@ func (a *JumpClones) updateRoutesAsync() {
 				if !ok {
 					continue
 				}
-				a.rows[i].route = m[solarSystem.ID]
+				route := m[solarSystem.ID]
+				if route == nil {
+					route = []*app.EveSolarSystem{} // requested, but no route found
+				}
+				a.rows[i].route = route
 			}
 			a.columnSorter.Set("Jumps", xwidget.SortAsc)
 			a.filterRowsAsync("")

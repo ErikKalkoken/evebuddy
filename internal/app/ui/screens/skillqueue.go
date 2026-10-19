@@ -301,11 +301,8 @@ func (a *SkillQueue) applyState() {
 
 // skillQueueItemLevels returns the levels to show for a skill in the queue.
 func skillQueueItemLevels(qi *app.CharacterSkillqueueItem) (active, trained, queued int64) {
-	switch {
-	case qi.IsCompleted():
+	if qi.IsCompleted() {
 		return qi.FinishedLevel, qi.FinishedLevel, qi.FinishedLevel
-	case qi.IsActive():
-		return qi.FinishedLevel - 1, qi.FinishedLevel - 1, 0
 	}
 	return qi.FinishedLevel - 1, qi.FinishedLevel - 1, qi.FinishedLevel
 }

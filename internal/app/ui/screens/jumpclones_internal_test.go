@@ -254,7 +254,7 @@ func TestJumpClones_UpdateRoutes(t *testing.T) {
 		})
 		xassert.Equal(t, []string{"2:0", "1:?"}, got)
 	})
-	t.Run("shows question mark when route was not found", func(t *testing.T) {
+	t.Run("shows no route when route was not found", func(t *testing.T) {
 		// given
 		db, st, _ := testutil.NewDBOnDisk(t)
 		defer db.Close()
@@ -268,7 +268,7 @@ func TestJumpClones_UpdateRoutes(t *testing.T) {
 		a.updateRoutesAsync()
 		// then
 		require.Len(t, a.rowsFiltered, 1)
-		xassert.Equal(t, "?", a.rowsFiltered[0].jumps())
+		xassert.Equal(t, "No route", a.rowsFiltered[0].jumps())
 	})
 	t.Run("does nothing without origin", func(t *testing.T) {
 		// given
