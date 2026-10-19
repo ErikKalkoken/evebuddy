@@ -209,7 +209,8 @@ func industryJobsReadyCountAll(rows []industryJobRow) int {
 type IndustryJobs struct {
 	widget.BaseWidget
 
-	OnUpdate func(count int)
+	// OnUpdate reports the jobs ready for delivery; empty when the update failed.
+	OnUpdate func(count optional.Optional[int])
 
 	readyCount    int // last count reported to OnUpdate
 	readyCountAll int // ready jobs of all installers, to detect finished jobs
@@ -735,7 +736,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 			a.readyCount = 0
 			a.readyCountAll = 0
 			if a.OnUpdate != nil {
-				a.OnUpdate(0)
+				a.OnUpdate(optional.Optional[int]{})
 			}
 			a.errorLabel.SetText(fmt.Sprintf("ERROR: %s", a.u.ErrorDisplay(err)))
 			a.errorLabel.Show()
@@ -755,7 +756,7 @@ func (a *IndustryJobs) update(ctx context.Context) {
 		a.readyCount = readyCount
 		a.readyCountAll = readyCountAll
 		if a.OnUpdate != nil {
-			a.OnUpdate(readyCount)
+			a.OnUpdate(optional.New(readyCount))
 		}
 	})
 }
@@ -775,7 +776,7 @@ func (a *IndustryJobs) refreshTimeDependent() {
 	}
 	a.readyCount = n
 	if a.OnUpdate != nil {
-		a.OnUpdate(n)
+		a.OnUpdate(optional.New(n))
 	}
 }
 

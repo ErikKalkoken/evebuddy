@@ -705,9 +705,9 @@ func TestMails_DownloadProgress(t *testing.T) {
 		e := &env{c: factory.CreateCharacterFull(), db: db, factory: factory, st: st}
 		e.a = NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		e.a.character.Store(e.c)
-		e.a.OnUpdate = func(unread, missing int) {
+		e.a.OnUpdate = func(unread optional.Optional[int], missing int) {
 			e.missing = append(e.missing, missing)
-			e.unread = append(e.unread, unread)
+			e.unread = append(e.unread, unread.ValueOrZero())
 		}
 		return e
 	}
@@ -1059,6 +1059,10 @@ func TestMails_Status(t *testing.T) {
 		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 		require.Len(t, a.MessagePane.rows, 1)
 		a.MessagePane.searchEntry.SetText("alpha")
+		unread := optional.New(1)
+		a.OnUpdate = func(v optional.Optional[int], _ int) {
+			unread = v
+		}
 		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
 			t.Fatal(err)
 		}
@@ -1075,6 +1079,7 @@ func TestMails_Status(t *testing.T) {
 		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
 		assert.True(t, a.NavigationPane.composeButton.Disabled())
+		assert.True(t, unread.IsEmpty())
 	})
 	t.Run("keeps error when mails change elsewhere", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
@@ -1086,6 +1091,10 @@ func TestMails_Status(t *testing.T) {
 			CompletedAt: time.Now().UTC(),
 		})
 		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		var unread optional.Optional[int]
+		a.OnUpdate = func(v optional.Optional[int], _ int) {
+			unread = v
+		}
 		if _, err := db.Exec("DROP TABLE character_mail_labels"); err != nil { // let loading the folders fail
 			t.Fatal(err)
 		}
@@ -1096,6 +1105,31 @@ func TestMails_Status(t *testing.T) {
 
 		assert.True(t, a.MessagePane.errorLabel.Visible())
 		assert.True(t, a.MessagePane.searchEntry.Disabled())
+		assert.True(t, unread.IsEmpty())
+	})
+	t.Run("shows error when counting unread mails fails", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterMailHeaders,
+			CompletedAt: time.Now().UTC(),
+		})
+		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+		unread := optional.New(1)
+		a.OnUpdate = func(v optional.Optional[int], _ int) {
+			unread = v
+		}
+		if _, err := db.Exec("DROP TABLE character_mail_mail_labels"); err != nil { // let counting fail, but not loading the folders
+			t.Fatal(err)
+		}
+
+		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
+
+		assert.True(t, a.MessagePane.errorLabel.Visible())
+		assert.Contains(t, a.MessagePane.errorLabel.Text, "ERROR:")
+		assert.True(t, unread.IsEmpty())
 	})
 }
 
@@ -1189,7 +1223,7 @@ func TestMails_CharactersLoaded(t *testing.T) {
 		factory.CreateCharacterFull()
 		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		var loaded, total int
-		a.OnUpdate = func(_, _ int) {
+		a.OnUpdate = func(_ optional.Optional[int], _ int) {
 			loaded, total = a.CharactersLoaded()
 		}
 

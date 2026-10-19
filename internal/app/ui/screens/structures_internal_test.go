@@ -262,8 +262,8 @@ func TestStructures_ErrorDisplay(t *testing.T) {
 		a, db := newScreen(t)
 		a.rows = []structureRow{{stateShort: "Online"}}
 		a.filterRowsAsync("")
-		reinforced := -1
-		a.OnUpdate = func(n int) {
+		reinforced := optional.New(-1)
+		a.OnUpdate = func(n optional.Optional[int]) {
 			reinforced = n
 		}
 		if _, err := db.Exec("DROP TABLE corporation_structures"); err != nil { // let the next update fail
@@ -275,7 +275,7 @@ func TestStructures_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.Equal(t, 0, reinforced)
+		assert.True(t, reinforced.IsEmpty())
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

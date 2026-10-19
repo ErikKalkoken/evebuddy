@@ -248,8 +248,8 @@ func TestTraining_ErrorDisplay(t *testing.T) {
 		a, db := newScreen(t)
 		a.rows = []trainingRow{{isWatched: true}}
 		a.filterRowsAsync("")
-		expired := -1
-		a.OnUpdate = func(n int) {
+		expired := optional.New(-1)
+		a.OnUpdate = func(n optional.Optional[int]) {
 			expired = n
 		}
 		if _, err := db.Exec("DROP TABLE characters"); err != nil { // let the next update fail
@@ -261,7 +261,7 @@ func TestTraining_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.Equal(t, 0, expired)
+		assert.True(t, expired.IsEmpty())
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())

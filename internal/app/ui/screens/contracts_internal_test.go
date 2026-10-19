@@ -220,8 +220,8 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		}
 		a := NewContractsForCharacters(newUI(t))
 		var got int
-		a.OnUpdate = func(attention int) {
-			got = attention
+		a.OnUpdate = func(attention optional.Optional[int]) {
+			got = attention.ValueOrZero()
 		}
 		a.update(t.Context())
 		assert.Equal(t, 2, got)
@@ -255,8 +255,8 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		a := NewContractsForCorporation(newUI(t))
 		a.corporation.Store(corporation)
 		var got int
-		a.OnUpdate = func(attention int) {
-			got = attention
+		a.OnUpdate = func(attention optional.Optional[int]) {
+			got = attention.ValueOrZero()
 		}
 		a.update(t.Context())
 		assert.Equal(t, 3, got)
@@ -455,9 +455,9 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 		Storage: st,
 	}))
 	var calls, got int
-	a.OnUpdate = func(attention int) {
+	a.OnUpdate = func(attention optional.Optional[int]) {
 		calls++
-		got = attention
+		got = attention.ValueOrZero()
 	}
 	a.rows = rows
 	a.selectStatus.SetSelected(app.ContractCategoryRequiresAttention.Display())
@@ -596,8 +596,8 @@ func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
 	a := NewContractsForCorporation(u)
 	a.corporation.Store(corporation)
 	var got int
-	a.OnUpdate = func(attention int) {
-		got = attention
+	a.OnUpdate = func(attention optional.Optional[int]) {
+		got = attention.ValueOrZero()
 	}
 	a.update(t.Context())
 	assert.Equal(t, 1, got, "issued by one of the user's characters")
@@ -639,8 +639,8 @@ func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
 		u := newUI(t)
 		a := NewContractsForCharacters(u)
 		var got int
-		a.OnUpdate = func(attention int) {
-			got = attention
+		a.OnUpdate = func(attention optional.Optional[int]) {
+			got = attention.ValueOrZero()
 		}
 		a.update(t.Context())
 		assert.Equal(t, 0, got, "accepted for another corporation")
@@ -672,8 +672,8 @@ func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
 		a := NewContractsForCorporation(u)
 		a.corporation.Store(corporation)
 		var got int
-		a.OnUpdate = func(attention int) {
-			got = attention
+		a.OnUpdate = func(attention optional.Optional[int]) {
+			got = attention.ValueOrZero()
 		}
 		a.update(t.Context())
 		assert.Equal(t, 0, got, "issued for a corporation without the user's characters")
@@ -701,8 +701,8 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		a.rows = []contractRow{r}
 		a.filterRowsAsync("")
 		a.attentionCount = 1
-		attention := -1
-		a.OnUpdate = func(n int) {
+		attention := optional.New(-1)
+		a.OnUpdate = func(n optional.Optional[int]) {
 			attention = n
 		}
 		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
@@ -714,7 +714,7 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.Equal(t, 0, attention)
+		assert.True(t, attention.IsEmpty())
 
 		a.selectStatus.SetSelected(contractsStatusAll)
 		assert.True(t, a.errorLabel.Visible())

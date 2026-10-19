@@ -143,7 +143,8 @@ func timeUntil(t optional.Optional[time.Time]) optional.Optional[time.Duration] 
 type Training struct {
 	widget.BaseWidget
 
-	OnUpdate func(expired int)
+	// OnUpdate reports the characters with expired training; empty when the update failed.
+	OnUpdate func(expired optional.Optional[int])
 
 	exportButton *xwidget.ContextMenuButton
 	filterChip   *xwidget.FilterChipCompact // only on mobile
@@ -585,7 +586,9 @@ func (a *Training) update(ctx context.Context) {
 			}
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
-			a.refreshOnUpdate()
+			if a.OnUpdate != nil {
+				a.OnUpdate(optional.Optional[int]{})
+			}
 			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
 			a.errorLabel.Show()
 			a.Refresh()
@@ -641,7 +644,7 @@ func (a *Training) refreshOnUpdate() {
 		}
 	}
 	if a.OnUpdate != nil {
-		a.OnUpdate(expired)
+		a.OnUpdate(optional.New(expired))
 	}
 }
 

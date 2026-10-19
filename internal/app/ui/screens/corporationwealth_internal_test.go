@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCorporationWealth_ErrorDisplay(t *testing.T) {
@@ -101,5 +103,119 @@ func TestCorporationWealth_ErrorDisplay(t *testing.T) {
 		assert.True(t, a.statusLabel.Visible())
 		assert.Contains(t, a.statusLabel.Text, "Failed to fetch data")
 		assert.True(t, slices.Contains(test.LaidOutObjects(a), fyne.CanvasObject(a.statusLabel)))
+	})
+}
+
+func TestCorporationWealth_OnUpdate(t *testing.T) {
+	t.Run("reports total net worth", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		var got optional.Optional[float64]
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletBalances,
+			CompletedAt:   time.Now(),
+		})
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Balance:       1000,
+		})
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+			Balance:       234.5,
+		})
+		a.corporation.Store(c)
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(1234.5), got)
+	})
+	t.Run("reports zero net worth", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		var got optional.Optional[float64]
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		for _, s := range []app.CorporationSection{
+			app.SectionCorporationAssets,
+			app.SectionCorporationContracts,
+			app.SectionCorporationWalletBalances,
+		} {
+			factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+				CorporationID: c.ID,
+				Section:       s,
+				CompletedAt:   time.Now(),
+			})
+		}
+		a.corporation.Store(c)
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(0.0), got)
+	})
+	t.Run("reports empty without wealth data", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		got := optional.New(1.0)
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		a.corporation.Store(factory.CreateCorporation())
+
+		a.update(t.Context())
+		assert.True(t, got.IsEmpty())
+	})
+	t.Run("reports empty without corporation", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		got := optional.New(1.0)
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+
+		a.update(t.Context())
+		assert.True(t, got.IsEmpty())
+	})
+	t.Run("reports empty when update fails", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		got := optional.New(1.0)
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		a.corporation.Store(factory.CreateCorporation())
+		if _, err := db.Exec("DROP TABLE corporation_section_status"); err != nil { // let the next update fail
+			t.Fatal(err)
+		}
+
+		a.update(t.Context())
+		assert.True(t, got.IsEmpty())
 	})
 }

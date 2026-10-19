@@ -26,11 +26,13 @@ type skillQueueState struct {
 	queue      *app.CharacterSkillqueue // nil when showing a message
 	message    string
 	importance widget.Importance
+	failed     bool // update failed, so the status is unknown
 }
 
 type SkillQueue struct {
 	widget.BaseWidget
 
+	// OnUpdate reports the training status; "?" when the update failed.
 	OnUpdate func(statusShort, statusLong string)
 
 	character            atomic.Pointer[app.Character]
@@ -209,6 +211,13 @@ func (a *SkillQueue) Update(ctx context.Context) {
 	showMessage := func(s string, i widget.Importance) {
 		setState(skillQueueState{message: s, importance: i})
 	}
+	showError := func(err error) {
+		setState(skillQueueState{
+			message:    "ERROR: " + a.u.ErrorDisplay(err),
+			importance: widget.DangerImportance,
+			failed:     true,
+		})
+	}
 
 	c := a.character.Load()
 	if c == nil {
@@ -221,7 +230,7 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		showMessage("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		showError(err)
 		return
 	}
 	if !hasData {
@@ -235,7 +244,7 @@ func (a *SkillQueue) Update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to refresh skill queue UI", "err", err)
-		showMessage("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		showError(err)
 		return
 	}
 	setState(skillQueueState{character: c, queue: sq})
@@ -254,7 +263,11 @@ func (a *SkillQueue) applyState() {
 		a.emptyLabel.Hide()
 		a.statusIcon.Hide()
 		if a.OnUpdate != nil {
-			a.OnUpdate("", "")
+			if st.failed {
+				a.OnUpdate("?", "?")
+			} else {
+				a.OnUpdate("", "")
+			}
 		}
 		return
 	}

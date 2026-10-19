@@ -36,6 +36,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/ximage"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
@@ -1258,4 +1259,16 @@ func (w *statusText) Unset(key string) {
 		break
 	}
 	w.label.SetText(text)
+}
+
+// formatCount returns "?" for an unknown count and nothing for 0.
+func formatCount(count optional.Optional[int], format func(int) string) string {
+	v, ok := count.Value()
+	if !ok {
+		return "?"
+	}
+	if v == 0 {
+		return ""
+	}
+	return format(v)
 }

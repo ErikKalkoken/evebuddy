@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -273,8 +274,8 @@ func TestIndustryJobs_ErrorDisplay(t *testing.T) {
 		a.filterRowsAsync("")
 		a.readyCount = 1
 		a.readyCountAll = 1
-		ready := -1
-		a.OnUpdate = func(n int) {
+		ready := optional.New(-1)
+		a.OnUpdate = func(n optional.Optional[int]) {
 			ready = n
 		}
 		if _, err := db.Exec("DROP TABLE character_industry_jobs"); err != nil { // let the next update fail
@@ -286,7 +287,7 @@ func TestIndustryJobs_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.Equal(t, 0, ready)
+		assert.True(t, ready.IsEmpty())
 		assert.Equal(t, 0, a.readyCountAll)
 
 		a.selectStatus.SetSelected(industryStatusHistory)
@@ -342,8 +343,8 @@ func TestIndustryJobs_RefreshTimeDependent(t *testing.T) {
 		a.readyCountAll = industryJobsReadyCountAll(rows)
 		a.selectStatus.SetSelected(industryStatusInProgress)
 		var calls []int
-		a.OnUpdate = func(count int) {
-			calls = append(calls, count)
+		a.OnUpdate = func(count optional.Optional[int]) {
+			calls = append(calls, count.ValueOrZero())
 		}
 		return a, &calls
 	}
@@ -383,8 +384,8 @@ func TestIndustryJobs_UpdateCountsFinishedJobsAsReady(t *testing.T) {
 		Storage: st,
 	}))
 	var got int
-	a.OnUpdate = func(count int) {
-		got = count
+	a.OnUpdate = func(count optional.Optional[int]) {
+		got = count.ValueOrZero()
 	}
 
 	a.update(t.Context())

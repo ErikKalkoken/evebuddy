@@ -114,6 +114,7 @@ type characterWealthValue struct {
 type CharacterWealth struct {
 	widget.BaseWidget
 
+	// OnUpdate reports the total net worth; empty when the update failed and 0 without wealth data.
 	OnUpdate func(totalNetWorth optional.Optional[float64])
 
 	characterBreakdownCard       *chartCard
@@ -301,8 +302,10 @@ func (a *CharacterWealth) update(ctx context.Context) {
 		a.showStatus("", widget.LowImportance)
 		a.rows = rows
 		a.filterRowsAsync()
-		// Only report when there is wealth data to show.
-		if hasWealth && a.OnUpdate != nil {
+		if a.OnUpdate != nil {
+			if !hasWealth {
+				total = optional.New(0.0) // clears the badge
+			}
 			a.OnUpdate(total)
 		}
 	})

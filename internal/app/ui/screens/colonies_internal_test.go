@@ -320,9 +320,9 @@ func TestColonies_ErrorDisplay(t *testing.T) {
 		a, db := newScreen(t)
 		a.rows = []colonyRow{{status: app.ColonyStopped, stopped: true}}
 		a.filterRowsAsync("")
-		total, notWorking := -1, -1
-		a.OnUpdate = func(x, n int) {
-			total, notWorking = x, n
+		notWorking := optional.New(-1)
+		a.OnUpdate = func(n optional.Optional[int]) {
+			notWorking = n
 		}
 		if _, err := db.Exec("DROP TABLE character_planets"); err != nil { // let the next update fail
 			t.Fatal(err)
@@ -333,11 +333,13 @@ func TestColonies_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.Equal(t, 0, total)
-		assert.Equal(t, 0, notWorking)
+		assert.True(t, notWorking.IsEmpty())
 
 		a.filterRowsAsync("")
 		assert.True(t, a.errorLabel.Visible())
+
+		a.u.Signals().RefreshTickerExpired.Emit(t.Context(), struct{}{})
+		assert.True(t, notWorking.IsEmpty())
 	})
 	t.Run("hides error after successful update", func(t *testing.T) {
 		a, _ := newScreen(t)

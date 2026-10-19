@@ -68,14 +68,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	u.defineShortcuts()
 
-	formatBadge := func(v, mx int) string {
-		if v == 0 {
-			return ""
-		}
-		if v >= mx {
-			return fmt.Sprintf("%d+", mx)
-		}
-		return fmt.Sprint(v)
+	formatBadge := func(count optional.Optional[int], mx int) string {
+		return formatCount(count, func(v int) string {
+			if v >= mx {
+				return fmt.Sprintf("%d+", mx)
+			}
+			return fmt.Sprint(v)
+		})
 	}
 
 	// Home
@@ -99,7 +98,11 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	)
 
 	u.wealth.OnUpdate = func(balance optional.Optional[float64]) {
-		wealth.SetBadge(formatISKValueShort(balance))
+		var s string
+		if v, ok := balance.Value(); !ok || v != 0 {
+			s = formatISKValueShort(balance)
+		}
+		wealth.SetBadge(s)
 	}
 
 	const assetsTitle = "Assets"
@@ -121,13 +124,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Communications", u.unifiedCommunications),
 	)
 	u.unifiedCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); !ok {
-			s = "?"
-		} else if v > 0 {
-			s = formatBadge(count.ValueOrZero(), 999)
-		}
-		unifiedCommunications.SetBadge(s)
+		unifiedCommunications.SetBadge(formatBadge(count, 999))
 	}
 
 	unifiedMails := xwidget.NewNavDrawerItem(
@@ -135,7 +132,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Mail",
 		newContentPage("Mail", u.unifiedMails),
 	)
-	u.unifiedMails.OnUpdate = func(unread, _ int) {
+	u.unifiedMails.OnUpdate = func(unread optional.Optional[int], _ int) {
 		unifiedMails.SetBadge(formatBadge(unread, 999))
 	}
 
@@ -144,12 +141,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Structures",
 		newContentPage("Structures", u.unifiedStructures),
 	)
-	u.unifiedStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		unifiedStructures.SetBadge(badge)
+	u.unifiedStructures.OnUpdate = func(count optional.Optional[int]) {
+		unifiedStructures.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	contracts := xwidget.NewNavDrawerItem(
@@ -163,12 +156,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			)),
 		)),
 	)
-	u.contractList.OnUpdate = func(count int) {
-		var s string
-		if count > 0 {
-			s += ihumanize.Comma(count)
-		}
-		contracts.SetBadge(s)
+	u.contractList.OnUpdate = func(count optional.Optional[int]) {
+		contracts.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	overviewColonies := xwidget.NewNavDrawerItem(
@@ -176,12 +165,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Colonies",
 		newContentPage("Colonies", u.colonies),
 	)
-	u.colonies.OnUpdate = func(_, notWorking int) {
-		var s string
-		if notWorking > 0 {
-			s = fmt.Sprint(notWorking)
-		}
-		overviewColonies.SetBadge(s)
+	u.colonies.OnUpdate = func(count optional.Optional[int]) {
+		overviewColonies.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	industry := xwidget.NewNavDrawerItem(
@@ -196,12 +181,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			))),
 		),
 	)
-	u.industryJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		industry.SetBadge(badge)
+	u.industryJobs.OnUpdate = func(count optional.Optional[int]) {
+		industry.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	marketOrders := xwidget.NewNavDrawerItem(
@@ -226,12 +207,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			ui.NewTabItem("Search", u.skillSearch),
 		), trainingMore),
 	)
-	u.training.OnUpdate = func(expired int) {
-		var badge string
-		if expired > 0 {
-			badge = ihumanize.Comma(expired)
-		}
-		skills.SetBadge(badge)
+	u.training.OnUpdate = func(count optional.Optional[int]) {
+		skills.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	homeNav := xwidget.NewNavDrawer(
@@ -274,7 +251,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Mail",
 		newContentPage("Mail", u.characterMails),
 	)
-	u.characterMails.OnUpdate = func(unread, _ int) {
+	u.characterMails.OnUpdate = func(unread optional.Optional[int], _ int) {
 		characterMailNav.SetBadge(formatBadge(unread, 99))
 	}
 	// u.characterMails.OnSendMessage = func(character *app.Character, mode app.SendMailMode, mail *app.CharacterMail) {
@@ -287,13 +264,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Communications", u.characterCommunications),
 	)
 	u.characterCommunications.OnUpdate = func(count optional.Optional[int]) {
-		var s string
-		if v, ok := count.Value(); !ok {
-			s = "?"
-		} else if v > 0 {
-			s = formatBadge(count.ValueOrZero(), 999)
-		}
-		characterCommunicationsNav.SetBadge(s)
+		characterCommunicationsNav.SetBadge(formatBadge(count, 999))
 	}
 
 	characterSkillsNav := xwidget.NewNavDrawerItem(
@@ -377,12 +348,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Contracts",
 		newContentPage("Contracts", u.corporationContracts),
 	)
-	u.corporationContracts.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpContractsItem.SetBadge(badge)
+	u.corporationContracts.OnUpdate = func(count optional.Optional[int]) {
+		corpContractsItem.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	corpIndustryItem := xwidget.NewNavDrawerItem(
@@ -390,12 +357,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Industry",
 		newContentPage("Industry", u.corporationIndyJobs),
 	)
-	u.corporationIndyJobs.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpIndustryItem.SetBadge(badge)
+	u.corporationIndyJobs.OnUpdate = func(count optional.Optional[int]) {
+		corpIndustryItem.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	corpStructuresItem := xwidget.NewNavDrawerItem(
@@ -403,12 +366,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Structures",
 		newContentPage("Structures", u.corporationStructures),
 	)
-	u.corporationStructures.OnUpdate = func(count int) {
-		var badge string
-		if count > 0 {
-			badge = ihumanize.Comma(count)
-		}
-		corpStructuresItem.SetBadge(badge)
+	u.corporationStructures.OnUpdate = func(count optional.Optional[int]) {
+		corpStructuresItem.SetBadge(formatCount(count, ihumanize.Comma))
 	}
 
 	corpSheetItem := xwidget.NewNavDrawerItem(
@@ -450,6 +409,21 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
 		corpWalletTotal = total
 		refreshCorpWalletBadge()
+	}
+
+	// Hides the total while wealth is not permitted, since the two update independently.
+	var corpWealthTotal optional.Optional[float64]
+	var corpWealthEnabled bool
+	refreshCorpWealthBadge := func() {
+		var s string
+		if corpWealthEnabled {
+			s = formatISKValueShort(corpWealthTotal)
+		}
+		corpWealthItem.SetBadge(s)
+	}
+	u.corporationWealth.OnUpdate = func(total optional.Optional[float64]) {
+		corpWealthTotal = total
+		refreshCorpWealthBadge()
 	}
 
 	// Make overall UI
@@ -606,14 +580,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 			}
 			refreshCorpWalletBadge()
 
-			if sections.Contains(app.SectionCorporationAssets) &&
+			corpWealthEnabled = sections.Contains(app.SectionCorporationAssets) &&
 				sections.Contains(app.SectionCorporationContracts) &&
-				sections.Contains(app.SectionCorporationWalletBalances) {
+				sections.Contains(app.SectionCorporationWalletBalances)
+			if corpWealthEnabled {
 				corporationNav.EnableItem(corpWealthItem)
 			} else {
 				corporationNav.DisableItem(corpWealthItem)
 				hasDisabled = true
 			}
+			refreshCorpWealthBadge()
 
 			if hasDisabled {
 				corporationNav.Select(corpSheetItem)

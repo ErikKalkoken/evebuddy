@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mailer"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
@@ -93,7 +94,8 @@ const mailsUpdated = "mailsUpdated"
 type Mails struct {
 	widget.BaseWidget
 
-	OnUpdate       func(unread, missing int)
+	// OnUpdate reports unread mails and missing bodies in percent; unread is empty when the update failed.
+	OnUpdate       func(unread optional.Optional[int], missing int)
 	MessagePane    *mailsMessagePane
 	NavigationPane *mailsNavigationPane
 	ReadingPane    *mailsReadingPane
@@ -106,7 +108,7 @@ type Mails struct {
 	missingPercent    atomic.Int64
 	sig               *singleinstance.Group
 	u                 baseUI
-	unreadCount       atomic.Int64
+	unreadCount       atomic.Int64 // -1 when unknown
 	updateRun         latestRun
 }
 
@@ -204,12 +206,16 @@ func (a *Mails) update(ctx context.Context) {
 	a.NavigationPane.downloadedRun.start()
 	a.bodiesComplete.Store(false)
 	isLatest := a.updateRun.start()
-	clearAll := func() {
+	clearAll := func(failed bool) {
 		if !isLatest() {
 			return
 		}
 		// stored now, not queued, so a newer update's state is not overwritten
-		a.unreadCount.Store(0)
+		if failed {
+			a.unreadCount.Store(-1)
+		} else {
+			a.unreadCount.Store(0)
+		}
 		a.missingPercent.Store(0)
 		a.MessagePane.currentFolder.Store(nil)
 		a.MessagePane.updateRun.start() // discards message pane updates still loading
@@ -224,7 +230,7 @@ func (a *Mails) update(ctx context.Context) {
 		})
 	}
 	setInfo := func(s string, i widget.Importance) {
-		clearAll()
+		clearAll(false)
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -234,7 +240,7 @@ func (a *Mails) update(ctx context.Context) {
 		})
 	}
 	setWaiting := func(characters int) {
-		clearAll()
+		clearAll(false)
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -248,7 +254,7 @@ func (a *Mails) update(ctx context.Context) {
 		})
 	}
 	setError := func(err error) {
-		clearAll() // so no outdated mails are shown with the error
+		clearAll(true) // so no outdated mails are shown with the error
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -340,6 +346,8 @@ func (a *Mails) update(ctx context.Context) {
 			return
 		}
 		slog.Error("Failed to update mail counts", "character", characterID, "error", err)
+		setError(err)
+		return
 	}
 	// keep showing the current folder if it still exists, e.g. after new mail arrived
 	current := a.MessagePane.currentFolder.Load()
@@ -394,7 +402,11 @@ func (a *Mails) callOnUpdate() {
 	if a.OnUpdate == nil {
 		return
 	}
-	a.OnUpdate(int(a.unreadCount.Load()), int(a.missingPercent.Load()))
+	var unread optional.Optional[int]
+	if v := a.unreadCount.Load(); v >= 0 {
+		unread.Set(int(v))
+	}
+	a.OnUpdate(unread, int(a.missingPercent.Load()))
 }
 
 func (a *Mails) showMailerWindow(mode mailer.Mode, mail *app.CharacterMail) {
@@ -863,6 +875,10 @@ func (a *mailsNavigationPane) updateCountsInTree(ctx context.Context, characterI
 }
 
 func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
+	old := a.ma.unreadCount.Load()
+	if old < 0 {
+		return // keeps the unknown count of a failed update
+	}
 	td := a.foldersTree.Data()
 	characterID := a.ma.character.Load().IDOrZero()
 	unread, err := a.updateCountsInTree(ctx, characterID, td)
@@ -873,7 +889,9 @@ func (a *mailsNavigationPane) updateUnreadCounts(ctx context.Context) {
 		slog.Error("Failed to update unread counts", "characterID", characterID, "error", err)
 		return
 	}
-	a.ma.unreadCount.Store(int64(unread))
+	if !a.ma.unreadCount.CompareAndSwap(old, int64(unread)) {
+		return // an update changed the count meanwhile
+	}
 	fyne.Do(func() {
 		a.foldersTree.Refresh() // counts changed in place; Set would reset selection and branches
 		a.ma.callOnUpdate()
