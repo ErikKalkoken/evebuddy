@@ -1163,6 +1163,19 @@ func TestUnifiedMails_Status(t *testing.T) {
 	})
 }
 
+func TestMailsNavigationPane_SetCharacters(t *testing.T) {
+	t.Run("caps loaded characters at total", func(t *testing.T) {
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		a := NewUnifiedMails(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
+
+		a.NavigationPane.setCharacters(3, 2)
+
+		assert.Equal(t, "2 / 2 characters", a.NavigationPane.charactersLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.NavigationPane.charactersLabel.Importance)
+	})
+}
+
 func TestMailsMessagePane_UpdateRun(t *testing.T) {
 	t.Run("discards outdated rows", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)

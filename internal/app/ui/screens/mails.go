@@ -485,7 +485,7 @@ type mailsNavigationPane struct {
 
 func newMailsNavigationPane(ma *Mails) *mailsNavigationPane {
 	a := &mailsNavigationPane{
-		charactersLabel:       widget.NewLabel("?"),
+		charactersLabel:       ui.NewLabelWithTruncation("?"),
 		folderDownloadedLabel: ttwidget.NewLabel(""),
 		folderTotalLabel:      widget.NewLabel("?"),
 		ma:                    ma,
@@ -552,6 +552,7 @@ func (a *mailsNavigationPane) clear() {
 
 // setCharacters shows how many characters have mails loaded.
 func (a *mailsNavigationPane) setCharacters(loaded, total int) {
+	loaded = min(loaded, total) // the two counts can race with a deleted character
 	a.charactersLabel.Text = fmt.Sprintf("%d / %d characters", loaded, total)
 	if loaded < total {
 		a.charactersLabel.Importance = widget.WarningImportance
