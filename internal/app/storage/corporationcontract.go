@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type CreateCorporationContractParams struct {
@@ -45,31 +44,19 @@ type CreateCorporationContractParams struct {
 	Volume              optional.Optional[float64]
 }
 
-// CalculateCorporationContractsEscrow returns the ISK held in escrow for a corporation's
-// courier collateral and winning auction bids.
+// CalculateCorporationContractsEscrow returns the collateral of a corporation's accepted courier contracts.
+// Auction bids are not included: ESI shows them only on copies the bidder rarely has.
 func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
-	v1, err := st.CalculateCorporationContractsCourierEscrow(ctx, corporationID)
-	if err != nil {
-		return 0, err
-	}
-	v2, err := st.CalculateCorporationContractsAuctionEscrow(ctx, corporationID)
-	if err != nil {
-		return 0, err
-	}
-	return v1 + v2, nil
-}
-
-func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Context, corporationID int64) (float64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCorporationContractsCourierEscrow: %d: %w", corporationID, err)
+		return fmt.Errorf("CalculateCorporationContractsEscrow: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCorporationContractsCourierEscrow(ctx, queries.CalculateCorporationContractsCourierEscrowParams{
+	v, err := st.qRO.CalculateCorporationContractsEscrow(ctx, queries.CalculateCorporationContractsEscrowParams{
 		CorporationID: corporationID,
 		Type:          contractTypeToDBValue[app.ContractTypeCourier],
-		Status:        contractStatusesToDBValues(contractEscrowCourierStatuses),
+		Status:        contractStatusesToDBValues(contractEscrowStatuses),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
@@ -79,26 +66,6 @@ func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Contex
 	}
 	v2 := optional.FromNullFloat64(v)
 	return v2.ValueOrZero(), nil
-}
-
-func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Context, corporationID int64) (float64, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCorporationContractsAuctionEscrow: %d: %w", corporationID, err)
-	}
-	if corporationID == 0 {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.ListCorporationContractBidsForEscrow(ctx, queries.ListCorporationContractBidsForEscrowParams{
-		CorporationID: corporationID,
-		Status:        contractStatusesToDBValues(contractEscrowAuctionStatuses),
-	})
-	if err != nil {
-		return 0, wrapErr(err)
-	}
-	bids := xslices.Map(rows, func(r queries.ListCorporationContractBidsForEscrowRow) contractBidDBModel {
-		return contractBidDBModel(r.CorporationContractBid)
-	})
-	return sumWinningBids(bids, corporationID), nil
 }
 
 func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.ContractStatus]) (int64, error) {

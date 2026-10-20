@@ -623,7 +623,7 @@ const characterWealthHelpText = `Wallet Balance: The balance of the wallet.
 
 Combined Assets: The estimated value of all personal assets, items in outstanding sell orders on the market and items in outstanding contracts.
 
-Contract Escrow: The total sum of all escrows in a character's currently outstanding contracts.
+Contract Escrow: The collateral of courier contracts a character has accepted and not yet delivered. Bids on auctions are not included.
 
 Orders Escrow: The total sum of all escrows in a character's currently outstanding buy orders on the market.
 

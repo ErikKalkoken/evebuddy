@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const calculateCorporationContractsCourierEscrow = `-- name: CalculateCorporationContractsCourierEscrow :one
+const calculateCorporationContractsEscrow = `-- name: CalculateCorporationContractsEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -24,14 +24,14 @@ WHERE
     AND status IN (/*SLICE:status*/?)
 `
 
-type CalculateCorporationContractsCourierEscrowParams struct {
+type CalculateCorporationContractsEscrowParams struct {
 	CorporationID int64
 	Type          string
 	Status        []string
 }
 
-func (q *Queries) CalculateCorporationContractsCourierEscrow(ctx context.Context, arg CalculateCorporationContractsCourierEscrowParams) (sql.NullFloat64, error) {
-	query := calculateCorporationContractsCourierEscrow
+func (q *Queries) CalculateCorporationContractsEscrow(ctx context.Context, arg CalculateCorporationContractsEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCorporationContractsEscrow
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CorporationID)
 	queryParams = append(queryParams, arg.Type)
@@ -602,67 +602,6 @@ func (q *Queries) ListCorporationContractBids(ctx context.Context, contractID in
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCorporationContractBidsForEscrow = `-- name: ListCorporationContractBidsForEscrow :many
-SELECT
-    ccb.id, ccb.contract_id, ccb.amount, ccb.bid_id, ccb.bidder_id, ccb.date_bid
-FROM
-    corporation_contract_bids ccb
-    JOIN corporation_contracts cc ON cc.id = ccb.contract_id
-WHERE
-    cc.corporation_id = ?
-    AND cc.status IN (/*SLICE:status*/?)
-`
-
-type ListCorporationContractBidsForEscrowParams struct {
-	CorporationID int64
-	Status        []string
-}
-
-type ListCorporationContractBidsForEscrowRow struct {
-	CorporationContractBid CorporationContractBid
-}
-
-func (q *Queries) ListCorporationContractBidsForEscrow(ctx context.Context, arg ListCorporationContractBidsForEscrowParams) ([]ListCorporationContractBidsForEscrowRow, error) {
-	query := listCorporationContractBidsForEscrow
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.CorporationID)
-	if len(arg.Status) > 0 {
-		for _, v := range arg.Status {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCorporationContractBidsForEscrowRow
-	for rows.Next() {
-		var i ListCorporationContractBidsForEscrowRow
-		if err := rows.Scan(
-			&i.CorporationContractBid.ID,
-			&i.CorporationContractBid.ContractID,
-			&i.CorporationContractBid.Amount,
-			&i.CorporationContractBid.BidID,
-			&i.CorporationContractBid.BidderID,
-			&i.CorporationContractBid.DateBid,
 		); err != nil {
 			return nil, err
 		}

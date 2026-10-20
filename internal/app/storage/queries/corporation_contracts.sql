@@ -1,14 +1,4 @@
--- name: ListCorporationContractBidsForEscrow :many
-SELECT
-    sqlc.embed(ccb)
-FROM
-    corporation_contract_bids ccb
-    JOIN corporation_contracts cc ON cc.id = ccb.contract_id
-WHERE
-    cc.corporation_id = ?
-    AND cc.status IN (sqlc.slice('status'));
-
--- name: CalculateCorporationContractsCourierEscrow :one
+-- name: CalculateCorporationContractsEscrow :one
 SELECT
     SUM(collateral)
 FROM

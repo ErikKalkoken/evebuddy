@@ -14,7 +14,7 @@ WHERE
     AND cci.is_included IS TRUE
     AND eg.eve_category_id <> ?;
 
--- name: CalculateCharacterContractsCourierEscrow :one
+-- name: CalculateCharacterContractsEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -24,16 +24,6 @@ WHERE
     AND acceptor_id == character_id
     AND type = ?
     AND status IN (sqlc.slice('status'));
-
--- name: ListCharacterContractBidsForEscrow :many
-SELECT
-    sqlc.embed(ccb)
-FROM
-    character_contract_bids ccb
-    JOIN character_contracts cc ON cc.id = ccb.contract_id
-WHERE
-    cc.character_id = ?
-    AND cc.status IN (sqlc.slice('status'));
 
 -- name: CountCharactersOutstandingPersonalContracts :many
 SELECT

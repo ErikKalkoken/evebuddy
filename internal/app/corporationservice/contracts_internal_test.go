@@ -129,32 +129,21 @@ func TestCalculateContractsEscrow(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	t.Run("should sum courier collateral and winning auction bids", func(t *testing.T) {
+	t.Run("should sum courier collateral", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		factory.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			AcceptorID:    c.ID,
 			Collateral:    optional.New(100.0),
 			Status:        app.ContractStatusInProgress,
 		})
-		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: c.ID,
-			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusOutstanding,
-		})
-		factory.CreateCorporationContractBid(storage.CreateContractBidParams{
-			Amount:     12.5,
-			BidderID:   c.ID,
-			ContractID: o.ID,
-		})
 		// when
 		got, err := s.CalculateContractsEscrow(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, 112.5, got)
+		xassert.Equal(t, 100.0, got)
 	})
 	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
 		// given

@@ -2,8 +2,6 @@ package storage
 
 import (
 	"database/sql"
-	"maps"
-	"slices"
 	"strings"
 	"time"
 
@@ -60,11 +58,8 @@ func init() {
 	}
 }
 
-// Contract statuses in which collateral or bids are held in escrow.
-var (
-	contractEscrowCourierStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
-	contractEscrowAuctionStatuses = []app.ContractStatus{app.ContractStatusOutstanding} // auctions never become in progress
-)
+// Contract statuses in which courier collateral is held in escrow.
+var contractEscrowStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
 
 // contractStatusesToDBValues returns the DB values for statuses.
 func contractStatusesToDBValues(statuses []app.ContractStatus) []string {
@@ -95,28 +90,6 @@ type contractItemDBModel struct {
 	RawQuantity int64
 	RecordID    int64
 	TypeID      int64
-}
-
-// sumWinningBids returns the sum of the top bids which an owner holds, per contract.
-func sumWinningBids(bids []contractBidDBModel, ownerID int64) float64 {
-	byContract := make(map[int64][]*app.ContractBid)
-	for _, b := range bids {
-		byContract[b.ContractID] = append(byContract[b.ContractID], &app.ContractBid{
-			ContractID: b.ContractID,
-			Amount:     b.Amount,
-			BidID:      b.BidID,
-			Bidder:     &app.EveEntity{ID: b.BidderID},
-			DateBid:    b.DateBid,
-		})
-	}
-	var total float64
-	// fixed order so the float sum is the same on every call
-	for _, id := range slices.Sorted(maps.Keys(byContract)) {
-		if top, ok := app.ContractTopBid(byContract[id]); ok && top.Bidder.ID == ownerID {
-			total += top.Amount
-		}
-	}
-	return total
 }
 
 type CreateContractBidParams struct {
