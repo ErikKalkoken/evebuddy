@@ -186,6 +186,8 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 		return myIDs.Contains(v.ID)
 	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
+	r.statusText = r.status.Display()
+	r.statusDisplay = makeContractStatusDisplay(r.status)
 	r.updateTimeDependent(now)
 }
 
@@ -211,8 +213,6 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 		r.categories = categories
 		r.isExpired = isExpired
 		r.isOverdue = isOverdue
-		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
-		r.statusDisplay = makeContractStatusDisplay(r.statusText, categories)
 	}
 	r.timeLeftText = timeLeft
 	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
@@ -230,23 +230,10 @@ func contractsOutstandingCount(rows []contractRow) int {
 	return n
 }
 
-// contractStatusText returns the status and notes when an open contract
-// has passed its deadline.
-func contractStatusText(status app.ContractStatus, isExpired, isOverdue bool) string {
-	s := status.Display()
-	switch {
-	case status == app.ContractStatusOutstanding && isExpired:
-		return s + " (expired)"
-	case status == app.ContractStatusInProgress && isOverdue:
-		return s + " (overdue)"
-	}
-	return s
-}
-
-// makeContractStatusDisplay returns the status text in the color of its categories.
-func makeContractStatusDisplay(text string, categories set.Set[app.ContractCategory]) []widget.RichTextSegment {
-	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-		ColorName: app.ContractCategoriesColor(categories),
+// makeContractStatusDisplay returns the status text in the color of the status.
+func makeContractStatusDisplay(status app.ContractStatus) []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+		ColorName: status.Color(),
 	})
 }
 

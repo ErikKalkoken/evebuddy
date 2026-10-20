@@ -83,33 +83,6 @@ func (cc ContractCategory) Display() string {
 	return "?"
 }
 
-func (cc ContractCategory) Color() fyne.ThemeColorName {
-	switch cc {
-	case ContractCategoryOutstanding:
-		return theme.ColorNameWarning
-	case ContractCategoryRequiresAttention:
-		return theme.ColorNameError
-	case ContractCategoryFinished:
-		return theme.ColorNameSuccess
-	}
-	return theme.ColorNameForeground
-}
-
-// ContractCategoriesColor returns the color for a contract in the given categories.
-// Requires attention takes precedence, since the user needs to act.
-func ContractCategoriesColor(categories set.Set[ContractCategory]) fyne.ThemeColorName {
-	for _, c := range []ContractCategory{
-		ContractCategoryRequiresAttention,
-		ContractCategoryOutstanding,
-		ContractCategoryFinished,
-	} {
-		if categories.Contains(c) {
-			return c.Color()
-		}
-	}
-	return theme.ColorNameForeground
-}
-
 // ContractStatus represents the original status of a contract.
 type ContractStatus uint
 
@@ -164,6 +137,23 @@ func (cs ContractStatus) IsFinished() bool {
 
 func (cs ContractStatus) Display() string {
 	return xstrings.Title(cs.String())
+}
+
+func (cs ContractStatus) Color() fyne.ThemeColorName {
+	switch cs {
+	case ContractStatusOutstanding:
+		return theme.ColorNameWarning
+	case ContractStatusInProgress:
+		return theme.ColorNamePrimary
+	case
+		ContractStatusFinished,
+		ContractStatusFinishedContractor,
+		ContractStatusFinishedIssuer:
+		return theme.ColorNameSuccess
+	case ContractStatusFailed, ContractStatusRejected:
+		return theme.ColorNameError
+	}
+	return theme.ColorNameForeground
 }
 
 type ContractType uint
@@ -318,8 +308,8 @@ type CorporationContract struct {
 
 // ContractStateAt returns the categories of a contract at the given time and
 // whether it has expired (outstanding only) or is overdue (in progress only).
-// Besides rejected contracts, a contract only requires attention when issuerIsMine is true
-// for an expired contract or acceptorIsMine is true for an overdue one.
+// A contract only requires attention when issuerIsMine is true for an expired or rejected contract
+// or acceptorIsMine is true for an overdue one.
 // Corporation roles (e.g. Contract Manager, Director) are not checked.
 func ContractStateAt(status ContractStatus, dateExpired time.Time, dateAccepted optional.Optional[time.Time], daysToComplete optional.Optional[int64], issuerIsMine, acceptorIsMine bool, now time.Time) (categories set.Set[ContractCategory], isExpired, isOverdue bool) {
 	switch status {
@@ -336,7 +326,10 @@ func ContractStateAt(status ContractStatus, dateExpired time.Time, dateAccepted 
 			categories.Add(ContractCategoryRequiresAttention)
 		}
 	case ContractStatusRejected:
-		categories.Add(ContractCategoryRequiresAttention, ContractCategoryFinished)
+		categories.Add(ContractCategoryFinished)
+		if issuerIsMine {
+			categories.Add(ContractCategoryRequiresAttention)
+		}
 	case
 		ContractStatusFailed,
 		ContractStatusFinished,
