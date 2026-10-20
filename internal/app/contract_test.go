@@ -28,27 +28,7 @@ func TestContractCategories(t *testing.T) {
 		app.ContractCategoryInProgress,
 		app.ContractCategoryRequiresAttention,
 		app.ContractCategoryFinished,
-		app.ContractCategoryOther,
 	}, app.ContractCategories())
-}
-
-func TestContractCategoryIsOpen(t *testing.T) {
-	cases := []struct {
-		category app.ContractCategory
-		want     bool
-	}{
-		{app.ContractCategoryOutstanding, true},
-		{app.ContractCategoryInProgress, true},
-		{app.ContractCategoryRequiresAttention, true},
-		{app.ContractCategoryFinished, false},
-		{app.ContractCategoryOther, false},
-		{app.ContractCategoryUndefined, false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.category.Display(), func(t *testing.T) {
-			xassert.Equal(t, tc.want, tc.category.IsOpen())
-		})
-	}
 }
 
 func TestContractCategoryDisplayAndColor(t *testing.T) {
@@ -61,13 +41,33 @@ func TestContractCategoryDisplayAndColor(t *testing.T) {
 		{app.ContractCategoryInProgress, "In progress", theme.ColorNameForeground},
 		{app.ContractCategoryRequiresAttention, "Requires attention", theme.ColorNameError},
 		{app.ContractCategoryFinished, "Finished", theme.ColorNameSuccess},
-		{app.ContractCategoryOther, "Other", theme.ColorNameForeground},
 		{app.ContractCategoryUndefined, "?", theme.ColorNameForeground},
 	}
 	for _, tc := range cases {
 		t.Run(tc.wantText, func(t *testing.T) {
 			xassert.Equal(t, tc.wantText, tc.category.Display())
 			xassert.Equal(t, tc.wantColor, tc.category.Color())
+		})
+	}
+}
+
+func TestContractCategoriesColor(t *testing.T) {
+	cases := []struct {
+		name       string
+		categories set.Set[app.ContractCategory]
+		want       fyne.ThemeColorName
+	}{
+		{"none", set.Of[app.ContractCategory](), theme.ColorNameForeground},
+		{"outstanding", set.Of(app.ContractCategoryOutstanding), theme.ColorNameWarning},
+		{"in progress", set.Of(app.ContractCategoryInProgress), theme.ColorNameForeground},
+		{"finished", set.Of(app.ContractCategoryFinished), theme.ColorNameSuccess},
+		{"attention over outstanding", set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), theme.ColorNameError},
+		{"attention over in progress", set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), theme.ColorNameError},
+		{"attention over finished", set.Of(app.ContractCategoryFinished, app.ContractCategoryRequiresAttention), theme.ColorNameError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			xassert.Equal(t, tc.want, app.ContractCategoriesColor(tc.categories))
 		})
 	}
 }
@@ -150,36 +150,36 @@ func TestContractStateAt(t *testing.T) {
 		daysToComplete optional.Optional[int64]
 		issuerIsMine   bool
 		acceptorIsMine bool
-		want           app.ContractCategory
+		want           set.Set[app.ContractCategory]
 		wantExpired    bool
 		wantOverdue    bool
 	}{
-		{"outstanding", app.ContractStatusOutstanding, future, none, noDays, true, true, app.ContractCategoryOutstanding, false, false},
-		{"outstanding expired issuer mine", app.ContractStatusOutstanding, past, none, noDays, true, false, app.ContractCategoryRequiresAttention, true, false},
-		{"outstanding expired issuer not mine", app.ContractStatusOutstanding, past, none, noDays, false, true, app.ContractCategoryOther, true, false},
-		{"outstanding expires exactly now", app.ContractStatusOutstanding, now, none, noDays, true, true, app.ContractCategoryOutstanding, false, false},
-		{"outstanding with past delivery data", app.ContractStatusOutstanding, future, accepted, optional.New[int64](3), true, true, app.ContractCategoryOutstanding, false, false},
-		{"in progress", app.ContractStatusInProgress, past, optional.New(now.AddDate(0, 0, -1)), optional.New[int64](3), true, true, app.ContractCategoryInProgress, false, false},
-		{"in progress overdue acceptor mine", app.ContractStatusInProgress, future, accepted, optional.New[int64](3), false, true, app.ContractCategoryRequiresAttention, false, true},
-		{"in progress overdue acceptor not mine", app.ContractStatusInProgress, future, accepted, optional.New[int64](3), true, false, app.ContractCategoryInProgress, false, true},
-		{"in progress delivery due exactly now", app.ContractStatusInProgress, future, optional.New(now.AddDate(0, 0, -3)), optional.New[int64](3), true, true, app.ContractCategoryInProgress, false, false},
-		{"in progress without days to complete", app.ContractStatusInProgress, past, accepted, noDays, true, true, app.ContractCategoryInProgress, false, false},
-		{"in progress without date accepted", app.ContractStatusInProgress, past, none, optional.New[int64](3), true, true, app.ContractCategoryInProgress, false, false},
-		{"failed", app.ContractStatusFailed, past, accepted, optional.New[int64](3), true, true, app.ContractCategoryOther, false, false},
-		{"rejected", app.ContractStatusRejected, past, none, noDays, true, true, app.ContractCategoryOther, false, false},
-		{"finished", app.ContractStatusFinished, past, none, noDays, true, true, app.ContractCategoryFinished, false, false},
-		{"finished courier past deadline", app.ContractStatusFinished, past, accepted, optional.New[int64](3), true, true, app.ContractCategoryFinished, false, false},
-		{"finished contractor", app.ContractStatusFinishedContractor, past, none, noDays, true, true, app.ContractCategoryFinished, false, false},
-		{"finished issuer", app.ContractStatusFinishedIssuer, past, none, noDays, true, true, app.ContractCategoryFinished, false, false},
-		{"reversed", app.ContractStatusReversed, past, none, noDays, true, true, app.ContractCategoryOther, false, false},
-		{"cancelled", app.ContractStatusCancelled, past, none, noDays, true, true, app.ContractCategoryOther, false, false},
-		{"deleted", app.ContractStatusDeleted, past, none, noDays, true, true, app.ContractCategoryOther, false, false},
-		{"undefined", app.ContractStatusUndefined, future, none, noDays, true, true, app.ContractCategoryOther, false, false},
+		{"outstanding", app.ContractStatusOutstanding, future, none, noDays, true, true, set.Of(app.ContractCategoryOutstanding), false, false},
+		{"outstanding expired issuer mine", app.ContractStatusOutstanding, past, none, noDays, true, false, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), true, false},
+		{"outstanding expired issuer not mine", app.ContractStatusOutstanding, past, none, noDays, false, true, set.Of(app.ContractCategoryOutstanding), true, false},
+		{"outstanding expires exactly now", app.ContractStatusOutstanding, now, none, noDays, true, true, set.Of(app.ContractCategoryOutstanding), false, false},
+		{"outstanding with past delivery data", app.ContractStatusOutstanding, future, accepted, optional.New[int64](3), true, true, set.Of(app.ContractCategoryOutstanding), false, false},
+		{"in progress", app.ContractStatusInProgress, past, optional.New(now.AddDate(0, 0, -1)), optional.New[int64](3), true, true, set.Of(app.ContractCategoryInProgress), false, false},
+		{"in progress overdue acceptor mine", app.ContractStatusInProgress, future, accepted, optional.New[int64](3), false, true, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), false, true},
+		{"in progress overdue acceptor not mine", app.ContractStatusInProgress, future, accepted, optional.New[int64](3), true, false, set.Of(app.ContractCategoryInProgress), false, true},
+		{"in progress delivery due exactly now", app.ContractStatusInProgress, future, optional.New(now.AddDate(0, 0, -3)), optional.New[int64](3), true, true, set.Of(app.ContractCategoryInProgress), false, false},
+		{"in progress without days to complete", app.ContractStatusInProgress, past, accepted, noDays, true, true, set.Of(app.ContractCategoryInProgress), false, false},
+		{"in progress without date accepted", app.ContractStatusInProgress, past, none, optional.New[int64](3), true, true, set.Of(app.ContractCategoryInProgress), false, false},
+		{"failed", app.ContractStatusFailed, past, accepted, optional.New[int64](3), true, true, set.Of(app.ContractCategoryFinished), false, false},
+		{"rejected", app.ContractStatusRejected, past, none, noDays, true, true, set.Of(app.ContractCategoryFinished, app.ContractCategoryRequiresAttention), false, false},
+		{"finished", app.ContractStatusFinished, past, none, noDays, true, true, set.Of(app.ContractCategoryFinished), false, false},
+		{"finished courier past deadline", app.ContractStatusFinished, past, accepted, optional.New[int64](3), true, true, set.Of(app.ContractCategoryFinished), false, false},
+		{"finished contractor", app.ContractStatusFinishedContractor, past, none, noDays, true, true, set.Of(app.ContractCategoryFinished), false, false},
+		{"finished issuer", app.ContractStatusFinishedIssuer, past, none, noDays, true, true, set.Of(app.ContractCategoryFinished), false, false},
+		{"reversed", app.ContractStatusReversed, past, none, noDays, true, true, set.Of[app.ContractCategory](), false, false},
+		{"cancelled", app.ContractStatusCancelled, past, none, noDays, true, true, set.Of[app.ContractCategory](), false, false},
+		{"deleted", app.ContractStatusDeleted, past, none, noDays, true, true, set.Of[app.ContractCategory](), false, false},
+		{"undefined", app.ContractStatusUndefined, future, none, noDays, true, true, set.Of[app.ContractCategory](), false, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			category, isExpired, isOverdue := app.ContractStateAt(tc.status, tc.dateExpired, tc.dateAccepted, tc.daysToComplete, tc.issuerIsMine, tc.acceptorIsMine, now)
-			xassert.Equal(t, tc.want, category)
+			categories, isExpired, isOverdue := app.ContractStateAt(tc.status, tc.dateExpired, tc.dateAccepted, tc.daysToComplete, tc.issuerIsMine, tc.acceptorIsMine, now)
+			xassert.Equal(t, tc.want, categories)
 			xassert.Equal(t, tc.wantExpired, isExpired)
 			xassert.Equal(t, tc.wantOverdue, isOverdue)
 		})
