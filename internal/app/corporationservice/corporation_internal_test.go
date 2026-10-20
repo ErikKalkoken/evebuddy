@@ -144,3 +144,49 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestListHangarNames(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	t.Run("returns stored names merged with defaults", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Name:          "Awesome Hangar",
+		})
+		// when
+		got, err := s.ListHangarNames(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, "Awesome Hangar", got[app.Division1])
+		assert.Equal(t, "2nd Division", got[app.Division2])
+	})
+	t.Run("returns defaults when corporation unknown", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		got, err := s.ListHangarNames(ctx, 42)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, "1st Division", got[app.Division1])
+	})
+	t.Run("returns error when fetching names fails", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		s := NewFake(Params{Storage: st})
+		c := factory.CreateCorporation()
+		if _, err := db.Exec("DROP TABLE corporation_hangar_names"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		_, err := s.ListHangarNames(ctx, c.ID)
+		// then
+		assert.Error(t, err)
+	})
+}

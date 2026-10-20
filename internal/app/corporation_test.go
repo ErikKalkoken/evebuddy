@@ -17,7 +17,8 @@ func TestDivisionDefaultWalletName(t *testing.T) {
 }
 
 func TestDivisionDefaultHangarName(t *testing.T) {
-	xassert.Equal(t, "Division 1", app.Division1.DefaultHangarName())
+	xassert.Equal(t, "1st Division", app.Division1.DefaultHangarName())
+	xassert.Equal(t, "7th Division", app.Division7.DefaultHangarName())
 	xassert.Equal(t, "", app.DivisionZero.DefaultHangarName())
 }
 

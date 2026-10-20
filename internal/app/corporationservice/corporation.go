@@ -184,3 +184,23 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg corpora
 			return true, nil
 		})
 }
+
+// ListHangarNames returns the names of a corporation's asset (hangar) divisions.
+// Divisions without a stored name get a default name.
+func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID int64) (map[app.Division]string, error) {
+	m := make(map[app.Division]string, len(app.Divisions))
+	for _, d := range app.Divisions {
+		m[d] = d.DefaultHangarName()
+	}
+	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range oo {
+		if o.Name == "" {
+			continue
+		}
+		m[app.Division(o.DivisionID)] = o.Name
+	}
+	return m, nil
+}
