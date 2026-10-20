@@ -427,7 +427,224 @@ func TestCorporationContractItem(t *testing.T) {
 	})
 }
 
-func TestCalculateCorporationContractsCourierEscrow(t *testing.T) {
+func TestCalculateCorporationContractItemsValue(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	cases := []struct {
+		name         string
+		contractType app.ContractType
+		status       app.ContractStatus
+		want         float64
+	}{
+		{"should exclude courier contract", app.ContractTypeCourier, app.ContractStatusOutstanding, 0},
+		{"should include outstanding auction contract", app.ContractTypeAuction, app.ContractStatusOutstanding, 10},
+		{"should include in progress auction contract", app.ContractTypeAuction, app.ContractStatusInProgress, 10},
+		{"should exclude finished auction contract", app.ContractTypeAuction, app.ContractStatusFinished, 0},
+		{"should include outstanding item exchange contract", app.ContractTypeItemExchange, app.ContractStatusOutstanding, 10},
+		{"should exclude finished item exchange contract", app.ContractTypeItemExchange, app.ContractStatusFinished, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := f.CreateCorporation()
+			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+				CorporationID:  c.ID,
+				ForCorporation: true,
+				Status:         tc.status,
+				Type:           tc.contractType,
+			})
+			u := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+				ContractID: o.ID,
+				IsIncluded: true,
+				Quantity:   1,
+			})
+			f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+				TypeID:       u.Type.ID,
+				AveragePrice: optional.New(10.0),
+			})
+
+			// when
+			got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should sum items of multiple contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		o1 := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+		u1 := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o1.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u1.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		o2 := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+		u2 := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o2.ID,
+			IsIncluded: true,
+			Quantity:   2,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u2.Type.ID,
+			AveragePrice: optional.New(200.2),
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 500.5, got)
+	})
+
+	t.Run("should ignore blueprints", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		blueprintCategory := f.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryBlueprint,
+			Name: "Blueprint",
+		})
+		blueprintGroup := f.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: blueprintCategory.ID,
+		})
+		blueprintType := f.CreateEveType(storage.CreateEveTypeParams{
+			GroupID: blueprintGroup.ID,
+		})
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+		u := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   1,
+			TypeID:     blueprintType.ID,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should exclude contract issued by another corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		other := f.CreateEveCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: other.ID})
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:       c.ID,
+			ForCorporation:      true,
+			IssuerCorporationID: issuer.ID,
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeAuction,
+		})
+		u := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should exclude contract issued personally", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: false,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+		u := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should exclude items not included", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+		u := f.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: false,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+}
+
+func TestCalculateCorporationContractsEscrow(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
 
@@ -450,7 +667,7 @@ func TestCalculateCorporationContractsCourierEscrow(t *testing.T) {
 		f.CreateCorporationContract() // should be ignored
 
 		// when
-		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
@@ -469,32 +686,182 @@ func TestCalculateCorporationContractsCourierEscrow(t *testing.T) {
 		})
 
 		// when
-		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0.0, got)
 	})
 
-	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
+	t.Run("should include reward of courier contract issued for the corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+		})
 
 		// when
-		got, err := st.CalculateCorporationContractsCourierEscrow(t.Context(), c.ID)
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of in progress courier contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusInProgress,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of item exchange contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should not include reward of finished contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusFinished,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0.0, got)
 	})
-}
 
-func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
-	db, st, f := testutil.NewDBInMemory()
-	defer db.Close()
+	t.Run("should not include reward of contract issued by another corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		other := f.CreateEveCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: other.ID})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:       c.ID,
+			ForCorporation:      true,
+			IssuerCorporationID: issuer.ID,
+			Reward:              optional.New(50.0),
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		})
 
-	t.Run("should include when own bid is highest", func(t *testing.T) {
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of auction", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of contract issued personally", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: false,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should sum collateral and reward", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(100.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 150.0, got)
+	})
+
+	t.Run("should not include winning auction bid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCorporation()
@@ -508,69 +875,9 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 			BidderID:   c.ID,
 			ContractID: o.ID,
 		})
-		f.CreateCorporationContractBid(storage.CreateContractBidParams{
-			Amount:     3,
-			ContractID: o.ID,
-		})
 
 		// when
-		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
-
-		// then
-		require.NoError(t, err)
-		assert.Equal(t, 12.3, got)
-	})
-
-	for _, status := range []app.ContractStatus{
-		app.ContractStatusInProgress,
-		app.ContractStatusFinishedContractor,
-		app.ContractStatusFinished,
-	} {
-		t.Run("should not include auction with status "+status.String(), func(t *testing.T) {
-			// given
-			testutil.MustTruncateTables(db)
-			c := f.CreateCorporation()
-			o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
-				CorporationID: c.ID,
-				Type:          app.ContractTypeAuction,
-				Status:        status,
-			})
-			f.CreateCorporationContractBid(storage.CreateContractBidParams{
-				Amount:     12.3,
-				BidderID:   c.ID,
-				ContractID: o.ID,
-			})
-
-			// when
-			got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
-
-			// then
-			require.NoError(t, err)
-			assert.Equal(t, 0.0, got)
-		})
-	}
-
-	t.Run("should not include when own bid is not highest", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := f.CreateCorporation()
-		o := f.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: c.ID,
-			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusOutstanding,
-		})
-		f.CreateCorporationContractBid(storage.CreateContractBidParams{
-			Amount:     12.3,
-			BidderID:   c.ID,
-			ContractID: o.ID,
-		})
-		f.CreateCorporationContractBid(storage.CreateContractBidParams{
-			Amount:     15,
-			ContractID: o.ID,
-		})
-
-		// when
-		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
@@ -583,7 +890,7 @@ func TestCalculateCorporationContractsAuctionEscrow(t *testing.T) {
 		c := f.CreateCorporation()
 
 		// when
-		got, err := st.CalculateCorporationContractsAuctionEscrow(t.Context(), c.ID)
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)

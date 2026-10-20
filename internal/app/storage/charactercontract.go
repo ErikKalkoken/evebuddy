@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -14,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, characterID int64) (float64, error) {
@@ -27,78 +24,49 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 	v, err := st.qRO.CalculateCharacterContractItemsValue(ctx, queries.CalculateCharacterContractItemsValueParams{
 		CharacterID:   characterID,
 		EveCategoryID: app.EveCategoryBlueprint,
-		Status: []string{
-			contractStatusToDBValue[app.ContractStatusOutstanding],
-			contractStatusToDBValue[app.ContractStatusInProgress],
-		},
+		Status:        contractStatusesToDBValues(contractOpenStatuses),
 		Types: []string{
 			contractTypeToDBValue[app.ContractTypeAuction],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
 		},
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
+	return v.Float64, nil
 }
 
-// CalculateCharacterContractsEscrow returns the ISK held in escrow for a character's
-// courier collateral and winning auction bids.
+// CalculateCharacterContractsEscrow returns the ISK a character holds in escrow for open contracts:
+// collateral of accepted couriers and rewards of personally issued couriers and item exchanges.
+// Auction bids are not included: ESI shows them only on copies the bidder rarely has.
 func (st *Storage) CalculateCharacterContractsEscrow(ctx context.Context, characterID int64) (float64, error) {
-	v1, err := st.CalculateCharacterContractsCourierEscrow(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	v2, err := st.CalculateCharacterContractsAuctionEscrow(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	return v1 + v2, nil
-}
-
-func (st *Storage) CalculateCharacterContractsCourierEscrow(ctx context.Context, characterID int64) (float64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCharacterContractsCourierEscrow: %d: %w", characterID, err)
+		return fmt.Errorf("CalculateCharacterContractsEscrow: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCharacterContractsCourierEscrow(ctx, queries.CalculateCharacterContractsCourierEscrowParams{
+	status := contractStatusesToDBValues(contractOpenStatuses)
+	collateral, err := st.qRO.CalculateCharacterContractsCollateralEscrow(ctx, queries.CalculateCharacterContractsCollateralEscrowParams{
 		CharacterID: characterID,
 		Type:        contractTypeToDBValue[app.ContractTypeCourier],
-		Status:      contractStatusesToDBValues(contractEscrowCourierStatuses),
+		Status:      status,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
-}
-
-func (st *Storage) CalculateCharacterContractsAuctionEscrow(ctx context.Context, characterID int64) (float64, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCharacterContractsAuctionEscrow: %d: %w", characterID, err)
-	}
-	if characterID == 0 {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.ListCharacterContractBidsForEscrow(ctx, queries.ListCharacterContractBidsForEscrowParams{
+	reward, err := st.qRO.CalculateCharacterContractsRewardEscrow(ctx, queries.CalculateCharacterContractsRewardEscrowParams{
 		CharacterID: characterID,
-		Status:      contractStatusesToDBValues(contractEscrowAuctionStatuses),
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeCourier],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+		Status: status,
 	})
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	bids := xslices.Map(rows, func(r queries.ListCharacterContractBidsForEscrowRow) contractBidDBModel {
-		return contractBidDBModel(r.CharacterContractBid)
-	})
-	return sumWinningBids(bids, characterID), nil
+	return collateral.Float64 + reward.Float64, nil
 }
 
 func (st *Storage) CountCharactersOutstandingPersonalContracts(ctx context.Context) (map[int64]int, error) {

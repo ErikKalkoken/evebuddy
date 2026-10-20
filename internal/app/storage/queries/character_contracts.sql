@@ -8,13 +8,15 @@ FROM
     JOIN eve_groups eg ON eg.id = et.eve_group_id
     LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
 WHERE
-    character_id = ?
+    cc.character_id = ?
+    AND cc.issuer_id = cc.character_id
+    AND cc.for_corporation IS FALSE
     AND cc.status IN (sqlc.slice('status'))
     AND cc.type IN (sqlc.slice('types'))
     AND cci.is_included IS TRUE
     AND eg.eve_category_id <> ?;
 
--- name: CalculateCharacterContractsCourierEscrow :one
+-- name: CalculateCharacterContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -25,15 +27,17 @@ WHERE
     AND type = ?
     AND status IN (sqlc.slice('status'));
 
--- name: ListCharacterContractBidsForEscrow :many
+-- name: CalculateCharacterContractsRewardEscrow :one
 SELECT
-    sqlc.embed(ccb)
+    SUM(reward)
 FROM
-    character_contract_bids ccb
-    JOIN character_contracts cc ON cc.id = ccb.contract_id
+    character_contracts
 WHERE
-    cc.character_id = ?
-    AND cc.status IN (sqlc.slice('status'));
+    character_id = ?
+    AND issuer_id = character_id
+    AND for_corporation IS FALSE
+    AND type IN (sqlc.slice('types'))
+    AND status IN (sqlc.slice('status'));
 
 -- name: CountCharactersOutstandingPersonalContracts :many
 SELECT

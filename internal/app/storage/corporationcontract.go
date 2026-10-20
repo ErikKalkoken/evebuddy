@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -14,7 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 type CreateCorporationContractParams struct {
@@ -45,60 +42,61 @@ type CreateCorporationContractParams struct {
 	Volume              optional.Optional[float64]
 }
 
-// CalculateCorporationContractsEscrow returns the ISK held in escrow for a corporation's
-// courier collateral and winning auction bids.
-func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
-	v1, err := st.CalculateCorporationContractsCourierEscrow(ctx, corporationID)
-	if err != nil {
-		return 0, err
-	}
-	v2, err := st.CalculateCorporationContractsAuctionEscrow(ctx, corporationID)
-	if err != nil {
-		return 0, err
-	}
-	return v1 + v2, nil
-}
-
-func (st *Storage) CalculateCorporationContractsCourierEscrow(ctx context.Context, corporationID int64) (float64, error) {
+// CalculateCorporationContractItemsValue returns the market value of items
+// in open auctions and item exchanges issued for a corporation.
+func (st *Storage) CalculateCorporationContractItemsValue(ctx context.Context, corporationID int64) (float64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCorporationContractsCourierEscrow: %d: %w", corporationID, err)
+		return fmt.Errorf("CalculateCorporationContractItemsValue: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCorporationContractsCourierEscrow(ctx, queries.CalculateCorporationContractsCourierEscrowParams{
+	v, err := st.qRO.CalculateCorporationContractItemsValue(ctx, queries.CalculateCorporationContractItemsValueParams{
+		CorporationID: corporationID,
+		EveCategoryID: app.EveCategoryBlueprint,
+		Status:        contractStatusesToDBValues(contractOpenStatuses),
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeAuction],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
+// CalculateCorporationContractsEscrow returns the ISK a corporation holds in escrow for open contracts:
+// collateral of accepted couriers and rewards of couriers and item exchanges issued for the corporation.
+// Auction bids are not included: ESI names the bidding character, not the corporation.
+func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationContractsEscrow: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	status := contractStatusesToDBValues(contractOpenStatuses)
+	collateral, err := st.qRO.CalculateCorporationContractsCollateralEscrow(ctx, queries.CalculateCorporationContractsCollateralEscrowParams{
 		CorporationID: corporationID,
 		Type:          contractTypeToDBValue[app.ContractTypeCourier],
-		Status:        contractStatusesToDBValues(contractEscrowCourierStatuses),
+		Status:        status,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
-}
-
-func (st *Storage) CalculateCorporationContractsAuctionEscrow(ctx context.Context, corporationID int64) (float64, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("CalculateCorporationContractsAuctionEscrow: %d: %w", corporationID, err)
-	}
-	if corporationID == 0 {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	rows, err := st.qRO.ListCorporationContractBidsForEscrow(ctx, queries.ListCorporationContractBidsForEscrowParams{
+	reward, err := st.qRO.CalculateCorporationContractsRewardEscrow(ctx, queries.CalculateCorporationContractsRewardEscrowParams{
 		CorporationID: corporationID,
-		Status:        contractStatusesToDBValues(contractEscrowAuctionStatuses),
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeCourier],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+		Status: status,
 	})
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	bids := xslices.Map(rows, func(r queries.ListCorporationContractBidsForEscrowRow) contractBidDBModel {
-		return contractBidDBModel(r.CorporationContractBid)
-	})
-	return sumWinningBids(bids, corporationID), nil
+	return collateral.Float64 + reward.Float64, nil
 }
 
 func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.ContractStatus]) (int64, error) {

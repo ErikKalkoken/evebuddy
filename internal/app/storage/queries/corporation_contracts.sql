@@ -1,14 +1,22 @@
--- name: ListCorporationContractBidsForEscrow :many
+-- name: CalculateCorporationContractItemsValue :one
 SELECT
-    sqlc.embed(ccb)
+    SUM(IFNULL(mp.average_price, 0) * cci.quantity)
 FROM
-    corporation_contract_bids ccb
-    JOIN corporation_contracts cc ON cc.id = ccb.contract_id
+    corporation_contract_items cci
+    JOIN corporation_contracts cc ON cc.id = cci.contract_id
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
 WHERE
     cc.corporation_id = ?
-    AND cc.status IN (sqlc.slice('status'));
+    AND cc.issuer_corporation_id = cc.corporation_id
+    AND cc.for_corporation IS TRUE
+    AND cc.status IN (sqlc.slice('status'))
+    AND cc.type IN (sqlc.slice('types'))
+    AND cci.is_included IS TRUE
+    AND eg.eve_category_id <> ?;
 
--- name: CalculateCorporationContractsCourierEscrow :one
+-- name: CalculateCorporationContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -17,6 +25,18 @@ WHERE
     corporation_id = ?
     AND acceptor_id == corporation_id
     AND type = ?
+    AND status IN (sqlc.slice('status'));
+
+-- name: CalculateCorporationContractsRewardEscrow :one
+SELECT
+    SUM(reward)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND issuer_corporation_id = corporation_id
+    AND for_corporation IS TRUE
+    AND type IN (sqlc.slice('types'))
     AND status IN (sqlc.slice('status'));
 
 -- name: CountCorporationContractsWithStatus :one

@@ -50,7 +50,12 @@ func (s *CorporationService) ListContractItems(ctx context.Context, contractID i
 	return s.st.ListCorporationContractItems(ctx, contractID)
 }
 
-// CalculateContractsEscrow returns the sum of courier and auction contract escrow held by the corporation.
+// CalculateContractItemsValue returns the market value of items in open contracts issued for the corporation.
+func (s *CorporationService) CalculateContractItemsValue(ctx context.Context, corporationID int64) (float64, error) {
+	return s.st.CalculateCorporationContractItemsValue(ctx, corporationID)
+}
+
+// CalculateContractsEscrow returns the ISK the corporation holds in escrow for open contracts.
 func (s *CorporationService) CalculateContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
 	return s.st.CalculateCorporationContractsEscrow(ctx, corporationID)
 }

@@ -22,7 +22,9 @@ FROM
     JOIN eve_groups eg ON eg.id = et.eve_group_id
     LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
 WHERE
-    character_id = ?
+    cc.character_id = ?
+    AND cc.issuer_id = cc.character_id
+    AND cc.for_corporation IS FALSE
     AND cc.status IN (/*SLICE:status*/?)
     AND cc.type IN (/*SLICE:types*/?)
     AND cci.is_included IS TRUE
@@ -63,7 +65,7 @@ func (q *Queries) CalculateCharacterContractItemsValue(ctx context.Context, arg 
 	return sum, err
 }
 
-const calculateCharacterContractsCourierEscrow = `-- name: CalculateCharacterContractsCourierEscrow :one
+const calculateCharacterContractsCollateralEscrow = `-- name: CalculateCharacterContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -75,17 +77,62 @@ WHERE
     AND status IN (/*SLICE:status*/?)
 `
 
-type CalculateCharacterContractsCourierEscrowParams struct {
+type CalculateCharacterContractsCollateralEscrowParams struct {
 	CharacterID int64
 	Type        string
 	Status      []string
 }
 
-func (q *Queries) CalculateCharacterContractsCourierEscrow(ctx context.Context, arg CalculateCharacterContractsCourierEscrowParams) (sql.NullFloat64, error) {
-	query := calculateCharacterContractsCourierEscrow
+func (q *Queries) CalculateCharacterContractsCollateralEscrow(ctx context.Context, arg CalculateCharacterContractsCollateralEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractsCollateralEscrow
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CharacterID)
 	queryParams = append(queryParams, arg.Type)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
+const calculateCharacterContractsRewardEscrow = `-- name: CalculateCharacterContractsRewardEscrow :one
+SELECT
+    SUM(reward)
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+    AND issuer_id = character_id
+    AND for_corporation IS FALSE
+    AND type IN (/*SLICE:types*/?)
+    AND status IN (/*SLICE:status*/?)
+`
+
+type CalculateCharacterContractsRewardEscrowParams struct {
+	CharacterID int64
+	Types       []string
+	Status      []string
+}
+
+func (q *Queries) CalculateCharacterContractsRewardEscrow(ctx context.Context, arg CalculateCharacterContractsRewardEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractsRewardEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Types) > 0 {
+		for _, v := range arg.Types {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:types*/?", strings.Repeat(",?", len(arg.Types))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:types*/?", "NULL", 1)
+	}
 	if len(arg.Status) > 0 {
 		for _, v := range arg.Status {
 			queryParams = append(queryParams, v)
@@ -820,67 +867,6 @@ func (q *Queries) ListCharacterContractBids(ctx context.Context, contractID int6
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacterContractBidsForEscrow = `-- name: ListCharacterContractBidsForEscrow :many
-SELECT
-    ccb.id, ccb.contract_id, ccb.amount, ccb.bid_id, ccb.bidder_id, ccb.date_bid
-FROM
-    character_contract_bids ccb
-    JOIN character_contracts cc ON cc.id = ccb.contract_id
-WHERE
-    cc.character_id = ?
-    AND cc.status IN (/*SLICE:status*/?)
-`
-
-type ListCharacterContractBidsForEscrowParams struct {
-	CharacterID int64
-	Status      []string
-}
-
-type ListCharacterContractBidsForEscrowRow struct {
-	CharacterContractBid CharacterContractBid
-}
-
-func (q *Queries) ListCharacterContractBidsForEscrow(ctx context.Context, arg ListCharacterContractBidsForEscrowParams) ([]ListCharacterContractBidsForEscrowRow, error) {
-	query := listCharacterContractBidsForEscrow
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.CharacterID)
-	if len(arg.Status) > 0 {
-		for _, v := range arg.Status {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterContractBidsForEscrowRow
-	for rows.Next() {
-		var i ListCharacterContractBidsForEscrowRow
-		if err := rows.Scan(
-			&i.CharacterContractBid.ID,
-			&i.CharacterContractBid.ContractID,
-			&i.CharacterContractBid.Amount,
-			&i.CharacterContractBid.BidID,
-			&i.CharacterContractBid.BidderID,
-			&i.CharacterContractBid.DateBid,
 		); err != nil {
 			return nil, err
 		}

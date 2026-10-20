@@ -125,36 +125,73 @@ func TestListActiveCorporationContracts(t *testing.T) {
 	})
 }
 
+func TestCalculateContractItemsValue(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := NewFake(Params{Storage: st})
+	t.Run("should return value of items in contracts issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+		u := factory.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   3,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+		// when
+		got, err := s.CalculateContractItemsValue(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 30.0, got)
+	})
+	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		got, err := s.CalculateContractItemsValue(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0.0, got)
+	})
+}
+
 func TestCalculateContractsEscrow(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	t.Run("should sum courier collateral and winning auction bids", func(t *testing.T) {
+	t.Run("should sum courier collateral and rewards", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
-		factory.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
 		factory.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
 			CorporationID: c.ID,
 			AcceptorID:    c.ID,
 			Collateral:    optional.New(100.0),
 			Status:        app.ContractStatusInProgress,
 		})
-		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
-			CorporationID: c.ID,
-			Type:          app.ContractTypeAuction,
-			Status:        app.ContractStatusOutstanding,
-		})
-		factory.CreateCorporationContractBid(storage.CreateContractBidParams{
-			Amount:     12.5,
-			BidderID:   c.ID,
-			ContractID: o.ID,
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
 		})
 		// when
 		got, err := s.CalculateContractsEscrow(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, 112.5, got)
+		xassert.Equal(t, 150.0, got)
 	})
 	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
 		// given

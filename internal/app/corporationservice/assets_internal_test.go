@@ -425,30 +425,6 @@ func TestCalculateAssetValueByDivision(t *testing.T) {
 	})
 }
 
-func TestListHangarNames(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	defer db.Close()
-	s := NewFake(Params{Storage: st})
-	ctx := context.Background()
-	t.Run("returns stored names merged with defaults", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
-			CorporationID: c.ID,
-			DivisionID:    1,
-			Name:          "Awesome Hangar",
-		})
-		got := s.ListHangarNames(ctx, c.ID)
-		assert.Equal(t, "Awesome Hangar", got[app.Division1])
-		assert.Equal(t, "2nd Division", got[app.Division2])
-	})
-	t.Run("returns defaults when corporation unknown", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		got := s.ListHangarNames(ctx, 42)
-		assert.Equal(t, "1st Division", got[app.Division1])
-	})
-}
-
 func TestAssets_AdoptNames(t *testing.T) {
 	assets := []*app.CorporationAsset{
 		{

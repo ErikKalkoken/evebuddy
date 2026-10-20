@@ -77,33 +77,6 @@ func (s *CorporationService) CalculateAssetValueByDivision(ctx context.Context, 
 	return m, nil
 }
 
-// ListHangarNames returns the names of a corporation's asset (hangar) divisions.
-func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID int64) map[app.Division]string {
-	m := map[app.Division]string{
-		app.Division1: "1st Division",
-		app.Division2: "2nd Division",
-		app.Division3: "3rd Division",
-		app.Division4: "4th Division",
-		app.Division5: "5th Division",
-		app.Division6: "6th Division",
-		app.Division7: "7th Division",
-	}
-	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
-	if err != nil {
-		if ctx.Err() == nil {
-			slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
-		}
-		return m
-	}
-	for _, o := range oo {
-		if o.Name == "" {
-			continue
-		}
-		m[app.Division(o.DivisionID)] = o.Name
-	}
-	return m
-}
-
 var (
 	locationFlagFromESIValue = map[string]app.LocationFlag{
 		"AssetSafety":                         app.FlagAssetSafety,

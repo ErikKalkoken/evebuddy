@@ -4,21 +4,27 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/nathabonfim59/fyneline"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
-	corporationWealthMultiplier     = 1_000_000_000
-	corporationWealthContractsLabel = "Contract Escrow"
+	corporationWealthMultiplier         = 1_000_000_000
+	corporationWealthContractsLabel     = "Contract Escrow"
+	corporationWealthContractItemsLabel = "Contracts"
+	corporationWealthOtherAssetsLabel   = "Other"
 )
 
 // corporationDivisionValue holds one division's wallet and asset value, in billions ISK.
@@ -43,6 +49,7 @@ type CorporationWealth struct {
 	categorySplitCard       *chartCard
 	categorySplitChart      *fyneline.ArcChart[namedValue]
 	categorySplitTitleLabel *widget.Label
+	helpButton              *xwidget.Button
 	statusLabel             *widget.Label
 	u                       baseUI
 	updateRun               latestRun
@@ -91,6 +98,11 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 	a.walletsCard = newChartCard(a.walletsTitleLabel, nil, a.walletsChart)
 	a.assetsCard = newChartCard(a.assetsTitleLabel, nil, a.assetsChart)
 
+	a.helpButton = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(corporationWealthHelpText, a.u.IsMobile(), a.helpButton)
+	})
+	a.helpButton.SetToolTip("Show explanation for values")
+
 	// Signals
 	a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		a.corporation.Store(c)
@@ -104,7 +116,13 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 		case
 			app.SectionCorporationAssets,
 			app.SectionCorporationContracts,
+			app.SectionCorporationDivisions,
 			app.SectionCorporationWalletBalances:
+			a.update(ctx)
+		}
+	})
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
 			a.update(ctx)
 		}
 	})
@@ -117,7 +135,13 @@ func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 		ui.NewTabItem("Wallets", a.walletsCard),
 		ui.NewTabItem("Assets", a.assetsCard),
 	)
-	c := container.NewBorder(nil, a.statusLabel, nil, nil, tabs)
+	c := container.NewBorder(
+		nil,
+		container.NewVBox(a.statusLabel, container.NewHBox(layout.NewSpacer(), a.helpButton)),
+		nil,
+		nil,
+		tabs,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -173,30 +197,20 @@ func (a *CorporationWealth) update(ctx context.Context) {
 
 	rows := make([]corporationDivisionValue, 0, len(app.Divisions))
 	var totalWalletBalance float64
+	var divisionAssetValue float64
 	walletByDivision := make(map[app.Division]corporationWalletEntry)
 	for _, wb := range v.walletBalances {
 		walletByDivision[app.Division(wb.DivisionID)] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
 		totalWalletBalance += wb.Balance
 	}
-	hangarNames := a.u.Corporation().ListHangarNames(ctx, corporationID)
-	if ctx.Err() != nil {
-		return
-	}
 	for _, d := range app.Divisions {
 		wallet := walletByDivision[d]
-		name := hangarNames[d]
-		if name == "" {
-			name = d.DefaultHangarName()
-		}
-		walletName := wallet.name
-		if walletName == "" {
-			walletName = d.DefaultWalletName()
-		}
 		assetValue := v.assetByDivision[d]
+		divisionAssetValue += assetValue
 		rows = append(rows, corporationDivisionValue{
 			division:      d,
-			name:          name,
-			walletName:    walletName,
+			name:          corporationHangarLabel(d, v.hangarNames[d]),
+			walletName:    corporationWalletLabel(d, wallet.name),
 			walletBalance: wallet.balance / corporationWealthMultiplier,
 			assetValue:    assetValue / corporationWealthMultiplier,
 		})
@@ -208,10 +222,11 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		}
 		a.showStatus("", widget.LowImportance)
 		a.updateWallets(rows)
-		a.updateAssets(rows)
-		a.updateCategorySplit(v.totalAssetValue, totalWalletBalance, v.contractsEscrow)
+		a.updateAssets(corporationAssetRows(rows, v.totalAssetValue-divisionAssetValue, v.contractItemsValue))
+		combinedAssets := v.totalAssetValue + v.contractItemsValue
+		a.updateCategorySplit(combinedAssets, totalWalletBalance, v.contractsEscrow)
 		if a.OnUpdate != nil {
-			a.OnUpdate(optional.New(v.totalAssetValue + totalWalletBalance + v.contractsEscrow))
+			a.OnUpdate(optional.New(combinedAssets + totalWalletBalance + v.contractsEscrow))
 		}
 	})
 }
@@ -239,10 +254,12 @@ func (a *CorporationWealth) hasAnyData(ctx context.Context, corporationID int64)
 }
 
 type corporationWealthValues struct {
-	assetByDivision map[app.Division]float64
-	contractsEscrow float64
-	totalAssetValue float64
-	walletBalances  []app.CorporationWalletBalanceWithName
+	assetByDivision    map[app.Division]float64
+	contractItemsValue float64
+	contractsEscrow    float64
+	hangarNames        map[app.Division]string
+	totalAssetValue    float64
+	walletBalances     []app.CorporationWalletBalanceWithName
 }
 
 // fetchValues fetches the values for the sections the corporation has data for.
@@ -264,12 +281,20 @@ func (a *CorporationWealth) fetchValues(ctx context.Context, corporationID int64
 		if err != nil {
 			return v, fmt.Errorf("contracts escrow: %w", err)
 		}
+		v.contractItemsValue, err = a.u.Corporation().CalculateContractItemsValue(ctx, corporationID)
+		if err != nil {
+			return v, fmt.Errorf("contract items value: %w", err)
+		}
 	}
 	if hasWallet {
 		v.walletBalances, err = a.u.Corporation().ListWalletBalances(ctx, corporationID)
 		if err != nil {
 			return v, fmt.Errorf("wallet balances: %w", err)
 		}
+	}
+	v.hangarNames, err = a.u.Corporation().ListHangarNames(ctx, corporationID)
+	if err != nil {
+		return v, fmt.Errorf("hangar names: %w", err)
 	}
 	return v, nil
 }
@@ -299,6 +324,35 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 	a.walletsTitleLabel.SetText("Wallet Balance by Division")
 }
 
+// corporationHangarLabel returns the display label for a hangar division, e.g. "1st Division [1]".
+func corporationHangarLabel(d app.Division, name string) string {
+	if name == "" {
+		name = d.DefaultHangarName()
+	}
+	return fmt.Sprintf("%s [%d]", name, d)
+}
+
+// corporationAssetRows returns the rows for the assets chart.
+// Assets outside hangar divisions and contract items get their own bars,
+// so the chart adds up to the Assets slice of the overview.
+func corporationAssetRows(rows []corporationDivisionValue, otherValue, contractItemsValue float64) []corporationDivisionValue {
+	rows = slices.Clone(rows)
+	// Ignores float rounding differences between the asset total and the division sum.
+	if otherValue >= 1 {
+		rows = append(rows, corporationDivisionValue{
+			name:       corporationWealthOtherAssetsLabel,
+			assetValue: otherValue / corporationWealthMultiplier,
+		})
+	}
+	if contractItemsValue > 0 {
+		rows = append(rows, corporationDivisionValue{
+			name:       corporationWealthContractItemsLabel,
+			assetValue: contractItemsValue / corporationWealthMultiplier,
+		})
+	}
+	return rows
+}
+
 func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
 	var maxValue float64
 	for _, v := range rows {
@@ -326,3 +380,13 @@ func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBala
 	a.categorySplitChart.SetData(d)
 	a.categorySplitTitleLabel.SetText(fmt.Sprintf("Total Net Worth By Category - Total: %.1f B", total))
 }
+
+const corporationWealthHelpText = `Wallet: The total balance of all division wallets.
+
+Assets: The estimated value of all corporation assets and of items in outstanding auction and item exchange contracts issued for the corporation. On the Assets tab, assets outside hangar divisions and contract items are shown as separate "Other" and "Contracts" bars.
+
+Contract Escrow: Collateral of courier contracts the corporation accepted, plus ISK rewards of courier and item exchange contracts issued for the corporation, while they are open. Bids on auctions are not included.
+
+Total Net Worth: Sum of Wallet, Assets and Contract Escrow.
+
+Values in the charts are shown in billion ISK.`
