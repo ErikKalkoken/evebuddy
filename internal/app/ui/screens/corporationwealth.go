@@ -24,6 +24,7 @@ const (
 	corporationWealthMultiplier         = 1_000_000_000
 	corporationWealthContractsLabel     = "Contract Escrow"
 	corporationWealthContractItemsLabel = "Contracts"
+	corporationWealthOtherAssetsLabel   = "Other"
 )
 
 // corporationDivisionValue holds one division's wallet and asset value, in billions ISK.
@@ -120,6 +121,11 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 			a.update(ctx)
 		}
 	})
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		if arg.Section == app.SectionEveMarketPrices {
+			a.update(ctx)
+		}
+	})
 	return a
 }
 
@@ -191,6 +197,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 
 	rows := make([]corporationDivisionValue, 0, len(app.Divisions))
 	var totalWalletBalance float64
+	var divisionAssetValue float64
 	walletByDivision := make(map[app.Division]corporationWalletEntry)
 	for _, wb := range v.walletBalances {
 		walletByDivision[app.Division(wb.DivisionID)] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
@@ -203,6 +210,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 			walletName = d.DefaultWalletName()
 		}
 		assetValue := v.assetByDivision[d]
+		divisionAssetValue += assetValue
 		rows = append(rows, corporationDivisionValue{
 			division:      d,
 			name:          v.hangarNames[d],
@@ -218,7 +226,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		}
 		a.showStatus("", widget.LowImportance)
 		a.updateWallets(rows)
-		a.updateAssets(corporationAssetRows(rows, v.contractItemsValue))
+		a.updateAssets(corporationAssetRows(rows, v.totalAssetValue-divisionAssetValue, v.contractItemsValue))
 		combinedAssets := v.totalAssetValue + v.contractItemsValue
 		a.updateCategorySplit(combinedAssets, totalWalletBalance, v.contractsEscrow)
 		if a.OnUpdate != nil {
@@ -321,15 +329,24 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 }
 
 // corporationAssetRows returns the rows for the assets chart.
-// Contract items have no division, so they get their own bar to match the Assets slice of the overview.
-func corporationAssetRows(rows []corporationDivisionValue, contractItemsValue float64) []corporationDivisionValue {
-	if contractItemsValue == 0 {
-		return rows
+// Assets outside hangar divisions and contract items get their own bars,
+// so the chart adds up to the Assets slice of the overview.
+func corporationAssetRows(rows []corporationDivisionValue, otherValue, contractItemsValue float64) []corporationDivisionValue {
+	rows = slices.Clone(rows)
+	// Ignores float rounding differences between the asset total and the division sum.
+	if otherValue >= 1 {
+		rows = append(rows, corporationDivisionValue{
+			name:       corporationWealthOtherAssetsLabel,
+			assetValue: otherValue / corporationWealthMultiplier,
+		})
 	}
-	return append(slices.Clone(rows), corporationDivisionValue{
-		name:       corporationWealthContractItemsLabel,
-		assetValue: contractItemsValue / corporationWealthMultiplier,
-	})
+	if contractItemsValue > 0 {
+		rows = append(rows, corporationDivisionValue{
+			name:       corporationWealthContractItemsLabel,
+			assetValue: contractItemsValue / corporationWealthMultiplier,
+		})
+	}
+	return rows
 }
 
 func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
@@ -362,7 +379,7 @@ func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBala
 
 const corporationWealthHelpText = `Wallet: The total balance of all division wallets.
 
-Assets: The estimated value of all corporation assets and of items in outstanding auction and item exchange contracts issued for the corporation. The Assets tab shows contract items as a separate "Contracts" bar.
+Assets: The estimated value of all corporation assets and of items in outstanding auction and item exchange contracts issued for the corporation. On the Assets tab, assets outside hangar divisions and contract items are shown as separate "Other" and "Contracts" bars.
 
 Contract Escrow: Collateral of courier contracts the corporation accepted, plus ISK rewards of courier and item exchange contracts issued for the corporation, while they are open. Bids on auctions are not included.
 

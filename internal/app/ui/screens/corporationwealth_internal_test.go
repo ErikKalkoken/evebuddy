@@ -302,24 +302,41 @@ func TestCorporationWealth_HelpButton(t *testing.T) {
 }
 
 func TestCorporationAssetRows(t *testing.T) {
-	t.Run("adds contracts bar when there are contract items", func(t *testing.T) {
+	t.Run("adds bars for other assets and contract items", func(t *testing.T) {
 		// given
 		rows := []corporationDivisionValue{{division: app.Division1, name: "Hangar", assetValue: 1}}
 		// when
-		got := corporationAssetRows(rows, 2_000_000_000)
+		got := corporationAssetRows(rows, 3_000_000_000, 2_000_000_000)
 		// then
 		want := []corporationDivisionValue{
 			{division: app.Division1, name: "Hangar", assetValue: 1},
+			{name: corporationWealthOtherAssetsLabel, assetValue: 3},
 			{name: corporationWealthContractItemsLabel, assetValue: 2},
 		}
 		assert.Equal(t, want, got)
 		assert.Len(t, rows, 1)
 	})
-	t.Run("returns rows unchanged without contract items", func(t *testing.T) {
+	t.Run("returns rows unchanged without other assets and contract items", func(t *testing.T) {
 		// given
 		rows := []corporationDivisionValue{{division: app.Division1, name: "Hangar", assetValue: 1}}
 		// when
-		got := corporationAssetRows(rows, 0)
+		got := corporationAssetRows(rows, 0, 0)
+		// then
+		assert.Equal(t, rows, got)
+	})
+	t.Run("ignores rounding differences for other assets", func(t *testing.T) {
+		// given
+		rows := []corporationDivisionValue{{division: app.Division1, name: "Hangar", assetValue: 1}}
+		// when
+		got := corporationAssetRows(rows, 0.0001, 0)
+		// then
+		assert.Equal(t, rows, got)
+	})
+	t.Run("ignores division sum above asset total", func(t *testing.T) {
+		// given
+		rows := []corporationDivisionValue{{division: app.Division1, name: "Hangar", assetValue: 1}}
+		// when
+		got := corporationAssetRows(rows, -5, 0)
 		// then
 		assert.Equal(t, rows, got)
 	})
@@ -355,6 +372,38 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		a.u.Signals().CorporationSectionChanged.Emit(t.Context(), app.CorporationSectionUpdated{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationDivisions,
+		})
+		// then
+		assert.Equal(t, optional.New(1000.0), got)
+	})
+	t.Run("updates when market prices change", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		var got optional.Optional[float64]
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletBalances,
+			CompletedAt:   time.Now(),
+		})
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Balance:       1000,
+		})
+		a.corporation.Store(c)
+		// when
+		a.u.Signals().EveUniverseSectionChanged.Emit(t.Context(), app.EveUniverseSectionUpdated{
+			Section: app.SectionEveMarketPrices,
 		})
 		// then
 		assert.Equal(t, optional.New(1000.0), got)
