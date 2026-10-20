@@ -140,6 +140,43 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 		a.update(t.Context())
 		assert.Equal(t, optional.New(1234.5), got)
 	})
+	t.Run("includes contract items value", func(t *testing.T) {
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		var got optional.Optional[float64]
+		a.OnUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationContracts,
+			CompletedAt:   time.Now(),
+		})
+		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+		u := factory.CreateCorporationContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(500.0),
+		})
+		a.corporation.Store(c)
+
+		a.update(t.Context())
+		assert.Equal(t, optional.New(1000.0), got)
+	})
 	t.Run("reports zero net worth", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		defer db.Close()
@@ -218,4 +255,23 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 		a.update(t.Context())
 		assert.True(t, got.IsEmpty())
 	})
+}
+
+func TestCorporationWealth_HelpButton(t *testing.T) {
+	// given
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewCorporationWealth(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	w := test.NewWindow(a)
+	defer w.Close()
+	w.Resize(fyne.NewSize(800, 600))
+
+	// when
+	test.Tap(a.helpButton)
+
+	// then
+	assert.NotNil(t, w.Canvas().Overlays().Top())
 }

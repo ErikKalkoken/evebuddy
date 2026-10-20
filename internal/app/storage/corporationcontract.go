@@ -42,6 +42,33 @@ type CreateCorporationContractParams struct {
 	Volume              optional.Optional[float64]
 }
 
+// CalculateCorporationContractItemsValue returns the market value of items
+// in open auctions and item exchanges issued for a corporation.
+func (st *Storage) CalculateCorporationContractItemsValue(ctx context.Context, corporationID int64) (float64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationContractItemsValue: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCorporationContractItemsValue(ctx, queries.CalculateCorporationContractItemsValueParams{
+		CorporationID: corporationID,
+		EveCategoryID: app.EveCategoryBlueprint,
+		Status: []string{
+			contractStatusToDBValue[app.ContractStatusOutstanding],
+			contractStatusToDBValue[app.ContractStatusInProgress],
+		},
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeAuction],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return v.Float64, nil
+}
+
 // CalculateCorporationContractsEscrow returns the ISK a corporation holds in escrow for open contracts:
 // collateral of accepted couriers and rewards of couriers and item exchanges issued for the corporation.
 // Auction bids are not included: ESI names the bidding character, not the corporation.

@@ -1,3 +1,21 @@
+-- name: CalculateCorporationContractItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * cci.quantity)
+FROM
+    corporation_contract_items cci
+    JOIN corporation_contracts cc ON cc.id = cci.contract_id
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
+WHERE
+    cc.corporation_id = ?
+    AND cc.issuer_corporation_id = cc.corporation_id
+    AND cc.for_corporation IS TRUE
+    AND cc.status IN (sqlc.slice('status'))
+    AND cc.type IN (sqlc.slice('types'))
+    AND cci.is_included IS TRUE
+    AND eg.eve_category_id <> ?;
+
 -- name: CalculateCorporationContractsCollateralEscrow :one
 SELECT
     SUM(collateral)

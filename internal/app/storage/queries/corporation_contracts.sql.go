@@ -12,6 +12,59 @@ import (
 	"time"
 )
 
+const calculateCorporationContractItemsValue = `-- name: CalculateCorporationContractItemsValue :one
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * cci.quantity)
+FROM
+    corporation_contract_items cci
+    JOIN corporation_contracts cc ON cc.id = cci.contract_id
+    JOIN eve_types et ON et.id = cci.type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
+WHERE
+    cc.corporation_id = ?
+    AND cc.issuer_corporation_id = cc.corporation_id
+    AND cc.for_corporation IS TRUE
+    AND cc.status IN (/*SLICE:status*/?)
+    AND cc.type IN (/*SLICE:types*/?)
+    AND cci.is_included IS TRUE
+    AND eg.eve_category_id <> ?
+`
+
+type CalculateCorporationContractItemsValueParams struct {
+	CorporationID int64
+	Status        []string
+	Types         []string
+	EveCategoryID int64
+}
+
+func (q *Queries) CalculateCorporationContractItemsValue(ctx context.Context, arg CalculateCorporationContractItemsValueParams) (sql.NullFloat64, error) {
+	query := calculateCorporationContractItemsValue
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	if len(arg.Types) > 0 {
+		for _, v := range arg.Types {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:types*/?", strings.Repeat(",?", len(arg.Types))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:types*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.EveCategoryID)
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const calculateCorporationContractsCollateralEscrow = `-- name: CalculateCorporationContractsCollateralEscrow :one
 SELECT
     SUM(collateral)

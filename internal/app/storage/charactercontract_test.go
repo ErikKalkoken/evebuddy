@@ -627,6 +627,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			ContractID: o1.ID,
 			IsIncluded: true,
 			Quantity:   1,
+			TypeID:     blueprintType.ID,
 		})
 		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:       blueprintType.ID,
@@ -634,7 +635,7 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 		})
 
 		// when
-		got, err := st.CalculateCharacterOrderItemsValue(t.Context(), c.ID)
+		got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
 
 		// then
 		require.NoError(t, err)
