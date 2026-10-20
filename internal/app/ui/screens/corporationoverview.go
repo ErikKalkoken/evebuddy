@@ -52,13 +52,13 @@ func (f corporationOverviewFilter) match(r corporationOverviewRow) bool {
 }
 
 type corporationOverviewRow struct {
-	outstandingContracts optional.Optional[int64]
 	activeIndustryJobs   optional.Optional[int64]
 	alliance             optional.Optional[*app.EveEntity]
 	corporationID        int64
 	faction              optional.Optional[*app.EveEntity]
 	memberCount          optional.Optional[int]
 	name                 string
+	outstandingContracts optional.Optional[int64]
 	reinforcedStructures optional.Optional[int64]
 	searchTarget         string
 	walletBalance        optional.Optional[float64]
@@ -88,7 +88,7 @@ type CorporationOverview struct {
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	columnSorter   *xwidget.ColumnSorter[corporationOverviewRow]
-	loadInfo       *widget.Label
+	loadInfoLabel  *widget.Label
 	main           fyne.CanvasObject
 	rows           []corporationOverviewRow
 	rowsFiltered   []corporationOverviewRow
@@ -146,11 +146,11 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 	info.Importance = widget.LowImportance
 
 	a := &CorporationOverview{
-		footerLabel:  ui.NewLabelWithTruncation(""),
-		errorLabel:   ui.NewLabelWithWrapping(""),
-		columnSorter: xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
-		loadInfo:     info,
-		u:            u,
+		footerLabel:   ui.NewLabelWithTruncation(""),
+		errorLabel:    ui.NewLabelWithWrapping(""),
+		columnSorter:  xwidget.NewColumnSorter(columns, "Name", xwidget.SortAsc),
+		loadInfoLabel: info,
+		u:             u,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -251,7 +251,7 @@ func (a *CorporationOverview) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
-		container.NewStack(a.loadInfo, a.main),
+		container.NewStack(a.loadInfoLabel, a.main),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -428,7 +428,7 @@ func (a *CorporationOverview) update(ctx context.Context) {
 		}
 		a.errorLabel.Hide()
 		a.rows = rows
-		a.loadInfo.Hide()
+		a.loadInfoLabel.Hide()
 		a.filterRowsAsync("")
 		if a.OnUpdate != nil {
 			a.OnUpdate(len(rows))
@@ -540,27 +540,27 @@ func (a *CorporationOverview) fetchRow(ctx context.Context, corp *app.Corporatio
 type corporationCard struct {
 	widget.BaseWidget
 
-	outstandingContracts *widget.Label
-	activeIndustryJobs   *widget.Label
-	allianceLogo         *xwidget.TappableImage
-	background           *canvas.Rectangle
-	border               *canvas.Rectangle
-	logoBackground       *canvas.Rectangle
-	logoBorder           *canvas.Rectangle
-	factionLogo          *xwidget.TappableImage
-	isSmall              bool
-	loadAlliance         loadFuncAsync
-	loadCorporation      loadFuncAsync
-	loadFaction          loadFuncAsync
-	logo                 *canvas.Image
-	memberCount          *widget.Label
-	name                 *widget.Label
-	reinforcedCount      *widget.Label
-	reinforcedIcon       *ttwidget.Icon
-	resourceNormal       fyne.Resource
-	resourceReinforced   fyne.Resource
-	showInfo             func(*app.EveEntity)
-	wallet               *widget.Label
+	activeIndustryJobsLabel   *widget.Label
+	allianceLogoImage         *xwidget.TappableImage
+	background                *canvas.Rectangle
+	border                    *canvas.Rectangle
+	factionLogoImage          *xwidget.TappableImage
+	isSmall                   bool
+	loadAlliance              loadFuncAsync
+	loadCorporation           loadFuncAsync
+	loadFaction               loadFuncAsync
+	logoBackground            *canvas.Rectangle
+	logoBorder                *canvas.Rectangle
+	logoImage                 *canvas.Image
+	memberCountLabel          *widget.Label
+	nameLabel                 *widget.Label
+	outstandingContractsLabel *widget.Label
+	reinforcedCountLabel      *widget.Label
+	reinforcedIcon            *ttwidget.Icon
+	resourceNormal            fyne.Resource
+	resourceReinforced        fyne.Resource
+	showInfo                  func(*app.EveEntity)
+	walletLabel               *widget.Label
 }
 
 func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *corporationCard {
@@ -588,27 +588,27 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 	resReinforced := theme.NewErrorThemedResource(icons.SpaceStationSvg)
 
 	w := &corporationCard{
-		outstandingContracts: makeLabel(numberTemplate),
-		activeIndustryJobs:   makeLabel(numberTemplate),
-		allianceLogo:         xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
-		background:           canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
-		border:               canvas.NewRectangle(color.Transparent),
-		factionLogo:          xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
-		isSmall:              isSmall,
-		loadAlliance:         loadAlliance,
-		loadCorporation:      loadCorporation,
-		loadFaction:          loadFaction,
-		logo:                 logo,
-		logoBackground:       canvas.NewRectangle(colorDarkBackground),
-		logoBorder:           canvas.NewRectangle(color.Transparent),
-		memberCount:          makeLabel(numberTemplate),
-		name:                 widget.NewLabel("Wayne Enterprises"),
-		reinforcedCount:      makeLabel(numberTemplate),
-		reinforcedIcon:       ttwidget.NewIcon(resNormal),
-		resourceNormal:       resNormal,
-		resourceReinforced:   resReinforced,
-		showInfo:             showInfo,
-		wallet:               makeLabel(numberTemplate + " ISK"),
+		activeIndustryJobsLabel:   makeLabel(numberTemplate),
+		allianceLogoImage:         xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		background:                canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
+		border:                    canvas.NewRectangle(color.Transparent),
+		factionLogoImage:          xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		isSmall:                   isSmall,
+		loadAlliance:              loadAlliance,
+		loadCorporation:           loadCorporation,
+		loadFaction:               loadFaction,
+		logoBackground:            canvas.NewRectangle(colorDarkBackground),
+		logoBorder:                canvas.NewRectangle(color.Transparent),
+		logoImage:                 logo,
+		memberCountLabel:          makeLabel(numberTemplate),
+		nameLabel:                 widget.NewLabel("Wayne Enterprises"),
+		outstandingContractsLabel: makeLabel(numberTemplate),
+		reinforcedCountLabel:      makeLabel(numberTemplate),
+		reinforcedIcon:            ttwidget.NewIcon(resNormal),
+		resourceNormal:            resNormal,
+		resourceReinforced:        resReinforced,
+		showInfo:                  showInfo,
+		walletLabel:               makeLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
 	var badgeSize float32
@@ -618,18 +618,18 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 		badgeSize = 40
 	}
 
-	w.allianceLogo.SetFillMode(canvas.ImageFillContain)
-	w.allianceLogo.SetMinSize(fyne.NewSquareSize(badgeSize))
-	w.allianceLogo.CornerRadius = theme.InputRadiusSize()
+	w.allianceLogoImage.SetFillMode(canvas.ImageFillContain)
+	w.allianceLogoImage.SetMinSize(fyne.NewSquareSize(badgeSize))
+	w.allianceLogoImage.CornerRadius = theme.InputRadiusSize()
 
-	w.factionLogo.SetFillMode(canvas.ImageFillContain)
-	w.factionLogo.SetMinSize(fyne.NewSquareSize(badgeSize))
-	w.factionLogo.CornerRadius = theme.InputRadiusSize()
+	w.factionLogoImage.SetFillMode(canvas.ImageFillContain)
+	w.factionLogoImage.SetMinSize(fyne.NewSquareSize(badgeSize))
+	w.factionLogoImage.CornerRadius = theme.InputRadiusSize()
 
 	w.background.CornerRadius = theme.InputRadiusSize()
 
-	w.name.SizeName = theme.SizeNameSubHeadingText
-	w.name.Truncation = fyne.TextTruncateEllipsis
+	w.nameLabel.SizeName = theme.SizeNameSubHeadingText
+	w.nameLabel.Truncation = fyne.TextTruncateEllipsis
 
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
@@ -655,9 +655,9 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 					w.background,
 					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
 						container.NewVBox(
-							container.NewStack(w.logoBackground, w.logo, w.logoBorder),
+							container.NewStack(w.logoBackground, w.logoImage, w.logoBorder),
 							container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
-								container.NewHBox(w.allianceLogo, layout.NewSpacer(), w.factionLogo),
+								container.NewHBox(w.allianceLogoImage, layout.NewSpacer(), w.factionLogoImage),
 							),
 						),
 					),
@@ -665,18 +665,18 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 			),
 			nil,
 			container.New(layout.NewCustomPaddedVBoxLayout(-3*p),
-				container.New(layout.NewCustomPaddedLayout(0, p, -2*p, 0), w.name),
+				container.New(layout.NewCustomPaddedLayout(0, p, -2*p, 0), w.nameLabel),
 				container.NewBorder(
-					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.AccountMultipleSvg)), nil, w.memberCount,
+					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.AccountMultipleSvg)), nil, w.memberCountLabel,
 				),
 				container.NewBorder(
-					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.CashSvg)), nil, w.wallet,
+					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.CashSvg)), nil, w.walletLabel,
 				),
 				container.NewBorder(
-					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.FactorySvg)), nil, w.activeIndustryJobs,
+					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.FactorySvg)), nil, w.activeIndustryJobsLabel,
 				),
 				container.NewBorder(
-					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.FileSignSvg)), nil, w.outstandingContracts,
+					nil, nil, widget.NewIcon(theme.NewThemedResource(icons.FileSignSvg)), nil, w.outstandingContractsLabel,
 				),
 			),
 		)
@@ -702,21 +702,21 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 	}
 
 	c := container.NewBorder(
-		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.name),
+		container.New(layout.NewCustomPaddedLayout(0, 0, -p, -p), w.nameLabel),
 		container.New(
 			layout.NewCustomPaddedVBoxLayout(-2*p),
-			container.NewBorder(nil, nil, members, nil, w.memberCount),
-			container.NewBorder(nil, nil, wallet, nil, w.wallet),
-			container.NewBorder(nil, nil, industry, nil, w.activeIndustryJobs),
-			container.NewBorder(nil, nil, contracts, nil, w.outstandingContracts),
-			container.NewBorder(nil, nil, w.reinforcedIcon, nil, w.reinforcedCount),
+			container.NewBorder(nil, nil, members, nil, w.memberCountLabel),
+			container.NewBorder(nil, nil, wallet, nil, w.walletLabel),
+			container.NewBorder(nil, nil, industry, nil, w.activeIndustryJobsLabel),
+			container.NewBorder(nil, nil, contracts, nil, w.outstandingContractsLabel),
+			container.NewBorder(nil, nil, w.reinforcedIcon, nil, w.reinforcedCountLabel),
 		),
 		nil,
 		nil,
 		container.NewStack(
-			container.NewStack(w.logoBackground, w.logo, w.logoBorder),
-			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.allianceLogo)),
-			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.factionLogo)),
+			container.NewStack(w.logoBackground, w.logoImage, w.logoBorder),
+			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.allianceLogoImage)),
+			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.factionLogoImage)),
 		),
 	)
 	r := container.NewStack(
@@ -742,56 +742,56 @@ func (w *corporationCard) set(c corporationOverviewRow) {
 		logoSize = 512
 	}
 	w.loadCorporation(c.corporationID, logoSize, func(r fyne.Resource) {
-		w.logo.Resource = r
-		w.logo.Refresh()
+		w.logoImage.Resource = r
+		w.logoImage.Refresh()
 	})
 
 	const badgeSize = 64
 
 	if alliance, ok := c.alliance.Value(); ok {
-		w.allianceLogo.OnTapped = func() {
+		w.allianceLogoImage.OnTapped = func() {
 			w.showInfo(alliance)
 		}
-		w.allianceLogo.SetToolTip(alliance.Name)
-		w.allianceLogo.Show()
+		w.allianceLogoImage.SetToolTip(alliance.Name)
+		w.allianceLogoImage.Show()
 		w.loadAlliance(alliance.ID, badgeSize, func(r fyne.Resource) {
-			w.allianceLogo.SetResource(r)
+			w.allianceLogoImage.SetResource(r)
 		})
 	} else {
-		w.allianceLogo.Hide()
+		w.allianceLogoImage.Hide()
 	}
 
 	if faction, ok := c.faction.Value(); ok {
-		w.factionLogo.OnTapped = func() {
+		w.factionLogoImage.OnTapped = func() {
 			w.showInfo(faction)
 		}
-		w.factionLogo.SetToolTip(faction.Name)
-		w.factionLogo.Show()
+		w.factionLogoImage.SetToolTip(faction.Name)
+		w.factionLogoImage.Show()
 		w.loadFaction(faction.ID, badgeSize, func(r fyne.Resource) {
-			w.factionLogo.SetResource(r)
+			w.factionLogoImage.SetResource(r)
 		})
 	} else {
-		w.factionLogo.Hide()
+		w.factionLogoImage.Hide()
 	}
 
-	w.name.SetText(c.name)
+	w.nameLabel.SetText(c.name)
 
-	w.memberCount.SetText(c.memberCount.StringFunc("?", func(v int) string {
+	w.memberCountLabel.SetText(c.memberCount.StringFunc("?", func(v int) string {
 		return humanize.Comma(int64(v))
 	}))
 
-	w.wallet.SetText(c.walletBalance.StringFunc("?", func(v float64) string {
+	w.walletLabel.SetText(c.walletBalance.StringFunc("?", func(v float64) string {
 		return humanize.Comma(int64(v)) + " ISK"
 	}))
 
-	w.activeIndustryJobs.SetText(c.activeIndustryJobs.StringFunc("?", func(v int64) string {
+	w.activeIndustryJobsLabel.SetText(c.activeIndustryJobs.StringFunc("?", func(v int64) string {
 		if v == 0 {
 			return "-"
 		}
 		return humanize.Comma(v)
 	}))
 
-	w.outstandingContracts.SetText(c.outstandingContracts.StringFunc("?", func(v int64) string {
+	w.outstandingContractsLabel.SetText(c.outstandingContracts.StringFunc("?", func(v int64) string {
 		if v == 0 {
 			return "-"
 		}
@@ -799,10 +799,10 @@ func (w *corporationCard) set(c corporationOverviewRow) {
 	}))
 
 	if v, ok := c.reinforcedStructures.Value(); ok && v > 0 {
-		w.reinforcedCount.SetText(humanize.Comma(int64(v)))
+		w.reinforcedCountLabel.SetText(humanize.Comma(int64(v)))
 		w.reinforcedIcon.SetResource(w.resourceReinforced)
 	} else {
-		w.reinforcedCount.SetText("-")
+		w.reinforcedCountLabel.SetText("-")
 		w.reinforcedIcon.SetResource(w.resourceNormal)
 	}
 }
