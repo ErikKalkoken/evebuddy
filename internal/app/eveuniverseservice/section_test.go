@@ -80,14 +80,14 @@ func TestEveuniverseservice_AsyncUpdates(t *testing.T) {
 		httpmock.Reset()
 		s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
 		entered := make(chan struct{})
-		var wasCanceled bool
+		canceled := make(chan struct{})
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/markets/prices",
 			func(req *http.Request) (*http.Response, error) {
 				close(entered)
 				<-req.Context().Done()
-				wasCanceled = true
+				close(canceled)
 				return nil, req.Context().Err()
 			},
 		)
@@ -109,7 +109,16 @@ func TestEveuniverseservice_AsyncUpdates(t *testing.T) {
 		case <-time.After(time.Second):
 			t.Fatal("Stop did not return")
 		}
-		assert.True(t, wasCanceled)
+		x, err := st.GetGeneralSectionStatus(context.Background(), section)
+		require.NoError(t, err)
+		assert.True(t, x.StartedAt.IsZero(), "Stop must wait for the update to finish")
+		assert.False(t, x.HasError(), "a canceled update must not be recorded as an error")
+		// httpmock can return ctx.Err() before the responder sees the cancel
+		select {
+		case <-canceled:
+		case <-time.After(time.Second):
+			t.Fatal("request was not canceled")
+		}
 	})
 	t.Run("skips updates after Stop", func(t *testing.T) {
 		httpmock.Reset()
