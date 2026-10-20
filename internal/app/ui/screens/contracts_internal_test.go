@@ -275,7 +275,6 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
 		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), r.categories)
 		assert.True(t, r.isExpired)
-		assert.Equal(t, "Outstanding", r.statusText)
 	})
 	t.Run("in progress becomes overdue", func(t *testing.T) {
 		r := contractRow{
@@ -288,9 +287,14 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		xassert.Equal(t, set.Of(app.ContractCategoryInProgress), r.categories)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		xassert.Equal(t, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), r.categories)
-		assert.Equal(t, "In Progress", r.statusText)
 		assert.Equal(t, contractDeadlineDelivery, r.deadlineKind)
 		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
+	})
+	t.Run("contract without category and deadline gets time left display", func(t *testing.T) {
+		r := contractRow{status: app.ContractStatusCancelled, dateExpired: now.Add(-time.Hour)}
+		r.init(myID, noAcceptor, myIDs, myCorpIDs, now)
+		assert.Equal(t, xwidget.RichTextSegmentsFromText(""), r.timeLeftDisplay)
+		assert.False(t, r.updateTimeDependent(now.Add(time.Hour)))
 	})
 	t.Run("time left changes with time", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour)}
@@ -306,7 +310,6 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		r.init(otherID, noAcceptor, myIDs, myCorpIDs, now)
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
 		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
-		assert.Equal(t, "Outstanding", r.statusText)
 	})
 	t.Run("overdue contract of others still shows as overdue", func(t *testing.T) {
 		r := contractRow{
@@ -318,7 +321,6 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		r.init(myID, optional.New(&app.EveEntity{ID: otherID}), myIDs, myCorpIDs, now)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
 		xassert.Equal(t, set.Of(app.ContractCategoryInProgress), r.categories)
-		assert.Equal(t, "In Progress", r.statusText)
 	})
 }
 

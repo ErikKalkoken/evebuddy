@@ -116,7 +116,6 @@ type contractRow struct {
 	startLocation   optional.Optional[*app.EveLocationShort]
 	status          app.ContractStatus
 	statusDisplay   []widget.RichTextSegment
-	statusText      string
 	tags            set.Set[string]
 	title           string
 	typeName        string
@@ -186,9 +185,8 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 		return myIDs.Contains(v.ID)
 	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
-	r.statusText = r.status.Display()
 	r.statusDisplay = makeContractStatusDisplay(r.status)
-	r.updateTimeDependent(now)
+	r.setTimeDependent(now)
 }
 
 // owner returns the character or corporation which owns the contract.
@@ -200,30 +198,27 @@ func (r *contractRow) owner() *app.EveEntity {
 	return &app.EveEntity{ID: r.ownerID, Name: r.ownerName, Category: category}
 }
 
+// setTimeDependent sets the fields which change with time.
+func (r *contractRow) setTimeDependent(now time.Time) {
+	r.categories, r.isExpired, r.isOverdue = app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
+	var isPassed bool
+	r.timeLeftText, isPassed = contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
+	r.timeLeftDisplay = makeTimeLeftDisplay(r.timeLeftText, isPassed)
+}
+
 // updateTimeDependent recomputes the fields which change with time
 // and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {
-	categories, isExpired, isOverdue := app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
-	timeLeft, isPassed := contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
-	statusChanged := !categories.Equal(r.categories) || isExpired != r.isExpired || isOverdue != r.isOverdue
-	if !statusChanged && timeLeft == r.timeLeftText {
-		return false
-	}
-	if statusChanged {
-		r.categories = categories
-		r.isExpired = isExpired
-		r.isOverdue = isOverdue
-	}
-	r.timeLeftText = timeLeft
-	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
-	return true
+	categories, isExpired, isOverdue, timeLeft := r.categories, r.isExpired, r.isOverdue, r.timeLeftText
+	r.setTimeDependent(now)
+	return !r.categories.Equal(categories) || r.isExpired != isExpired || r.isOverdue != isOverdue || r.timeLeftText != timeLeft
 }
 
 // contractsOutstandingCount returns how many rows are outstanding.
 func contractsOutstandingCount(rows []contractRow) int {
 	var n int
 	for _, r := range rows {
-		if r.categories.Contains(app.ContractCategoryOutstanding) {
+		if r.status == app.ContractStatusOutstanding {
 			n++
 		}
 	}
@@ -400,7 +395,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		Label: "Status",
 		Width: 180,
 		Sort: func(a, b contractRow) int {
-			return strings.Compare(a.statusText, b.statusText)
+			return strings.Compare(a.status.Display(), b.status.Display())
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.statusDisplay)
