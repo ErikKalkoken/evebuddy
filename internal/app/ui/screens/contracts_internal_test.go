@@ -546,10 +546,21 @@ func TestCompareContractDeadlines(t *testing.T) {
 	assert.Equal(t, 0, compareContractDeadlines(none, none))
 }
 
-func TestMakeContractDateString(t *testing.T) {
+func TestMakeContractDateDisplay(t *testing.T) {
 	d := time.Date(2026, 9, 18, 10, 0, 0, 0, time.UTC)
-	assert.Equal(t, d.Format(app.DateTimeFormat), makeContractDateString(d, ""))
-	assert.Equal(t, d.Format(app.DateTimeFormat)+" (OVERDUE)", makeContractDateString(d, makeContractDeadlineNote(d, true, "OVERDUE")))
+	ts := d.Format(app.DateTimeFormat)
+	t.Run("without note", func(t *testing.T) {
+		got := makeContractDateDisplay(d, nil)
+		assert.Equal(t, xwidget.RichTextSegmentsFromText(ts), got)
+	})
+	t.Run("with passed deadline", func(t *testing.T) {
+		got := makeContractDateDisplay(d, makeContractDeadlineNote(d, true, "OVERDUE"))
+		want := xwidget.InlineRichTextSegments(
+			overdueSegments(),
+			xwidget.RichTextSegmentsFromText(" ("+ts+")"),
+		)
+		assert.Equal(t, want, got)
+	})
 }
 
 func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {

@@ -117,17 +117,17 @@ func ShowContract(u baseUI, r contractRow) {
 				fi = append(fi, widget.NewFormItem("Date Accepted", widget.NewLabel(r.dateAccepted.StringFunc("", func(v time.Time) string {
 					return v.Format(app.DateTimeFormat)
 				}))))
-				var expiredNote string
+				var expiredNote []widget.RichTextSegment
 				if r.deadlineKind == contractDeadlineExpiry {
 					expiredNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
-				fi = append(fi, widget.NewFormItem("Date Expired", widget.NewLabel(makeContractDateString(r.dateExpired, expiredNote))))
+				fi = append(fi, widget.NewFormItem("Date Expired", xwidget.NewRichText(makeContractDateDisplay(r.dateExpired, expiredNote)...)))
 				if deadline, ok := app.ContractDeliveryDeadline(r.dateAccepted, r.daysToComplete); ok {
-					var note string
+					var note []widget.RichTextSegment
 					if r.status == app.ContractStatusInProgress {
 						note = makeContractDeadlineNote(deadline, r.isOverdue, "OVERDUE")
 					}
-					fi = append(fi, widget.NewFormItem("Deliver By", widget.NewLabel(makeContractDateString(deadline, note))))
+					fi = append(fi, widget.NewFormItem("Deliver By", xwidget.NewRichText(makeContractDateDisplay(deadline, note)...)))
 				}
 				fi = append(fi, widget.NewFormItem("Date Completed", widget.NewLabel(r.dateCompleted.StringFunc("", func(v time.Time) string {
 					return v.Format(app.DateTimeFormat)
@@ -159,7 +159,7 @@ func ShowContract(u baseUI, r contractRow) {
 					fi = append(fi, widget.NewFormItem("Buyer Will Get", x))
 				}
 			case app.ContractTypeAuction:
-				var auctionExpiresNote string
+				var auctionExpiresNote []widget.RichTextSegment
 				if r.status == app.ContractStatusOutstanding {
 					auctionExpiresNote = makeContractDeadlineNote(r.dateExpired, r.isExpired, "EXPIRED")
 				}
@@ -167,7 +167,7 @@ func ShowContract(u baseUI, r contractRow) {
 					{Text: "Starting Bid", Widget: widget.NewLabel(r.price.StringFunc("?", ui.FormatISKAmount))},
 					{Text: "Buyout Price", Widget: widget.NewLabel(r.buyout.StringFunc("(None)", ui.FormatISKAmount))},
 					{Text: "Highest Bid", Widget: widget.NewLabel(contractHighestBidDisplay(totalBids, topBidAmount))},
-					{Text: "Expires", Widget: widget.NewLabel(makeContractDateString(r.dateExpired, auctionExpiresNote))},
+					{Text: "Expires", Widget: xwidget.NewRichText(makeContractDateDisplay(r.dateExpired, auctionExpiresNote)...)},
 				})
 			}
 
@@ -241,21 +241,24 @@ func contractHighestBidDisplay(totalBids int, topBidAmount float64) string {
 	return fmt.Sprintf("%s (%d bids)", ui.FormatISKAmount(topBidAmount), totalBids)
 }
 
-// makeContractDateString returns a formatted date with an optional note.
-func makeContractDateString(t time.Time, note string) string {
+// makeContractDateDisplay returns a formatted date, after the note when there is one.
+func makeContractDateDisplay(t time.Time, note []widget.RichTextSegment) []widget.RichTextSegment {
 	ts := t.Format(app.DateTimeFormat)
-	if note == "" {
-		return ts
+	if len(note) == 0 {
+		return xwidget.RichTextSegmentsFromText(ts)
 	}
-	return fmt.Sprintf("%s (%s)", ts, note)
+	return xwidget.InlineRichTextSegments(
+		note,
+		xwidget.RichTextSegmentsFromText(" ("+ts+")"),
+	)
 }
 
-// makeContractDeadlineNote returns the time left until a deadline or the passed text when it is over.
-func makeContractDeadlineNote(deadline time.Time, isPassed bool, passed string) string {
+// makeContractDeadlineNote returns the time left until a deadline or the passed text in red when it is over.
+func makeContractDeadlineNote(deadline time.Time, isPassed bool, passed string) []widget.RichTextSegment {
 	if isPassed {
-		return passed
+		return makeTimeLeftDisplay(passed, true)
 	}
-	return ihumanize.RelTime(deadline)
+	return makeTimeLeftDisplay(ihumanize.RelTime(deadline), false)
 }
 
 // ui.MakeEveEntityActionLabel returns a Hyperlink for existing entities or a placeholder label otherwise.
