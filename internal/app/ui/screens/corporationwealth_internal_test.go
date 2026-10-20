@@ -409,3 +409,8 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		assert.Equal(t, optional.New(1000.0), got)
 	})
 }
+
+func TestCorporationHangarLabel(t *testing.T) {
+	assert.Equal(t, "Alpha [3]", corporationHangarLabel(app.Division3, "Alpha"))
+	assert.Equal(t, "1st Division [1]", corporationHangarLabel(app.Division1, ""))
+}

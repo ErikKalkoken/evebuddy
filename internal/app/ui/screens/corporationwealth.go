@@ -205,16 +205,12 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	}
 	for _, d := range app.Divisions {
 		wallet := walletByDivision[d]
-		walletName := wallet.name
-		if walletName == "" {
-			walletName = d.DefaultWalletName()
-		}
 		assetValue := v.assetByDivision[d]
 		divisionAssetValue += assetValue
 		rows = append(rows, corporationDivisionValue{
 			division:      d,
-			name:          v.hangarNames[d],
-			walletName:    walletName,
+			name:          corporationHangarLabel(d, v.hangarNames[d]),
+			walletName:    corporationWalletLabel(d, wallet.name),
 			walletBalance: wallet.balance / corporationWealthMultiplier,
 			assetValue:    assetValue / corporationWealthMultiplier,
 		})
@@ -326,6 +322,14 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 		WithTickCount(tickCount))
 	a.walletsChart.SetData(rows)
 	a.walletsTitleLabel.SetText("Wallet Balance by Division")
+}
+
+// corporationHangarLabel returns the display label for a hangar division, e.g. "1st Division [1]".
+func corporationHangarLabel(d app.Division, name string) string {
+	if name == "" {
+		name = d.DefaultHangarName()
+	}
+	return fmt.Sprintf("%s [%d]", name, d)
 }
 
 // corporationAssetRows returns the rows for the assets chart.
