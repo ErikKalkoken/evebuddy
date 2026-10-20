@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -26,23 +24,16 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 	v, err := st.qRO.CalculateCharacterContractItemsValue(ctx, queries.CalculateCharacterContractItemsValueParams{
 		CharacterID:   characterID,
 		EveCategoryID: app.EveCategoryBlueprint,
-		Status: []string{
-			contractStatusToDBValue[app.ContractStatusOutstanding],
-			contractStatusToDBValue[app.ContractStatusInProgress],
-		},
+		Status:        contractStatusesToDBValues(contractOpenStatuses),
 		Types: []string{
 			contractTypeToDBValue[app.ContractTypeAuction],
 			contractTypeToDBValue[app.ContractTypeItemExchange],
 		},
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
+	return v.Float64, nil
 }
 
 // CalculateCharacterContractsEscrow returns the ISK a character holds in escrow for open contracts:
@@ -55,7 +46,7 @@ func (st *Storage) CalculateCharacterContractsEscrow(ctx context.Context, charac
 	if characterID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	status := contractStatusesToDBValues(contractEscrowStatuses)
+	status := contractStatusesToDBValues(contractOpenStatuses)
 	collateral, err := st.qRO.CalculateCharacterContractsCollateralEscrow(ctx, queries.CalculateCharacterContractsCollateralEscrowParams{
 		CharacterID: characterID,
 		Type:        contractTypeToDBValue[app.ContractTypeCourier],

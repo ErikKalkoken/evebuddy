@@ -54,10 +54,7 @@ func (st *Storage) CalculateCorporationContractItemsValue(ctx context.Context, c
 	v, err := st.qRO.CalculateCorporationContractItemsValue(ctx, queries.CalculateCorporationContractItemsValueParams{
 		CorporationID: corporationID,
 		EveCategoryID: app.EveCategoryBlueprint,
-		Status: []string{
-			contractStatusToDBValue[app.ContractStatusOutstanding],
-			contractStatusToDBValue[app.ContractStatusInProgress],
-		},
+		Status:        contractStatusesToDBValues(contractOpenStatuses),
 		Types: []string{
 			contractTypeToDBValue[app.ContractTypeAuction],
 			contractTypeToDBValue[app.ContractTypeItemExchange],
@@ -79,7 +76,7 @@ func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corp
 	if corporationID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	status := contractStatusesToDBValues(contractEscrowStatuses)
+	status := contractStatusesToDBValues(contractOpenStatuses)
 	collateral, err := st.qRO.CalculateCorporationContractsCollateralEscrow(ctx, queries.CalculateCorporationContractsCollateralEscrowParams{
 		CorporationID: corporationID,
 		Type:          contractTypeToDBValue[app.ContractTypeCourier],

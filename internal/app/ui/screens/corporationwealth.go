@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
@@ -20,8 +21,9 @@ import (
 )
 
 const (
-	corporationWealthMultiplier     = 1_000_000_000
-	corporationWealthContractsLabel = "Contract Escrow"
+	corporationWealthMultiplier         = 1_000_000_000
+	corporationWealthContractsLabel     = "Contract Escrow"
+	corporationWealthContractItemsLabel = "Contracts"
 )
 
 // corporationDivisionValue holds one division's wallet and asset value, in billions ISK.
@@ -113,6 +115,7 @@ func NewCorporationWealth(u baseUI) *CorporationWealth {
 		case
 			app.SectionCorporationAssets,
 			app.SectionCorporationContracts,
+			app.SectionCorporationDivisions,
 			app.SectionCorporationWalletBalances:
 			a.update(ctx)
 		}
@@ -215,7 +218,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		}
 		a.showStatus("", widget.LowImportance)
 		a.updateWallets(rows)
-		a.updateAssets(rows)
+		a.updateAssets(corporationAssetRows(rows, v.contractItemsValue))
 		combinedAssets := v.totalAssetValue + v.contractItemsValue
 		a.updateCategorySplit(combinedAssets, totalWalletBalance, v.contractsEscrow)
 		if a.OnUpdate != nil {
@@ -317,6 +320,18 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 	a.walletsTitleLabel.SetText("Wallet Balance by Division")
 }
 
+// corporationAssetRows returns the rows for the assets chart.
+// Contract items have no division, so they get their own bar to match the Assets slice of the overview.
+func corporationAssetRows(rows []corporationDivisionValue, contractItemsValue float64) []corporationDivisionValue {
+	if contractItemsValue == 0 {
+		return rows
+	}
+	return append(slices.Clone(rows), corporationDivisionValue{
+		name:       corporationWealthContractItemsLabel,
+		assetValue: contractItemsValue / corporationWealthMultiplier,
+	})
+}
+
 func (a *CorporationWealth) updateAssets(rows []corporationDivisionValue) {
 	var maxValue float64
 	for _, v := range rows {
@@ -347,7 +362,7 @@ func (a *CorporationWealth) updateCategorySplit(totalAssetValue, totalWalletBala
 
 const corporationWealthHelpText = `Wallet: The total balance of all division wallets.
 
-Assets: The estimated value of all corporation assets and of items in outstanding auction and item exchange contracts issued for the corporation.
+Assets: The estimated value of all corporation assets and of items in outstanding auction and item exchange contracts issued for the corporation. The Assets tab shows contract items as a separate "Contracts" bar.
 
 Contract Escrow: Collateral of courier contracts the corporation accepted, plus ISK rewards of courier and item exchange contracts issued for the corporation, while they are open. Bids on auctions are not included.
 

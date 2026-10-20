@@ -58,8 +58,8 @@ func init() {
 	}
 }
 
-// Contract statuses in which collateral and rewards are held in escrow.
-var contractEscrowStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
+// Contract statuses in which ISK and items are still held by a contract.
+var contractOpenStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
 
 // contractStatusesToDBValues returns the DB values for statuses.
 func contractStatusesToDBValues(statuses []app.ContractStatus) []string {
