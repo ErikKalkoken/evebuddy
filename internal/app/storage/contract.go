@@ -58,7 +58,7 @@ func init() {
 	}
 }
 
-// Contract statuses in which courier collateral is held in escrow.
+// Contract statuses in which collateral and rewards are held in escrow.
 var contractEscrowStatuses = []app.ContractStatus{app.ContractStatusOutstanding, app.ContractStatusInProgress}
 
 // contractStatusesToDBValues returns the DB values for statuses.

@@ -22,7 +22,9 @@ FROM
     JOIN eve_groups eg ON eg.id = et.eve_group_id
     LEFT JOIN eve_market_prices mp ON mp.type_id = cci.type_id
 WHERE
-    character_id = ?
+    cc.character_id = ?
+    AND cc.issuer_id = cc.character_id
+    AND cc.for_corporation IS FALSE
     AND cc.status IN (/*SLICE:status*/?)
     AND cc.type IN (/*SLICE:types*/?)
     AND cci.is_included IS TRUE
@@ -63,7 +65,7 @@ func (q *Queries) CalculateCharacterContractItemsValue(ctx context.Context, arg 
 	return sum, err
 }
 
-const calculateCharacterContractsEscrow = `-- name: CalculateCharacterContractsEscrow :one
+const calculateCharacterContractsCollateralEscrow = `-- name: CalculateCharacterContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -75,17 +77,62 @@ WHERE
     AND status IN (/*SLICE:status*/?)
 `
 
-type CalculateCharacterContractsEscrowParams struct {
+type CalculateCharacterContractsCollateralEscrowParams struct {
 	CharacterID int64
 	Type        string
 	Status      []string
 }
 
-func (q *Queries) CalculateCharacterContractsEscrow(ctx context.Context, arg CalculateCharacterContractsEscrowParams) (sql.NullFloat64, error) {
-	query := calculateCharacterContractsEscrow
+func (q *Queries) CalculateCharacterContractsCollateralEscrow(ctx context.Context, arg CalculateCharacterContractsCollateralEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractsCollateralEscrow
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CharacterID)
 	queryParams = append(queryParams, arg.Type)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
+const calculateCharacterContractsRewardEscrow = `-- name: CalculateCharacterContractsRewardEscrow :one
+SELECT
+    SUM(reward)
+FROM
+    character_contracts
+WHERE
+    character_id = ?
+    AND issuer_id = character_id
+    AND for_corporation IS FALSE
+    AND type IN (/*SLICE:types*/?)
+    AND status IN (/*SLICE:status*/?)
+`
+
+type CalculateCharacterContractsRewardEscrowParams struct {
+	CharacterID int64
+	Types       []string
+	Status      []string
+}
+
+func (q *Queries) CalculateCharacterContractsRewardEscrow(ctx context.Context, arg CalculateCharacterContractsRewardEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCharacterContractsRewardEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Types) > 0 {
+		for _, v := range arg.Types {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:types*/?", strings.Repeat(",?", len(arg.Types))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:types*/?", "NULL", 1)
+	}
 	if len(arg.Status) > 0 {
 		for _, v := range arg.Status {
 			queryParams = append(queryParams, v)

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const calculateCorporationContractsEscrow = `-- name: CalculateCorporationContractsEscrow :one
+const calculateCorporationContractsCollateralEscrow = `-- name: CalculateCorporationContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -24,17 +24,62 @@ WHERE
     AND status IN (/*SLICE:status*/?)
 `
 
-type CalculateCorporationContractsEscrowParams struct {
+type CalculateCorporationContractsCollateralEscrowParams struct {
 	CorporationID int64
 	Type          string
 	Status        []string
 }
 
-func (q *Queries) CalculateCorporationContractsEscrow(ctx context.Context, arg CalculateCorporationContractsEscrowParams) (sql.NullFloat64, error) {
-	query := calculateCorporationContractsEscrow
+func (q *Queries) CalculateCorporationContractsCollateralEscrow(ctx context.Context, arg CalculateCorporationContractsCollateralEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCorporationContractsCollateralEscrow
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CorporationID)
 	queryParams = append(queryParams, arg.Type)
+	if len(arg.Status) > 0 {
+		for _, v := range arg.Status {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:status*/?", strings.Repeat(",?", len(arg.Status))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:status*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
+const calculateCorporationContractsRewardEscrow = `-- name: CalculateCorporationContractsRewardEscrow :one
+SELECT
+    SUM(reward)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND issuer_corporation_id = corporation_id
+    AND for_corporation IS TRUE
+    AND type IN (/*SLICE:types*/?)
+    AND status IN (/*SLICE:status*/?)
+`
+
+type CalculateCorporationContractsRewardEscrowParams struct {
+	CorporationID int64
+	Types         []string
+	Status        []string
+}
+
+func (q *Queries) CalculateCorporationContractsRewardEscrow(ctx context.Context, arg CalculateCorporationContractsRewardEscrowParams) (sql.NullFloat64, error) {
+	query := calculateCorporationContractsRewardEscrow
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CorporationID)
+	if len(arg.Types) > 0 {
+		for _, v := range arg.Types {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:types*/?", strings.Repeat(",?", len(arg.Types))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:types*/?", "NULL", 1)
+	}
 	if len(arg.Status) > 0 {
 		for _, v := range arg.Status {
 			queryParams = append(queryParams, v)

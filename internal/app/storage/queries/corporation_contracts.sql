@@ -1,4 +1,4 @@
--- name: CalculateCorporationContractsEscrow :one
+-- name: CalculateCorporationContractsCollateralEscrow :one
 SELECT
     SUM(collateral)
 FROM
@@ -7,6 +7,18 @@ WHERE
     corporation_id = ?
     AND acceptor_id == corporation_id
     AND type = ?
+    AND status IN (sqlc.slice('status'));
+
+-- name: CalculateCorporationContractsRewardEscrow :one
+SELECT
+    SUM(reward)
+FROM
+    corporation_contracts
+WHERE
+    corporation_id = ?
+    AND issuer_corporation_id = corporation_id
+    AND for_corporation IS TRUE
+    AND type IN (sqlc.slice('types'))
     AND status IN (sqlc.slice('status'));
 
 -- name: CountCorporationContractsWithStatus :one

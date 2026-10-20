@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -44,8 +42,9 @@ type CreateCorporationContractParams struct {
 	Volume              optional.Optional[float64]
 }
 
-// CalculateCorporationContractsEscrow returns the collateral of a corporation's accepted courier contracts.
-// Auction bids are not included: ESI shows them only on copies the bidder rarely has.
+// CalculateCorporationContractsEscrow returns the ISK a corporation holds in escrow for open contracts:
+// collateral of accepted couriers and rewards of couriers and item exchanges issued for the corporation.
+// Auction bids are not included: ESI names the bidding character, not the corporation.
 func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corporationID int64) (float64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CalculateCorporationContractsEscrow: %d: %w", corporationID, err)
@@ -53,19 +52,27 @@ func (st *Storage) CalculateCorporationContractsEscrow(ctx context.Context, corp
 	if corporationID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCorporationContractsEscrow(ctx, queries.CalculateCorporationContractsEscrowParams{
+	status := contractStatusesToDBValues(contractEscrowStatuses)
+	collateral, err := st.qRO.CalculateCorporationContractsCollateralEscrow(ctx, queries.CalculateCorporationContractsCollateralEscrowParams{
 		CorporationID: corporationID,
 		Type:          contractTypeToDBValue[app.ContractTypeCourier],
-		Status:        contractStatusesToDBValues(contractEscrowStatuses),
+		Status:        status,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
+	reward, err := st.qRO.CalculateCorporationContractsRewardEscrow(ctx, queries.CalculateCorporationContractsRewardEscrowParams{
+		CorporationID: corporationID,
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeCourier],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+		Status: status,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return collateral.Float64 + reward.Float64, nil
 }
 
 func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.ContractStatus]) (int64, error) {

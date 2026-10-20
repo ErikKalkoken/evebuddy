@@ -44,6 +44,12 @@ func TestUpdateContractsEscrow(t *testing.T) {
 		Type:        app.ContractTypeCourier,
 		Status:      app.ContractStatusInProgress,
 	})
+	factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		CharacterID: c.ID,
+		Reward:      optional.New(50.0),
+		Type:        app.ContractTypeItemExchange,
+		Status:      app.ContractStatusOutstanding,
+	})
 
 	// when
 	err := s.updateContractsEscrow(t.Context(), c.ID)
@@ -53,7 +59,7 @@ func TestUpdateContractsEscrow(t *testing.T) {
 	c2, err := st.GetCharacter(t.Context(), c.ID)
 	require.NoError(t, err)
 	got := c2.ContractsEscrow
-	assert.Equal(t, optional.New(300.0), got)
+	assert.Equal(t, optional.New(350.0), got)
 }
 
 func TestUpdateContractsESI(t *testing.T) {

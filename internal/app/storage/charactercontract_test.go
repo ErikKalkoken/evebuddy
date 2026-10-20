@@ -430,6 +430,20 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 			price:        10.0,
 			want:         0,
 		},
+		{
+			name:         "should include outstanding item exchange contract",
+			contractType: app.ContractTypeItemExchange,
+			status:       app.ContractStatusOutstanding,
+			price:        10.0,
+			want:         10.0,
+		},
+		{
+			name:         "should exclude finished item exchange contract",
+			contractType: app.ContractTypeItemExchange,
+			status:       app.ContractStatusFinished,
+			price:        10.0,
+			want:         0,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -504,6 +518,90 @@ func TestCalculateCharacterContractItemsValue(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 500.5, got)
+	})
+
+	t.Run("should exclude contract issued by another character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		issuer := f.CreateEveEntityCharacter()
+		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			IssuerID:    issuer.ID,
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeAuction,
+		})
+		u := f.CreateCharacterContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should exclude contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:    c.ID,
+			ForCorporation: true,
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+		u := f.CreateCharacterContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: true,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should exclude items not included", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o := f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeItemExchange,
+		})
+		u := f.CreateCharacterContractItem(storage.CreateContractItemParams{
+			ContractID: o.ID,
+			IsIncluded: false,
+			Quantity:   1,
+		})
+		f.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       u.Type.ID,
+			AveragePrice: optional.New(10.0),
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractItemsValue(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
 	})
 
 	t.Run("should ignore blueprints", func(t *testing.T) {
@@ -614,6 +712,165 @@ func TestCalculateCharacterContractsEscrow(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 300.0, got)
+	})
+
+	t.Run("should include reward of issued courier contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusOutstanding,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of issued in progress courier contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusInProgress,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of issued item exchange contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should not include reward of finished contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusFinished,
+			Type:        app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of contract issued by someone else", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		issuer := f.CreateEveEntityCharacter()
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			IssuerID:    issuer.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of auction", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeAuction,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:    c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should sum collateral and reward", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterContractCourier(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			AcceptorID:  c.ID,
+			Collateral:  optional.New(100.0),
+			Status:      app.ContractStatusInProgress,
+		})
+		f.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			Reward:      optional.New(50.0),
+			Status:      app.ContractStatusOutstanding,
+			Type:        app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCharacterContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 150.0, got)
 	})
 
 	t.Run("should not include winning auction bid", func(t *testing.T) {

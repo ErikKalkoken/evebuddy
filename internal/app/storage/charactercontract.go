@@ -32,6 +32,7 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 		},
 		Types: []string{
 			contractTypeToDBValue[app.ContractTypeAuction],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
 		},
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -44,7 +45,8 @@ func (st *Storage) CalculateCharacterContractItemsValue(ctx context.Context, cha
 	return v2.ValueOrZero(), nil
 }
 
-// CalculateCharacterContractsEscrow returns the collateral of a character's accepted courier contracts.
+// CalculateCharacterContractsEscrow returns the ISK a character holds in escrow for open contracts:
+// collateral of accepted couriers and rewards of personally issued couriers and item exchanges.
 // Auction bids are not included: ESI shows them only on copies the bidder rarely has.
 func (st *Storage) CalculateCharacterContractsEscrow(ctx context.Context, characterID int64) (float64, error) {
 	wrapErr := func(err error) error {
@@ -53,19 +55,27 @@ func (st *Storage) CalculateCharacterContractsEscrow(ctx context.Context, charac
 	if characterID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	v, err := st.qRO.CalculateCharacterContractsEscrow(ctx, queries.CalculateCharacterContractsEscrowParams{
+	status := contractStatusesToDBValues(contractEscrowStatuses)
+	collateral, err := st.qRO.CalculateCharacterContractsCollateralEscrow(ctx, queries.CalculateCharacterContractsCollateralEscrowParams{
 		CharacterID: characterID,
 		Type:        contractTypeToDBValue[app.ContractTypeCourier],
-		Status:      contractStatusesToDBValues(contractEscrowStatuses),
+		Status:      status,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	v2 := optional.FromNullFloat64(v)
-	return v2.ValueOrZero(), nil
+	reward, err := st.qRO.CalculateCharacterContractsRewardEscrow(ctx, queries.CalculateCharacterContractsRewardEscrowParams{
+		CharacterID: characterID,
+		Types: []string{
+			contractTypeToDBValue[app.ContractTypeCourier],
+			contractTypeToDBValue[app.ContractTypeItemExchange],
+		},
+		Status: status,
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return collateral.Float64 + reward.Float64, nil
 }
 
 func (st *Storage) CountCharactersOutstandingPersonalContracts(ctx context.Context) (map[int64]int, error) {

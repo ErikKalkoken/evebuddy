@@ -129,7 +129,7 @@ func TestCalculateContractsEscrow(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	t.Run("should sum courier collateral", func(t *testing.T) {
+	t.Run("should sum courier collateral and rewards", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
@@ -139,11 +139,18 @@ func TestCalculateContractsEscrow(t *testing.T) {
 			Collateral:    optional.New(100.0),
 			Status:        app.ContractStatusInProgress,
 		})
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
 		// when
 		got, err := s.CalculateContractsEscrow(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, 100.0, got)
+		xassert.Equal(t, 150.0, got)
 	})
 	t.Run("should return zero when corporation has no contracts", func(t *testing.T) {
 		// given

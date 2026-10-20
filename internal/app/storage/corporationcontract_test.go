@@ -476,6 +476,174 @@ func TestCalculateCorporationContractsEscrow(t *testing.T) {
 		assert.Equal(t, 0.0, got)
 	})
 
+	t.Run("should include reward of courier contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of in progress courier contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusInProgress,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should include reward of item exchange contract issued for the corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 50.0, got)
+	})
+
+	t.Run("should not include reward of finished contract", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusFinished,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of contract issued by another corporation", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		other := f.CreateEveCorporation()
+		issuer := f.CreateEveEntityCorporation(app.EveEntity{ID: other.ID})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:       c.ID,
+			ForCorporation:      true,
+			IssuerCorporationID: issuer.ID,
+			Reward:              optional.New(50.0),
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of auction", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeAuction,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should not include reward of contract issued personally", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: false,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should sum collateral and reward", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCorporation()
+		f.CreateEveEntityCorporation(app.EveEntity{ID: c.ID})
+		f.CreateCorporationContractCourier(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			AcceptorID:    c.ID,
+			Collateral:    optional.New(100.0),
+			Status:        app.ContractStatusInProgress,
+		})
+		f.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID:  c.ID,
+			ForCorporation: true,
+			Reward:         optional.New(50.0),
+			Status:         app.ContractStatusOutstanding,
+			Type:           app.ContractTypeItemExchange,
+		})
+
+		// when
+		got, err := st.CalculateCorporationContractsEscrow(t.Context(), c.ID)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 150.0, got)
+	})
+
 	t.Run("should not include winning auction bid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
