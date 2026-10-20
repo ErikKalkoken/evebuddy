@@ -96,10 +96,6 @@ func TestContractStatusPredicates(t *testing.T) {
 	}
 }
 
-func TestContractStatusActive(t *testing.T) {
-	xassert.Equal(t, set.Of(app.ContractStatusOutstanding, app.ContractStatusInProgress), app.ContractStatusActive)
-}
-
 func TestContractType(t *testing.T) {
 	xassert.Equal(t, "auction", app.ContractTypeAuction.String())
 }

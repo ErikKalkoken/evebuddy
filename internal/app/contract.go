@@ -148,9 +148,6 @@ func (cs ContractStatus) String() string {
 	return s
 }
 
-// ContractStatusActive defines which status is considered active.
-var ContractStatusActive = set.Of(ContractStatusOutstanding, ContractStatusInProgress)
-
 // IsFinished reports whether a contract has reached a final state that is kept after it drops out of ESI.
 // Reversed counts as finished here, although the UI shows it in no category.
 func (cs ContractStatus) IsFinished() bool {
