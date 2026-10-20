@@ -193,16 +193,8 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		walletByDivision[app.Division(wb.DivisionID)] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
 		totalWalletBalance += wb.Balance
 	}
-	hangarNames := a.u.Corporation().ListHangarNames(ctx, corporationID)
-	if ctx.Err() != nil {
-		return
-	}
 	for _, d := range app.Divisions {
 		wallet := walletByDivision[d]
-		name := hangarNames[d]
-		if name == "" {
-			name = d.DefaultHangarName()
-		}
 		walletName := wallet.name
 		if walletName == "" {
 			walletName = d.DefaultWalletName()
@@ -210,7 +202,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 		assetValue := v.assetByDivision[d]
 		rows = append(rows, corporationDivisionValue{
 			division:      d,
-			name:          name,
+			name:          v.hangarNames[d],
 			walletName:    walletName,
 			walletBalance: wallet.balance / corporationWealthMultiplier,
 			assetValue:    assetValue / corporationWealthMultiplier,
@@ -258,6 +250,7 @@ type corporationWealthValues struct {
 	assetByDivision    map[app.Division]float64
 	contractItemsValue float64
 	contractsEscrow    float64
+	hangarNames        map[app.Division]string
 	totalAssetValue    float64
 	walletBalances     []app.CorporationWalletBalanceWithName
 }
@@ -291,6 +284,10 @@ func (a *CorporationWealth) fetchValues(ctx context.Context, corporationID int64
 		if err != nil {
 			return v, fmt.Errorf("wallet balances: %w", err)
 		}
+	}
+	v.hangarNames, err = a.u.Corporation().ListHangarNames(ctx, corporationID)
+	if err != nil {
+		return v, fmt.Errorf("hangar names: %w", err)
 	}
 	return v, nil
 }

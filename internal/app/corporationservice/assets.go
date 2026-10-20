@@ -78,7 +78,8 @@ func (s *CorporationService) CalculateAssetValueByDivision(ctx context.Context, 
 }
 
 // ListHangarNames returns the names of a corporation's asset (hangar) divisions.
-func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID int64) map[app.Division]string {
+// Divisions without a stored name get a default name.
+func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID int64) (map[app.Division]string, error) {
 	m := map[app.Division]string{
 		app.Division1: "1st Division",
 		app.Division2: "2nd Division",
@@ -90,10 +91,7 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 	}
 	oo, err := s.st.ListCorporationHangarNames(ctx, corporationID)
 	if err != nil {
-		if ctx.Err() == nil {
-			slog.Error("Failed to fetch hangar names. Falling back to defaults.", "corporationID", corporationID, "error", err)
-		}
-		return m
+		return nil, err
 	}
 	for _, o := range oo {
 		if o.Name == "" {
@@ -101,7 +99,7 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 		}
 		m[app.Division(o.DivisionID)] = o.Name
 	}
-	return m
+	return m, nil
 }
 
 var (
