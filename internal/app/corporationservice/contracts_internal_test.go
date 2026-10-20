@@ -94,11 +94,11 @@ func TestListCorporationContracts(t *testing.T) {
 	})
 }
 
-func TestListActiveCorporationContracts(t *testing.T) {
+func TestCountOutstandingCorporationContracts(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	s := NewFake(Params{Storage: st})
-	t.Run("should count outstanding and in progress contracts of a corporation", func(t *testing.T) {
+	t.Run("should count outstanding contracts of a corporation including expired ones", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
@@ -115,10 +115,15 @@ func TestListActiveCorporationContracts(t *testing.T) {
 			})
 		}
 		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
+			CorporationID: c.ID,
+			DateExpired:   time.Now().Add(-time.Hour),
+			Status:        app.ContractStatusOutstanding,
+		})
+		factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			Status: app.ContractStatusOutstanding,
 		})
 		// when
-		got, err := s.ListActiveCorporationContracts(t.Context(), c.ID)
+		got, err := s.CountOutstandingCorporationContracts(t.Context(), c.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 2, got)

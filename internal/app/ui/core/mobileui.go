@@ -315,7 +315,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	)
 	u.corporationContracts.OnUpdate = func(count optional.Optional[int]) {
 		corpContractsNav.Supporting = formatCount(count, func(v int) string {
-			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
+			return ihumanize.Plural(v, "contract", "contracts") + " outstanding"
 		})
 		corpContractsNav.Refresh()
 	}
@@ -821,7 +821,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 	)
 	u.contractList.OnUpdate = func(count optional.Optional[int]) {
 		navItemContracts.Supporting = formatCount(count, func(v int) string {
-			return ihumanize.Plural(v, "contract needs", "contracts need") + " attention"
+			return ihumanize.Plural(v, "contract", "contracts") + " outstanding"
 		})
 		navItemContracts.Refresh()
 	}

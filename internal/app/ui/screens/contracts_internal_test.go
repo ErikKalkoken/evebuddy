@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -24,20 +25,23 @@ import (
 func TestContractsFilter_Match(t *testing.T) {
 	r := contractRow{
 		assigneeName: "Alice",
-		category:     app.ContractCategoryOutstanding,
+		categories:   set.Of(app.ContractCategoryOutstanding),
 		issuerName:   "Bruce",
 		tags:         set.Of("alpha"),
 		typeName:     "Item Exchange",
 	}
 	finished := r
-	finished.category = app.ContractCategoryFinished
+	finished.categories = set.Of(app.ContractCategoryFinished)
 	inProgress := r
-	inProgress.category = app.ContractCategoryInProgress
-	attention := r
-	attention.category = app.ContractCategoryRequiresAttention
-	other := r
-	other.category = app.ContractCategoryOther
+	inProgress.categories = set.Of(app.ContractCategoryInProgress)
+	expired := r
+	expired.categories = set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention)
+	rejected := r
+	rejected.categories = set.Of(app.ContractCategoryRequiresAttention, app.ContractCategoryFinished)
+	uncategorized := r
+	uncategorized.categories = set.Of[app.ContractCategory]()
 	outstanding := app.ContractCategoryOutstanding.Display()
+	attention := app.ContractCategoryRequiresAttention.Display()
 	for _, tc := range []struct {
 		name   string
 		filter contractsFilter
@@ -51,12 +55,16 @@ func TestContractsFilter_Match(t *testing.T) {
 		{"issuer differs", contractsFilter{issuer: "Other"}, r, false},
 		{"status matches", contractsFilter{status: outstanding}, r, true},
 		{"status differs", contractsFilter{status: outstanding}, finished, false},
+		{"status matches one of several categories", contractsFilter{status: outstanding}, expired, true},
+		{"status matches other of several categories", contractsFilter{status: attention}, expired, true},
 		{"all open matches outstanding", contractsFilter{status: contractsStatusAllOpen}, r, true},
 		{"all open matches in progress", contractsFilter{status: contractsStatusAllOpen}, inProgress, true},
-		{"all open matches requires attention", contractsFilter{status: contractsStatusAllOpen}, attention, true},
+		{"all open matches expired", contractsFilter{status: contractsStatusAllOpen}, expired, true},
+		{"all open but rejected", contractsFilter{status: contractsStatusAllOpen}, rejected, false},
 		{"all open but finished", contractsFilter{status: contractsStatusAllOpen}, finished, false},
-		{"all open but other", contractsFilter{status: contractsStatusAllOpen}, other, false},
+		{"all open but uncategorized", contractsFilter{status: contractsStatusAllOpen}, uncategorized, false},
 		{"all matches finished", contractsFilter{status: contractsStatusAll}, finished, true},
+		{"all matches uncategorized", contractsFilter{status: contractsStatusAll}, uncategorized, true},
 		{"all matches outstanding", contractsFilter{status: contractsStatusAll}, r, true},
 		{"tag matches", contractsFilter{tag: "alpha"}, r, true},
 		{"tag missing", contractsFilter{tag: "bravo"}, r, false},
@@ -77,45 +85,23 @@ func TestContractsStatusOptions(t *testing.T) {
 		"In progress",
 		"Requires attention",
 		"Finished",
-		"Other",
 		"All contracts",
 	}, contractsStatusOptions())
 }
 
 func TestMakeContractStatusDisplay(t *testing.T) {
-	got := makeContractStatusDisplay("Outstanding (expired)", app.ContractCategoryRequiresAttention)
-	want := xwidget.RichTextSegmentsFromText("Outstanding (expired)", widget.RichTextStyle{ColorName: theme.ColorNameError})
+	got := makeContractStatusDisplay(app.ContractStatusInProgress)
+	want := xwidget.RichTextSegmentsFromText("In Progress", widget.RichTextStyle{ColorName: theme.ColorNamePrimary})
 	assert.Equal(t, want, got)
-}
-
-func TestContractStatusText(t *testing.T) {
-	for _, tc := range []struct {
-		status    app.ContractStatus
-		isExpired bool
-		isOverdue bool
-		want      string
-	}{
-		{app.ContractStatusOutstanding, true, false, "Outstanding (expired)"},
-		{app.ContractStatusInProgress, true, true, "In Progress (overdue)"},
-		{app.ContractStatusOutstanding, false, false, "Outstanding"},
-		{app.ContractStatusInProgress, true, false, "In Progress"},
-		{app.ContractStatusFailed, true, true, "Failed"},
-		{app.ContractStatusRejected, true, false, "Rejected"},
-		{app.ContractStatusFinished, true, false, "Finished"},
-	} {
-		t.Run(tc.want, func(t *testing.T) {
-			assert.Equal(t, tc.want, contractStatusText(tc.status, tc.isExpired, tc.isOverdue))
-		})
-	}
 }
 
 func TestContracts_Filter(t *testing.T) {
 	db, st, _ := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	rows := []contractRow{
-		{contractID: 1, category: app.ContractCategoryOutstanding, typeName: "Courier"},
-		{contractID: 2, category: app.ContractCategoryInProgress, typeName: "Item Exchange"},
-		{contractID: 3, category: app.ContractCategoryFinished, typeName: "Courier"},
+		{contractID: 1, categories: set.Of(app.ContractCategoryOutstanding), typeName: "Courier"},
+		{contractID: 2, categories: set.Of(app.ContractCategoryInProgress), typeName: "Item Exchange"},
+		{contractID: 3, categories: set.Of(app.ContractCategoryFinished), typeName: "Courier"},
 	}
 	newContracts := func(t *testing.T, isMobile, forCorporation bool) *Contracts {
 		u := testdouble.NewUIFake(testdouble.UIParams{
@@ -191,7 +177,7 @@ func TestContracts_Filter(t *testing.T) {
 	})
 }
 
-func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
+func TestContracts_OnUpdateCountsOutstandingContracts(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	expired := time.Now().Add(-time.Hour)
@@ -207,6 +193,7 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		other := factory.CreateEveEntityCharacter()
 		for _, arg := range []storage.CreateCharacterContractParams{
 			{Status: app.ContractStatusOutstanding},
+			{Status: app.ContractStatusOutstanding, IssuerID: other.ID},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: other.ID},
 			{Status: app.ContractStatusInProgress, AcceptorID: c.ID, DateAccepted: overdueAccepted, DaysToComplete: optional.New[int64](3)},
@@ -220,11 +207,11 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		}
 		a := NewContractsForCharacters(newUI(t))
 		var got int
-		a.OnUpdate = func(attention optional.Optional[int]) {
-			got = attention.ValueOrZero()
+		a.OnUpdate = func(outstanding optional.Optional[int]) {
+			got = outstanding.ValueOrZero()
 		}
 		a.update(t.Context())
-		assert.Equal(t, 2, got)
+		assert.Equal(t, 4, got)
 	})
 	t.Run("corporation", func(t *testing.T) {
 		ec := factory.CreateEveCorporation()
@@ -242,6 +229,7 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		member := factory.CreateEveEntityCharacter()
 		for _, arg := range []storage.CreateCorporationContractParams{
 			{Status: app.ContractStatusOutstanding},
+			{Status: app.ContractStatusOutstanding, IssuerID: member.ID},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: c.ID},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: member.ID, ForCorporation: true},
 			{Status: app.ContractStatusOutstanding, DateExpired: expired, IssuerID: member.ID},
@@ -255,11 +243,11 @@ func TestContracts_OnUpdateCountsContractsRequiringAttention(t *testing.T) {
 		a := NewContractsForCorporation(newUI(t))
 		a.corporation.Store(corporation)
 		var got int
-		a.OnUpdate = func(attention optional.Optional[int]) {
-			got = attention.ValueOrZero()
+		a.OnUpdate = func(outstanding optional.Optional[int]) {
+			got = outstanding.ValueOrZero()
 		}
 		a.update(t.Context())
-		assert.Equal(t, 3, got)
+		assert.Equal(t, 5, got)
 	})
 }
 
@@ -281,13 +269,12 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 	t.Run("outstanding becomes expired", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
 		r.init(myID, noAcceptor, myIDs, myCorpIDs, now)
-		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
 		assert.False(t, r.isExpired)
 		assert.False(t, r.updateTimeDependent(now))
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
-		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), r.categories)
 		assert.True(t, r.isExpired)
-		assert.Equal(t, "Outstanding (expired)", r.statusText)
 	})
 	t.Run("in progress becomes overdue", func(t *testing.T) {
 		r := contractRow{
@@ -297,12 +284,17 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 			daysToComplete: optional.New[int64](3),
 		}
 		r.init(otherID, optional.New(&app.EveEntity{ID: myID}), myIDs, myCorpIDs, now)
-		assert.Equal(t, app.ContractCategoryInProgress, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress), r.categories)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
-		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
-		assert.Equal(t, "In Progress (overdue)", r.statusText)
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), r.categories)
 		assert.Equal(t, contractDeadlineDelivery, r.deadlineKind)
 		assert.Equal(t, overdueSegments(), r.timeLeftDisplay)
+	})
+	t.Run("contract without category and deadline gets time left display", func(t *testing.T) {
+		r := contractRow{status: app.ContractStatusCancelled, dateExpired: now.Add(-time.Hour)}
+		r.init(myID, noAcceptor, myIDs, myCorpIDs, now)
+		assert.Equal(t, xwidget.RichTextSegmentsFromText(""), r.timeLeftDisplay)
+		assert.False(t, r.updateTimeDependent(now.Add(time.Hour)))
 	})
 	t.Run("time left changes with time", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(3 * time.Hour)}
@@ -311,14 +303,13 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		assert.False(t, r.updateTimeDependent(now.Add(10*time.Second)), "no change within a minute")
 		assert.True(t, r.updateTimeDependent(now.Add(5*time.Minute)))
 		assert.Equal(t, "2h 55m", r.timeLeftText)
-		assert.Equal(t, app.ContractCategoryOutstanding, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
 	})
 	t.Run("expired contract of others does not require attention", func(t *testing.T) {
 		r := contractRow{status: app.ContractStatusOutstanding, dateExpired: now.Add(time.Hour)}
 		r.init(otherID, noAcceptor, myIDs, myCorpIDs, now)
 		assert.True(t, r.updateTimeDependent(now.Add(2*time.Hour)))
-		assert.Equal(t, app.ContractCategoryOther, r.category)
-		assert.Equal(t, "Outstanding (expired)", r.statusText)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
 	})
 	t.Run("overdue contract of others still shows as overdue", func(t *testing.T) {
 		r := contractRow{
@@ -329,8 +320,7 @@ func TestContractRow_UpdateTimeDependent(t *testing.T) {
 		}
 		r.init(myID, optional.New(&app.EveEntity{ID: otherID}), myIDs, myCorpIDs, now)
 		assert.True(t, r.updateTimeDependent(now.AddDate(0, 0, 4)))
-		assert.Equal(t, app.ContractCategoryInProgress, r.category)
-		assert.Equal(t, "In Progress (overdue)", r.statusText)
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress), r.categories)
 	})
 }
 
@@ -406,7 +396,7 @@ func TestNewContractRow_RequiresAttention(t *testing.T) {
 			},
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
-		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), r.categories)
 	})
 	t.Run("expired personal contract of a corporation member", func(t *testing.T) {
 		o := &app.CorporationContract{
@@ -419,7 +409,7 @@ func TestNewContractRow_RequiresAttention(t *testing.T) {
 			},
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
-		assert.Equal(t, app.ContractCategoryOther, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
 	})
 	t.Run("overdue contract accepted for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
@@ -435,7 +425,7 @@ func TestNewContractRow_RequiresAttention(t *testing.T) {
 			},
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
-		assert.Equal(t, app.ContractCategoryRequiresAttention, r.category)
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), r.categories)
 	})
 }
 
@@ -454,31 +444,25 @@ func TestContracts_RefreshTimeDependent(t *testing.T) {
 		App:     test.NewTempApp(t),
 		Storage: st,
 	}))
-	var calls, got int
-	a.OnUpdate = func(attention optional.Optional[int]) {
+	var calls int
+	a.OnUpdate = func(outstanding optional.Optional[int]) {
 		calls++
-		got = attention.ValueOrZero()
 	}
 	a.rows = rows
 	a.selectStatus.SetSelected(app.ContractCategoryRequiresAttention.Display())
 	assert.Empty(t, a.rowsFiltered)
 
 	a.refreshTimeDependent(now.Add(90 * time.Minute))
-	assert.Equal(t, 1, calls)
-	assert.Equal(t, 1, got)
 	assert.Equal(t, []int64{1}, xslices.Map(a.rowsFiltered, func(r contractRow) int64 {
 		return r.contractID
 	}))
-
-	a.refreshTimeDependent(now.Add(91 * time.Minute))
-	assert.Equal(t, 1, calls, "no update without changes")
 
 	a.selectStatus.SetSelected(contractsStatusAll)
 	before := a.rowsFiltered[slices.IndexFunc(a.rowsFiltered, func(r contractRow) bool { return r.contractID == 2 })].timeLeftText
 	a.refreshTimeDependent(now.Add(5 * time.Hour))
 	after := a.rowsFiltered[slices.IndexFunc(a.rowsFiltered, func(r contractRow) bool { return r.contractID == 2 })].timeLeftText
 	assert.NotEqual(t, before, after, "time left is updated in the list")
-	assert.Equal(t, 1, calls, "badge is not updated when the count is unchanged")
+	assert.Zero(t, calls, "outstanding count does not change with time")
 }
 
 func overdueSegments() []widget.RichTextSegment {
@@ -564,10 +548,21 @@ func TestCompareContractDeadlines(t *testing.T) {
 	assert.Equal(t, 0, compareContractDeadlines(none, none))
 }
 
-func TestMakeContractDateString(t *testing.T) {
+func TestMakeContractDateDisplay(t *testing.T) {
 	d := time.Date(2026, 9, 18, 10, 0, 0, 0, time.UTC)
-	assert.Equal(t, d.Format(app.DateTimeFormat), makeContractDateString(d, ""))
-	assert.Equal(t, d.Format(app.DateTimeFormat)+" (OVERDUE)", makeContractDateString(d, makeContractDeadlineNote(d, true, "OVERDUE")))
+	ts := d.Format(app.DateTimeFormat)
+	t.Run("without note", func(t *testing.T) {
+		got := makeContractDateDisplay(d, nil)
+		assert.Equal(t, xwidget.RichTextSegmentsFromText(ts), got)
+	})
+	t.Run("with passed deadline", func(t *testing.T) {
+		got := makeContractDateDisplay(d, makeContractDeadlineNote(d, true, "OVERDUE"))
+		want := xwidget.InlineRichTextSegments(
+			overdueSegments(),
+			xwidget.RichTextSegmentsFromText(" ("+ts+")"),
+		)
+		assert.Equal(t, want, got)
+	})
 }
 
 func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
@@ -595,18 +590,14 @@ func TestContracts_CorporationReloadsWhenCharactersChange(t *testing.T) {
 	})
 	a := NewContractsForCorporation(u)
 	a.corporation.Store(corporation)
-	var got int
-	a.OnUpdate = func(attention optional.Optional[int]) {
-		got = attention.ValueOrZero()
-	}
 	a.update(t.Context())
-	assert.Equal(t, 1, got, "issued by one of the user's characters")
+	xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), a.rows[0].categories) // issued by one of the user's characters
 
 	if err := st.DeleteCharacter(t.Context(), c.ID); err != nil {
 		t.Fatal(err)
 	}
 	u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
-	assert.Equal(t, 0, got, "reloaded after the issuer was removed")
+	xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), a.rows[0].categories) // reloaded after the issuer was removed
 }
 
 func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
@@ -638,16 +629,12 @@ func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
 		})
 		u := newUI(t)
 		a := NewContractsForCharacters(u)
-		var got int
-		a.OnUpdate = func(attention optional.Optional[int]) {
-			got = attention.ValueOrZero()
-		}
 		a.update(t.Context())
-		assert.Equal(t, 0, got, "accepted for another corporation")
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress), a.rows[0].categories) // accepted for another corporation
 
 		addCharacterToCorporation(ec.ID)
 		u.Signals().CorporationsChanged.Emit(t.Context(), struct{}{})
-		assert.Equal(t, 1, got, "reloaded after the acceptor became one of the user's corporations")
+		xassert.Equal(t, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), a.rows[0].categories) // reloaded after the acceptor became one of the user's corporations
 	})
 	t.Run("corporation", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -671,16 +658,12 @@ func TestContracts_ReloadsWhenCorporationsChange(t *testing.T) {
 		u := newUI(t)
 		a := NewContractsForCorporation(u)
 		a.corporation.Store(corporation)
-		var got int
-		a.OnUpdate = func(attention optional.Optional[int]) {
-			got = attention.ValueOrZero()
-		}
 		a.update(t.Context())
-		assert.Equal(t, 0, got, "issued for a corporation without the user's characters")
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), a.rows[0].categories) // issued for a corporation without the user's characters
 
 		addCharacterToCorporation(ec.ID)
 		u.Signals().CorporationsChanged.Emit(t.Context(), struct{}{})
-		assert.Equal(t, 1, got, "reloaded after the issuer became one of the user's corporations")
+		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), a.rows[0].categories) // reloaded after the issuer became one of the user's corporations
 	})
 }
 
@@ -700,10 +683,9 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		r.init(myID, noAcceptor, myIDs, myCorpIDs, now)
 		a.rows = []contractRow{r}
 		a.filterRowsAsync("")
-		a.attentionCount = 1
-		attention := optional.New(-1)
+		outstanding := optional.New(-1)
 		a.OnUpdate = func(n optional.Optional[int]) {
-			attention = n
+			outstanding = n
 		}
 		if _, err := db.Exec("DROP TABLE character_contracts"); err != nil { // let the next update fail
 			t.Fatal(err)
@@ -714,7 +696,7 @@ func TestContracts_ErrorDisplay(t *testing.T) {
 		assert.Contains(t, a.errorLabel.Text, "ERROR:")
 		assert.Empty(t, a.rows)
 		assert.Empty(t, a.rowsFiltered)
-		assert.True(t, attention.IsEmpty())
+		assert.True(t, outstanding.IsEmpty())
 
 		a.selectStatus.SetSelected(contractsStatusAll)
 		assert.True(t, a.errorLabel.Visible())

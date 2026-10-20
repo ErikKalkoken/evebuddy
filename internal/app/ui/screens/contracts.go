@@ -72,9 +72,11 @@ func (f contractsFilter) match(r contractRow) bool {
 	case "", contractsStatusAll:
 		return true
 	case contractsStatusAllOpen:
-		return r.category.IsOpen()
+		return r.categories.ContainsAny(app.ContractCategoriesOpen.All())
 	}
-	return r.category.Display() == f.status
+	return r.categories.ContainsFunc(func(c app.ContractCategory) bool {
+		return c.Display() == f.status
+	})
 }
 
 type contractRow struct {
@@ -84,7 +86,7 @@ type contractRow struct {
 	assigneeName    string
 	availability    app.ContractAvailability
 	buyout          optional.Optional[float64]
-	category        app.ContractCategory
+	categories      set.Set[app.ContractCategory]
 	collateral      optional.Optional[float64]
 	contractID      int64
 	contractType    app.ContractType
@@ -114,7 +116,6 @@ type contractRow struct {
 	startLocation   optional.Optional[*app.EveLocationShort]
 	status          app.ContractStatus
 	statusDisplay   []widget.RichTextSegment
-	statusText      string
 	tags            set.Set[string]
 	title           string
 	typeName        string
@@ -184,7 +185,8 @@ func (r *contractRow) init(issuerID int64, acceptor optional.Optional[*app.EveEn
 		return myIDs.Contains(v.ID)
 	})
 	r.deadline, r.deadlineKind = contractDeadline(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete)
-	r.updateTimeDependent(now)
+	r.statusDisplay = makeContractStatusDisplay(r.status)
+	r.setTimeDependent(now)
 }
 
 // owner returns the character or corporation which owns the contract.
@@ -196,55 +198,37 @@ func (r *contractRow) owner() *app.EveEntity {
 	return &app.EveEntity{ID: r.ownerID, Name: r.ownerName, Category: category}
 }
 
+// setTimeDependent sets the fields which change with time.
+func (r *contractRow) setTimeDependent(now time.Time) {
+	r.categories, r.isExpired, r.isOverdue = app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
+	var isPassed bool
+	r.timeLeftText, isPassed = contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
+	r.timeLeftDisplay = makeTimeLeftDisplay(r.timeLeftText, isPassed)
+}
+
 // updateTimeDependent recomputes the fields which change with time
 // and reports whether any of them changed.
 func (r *contractRow) updateTimeDependent(now time.Time) bool {
-	category, isExpired, isOverdue := app.ContractStateAt(r.status, r.dateExpired, r.dateAccepted, r.daysToComplete, r.issuerIsMine, r.acceptorIsMine, now)
-	timeLeft, isPassed := contractTimeLeftText(r.deadline, r.deadlineKind.passedText(), now)
-	statusChanged := category != r.category || isExpired != r.isExpired || isOverdue != r.isOverdue
-	if !statusChanged && timeLeft == r.timeLeftText {
-		return false
-	}
-	if statusChanged {
-		r.category = category
-		r.isExpired = isExpired
-		r.isOverdue = isOverdue
-		r.statusText = contractStatusText(r.status, isExpired, isOverdue)
-		r.statusDisplay = makeContractStatusDisplay(r.statusText, category)
-	}
-	r.timeLeftText = timeLeft
-	r.timeLeftDisplay = makeTimeLeftDisplay(timeLeft, isPassed)
-	return true
+	categories, isExpired, isOverdue, timeLeft := r.categories, r.isExpired, r.isOverdue, r.timeLeftText
+	r.setTimeDependent(now)
+	return !r.categories.Equal(categories) || r.isExpired != isExpired || r.isOverdue != isOverdue || r.timeLeftText != timeLeft
 }
 
-// contractsAttentionCount returns how many rows require attention.
-func contractsAttentionCount(rows []contractRow) int {
+// contractsOutstandingCount returns how many rows are outstanding.
+func contractsOutstandingCount(rows []contractRow) int {
 	var n int
 	for _, r := range rows {
-		if r.category == app.ContractCategoryRequiresAttention {
+		if r.categories.Contains(app.ContractCategoryOutstanding) {
 			n++
 		}
 	}
 	return n
 }
 
-// contractStatusText returns the status and notes when an open contract
-// has passed its deadline.
-func contractStatusText(status app.ContractStatus, isExpired, isOverdue bool) string {
-	s := status.Display()
-	switch {
-	case status == app.ContractStatusOutstanding && isExpired:
-		return s + " (expired)"
-	case status == app.ContractStatusInProgress && isOverdue:
-		return s + " (overdue)"
-	}
-	return s
-}
-
-// makeContractStatusDisplay returns the status text in the color of its category.
-func makeContractStatusDisplay(text string, category app.ContractCategory) []widget.RichTextSegment {
-	return xwidget.RichTextSegmentsFromText(text, widget.RichTextStyle{
-		ColorName: category.Color(),
+// makeContractStatusDisplay returns the status text in the color of the status.
+func makeContractStatusDisplay(status app.ContractStatus) []widget.RichTextSegment {
+	return xwidget.RichTextSegmentsFromText(status.Display(), widget.RichTextStyle{
+		ColorName: status.Color(),
 	})
 }
 
@@ -338,10 +322,8 @@ func compareContractDeadlines(a, b optional.Optional[time.Time]) int {
 type Contracts struct {
 	widget.BaseWidget
 
-	// OnUpdate reports the contracts needing attention; empty when the update failed.
-	OnUpdate func(attention optional.Optional[int])
-
-	attentionCount int // last count reported to OnUpdate
+	// OnUpdate reports the outstanding contracts; empty when the update failed.
+	OnUpdate func(outstanding optional.Optional[int])
 
 	body           fyne.CanvasObject
 	columnSorter   *xwidget.ColumnSorter[contractRow]
@@ -413,7 +395,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		Label: "Status",
 		Width: 180,
 		Sort: func(a, b contractRow) int {
-			return strings.Compare(a.statusText, b.statusText)
+			return strings.Compare(a.status.String(), b.status.String())
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.statusDisplay)
@@ -775,7 +757,6 @@ func (a *Contracts) update(ctx context.Context) {
 			}
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync("")
-			a.attentionCount = 0
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[int]{})
 			}
@@ -785,7 +766,7 @@ func (a *Contracts) update(ctx context.Context) {
 		})
 		return
 	}
-	attentionCount := contractsAttentionCount(rows)
+	outstandingCount := contractsOutstandingCount(rows)
 	fyne.Do(func() {
 		if !isLatest() {
 			return
@@ -793,15 +774,14 @@ func (a *Contracts) update(ctx context.Context) {
 		a.errorLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
-		a.attentionCount = attentionCount
 		if a.OnUpdate != nil {
-			a.OnUpdate(optional.New(attentionCount))
+			a.OnUpdate(optional.New(outstandingCount))
 		}
 	})
 }
 
 // refreshTimeDependent updates the time dependent fields of all rows,
-// so that list and badge stay current without new data. Must run on the main thread.
+// so that the list stays current without new data. Must run on the main thread.
 func (a *Contracts) refreshTimeDependent(now time.Time) {
 	var changed bool
 	for i := range a.rows {
@@ -813,14 +793,6 @@ func (a *Contracts) refreshTimeDependent(now time.Time) {
 		return
 	}
 	a.filterRowsAsync("")
-	n := contractsAttentionCount(a.rows)
-	if n == a.attentionCount {
-		return
-	}
-	a.attentionCount = n
-	if a.OnUpdate != nil {
-		a.OnUpdate(optional.New(n))
-	}
 }
 
 func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, error) {
