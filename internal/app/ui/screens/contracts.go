@@ -218,7 +218,7 @@ func (r *contractRow) updateTimeDependent(now time.Time) bool {
 func contractsOutstandingCount(rows []contractRow) int {
 	var n int
 	for _, r := range rows {
-		if r.status == app.ContractStatusOutstanding {
+		if r.categories.Contains(app.ContractCategoryOutstanding) {
 			n++
 		}
 	}
@@ -395,7 +395,7 @@ func newContracts(u baseUI, forCorporation bool) *Contracts {
 		Label: "Status",
 		Width: 180,
 		Sort: func(a, b contractRow) int {
-			return strings.Compare(a.status.Display(), b.status.Display())
+			return strings.Compare(a.status.String(), b.status.String())
 		},
 		Update: func(r contractRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).Set(r.statusDisplay)

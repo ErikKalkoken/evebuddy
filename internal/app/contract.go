@@ -49,6 +49,8 @@ type ContractCategory uint
 
 const (
 	ContractCategoryUndefined ContractCategory = iota
+	// Contains exactly the contracts with status outstanding, including expired ones.
+	// The corporation overview count relies on this.
 	ContractCategoryOutstanding
 	ContractCategoryInProgress
 	ContractCategoryRequiresAttention

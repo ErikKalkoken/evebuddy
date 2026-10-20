@@ -182,6 +182,14 @@ func TestContractStateAt(t *testing.T) {
 			xassert.Equal(t, tc.wantOverdue, isOverdue)
 		})
 	}
+	t.Run("outstanding category contains exactly the outstanding contracts", func(t *testing.T) {
+		for status := app.ContractStatusUndefined; status <= app.ContractStatusReversed; status++ {
+			for _, dateExpired := range []time.Time{past, future} {
+				categories, _, _ := app.ContractStateAt(status, dateExpired, accepted, optional.New[int64](3), true, true, now)
+				xassert.Equal(t, status == app.ContractStatusOutstanding, categories.Contains(app.ContractCategoryOutstanding))
+			}
+		}
+	})
 }
 
 func TestContractIsExpiredAt(t *testing.T) {
