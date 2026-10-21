@@ -204,7 +204,7 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Mails) update(ctx context.Context) {
 	// discard running checks and keep ticks checking, also when returning early
-	a.NavigationPane.downloadedRun.Start()
+	a.NavigationPane.downloadedRun.Discard()
 	a.bodiesComplete.Store(false)
 	isLatest := a.updateRun.Start()
 	clearAll := func(failed bool) {
@@ -219,7 +219,7 @@ func (a *Mails) update(ctx context.Context) {
 		}
 		a.missingPercent.Store(0)
 		a.MessagePane.currentFolder.Store(nil)
-		a.MessagePane.updateRun.Start() // discards message pane updates still loading
+		a.MessagePane.updateRun.Discard()
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -1108,7 +1108,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 }
 
 func (a *mailsMessagePane) clear() {
-	a.filterRun.Start() // discards pending filter results
+	a.filterRun.Discard()
 	xslices.Clear(&a.rows)
 	xslices.Clear(&a.rowsFiltered)
 	a.rowsFolderUID = ""

@@ -37,4 +37,13 @@ func TestLatestRun(t *testing.T) {
 		// then
 		assert.False(t, isLatest())
 	})
+	t.Run("should report a started run as outdated after Discard", func(t *testing.T) {
+		// given
+		var r xsync.LatestRun
+		isLatest := r.Start()
+		// when
+		r.Discard()
+		// then
+		assert.False(t, isLatest())
+	})
 }

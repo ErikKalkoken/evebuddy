@@ -414,8 +414,8 @@ func (a *browserNavigation) resetFilters() {
 
 func (a *browserNavigation) clear() {
 	// discard loads and filters still running, and assets of the previous owner
-	a.updateRun.Start()
-	a.filterRun.Start()
+	a.updateRun.Discard()
+	a.filterRun.Discard()
 	a.filteredTrees = make(map[assetFilter]filteredTree)
 	a.locations.Clear()
 	a.locations.UnselectAll()

@@ -11,3 +11,6 @@ func (l *LatestRun) Start() func() bool {
 	n := l.n.Add(1)
 	return func() bool { return l.n.Load() == n }
 }
+
+// Discard marks all started runs as outdated.
+func (l *LatestRun) Discard() { l.n.Add(1) }

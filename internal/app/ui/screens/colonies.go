@@ -639,7 +639,7 @@ func (a *Colonies) Update(ctx context.Context) {
 				return
 			}
 			xslices.Clear(&a.rows)
-			a.forecastRun.Start() // discards pending forecast refreshes
+			a.forecastRun.Discard()
 			a.filterRowsAsync("")
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[int]{})
@@ -656,7 +656,7 @@ func (a *Colonies) Update(ctx context.Context) {
 		}
 		a.errorLabel.Hide()
 		a.rows = rows
-		a.forecastRun.Start() // discards pending forecast refreshes
+		a.forecastRun.Discard()
 		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})

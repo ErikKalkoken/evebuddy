@@ -318,9 +318,8 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
-				// discard updates and forecast refreshes still running
-				a.rowsRun.Start()
-				a.forecastRun.Start()
+				a.rowsRun.Discard()
+				a.forecastRun.Discard()
 				a.setIssue("Character has been removed")
 			})
 		}
@@ -489,8 +488,8 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
-			a.colony = nil        // so a refresh can't bring it back
-			a.forecastRun.Start() // discards pending forecast refreshes
+			a.colony = nil // so a refresh can't bring it back
+			a.forecastRun.Discard()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
@@ -544,7 +543,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.colony = cp
 		a.setStatus(cp, stopped, status)
 		a.rows = rows
-		a.forecastRun.Start() // discards pending forecast refreshes
+		a.forecastRun.Discard()
 		a.filterRowsAsync()
 	})
 	return nil

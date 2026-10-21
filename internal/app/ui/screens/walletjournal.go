@@ -454,7 +454,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.Start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
@@ -560,7 +560,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.Start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

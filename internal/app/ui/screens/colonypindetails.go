@@ -134,9 +134,8 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		if o.ID == a.characterID {
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
-				// discard updates and forecast refreshes still running
-				a.rowsRun.Start()
-				a.forecastRun.Start()
+				a.rowsRun.Discard()
+				a.forecastRun.Discard()
 				a.setIssue("Character has been removed")
 			})
 		}
@@ -176,8 +175,8 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
-			a.colony = nil        // so a refresh can't forecast it again
-			a.forecastRun.Start() // discards pending forecast refreshes
+			a.colony = nil // so a refresh can't forecast it again
+			a.forecastRun.Discard()
 			if notFound {
 				a.set(colonyPinInfo{}) // shows that the installation no longer exists
 				a.clearIssue()
@@ -198,7 +197,7 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 		}
 		a.colony = cp
 		a.extraTypeNames = extraTypeNames
-		a.forecastRun.Start() // discards pending forecast refreshes
+		a.forecastRun.Discard()
 		a.set(info)
 		a.clearIssue()
 	})
