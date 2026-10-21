@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"sync"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 
@@ -45,6 +43,11 @@ type baseUI interface {
 	Signals() *app.Signals
 }
 
+// runAsync runs f in a new goroutine.
+//
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
+
 func Show(u baseUI) {
 	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
 	if !created {
@@ -65,7 +68,7 @@ func Show(u baseUI) {
 		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	w.Show()
-	go cw.update(context.Background())
+	cw.update(context.Background())
 }
 
 type manageCharacters struct {
@@ -74,6 +77,7 @@ type manageCharacters struct {
 	characterAdmin    *admin
 	characterTags     *manageTags
 	characterTraining *training
+	displaySnackbar   func(string)
 	sb                *kxwidget.Snackbar
 	u                 baseUI
 	w                 fyne.Window
@@ -86,6 +90,7 @@ func newManageCharacters(u baseUI, w fyne.Window) *manageCharacters {
 		w:  w,
 	}
 	a.ExtendBaseWidget(a)
+	a.displaySnackbar = a.sb.Display
 	a.characterAdmin = newAdmin(a)
 	a.characterTags = newManageTags(a)
 	a.characterTraining = newTraining(a)
@@ -105,23 +110,23 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *manageCharacters) stop() {
 	a.sb.Stop()
+	a.characterTags.stop()
+	a.characterTraining.stop()
 }
 
 func (a *manageCharacters) update(ctx context.Context) {
-	var wg sync.WaitGroup
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterAdmin.update(ctx)
 	})
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterTags.update(ctx)
 	})
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterTraining.update(ctx)
 	})
-	wg.Wait()
 }
 
 func (a *manageCharacters) reportError(text string, err error) {
 	slog.Error(text, "error", err)
-	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
+	a.displaySnackbar(fmt.Sprintf("ERROR: %s: %s", text, err))
 }

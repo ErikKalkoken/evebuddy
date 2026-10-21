@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -36,9 +37,11 @@ type admin struct {
 	widget.BaseWidget
 
 	ab         *xwidget.AppBar
+	addButton  *widget.Button
 	cw         *manageCharacters
 	characters *widget.List
 	rows       []adminRow
+	rowsLoad   atomic.Int64 // identifies the newest rows load
 }
 
 func newAdmin(cw *manageCharacters) *admin {
@@ -47,16 +50,16 @@ func newAdmin(cw *manageCharacters) *admin {
 	}
 	a.ExtendBaseWidget(a)
 	a.characters = a.makeCharacterList()
-	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	a.addButton = widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	add.Importance = widget.HighImportance
+	a.addButton.Importance = widget.HighImportance
 	if a.cw.u.IsOffline() {
-		add.Disable()
+		a.addButton.Disable()
 	}
 	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
-		container.NewVBox(add, xwidget.NewStandardSpacer()),
+		container.NewVBox(a.addButton, xwidget.NewStandardSpacer()),
 		nil,
 		nil,
 		a.characters,
@@ -91,15 +94,22 @@ func (a *admin) makeCharacterList() *widget.List {
 }
 
 func (a *admin) update(ctx context.Context) {
+	load := a.rowsLoad.Add(1)
 	characters, err := a.fetchRows(ctx)
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
+		if load != a.rowsLoad.Load() {
+			return // outdated
+		}
 		a.cw.reportError("Failed to update characters", err)
 		return
 	}
 	fyne.Do(func() {
+		if load != a.rowsLoad.Load() {
+			return // outdated
+		}
 		a.rows = characters
 		a.characters.Refresh()
 		a.ab.SetTitle(fmt.Sprintf("Characters (%d)", len(characters)))
@@ -197,7 +207,7 @@ func (a *admin) showAddCharacterDialog() {
 						slog.Int64("characterID", character.ID),
 						slog.Any("error", err),
 					)
-					a.cw.sb.Display("Failed to load character")
+					a.cw.displaySnackbar("Failed to load character")
 				}
 			}
 			if a.cw.u.CurrentCorporation() == nil {
@@ -212,11 +222,13 @@ func (a *admin) showAddCharacterDialog() {
 							slog.Int64("corporationID", c.ID),
 							slog.Any("error", err),
 						)
-						a.cw.sb.Display("Failed to load corporation")
+						a.cw.displaySnackbar("Failed to load corporation")
 					}
 				}
 			}
-			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
+			runAsync(func() {
+				a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
+			})
 			if !a.cw.u.IsUpdateDisabled() {
 				a.cw.u.Character().UpdateCharacterAndRefreshIfNeededAsync(character.ID, true)
 			}
@@ -266,7 +278,7 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 		return
 	}
 	a.update(ctx)
-	a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
+	a.cw.displaySnackbar(fmt.Sprintf("Character %s deleted", r.characterName))
 
 	if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
 		err := a.cw.u.SetAnyCharacter(ctx)
@@ -302,9 +314,11 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 		}
 	}
 
-	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
-		ID:   r.characterID,
-		Name: r.characterName,
+	runAsync(func() {
+		a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
+			ID:   r.characterID,
+			Name: r.characterName,
+		})
 	})
 }
 
