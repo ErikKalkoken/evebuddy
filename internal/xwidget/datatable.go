@@ -15,8 +15,6 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
-
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // SortDir represents the sort direction for a data table.
@@ -257,14 +255,14 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol string, dir SortDir, doSor
 
 // NewSortChip creates a [SortChip] for a [ColumnSorter].
 func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string) *kxwidget.SortChip {
-	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
-		return h.Label
-	}))
-
 	ignored := set.Of(ignoredColumns...)
-	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
-		return ignored.Contains(c)
-	})
+	var sortColumns []string
+	for c := range cs.columns.Values() {
+		if c.Sort == nil || ignored.Contains(c.Label) {
+			continue
+		}
+		sortColumns = append(sortColumns, c.Label)
+	}
 	col, dir := cs.current() // TODO: Hack, replace with defaults
 	var defaultColumn string
 	if col >= 0 {

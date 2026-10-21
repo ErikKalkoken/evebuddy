@@ -248,6 +248,26 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 		assert.Nil(t, findMenuItem(w, "Bravo"))
 		assert.Nil(t, findMenuItem(w, "Charlie"))
 	})
+
+	t.Run("excludes columns without sort func from the menu", func(t *testing.T) {
+		// given
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label: "Alpha",
+			Sort:  func(a, b myRow) int { return 0 },
+		}, {
+			Label: "Bravo",
+		}})
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		chip := sc.NewSortChip(nil)
+		w := test.NewWindow(chip)
+		defer w.Close()
+		w.Resize(fyne.NewSize(300, 400))
+		// when
+		test.Tap(chip)
+		// then
+		assert.NotNil(t, findMenuItem(w, "Alpha"))
+		assert.Nil(t, findMenuItem(w, "Bravo"))
+	})
 }
 
 // findMenuItem searches the topmost canvas overlay of w for a text object matching label.
