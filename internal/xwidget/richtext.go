@@ -1,14 +1,13 @@
 package xwidget
 
 import (
-	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
-// RichTextSegmentsFromText returns a single text segment for s.
+// RichTextSegmentsFromText returns a text segment from s.
 // The optional style is applied to the segment.
 func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
 	seg := &widget.TextSegment{Text: s}
@@ -18,48 +17,47 @@ func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.
 	return []widget.RichTextSegment{seg}
 }
 
-// RichTextSegmentsInlined returns an inlined copy of the segments,
+// RichTextSegmentsInlined returns an inlined copy of the text segments,
 // so they are all rendered in the same line.
-// Non-inlinable segments are skipped.
+// Non-text segments are skipped.
 func RichTextSegmentsInlined(segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
-	segs := slices.Concat(segments...)
-	if len(segs) == 0 {
-		return nil
+	var texts []*widget.TextSegment
+	for _, s := range slices.Concat(segments...) {
+		if t, ok := s.(*widget.TextSegment); ok {
+			texts = append(texts, t)
+		}
 	}
-	var segs2 []widget.RichTextSegment
-	for _, s := range segs[:len(segs)-1] {
-		if s.Inline() {
-			segs2 = append(segs2, s)
-			continue
+	segs2 := make([]widget.RichTextSegment, 0, len(texts))
+	for i, t := range texts {
+		t2 := copyTextSegment(t)
+		if i < len(texts)-1 {
+			t2.Style.Inline = true
 		}
-		t, ok := s.(*widget.TextSegment)
-		if !ok {
-			slog.Warn("RichTextSegmentsInlined: Skipping non inlinable segment")
-			continue
-		}
-		t2 := &widget.TextSegment{Text: t.Text, Style: t.Style}
-		t2.Style.Inline = true
 		segs2 = append(segs2, t2)
 	}
-	segs2 = append(segs2, segs[len(segs)-1])
 	return segs2
 }
 
-// RichTextSegmentsWithStyle returns a copy where the style of all segments is modified by f.
+// RichTextSegmentsWithStyle returns a copy where the style of all text segments is modified by f.
 // Non-text segments are kept unchanged.
 func RichTextSegmentsWithStyle(segments []widget.RichTextSegment, f func(x *widget.RichTextStyle)) []widget.RichTextSegment {
-	var segs2 []widget.RichTextSegment
+	segs2 := make([]widget.RichTextSegment, 0, len(segments))
 	for _, x := range segments {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {
 			segs2 = append(segs2, x)
 			continue
 		}
-		t2 := &widget.TextSegment{Text: t.Text, Style: t.Style}
+		t2 := copyTextSegment(t)
 		f(&t2.Style)
 		segs2 = append(segs2, t2)
 	}
 	return segs2
+}
+
+// copyTextSegment returns a new text segment with the text and style of t.
+func copyTextSegment(t *widget.TextSegment) *widget.TextSegment {
+	return &widget.TextSegment{Text: t.Text, Style: t.Style}
 }
 
 // RichText is a variant of [widget.RichText] which adds convenience setters.

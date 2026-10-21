@@ -123,11 +123,38 @@ func TestRichTextSegmentsInlined_DoesNotModifyInput(t *testing.T) {
 	assert.False(t, a[0].(*widget.TextSegment).Style.Inline)
 }
 
-func TestRichTextSegmentsInlined_ReturnsNilForEmptyInput(t *testing.T) {
+func TestRichTextSegmentsInlined_ReturnsCopies(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a", widget.RichTextStyle{Inline: true})
+	b := xwidget.RichTextSegmentsFromText("b")
+	// when
+	got := xwidget.RichTextSegmentsInlined(a, b)
+	// then
+	assert.Len(t, got, 2)
+	assert.NotSame(t, a[0], got[0])
+	assert.Equal(t, "a", got[0].(*widget.TextSegment).Text)
+	assert.True(t, got[0].(*widget.TextSegment).Style.Inline)
+	assert.NotSame(t, b[0], got[1])
+	assert.Equal(t, "b", got[1].(*widget.TextSegment).Text)
+	assert.False(t, got[1].(*widget.TextSegment).Style.Inline)
+}
+
+func TestRichTextSegmentsInlined_SkipNonTextLastSegment(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a")
+	x := []widget.RichTextSegment{&widget.ImageSegment{Title: "x"}}
+	// when
+	got := xwidget.RichTextSegmentsInlined(a, x)
+	// then
+	assert.Len(t, got, 1)
+	assert.Equal(t, "a", got[0].(*widget.TextSegment).Text)
+}
+
+func TestRichTextSegmentsInlined_ReturnsEmptyForEmptyInput(t *testing.T) {
 	// when
 	got := xwidget.RichTextSegmentsInlined()
 	// then
-	assert.Nil(t, got)
+	assert.Empty(t, got)
 }
 
 func TestRichTextSegmentsWithStyle_CanModify(t *testing.T) {
@@ -149,8 +176,8 @@ func TestRichTextSegmentsWithStyle_KeepsNonTextUnchanged(t *testing.T) {
 	x := &widget.ImageSegment{Title: "x"}
 	segs := []widget.RichTextSegment{x, &widget.TextSegment{Text: "a"}}
 	// when
-	got := xwidget.RichTextSegmentsWithStyle(segs, func(x *widget.RichTextStyle) {
-		x.ColorName = theme.ColorNameError
+	got := xwidget.RichTextSegmentsWithStyle(segs, func(s *widget.RichTextStyle) {
+		s.ColorName = theme.ColorNameError
 	})
 	// then
 	assert.Len(t, got, 2)
