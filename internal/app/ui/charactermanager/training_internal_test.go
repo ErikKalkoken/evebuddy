@@ -57,6 +57,30 @@ func TestTraining_Update(t *testing.T) {
 			assert.Contains(t, messages[0], "ERROR: Failed to update training")
 		}
 	})
+	t.Run("skips reporting and updates when canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		c := factory.CreateCharacter()
+		a := cw.characterTraining
+		a.update(context.Background())
+		factory.CreateCharacter()
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		// when
+		a.update(ctx)
+		// then
+		assert.Empty(t, messages)
+		if assert.Len(t, a.characters, 1) {
+			assert.Equal(t, c.ID, a.characters[0].ID)
+		}
+	})
 	t.Run("reloads when a character was added", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

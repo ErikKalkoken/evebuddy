@@ -86,6 +86,30 @@ func TestManageTags_Update(t *testing.T) {
 		// then
 		assert.Len(t, pending, 1)
 	})
+	t.Run("skips reporting and updates when canceled", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		tag := factory.CreateCharacterTag("Alpha")
+		a := cw.characterTags
+		a.update(context.Background())
+		factory.CreateCharacterTag("Bravo")
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		// when
+		a.update(ctx)
+		// then
+		assert.Empty(t, messages)
+		if assert.Len(t, a.tags, 1) {
+			assert.Equal(t, tag.ID, a.tags[0].ID)
+		}
+	})
 	t.Run("reports error and keeps tags when loading fails", func(t *testing.T) {
 		// given
 		db2, st2, factory2 := testutil.NewDBInMemory()
@@ -218,6 +242,31 @@ func TestManageTags_SetCharacters(t *testing.T) {
 		if assert.Len(t, a.characters, 1) {
 			assert.Equal(t, c2.ID, a.characters[0].ID)
 		}
+	})
+	t.Run("ignores error of outdated load", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBInMemory()
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		tag := factory2.CreateCharacterTag("Alpha")
+		a := cw.characterTags
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a.setCharactersAsync(tag)
+		runAsync = orig
+		a.setCharactersAsync(nil)
+		db2.Close()
+		// when
+		pending[0]()
+		// then
+		assert.Empty(t, messages)
 	})
 	t.Run("ignores pending load after clearing", func(t *testing.T) {
 		// given
@@ -457,6 +506,40 @@ func TestManageTags_AddCharactersToTag(t *testing.T) {
 		}
 		assert.ElementsMatch(t, []int64{c1.ID, c2.ID}, got)
 		assert.True(t, a.addCharactersButton.Disabled())
+		select {
+		case <-tagsChanged:
+		case <-time.After(5 * time.Second):
+			t.Fatal("TagsChanged not emitted")
+		}
+	})
+	t.Run("shows characters added before an error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		tagsChanged := make(chan struct{}, 1)
+		u.Signals().TagsChanged.AddListener(func(context.Context, struct{}) {
+			tagsChanged <- struct{}{}
+		})
+		tag := factory.CreateCharacterTag("Alpha")
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		a := cw.characterTags
+		a.update(context.Background())
+		// when
+		a.addCharactersToTag(context.Background(), tag, []int64{c1.ID, 0, c2.ID})
+		// then
+		if assert.Len(t, a.characters, 1) {
+			assert.Equal(t, c1.ID, a.characters[0].ID)
+		}
+		if assert.Len(t, messages, 1) {
+			assert.Contains(t, messages[0], "ERROR: Failed to add tag to character")
+		}
 		select {
 		case <-tagsChanged:
 		case <-time.After(5 * time.Second):

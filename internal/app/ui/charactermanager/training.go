@@ -173,6 +173,9 @@ func (a *training) indexOf(characterID int64) int {
 
 func (a *training) update(ctx context.Context) {
 	characters, err := a.cw.u.Character().ListCharacters(ctx)
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		a.cw.reportError("Failed to update training", err)
 		return

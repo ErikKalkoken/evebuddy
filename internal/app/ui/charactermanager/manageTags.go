@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -28,7 +29,7 @@ type manageTags struct {
 	addCharactersButton *widget.Button
 	characterList       *widget.List
 	characters          []*app.EntityShort
-	charactersLoad      int // identifies the newest characters load; main thread only
+	charactersLoad      atomic.Int64 // identifies the newest characters load
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *xwidget.AppBar
@@ -266,12 +267,17 @@ func (a *manageTags) makeAddCharacterButton() *widget.Button {
 }
 
 func (a *manageTags) addCharactersToTag(ctx context.Context, tag *app.CharacterTag, characterIDs []int64) {
+	var added int
 	for _, characterID := range characterIDs {
 		err := a.cw.u.Character().AddTagToCharacter(ctx, characterID, tag.ID)
 		if err != nil {
 			a.cw.reportError("Failed to add tag to character", err)
-			return
+			break
 		}
+		added++
+	}
+	if added == 0 {
+		return
 	}
 	fyne.Do(func() {
 		a.setCharactersAsync(tag)
@@ -410,8 +416,7 @@ func (a *manageTags) removeCharacterFromTag(ctx context.Context, tag *app.Charac
 
 func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
-	a.charactersLoad++
-	load := a.charactersLoad
+	load := a.charactersLoad.Add(1)
 	if tag == nil {
 		xslices.Clear(&a.characters)
 		a.characterList.Refresh()
@@ -425,11 +430,14 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	runAsync(func() {
 		tagged, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
+			if load != a.charactersLoad.Load() {
+				return // outdated
+			}
 			a.cw.reportError("Failed to list characters for "+tag.Name, err)
 			return
 		}
 		fyne.Do(func() {
-			if load != a.charactersLoad {
+			if load != a.charactersLoad.Load() {
 				return // outdated
 			}
 			a.characters = tagged
@@ -504,6 +512,9 @@ func (a *manageTags) selectTagByName(name string) {
 
 func (a *manageTags) update(ctx context.Context) {
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		a.cw.reportError("Failed to list tags", err)
 		return
