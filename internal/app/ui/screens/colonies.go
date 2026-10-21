@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -169,13 +170,13 @@ type Colonies struct {
 	body              fyne.CanvasObject
 	columnSorter      *xwidget.ColumnSorter[colonyRow]
 	filterChip        *xwidget.FilterChipCompact // only on mobile
-	filterRun         latestRun
+	filterRun         xsync.LatestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
-	forecastRun       latestRun
+	forecastRun       xsync.LatestRun
 	rows              []colonyRow
 	rowsGen           int // incremented when Update replaces rows
-	rowsRun           latestRun
+	rowsRun           xsync.LatestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
 	selectExtracting  *kxwidget.FilterChipSelect // select chips only on desktop
@@ -535,7 +536,7 @@ func (a *Colonies) currentFilter() colonyFilter {
 }
 
 func (a *Colonies) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -627,7 +628,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 }
 
 func (a *Colonies) Update(ctx context.Context) {
-	isLatest := a.rowsRun.start()
+	isLatest := a.rowsRun.Start()
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -668,7 +669,7 @@ func (a *Colonies) refreshForecasts() {
 	if len(a.rows) == 0 {
 		return // keeps the badge of a failed update
 	}
-	isLatest := a.forecastRun.start()
+	isLatest := a.forecastRun.Start()
 	gen := a.rowsGen
 	rows := slices.Clone(a.rows)
 	runAsync(func() {

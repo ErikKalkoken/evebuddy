@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -52,7 +53,7 @@ type CorporationWealth struct {
 	helpButton              *xwidget.Button
 	statusLabel             *widget.Label
 	u                       baseUI
-	updateRun               latestRun
+	updateRun               xsync.LatestRun
 	walletsCard             *chartCard
 	walletsChart            *fyneline.BarChart[corporationDivisionValue]
 	walletsTitleLabel       *widget.Label
@@ -146,7 +147,7 @@ func (a *CorporationWealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CorporationWealth) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func(text string, importance widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {

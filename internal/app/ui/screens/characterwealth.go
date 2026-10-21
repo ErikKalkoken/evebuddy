@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -125,8 +126,8 @@ type CharacterWealth struct {
 	characterSplitTitleLabel     *widget.Label
 	details                      *characterWealthDetails
 	filterChip                   *xwidget.FilterChipCompact // only on mobile
-	filterRun                    latestRun
-	updateRun                    latestRun
+	filterRun                    xsync.LatestRun
+	updateRun                    xsync.LatestRun
 	updateErr                    error // error of the last update
 	footer                       *widget.Label
 	overviewGrid                 *fyne.Container
@@ -269,7 +270,7 @@ func (a *CharacterWealth) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterWealth) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, total, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -324,7 +325,7 @@ func (a *CharacterWealth) currentFilter() (tag, corporation, alliance string) {
 // filterRowsAsync applies the filters and updates all tabs.
 // Must be called on the main thread.
 func (a *CharacterWealth) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	rows := slices.Clone(a.rows)
 	// An error takes priority over the empty text.
 	hasError := a.updateErr != nil
@@ -608,7 +609,7 @@ type characterWealthDetails struct {
 	widget.BaseWidget
 
 	columnSorter *xwidget.ColumnSorter[characterWealthDetailsRow]
-	filterRun    latestRun
+	filterRun    xsync.LatestRun
 	main         fyne.CanvasObject
 	rows         []characterWealthDetailsRow
 	rowsFiltered []characterWealthDetailsRow
@@ -816,7 +817,7 @@ func (a *characterWealthDetails) setRows(rows []characterWealthRow) {
 }
 
 func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)

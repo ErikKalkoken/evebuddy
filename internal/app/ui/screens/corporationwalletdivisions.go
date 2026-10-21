@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -58,7 +59,7 @@ type CorporationWalletDivisions struct {
 	rowsSorted   []corporationWalletRow // sorted rows plus total row
 	status       *widget.Label
 	u            baseUI
-	updateRun    latestRun
+	updateRun    xsync.LatestRun
 	sortChip     *kxwidget.SortChip
 }
 
@@ -191,7 +192,7 @@ func (a *CorporationWalletDivisions) makeList() *xwidget.StripedList {
 
 // Update reloads the wallet names and balances.
 func (a *CorporationWalletDivisions) Update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	data := fetchCorporationWalletsData(ctx, a.u, a.corporation.Load().IDOrZero())
 	if ctx.Err() != nil {
 		return

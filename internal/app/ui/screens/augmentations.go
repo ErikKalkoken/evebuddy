@@ -22,6 +22,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -80,8 +81,8 @@ type Augmentations struct {
 
 	collapseBranches *ttwidget.Button
 	filterChip       *xwidget.FilterChipCompact // only on mobile
-	filterRun        latestRun
-	updateRun        latestRun
+	filterRun        xsync.LatestRun
+	updateRun        xsync.LatestRun
 	footerLabel      *widget.Label
 	errorLabel       *widget.Label
 	selectImplants   *kxwidget.FilterChipSelect // select chips only on desktop
@@ -200,7 +201,7 @@ func (a *Augmentations) makeTree() *xwidget.Tree[augmentationNode] {
 }
 
 func (a *Augmentations) filterTreeAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	total := a.treeData.ChildrenCount(nil)
 	filter := a.currentFilter()
 	td := a.treeData.Clone()
@@ -241,7 +242,7 @@ func (a *Augmentations) filterTreeAsync() {
 }
 
 func (a *Augmentations) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	td, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

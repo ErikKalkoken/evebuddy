@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -329,8 +330,8 @@ type Contracts struct {
 	columnSorter   *xwidget.ColumnSorter[contractRow]
 	corporation    atomic.Pointer[app.Corporation]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
-	filterRun      latestRun
-	updateRun      latestRun
+	filterRun      xsync.LatestRun
+	updateRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
@@ -675,7 +676,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 }
 
 func (a *Contracts) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -738,7 +739,7 @@ func (a *Contracts) filterRowsAsync(sortCol string) {
 }
 
 func (a *Contracts) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	var err error
 	var rows []contractRow
 	if a.forCorporation {

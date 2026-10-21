@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -45,7 +46,7 @@ type SkillQueue struct {
 	statusResource       fyne.Resource
 	topLabel             *widget.Label
 	u                    baseUI
-	updateRun            latestRun
+	updateRun            xsync.LatestRun
 }
 
 // NewSkillQueue returns a new characterSkillQueue for the current character.
@@ -183,7 +184,7 @@ func (a *SkillQueue) Stop() {
 }
 
 func (a *SkillQueue) Update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setState := func(st skillQueueState) {
 		fyne.Do(func() {
 			if !isLatest() {

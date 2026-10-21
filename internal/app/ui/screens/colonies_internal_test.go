@@ -99,7 +99,7 @@ func TestColonies(t *testing.T) {
 	})
 	t.Run("should not invalidate a running update when refreshing", func(t *testing.T) {
 		a := newColonies(t)
-		isLatest := a.rowsRun.start() // simulates an update in flight
+		isLatest := a.rowsRun.Start() // simulates an update in flight
 		a.refreshForecasts()
 		assert.True(t, isLatest())
 	})

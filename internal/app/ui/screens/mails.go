@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -109,7 +110,7 @@ type Mails struct {
 	sig               *singleinstance.Group
 	u                 baseUI
 	unreadCount       atomic.Int64 // -1 when unknown
-	updateRun         latestRun
+	updateRun         xsync.LatestRun
 }
 
 func NewMailsForCharacter(u baseUI) *Mails {
@@ -203,9 +204,9 @@ func (a *Mails) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *Mails) update(ctx context.Context) {
 	// discard running checks and keep ticks checking, also when returning early
-	a.NavigationPane.downloadedRun.start()
+	a.NavigationPane.downloadedRun.Start()
 	a.bodiesComplete.Store(false)
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	clearAll := func(failed bool) {
 		if !isLatest() {
 			return
@@ -218,7 +219,7 @@ func (a *Mails) update(ctx context.Context) {
 		}
 		a.missingPercent.Store(0)
 		a.MessagePane.currentFolder.Store(nil)
-		a.MessagePane.updateRun.start() // discards message pane updates still loading
+		a.MessagePane.updateRun.Start() // discards message pane updates still loading
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -497,7 +498,7 @@ type mailsNavigationPane struct {
 	charactersLoaded      int
 	charactersTotal       int
 	composeButton         *widget.Button
-	downloadedRun         latestRun
+	downloadedRun         xsync.LatestRun
 	folderDownloadedLabel *ttwidget.Label
 	foldersTree           *xwidget.Tree[mailFolderNode]
 	folderTotalLabel      *widget.Label
@@ -617,7 +618,7 @@ type mailsDownloaded struct {
 // updateDownloaded shows how many mail bodies are downloaded.
 // With notify it calls OnUpdate when the percentage changed.
 func (a *mailsNavigationPane) updateDownloaded(ctx context.Context, notify bool) {
-	isLatest := a.downloadedRun.start()
+	isLatest := a.downloadedRun.Start()
 	r, ok := a.fetchDownloaded(ctx)
 	if !ok {
 		return
@@ -984,7 +985,7 @@ type mailsMessagePane struct {
 	currentFolder atomic.Pointer[mailFolderNode]
 	errorLabel    *widget.Label
 	filterChip    *xwidget.FilterChipCompact
-	filterRun     latestRun
+	filterRun     xsync.LatestRun
 	footerLabel   *widget.Label
 	headerList    *widget.List
 	ma            *Mails
@@ -995,7 +996,7 @@ type mailsMessagePane struct {
 	searchEntry   *xwidget.SearchEntry
 	sortChip      *kxwidget.SortChip
 	topLabel      *widget.Label
-	updateRun     latestRun
+	updateRun     xsync.LatestRun
 }
 
 func newMailsMessagePane(ma *Mails) *mailsMessagePane {
@@ -1107,7 +1108,7 @@ func (a *mailsMessagePane) makeHeaderList() *widget.List {
 }
 
 func (a *mailsMessagePane) clear() {
-	a.filterRun.start() // discards pending filter results
+	a.filterRun.Start() // discards pending filter results
 	xslices.Clear(&a.rows)
 	xslices.Clear(&a.rowsFiltered)
 	a.rowsFolderUID = ""
@@ -1189,7 +1190,7 @@ func (a *mailsMessagePane) updateIsRead() {
 
 // update refreshes the headers for the current folder.
 func (a *mailsMessagePane) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	folder := a.currentFolder.Load()
 	reset := func() {
 		a.clear()
@@ -1254,7 +1255,7 @@ func (a *mailsMessagePane) isCurrentFolder(folder *mailFolderNode) bool {
 }
 
 func (a *mailsMessagePane) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	rows := slices.Clone(a.rows)
 	totalRows := len(rows)
 	filter := a.filterChip.Selected()

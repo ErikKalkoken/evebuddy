@@ -39,16 +39,6 @@ func clearSelectsSilent(chips ...*kxwidget.FilterChipSelect) {
 	}
 }
 
-// latestRun identifies the newest of overlapping async runs,
-// so results from older runs can be discarded.
-type latestRun struct{ n atomic.Int64 }
-
-// start begins a new run and returns a function reporting whether it is still the newest.
-func (l *latestRun) start() func() bool {
-	n := l.n.Add(1)
-	return func() bool { return l.n.Load() == n }
-}
-
 // swapReloadedCharacter stores a reloaded character unless it was replaced meanwhile.
 // It reports false when the current character is now a different one.
 func swapReloadedCharacter(p *atomic.Pointer[app.Character], old, reloaded *app.Character) bool {

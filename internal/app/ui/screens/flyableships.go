@@ -69,8 +69,8 @@ type FlyableShips struct {
 	character     atomic.Pointer[app.Character]
 	columnSorter  *xwidget.ColumnSorter[flyableShipRow]
 	filterChip    *xwidget.FilterChipCompact // only on mobile
-	filterRun     latestRun
-	updateRun     latestRun
+	filterRun     xsync.LatestRun
+	updateRun     xsync.LatestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	imageCache    xsync.Map[string, image.Image]
@@ -234,7 +234,7 @@ func (a *FlyableShips) currentFilter() flyableShipsFilter {
 }
 
 func (a *FlyableShips) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	filter := a.currentFilter()
@@ -286,7 +286,7 @@ func (a *FlyableShips) filterRowsAsync() {
 }
 
 func (a *FlyableShips) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

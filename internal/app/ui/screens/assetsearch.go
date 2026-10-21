@@ -33,6 +33,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -270,8 +271,8 @@ type AssetSearch struct {
 	columnSorter   *xwidget.ColumnSorter[assetRow]
 	corporation    atomic.Pointer[app.Corporation]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
-	filterRun      latestRun
-	updateRun      latestRun
+	filterRun      xsync.LatestRun
+	updateRun      xsync.LatestRun
 	footer         *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
@@ -762,7 +763,7 @@ func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) erro
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -855,7 +856,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 }
 
 func (a *AssetSearch) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -86,8 +87,8 @@ type CharacterContacts struct {
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[characterContactRow]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
-	filterRun      latestRun
-	updateRun      latestRun
+	filterRun      xsync.LatestRun
+	updateRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	list           fyne.CanvasObject
@@ -313,7 +314,7 @@ func (a *CharacterContacts) makeList() fyne.CanvasObject {
 }
 
 func (a *CharacterContacts) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -442,13 +443,13 @@ func (a *CharacterContacts) filterRowsAsync() {
 }
 
 func (a *CharacterContacts) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rest := func() {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Start() // discard results of filters still running
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

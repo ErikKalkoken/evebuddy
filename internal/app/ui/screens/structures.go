@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -145,8 +146,8 @@ type Structures struct {
 	columnSorter      *xwidget.ColumnSorter[structureRow]
 	corporation       atomic.Pointer[app.Corporation]
 	filterChip        *xwidget.FilterChipCompact // only on mobile
-	filterRun         latestRun
-	updateRun         latestRun
+	filterRun         xsync.LatestRun
+	updateRun         xsync.LatestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	forCorporation    bool
@@ -412,7 +413,7 @@ func (a *Structures) currentFilter() structuresFilter {
 }
 
 func (a *Structures) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -488,7 +489,7 @@ func (a *Structures) filterRowsAsync(sortCol string) {
 }
 
 func (a *Structures) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

@@ -68,9 +68,9 @@ type colonyDetails struct {
 	colony        *app.CharacterPlanet
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
 	filterChip    *xwidget.FilterChipCompact
-	filterRun     latestRun
+	filterRun     xsync.LatestRun
 	footer        *widget.Label
-	forecastRun   latestRun
+	forecastRun   xsync.LatestRun
 	icon          *colonyPlanetSymbol
 	installations *widget.List
 	owner         *widget.Hyperlink
@@ -81,7 +81,7 @@ type colonyDetails struct {
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
 	rowsGen       int // incremented when Update replaces rows
-	rowsRun       latestRun
+	rowsRun       xsync.LatestRun
 	searchEntry   *xwidget.SearchEntry
 	helpButton    *xwidget.Button
 	showPin       func(pinID int64, title string)
@@ -400,7 +400,7 @@ func (a *colonyDetails) refreshForecast() {
 	if cp == nil {
 		return
 	}
-	isLatest := a.forecastRun.start()
+	isLatest := a.forecastRun.Start()
 	gen := a.rowsGen
 	runAsync(func() {
 		stopped, status, rows := a.makeRows(cp, time.Now())
@@ -416,7 +416,7 @@ func (a *colonyDetails) refreshForecast() {
 }
 
 func (a *colonyDetails) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.filterChip.Selected()
@@ -482,7 +482,7 @@ func (a *colonyDetails) filterRowsAsync() {
 }
 
 func (a *colonyDetails) Update(ctx context.Context) error {
-	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
+	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

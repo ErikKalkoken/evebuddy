@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // colonyPinInfo is the information shown for an installation.
@@ -49,7 +50,7 @@ type colonyPinDetails struct {
 	content        *fyne.Container
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
-	forecastRun    latestRun
+	forecastRun    xsync.LatestRun
 	header         *colonyPinWidget
 	inputs         *colonyInputList
 	inputsTab      *container.TabItem
@@ -65,7 +66,7 @@ type colonyPinDetails struct {
 	routesTab      *container.TabItem
 	showPin        func(pinID int64, title string)
 	rowsGen        int // incremented when Update replaces the colony
-	rowsRun        latestRun
+	rowsRun        xsync.LatestRun
 	signalKey      string
 	storage        *colonyStorageList
 	storageTab     *container.TabItem
@@ -165,7 +166,7 @@ func (a *colonyPinDetails) clearIssue() {
 
 // Update reloads the colony and shows the installation.
 func (a *colonyPinDetails) Update(ctx context.Context) error {
-	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
+	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
 	cp, err := a.u.Character().GetPlanet(ctx, a.characterID, a.planetID)
 	if err != nil {
 		notFound := errors.Is(err, app.ErrNotFound)
@@ -233,7 +234,7 @@ func (a *colonyPinDetails) refreshForecast() {
 		return
 	}
 	extraTypeNames := a.extraTypeNames
-	isLatest := a.forecastRun.start()
+	isLatest := a.forecastRun.Start()
 	gen := a.rowsGen
 	runAsync(func() {
 		now := time.Now()

@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -106,8 +107,8 @@ type CharacterOverview struct {
 	OnUpdate func(characters int)
 
 	filterChip        *xwidget.FilterChipCompact // only on mobile
-	filterRun         latestRun
-	updateRun         latestRun
+	filterRun         xsync.LatestRun
+	updateRun         xsync.LatestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	columnSorter      *xwidget.ColumnSorter[characterOverviewRow]
@@ -380,7 +381,7 @@ func (a *CharacterOverview) currentFilter() characterOverviewFilter {
 }
 
 func (a *CharacterOverview) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	rows := slices.Clone(a.rows)
 	total := len(rows)
 	filter := a.currentFilter()
@@ -445,7 +446,7 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 }
 
 func (a *CharacterOverview) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

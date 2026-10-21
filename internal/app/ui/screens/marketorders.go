@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -167,8 +168,8 @@ type MarketOrders struct {
 
 	columnSorter *xwidget.ColumnSorter[marketOrderRow]
 	filterChip   *xwidget.FilterChipCompact // only on mobile
-	filterRun    latestRun
-	updateRun    latestRun
+	filterRun    xsync.LatestRun
+	updateRun    xsync.LatestRun
 	footerLabel  *widget.Label
 	errorLabel   *widget.Label
 	isBuyOrders  bool
@@ -456,7 +457,7 @@ func (a *MarketOrders) currentFilter() marketOrdersFilter {
 }
 
 func (a *MarketOrders) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -523,7 +524,7 @@ func (a *MarketOrders) filterRowsAsync(sortCol string) {
 }
 
 func (a *MarketOrders) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, err := a.fetchRows(ctx, a.isBuyOrders)
 	if err != nil {
 		if ctx.Err() != nil {
