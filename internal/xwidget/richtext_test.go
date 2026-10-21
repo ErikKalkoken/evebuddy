@@ -144,19 +144,20 @@ func TestRichTextSegmentsWithStyle_CanModify(t *testing.T) {
 	assert.Equal(t, theme.ColorNameError, s1.Style.ColorName)
 }
 
-func TestRichTextSegmentsWithStyle_SkipNonText(t *testing.T) {
+func TestRichTextSegmentsWithStyle_KeepsNonTextUnchanged(t *testing.T) {
 	// given
-	segs := []widget.RichTextSegment{
-		&widget.ImageSegment{Title: "x"},
-		&widget.TextSegment{Text: "a"},
-	}
+	x := &widget.ImageSegment{Title: "x"}
+	segs := []widget.RichTextSegment{x, &widget.TextSegment{Text: "a"}}
 	// when
 	got := xwidget.RichTextSegmentsWithStyle(segs, func(x *widget.RichTextStyle) {
 		x.ColorName = theme.ColorNameError
 	})
 	// then
-	assert.Len(t, got, 1)
-	assert.Equal(t, "a", got[0].(*widget.TextSegment).Text)
+	assert.Len(t, got, 2)
+	assert.Same(t, x, got[0])
+	s2 := got[1].(*widget.TextSegment)
+	assert.Equal(t, "a", s2.Text)
+	assert.Equal(t, theme.ColorNameError, s2.Style.ColorName)
 }
 
 func TestRichTextSegmentsWithStyle_DoesNotModifyInput(t *testing.T) {

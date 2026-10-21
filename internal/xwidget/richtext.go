@@ -37,26 +37,27 @@ func RichTextSegmentsInlined(segments ...[]widget.RichTextSegment) []widget.Rich
 			slog.Warn("RichTextSegmentsInlined: Skipping non inlinable segment")
 			continue
 		}
-		t2 := *t
+		t2 := &widget.TextSegment{Text: t.Text, Style: t.Style}
 		t2.Style.Inline = true
-		segs2 = append(segs2, &t2)
+		segs2 = append(segs2, t2)
 	}
 	segs2 = append(segs2, segs[len(segs)-1])
 	return segs2
 }
 
 // RichTextSegmentsWithStyle returns a copy where the style of all segments is modified by f.
-// Non-text segments are skipped.
+// Non-text segments are kept unchanged.
 func RichTextSegmentsWithStyle(segments []widget.RichTextSegment, f func(x *widget.RichTextStyle)) []widget.RichTextSegment {
 	var segs2 []widget.RichTextSegment
 	for _, x := range segments {
 		t, ok := x.(*widget.TextSegment)
 		if !ok {
+			segs2 = append(segs2, x)
 			continue
 		}
-		t2 := *t
+		t2 := &widget.TextSegment{Text: t.Text, Style: t.Style}
 		f(&t2.Style)
-		segs2 = append(segs2, &t2)
+		segs2 = append(segs2, t2)
 	}
 	return segs2
 }
