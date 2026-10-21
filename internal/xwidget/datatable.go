@@ -477,8 +477,6 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
-//
-// makeCell must return new segments on every call, because they are modified in place.
 func MakeDataList[S ~[]E, E any](
 	columns DataColumns[E],
 	data *S,
@@ -627,6 +625,7 @@ func (w *dataCardRowWidget) Refresh() {
 }
 
 func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegment, isFirst bool) {
+	cell = copyTextSegments(cell) // the caller's segments must not be modified
 	if isFirst {
 		w.bg.Show()
 		for _, s := range cell {
@@ -642,4 +641,17 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 		w.bg.Hide()
 	}
 	w.cell.Refresh()
+}
+
+// copyTextSegments returns a copy of segments with every text segment copied.
+func copyTextSegments(segments []widget.RichTextSegment) []widget.RichTextSegment {
+	segs2 := make([]widget.RichTextSegment, len(segments))
+	for i, s := range segments {
+		if t, ok := s.(*widget.TextSegment); ok {
+			t2 := *t
+			s = &t2
+		}
+		segs2[i] = s
+	}
+	return segs2
 }

@@ -204,6 +204,24 @@ func TestDataCardRowWidget_Update(t *testing.T) {
 		require.Len(t, w.cell.Segments, 1)
 		assert.Equal(t, fyne.TextAlignTrailing, w.cell.Segments[0].(*widget.TextSegment).Style.Alignment)
 	})
+	t.Run("first row does not modify the given segments", func(t *testing.T) {
+		// given
+		w := newDataCardRowWidget(100)
+		cell := RichTextSegmentsFromText("Earth")
+		// when
+		w.Update("Planet", cell, true)
+		// then
+		assert.False(t, cell[0].(*widget.TextSegment).Style.TextStyle.Bold)
+	})
+	t.Run("other rows do not modify the given segments", func(t *testing.T) {
+		// given
+		w := newDataCardRowWidget(100)
+		cell := RichTextSegmentsFromText("Earth")
+		// when
+		w.Update("Planet", cell, false)
+		// then
+		assert.Equal(t, fyne.TextAlignLeading, cell[0].(*widget.TextSegment).Style.Alignment)
+	})
 	t.Run("can switch from first row to other row", func(t *testing.T) {
 		// given
 		w := newDataCardRowWidget(100)
