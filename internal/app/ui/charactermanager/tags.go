@@ -6,7 +6,6 @@ import (
 	"io"
 	"slices"
 	"strings"
-	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -21,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -30,7 +30,7 @@ type manageTags struct {
 	addCharactersButton *widget.Button
 	characterList       *widget.List
 	characters          []*app.EntityShort
-	charactersLoad      atomic.Int64 // identifies the newest characters load
+	charactersRun       xsync.LatestRun
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *xwidget.AppBar
@@ -39,7 +39,7 @@ type manageTags struct {
 	signalKey           string
 	tagList             *widget.List
 	tags                []*app.CharacterTag
-	tagsLoad            atomic.Int64 // identifies the newest tags load
+	tagsRun             xsync.LatestRun
 }
 
 func newManageTags(cw *manageCharacters) *manageTags {
@@ -442,7 +442,7 @@ func (a *manageTags) removeCharacterFromTag(ctx context.Context, tag *app.Charac
 func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	switched := tag == nil || a.selectedTag == nil || a.selectedTag.ID != tag.ID
 	a.selectedTag = tag
-	load := a.charactersLoad.Add(1)
+	isLatest := a.charactersRun.Start()
 	if switched {
 		// Don't show the previous tag's characters under the new tag's title.
 		xslices.Clear(&a.characters)
@@ -459,12 +459,12 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	runAsync(func() {
 		tagged, others, err := a.cw.u.Character().ListCharactersForTag(context.Background(), tag.ID)
 		if err != nil {
-			if load != a.charactersLoad.Load() {
+			if !isLatest() {
 				return // outdated
 			}
 			a.cw.reportError("Failed to list characters for "+tag.Name, err)
 			fyne.Do(func() {
-				if load != a.charactersLoad.Load() {
+				if !isLatest() {
 					return // outdated
 				}
 				if len(a.characters) == 0 {
@@ -474,7 +474,7 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 			return
 		}
 		fyne.Do(func() {
-			if load != a.charactersLoad.Load() {
+			if !isLatest() {
 				return // outdated
 			}
 			a.characters = tagged
@@ -557,20 +557,20 @@ func (a *manageTags) update(ctx context.Context) {
 // updateAndSelect reloads the tags and selects the tag with tagID.
 // A tagID of 0 keeps the current selection. Falls back to the first tag.
 func (a *manageTags) updateAndSelect(ctx context.Context, tagID int64) {
-	load := a.tagsLoad.Add(1)
+	isLatest := a.tagsRun.Start()
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
-		if load != a.tagsLoad.Load() {
+		if !isLatest() {
 			return // outdated
 		}
 		a.cw.reportError("Failed to list tags", err)
 		return
 	}
 	fyne.Do(func() {
-		if load != a.tagsLoad.Load() {
+		if !isLatest() {
 			return // outdated
 		}
 		a.tags = tags

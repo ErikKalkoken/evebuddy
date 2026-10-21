@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
-	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -18,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -25,11 +25,11 @@ import (
 type training struct {
 	widget.BaseWidget
 
-	characters     []*app.Character
-	charactersLoad atomic.Int64 // identifies the newest characters load
-	cw             *manageCharacters
-	list           *widget.List
-	signalKey      string
+	characters    []*app.Character
+	charactersRun xsync.LatestRun
+	cw            *manageCharacters
+	list          *widget.List
+	signalKey     string
 }
 
 func newTraining(cw *manageCharacters) *training {
@@ -190,13 +190,13 @@ func (a *training) indexOf(characterID int64) int {
 }
 
 func (a *training) update(ctx context.Context) {
-	load := a.charactersLoad.Add(1)
+	isLatest := a.charactersRun.Start()
 	characters, err := a.cw.u.Character().ListCharacters(ctx)
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
-		if load != a.charactersLoad.Load() {
+		if !isLatest() {
 			return // outdated
 		}
 		a.cw.reportError("Failed to update training", err)
@@ -206,7 +206,7 @@ func (a *training) update(ctx context.Context) {
 		return strings.Compare(a.EveCharacter.Name, b.EveCharacter.Name)
 	})
 	fyne.Do(func() {
-		if load != a.charactersLoad.Load() {
+		if !isLatest() {
 			return // outdated
 		}
 		a.characters = characters
