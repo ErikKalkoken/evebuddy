@@ -175,7 +175,6 @@ type Colonies struct {
 	errorLabel        *widget.Label
 	forecastRun       xsync.LatestRun
 	rows              []colonyRow
-	rowsGen           int // incremented when Update replaces rows
 	rowsRun           xsync.LatestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
@@ -640,7 +639,7 @@ func (a *Colonies) Update(ctx context.Context) {
 				return
 			}
 			xslices.Clear(&a.rows)
-			a.rowsGen++
+			a.forecastRun.Start() // discards pending forecast refreshes
 			a.filterRowsAsync("")
 			if a.OnUpdate != nil {
 				a.OnUpdate(optional.Optional[int]{})
@@ -657,7 +656,7 @@ func (a *Colonies) Update(ctx context.Context) {
 		}
 		a.errorLabel.Hide()
 		a.rows = rows
-		a.rowsGen++
+		a.forecastRun.Start() // discards pending forecast refreshes
 		a.filterRowsAsync("")
 		a.setOnUpdate()
 	})
@@ -670,7 +669,6 @@ func (a *Colonies) refreshForecasts() {
 		return // keeps the badge of a failed update
 	}
 	isLatest := a.forecastRun.Start()
-	gen := a.rowsGen
 	rows := slices.Clone(a.rows)
 	runAsync(func() {
 		now := time.Now()
@@ -678,7 +676,7 @@ func (a *Colonies) refreshForecasts() {
 			rows[i].setForecast(a.u.Character().ForecastPlanet(rows[i].planet, now))
 		}
 		fyne.Do(func() {
-			if !isLatest() || a.rowsGen != gen {
+			if !isLatest() {
 				return
 			}
 			a.rows = rows

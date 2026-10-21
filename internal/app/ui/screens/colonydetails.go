@@ -80,7 +80,6 @@ type colonyDetails struct {
 	root          *fyne.Container // content of the renderer
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
-	rowsGen       int // incremented when Update replaces rows
 	rowsRun       xsync.LatestRun
 	searchEntry   *xwidget.SearchEntry
 	helpButton    *xwidget.Button
@@ -401,11 +400,10 @@ func (a *colonyDetails) refreshForecast() {
 		return
 	}
 	isLatest := a.forecastRun.Start()
-	gen := a.rowsGen
 	runAsync(func() {
 		stopped, status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
-			if !isLatest() || a.rowsGen != gen {
+			if !isLatest() {
 				return
 			}
 			a.setStatus(cp, stopped, status)
@@ -488,8 +486,8 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
-			a.colony = nil // so a refresh can't bring it back
-			a.rowsGen++
+			a.colony = nil        // so a refresh can't bring it back
+			a.forecastRun.Start() // discards pending forecast refreshes
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
@@ -543,7 +541,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.colony = cp
 		a.setStatus(cp, stopped, status)
 		a.rows = rows
-		a.rowsGen++
+		a.forecastRun.Start() // discards pending forecast refreshes
 		a.filterRowsAsync()
 	})
 	return nil

@@ -65,7 +65,6 @@ type colonyPinDetails struct {
 	routes         *colonyRouteList
 	routesTab      *container.TabItem
 	showPin        func(pinID int64, title string)
-	rowsGen        int // incremented when Update replaces the colony
 	rowsRun        xsync.LatestRun
 	signalKey      string
 	storage        *colonyStorageList
@@ -174,8 +173,8 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
-			a.colony = nil // so a refresh can't forecast it again
-			a.rowsGen++
+			a.colony = nil        // so a refresh can't forecast it again
+			a.forecastRun.Start() // discards pending forecast refreshes
 			if notFound {
 				a.set(colonyPinInfo{}) // shows that the installation no longer exists
 				a.clearIssue()
@@ -196,7 +195,7 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 		}
 		a.colony = cp
 		a.extraTypeNames = extraTypeNames
-		a.rowsGen++
+		a.forecastRun.Start() // discards pending forecast refreshes
 		a.set(info)
 		a.clearIssue()
 	})
@@ -235,13 +234,12 @@ func (a *colonyPinDetails) refreshForecast() {
 	}
 	extraTypeNames := a.extraTypeNames
 	isLatest := a.forecastRun.Start()
-	gen := a.rowsGen
 	runAsync(func() {
 		now := time.Now()
 		f := a.u.Character().ForecastPlanet(cp, now)
 		info := a.makeInfo(cp, f, extraTypeNames, now)
 		fyne.Do(func() {
-			if !isLatest() || a.rowsGen != gen {
+			if !isLatest() {
 				return
 			}
 			a.set(info)
