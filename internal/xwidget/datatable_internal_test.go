@@ -15,23 +15,54 @@ import (
 func TestColumnSorter_New(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
 		Label: "Alpha",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}, {
 		Label: "Bravo",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}})
 	t.Run("should create normally", func(t *testing.T) {
 		sc := NewColumnSorter(def, "Alpha", SortAsc)
 		got := sc.column(0)
 		assert.Equal(t, SortAsc, got)
 	})
+	t.Run("keeps unsortable first column unsortable when starting unsorted", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+		}, {
+			Label: "Bravo",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when
+		sc := NewColumnSorter(def, "Bravo", SortOff)
+		// then
+		assert.Equal(t, sortNone, sc.column(0))
+		assert.Equal(t, SortOff, sc.column(1))
+	})
 }
 
 func TestColumnSorter_Column(t *testing.T) {
 	def := NewDataColumns([]DataColumn[struct{}]{{
 		Label: "Alpha",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}, {
 		Label: "Bravo",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}, {
 		Label: "Charlie",
+		Sort: func(a, b struct{}) int {
+			return 0
+		},
 	}})
 	t.Run("return value", func(t *testing.T) {
 		sc := NewColumnSorter(def, "Alpha", SortOff)
@@ -82,10 +113,11 @@ func TestColumnSorter_Set(t *testing.T) {
 		assert.Equal(t, SortAsc, sc.column(0))
 		assert.Equal(t, SortOff, sc.column(1))
 	})
-	t.Run("sets the direction even for a column without a Sort func", func(t *testing.T) {
+	t.Run("ignores a column without a Sort func", func(t *testing.T) {
 		sc := NewColumnSorter(def, "Alpha", SortAsc)
 		sc.Set("Charlie", SortDesc)
-		assert.Equal(t, SortDesc, sc.column(2))
+		assert.Equal(t, SortAsc, sc.column(0))
+		assert.Equal(t, sortNone, sc.column(2))
 	})
 }
 
@@ -262,7 +294,7 @@ func TestMakeDataTable_Header(t *testing.T) {
 			columns,
 			&data,
 			func() fyne.CanvasObject { return widget.NewLabel("") },
-			NewColumnSorter(columns, "Planet", SortAsc),
+			NewColumnSorter(columns, "Planet", SortOff),
 			func(string) {},
 			nil,
 		)

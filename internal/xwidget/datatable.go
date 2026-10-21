@@ -199,6 +199,9 @@ func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
 }
 
 func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
+	if cs.columns.cols[idx].Sort == nil {
+		return
+	}
 	cs.init()
 	cs.cols[idx] = dir
 }
@@ -477,6 +480,8 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
+//
+// makeCell must return new segments on every call, because they are modified in place.
 func MakeDataList[S ~[]E, E any](
 	columns DataColumns[E],
 	data *S,
