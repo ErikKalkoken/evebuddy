@@ -69,9 +69,26 @@ func TestManageTags_Update(t *testing.T) {
 		assert.True(t, a.emptyCharactersHint.Visible())
 		assert.False(t, a.manageCharacters.Visible())
 	})
-	t.Run("reports error when loading fails", func(t *testing.T) {
+	t.Run("loads characters of the selected tag once", func(t *testing.T) {
 		// given
-		db2, st2, _ := testutil.NewDBInMemory()
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		factory.CreateCharacterTag("Alpha")
+		a := cw.characterTags
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		// when
+		a.update(context.Background())
+		// then
+		assert.Len(t, pending, 1)
+	})
+	t.Run("reports error and keeps tags when loading fails", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBInMemory()
 		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
 		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
 		defer cw.stop()
@@ -79,10 +96,18 @@ func TestManageTags_Update(t *testing.T) {
 		cw.displaySnackbar = func(s string) {
 			messages = append(messages, s)
 		}
+		tag := factory2.CreateCharacterTag("Alpha")
+		a := cw.characterTags
+		a.update(context.Background())
 		db2.Close()
 		// when
-		cw.characterTags.update(context.Background())
+		a.update(context.Background())
 		// then
+		if assert.Len(t, a.tags, 1) {
+			assert.Equal(t, tag.ID, a.tags[0].ID)
+		}
+		require.NotNil(t, a.selectedTag)
+		assert.Equal(t, tag.ID, a.selectedTag.ID)
 		if assert.Len(t, messages, 1) {
 			assert.Contains(t, messages[0], "ERROR: Failed to list tags")
 		}
@@ -166,7 +191,35 @@ func TestManageTags_SetCharacters(t *testing.T) {
 		assert.False(t, a.addCharactersButton.Disabled())
 		assert.True(t, a.emptyCharactersHint.Visible())
 	})
-	t.Run("clears characters when no tag is given", func(t *testing.T) {
+	t.Run("ignores outdated load when switching tags", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		alpha := factory.CreateCharacterTag("Alpha")
+		bravo := factory.CreateCharacterTag("Bravo")
+		c1 := factory.CreateCharacter()
+		factory.AddCharacterToTag(alpha, c1)
+		c2 := factory.CreateCharacter()
+		factory.AddCharacterToTag(bravo, c2)
+		a := cw.characterTags
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a.setCharactersAsync(alpha)
+		a.setCharactersAsync(bravo)
+		runAsync = orig
+		// when
+		pending[1]() // Bravo finishes first
+		pending[0]()
+		// then
+		if assert.Len(t, a.characters, 1) {
+			assert.Equal(t, c2.ID, a.characters[0].ID)
+		}
+	})
+	t.Run("ignores pending load after clearing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
@@ -176,12 +229,37 @@ func TestManageTags_SetCharacters(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.AddCharacterToTag(tag, c)
 		a := cw.characterTags
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a.setCharactersAsync(tag)
+		runAsync = orig
+		a.setCharactersAsync(nil)
+		// when
+		pending[0]()
+		// then
+		assert.Empty(t, a.characters)
+		assert.True(t, a.emptyCharactersHint.Visible())
+	})
+	t.Run("clears characters when no tag is given", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		tag := factory.CreateCharacterTag("Alpha")
+		c := factory.CreateCharacter()
+		factory.AddCharacterToTag(tag, c)
+		factory.CreateCharacter() // enables the add button
+		a := cw.characterTags
 		a.setCharactersAsync(tag)
 		// when
 		a.setCharactersAsync(nil)
 		// then
 		assert.Nil(t, a.selectedTag)
 		assert.Empty(t, a.characters)
+		assert.True(t, a.addCharactersButton.Disabled())
 		assert.False(t, a.manageCharacters.Visible())
 		assert.True(t, a.emptyCharactersHint.Visible())
 	})

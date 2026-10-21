@@ -28,6 +28,7 @@ type manageTags struct {
 	addCharactersButton *widget.Button
 	characterList       *widget.List
 	characters          []*app.EntityShort
+	charactersLoad      int // identifies the newest characters load; main thread only
 	emptyCharactersHint fyne.CanvasObject
 	emptyTagsHint       fyne.CanvasObject
 	manageCharacters    *xwidget.AppBar
@@ -348,19 +349,6 @@ func (a *manageTags) deleteTag(ctx context.Context, tag *app.CharacterTag) {
 	}
 	a.update(ctx)
 	go a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	fyne.Do(func() {
-		if len(a.tags) > 0 {
-			a.tagList.Select(0)
-			return
-		}
-		a.tagList.UnselectAll()
-		a.selectedTag = nil
-		xslices.Clear(&a.characters)
-		a.addCharactersButton.Disable()
-		a.characterList.Refresh()
-		a.addCharactersButton.Disable()
-		a.manageCharacters.Hide()
-	})
 }
 
 func (a *manageTags) makeCharacterList() *widget.List {
@@ -422,8 +410,12 @@ func (a *manageTags) removeCharacterFromTag(ctx context.Context, tag *app.Charac
 
 func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	a.selectedTag = tag
+	a.charactersLoad++
+	load := a.charactersLoad
 	if tag == nil {
 		xslices.Clear(&a.characters)
+		a.characterList.Refresh()
+		a.addCharactersButton.Disable()
 		a.manageCharacters.Hide()
 		a.emptyCharactersHint.Show()
 		return
@@ -437,6 +429,9 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 			return
 		}
 		fyne.Do(func() {
+			if load != a.charactersLoad {
+				return // outdated
+			}
 			a.characters = tagged
 			a.characterList.Refresh()
 			if len(others) > 0 {
@@ -511,7 +506,6 @@ func (a *manageTags) update(ctx context.Context) {
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if err != nil {
 		a.cw.reportError("Failed to list tags", err)
-		xslices.Clear(&a.tags)
 		return
 	}
 	fyne.Do(func() {
@@ -520,8 +514,7 @@ func (a *manageTags) update(ctx context.Context) {
 		a.tagList.UnselectAll()
 		if len(tags) > 0 {
 			a.emptyTagsHint.Hide()
-			a.selectTagByName(tags[0].Name)
-			a.setCharactersAsync(tags[0])
+			a.selectTagByName(tags[0].Name) // loads its characters via OnSelected
 		} else {
 			a.emptyTagsHint.Show()
 			a.setCharactersAsync(nil)
