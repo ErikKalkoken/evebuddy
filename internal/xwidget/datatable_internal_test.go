@@ -60,6 +60,71 @@ func TestColumnSorter_New(t *testing.T) {
 			NewColumnSorter(def, "Alpha", SortAsc)
 		})
 	})
+	t.Run("should panic when initial sort column is unknown", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when/then
+		assert.Panics(t, func() {
+			NewColumnSorter(def, "Zulu", SortAsc)
+		})
+	})
+	t.Run("should panic when initial column is unknown and no sorting requested", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when/then
+		assert.Panics(t, func() {
+			NewColumnSorter(def, "Zulu", SortOff)
+		})
+	})
+	t.Run("empty label starts unsorted", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when
+		sc := NewColumnSorter(def, "", SortOff)
+		// then
+		assert.Equal(t, SortOff, sc.column(0))
+	})
+	t.Run("should panic when empty label is given with a sort direction", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when/then
+		assert.Panics(t, func() {
+			NewColumnSorter(def, "", SortAsc)
+		})
+	})
+	t.Run("does not panic for unsortable column when no sorting requested", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+		}})
+		var sc *ColumnSorter[struct{}]
+		// when
+		assert.NotPanics(t, func() {
+			sc = NewColumnSorter(def, "Alpha", sortNone)
+		})
+		// then
+		assert.Equal(t, sortNone, sc.column(0))
+	})
 }
 
 func TestColumnSorter_Column(t *testing.T) {

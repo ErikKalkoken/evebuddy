@@ -138,22 +138,30 @@ type ColumnSorter[T any] struct {
 
 // NewColumnSorter returns a new ColumSorter.
 // label and dir defines the initially sorted column.
+// An empty label means no column is sorted initially.
 // It panics if semantic checks fail.
 func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *ColumnSorter[T] {
-	idx, ok := columns.labelLookup[label]
-	if !ok {
-		dir = SortOff
-	}
-	if dir == SortOff {
-		idx = 0
-	} else if columns.cols[idx].Sort == nil {
-		panic(fmt.Sprintf("initial sort column has no sort func: %q", label))
-	}
 	cs := &ColumnSorter[T]{
 		cols:    make([]SortDir, columns.Size()),
 		columns: columns,
 	}
 	cs.init()
+	if label == "" {
+		if dir.isSorting() {
+			panic("initial sort direction given without a column")
+		}
+		return cs
+	}
+	idx, ok := columns.labelLookup[label]
+	if !ok {
+		panic(fmt.Sprintf("unknown initial sort column: %q", label))
+	}
+	if !dir.isSorting() {
+		return cs
+	}
+	if columns.cols[idx].Sort == nil {
+		panic(fmt.Sprintf("initial sort column has no sort func: %q", label))
+	}
 	cs.setIdx(idx, dir)
 	return cs
 }

@@ -157,7 +157,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		},
 		{
 			name:         "initial no sort, asc->desc",
-			initialLabel: "Nonexistent",
+			initialLabel: "",
 			initialDir:   xwidget.SortOff,
 			sortLabel:    "Bravo",
 			wantLabel:    "Bravo",
@@ -201,7 +201,7 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 	})
 
 	t.Run("does not panic when no column is currently sorted", func(t *testing.T) {
-		sc := xwidget.NewColumnSorter(columns, "Nonexistent", xwidget.SortAsc)
+		sc := xwidget.NewColumnSorter(columns, "", xwidget.SortOff)
 		var chip *kxwidget.SortChip
 		assert.NotPanics(t, func() {
 			chip = sc.NewSortChip(nil)
