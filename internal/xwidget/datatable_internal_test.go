@@ -45,6 +45,21 @@ func TestColumnSorter_New(t *testing.T) {
 		assert.Equal(t, sortNone, sc.column(0))
 		assert.Equal(t, SortOff, sc.column(1))
 	})
+	t.Run("should panic when initial sort column has no sort func", func(t *testing.T) {
+		// given
+		def := NewDataColumns([]DataColumn[struct{}]{{
+			Label: "Alpha",
+		}, {
+			Label: "Bravo",
+			Sort: func(a, b struct{}) int {
+				return 0
+			},
+		}})
+		// when/then
+		assert.Panics(t, func() {
+			NewColumnSorter(def, "Alpha", SortAsc)
+		})
+	})
 }
 
 func TestColumnSorter_Column(t *testing.T) {
@@ -110,6 +125,12 @@ func TestColumnSorter_Set(t *testing.T) {
 	t.Run("does nothing for an unknown label", func(t *testing.T) {
 		sc := NewColumnSorter(def, "Alpha", SortAsc)
 		sc.Set("Zulu", SortDesc)
+		assert.Equal(t, SortAsc, sc.column(0))
+		assert.Equal(t, SortOff, sc.column(1))
+	})
+	t.Run("ignores an invalid direction", func(t *testing.T) {
+		sc := NewColumnSorter(def, "Alpha", SortAsc)
+		sc.Set("Bravo", sortNone)
 		assert.Equal(t, SortAsc, sc.column(0))
 		assert.Equal(t, SortOff, sc.column(1))
 	})
@@ -203,6 +224,7 @@ func TestDataCardRowWidget_Update(t *testing.T) {
 		// then
 		assert.True(t, w.bg.Visible())
 		assert.Equal(t, "Venus", w.label.String())
+		assert.Empty(t, w.cell.Segments)
 	})
 }
 

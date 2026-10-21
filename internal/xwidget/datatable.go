@@ -146,6 +146,8 @@ func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *
 	}
 	if dir == SortOff {
 		idx = 0
+	} else if columns.cols[idx].Sort == nil {
+		panic(fmt.Sprintf("initial sort column has no sort func: %q", label))
 	}
 	cs := &ColumnSorter[T]{
 		cols:    make([]SortDir, columns.Size()),
@@ -197,7 +199,7 @@ func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
 }
 
 func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
-	if cs.columns.cols[idx].Sort == nil {
+	if cs.columns.cols[idx].Sort == nil || dir < SortOff || dir > SortDesc {
 		return
 	}
 	cs.init()
@@ -211,11 +213,8 @@ func (cs *ColumnSorter[T]) CalcSort(label string) (string, SortDir, bool) {
 		idx = -1
 	}
 	var dir SortDir
-	if idx >= 0 {
+	if idx >= 0 && cs.cols[idx] != sortNone {
 		dir = cs.cols[idx]
-		if dir == sortNone {
-			return "", 0, false
-		}
 		dir++
 		if dir > SortDesc {
 			dir = SortAsc
@@ -636,6 +635,7 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 			}
 		}
 		w.label.Set(cell)
+		w.cell.Segments = nil
 	} else {
 		w.cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, cell)
 		w.label.SetWithText(labelText)
