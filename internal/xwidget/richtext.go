@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// RichTextSegmentsFromText returns a single text segment for s.
+// The optional style is applied to the segment.
 func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.RichTextSegment {
 	seg := &widget.TextSegment{Text: s}
 	if len(style) > 0 {
@@ -59,10 +61,12 @@ func RichTextSegmentsWithStyle(segments []widget.RichTextSegment, f func(x *widg
 	return segs2
 }
 
+// RichText is a variant of [widget.RichText] which adds convenience setters.
 type RichText struct {
 	widget.RichText
 }
 
+// NewRichText returns a new [RichText] with the given segments.
 func NewRichText(segments ...widget.RichTextSegment) *RichText {
 	w := &RichText{}
 	w.ExtendBaseWidget(w)
@@ -71,15 +75,20 @@ func NewRichText(segments ...widget.RichTextSegment) *RichText {
 	return w
 }
 
+// NewRichTextWithText returns a new [RichText] showing text.
+// The optional style is applied to the text.
 func NewRichTextWithText(text string, style ...widget.RichTextStyle) *RichText {
 	return NewRichText(RichTextSegmentsFromText(text, style...)...)
 }
 
+// Set replaces the segments and refreshes the widget.
 func (w *RichText) Set(segments []widget.RichTextSegment) {
 	w.Segments = segments
 	w.Refresh()
 }
 
+// SetWithText replaces the segments with text and refreshes the widget.
+// The optional style is applied to the text.
 func (w *RichText) SetWithText(text string, style ...widget.RichTextStyle) {
 	w.Set(RichTextSegmentsFromText(text, style...))
 }
