@@ -155,6 +155,24 @@ func TestManageTags_Update(t *testing.T) {
 		}
 		assert.Equal(t, 1, tagsChanged)
 	})
+	t.Run("keeps selected tag after reload", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		factory.CreateCharacterTag("Alpha")
+		bravo := factory.CreateCharacterTag("Bravo")
+		a := cw.characterTags
+		a.update(context.Background())
+		a.tagList.Select(1)
+		// when
+		a.update(context.Background())
+		// then
+		require.NotNil(t, a.selectedTag)
+		assert.Equal(t, bravo.ID, a.selectedTag.ID)
+		assert.Equal(t, "Tag: Bravo", a.manageCharacters.Title())
+	})
 }
 
 func TestManageTags_SetCharacters(t *testing.T) {
@@ -425,9 +443,12 @@ func TestManageTags_SubmitTag(t *testing.T) {
 		})
 		a := cw.characterTags
 		// when
-		a.submitTag(context.Background(), "Alpha", func(ctx context.Context, name string) error {
-			_, err := u.Character().CreateTag(ctx, name)
-			return err
+		a.submitTag(context.Background(), "Alpha", func(ctx context.Context, name string) (int64, error) {
+			tag, err := u.Character().CreateTag(ctx, name)
+			if err != nil {
+				return 0, err
+			}
+			return tag.ID, nil
 		})
 		// then
 		if assert.Len(t, a.tags, 1) {
@@ -453,14 +474,57 @@ func TestManageTags_SubmitTag(t *testing.T) {
 		a := cw.characterTags
 		a.update(context.Background())
 		// when
-		a.submitTag(context.Background(), "Bravo", func(context.Context, string) error {
-			return errors.New("dummy")
+		a.submitTag(context.Background(), "Bravo", func(context.Context, string) (int64, error) {
+			return 0, errors.New("dummy")
 		})
 		// then
 		assert.Equal(t, []string{"Failed to modify tag"}, messages)
 		if assert.Len(t, a.tags, 1) {
 			assert.Equal(t, "Alpha", a.tags[0].Name)
 		}
+	})
+	t.Run("selects created tag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		factory.CreateCharacterTag("Alpha")
+		a := cw.characterTags
+		a.update(context.Background())
+		// when
+		a.submitTag(context.Background(), "Bravo", func(ctx context.Context, name string) (int64, error) {
+			tag, err := u.Character().CreateTag(ctx, name)
+			if err != nil {
+				return 0, err
+			}
+			return tag.ID, nil
+		})
+		// then
+		require.NotNil(t, a.selectedTag)
+		assert.Equal(t, "Bravo", a.selectedTag.Name)
+		assert.Equal(t, "Tag: Bravo", a.manageCharacters.Title())
+	})
+	t.Run("keeps renamed tag selected", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		factory.CreateCharacterTag("Alpha")
+		bravo := factory.CreateCharacterTag("Bravo")
+		factory.CreateCharacterTag("Charlie")
+		a := cw.characterTags
+		a.update(context.Background())
+		a.tagList.Select(1)
+		// when
+		a.submitTag(context.Background(), "Zulu", func(ctx context.Context, name string) (int64, error) {
+			return bravo.ID, u.Character().RenameTag(ctx, bravo.ID, name)
+		})
+		// then
+		require.NotNil(t, a.selectedTag)
+		assert.Equal(t, bravo.ID, a.selectedTag.ID)
+		assert.Equal(t, "Tag: Zulu", a.manageCharacters.Title())
 	})
 }
 

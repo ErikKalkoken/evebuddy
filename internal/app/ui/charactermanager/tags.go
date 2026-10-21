@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -76,9 +77,12 @@ func (a *manageTags) stop() {
 func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
-		a.modifyTag("Create Character Tag", "Create", func(ctx context.Context, name string) error {
-			_, err := a.cw.u.Character().CreateTag(ctx, name)
-			return err
+		a.modifyTag("Create Character Tag", "Create", func(ctx context.Context, name string) (int64, error) {
+			tag, err := a.cw.u.Character().CreateTag(ctx, name)
+			if err != nil {
+				return 0, err
+			}
+			return tag.ID, nil
 		})
 	})
 	addTag.Importance = widget.HighImportance
@@ -327,8 +331,8 @@ func (a *manageTags) makeTagList() *widget.List {
 			box[0].(*widget.Label).SetText(tag.Name)
 			icons := box[1].(*fyne.Container).Objects
 			icons[0].(*ttwidget.Button).OnTapped = func() {
-				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(ctx context.Context, name string) error {
-					return a.cw.u.Character().RenameTag(ctx, tag.ID, name)
+				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(ctx context.Context, name string) (int64, error) {
+					return tag.ID, a.cw.u.Character().RenameTag(ctx, tag.ID, name)
 				})
 			}
 			icons[1].(*ttwidget.Button).OnTapped = func() {
@@ -477,7 +481,9 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 	})
 }
 
-func (a *manageTags) modifyTag(title, confirm string, execute func(ctx context.Context, name string) error) {
+// modifyTag shows a dialog for entering a tag name.
+// execute returns the ID of the tag to select afterwards.
+func (a *manageTags) modifyTag(title, confirm string, execute func(ctx context.Context, name string) (int64, error)) {
 	name := widget.NewEntry()
 	name.Validator = newTagNameValidator(a.tags)
 	items := []*widget.FormItem{
@@ -500,12 +506,13 @@ func (a *manageTags) modifyTag(title, confirm string, execute func(ctx context.C
 	a.cw.w.Canvas().Focus(name)
 }
 
-func (a *manageTags) submitTag(ctx context.Context, name string, execute func(ctx context.Context, name string) error) {
-	if err := execute(ctx, name); err != nil {
+func (a *manageTags) submitTag(ctx context.Context, name string, execute func(ctx context.Context, name string) (int64, error)) {
+	tagID, err := execute(ctx, name)
+	if err != nil {
 		ui.NotifyErrorAndLog("Failed to modify tag", err, a.cw.displaySnackbar)
 		return
 	}
-	a.update(ctx)
+	a.updateAndSelect(ctx, tagID)
 	runAsync(func() {
 		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
 	})
@@ -526,17 +533,13 @@ func newTagNameValidator(tags []*app.CharacterTag) fyne.StringValidator {
 	}
 }
 
-func (a *manageTags) selectTagByName(name string) {
-	a.tagList.UnselectAll()
-	for id, t := range a.tags {
-		if t.Name == name {
-			a.tagList.Select(id)
-			break
-		}
-	}
+func (a *manageTags) update(ctx context.Context) {
+	a.updateAndSelect(ctx, 0)
 }
 
-func (a *manageTags) update(ctx context.Context) {
+// updateAndSelect reloads the tags and selects the tag with tagID.
+// A tagID of 0 keeps the current selection. Falls back to the first tag.
+func (a *manageTags) updateAndSelect(ctx context.Context, tagID int64) {
 	load := a.tagsLoad.Add(1)
 	tags, err := a.cw.u.Character().ListTagsByName(ctx)
 	if ctx.Err() != nil {
@@ -558,7 +561,13 @@ func (a *manageTags) update(ctx context.Context) {
 		a.tagList.UnselectAll()
 		if len(tags) > 0 {
 			a.emptyTagsHint.Hide()
-			a.selectTagByName(tags[0].Name) // loads its characters via OnSelected
+			if tagID == 0 && a.selectedTag != nil {
+				tagID = a.selectedTag.ID
+			}
+			id := max(0, slices.IndexFunc(tags, func(x *app.CharacterTag) bool {
+				return x.ID == tagID
+			}))
+			a.tagList.Select(id) // loads its characters via OnSelected
 		} else {
 			a.emptyTagsHint.Show()
 			a.setCharactersAsync(nil)
