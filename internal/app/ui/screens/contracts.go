@@ -657,7 +657,7 @@ func (a *Contracts) makeDataList() *xwidget.StripedList {
 			if r.deadlineKind == contractDeadlineNone {
 				main[4].(*xwidget.RichText).Set(xwidget.RichTextSegmentsFromText(""))
 			} else {
-				main[4].(*xwidget.RichText).Set(xwidget.InlineRichTextSegments(
+				main[4].(*xwidget.RichText).Set(xwidget.RichTextSegmentsInlined(
 					xwidget.RichTextSegmentsFromText(r.deadlineKind.label()+" "),
 					r.timeLeftDisplay,
 				))

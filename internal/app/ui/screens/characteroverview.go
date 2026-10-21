@@ -903,6 +903,8 @@ func (w *characterCard) set(c characterOverviewRow) {
 			rt = es.DisplayRichText()
 		}
 	}
-	rt = xwidget.AlignRichTextSegments(fyne.TextAlignTrailing, rt)
+	rt = xwidget.RichTextSegmentsWithStyle(rt, func(x *widget.RichTextStyle) {
+		x.Alignment = fyne.TextAlignTrailing
+	})
 	w.solarSystem.Set(rt)
 }

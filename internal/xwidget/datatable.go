@@ -633,33 +633,18 @@ func (w *dataCardRowWidget) Refresh() {
 }
 
 func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegment, isFirst bool) {
-	cell = copyTextSegments(cell) // the caller's segments must not be modified
 	if isFirst {
 		w.bg.Show()
-		for _, s := range cell {
-			if x, ok := s.(*widget.TextSegment); ok {
-				x.Style.TextStyle.Bold = true
-			}
-		}
-		w.label.Set(cell)
+		w.label.Set(RichTextSegmentsWithStyle(cell, func(x *widget.RichTextStyle) {
+			x.TextStyle.Bold = true
+		}))
 		w.cell.Segments = nil
 	} else {
-		w.cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, cell)
+		w.cell.Segments = RichTextSegmentsWithStyle(cell, func(x *widget.RichTextStyle) {
+			x.Alignment = fyne.TextAlignTrailing
+		})
 		w.label.SetWithText(labelText)
 		w.bg.Hide()
 	}
 	w.cell.Refresh()
-}
-
-// copyTextSegments returns a copy of segments with every text segment copied.
-func copyTextSegments(segments []widget.RichTextSegment) []widget.RichTextSegment {
-	segs2 := make([]widget.RichTextSegment, len(segments))
-	for i, s := range segments {
-		if t, ok := s.(*widget.TextSegment); ok {
-			t2 := *t
-			s = &t2
-		}
-		segs2[i] = s
-	}
-	return segs2
 }
