@@ -640,7 +640,9 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 		}))
 		w.cell.Segments = nil
 	} else {
-		w.cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, cell)
+		w.cell.Segments = ModifyRichTextStyle(cell, func(x *widget.RichTextStyle) {
+			x.Alignment = fyne.TextAlignTrailing
+		})
 		w.label.SetWithText(labelText)
 		w.bg.Hide()
 	}

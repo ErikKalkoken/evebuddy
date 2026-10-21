@@ -113,33 +113,6 @@ func TestInlineRichText_SkipNonInlinable(t *testing.T) {
 	assert.False(t, s2.Style.Inline)
 }
 
-func TestAlignRichTextSegments_CanAlign(t *testing.T) {
-	a := xwidget.RichTextSegmentsFromText("a")
-	b := xwidget.RichTextSegmentsFromText("b")
-	got := xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, b)
-	assert.Len(t, got, 2)
-	s1 := got[0].(*widget.TextSegment)
-	assert.Equal(t, "a", s1.Text)
-	assert.Equal(t, fyne.TextAlignCenter, s1.Style.Alignment)
-	s2 := got[1].(*widget.TextSegment)
-	assert.Equal(t, "b", s2.Text)
-	assert.Equal(t, fyne.TextAlignCenter, s2.Style.Alignment)
-}
-
-func TestAlignRichTextSegments_SkipNonAlignable(t *testing.T) {
-	a := xwidget.RichTextSegmentsFromText("a")
-	x := []widget.RichTextSegment{&widget.ImageSegment{Title: "x"}}
-	b := xwidget.RichTextSegmentsFromText("b")
-	got := xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a, x, b)
-	assert.Len(t, got, 2)
-	s1 := got[0].(*widget.TextSegment)
-	assert.Equal(t, "a", s1.Text)
-	assert.Equal(t, fyne.TextAlignCenter, s1.Style.Alignment)
-	s2 := got[1].(*widget.TextSegment)
-	assert.Equal(t, "b", s2.Text)
-	assert.Equal(t, fyne.TextAlignCenter, s2.Style.Alignment)
-}
-
 func TestInlineRichText_DoesNotModifyInput(t *testing.T) {
 	// given
 	a := xwidget.RichTextSegmentsFromText("a")
@@ -155,15 +128,6 @@ func TestInlineRichText_ReturnsNilForEmptyInput(t *testing.T) {
 	got := xwidget.InlineRichTextSegments()
 	// then
 	assert.Nil(t, got)
-}
-
-func TestAlignRichTextSegments_DoesNotModifyInput(t *testing.T) {
-	// given
-	a := xwidget.RichTextSegmentsFromText("a")
-	// when
-	xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a)
-	// then
-	assert.Equal(t, fyne.TextAlignLeading, a[0].(*widget.TextSegment).Style.Alignment)
 }
 
 func TestModifyRichTextStyle_CanModify(t *testing.T) {

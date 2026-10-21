@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"slices"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
@@ -41,23 +40,6 @@ func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichT
 		segs2 = append(segs2, &t2)
 	}
 	segs2 = append(segs2, segs[len(segs)-1])
-	return segs2
-}
-
-// AlignRichTextSegments returns a copy where all segments are aligned as given.
-// Non-alignable segments are skipped.
-func AlignRichTextSegments(align fyne.TextAlign, segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
-	var segs2 []widget.RichTextSegment
-	segs := slices.Concat(segments...)
-	for _, x := range segs {
-		t, ok := x.(*widget.TextSegment)
-		if !ok {
-			continue
-		}
-		t2 := *t
-		t2.Style.Alignment = align
-		segs2 = append(segs2, &t2)
-	}
 	return segs2
 }
 
