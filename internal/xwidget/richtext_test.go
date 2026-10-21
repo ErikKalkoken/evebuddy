@@ -139,3 +139,69 @@ func TestAlignRichTextSegments_SkipNonAlignable(t *testing.T) {
 	assert.Equal(t, "b", s2.Text)
 	assert.Equal(t, fyne.TextAlignCenter, s2.Style.Alignment)
 }
+
+func TestInlineRichText_DoesNotModifyInput(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a")
+	b := xwidget.RichTextSegmentsFromText("b")
+	// when
+	xwidget.InlineRichTextSegments(a, b)
+	// then
+	assert.False(t, a[0].(*widget.TextSegment).Style.Inline)
+}
+
+func TestInlineRichText_ReturnsNilForEmptyInput(t *testing.T) {
+	// when
+	got := xwidget.InlineRichTextSegments()
+	// then
+	assert.Nil(t, got)
+}
+
+func TestAlignRichTextSegments_DoesNotModifyInput(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a")
+	// when
+	xwidget.AlignRichTextSegments(fyne.TextAlignCenter, a)
+	// then
+	assert.Equal(t, fyne.TextAlignLeading, a[0].(*widget.TextSegment).Style.Alignment)
+}
+
+func TestModifyRichTextStyle_CanModify(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a")
+	// when
+	got := xwidget.ModifyRichTextStyle(a, func(x *widget.RichTextStyle) {
+		x.ColorName = theme.ColorNameError
+	})
+	// then
+	assert.Len(t, got, 1)
+	s1 := got[0].(*widget.TextSegment)
+	assert.Equal(t, "a", s1.Text)
+	assert.Equal(t, theme.ColorNameError, s1.Style.ColorName)
+}
+
+func TestModifyRichTextStyle_SkipNonText(t *testing.T) {
+	// given
+	segs := []widget.RichTextSegment{
+		&widget.ImageSegment{Title: "x"},
+		&widget.TextSegment{Text: "a"},
+	}
+	// when
+	got := xwidget.ModifyRichTextStyle(segs, func(x *widget.RichTextStyle) {
+		x.ColorName = theme.ColorNameError
+	})
+	// then
+	assert.Len(t, got, 1)
+	assert.Equal(t, "a", got[0].(*widget.TextSegment).Text)
+}
+
+func TestModifyRichTextStyle_DoesNotModifyInput(t *testing.T) {
+	// given
+	a := xwidget.RichTextSegmentsFromText("a")
+	// when
+	xwidget.ModifyRichTextStyle(a, func(x *widget.RichTextStyle) {
+		x.ColorName = theme.ColorNameError
+	})
+	// then
+	assert.Equal(t, fyne.ThemeColorName(""), a[0].(*widget.TextSegment).Style.ColorName)
+}
