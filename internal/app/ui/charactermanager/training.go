@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
@@ -96,15 +97,12 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 		})
 	}
 	if failed > 0 {
-		a.cw.displaySnackbar(fmt.Sprintf("Failed to set watcher for %d characters: %s", failed, a.cw.u.ErrorDisplay(lastErr)))
+		a.cw.displaySnackbar(fmt.Sprintf("Failed to set watcher for %s: %s", ihumanize.Plural(failed, "character", "characters"), a.cw.u.ErrorDisplay(lastErr)))
 	}
 }
 
 func (a *training) setAllWatched(ctx context.Context, on bool) {
-	for id, c := range a.characters {
-		if c.IsTrainingWatched == on {
-			continue
-		}
+	for id := range a.characters {
 		a.updateCharacterWatched(ctx, id, on)
 	}
 }

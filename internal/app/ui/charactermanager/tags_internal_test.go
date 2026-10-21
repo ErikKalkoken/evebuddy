@@ -173,6 +173,23 @@ func TestManageTags_Update(t *testing.T) {
 		assert.Equal(t, bravo.ID, a.selectedTag.ID)
 		assert.Equal(t, "Tag: Bravo", a.manageCharacters.Title())
 	})
+	t.Run("reloads when a character is added", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		tag := factory.CreateCharacterTag("Alpha")
+		factory.AddCharacterToTag(tag, factory.CreateCharacter())
+		a := cw.characterTags
+		a.update(context.Background())
+		require.True(t, a.addCharactersButton.Disabled())
+		c := factory.CreateCharacter()
+		// when
+		u.Signals().CharacterAdded.Emit(context.Background(), c)
+		// then
+		assert.False(t, a.addCharactersButton.Disabled())
+	})
 }
 
 func TestManageTags_SetCharacters(t *testing.T) {
@@ -374,6 +391,7 @@ func TestManageTags_SetCharacters(t *testing.T) {
 		// then
 		assert.Empty(t, a.characters)
 		assert.True(t, a.addCharactersButton.Disabled())
+		assert.True(t, a.emptyCharactersHint.Visible())
 		assert.Len(t, messages, 1)
 	})
 	t.Run("clears characters when no tag is given", func(t *testing.T) {
@@ -713,6 +731,26 @@ func TestManageTags_RemoveCharacterFromTag(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatal("TagsChanged not emitted")
 		}
+	})
+	t.Run("keeps tag selected meanwhile", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		alpha := factory.CreateCharacterTag("Alpha")
+		bravo := factory.CreateCharacterTag("Bravo")
+		c := factory.CreateCharacter()
+		factory.AddCharacterToTag(alpha, c)
+		a := cw.characterTags
+		a.update(context.Background())
+		a.tagList.Select(1)
+		// when
+		a.removeCharacterFromTag(context.Background(), alpha, c.ID)
+		// then
+		require.NotNil(t, a.selectedTag)
+		assert.Equal(t, bravo.ID, a.selectedTag.ID)
+		assert.Equal(t, "Tag: Bravo", a.manageCharacters.Title())
 	})
 }
 

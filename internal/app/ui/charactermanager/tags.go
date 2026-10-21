@@ -63,6 +63,9 @@ func newManageTags(cw *manageCharacters) *manageTags {
 	a.tagList = a.makeTagList()
 
 	// Signals
+	a.cw.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	}, a.signalKey)
 	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
@@ -71,7 +74,14 @@ func newManageTags(cw *manageCharacters) *manageTags {
 }
 
 func (a *manageTags) stop() {
+	a.cw.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
 	a.cw.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
+}
+
+func (a *manageTags) emitTagsChanged(ctx context.Context) {
+	runAsync(func() {
+		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
+	})
 }
 
 func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
@@ -114,9 +124,7 @@ func (a *manageTags) deleteTags() {
 		"This will permanently remove all tags",
 		"Delete",
 		widget.DangerImportance,
-		func(ctx context.Context) {
-			a.deleteAllTags(ctx)
-		},
+		a.deleteAllTags,
 		a.cw.w,
 	)
 }
@@ -131,9 +139,7 @@ func (a *manageTags) deleteAllTags(ctx context.Context) {
 		return
 	}
 	a.update(ctx)
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 	a.cw.displaySnackbar("All tags deleted")
 }
 
@@ -167,9 +173,7 @@ func (a *manageTags) importTagsFrom(ctx context.Context, r io.Reader) error {
 		return err
 	}
 	a.update(ctx)
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 	return nil
 }
 
@@ -295,11 +299,12 @@ func (a *manageTags) addCharactersToTag(ctx context.Context, tag *app.CharacterT
 		return
 	}
 	fyne.Do(func() {
-		a.setCharactersAsync(tag)
+		if a.selectedTag == nil || a.selectedTag.ID != tag.ID {
+			return // another tag was selected meanwhile
+		}
+		a.setCharactersAsync(a.selectedTag)
 	})
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 }
 
 func (a *manageTags) makeTagList() *widget.List {
@@ -371,9 +376,7 @@ func (a *manageTags) deleteTag(ctx context.Context, tag *app.CharacterTag) {
 		return
 	}
 	a.update(ctx)
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 }
 
 func (a *manageTags) makeCharacterList() *widget.List {
@@ -428,11 +431,12 @@ func (a *manageTags) removeCharacterFromTag(ctx context.Context, tag *app.Charac
 		return
 	}
 	fyne.Do(func() {
-		a.setCharactersAsync(tag)
+		if a.selectedTag == nil || a.selectedTag.ID != tag.ID {
+			return // another tag was selected meanwhile
+		}
+		a.setCharactersAsync(a.selectedTag)
 	})
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 }
 
 func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
@@ -459,6 +463,14 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 				return // outdated
 			}
 			a.cw.reportError("Failed to list characters for "+tag.Name, err)
+			fyne.Do(func() {
+				if load != a.charactersLoad.Load() {
+					return // outdated
+				}
+				if len(a.characters) == 0 {
+					a.emptyCharactersHint.Show()
+				}
+			})
 			return
 		}
 		fyne.Do(func() {
@@ -514,9 +526,7 @@ func (a *manageTags) submitTag(ctx context.Context, name string, execute func(ct
 		return
 	}
 	a.updateAndSelect(ctx, tagID)
-	runAsync(func() {
-		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	a.emitTagsChanged(ctx)
 }
 
 // newTagNameValidator returns a validator that rejects empty and existing tag names.

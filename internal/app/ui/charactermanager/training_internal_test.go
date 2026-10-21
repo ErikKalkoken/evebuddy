@@ -298,25 +298,6 @@ func TestTraining_SetAllWatched(t *testing.T) {
 			assert.False(t, c.IsTrainingWatched, "character %d", id)
 		}
 	})
-	t.Run("skips characters already in target state", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
-		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
-		defer cw.stop()
-		c1 := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: false})
-		factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: true})
-		var changed []int64
-		u.Signals().CharacterChanged.AddListener(func(_ context.Context, id int64) {
-			changed = append(changed, id)
-		})
-		a := cw.characterTraining
-		a.update(context.Background())
-		// when
-		a.setAllWatched(context.Background(), true)
-		// then
-		assert.Equal(t, []int64{c1.ID}, changed)
-	})
 }
 
 func TestTraining_SetWatchedToCurrentlyTrained(t *testing.T) {
