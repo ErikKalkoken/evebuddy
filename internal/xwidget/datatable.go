@@ -15,8 +15,6 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
-
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 // SortDir represents the sort direction for a data table.
@@ -140,20 +138,30 @@ type ColumnSorter[T any] struct {
 
 // NewColumnSorter returns a new ColumSorter.
 // label and dir defines the initially sorted column.
+// An empty label means no column is sorted initially.
 // It panics if semantic checks fail.
 func NewColumnSorter[T any](columns DataColumns[T], label string, dir SortDir) *ColumnSorter[T] {
-	idx, ok := columns.labelLookup[label]
-	if !ok {
-		dir = SortOff
-	}
-	if dir == SortOff {
-		idx = 0
-	}
 	cs := &ColumnSorter[T]{
 		cols:    make([]SortDir, columns.Size()),
 		columns: columns,
 	}
 	cs.init()
+	if label == "" {
+		if dir.isSorting() {
+			panic("initial sort direction given without a column")
+		}
+		return cs
+	}
+	idx, ok := columns.labelLookup[label]
+	if !ok {
+		panic(fmt.Sprintf("unknown initial sort column: %q", label))
+	}
+	if !dir.isSorting() {
+		return cs
+	}
+	if columns.cols[idx].Sort == nil {
+		panic(fmt.Sprintf("initial sort column has no sort func: %q", label))
+	}
 	cs.setIdx(idx, dir)
 	return cs
 }
@@ -199,6 +207,9 @@ func (cs *ColumnSorter[T]) Set(label string, dir SortDir) {
 }
 
 func (cs *ColumnSorter[T]) setIdx(idx int, dir SortDir) {
+	if cs.columns.cols[idx].Sort == nil || dir < SortOff || dir > SortDesc {
+		return
+	}
 	cs.init()
 	cs.cols[idx] = dir
 }
@@ -210,11 +221,8 @@ func (cs *ColumnSorter[T]) CalcSort(label string) (string, SortDir, bool) {
 		idx = -1
 	}
 	var dir SortDir
-	if idx >= 0 {
+	if idx >= 0 && cs.cols[idx] != sortNone {
 		dir = cs.cols[idx]
-		if dir == sortNone {
-			return "", 0, false
-		}
 		dir++
 		if dir > SortDesc {
 			dir = SortAsc
@@ -254,14 +262,14 @@ func (cs *ColumnSorter[T]) SortRows(rows []T, sortCol string, dir SortDir, doSor
 
 // NewSortChip creates a [SortChip] for a [ColumnSorter].
 func (cs *ColumnSorter[T]) NewSortChip(changed func(), ignoredColumns ...string) *kxwidget.SortChip {
-	columns := slices.Collect(xiter.Map(cs.columns.Values(), func(h DataColumn[T]) string {
-		return h.Label
-	}))
-
 	ignored := set.Of(ignoredColumns...)
-	sortColumns := slices.DeleteFunc(columns, func(c string) bool {
-		return ignored.Contains(c)
-	})
+	var sortColumns []string
+	for c := range cs.columns.Values() {
+		if c.Sort == nil || ignored.Contains(c.Label) {
+			continue
+		}
+		sortColumns = append(sortColumns, c.Label)
+	}
 	col, dir := cs.current() // TODO: Hack, replace with defaults
 	var defaultColumn string
 	if col >= 0 {
@@ -478,7 +486,7 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
 func MakeDataList[S ~[]E, E any](
-	def DataColumns[E],
+	columns DataColumns[E],
 	data *S,
 	makeCell func(string, E) []widget.RichTextSegment,
 	onSelected func(E),
@@ -489,7 +497,7 @@ func MakeDataList[S ~[]E, E any](
 			return len(*data)
 		},
 		func() fyne.CanvasObject {
-			return newDataCardWidget(def, makeCell)
+			return newDataCardWidget(columns, makeCell)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(*data) || id < 0 {
@@ -524,11 +532,10 @@ const (
 type dataCardWidget[E any] struct {
 	widget.BaseWidget
 
-	border         *canvas.Rectangle
-	columns        DataColumns[E]
-	makeCell       func(string, E) []widget.RichTextSegment
-	maxColumnWidth float32
-	rows           []*dataCardRowWidget
+	border   *canvas.Rectangle
+	columns  DataColumns[E]
+	makeCell func(string, E) []widget.RichTextSegment
+	rows     []*dataCardRowWidget
 }
 
 func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) []widget.RichTextSegment) *dataCardWidget[E] {
@@ -536,26 +543,27 @@ func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) [
 	border.StrokeColor = theme.Color(dataCardBorderColor)
 	border.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	border.CornerRadius = theme.Size(theme.SizeNameCardRadius)
+	width := columns.maxColumnWidth + theme.Padding()
+	rows := make([]*dataCardRowWidget, columns.Size())
+	for i := range rows {
+		rows[i] = newDataCardRowWidget(width)
+	}
 	w := &dataCardWidget[E]{
-		rows:           make([]*dataCardRowWidget, len(columns.cols)),
-		columns:        columns,
-		makeCell:       makeCell,
-		maxColumnWidth: columns.maxColumnWidth,
-		border:         border,
+		rows:     rows,
+		columns:  columns,
+		makeCell: makeCell,
+		border:   border,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *dataCardWidget[E]) CreateRenderer() fyne.WidgetRenderer {
-	width := w.maxColumnWidth + theme.Padding()
 	p := theme.Padding()
 	rows := container.New(layout.NewCustomPaddedVBoxLayout(0))
-	for i := range w.columns.cols {
-		rowWidget := newDataCardRowWidget(width)
+	for i, rowWidget := range w.rows {
 		rows.Add(rowWidget)
-		w.rows[i] = rowWidget
-		showDivider := i < w.columns.Size()-1
+		showDivider := i < len(w.rows)-1
 		if showDivider {
 			divider := container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator())
 			rows.Add(divider)
@@ -625,6 +633,7 @@ func (w *dataCardRowWidget) Refresh() {
 }
 
 func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegment, isFirst bool) {
+	cell = copyTextSegments(cell) // the caller's segments must not be modified
 	if isFirst {
 		w.bg.Show()
 		for _, s := range cell {
@@ -633,10 +642,24 @@ func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegme
 			}
 		}
 		w.label.Set(cell)
+		w.cell.Segments = nil
 	} else {
 		w.cell.Segments = AlignRichTextSegments(fyne.TextAlignTrailing, cell)
 		w.label.SetWithText(labelText)
 		w.bg.Hide()
 	}
 	w.cell.Refresh()
+}
+
+// copyTextSegments returns a copy of segments with every text segment copied.
+func copyTextSegments(segments []widget.RichTextSegment) []widget.RichTextSegment {
+	segs2 := make([]widget.RichTextSegment, len(segments))
+	for i, s := range segments {
+		if t, ok := s.(*widget.TextSegment); ok {
+			t2 := *t
+			s = &t2
+		}
+		segs2[i] = s
+	}
+	return segs2
 }

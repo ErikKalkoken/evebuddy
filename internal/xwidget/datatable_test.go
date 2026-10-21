@@ -1,6 +1,7 @@
 package xwidget_test
 
 import (
+	"cmp"
 	"fmt"
 	"testing"
 
@@ -156,7 +157,7 @@ func TestColumsSorter_CalcSortIdx(t *testing.T) {
 		},
 		{
 			name:         "initial no sort, asc->desc",
-			initialLabel: "Nonexistent",
+			initialLabel: "",
 			initialDir:   xwidget.SortOff,
 			sortLabel:    "Bravo",
 			wantLabel:    "Bravo",
@@ -200,7 +201,7 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 	})
 
 	t.Run("does not panic when no column is currently sorted", func(t *testing.T) {
-		sc := xwidget.NewColumnSorter(columns, "Nonexistent", xwidget.SortAsc)
+		sc := xwidget.NewColumnSorter(columns, "", xwidget.SortOff)
 		var chip *kxwidget.SortChip
 		assert.NotPanics(t, func() {
 			chip = sc.NewSortChip(nil)
@@ -247,6 +248,26 @@ func TestColumnSorter_NewSortChip(t *testing.T) {
 		assert.Nil(t, findMenuItem(w, "Bravo"))
 		assert.Nil(t, findMenuItem(w, "Charlie"))
 	})
+
+	t.Run("excludes columns without sort func from the menu", func(t *testing.T) {
+		// given
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label: "Alpha",
+			Sort:  func(a, b myRow) int { return 0 },
+		}, {
+			Label: "Bravo",
+		}})
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		chip := sc.NewSortChip(nil)
+		w := test.NewWindow(chip)
+		defer w.Close()
+		w.Resize(fyne.NewSize(300, 400))
+		// when
+		test.Tap(chip)
+		// then
+		assert.NotNil(t, findMenuItem(w, "Alpha"))
+		assert.Nil(t, findMenuItem(w, "Bravo"))
+	})
 }
 
 // findMenuItem searches the topmost canvas overlay of w for a text object matching label.
@@ -284,4 +305,346 @@ func findObjectByText(obj fyne.CanvasObject, want string) fyne.CanvasObject {
 		}
 	}
 	return nil
+}
+
+func TestColumnSorter_CalcSort_Sequences(t *testing.T) {
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+		Label: "Alpha",
+		Sort:  func(a, b myRow) int { return 0 },
+	}, {
+		Label: "Bravo",
+		Sort:  func(a, b myRow) int { return 0 },
+	}, {
+		Label: "Charlie",
+	}})
+	t.Run("empty label keeps current sort without toggling", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortDesc)
+		sc.CalcSort("")
+		// when
+		gotLabel, gotDir, gotSort := sc.CalcSort("")
+		// then
+		assert.True(t, gotSort)
+		assert.Equal(t, "Alpha", gotLabel)
+		assert.Equal(t, xwidget.SortDesc, gotDir)
+	})
+	t.Run("repeated taps cycle between ascending and descending", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortOff)
+		// when
+		_, dir1, _ := sc.CalcSort("Alpha")
+		_, dir2, _ := sc.CalcSort("Alpha")
+		_, dir3, _ := sc.CalcSort("Alpha")
+		// then
+		assert.Equal(t, xwidget.SortAsc, dir1)
+		assert.Equal(t, xwidget.SortDesc, dir2)
+		assert.Equal(t, xwidget.SortAsc, dir3)
+	})
+	t.Run("tapping another column resets the previous one", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortAsc)
+		sc.CalcSort("Bravo")
+		// when
+		gotLabel, gotDir, gotSort := sc.CalcSort("Alpha")
+		// then
+		assert.True(t, gotSort)
+		assert.Equal(t, "Alpha", gotLabel)
+		assert.Equal(t, xwidget.SortAsc, gotDir)
+	})
+	t.Run("tapping an unsortable column returns the current sort", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "Alpha", xwidget.SortDesc)
+		// when
+		gotLabel, gotDir, gotSort := sc.CalcSort("Charlie")
+		// then
+		assert.True(t, gotSort)
+		assert.Equal(t, "Alpha", gotLabel)
+		assert.Equal(t, xwidget.SortDesc, gotDir)
+	})
+}
+
+func TestColumnSorter_SortRows(t *testing.T) {
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+		Label: "ID",
+		Sort:  func(a, b myRow) int { return cmp.Compare(a.id, b.id) },
+	}, {
+		Label: "Planet",
+	}})
+	t.Run("sorts ascending", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc)
+		rows := []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}
+		// when
+		sc.SortRows(rows, "ID", xwidget.SortAsc, true)
+		// then
+		assert.Equal(t, []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}, rows)
+	})
+	t.Run("sorts descending", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc)
+		rows := []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}
+		// when
+		sc.SortRows(rows, "ID", xwidget.SortDesc, true)
+		// then
+		assert.Equal(t, []myRow{{42, "Earth"}, {8, "Venus"}, {3, "Mercury"}}, rows)
+	})
+	t.Run("does not sort when doSort is false", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc)
+		rows := []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}
+		// when
+		sc.SortRows(rows, "ID", xwidget.SortAsc, false)
+		// then
+		assert.Equal(t, []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}, rows)
+	})
+	t.Run("does not sort for an unknown column", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc)
+		rows := []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}
+		// when
+		sc.SortRows(rows, "Zulu", xwidget.SortAsc, true)
+		// then
+		assert.Equal(t, []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}, rows)
+	})
+	t.Run("does not sort for a column without sort func", func(t *testing.T) {
+		// given
+		sc := xwidget.NewColumnSorter(columns, "ID", xwidget.SortAsc)
+		rows := []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}
+		// when
+		sc.SortRows(rows, "Planet", xwidget.SortAsc, true)
+		// then
+		assert.Equal(t, []myRow{{8, "Venus"}, {3, "Mercury"}, {42, "Earth"}}, rows)
+	})
+}
+
+func TestDataTable_OnSelected(t *testing.T) {
+	test.NewTempApp(t)
+	columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+		Label:  "ID",
+		Update: func(r myRow, co fyne.CanvasObject) {},
+	}, {
+		Label:  "Planet",
+		Update: func(r myRow, co fyne.CanvasObject) {},
+	}})
+	t.Run("reports column and row of selected cell", func(t *testing.T) {
+		// given
+		data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
+		var gotCol int
+		var gotRow myRow
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff),
+			func(string) {},
+			func(col int, r myRow) {
+				gotCol = col
+				gotRow = r
+			},
+		)
+		// when
+		x.Select(widget.TableCellID{Row: 1, Col: 1})
+		// then
+		assert.Equal(t, 1, gotCol)
+		assert.Equal(t, myRow{8, "Venus"}, gotRow)
+	})
+	t.Run("same cell can be selected again", func(t *testing.T) {
+		// given
+		data := []myRow{{3, "Mercury"}, {8, "Venus"}, {42, "Earth"}}
+		var calls int
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff),
+			func(string) {},
+			func(int, myRow) { calls++ },
+		)
+		x.Select(widget.TableCellID{Row: 1, Col: 1})
+		// when
+		x.Select(widget.TableCellID{Row: 1, Col: 1})
+		// then
+		assert.Equal(t, 2, calls)
+	})
+	t.Run("ignores rows no longer in data", func(t *testing.T) {
+		// given
+		data := []myRow{{3, "Mercury"}}
+		var calls int
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff),
+			func(string) {},
+			func(int, myRow) { calls++ },
+		)
+		// when
+		x.OnSelected(widget.TableCellID{Row: 5, Col: 0})
+		// then
+		assert.Equal(t, 0, calls)
+	})
+	t.Run("does not panic without callback", func(t *testing.T) {
+		// given
+		data := []myRow{{3, "Mercury"}}
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff),
+			func(string) {},
+			nil,
+		)
+		// when/then
+		assert.NotPanics(t, func() {
+			x.Select(widget.TableCellID{Row: 0, Col: 0})
+		})
+	})
+}
+
+func TestDataTable_CustomCreate(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("first column shows its custom object", func(t *testing.T) {
+		// given
+		var got []fyne.CanvasObject
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label:  "Done",
+			Create: func() fyne.CanvasObject { return widget.NewCheck("", nil) },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Planet",
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Progress",
+			Create: func() fyne.CanvasObject { return widget.NewProgressBar() },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}})
+		data := []myRow{{3, "Mercury"}}
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "Planet", xwidget.SortOff),
+			func(string) {},
+			nil,
+		)
+		co := x.CreateCell()
+		// when
+		x.UpdateCell(widget.TableCellID{Row: 0, Col: 0}, co)
+		// then
+		require.Len(t, got, 1)
+		assert.IsType(t, &widget.Check{}, got[0])
+		var visible []fyne.CanvasObject
+		for _, o := range co.(*fyne.Container).Objects {
+			if o.Visible() {
+				visible = append(visible, o)
+			}
+		}
+		assert.Equal(t, []fyne.CanvasObject{got[0]}, visible)
+	})
+	t.Run("column without create shows the default object", func(t *testing.T) {
+		// given
+		var got []fyne.CanvasObject
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label:  "Done",
+			Create: func() fyne.CanvasObject { return widget.NewCheck("", nil) },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Planet",
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Progress",
+			Create: func() fyne.CanvasObject { return widget.NewProgressBar() },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}})
+		data := []myRow{{3, "Mercury"}}
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "Planet", xwidget.SortOff),
+			func(string) {},
+			nil,
+		)
+		co := x.CreateCell()
+		// when
+		x.UpdateCell(widget.TableCellID{Row: 0, Col: 1}, co)
+		// then
+		require.Len(t, got, 1)
+		assert.IsType(t, &widget.Label{}, got[0])
+		var visible []fyne.CanvasObject
+		for _, o := range co.(*fyne.Container).Objects {
+			if o.Visible() {
+				visible = append(visible, o)
+			}
+		}
+		assert.Equal(t, []fyne.CanvasObject{got[0]}, visible)
+	})
+	t.Run("last column shows its custom object", func(t *testing.T) {
+		// given
+		var got []fyne.CanvasObject
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label:  "Done",
+			Create: func() fyne.CanvasObject { return widget.NewCheck("", nil) },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Planet",
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}, {
+			Label:  "Progress",
+			Create: func() fyne.CanvasObject { return widget.NewProgressBar() },
+			Update: func(r myRow, co fyne.CanvasObject) { got = append(got, co) },
+		}})
+		data := []myRow{{3, "Mercury"}}
+		x := xwidget.MakeDataTable(
+			columns,
+			&data,
+			func() fyne.CanvasObject { return widget.NewLabel("") },
+			xwidget.NewColumnSorter(columns, "Planet", xwidget.SortOff),
+			func(string) {},
+			nil,
+		)
+		co := x.CreateCell()
+		// when
+		x.UpdateCell(widget.TableCellID{Row: 0, Col: 2}, co)
+		// then
+		require.Len(t, got, 1)
+		assert.IsType(t, &widget.ProgressBar{}, got[0])
+		var visible []fyne.CanvasObject
+		for _, o := range co.(*fyne.Container).Objects {
+			if o.Visible() {
+				visible = append(visible, o)
+			}
+		}
+		assert.Equal(t, []fyne.CanvasObject{got[0]}, visible)
+	})
+}
+
+func TestDataTable_Panics(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("when default create is missing", func(t *testing.T) {
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label:  "ID",
+			Update: func(r myRow, co fyne.CanvasObject) {},
+		}})
+		data := []myRow{}
+		assert.Panics(t, func() {
+			xwidget.MakeDataTable(columns, &data, nil, xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff), func(string) {}, nil)
+		})
+	})
+	t.Run("when a column has no update", func(t *testing.T) {
+		columns := xwidget.NewDataColumns([]xwidget.DataColumn[myRow]{{
+			Label: "ID",
+		}})
+		data := []myRow{}
+		assert.Panics(t, func() {
+			xwidget.MakeDataTable(
+				columns,
+				&data,
+				func() fyne.CanvasObject { return widget.NewLabel("") },
+				xwidget.NewColumnSorter(columns, "ID", xwidget.SortOff),
+				func(string) {},
+				nil,
+			)
+		})
+	})
 }
