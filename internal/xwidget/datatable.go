@@ -478,7 +478,7 @@ func (w *dataTableHeaderWidget) Update(labelText string, dir SortDir, iconRes fy
 // MakeDataList returns a list for showing a data table in a generic way.
 // This is meant for showing table content on mobile.
 func MakeDataList[S ~[]E, E any](
-	def DataColumns[E],
+	columns DataColumns[E],
 	data *S,
 	makeCell func(string, E) []widget.RichTextSegment,
 	onSelected func(E),
@@ -489,7 +489,7 @@ func MakeDataList[S ~[]E, E any](
 			return len(*data)
 		},
 		func() fyne.CanvasObject {
-			return newDataCardWidget(def, makeCell)
+			return newDataCardWidget(columns, makeCell)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(*data) || id < 0 {
@@ -524,11 +524,10 @@ const (
 type dataCardWidget[E any] struct {
 	widget.BaseWidget
 
-	border         *canvas.Rectangle
-	columns        DataColumns[E]
-	makeCell       func(string, E) []widget.RichTextSegment
-	maxColumnWidth float32
-	rows           []*dataCardRowWidget
+	border   *canvas.Rectangle
+	columns  DataColumns[E]
+	makeCell func(string, E) []widget.RichTextSegment
+	rows     []*dataCardRowWidget
 }
 
 func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) []widget.RichTextSegment) *dataCardWidget[E] {
@@ -536,26 +535,27 @@ func newDataCardWidget[E any](columns DataColumns[E], makeCell func(string, E) [
 	border.StrokeColor = theme.Color(dataCardBorderColor)
 	border.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	border.CornerRadius = theme.Size(theme.SizeNameCardRadius)
+	width := columns.maxColumnWidth + theme.Padding()
+	rows := make([]*dataCardRowWidget, columns.Size())
+	for i := range rows {
+		rows[i] = newDataCardRowWidget(width)
+	}
 	w := &dataCardWidget[E]{
-		rows:           make([]*dataCardRowWidget, len(columns.cols)),
-		columns:        columns,
-		makeCell:       makeCell,
-		maxColumnWidth: columns.maxColumnWidth,
-		border:         border,
+		rows:     rows,
+		columns:  columns,
+		makeCell: makeCell,
+		border:   border,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *dataCardWidget[E]) CreateRenderer() fyne.WidgetRenderer {
-	width := w.maxColumnWidth + theme.Padding()
 	p := theme.Padding()
 	rows := container.New(layout.NewCustomPaddedVBoxLayout(0))
-	for i := range w.columns.cols {
-		rowWidget := newDataCardRowWidget(width)
+	for i, rowWidget := range w.rows {
 		rows.Add(rowWidget)
-		w.rows[i] = rowWidget
-		showDivider := i < w.columns.Size()-1
+		showDivider := i < len(w.rows)-1
 		if showDivider {
 			divider := container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 2*p), widget.NewSeparator())
 			rows.Add(divider)
