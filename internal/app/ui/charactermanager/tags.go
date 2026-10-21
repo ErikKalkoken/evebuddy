@@ -77,7 +77,7 @@ func (a *manageTags) stop() {
 func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {
 	// p := theme.Padding()
 	addTag := widget.NewButtonWithIcon("Create tag", theme.ContentAddIcon(), func() {
-		a.modifyTag("Create Character Tag", "Create", func(ctx context.Context, name string) (int64, error) {
+		a.modifyTag("Create Character Tag", "Create", nil, func(ctx context.Context, name string) (int64, error) {
 			tag, err := a.cw.u.Character().CreateTag(ctx, name)
 			if err != nil {
 				return 0, err
@@ -331,7 +331,7 @@ func (a *manageTags) makeTagList() *widget.List {
 			box[0].(*widget.Label).SetText(tag.Name)
 			icons := box[1].(*fyne.Container).Objects
 			icons[0].(*ttwidget.Button).OnTapped = func() {
-				a.modifyTag("Rename tag: "+tag.Name, "Rename", func(ctx context.Context, name string) (int64, error) {
+				a.modifyTag("Rename tag: "+tag.Name, "Rename", tag, func(ctx context.Context, name string) (int64, error) {
 					return tag.ID, a.cw.u.Character().RenameTag(ctx, tag.ID, name)
 				})
 			}
@@ -482,10 +482,11 @@ func (a *manageTags) setCharactersAsync(tag *app.CharacterTag) {
 }
 
 // modifyTag shows a dialog for entering a tag name.
+// tag is the tag being renamed or nil when creating a new one.
 // execute returns the ID of the tag to select afterwards.
-func (a *manageTags) modifyTag(title, confirm string, execute func(ctx context.Context, name string) (int64, error)) {
+func (a *manageTags) modifyTag(title, confirm string, tag *app.CharacterTag, execute func(ctx context.Context, name string) (int64, error)) {
 	name := widget.NewEntry()
-	name.Validator = newTagNameValidator(a.tags)
+	name.Validator = newTagNameValidator(a.tags, tag)
 	items := []*widget.FormItem{
 		widget.NewFormItem("Name", name),
 	}
@@ -518,10 +519,16 @@ func (a *manageTags) submitTag(ctx context.Context, name string, execute func(ct
 	})
 }
 
-func newTagNameValidator(tags []*app.CharacterTag) fyne.StringValidator {
-	names := set.Of(xslices.Map(tags, func(x *app.CharacterTag) string {
-		return strings.ToLower(x.Name)
-	})...)
+// newTagNameValidator returns a validator that rejects empty and existing tag names.
+// The name of the renamed tag is allowed, so its case can be changed.
+func newTagNameValidator(tags []*app.CharacterTag, renamed *app.CharacterTag) fyne.StringValidator {
+	var names set.Set[string]
+	for _, x := range tags {
+		if renamed != nil && x.ID == renamed.ID {
+			continue
+		}
+		names.Add(strings.ToLower(x.Name))
+	}
 	return func(s string) error {
 		if len(s) == 0 {
 			return errors.New("can not be empty")

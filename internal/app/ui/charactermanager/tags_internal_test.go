@@ -400,21 +400,25 @@ func TestManageTags_SetCharacters(t *testing.T) {
 }
 
 func TestNewTagNameValidator(t *testing.T) {
-	tags := []*app.CharacterTag{{ID: 1, Name: "Alpha"}}
+	alpha := &app.CharacterTag{ID: 1, Name: "Alpha"}
+	tags := []*app.CharacterTag{alpha, {ID: 2, Name: "Bravo"}}
 	cases := []struct {
 		name    string
+		renamed *app.CharacterTag
 		input   string
 		wantErr bool
 	}{
-		{"accepts new name", "Bravo", false},
-		{"rejects empty name", "", true},
-		{"rejects existing name", "Alpha", true},
-		{"rejects existing name in other case", "aLPHA", true},
+		{"accepts new name", nil, "Charlie", false},
+		{"rejects empty name", nil, "", true},
+		{"rejects existing name", nil, "Alpha", true},
+		{"rejects existing name in other case", nil, "aLPHA", true},
+		{"rename accepts own name in other case", alpha, "aLPHA", false},
+		{"rename rejects name of other tag", alpha, "bravo", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			v := newTagNameValidator(tags)
+			v := newTagNameValidator(tags, tc.renamed)
 			// when
 			err := v(tc.input)
 			// then
