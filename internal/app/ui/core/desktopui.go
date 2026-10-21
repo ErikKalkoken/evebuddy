@@ -456,11 +456,12 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	corporationSelector := newNavSelector()
 	corporationNav.Header = newTitleRow(corporationSelector)
 	corporationItem := xwidget.NewNavRailItem(
-		icons.StarCircleOutlineSvg,
+		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		"Corporations",
 		makeTabContent("Corporations", corporationNav),
 	)
-	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search New Eden", u.showSearchWindow)
+	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search", u.showSearchWindow)
+	searchItem.Tooltip = "Search New Eden"
 	rail := xwidget.NewNavRail(
 		[]*xwidget.NavRailItem{homeItem, characterItem, corporationItem},
 		searchItem,

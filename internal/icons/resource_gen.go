@@ -562,6 +562,13 @@ var QuestionmarksmallSvg = &fyne.StaticResource{
 	StaticContent: QuestionmarksmallSvgData,
 }
 
+//go:embed rectangle.svg
+var RectangleSvgData []byte
+var RectangleSvg = &fyne.StaticResource{
+	StaticName:    "rectangle.svg",
+	StaticContent: RectangleSvgData,
+}
+
 //go:embed region_64.png
 var Region64PngData []byte
 var Region64Png = &fyne.StaticResource{
