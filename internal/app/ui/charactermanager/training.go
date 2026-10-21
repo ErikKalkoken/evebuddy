@@ -46,36 +46,39 @@ func newTraining(cw *manageCharacters) *training {
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	actions := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Set to currently trained", func() {
-			go func() {
-				ctx := context.Background()
-				for id, c := range a.characters {
-					d, err := a.cw.u.Character().TotalTrainingTime(ctx, c.ID)
-					if err != nil {
-						slog.Error("Failed to set watcher for trained characters", "error", err)
-						continue
-					}
-					fyne.Do(func() {
-						a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
-					})
-				}
-			}()
+			runAsync(func() {
+				a.setWatchedToCurrentlyTrained(context.Background())
+			})
 		}),
 		fyne.NewMenuItem("Enable all", func() {
-			ctx := context.Background()
-			for id := range a.characters {
-				a.updateCharacterWatched(ctx, id, true)
-			}
+			a.setAllWatched(context.Background(), true)
 		}),
 		fyne.NewMenuItem("Disable all", func() {
-			ctx := context.Background()
-			for id := range a.characters {
-				a.updateCharacterWatched(ctx, id, false)
-			}
+			a.setAllWatched(context.Background(), false)
 		}),
 	))
 	ab := xwidget.NewAppBar("Watched Training", a.list, actions)
 	ab.HideBackground = !a.cw.u.IsMobile()
 	return widget.NewSimpleRenderer(ab)
+}
+
+func (a *training) setWatchedToCurrentlyTrained(ctx context.Context) {
+	for id, c := range a.characters {
+		d, err := a.cw.u.Character().TotalTrainingTime(ctx, c.ID)
+		if err != nil {
+			slog.Error("Failed to set watcher for trained characters", "error", err)
+			continue
+		}
+		fyne.Do(func() {
+			a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
+		})
+	}
+}
+
+func (a *training) setAllWatched(ctx context.Context, on bool) {
+	for id := range a.characters {
+		a.updateCharacterWatched(ctx, id, on)
+	}
 }
 
 func (a *training) makeList() *widget.List {
@@ -128,18 +131,18 @@ func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) 
 		return
 	}
 	c := a.characters[id]
-	go func() {
+	runAsync(func() {
 		err := a.cw.u.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
-			a.cw.sb.Display("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
+			a.cw.displaySnackbar("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
 		}
 		fyne.Do(func() {
 			a.characters[id].IsTrainingWatched = on
 			a.list.RefreshItem(id)
 		})
 		a.cw.u.Signals().CharacterChanged.Emit(ctx, c.ID)
-	}()
+	})
 }
 
 func (a *training) update(ctx context.Context) {

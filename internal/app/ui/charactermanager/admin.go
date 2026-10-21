@@ -36,6 +36,7 @@ type admin struct {
 	widget.BaseWidget
 
 	ab         *xwidget.AppBar
+	addButton  *widget.Button
 	cw         *manageCharacters
 	characters *widget.List
 	rows       []adminRow
@@ -47,16 +48,16 @@ func newAdmin(cw *manageCharacters) *admin {
 	}
 	a.ExtendBaseWidget(a)
 	a.characters = a.makeCharacterList()
-	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	a.addButton = widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	add.Importance = widget.HighImportance
+	a.addButton.Importance = widget.HighImportance
 	if a.cw.u.IsOffline() {
-		add.Disable()
+		a.addButton.Disable()
 	}
 	a.ab = xwidget.NewAppBar("Characters", container.NewBorder(
 		nil,
-		container.NewVBox(add, xwidget.NewStandardSpacer()),
+		container.NewVBox(a.addButton, xwidget.NewStandardSpacer()),
 		nil,
 		nil,
 		a.characters,
@@ -197,7 +198,7 @@ func (a *admin) showAddCharacterDialog() {
 						slog.Int64("characterID", character.ID),
 						slog.Any("error", err),
 					)
-					a.cw.sb.Display("Failed to load character")
+					a.cw.displaySnackbar("Failed to load character")
 				}
 			}
 			if a.cw.u.CurrentCorporation() == nil {
@@ -212,7 +213,7 @@ func (a *admin) showAddCharacterDialog() {
 							slog.Int64("corporationID", c.ID),
 							slog.Any("error", err),
 						)
-						a.cw.sb.Display("Failed to load corporation")
+						a.cw.displaySnackbar("Failed to load corporation")
 					}
 				}
 			}
@@ -266,7 +267,7 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 		return
 	}
 	a.update(ctx)
-	a.cw.sb.Display(fmt.Sprintf("Character %s deleted", r.characterName))
+	a.cw.displaySnackbar(fmt.Sprintf("Character %s deleted", r.characterName))
 
 	if a.cw.u.CurrentCharacter().IDOrZero() == r.characterID {
 		err := a.cw.u.SetAnyCharacter(ctx)
