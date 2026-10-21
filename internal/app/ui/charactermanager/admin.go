@@ -303,9 +303,11 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 		}
 	}
 
-	go a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
-		ID:   r.characterID,
-		Name: r.characterName,
+	runAsync(func() {
+		a.cw.u.Signals().CharacterRemoved.Emit(ctx, &app.EntityShort{
+			ID:   r.characterID,
+			Name: r.characterName,
+		})
 	})
 }
 

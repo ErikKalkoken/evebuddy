@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"sync"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 
@@ -70,9 +68,7 @@ func Show(u baseUI) {
 		fynetooltip.DestroyWindowToolTipLayer(w.Canvas())
 	})
 	w.Show()
-	runAsync(func() {
-		cw.update(context.Background())
-	})
+	cw.update(context.Background())
 }
 
 type manageCharacters struct {
@@ -117,17 +113,15 @@ func (a *manageCharacters) stop() {
 }
 
 func (a *manageCharacters) update(ctx context.Context) {
-	var wg sync.WaitGroup
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterAdmin.update(ctx)
 	})
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterTags.update(ctx)
 	})
-	wg.Go(func() {
+	runAsync(func() {
 		a.characterTraining.update(ctx)
 	})
-	wg.Wait()
 }
 
 func (a *manageCharacters) reportError(text string, err error) {

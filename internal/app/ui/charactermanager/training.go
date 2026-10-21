@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -46,8 +47,11 @@ func newTraining(cw *manageCharacters) *training {
 func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	actions := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), fyne.NewMenu("",
 		fyne.NewMenuItem("Set to currently trained", func() {
+			characterIDs := xslices.Map(a.characters, func(x *app.Character) int64 {
+				return x.ID
+			})
 			runAsync(func() {
-				a.setWatchedToCurrentlyTrained(context.Background())
+				a.setWatchedToCurrentlyTrained(context.Background(), characterIDs)
 			})
 		}),
 		fyne.NewMenuItem("Enable all", func() {
@@ -62,14 +66,18 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(ab)
 }
 
-func (a *training) setWatchedToCurrentlyTrained(ctx context.Context) {
-	for id, c := range a.characters {
-		d, err := a.cw.u.Character().TotalTrainingTime(ctx, c.ID)
+func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterIDs []int64) {
+	for _, characterID := range characterIDs {
+		d, err := a.cw.u.Character().TotalTrainingTime(ctx, characterID)
 		if err != nil {
 			slog.Error("Failed to set watcher for trained characters", "error", err)
 			continue
 		}
 		fyne.Do(func() {
+			id := a.indexOf(characterID)
+			if id == -1 {
+				return // removed meanwhile
+			}
 			a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
 		})
 	}
@@ -138,10 +146,28 @@ func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) 
 			a.cw.displaySnackbar("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
 		}
 		fyne.Do(func() {
-			a.characters[id].IsTrainingWatched = on
-			a.list.RefreshItem(id)
+			// The list may have been reloaded while storing.
+			id := a.indexOf(c.ID)
+			if id == -1 {
+				return
+			}
+			if err == nil {
+				a.characters[id].IsTrainingWatched = on
+			}
+			a.list.RefreshItem(id) // on error reverts the switch the user already toggled
 		})
+		if err != nil {
+			return
+		}
 		a.cw.u.Signals().CharacterChanged.Emit(ctx, c.ID)
+	})
+}
+
+// indexOf returns the row of a character or -1 if not found.
+// Must be called on the main thread.
+func (a *training) indexOf(characterID int64) int {
+	return slices.IndexFunc(a.characters, func(x *app.Character) bool {
+		return x.ID == characterID
 	})
 }
 
