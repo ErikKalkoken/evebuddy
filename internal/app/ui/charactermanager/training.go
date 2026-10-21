@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -22,9 +23,10 @@ import (
 type training struct {
 	widget.BaseWidget
 
-	characters []*app.Character
-	cw         *manageCharacters
-	list       *widget.List
+	characters     []*app.Character
+	charactersLoad atomic.Int64 // identifies the newest characters load
+	cw             *manageCharacters
+	list           *widget.List
 }
 
 func newTraining(cw *manageCharacters) *training {
@@ -84,7 +86,10 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 }
 
 func (a *training) setAllWatched(ctx context.Context, on bool) {
-	for id := range a.characters {
+	for id, c := range a.characters {
+		if c.IsTrainingWatched == on {
+			continue
+		}
 		a.updateCharacterWatched(ctx, id, on)
 	}
 }
@@ -172,11 +177,15 @@ func (a *training) indexOf(characterID int64) int {
 }
 
 func (a *training) update(ctx context.Context) {
+	load := a.charactersLoad.Add(1)
 	characters, err := a.cw.u.Character().ListCharacters(ctx)
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
+		if load != a.charactersLoad.Load() {
+			return // outdated
+		}
 		a.cw.reportError("Failed to update training", err)
 		return
 	}
@@ -184,6 +193,9 @@ func (a *training) update(ctx context.Context) {
 		return strings.Compare(a.EveCharacter.Name, b.EveCharacter.Name)
 	})
 	fyne.Do(func() {
+		if load != a.charactersLoad.Load() {
+			return // outdated
+		}
 		a.characters = characters
 		a.list.Refresh()
 	})

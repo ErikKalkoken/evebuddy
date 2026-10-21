@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -40,6 +41,7 @@ type admin struct {
 	cw         *manageCharacters
 	characters *widget.List
 	rows       []adminRow
+	rowsLoad   atomic.Int64 // identifies the newest rows load
 }
 
 func newAdmin(cw *manageCharacters) *admin {
@@ -92,15 +94,22 @@ func (a *admin) makeCharacterList() *widget.List {
 }
 
 func (a *admin) update(ctx context.Context) {
+	load := a.rowsLoad.Add(1)
 	characters, err := a.fetchRows(ctx)
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
+		if load != a.rowsLoad.Load() {
+			return // outdated
+		}
 		a.cw.reportError("Failed to update characters", err)
 		return
 	}
 	fyne.Do(func() {
+		if load != a.rowsLoad.Load() {
+			return // outdated
+		}
 		a.rows = characters
 		a.characters.Refresh()
 		a.ab.SetTitle(fmt.Sprintf("Characters (%d)", len(characters)))
@@ -217,7 +226,9 @@ func (a *admin) showAddCharacterDialog() {
 					}
 				}
 			}
-			go a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
+			runAsync(func() {
+				a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
+			})
 			if !a.cw.u.IsUpdateDisabled() {
 				a.cw.u.Character().UpdateCharacterAndRefreshIfNeededAsync(character.ID, true)
 			}

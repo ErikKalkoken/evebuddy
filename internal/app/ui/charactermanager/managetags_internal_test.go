@@ -291,6 +291,73 @@ func TestManageTags_SetCharacters(t *testing.T) {
 		assert.Empty(t, a.characters)
 		assert.True(t, a.emptyCharactersHint.Visible())
 	})
+	t.Run("clears characters when switching tags", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		alpha := factory.CreateCharacterTag("Alpha")
+		bravo := factory.CreateCharacterTag("Bravo")
+		factory.AddCharacterToTag(alpha, factory.CreateCharacter())
+		factory.CreateCharacter()
+		a := cw.characterTags
+		a.setCharactersAsync(alpha)
+		require.Len(t, a.characters, 1)
+		require.False(t, a.addCharactersButton.Disabled())
+		orig := runAsync
+		runAsync = func(f func()) {} // Bravo's load never finishes
+		t.Cleanup(func() { runAsync = orig })
+		// when
+		a.setCharactersAsync(bravo)
+		// then
+		assert.Empty(t, a.characters)
+		assert.True(t, a.addCharactersButton.Disabled())
+		assert.Equal(t, "Tag: Bravo", a.manageCharacters.Title())
+	})
+	t.Run("keeps characters while reloading same tag", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		tag := factory.CreateCharacterTag("Alpha")
+		factory.AddCharacterToTag(tag, factory.CreateCharacter())
+		a := cw.characterTags
+		a.setCharactersAsync(tag)
+		require.Len(t, a.characters, 1)
+		orig := runAsync
+		runAsync = func(f func()) {} // reload never finishes
+		t.Cleanup(func() { runAsync = orig })
+		// when
+		a.setCharactersAsync(&app.CharacterTag{ID: tag.ID, Name: tag.Name})
+		// then
+		assert.Len(t, a.characters, 1)
+	})
+	t.Run("shows no characters when load fails after switching", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBInMemory()
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		alpha := factory2.CreateCharacterTag("Alpha")
+		bravo := factory2.CreateCharacterTag("Bravo")
+		factory2.AddCharacterToTag(alpha, factory2.CreateCharacter())
+		a := cw.characterTags
+		a.setCharactersAsync(alpha)
+		require.Len(t, a.characters, 1)
+		db2.Close()
+		// when
+		a.setCharactersAsync(bravo)
+		// then
+		assert.Empty(t, a.characters)
+		assert.True(t, a.addCharactersButton.Disabled())
+		assert.Len(t, messages, 1)
+	})
 	t.Run("clears characters when no tag is given", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
