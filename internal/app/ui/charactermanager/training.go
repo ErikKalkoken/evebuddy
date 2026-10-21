@@ -2,6 +2,7 @@ package charactermanager
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -76,10 +77,14 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterIDs []int64) {
+	var failed int
+	var lastErr error
 	for _, characterID := range characterIDs {
 		d, err := a.cw.u.Character().TotalTrainingTime(ctx, characterID)
 		if err != nil {
-			slog.Error("Failed to set watcher for trained characters", "error", err)
+			slog.Error("Failed to set watcher for trained character", "characterID", characterID, "error", err)
+			failed++
+			lastErr = err
 			continue
 		}
 		fyne.Do(func() {
@@ -89,6 +94,9 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 			}
 			a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
 		})
+	}
+	if failed > 0 {
+		a.cw.displaySnackbar(fmt.Sprintf("Failed to set watcher for %d characters: %s", failed, a.cw.u.ErrorDisplay(lastErr)))
 	}
 }
 

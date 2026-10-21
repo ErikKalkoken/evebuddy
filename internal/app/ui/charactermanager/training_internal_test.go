@@ -382,4 +382,25 @@ func TestTraining_SetWatchedToCurrentlyTrained(t *testing.T) {
 		assert.False(t, a.characters[0].IsTrainingWatched) // Alpha
 		assert.True(t, a.characters[1].IsTrainingWatched)  // Bravo
 	})
+	t.Run("shows error when training time can not be fetched", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBInMemory()
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		c1 := factory2.CreateCharacter()
+		c2 := factory2.CreateCharacter()
+		db2.Close()
+		a := cw.characterTraining
+		// when
+		a.setWatchedToCurrentlyTrained(context.Background(), []int64{c1.ID, c2.ID})
+		// then
+		if assert.Len(t, messages, 1) {
+			assert.Contains(t, messages[0], "Failed to set watcher for 2 characters")
+		}
+	})
 }
