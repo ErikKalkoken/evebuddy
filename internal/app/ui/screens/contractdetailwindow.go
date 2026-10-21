@@ -247,7 +247,7 @@ func makeContractDateDisplay(t time.Time, note []widget.RichTextSegment) []widge
 	if len(note) == 0 {
 		return xwidget.RichTextSegmentsFromText(ts)
 	}
-	return xwidget.InlineRichTextSegments(
+	return xwidget.RichTextSegmentsInlined(
 		note,
 		xwidget.RichTextSegmentsFromText(" ("+ts+")"),
 	)

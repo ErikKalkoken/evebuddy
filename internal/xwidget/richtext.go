@@ -16,10 +16,10 @@ func RichTextSegmentsFromText(s string, style ...widget.RichTextStyle) []widget.
 	return []widget.RichTextSegment{seg}
 }
 
-// InlineRichTextSegments returns an inlined copy of the segments,
+// RichTextSegmentsInlined returns an inlined copy of the segments,
 // so they are all rendered in the same line.
 // Non-inlinable segments are skipped.
-func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
+func RichTextSegmentsInlined(segments ...[]widget.RichTextSegment) []widget.RichTextSegment {
 	segs := slices.Concat(segments...)
 	if len(segs) == 0 {
 		return nil
@@ -32,7 +32,7 @@ func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichT
 		}
 		t, ok := s.(*widget.TextSegment)
 		if !ok {
-			slog.Warn("InlineRichTextSegments: Skipping non inlinable segment")
+			slog.Warn("RichTextSegmentsInlined: Skipping non inlinable segment")
 			continue
 		}
 		t2 := *t
@@ -43,9 +43,9 @@ func InlineRichTextSegments(segments ...[]widget.RichTextSegment) []widget.RichT
 	return segs2
 }
 
-// ModifyRichTextStyle returns a copy where the style of all segments is modified by modify.
+// RichTextSegmentsWithStyle returns a copy where the style of all segments is modified by f.
 // Non-text segments are skipped.
-func ModifyRichTextStyle(segments []widget.RichTextSegment, modify func(x *widget.RichTextStyle)) []widget.RichTextSegment {
+func RichTextSegmentsWithStyle(segments []widget.RichTextSegment, f func(x *widget.RichTextStyle)) []widget.RichTextSegment {
 	var segs2 []widget.RichTextSegment
 	for _, x := range segments {
 		t, ok := x.(*widget.TextSegment)
@@ -53,7 +53,7 @@ func ModifyRichTextStyle(segments []widget.RichTextSegment, modify func(x *widge
 			continue
 		}
 		t2 := *t
-		modify(&t2.Style)
+		f(&t2.Style)
 		segs2 = append(segs2, &t2)
 	}
 	return segs2

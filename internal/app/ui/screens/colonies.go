@@ -717,7 +717,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		producing := set.Collect(xiter.MapSlice(p.ProducedSchematics(), func(x *app.EveSchematic) string {
 			return x.Name
 		}))
-		titleDisplay := xwidget.ModifyRichTextStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
+		titleDisplay := xwidget.RichTextSegmentsWithStyle(p.NameRichText(), func(x *widget.RichTextStyle) {
 			x.TextStyle.Bold = true
 		})
 		name := p.EvePlanet.Name

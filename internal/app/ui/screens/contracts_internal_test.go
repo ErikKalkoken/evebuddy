@@ -557,7 +557,7 @@ func TestMakeContractDateDisplay(t *testing.T) {
 	})
 	t.Run("with passed deadline", func(t *testing.T) {
 		got := makeContractDateDisplay(d, makeContractDeadlineNote(d, true, "OVERDUE"))
-		want := xwidget.InlineRichTextSegments(
+		want := xwidget.RichTextSegmentsInlined(
 			overdueSegments(),
 			xwidget.RichTextSegmentsFromText(" ("+ts+")"),
 		)

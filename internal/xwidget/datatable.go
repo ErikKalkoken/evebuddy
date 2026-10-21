@@ -635,12 +635,12 @@ func (w *dataCardRowWidget) Refresh() {
 func (w *dataCardRowWidget) Update(labelText string, cell []widget.RichTextSegment, isFirst bool) {
 	if isFirst {
 		w.bg.Show()
-		w.label.Set(ModifyRichTextStyle(cell, func(x *widget.RichTextStyle) {
+		w.label.Set(RichTextSegmentsWithStyle(cell, func(x *widget.RichTextStyle) {
 			x.TextStyle.Bold = true
 		}))
 		w.cell.Segments = nil
 	} else {
-		w.cell.Segments = ModifyRichTextStyle(cell, func(x *widget.RichTextStyle) {
+		w.cell.Segments = RichTextSegmentsWithStyle(cell, func(x *widget.RichTextStyle) {
 			x.Alignment = fyne.TextAlignTrailing
 		})
 		w.label.SetWithText(labelText)
