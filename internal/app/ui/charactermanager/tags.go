@@ -488,7 +488,10 @@ func (a *manageTags) modifyTag(title, confirm string, execute func(ctx context.C
 			if !confirmed {
 				return
 			}
-			a.submitTag(context.Background(), name.Text, execute)
+			text := name.Text
+			runAsync(func() {
+				a.submitTag(context.Background(), text, execute)
+			})
 		}, a.cw.w,
 	)
 	xdesktop.DisableShortcutsForDialog(d, a.cw.w)
