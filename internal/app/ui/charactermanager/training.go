@@ -27,11 +27,13 @@ type training struct {
 	charactersLoad atomic.Int64 // identifies the newest characters load
 	cw             *manageCharacters
 	list           *widget.List
+	signalKey      string
 }
 
 func newTraining(cw *manageCharacters) *training {
 	a := &training{
-		cw: cw,
+		cw:        cw,
+		signalKey: cw.u.Signals().UniqueKey(),
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeList()
@@ -39,11 +41,16 @@ func newTraining(cw *manageCharacters) *training {
 	// Signals
 	a.cw.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.update(ctx)
-	})
+	}, a.signalKey)
 	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
-	})
+	}, a.signalKey)
 	return a
+}
+
+func (a *training) stop() {
+	a.cw.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
+	a.cw.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 }
 
 func (a *training) CreateRenderer() fyne.WidgetRenderer {

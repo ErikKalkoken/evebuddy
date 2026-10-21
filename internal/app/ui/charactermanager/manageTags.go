@@ -35,6 +35,7 @@ type manageTags struct {
 	manageCharacters    *xwidget.AppBar
 	cw                  *manageCharacters
 	selectedTag         *app.CharacterTag
+	signalKey           string
 	tagList             *widget.List
 	tags                []*app.CharacterTag
 	tagsLoad            atomic.Int64 // identifies the newest tags load
@@ -42,7 +43,8 @@ type manageTags struct {
 
 func newManageTags(cw *manageCharacters) *manageTags {
 	a := &manageTags{
-		cw: cw,
+		cw:        cw,
+		signalKey: cw.u.Signals().UniqueKey(),
 	}
 	a.ExtendBaseWidget(a)
 
@@ -63,8 +65,12 @@ func newManageTags(cw *manageCharacters) *manageTags {
 	a.cw.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.update(ctx)
 		a.cw.u.Signals().TagsChanged.Emit(ctx, struct{}{})
-	})
+	}, a.signalKey)
 	return a
+}
+
+func (a *manageTags) stop() {
+	a.cw.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 }
 
 func (a *manageTags) CreateRenderer() fyne.WidgetRenderer {

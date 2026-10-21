@@ -110,6 +110,8 @@ func (a *manageCharacters) CreateRenderer() fyne.WidgetRenderer {
 
 func (a *manageCharacters) stop() {
 	a.sb.Stop()
+	a.characterTags.stop()
+	a.characterTraining.stop()
 }
 
 func (a *manageCharacters) update(ctx context.Context) {
