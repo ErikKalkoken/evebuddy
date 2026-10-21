@@ -134,6 +134,9 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 		if o.ID == a.characterID {
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
+				// discard updates and forecast refreshes still running
+				a.rowsRun.Start()
+				a.forecastRun.Start()
 				a.setIssue("Character has been removed")
 			})
 		}

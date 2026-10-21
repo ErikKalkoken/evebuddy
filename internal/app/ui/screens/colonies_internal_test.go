@@ -104,20 +104,21 @@ func TestColonies(t *testing.T) {
 		assert.True(t, isLatest())
 	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
+		// given
 		var pending []func()
 		orig := runAsync
 		runAsync = func(f func()) { pending = append(pending, f) }
 		t.Cleanup(func() { runAsync = orig })
 		a := newColonies(t)
-		a.refreshForecasts() // started with no rows
 		a.Update(t.Context())
-		for len(pending) > 0 {
-			f := pending[0]
-			pending = pending[1:]
-			f()
-		}
+		a.rows = a.rows[:1] // stale rows of the refresh
+		a.refreshForecasts()
+		refresh := pending[len(pending)-1]
+		// when
+		a.Update(t.Context())
+		refresh()
+		// then
 		assert.Len(t, a.rows, 2)
-		assert.Len(t, a.rowsFiltered, 2)
 	})
 	t.Run("can filter by status on mobile", func(t *testing.T) {
 		a := NewColonies(testdouble.NewUIFake(testdouble.UIParams{

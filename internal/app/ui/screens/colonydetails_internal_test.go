@@ -275,6 +275,53 @@ func TestColonyDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Empty(t, a.rows)
 	})
+	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		stale := *a.colony
+		stale.Pins = stale.Pins[:1]
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		require.NoError(t, a.Update(t.Context()))
+		refresh()
+		// then
+		assert.Len(t, a.rows, 4)
+	})
+	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		isUpdateLatest := a.rowsRun.Start() // simulates an update in flight
+		stale := *a.colony
+		stale.Pins = stale.Pins[:1]
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		refresh()
+		// then
+		assert.False(t, isUpdateLatest())
+		assert.Len(t, a.rows, 4)
+	})
 }
 
 func TestColonyProgress(t *testing.T) {

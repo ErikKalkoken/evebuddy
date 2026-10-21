@@ -318,6 +318,9 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		if o.ID == a.characterID.Load() {
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
+				// discard updates and forecast refreshes still running
+				a.rowsRun.Start()
+				a.forecastRun.Start()
 				a.setIssue("Character has been removed")
 			})
 		}

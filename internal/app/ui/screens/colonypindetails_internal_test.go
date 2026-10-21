@@ -400,6 +400,55 @@ func TestColonyPinDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Empty(t, a.content.Objects)
 	})
+	t.Run("should discard a refresh when update replaced the colony", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		stale := *a.colony
+		stale.Pins = nil
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		require.NoError(t, a.Update(t.Context()))
+		refresh()
+		// then
+		require.Len(t, a.content.Objects, 1)
+		assert.Same(t, a.body, a.content.Objects[0], "shows installation")
+	})
+	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		isUpdateLatest := a.rowsRun.Start() // simulates an update in flight
+		stale := *a.colony
+		stale.Pins = nil
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		refresh()
+		// then
+		assert.False(t, isUpdateLatest())
+		require.Len(t, a.content.Objects, 1)
+		assert.Same(t, a.body, a.content.Objects[0], "shows installation")
+	})
 }
 
 func TestGroupCycles(t *testing.T) {
