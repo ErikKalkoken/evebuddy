@@ -1,6 +1,7 @@
 package xwidget
 
 import (
+	"image/color"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -232,4 +233,131 @@ func assertIndicatorAt(t *testing.T, nr *NavRail, it *NavRailItem) {
 	assert.Equal(t, it.dest.Size().Height, nr.indicator.Size().Height)
 	assert.Equal(t, theme.Size(theme.SizeNameSeparatorThickness), nr.indicator.Size().Width)
 	assert.Equal(t, theme.Color(theme.ColorNamePrimary), nr.indicator.FillColor)
+}
+
+func TestNavRail_LabelColorFollowsState(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	t.Run("shows the color for each state", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		c := NewNavRailItem(theme.HomeIcon(), "C", widget.NewLabel("C"))
+		nr := NewNavRail([]*NavRailItem{a, b, c})
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		// when
+		nr.DisableItem(c)
+
+		// then
+		assert.Equal(t, "A", a.dest.label.Text)
+		assert.Equal(t, theme.Color(theme.ColorNamePrimary), a.dest.label.Color)
+		assert.Equal(t, theme.Color(theme.ColorNameForeground), b.dest.label.Color)
+		assert.Equal(t, theme.Color(theme.ColorNameDisabled), c.dest.label.Color)
+	})
+
+	t.Run("resets the color when deselected", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nr := NewNavRail([]*NavRailItem{a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		// when
+		nr.Select(b)
+
+		// then
+		assert.Equal(t, theme.Color(theme.ColorNameForeground), a.dest.label.Color)
+		assert.Equal(t, theme.Color(theme.ColorNamePrimary), b.dest.label.Color)
+	})
+}
+
+func TestNavRail_Tooltip(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	x := NewNavRailActionItem(theme.SearchIcon(), "Search", func() {})
+	x.Tooltip = "Search everything"
+	nr := NewNavRail([]*NavRailItem{a}, x)
+	w := test.NewWindow(nr)
+	defer w.Close()
+
+	assert.Empty(t, a.dest.ToolTip())
+	assert.Equal(t, "Search everything", x.dest.ToolTip())
+}
+
+func TestNavRail_Hover(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	t.Run("shows background and pointer while hovered", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nr := NewNavRail([]*NavRailItem{a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+
+		// when
+		b.dest.MouseIn(&desktop.MouseEvent{})
+
+		// then
+		assert.Equal(t, theme.Color(theme.ColorNameHover), b.dest.hover.FillColor)
+		assert.Equal(t, desktop.PointerCursor, b.dest.Cursor())
+	})
+
+	t.Run("clears background and pointer on mouse out", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nr := NewNavRail([]*NavRailItem{a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+		b.dest.MouseIn(&desktop.MouseEvent{})
+
+		// when
+		b.dest.MouseOut()
+
+		// then
+		assert.Equal(t, color.Transparent, b.dest.hover.FillColor)
+		assert.Equal(t, desktop.DefaultCursor, b.dest.Cursor())
+	})
+
+	t.Run("shows no background and no pointer when disabled", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nr := NewNavRail([]*NavRailItem{a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+		nr.DisableItem(b)
+
+		// when
+		b.dest.MouseIn(&desktop.MouseEvent{})
+
+		// then
+		assert.Equal(t, color.Transparent, b.dest.hover.FillColor)
+		assert.Equal(t, desktop.DefaultCursor, b.dest.Cursor())
+	})
+
+	t.Run("clears background and pointer when disabled while hovered", func(t *testing.T) {
+		// given
+		a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+		b := NewNavRailItem(theme.HomeIcon(), "B", widget.NewLabel("B"))
+		nr := NewNavRail([]*NavRailItem{a, b})
+		w := test.NewWindow(nr)
+		defer w.Close()
+		b.dest.MouseIn(&desktop.MouseEvent{})
+
+		// when
+		nr.DisableItem(b)
+
+		// then
+		assert.Equal(t, color.Transparent, b.dest.hover.FillColor)
+		assert.Equal(t, desktop.DefaultCursor, b.dest.Cursor())
+	})
 }

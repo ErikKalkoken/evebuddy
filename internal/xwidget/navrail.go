@@ -17,10 +17,11 @@ import (
 const (
 	navRailIconScale       = 1.5 // × inline icon size
 	navRailItemGapPaddings = 1   // × theme padding
-	navRailHoverPaddings   = 3   // × theme padding
+	navRailIconPaddings    = 2   // × theme padding, around the icon in total
+	navRailLabelPaddings   = 2   // × theme padding, left and right
 )
 
-// railDestination is a tappable icon in a [NavRail].
+// railDestination is a tappable icon with a label in a [NavRail].
 type railDestination struct {
 	widget.DisableableWidget
 	ttwidget.ToolTipWidgetExtend
@@ -32,6 +33,7 @@ type railDestination struct {
 	iconEnabled  fyne.Resource
 	iconSelected fyne.Resource
 	isActive     bool
+	label        *canvas.Text
 	onTapped     func()
 }
 
@@ -39,19 +41,21 @@ var _ fyne.Tappable = (*railDestination)(nil)
 var _ desktop.Hoverable = (*railDestination)(nil)
 var _ desktop.Cursorable = (*railDestination)(nil)
 
-func newRailDestination(icon fyne.Resource, tooltip string, onTapped func()) *railDestination {
+func newRailDestination(icon fyne.Resource, label, tooltip string, onTapped func()) *railDestination {
 	iconSize := theme.Size(theme.SizeNameInlineIcon) * navRailIconScale
+	l := canvas.NewText(label, theme.Color(theme.ColorNameForeground))
+	l.Alignment = fyne.TextAlignCenter
+	l.TextSize = theme.Size(theme.SizeNameCaptionText)
 	w := &railDestination{
 		hover:        canvas.NewRectangle(color.Transparent),
 		icon:         NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(iconSize)),
 		iconEnabled:  theme.NewThemedResource(icon),
 		iconSelected: theme.NewPrimaryThemedResource(icon),
 		iconDisabled: theme.NewDisabledResource(icon),
+		label:        l,
 		onTapped:     onTapped,
 	}
 	w.ExtendBaseWidget(w)
-	// stays visible but transparent, so the destination never changes size
-	w.hover.SetMinSize(fyne.NewSquareSize(iconSize + navRailHoverPaddings*theme.Padding()))
 	w.SetToolTip(tooltip)
 	return w
 }
@@ -72,11 +76,15 @@ func (w *railDestination) Refresh() {
 	switch {
 	case w.Disabled():
 		w.icon.Resource = w.iconDisabled
+		w.label.Color = th.Color(theme.ColorNameDisabled, v)
 	case w.isActive:
 		w.icon.Resource = w.iconSelected
+		w.label.Color = th.Color(theme.ColorNamePrimary, v)
 	default:
 		w.icon.Resource = w.iconEnabled
+		w.label.Color = th.Color(theme.ColorNameForeground, v)
 	}
+	w.label.TextSize = th.Size(theme.SizeNameCaptionText)
 	w.hover.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
 	if w.hovered && !w.Disabled() {
 		w.hover.FillColor = th.Color(theme.ColorNameHover, v)
@@ -85,6 +93,7 @@ func (w *railDestination) Refresh() {
 	}
 	w.hover.Refresh()
 	w.icon.Refresh()
+	w.label.Refresh()
 	w.BaseWidget.Refresh()
 }
 
@@ -119,9 +128,15 @@ func (w *railDestination) MouseOut() {
 }
 
 func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
+	p := w.Theme().Size(theme.SizeNamePadding)
+	p1 := navRailIconPaddings * p
+	p2 := navRailLabelPaddings * p
 	c := container.NewStack(
-		container.NewCenter(w.hover),
-		container.NewCenter(w.icon),
+		w.hover, // covers the whole destination, so it touches the indicator
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			container.New(layout.NewCustomPaddedLayout(p1, p1, p1, p1), container.NewCenter(w.icon)),
+			container.New(layout.NewCustomPaddedLayout(-p, p2, p2, p2), w.label), // keeps long labels off the separator; bottom matches the space above the icon
+		),
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -131,37 +146,41 @@ type NavRailItem struct {
 	// OnSelected is an optional callback that fires when this item is selected.
 	OnSelected func()
 
+	// Tooltip is an optional text shown when hovering over this item.
+	// It must be set before the item is added to a rail.
+	Tooltip string
+
 	content  fyne.CanvasObject
 	dest     *railDestination
 	icon     fyne.Resource
+	label    string
 	onTapped func() // action items run this when tapped; they have no content and are never selected
 	rail     *NavRail
-	tooltip  string
 }
 
 // NewNavRailItem returns a new item for a [NavRail].
-func NewNavRailItem(icon fyne.Resource, tooltip string, content fyne.CanvasObject) *NavRailItem {
-	return &NavRailItem{icon: icon, tooltip: tooltip, content: content}
+func NewNavRailItem(icon fyne.Resource, label string, content fyne.CanvasObject) *NavRailItem {
+	return &NavRailItem{icon: icon, label: label, content: content}
 }
 
 // NewNavRailActionItem returns a new item for a [NavRail], which runs onTapped when tapped.
 //
 // It panics if onTapped is nil.
-func NewNavRailActionItem(icon fyne.Resource, tooltip string, onTapped func()) *NavRailItem {
+func NewNavRailActionItem(icon fyne.Resource, label string, onTapped func()) *NavRailItem {
 	if onTapped == nil {
 		panic("onTapped must not be nil")
 	}
-	return &NavRailItem{icon: icon, tooltip: tooltip, onTapped: onTapped}
+	return &NavRailItem{icon: icon, label: label, onTapped: onTapped}
 }
 
 // NewNavRailMenuItem returns a new item for a [NavRail], which shows a pop-up menu when tapped.
 //
 // It panics if menu is nil.
-func NewNavRailMenuItem(icon fyne.Resource, tooltip string, menu *fyne.Menu) *NavRailItem {
+func NewNavRailMenuItem(icon fyne.Resource, label string, menu *fyne.Menu) *NavRailItem {
 	if menu == nil {
 		panic("menu must not be nil")
 	}
-	it := &NavRailItem{icon: icon, tooltip: tooltip}
+	it := &NavRailItem{icon: icon, label: label}
 	it.onTapped = func() {
 		ShowPopUpMenuTrailingAbove(it.dest, menu)
 	}
@@ -173,7 +192,7 @@ func (it *NavRailItem) isAction() bool {
 }
 
 // NavRail lets people switch between the top-level views of an app on desktop.
-// It shows a vertical strip of icons with leading items at the top and trailing items at the bottom.
+// It shows a vertical strip of labeled icons with leading items at the top and trailing items at the bottom.
 // While no non-action item is enabled, it shows an optional placeholder instead of any content.
 type NavRail struct {
 	widget.BaseWidget
@@ -218,7 +237,7 @@ func NewNavRail(leading []*NavRailItem, trailing ...*NavRailItem) *NavRail {
 			panic("item already belongs to a rail")
 		}
 		it.rail = w
-		it.dest = newRailDestination(it.icon, it.tooltip, func() {
+		it.dest = newRailDestination(it.icon, it.label, it.Tooltip, func() {
 			if it.isAction() {
 				it.onTapped()
 				return

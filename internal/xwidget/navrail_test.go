@@ -252,3 +252,25 @@ func TestNavRail_CanShowPlaceholder(t *testing.T) {
 
 	test.AssertImageMatches(t, "navrail/placeholder.png", w.Canvas().Capture())
 }
+
+func TestNavRail_CanRenderRail(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	// given
+	a := xwidget.NewNavRailItem(theme.HomeIcon(), "Home", widget.NewLabel("Home"))
+	b := xwidget.NewNavRailItem(theme.MailComposeIcon(), "Mail", widget.NewLabel("Mail"))
+	c := xwidget.NewNavRailItem(theme.DocumentIcon(), "Documents", widget.NewLabel("Documents"))
+	s := xwidget.NewNavRailItem(theme.SettingsIcon(), "Settings", widget.NewLabel("Settings"))
+	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a, b, c}, s)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	// when
+	nr.Select(b)
+	nr.DisableItem(c)
+
+	// then
+	test.AssertImageMatches(t, "navrail/rail.png", w.Canvas().Capture())
+}
