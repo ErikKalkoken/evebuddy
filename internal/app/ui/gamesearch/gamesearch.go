@@ -73,6 +73,7 @@ func (r searchResultNode) UID() widget.TreeNodeID {
 type GameSearch struct {
 	widget.BaseWidget
 
+	cancelSearch        context.CancelFunc
 	categories          *kxwidget.FilterChipGroup
 	clearRecent         *widget.Hyperlink
 	defaultCategories   []string
@@ -128,9 +129,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 			if len(s) < 3 {
 				return
 			}
-			runAsync(func() {
-				a.doSearch(context.Background(), s)
-			})
+			a.startSearch(s)
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
@@ -268,6 +267,7 @@ func (a *GameSearch) Focus() {
 }
 
 func (a *GameSearch) Reset() {
+	a.stopSearch()
 	a.searchEntry.SetText("")
 	a.clearResults()
 }
@@ -391,7 +391,34 @@ func (a *GameSearch) showRecent() {
 	a.recentPage.Show()
 }
 
-func (a *GameSearch) doSearch(ctx context.Context, search string) {
+// startSearch starts a new search and cancels the previous one.
+// Options are read here, because widgets must only be accessed on the main thread.
+func (a *GameSearch) startSearch(search string) {
+	a.stopSearch()
+	ctx, cancel := context.WithCancel(context.Background())
+	a.cancelSearch = cancel
+	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
+		return option2searchCategory(o)
+	})
+	strict := a.strict.On
+	runAsync(func() {
+		a.doSearch(ctx, search, categories, strict)
+	})
+}
+
+func (a *GameSearch) stopSearch() {
+	if a.cancelSearch == nil {
+		return
+	}
+	a.cancelSearch()
+	a.cancelSearch = nil
+	a.indicator.Stop()
+	a.indicator.Hide()
+}
+
+// doSearch runs a search. Results of a canceled search are discarded,
+// so a slow search can't overwrite the results of a newer one.
+func (a *GameSearch) doSearch(ctx context.Context, search string, categories []app.SearchCategory, strict bool) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			ui.ShowInformation(
@@ -402,11 +429,16 @@ func (a *GameSearch) doSearch(ctx context.Context, search string) {
 		})
 		return
 	}
-	a.clearResults()
 	if search == "" {
+		a.clearResults()
 		return
 	}
 	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
+		a.results.Clear()
+		a.resultCount.Hide()
 		a.recentPage.Hide()
 		a.resultsPage.Show()
 		a.indicator.Show()
@@ -414,24 +446,30 @@ func (a *GameSearch) doSearch(ctx context.Context, search string) {
 	})
 	defer func() {
 		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return // indicator belongs to the newer search
+			}
 			a.indicator.Stop()
 			a.indicator.Hide()
 		})
 	}()
-	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
-		return option2searchCategory(o)
-	})
 	results, total, err := a.u.Character().SearchESI(
 		ctx,
 		search,
 		categories,
-		a.strict.On,
+		strict,
 	)
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		ui.NotifyErrorAndLog("Search failed", err, a.displaySnackbar)
 		return
 	}
 	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
 		if total == maxSearchResults {
 			a.resultCount.Importance = widget.WarningImportance
 			a.resultCount.Wrapping = fyne.TextWrapWord
@@ -476,6 +514,9 @@ func (a *GameSearch) doSearch(ctx context.Context, search string) {
 		}
 	}
 	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
 		a.results.Set(td)
 		if categoriesFound == 1 {
 			a.results.OpenAllBranches()
