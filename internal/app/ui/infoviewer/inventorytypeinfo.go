@@ -143,12 +143,12 @@ func (a *inventoryTypeInfo) update(ctx context.Context) error {
 				a.typeIcon.SetResource(r)
 			})
 		}
-	})
-	if et.HasRender() {
-		a.typeIcon.OnTapped = func() {
-			a.iw.showZoomWindow(et.Name, a.typeID, a.iw.u.EVEImage().InventoryTypeRenderAsync, a.iw.w)
+		if et.HasRender() {
+			a.typeIcon.OnTapped = func() {
+				a.iw.showZoomWindow(et.Name, a.typeID, a.iw.u.EVEImage().InventoryTypeRenderAsync, a.iw.w)
+			}
 		}
-	}
+	})
 
 	var character *app.EveEntity
 	if a.characterID != 0 {
