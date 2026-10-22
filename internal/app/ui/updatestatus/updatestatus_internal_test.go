@@ -2,7 +2,6 @@ package updatestatus
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -824,6 +823,7 @@ func TestSectionStatus(t *testing.T) {
 		assert.Equal(t, "-", w.issue.Text)
 		assert.Equal(t, "?", w.completedAt.Text)
 		assert.Equal(t, "-", w.startedAt.Text)
+		assert.Equal(t, "?", w.nextUpdate.Text)
 		assert.Equal(t, "Missing", w.status.Text)
 	})
 	t.Run("shows times", func(t *testing.T) {
@@ -839,7 +839,19 @@ func TestSectionStatus(t *testing.T) {
 		// then
 		assert.Equal(t, "59 minutes ago", w.completedAt.Text)
 		assert.Equal(t, "1 hour ago", w.startedAt.Text)
-		assert.Equal(t, "3 hours", strings.TrimSpace(w.timeout.Text))
-		assert.Equal(t, "2 hours", strings.TrimSpace(w.nextUpdate.Text))
+		assert.Equal(t, "3h 0m", w.timeout.Text)
+		assert.Equal(t, "2 hours from now", w.nextUpdate.Text)
+	})
+	t.Run("shows overdue next update", func(t *testing.T) {
+		// given
+		test.NewTempApp(t)
+		w := newSectionStatus(false)
+		// when
+		w.set(app.CacheSectionStatus{
+			CompletedAt: time.Now().Add(-5*time.Hour - time.Minute),
+			Timeout:     3 * time.Hour,
+		})
+		// then
+		assert.Equal(t, "2 hours ago", w.nextUpdate.Text)
 	})
 }

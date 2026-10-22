@@ -689,7 +689,12 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 
 	w.completedAt.SetText(ihumanize.TimeWithFallback(ss.CompletedAt, "?"))
 	w.startedAt.SetText(ihumanize.TimeWithFallback(ss.StartedAt, "-"))
-	now := time.Now()
-	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
-	w.nextUpdate.SetText(humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "", ""))
+	w.timeout.SetText(ihumanize.Duration(ss.Timeout))
+	var nextUpdate string
+	if ss.CompletedAt.IsZero() {
+		nextUpdate = "?"
+	} else {
+		nextUpdate = humanize.RelTime(time.Now(), ss.CompletedAt.Add(ss.Timeout), "from now", "ago")
+	}
+	w.nextUpdate.SetText(nextUpdate)
 }
