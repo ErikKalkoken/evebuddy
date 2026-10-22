@@ -414,6 +414,9 @@ func (iw *InfoViewer) show2(arg showParams) {
 		}
 	}
 	iw.u.Go(func(ctx context.Context) {
+		if pageCtx.Err() != nil {
+			return // page closed before load started; AfterFunc would cancel too late
+		}
 		// Ends when the page is closed or the app shuts down. Lives as long as the page,
 		// because the market tab keeps using it after the load.
 		ctx, cancel := context.WithCancel(ctx)
