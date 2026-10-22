@@ -365,27 +365,38 @@ func TestColonyPinDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Empty(t, a.content.Objects)
 	})
-	t.Run("should stop forecasting when colony can not be loaded", func(t *testing.T) {
-		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+	t.Run("should stop forecasting and show error when colony can not be loaded", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBOnDisk(t)
+		defer db2.Close()
+		cp2 := factory2.CreateCharacterPlanet()
+		u2 := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})
+		a := newColonyPinDetails(u2, cp2.CharacterID, cp2.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-		require.Error(t, a.Update(ctx))
+		_, err := db2.Exec("DROP TABLE character_planets") // makes loading the colony fail
+		require.NoError(t, err)
+		// when
+		err = a.Update(t.Context())
+		// then
+		require.Error(t, err)
 		assert.Nil(t, a.colony)
+		assert.Contains(t, a.footer.Text, "ERROR: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
 	})
-	t.Run("should show error when update fails", func(t *testing.T) {
+	t.Run("should keep installation when update is canceled", func(t *testing.T) {
 		// given
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		// when
 		err := a.Update(ctx)
 		// then
 		require.Error(t, err)
-		assert.Contains(t, a.footer.Text, "ERROR: ")
-		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+		assert.NotNil(t, a.colony)
+		assert.Empty(t, a.footer.Text)
 	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)

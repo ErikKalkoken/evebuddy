@@ -506,12 +506,18 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	}
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current colony
+		}
 		reset()
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	cp, err := a.u.Character().GetPlanet(ctx, c.ID, a.planetID.Load())
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current colony
+		}
 		reset()
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err

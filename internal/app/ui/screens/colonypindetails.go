@@ -168,6 +168,9 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
 	cp, err := a.u.Character().GetPlanet(ctx, a.characterID, a.planetID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current installation
+		}
 		notFound := errors.Is(err, app.ErrNotFound)
 		fyne.Do(func() {
 			if !isLatest() {

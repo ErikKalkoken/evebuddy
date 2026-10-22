@@ -278,16 +278,37 @@ func TestColonyDetails(t *testing.T) {
 	})
 	t.Run("should show error when update fails", func(t *testing.T) {
 		// given
+		db2, st2, factory2 := testutil.NewDBOnDisk(t)
+		defer db2.Close()
+		cp2 := factory2.CreateCharacterPlanet()
+		u2 := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})
+		a := newColonyDetails(u2, cp2.CharacterID, cp2.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		_, err := db2.Exec("DROP TABLE character_planets") // makes loading the colony fail
+		require.NoError(t, err)
+		// when
+		err = a.Update(t.Context())
+		// then
+		require.Error(t, err)
+		assert.Nil(t, a.colony)
+		assert.Contains(t, a.footer.Text, "Error: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+	})
+	t.Run("should keep colony when update is canceled", func(t *testing.T) {
+		// given
 		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
 		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		// when
 		err := a.Update(ctx)
 		// then
 		require.Error(t, err)
-		assert.Contains(t, a.footer.Text, "Error: ")
-		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+		assert.NotNil(t, a.colony)
+		assert.Len(t, a.rows, 4)
+		assert.NotEqual(t, widget.DangerImportance, a.footer.Importance)
 	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
 		// given
