@@ -576,12 +576,12 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 	if isSmall {
 		logo = xwidget.NewImageFromResource(
 			icons.Characterplaceholder256Jpeg,
-			fyne.NewSquareSize(88),
+			fyne.NewSquareSize(PortraitMobileUnitSize),
 		)
 	} else {
 		logo = xwidget.NewImageFromResource(
 			icons.Characterplaceholder512Jpeg,
-			fyne.NewSquareSize(192),
+			fyne.NewSquareSize(PortraitDesktopUnitSize),
 		)
 	}
 
@@ -738,9 +738,9 @@ func (w *corporationCard) Refresh() {
 func (w *corporationCard) set(c corporationOverviewRow) {
 	var logoSize int
 	if w.isSmall {
-		logoSize = 256
+		logoSize = PortraitMobilePixelSize
 	} else {
-		logoSize = 512
+		logoSize = PortraitDesktopPixelSize
 	}
 	w.loadCorporation(c.corporationID, logoSize, func(r fyne.Resource) {
 		w.logoImage.Resource = r

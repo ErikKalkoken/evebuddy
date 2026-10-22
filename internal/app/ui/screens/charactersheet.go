@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -18,10 +17,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type CharacterSheet struct {
@@ -36,7 +33,6 @@ type CharacterSheet struct {
 	lastLoginAtLabel *widget.Label
 	locationLink     *ui.InfoLink
 	nameLink         *ui.InfoLink
-	portraitImage    *xwidget.TappableImage
 	raceLink         *ui.InfoLink
 	securityLabel    *widget.Label
 	shipLink         *ui.InfoLink
@@ -57,10 +53,6 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 	makeInfoLink := func() *ui.InfoLink {
 		return ui.NewInfoLink(u.InfoViewer())
 	}
-	portrait := xwidget.NewTappableImage(icons.Characterplaceholder64Jpeg, nil)
-	portrait.SetFillMode(canvas.ImageFillContain)
-	portrait.SetMinSize(fyne.NewSquareSize(128))
-	portrait.SetToolTip("Show details")
 	a := &CharacterSheet{
 		bloodlineLink:    makeInfoLink(),
 		bornLabel:        makeLabel(),
@@ -70,7 +62,6 @@ func NewCharacterSheet(u baseUI) *CharacterSheet {
 		lastLoginAtLabel: makeLabel(),
 		locationLink:     makeInfoLink(),
 		nameLink:         makeInfoLink(),
-		portraitImage:    portrait,
 		raceLink:         makeInfoLink(),
 		securityLabel:    makeLabel(),
 		shipLink:         makeInfoLink(),
@@ -145,19 +136,13 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 	)
 	main.Orientation = widget.Adaptive
 
-	portrait := container.NewVBox(
-		container.NewPadded(a.portraitImage),
-	)
 	c := container.NewBorder(
 		nil,
 		a.errorLabel,
 		nil,
-		portrait,
+		nil,
 		container.NewVScroll(main),
 	)
-	if a.u.IsMobile() {
-		portrait.Hide()
-	}
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -176,7 +161,6 @@ func (a *CharacterSheet) update(ctx context.Context) {
 			a.lastLoginAtLabel.SetText("")
 			a.locationLink.Clear()
 			a.nameLink.Clear()
-			a.portraitImage.SetResource(icons.BlankSvg)
 			a.raceLink.Clear()
 			a.securityLabel.SetText("")
 			a.shipLink.Clear()
@@ -257,15 +241,6 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		}
 		a.errorLabel.Hide()
 		a.nameLink.Set(c.EveCharacter.ToEveEntity())
-		a.portraitImage.OnTapped = func() {
-			a.u.InfoViewer().Show(c.EveCharacter.ToEveEntity())
-		}
-		a.u.EVEImage().CharacterPortraitAsync(c.ID, 512, func(r fyne.Resource) {
-			if !isLatest() {
-				return
-			}
-			a.portraitImage.SetResource(r)
-		})
 		a.raceLink.SetRace(c.EveCharacter.Race)
 		if v, ok := c.EveCharacter.Bloodline.Value(); ok {
 			a.bloodlineLink.SetBloodline(v)

@@ -643,12 +643,12 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	if isSmall {
 		portrait = xwidget.NewImageFromResource(
 			icons.Characterplaceholder256Jpeg,
-			fyne.NewSquareSize(88),
+			fyne.NewSquareSize(PortraitMobileUnitSize),
 		)
 	} else {
 		portrait = xwidget.NewImageFromResource(
 			icons.Characterplaceholder512Jpeg,
-			fyne.NewSquareSize(192),
+			fyne.NewSquareSize(PortraitDesktopUnitSize),
 		)
 	}
 	resTraining := theme.MediaRecordIcon()
@@ -823,10 +823,10 @@ func (w *characterCard) Refresh() {
 func (w *characterCard) set(c characterOverviewRow) {
 	var portraitSize, logoSize int
 	if w.isSmall {
-		portraitSize = 256
+		portraitSize = PortraitMobilePixelSize
 		logoSize = 64
 	} else {
-		portraitSize = 512
+		portraitSize = PortraitDesktopPixelSize
 		logoSize = 64
 	}
 

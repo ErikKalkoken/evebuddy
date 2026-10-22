@@ -114,6 +114,7 @@ type baseUI struct {
 	characterJumpClones        *screens.CharacterClones
 	characterMails             *screens.Mails
 	characterOverview          *screens.CharacterOverview
+	characterPortrait          *screens.CharacterPortrait
 	characterSheet             *screens.CharacterSheet
 	characterShips             *screens.FlyableShips
 	characterSkillCatalogue    *screens.SkillCatalogue
@@ -128,6 +129,7 @@ type baseUI struct {
 	corporationAssetSearch     *screens.AssetSearch
 	corporationContracts       *screens.Contracts
 	corporationIndyJobs        *screens.IndustryJobs
+	corporationLogo            *screens.CorporationLogo
 	corporationMember          *screens.Members
 	corporationOverview        *screens.CorporationOverview
 	corporationSheet           *screens.CorporationSheet
@@ -398,20 +400,18 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.iw = infoviewer.New(u)
 
 	u.assetSearchAll = screens.NewAssetSearchForAll(u)
-	u.unifiedCommunications = screens.NewUnifiedCommunications(u)
-	u.unifiedStructures = screens.NewUnifiedStructures(u)
 	u.augmentations = screens.NewAugmentations(u)
 	u.characterAssetBrowser = screens.NewCharacterBrowser(u)
 	u.characterAttributes = screens.NewCharacterAttributes(u)
 	u.characterAugmentations = screens.NewCharacterAugmentations(u)
 	u.characterBiography = screens.NewBiography(u)
-	u.characterContacts = screens.NewCharacterContacts(u)
 	u.characterCommunications = screens.NewCommunicationsForCharacter(u)
+	u.characterContacts = screens.NewCharacterContacts(u)
 	u.characterCorporation = screens.NewCorporationSheet(u, false)
 	u.characterJumpClones = screens.NewCharacterClones(u)
 	u.characterMails = screens.NewMailsForCharacter(u)
-	u.unifiedMails = screens.NewUnifiedMails(u)
 	u.characterOverview = screens.NewCharacterOverview(u)
+	u.characterPortrait = screens.NewCharacterPortrait(u)
 	u.characterSheet = screens.NewCharacterSheet(u)
 	u.characterShips = screens.NewFlyableShips(u)
 	u.characterSkillCatalogue = screens.NewSkillCatalogue(u)
@@ -420,30 +420,33 @@ func newBaseUI(arg UIParams) *baseUI {
 	u.clones = screens.NewJumpClones(u)
 	u.colonies = screens.NewColonies(u)
 	u.contractList = screens.NewContractsForCharacters(u)
-	u.contractSlotsPersonal = screens.NewContractSlots(u, false)
 	u.contractSlotsCorporation = screens.NewContractSlots(u, true)
+	u.contractSlotsPersonal = screens.NewContractSlots(u, false)
 	u.corporationAssetBrowser = screens.NewCorporationBrowser(u)
 	u.corporationAssetSearch = screens.NewAssetSearchForCorporation(u)
 	u.corporationContracts = screens.NewContractsForCorporation(u)
 	u.corporationIndyJobs = screens.NewJobsForCorporation(u)
-
+	u.corporationLogo = screens.NewCorporationLogo(u)
 	u.corporationMember = screens.NewMembers(u)
 	u.corporationOverview = screens.NewCorporationOverview(u)
-	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationSheet = screens.NewCorporationSheet(u, true)
+	u.corporationStructures = screens.NewStructuresForCorporation(u)
 	u.corporationWallets = screens.NewCorporationWallets(u)
 	u.corporationWealth = screens.NewCorporationWealth(u)
 	u.gameSearch = gamesearch.NewGameSearch(u)
 	u.industryJobs = screens.NewJobsForOverview(u)
-	u.loyaltyPoints = screens.NewLoyaltyPoints(u)
-	u.marketOrdersBuy = screens.NewMarketOrders(u, true)
-	u.marketOrdersSell = screens.NewMarketOrders(u, false)
 	u.industrySlotsManufacturing = screens.NewIndustrySlots(u, app.ManufacturingJob)
 	u.industrySlotsReactions = screens.NewIndustrySlots(u, app.ReactionJob)
 	u.industrySlotsResearch = screens.NewIndustrySlots(u, app.ScienceJob)
-	u.snackbar = kxwidget.NewSnackbar(u.window.Canvas())
+	u.loyaltyPoints = screens.NewLoyaltyPoints(u)
+	u.marketOrdersBuy = screens.NewMarketOrders(u, true)
+	u.marketOrdersSell = screens.NewMarketOrders(u, false)
 	u.skillSearch = screens.NewSkillSearch(u)
+	u.snackbar = kxwidget.NewSnackbar(u.window.Canvas())
 	u.training = screens.NewTraining(u)
+	u.unifiedCommunications = screens.NewUnifiedCommunications(u)
+	u.unifiedMails = screens.NewUnifiedMails(u)
+	u.unifiedStructures = screens.NewUnifiedStructures(u)
 	u.wealth = screens.NewCharacterWealth(u)
 
 	u.MainWindow().SetMaster()
