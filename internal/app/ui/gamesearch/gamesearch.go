@@ -27,8 +27,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// TODO: Make component permanent, e.g. to ensure cache is persistent between searches
-
 const (
 	maxSearchResults = 500 // max results returned from the server
 )
@@ -118,7 +116,6 @@ func NewGameSearch(u baseUI) *GameSearch {
 	})
 	a.strict.On = false
 
-	a.resultCount = widget.NewLabel("")
 	a.resultCount.Hide()
 	a.results = a.makeResults()
 
@@ -132,20 +129,11 @@ func NewGameSearch(u baseUI) *GameSearch {
 				return
 			}
 			runAsync(func() {
-				a.DoSearch(context.Background(), s)
+				a.doSearch(context.Background(), s)
 			})
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
-
-	// p := theme.Padding()
-	// a.searchEntry.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), kxwidget.NewTappableIcon(theme.CancelIcon(), func() {
-	// 	a.Reset()
-	// }))
-	// a.searchEntry.PlaceHolder = "Search New Eden"
-	// a.searchEntry.OnSubmitted = func(s string) {
-	// 	go a.DoSearch(context.Background(), s)
-	// }
 	a.indicator.Hide()
 
 	a.searchOptions = widget.NewAccordion(
@@ -159,7 +147,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 					kxwidget.NewTappableLabel("Strict search", func() {
 						a.strict.SetOn(!a.strict.On)
 					})),
-				widget.NewButton("Reset", a.ResetOptions),
+				widget.NewButton("Reset", a.resetOptions),
 			),
 		),
 	)
@@ -226,7 +214,7 @@ func (a *GameSearch) init(ctx context.Context) {
 	})
 }
 
-func (a *GameSearch) ResetOptions() {
+func (a *GameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
 	a.updateSearchOptionsTitle()
@@ -247,15 +235,6 @@ func (a *GameSearch) updateSearchOptionsTitle() {
 		s += " (changed)"
 	}
 	a.searchOptions.Items[0].Title = s
-	a.searchOptions.Refresh()
-}
-
-func (a *GameSearch) ToogleOptions(enabled bool) {
-	if enabled {
-		a.searchOptions.Open(0)
-	} else {
-		a.searchOptions.Close(0)
-	}
 	a.searchOptions.Refresh()
 }
 
@@ -378,7 +357,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.loadIconFunc(), infoviewer.SupportedCategories())
+			return newSearchResult(a.loadIconFunc(), a.supportedCategories)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {
@@ -412,7 +391,7 @@ func (a *GameSearch) showRecent() {
 	a.recentPage.Show()
 }
 
-func (a *GameSearch) DoSearch(ctx context.Context, search string) {
+func (a *GameSearch) doSearch(ctx context.Context, search string) {
 	if a.u.IsOffline() {
 		fyne.Do(func() {
 			ui.ShowInformation(

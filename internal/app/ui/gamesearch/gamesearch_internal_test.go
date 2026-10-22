@@ -283,32 +283,11 @@ func TestGameSearch_SearchOptions(t *testing.T) {
 		a.categories.SetSelected([]string{"Characters"})
 		a.strict.SetOn(true)
 
-		a.ResetOptions()
+		a.resetOptions()
 
 		assert.ElementsMatch(t, makeOptions(), a.categories.Selected)
 		assert.False(t, a.strict.On)
 		assert.Equal(t, "Search options", a.searchOptions.Items[0].Title)
-	})
-	t.Run("can open options", func(t *testing.T) {
-		db, st, _ := testutil.NewDBOnDisk(t)
-		t.Cleanup(func() { db.Close() })
-		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
-		a := NewGameSearch(u)
-
-		a.ToogleOptions(true)
-
-		assert.True(t, a.searchOptions.Items[0].Open)
-	})
-	t.Run("can close options", func(t *testing.T) {
-		db, st, _ := testutil.NewDBOnDisk(t)
-		t.Cleanup(func() { db.Close() })
-		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
-		a := NewGameSearch(u)
-		a.ToogleOptions(true)
-
-		a.ToogleOptions(false)
-
-		assert.False(t, a.searchOptions.Items[0].Open)
 	})
 	t.Run("toggles strict when tapping its label", func(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
@@ -317,7 +296,7 @@ func TestGameSearch_SearchOptions(t *testing.T) {
 		a := NewGameSearch(u)
 		w := test.NewWindow(a)
 		t.Cleanup(w.Close)
-		a.ToogleOptions(true)
+		a.searchOptions.Open(0)
 		var label *kxwidget.TappableLabel
 		for _, o := range test.LaidOutObjects(a) {
 			if x, ok := o.(*kxwidget.TappableLabel); ok && x.Text == "Strict search" {
@@ -344,7 +323,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		assert.False(t, a.resultsPage.Visible())
@@ -358,7 +337,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "")
+		a.doSearch(t.Context(), "")
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		assert.True(t, a.recentPage.Visible())
@@ -379,7 +358,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		}))
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.True(t, a.resultsPage.Visible())
 		assert.False(t, a.recentPage.Visible())
@@ -413,7 +392,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		}))
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.Equal(t, "2 Results", a.resultCount.Text)
 		categories := a.results.Data().Children(nil)
@@ -442,7 +421,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		}))
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.Equal(t, widget.WarningImportance, a.resultCount.Importance)
 		assert.Contains(t, a.resultCount.Text, "exceeded the server limit of 500 results")
@@ -458,7 +437,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.True(t, a.resultsPage.Visible())
 		assert.Equal(t, "0 Results", a.resultCount.Text)
@@ -481,7 +460,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		a.categories.SetSelected([]string{"Characters", "Types"})
 		a.strict.SetOn(true)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		require.NotNil(t, req)
 		q := req.URL.Query()
@@ -506,7 +485,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(500, "internal error"))
 		a := NewGameSearch(u)
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.Equal(t, "Search failed", snackbar)
 		assert.False(t, a.indicator.Visible())
@@ -526,7 +505,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		t.Cleanup(w.Close)
 		a.SetWindow(w, func(string) {})
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.NotNil(t, w.Canvas().Overlays().Top())
 		assert.Nil(t, mainWindow.Canvas().Overlays().Top())
@@ -553,7 +532,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		var snackbar string
 		a.SetWindow(w, func(s string) { snackbar = s })
 		// when
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		// then
 		assert.Equal(t, "Search failed", snackbar)
 		assert.Empty(t, mainSnackbar)
@@ -823,9 +802,9 @@ func TestGameSearch_CanRender(t *testing.T) {
 		t.Cleanup(w.Close)
 		w.Resize(fyne.NewSize(600, 800))
 		a.init(t.Context())
-		a.ToogleOptions(true)
+		a.searchOptions.Open(0)
 
-		a.DoSearch(t.Context(), "alpha")
+		a.doSearch(t.Context(), "alpha")
 		w.Resize(fyne.NewSize(400, 600))
 
 		got := make(map[string]fyne.Resource)
