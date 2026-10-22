@@ -58,7 +58,7 @@ func TestCharacterInfo_update(t *testing.T) {
 		assert.True(t, a.title.Visible())
 		assert.Equal(t, "My bio", a.bio.Text)
 		assert.Equal(t, c.Race.Description, a.description.Text)
-		assert.Contains(t, a.membership.Text, "for 2 days")
+		assert.Equal(t, "for 2 days", a.membership.Text)
 		assert.Equal(t, []int64{corporation.ID}, xslices.Map(a.employeeHistory.items, func(x entityItem) int64 {
 			return x.id
 		}))

@@ -251,7 +251,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		return nil
 	}
 	items := xslices.Map(history, historyItem2EntityItem)
-	duration := humanize.RelTime(history[0].StartDate, time.Now(), "", "")
+	duration := strings.TrimSpace(humanize.RelTime(history[0].StartDate, time.Now(), "", ""))
 	fyne.Do(func() {
 		a.employeeHistory.set(items...)
 		a.membership.SetText(fmt.Sprintf("for %s", duration))

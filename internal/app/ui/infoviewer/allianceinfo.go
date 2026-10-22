@@ -22,7 +22,6 @@ type allianceInfo struct {
 	baseInfo
 
 	attributes *attributeList
-	hq         *widget.Hyperlink
 	id         int64
 	logo       *canvas.Image
 	members    *entityList
@@ -30,12 +29,9 @@ type allianceInfo struct {
 }
 
 func newAllianceInfo(iw *InfoViewer, id int64) *allianceInfo {
-	hq := widget.NewHyperlink("", nil)
-	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
 		id:   id,
 		logo: makeInfoLogo(),
-		hq:   hq,
 	}
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
