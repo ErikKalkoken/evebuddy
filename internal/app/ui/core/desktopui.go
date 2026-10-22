@@ -440,31 +440,39 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	homeItem := xwidget.NewNavRailItem(
 		theme.HomeIcon(),
-		"Home",
+		"",
 		makeTabContent("Home", homeNav),
 	)
+	homeItem.Tooltip = "Home"
 
 	characterSelector := newNavSelector()
 	characterNav.Header = newTitleRow(characterSelector)
 	characterItem := xwidget.NewNavRailItem(
 		theme.AccountIcon(),
-		"Characters",
+		"",
 		makeTabContent("Characters", characterNav),
 	)
+	characterItem.Tooltip = "Characters"
 
 	corporationSelector := newNavSelector()
 	corporationNav.Header = newTitleRow(corporationSelector)
 	corporationItem := xwidget.NewNavRailItem(
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
-		"Corporations",
+		"",
 		makeTabContent("Corporations", corporationNav),
 	)
-	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "Search", u.showSearchWindow)
+	corporationItem.Tooltip = "Corporations"
+
+	searchItem := xwidget.NewNavRailActionItem(theme.SearchIcon(), "", u.showSearchWindow)
 	searchItem.Tooltip = "Search New Eden"
+
+	manageItem := xwidget.NewNavRailMenuItem(theme.SettingsIcon(), "", makeManageMenu(u))
+	manageItem.Tooltip = "Manage"
+
 	rail := xwidget.NewNavRail(
 		[]*xwidget.NavRailItem{homeItem, characterItem, corporationItem},
 		searchItem,
-		xwidget.NewNavRailMenuItem(theme.SettingsIcon(), "Manage", makeMainMenu(u)),
+		manageItem,
 	)
 
 	statusBar := newStatusBar(u)

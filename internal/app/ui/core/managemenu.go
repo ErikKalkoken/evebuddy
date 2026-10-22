@@ -7,8 +7,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 )
 
-// makeMainMenu returns the app's main menu.
-func makeMainMenu(u *DesktopUI) *fyne.Menu {
+// makeManageMenu returns the menu for the nav rail's Manage item.
+func makeManageMenu(u *DesktopUI) *fyne.Menu {
 	makeMenuItem := func(title string, sc xdesktop.ShortcutWithHandler) *fyne.MenuItem {
 		it := fyne.NewMenuItem(title, func() {
 			sc.Handler(sc.Shortcut)
