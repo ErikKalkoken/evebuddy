@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -149,33 +148,29 @@ func (a *corporationInfo) update(ctx context.Context) error {
 			a.iw.Show(v)
 		}
 	})
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		history, err := a.iw.u.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
-		if err != nil {
-			return err
-		}
-		var items []entityItem
-		if len(history) > 0 {
-			history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
-				return v.Organization != nil && v.Organization.Category.IsKnown()
-			})
-			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
-		}
-		var founded string
-		if v, ok := o.DateFounded.Value(); ok {
-			founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
-		} else {
-			founded = "?"
-		}
-		items = append(items, newEntityItem(0, "Corporation Founded", founded, Undefined))
-		fyne.Do(func() {
-			a.allianceHistory.set(items...)
-			a.tabs.Refresh()
+	history, err := a.iw.u.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	var items []entityItem
+	if len(history) > 0 {
+		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
+			return v.Organization != nil && v.Organization.Category.IsKnown()
 		})
-		return nil
+		items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
+	}
+	var founded string
+	if v, ok := o.DateFounded.Value(); ok {
+		founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
+	} else {
+		founded = "?"
+	}
+	items = append(items, newEntityItem(0, "Corporation Founded", founded, Undefined))
+	fyne.Do(func() {
+		a.allianceHistory.set(items...)
+		a.tabs.Refresh()
 	})
-	return g.Wait()
+	return nil
 }
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {

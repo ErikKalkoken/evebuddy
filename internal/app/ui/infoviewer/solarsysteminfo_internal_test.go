@@ -86,6 +86,34 @@ func TestSolarSystemInfo_update(t *testing.T) {
 		assert.Equal(t, []int64{otherSystem.ID}, entityItemIDs(a.stargates))
 		assert.Equal(t, []int64{planet.ID}, entityItemIDs(a.planets))
 	})
+	t.Run("should show solar system when star type can not be fetched", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		httpmock.Activate()
+		t.Cleanup(httpmock.DeactivateAndReset)
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		system := factory.CreateEveSolarSystem()
+		factory.GetOrCreateEveEntity(*system.ToEveEntity())
+		factory.GetOrCreateEveEntity(*system.Constellation.ToEveEntity())
+		httpmock.RegisterResponder("GET", fmt.Sprintf("https://esi.evetech.net/universe/systems/%d", system.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"constellation_id": system.Constellation.ID,
+				"name":             system.Name,
+				"position":         map[string]any{"x": 1, "y": 2, "z": 3},
+				"security_status":  system.SecurityStatus,
+				"star_id":          40000040,
+				"system_id":        system.ID,
+			}))
+		httpmock.RegisterResponder("GET", "https://esi.evetech.net/universe/stars/40000040",
+			httpmock.NewStringResponder(404, `{"error":"not found"}`))
+		a := newSolarSystemInfo(New(u), system.ID)
+		// when
+		err := a.update(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, system.Name, a.name.Text)
+	})
 	t.Run("should report error when solar system can not be fetched", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)

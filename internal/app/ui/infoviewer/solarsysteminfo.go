@@ -3,6 +3,7 @@ package infoviewer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -127,9 +128,14 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	g := new(errgroup.Group)
 	if v, ok := starID.Value(); ok {
 		g.Go(func() error {
-			var err error
-			starTypeID, err = a.iw.u.EVEUniverse().GetStarTypeID(ctx, v)
-			return err
+			id, err := a.iw.u.EVEUniverse().GetStarTypeID(ctx, v)
+			if err != nil {
+				// only needed for the logo
+				slog.Error("Failed to fetch star type for solar system", "solarSystemID", a.id, "error", err)
+				return nil
+			}
+			starTypeID = id
+			return nil
 		})
 	}
 	g.Go(func() error {
