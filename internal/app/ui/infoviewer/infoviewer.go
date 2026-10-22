@@ -251,7 +251,6 @@ func (iw *InfoViewer) show(v Kind, id int64) {
 type infoWidget interface {
 	fyne.CanvasObject
 	update(context.Context) error
-	setError(string)
 }
 
 type showParams struct {
@@ -261,8 +260,9 @@ type showParams struct {
 }
 
 type pageState struct {
-	cancel context.CancelFunc // cancels background work of the page
-	params showParams
+	cancel     context.CancelFunc // cancels background work of the page
+	errorLabel *widget.Label      // shows why the page failed to load
+	params     showParams
 }
 
 // current returns the parameters of the currently shown page or nil if none is shown.
@@ -376,13 +376,22 @@ func (iw *InfoViewer) show2(arg showParams) {
 		)
 		return
 	}
-	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
+	errorLabel := widget.NewLabel("")
+	errorLabel.Importance = widget.DangerImportance
+	errorLabel.Wrapping = fyne.TextWrapWord
+	errorLabel.Hide()
+	content := container.NewBorder(errorLabel, nil, nil, nil, page)
+	ab = xwidget.NewAppBar(makeAppBarTitle(title), content)
 	ab.HideBackground = !iw.u.IsMobile()
 	pageCtx, cancel := context.WithCancel(context.Background())
 	if iw.pages == nil {
 		iw.pages = make(map[fyne.CanvasObject]pageState)
 	}
-	iw.pages[ab] = pageState{cancel: cancel, params: arg}
+	iw.pages[ab] = pageState{
+		cancel:     cancel,
+		errorLabel: errorLabel,
+		params:     arg,
+	}
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
@@ -443,7 +452,9 @@ func (iw *InfoViewer) show2(arg showParams) {
 		if err != nil {
 			slog.Error("info widget load", "params", arg, "error", err)
 			fyne.Do(func() {
-				page.setError("ERROR: " + iw.u.ErrorDisplay(err))
+				errorLabel.SetText("ERROR: " + iw.u.ErrorDisplay(err))
+				errorLabel.Show()
+				content.Refresh() // repaints the label, which was hidden since the first frame
 			})
 		}
 	})
@@ -583,12 +594,6 @@ func (b *baseInfo) initBase(iw *InfoViewer) {
 	b.iw = iw
 	b.name = newLabelWithWrapAndSelectable("Loading...")
 	b.name.TextStyle.Bold = true
-}
-
-func (b *baseInfo) setError(s string) {
-	b.name.Text = s
-	b.name.Importance = widget.DangerImportance
-	b.name.Refresh()
 }
 
 func boolIconResource(ok bool) fyne.Resource {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -437,6 +436,7 @@ func TestInfoViewer_show(t *testing.T) {
 		// then
 		page := iw.nav.Current().(*xwidget.AppBar)
 		assert.Contains(t, labelTexts(page), "Caldari")
+		assert.False(t, iw.pages[page].errorLabel.Visible())
 	})
 	t.Run("should show error when page load fails", func(t *testing.T) {
 		// given
@@ -460,9 +460,37 @@ func TestInfoViewer_show(t *testing.T) {
 		jobs[0](t.Context())
 		// then
 		page := iw.nav.Current().(*xwidget.AppBar)
-		assert.True(t, slices.ContainsFunc(labelTexts(page), func(s string) bool {
-			return strings.HasPrefix(s, "ERROR:")
-		}))
+		errorLabel := iw.pages[page].errorLabel
+		assert.True(t, errorLabel.Visible())
+		assert.True(t, strings.HasPrefix(errorLabel.Text, "ERROR:"), errorLabel.Text)
+	})
+	t.Run("should keep loaded data when page load fails later", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		httpmock.Activate()
+		t.Cleanup(httpmock.DeactivateAndReset)
+		httpmock.RegisterResponder("GET", `=~^https://esi\.evetech\.net/corporations/\d+/alliancehistory`,
+			httpmock.NewStringResponder(404, `{"error":"not found"}`))
+		var jobs []func(context.Context)
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			Go:       func(job func(context.Context)) { jobs = append(jobs, job) },
+			IsOnline: true,
+			Storage:  st,
+		})
+		c := factory.CreateEveCorporation()
+		iw := New(u)
+		iw.Show(&app.EveEntity{ID: c.ID, Category: app.EveEntityCorporation})
+		require.Len(t, jobs, 1)
+		// when
+		jobs[0](t.Context())
+		// then
+		page := iw.nav.Current().(*xwidget.AppBar)
+		assert.Contains(t, labelTexts(page), c.Name)
+		errorLabel := iw.pages[page].errorLabel
+		assert.True(t, errorLabel.Visible())
+		assert.True(t, strings.HasPrefix(errorLabel.Text, "ERROR:"), errorLabel.Text)
 	})
 	t.Run("should not load page after it was popped", func(t *testing.T) {
 		// given

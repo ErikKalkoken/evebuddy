@@ -74,6 +74,10 @@ func Show(s baseUI) {
 	w.Show()
 }
 
+// runAsync runs f in a new goroutine.
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
+
 type settingAction struct {
 	Label  string
 	Action func()
@@ -82,9 +86,10 @@ type settingAction struct {
 type settings struct {
 	widget.BaseWidget
 
-	sb *kxwidget.Snackbar
-	u  baseUI
-	w  fyne.Window
+	displaySnackbar func(text string)
+	sb              *kxwidget.Snackbar
+	u               baseUI
+	w               fyne.Window
 }
 
 func newSettings(u baseUI, w fyne.Window) *settings {
@@ -93,6 +98,7 @@ func newSettings(u baseUI, w fyne.Window) *settings {
 		u:  u,
 		w:  w,
 	}
+	a.displaySnackbar = a.sb.Display
 	a.ExtendBaseWidget(a)
 	a.sb.Start()
 	return a
@@ -104,25 +110,25 @@ func (a *settings) CreateRenderer() fyne.WidgetRenderer {
 		ab.HideBackground = !a.u.IsMobile()
 		return ab
 	}
-	generalContent, generalActions := a.makeGeneralPage()
-	notificationContent, notificationActions := a.makeNotificationPage()
+	generalList, generalActions := a.makeGeneralPage()
+	notificationList, notificationActions := a.makeNotificationPage()
 	tabs := container.NewAppTabs(
 		ui.NewTabItem("General", makeSettingsPage(
 			"General",
-			generalContent,
-			generalActions,
+			generalList,
+			makeIconButtonFromActions(generalActions),
 		)),
 		ui.NewTabItem("Notifications", makeSettingsPage(
 			"Notifications",
-			notificationContent,
-			notificationActions,
+			notificationList,
+			makeIconButtonFromActions(notificationActions),
 		)),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	return widget.NewSimpleRenderer(tabs)
 }
 
-func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuButton) {
+func (a *settings) makeGeneralPage() (*settingList, []settingAction) {
 	logLevel := NewSettingItemOptions(SettingItemOptionsParams{
 		label:        "Log level",
 		hint:         "Set current log level",
@@ -167,7 +173,9 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 		getter:       a.u.Settings().HideLimitedCorporations,
 		onChanged: func(enabled bool) {
 			a.u.Settings().SetHideLimitedCorporations(enabled)
-			go a.u.Signals().CorporationsChanged.Emit(context.Background(), struct{}{})
+			runAsync(func() {
+				a.u.Signals().CorporationsChanged.Emit(context.Background(), struct{}{})
+			})
 		},
 	})
 
@@ -335,7 +343,7 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 				widget.DangerImportance,
 				func(_ context.Context) {
 					a.u.ClearAllCaches()
-					a.sb.Display("Cache cleared")
+					a.displaySnackbar("Cache cleared")
 				}, a.w,
 			)
 		},
@@ -354,6 +362,8 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 			hideLimitedCorporations.Reset()
 			maxMail.Reset()
 			maxWallet.Reset()
+			marketOrdersRetention.Reset()
+			approvedContactCost.Reset()
 		},
 	}
 	exportAppLog := settingAction{
@@ -394,17 +404,21 @@ func (a *settings) makeGeneralPage() (fyne.CanvasObject, *xwidget.ContextMenuBut
 		actions = append(actions, settingAction{
 			Label: "Reset shown character (debug)",
 			Action: func() {
-				go a.u.ResetCharacter(context.Background())
+				runAsync(func() {
+					a.u.ResetCharacter(context.Background())
+				})
 			},
 		})
 		actions = append(actions, settingAction{
 			Label: "Reset shown corporation (debug)",
 			Action: func() {
-				go a.u.ResetCorporation(context.Background())
+				runAsync(func() {
+					a.u.ResetCorporation(context.Background())
+				})
 			},
 		})
 	}
-	return list, makeIconButtonFromActions(actions)
+	return list, actions
 }
 
 func (a *settings) showDeleteFileDialog(name, path string) {
@@ -429,43 +443,49 @@ func (a *settings) showDeleteFileDialog(name, path string) {
 			}()
 			if err != nil {
 				slog.Error("delete "+name, "path", path, "error", err)
-				a.sb.Display("ERROR: Failed to delete " + name)
+				a.displaySnackbar("ERROR: Failed to delete " + name)
 			} else {
-				a.sb.Display(xstrings.Title(name) + " deleted")
+				a.displaySnackbar(xstrings.Title(name) + " deleted")
 			}
 		}, a.w)
 }
 
 func (a *settings) showExportFileDialog(topic, path string) {
-	filename := filepath.Base(path)
-	ext := filepath.Ext(filename)
-	timestamp := time.Now().Format("060102150405")
-	filename = strings.TrimSuffix(filename, ext) + "_" + timestamp + ext
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		a.sb.Display("No file to export: " + filename)
-		return
-	} else if err != nil {
-		ui.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
-		return
-	}
+	name := filepath.Base(path)
+	runAsync(func() {
+		data, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
+			a.displaySnackbar("No file to export: " + name)
+			return
+		} else if err != nil {
+			isDeveloperMode := a.u.IsDeveloperMode()
+			fyne.Do(func() {
+				ui.ShowErrorAndLog("Failed to open "+name, err, isDeveloperMode, a.w)
+			})
+			return
+		}
 
-	filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
-		CompletionText:  xstrings.Title(topic) + " exported",
-		Filename:        filename,
-		DisplaySnackbar: a.sb.Display,
-		Title:           "Export " + topic,
-		WindowID:        "export-log",
-		WriteFunc: func(_ context.Context, w io.Writer) error {
-			_, err := w.Write(data)
-			return err
-
-		},
-		Window: a.w,
+		ext := filepath.Ext(name)
+		timestamp := time.Now().Format("060102150405")
+		filename := strings.TrimSuffix(name, ext) + "_" + timestamp + ext
+		fyne.Do(func() {
+			filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
+				CompletionText:  xstrings.Title(topic) + " exported",
+				Filename:        filename,
+				DisplaySnackbar: a.displaySnackbar,
+				Title:           "Export " + topic,
+				WindowID:        "export-log",
+				WriteFunc: func(_ context.Context, w io.Writer) error {
+					_, err := w.Write(data)
+					return err
+				},
+				Window: a.w,
+			})
+		})
 	})
 }
 
-func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMenuButton) {
+func (a *settings) makeNotificationPage() (*settingList, []settingAction) {
 	groupsAndTypes := make(map[app.EveNotificationGroup][]app.EveNotificationType)
 	for n := range app.NotificationTypesSupported().All() {
 		g := n.Group()
@@ -502,7 +522,7 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMe
 		},
 	})
 	notifyPI := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.u.Settings().NotifyPIEnabled(),
+		defaultValue: a.u.Settings().NotifyPIEnabledDefault(),
 		label:        "Planetary Industry",
 		hint:         "Whether to notify when a PI colony has stopped completely",
 		getter:       a.u.Settings().NotifyPIEnabled,
@@ -515,7 +535,7 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMe
 	})
 
 	notifyTraining := NewSettingItemSwitch(SettingItemSwitchParams{
-		defaultValue: a.u.Settings().NotifyTrainingEnabled(),
+		defaultValue: a.u.Settings().NotifyTrainingEnabledDefault(),
 		label:        "Notify Training",
 		hint:         "Whether to notify when skillqueue is empty for watched characters",
 		getter:       a.u.Settings().NotifyTrainingEnabled,
@@ -706,19 +726,14 @@ func (a *settings) makeNotificationPage() (fyne.CanvasObject, *xwidget.ContextMe
 	send := settingAction{
 		Label: "Send test notification",
 		Action: func() {
-			go func() {
+			runAsync(func() {
 				n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
 				fyne.CurrentApp().SendNotification(n)
-			}()
+			})
 		},
 	}
-	return list, makeIconButtonFromActions([]settingAction{reset, all, none, send})
+	return list, []settingAction{reset, all, none, send}
 }
-
-// func (a *userSettings) reportError(text string, err error) {
-// 	slog.Error(text, "error", err)
-// 	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
-// }
 
 func makeIconButtonFromActions(actions []settingAction) *xwidget.ContextMenuButton {
 	var items []*fyne.MenuItem
@@ -865,6 +880,7 @@ func NewSettingItemSlider(arg SettingItemSliderParams) SettingItem {
 				isMobile: arg.isMobile,
 				reset: func() {
 					sl.SetValue(arg.defaultValue)
+					arg.setter(arg.defaultValue) // SetValue does not call OnChangeEnded
 				},
 				refresh: refresh,
 				window:  arg.window,
@@ -966,11 +982,13 @@ func makeSettingDialog(arg makeSettingDialogParams) dialog.Dialog {
 // settingList is a custom list widget for settings.
 type settingList struct {
 	widget.List
+
+	items []SettingItem
 }
 
 // newSettingList returns a new SettingList widget.
 func newSettingList(items []SettingItem) *settingList {
-	w := &settingList{}
+	w := &settingList{items: items}
 	w.ExtendBaseWidget(w)
 	w.Length = func() int {
 		return len(items)
