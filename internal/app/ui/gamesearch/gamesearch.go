@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -27,16 +29,32 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// TODO: Make component permanent, e.g. to ensure cache is persistent between searches
-
 const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
+// Hooks that tests can replace.
+var (
+	runAsync          = func(f func()) { go f() }
+	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
+	// waitSearchDelay waits briefly, so typing triggers only one search.
+	// Reports false when the search was canceled while waiting.
+	waitSearchDelay = func(ctx context.Context) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(300 * time.Millisecond):
+			return true
+		}
+	}
+	// searchTimeout limits the ESI call, as a dead connection can otherwise hang for minutes.
+	searchTimeout = 15 * time.Second
+)
+
 type baseUI interface {
 	Character() *characterservice.CharacterService
-	DisplaySnackbar(text string)
 	EVEImage() ui.EVEImageService
+	ErrorDisplay(err error) string
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoViewer() ui.InfoViewer
 	IsOffline() bool
@@ -69,76 +87,72 @@ func (r searchResultNode) UID() widget.TreeNodeID {
 type GameSearch struct {
 	widget.BaseWidget
 
+	cancelSearch        context.CancelFunc
 	categories          *kxwidget.FilterChipGroup
 	clearRecent         *widget.Hyperlink
 	defaultCategories   []string
 	searchEntry         *xwidget.SearchEntry
 	iconCache           xsync.Map[int64, fyne.Resource]
-	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
 	recentItems         []*app.EveEntity
 	recentLoadFailed    bool
 	recentPage          *fyne.Container
-	resultCount         *widget.Label
 	results             *xwidget.Tree[searchResultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
+	spinner             *kxwidget.Spinner
+	statusLabel         *widget.Label
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
 	u                   baseUI
 	w                   fyne.Window
-	displaySnackbar     func(string)
 }
 
 func NewGameSearch(u baseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
-		displaySnackbar:     u.DisplaySnackbar,
-		indicator:           widget.NewProgressBarInfinite(),
-		resultCount:         widget.NewLabel(""),
+		spinner:             kxwidget.NewSpinner(),
+		statusLabel:         widget.NewLabel(""),
 		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
 	}
 	a.ExtendBaseWidget(a)
 
+	searchIfValid := func() {
+		if s := a.searchEntry.Text; len(s) >= 3 {
+			a.startSearch(s)
+		}
+	}
+
 	a.categories = kxwidget.NewFilterChipGroup(a.defaultCategories, func(_ []string) {
 		a.updateSearchOptionsTitle()
+		searchIfValid()
 	})
 	a.categories.Selected = a.defaultCategories
 
 	a.strict = kxwidget.NewSwitch(func(_ bool) {
 		a.updateSearchOptionsTitle()
+		searchIfValid()
 	})
 	a.strict.On = false
 
-	a.resultCount = widget.NewLabel("")
-	a.resultCount.Hide()
+	a.statusLabel.Wrapping = fyne.TextWrapWord
+	a.statusLabel.Hide()
 	a.results = a.makeResults()
 
 	a.searchEntry = xwidget.NewSearchEntry(
 		"Loading...",
 		func(s string) {
-			if s == "" {
-				a.Reset()
-			}
 			if len(s) < 3 {
+				a.clearSearch()
 				return
 			}
-			go a.DoSearch(context.Background(), s)
+			a.startSearch(s)
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
-
-	// p := theme.Padding()
-	// a.searchEntry.ActionItem = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), kxwidget.NewTappableIcon(theme.CancelIcon(), func() {
-	// 	a.Reset()
-	// }))
-	// a.searchEntry.PlaceHolder = "Search New Eden"
-	// a.searchEntry.OnSubmitted = func(s string) {
-	// 	go a.DoSearch(context.Background(), s)
-	// }
-	a.indicator.Hide()
+	a.spinner.Hide()
 
 	a.searchOptions = widget.NewAccordion(
 		widget.NewAccordionItem(
@@ -151,7 +165,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 					kxwidget.NewTappableLabel("Strict search", func() {
 						a.strict.SetOn(!a.strict.On)
 					})),
-				widget.NewButton("Reset", a.ResetOptions),
+				widget.NewButton("Reset", a.resetOptions),
 			),
 		),
 	)
@@ -160,14 +174,17 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.recent = a.makeRecentSelected()
 
 	a.resultsPage = container.NewBorder(
-		container.NewVBox(
-			a.indicator,
-			a.resultCount,
+		a.statusLabel,
+		nil,
+		nil,
+		nil,
+		container.NewStack(
+			a.results,
+			container.NewCenter(container.NewStack(
+				xwidget.NewSpacer(fyne.NewSquareSize(2*theme.IconInlineSize())),
+				a.spinner,
+			)),
 		),
-		nil,
-		nil,
-		nil,
-		a.results,
 	)
 	a.resultsPage.Hide()
 	a.clearRecent = widget.NewHyperlink("Clear", nil)
@@ -218,10 +235,9 @@ func (a *GameSearch) init(ctx context.Context) {
 	})
 }
 
-func (a *GameSearch) ResetOptions() {
+func (a *GameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
-	a.updateSearchOptionsTitle()
 }
 
 func (a *GameSearch) updateSearchOptionsTitle() {
@@ -239,15 +255,6 @@ func (a *GameSearch) updateSearchOptionsTitle() {
 		s += " (changed)"
 	}
 	a.searchOptions.Items[0].Title = s
-	a.searchOptions.Refresh()
-}
-
-func (a *GameSearch) ToogleOptions(enabled bool) {
-	if enabled {
-		a.searchOptions.Open(0)
-	} else {
-		a.searchOptions.Close(0)
-	}
 	a.searchOptions.Refresh()
 }
 
@@ -281,18 +288,32 @@ func (a *GameSearch) Focus() {
 }
 
 func (a *GameSearch) Reset() {
-	a.searchEntry.SetText("")
-	a.clearResults()
+	a.searchEntry.ClearSilent()
+	a.clearSearch()
 }
 
-func (a *GameSearch) SetWindow(w fyne.Window, displaySnackbar func(string)) {
+// clearSearch cancels the running search and shows the recent searches.
+func (a *GameSearch) clearSearch() {
+	a.stopSearch()
+	a.spinner.Stop()
+	a.spinner.Hide()
+	a.results.Clear()
+	a.statusLabel.Hide()
+	a.showRecent()
+}
+
+// Stop cancels a running search. Used at shutdown.
+func (a *GameSearch) Stop() {
+	a.stopSearch()
+}
+
+func (a *GameSearch) SetWindow(w fyne.Window) {
 	a.w = w
-	a.displaySnackbar = displaySnackbar
 }
 
 func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
 	return func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
-		xwidget.LoadResourceAsyncWithCache(
+		loadResourceAsync(
 			icons.BlankSvg,
 			func() (fyne.Resource, bool) {
 				return a.iconCache.Load(o.ID)
@@ -370,7 +391,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 			return len(a.recentItems)
 		},
 		func() fyne.CanvasObject {
-			return newSearchResult(a.loadIconFunc(), infoviewer.SupportedCategories())
+			return newSearchResult(a.loadIconFunc(), a.supportedCategories)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.recentItems) {
@@ -381,6 +402,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
 		if id >= len(a.recentItems) {
 			return
 		}
@@ -390,22 +412,87 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 	return l
 }
 
-func (a *GameSearch) clearResults() {
-	fyne.Do(func() {
-		a.results.Clear()
-		a.resultCount.Hide()
-		a.showRecent()
-	})
-}
-
 func (a *GameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
 }
 
-func (a *GameSearch) DoSearch(ctx context.Context, search string) {
+// showResultsPage shows the results page. Call it after showing its content.
+func (a *GameSearch) showResultsPage() {
+	a.recentPage.Hide()
+	a.resultsPage.Show()
+	a.resultsPage.Refresh() // Fyne won't repaint a never-visible object on Show
+}
+
+// startSearch starts a new search and cancels the previous one.
+// Options are read here, because widgets must only be accessed on the main thread.
+func (a *GameSearch) startSearch(search string) {
+	a.stopSearch()
+	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
+		return option2searchCategory(o)
+	})
+	if len(categories) == 0 {
+		a.spinner.Stop()
+		a.spinner.Hide()
+		a.results.Clear()
+		a.showStatus("Select at least one category", widget.WarningImportance)
+		a.showResultsPage()
+		return
+	}
+	strict := a.strict.On
+	ctx, cancel := context.WithCancel(context.Background())
+	a.cancelSearch = cancel
+	runAsync(func() {
+		a.doSearch(ctx, search, categories, strict)
+	})
+}
+
+func (a *GameSearch) stopSearch() {
+	if a.cancelSearch == nil {
+		return
+	}
+	a.cancelSearch()
+	a.cancelSearch = nil
+}
+
+func (a *GameSearch) showStatus(text string, importance widget.Importance) {
+	a.statusLabel.Importance = importance
+	a.statusLabel.Text = text
+	a.statusLabel.Refresh()
+	a.statusLabel.Show()
+}
+
+// doSearch runs a search. Results of a canceled search are discarded,
+// so a slow search can't overwrite the results of a newer one.
+func (a *GameSearch) doSearch(ctx context.Context, search string, categories []app.SearchCategory, strict bool) {
+	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
+		a.results.Clear()
+		a.statusLabel.Hide()
+		a.spinner.Show()
+		a.spinner.Start()
+		a.showResultsPage()
+	})
+	defer func() {
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return // spinner belongs to the newer search
+			}
+			a.spinner.Stop()
+			a.spinner.Hide()
+		})
+	}()
+	if !waitSearchDelay(ctx) {
+		return
+	}
 	if a.u.IsOffline() {
 		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			a.showRecent()
 			ui.ShowInformation(
 				"Offline",
 				"Can't search when offline",
@@ -414,51 +501,48 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 		})
 		return
 	}
-	a.clearResults()
-	if search == "" {
-		return
-	}
-	fyne.Do(func() {
-		a.recentPage.Hide()
-		a.resultsPage.Show()
-		a.indicator.Show()
-		a.indicator.Start()
-	})
-	defer func() {
-		fyne.Do(func() {
-			a.indicator.Stop()
-			a.indicator.Hide()
-		})
-	}()
-	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
-		return option2searchCategory(o)
-	})
-	results, total, err := a.u.Character().SearchESI(
-		ctx,
+	esiCtx, cancel := context.WithTimeout(ctx, searchTimeout) // separate, so ctx only reports newer searches
+	defer cancel()
+	results, _, err := a.u.Character().SearchESI(
+		esiCtx,
 		search,
 		categories,
-		a.strict.On,
+		strict,
 	)
-	if err != nil {
-		ui.NotifyErrorAndLog("Search failed", err, a.displaySnackbar)
+	if ctx.Err() != nil {
 		return
 	}
+	if err != nil {
+		slog.Error("Search failed", "error", err)
+		msg := a.u.ErrorDisplay(err)
+		if esiCtx.Err() != nil {
+			msg = "search timed out"
+		}
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			a.showStatus("ERROR: "+msg, widget.DangerImportance)
+		})
+		return
+	}
+	var total int // entries, not unique IDs, as an entity can be found in several categories
+	for _, c := range categories {
+		total += len(results[c])
+	}
 	fyne.Do(func() {
-		if total == maxSearchResults {
-			a.resultCount.Importance = widget.WarningImportance
-			a.resultCount.Wrapping = fyne.TextWrapWord
-			a.resultCount.Text = fmt.Sprintf(
+		if ctx.Err() != nil {
+			return
+		}
+		if total >= maxSearchResults {
+			a.showStatus(fmt.Sprintf(
 				"Search for \"%s\" exceeded the server limit of 500 results "+
 					"and may not contain the items you are looking for.",
 				search,
-			)
+			), widget.WarningImportance)
 		} else {
-			a.resultCount.Importance = widget.MediumImportance
-			a.resultCount.Text = fmt.Sprintf("%d Results", total)
+			a.showStatus(fmt.Sprintf("%d Results", total), widget.MediumImportance)
 		}
-		a.resultCount.Refresh()
-		a.resultCount.Show()
-
 	})
 	if total == 0 {
 		return
@@ -475,19 +559,22 @@ func (a *GameSearch) DoSearch(ctx context.Context, search string) {
 		category := &searchResultNode{category: c, count: itemsCount}
 		err := td.Add(nil, category, itemsCount > 0)
 		if err != nil {
-			slog.Error("game search: adding category node", "node", category)
+			slog.Error("game search: adding category node", "node", category, "err", err)
 			continue
 		}
 		for _, o := range items {
-			entity := &searchResultNode{ee: o}
+			entity := &searchResultNode{category: c, ee: o}
 			err := td.Add(category, entity, false)
 			if err != nil {
-				slog.Error("game search: adding item node", "node", category)
+				slog.Error("game search: adding item node", "node", entity, "err", err)
 				continue
 			}
 		}
 	}
 	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
 		a.results.Set(td)
 		if categoriesFound == 1 {
 			a.results.OpenAllBranches()

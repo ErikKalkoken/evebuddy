@@ -220,7 +220,8 @@ type UIFake struct {
 	eis                 ui.EVEImageService
 	eus                 *eveuniverseservice.EVEUniverseService
 	isMobile            bool
-	iw                  *infoviewer.InfoViewer
+	isOnline            bool
+	iw                  ui.InfoViewer
 	settings            *settings.Settings
 	signals             *app.Signals
 	showCharacterFunc   func(ctx context.Context, characterID int64)
@@ -231,7 +232,9 @@ type UIFake struct {
 
 type UIParams struct {
 	App                 fyne.App
+	InfoViewer          ui.InfoViewer // defaults to a real info viewer
 	IsMobile            bool
+	IsOnline            bool // defaults to offline, so tests don't call ESI by accident
 	Signals             *app.Signals
 	Storage             *storage.Storage
 	ShowCharacterFunc   func(ctx context.Context, characterID int64)
@@ -294,6 +297,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		eis:                 testutil.NewEveImageServiceStub(),
 		eus:                 eus,
 		isMobile:            arg.IsMobile,
+		isOnline:            arg.IsOnline,
 		rs:                  rs,
 		showCharacterFunc:   arg.ShowCharacterFunc,
 		showCorporationFunc: arg.ShowCorporationFunc,
@@ -302,7 +306,11 @@ func NewUIFake(args ...UIParams) *UIFake {
 		settings:            arg.Settings,
 		windows:             make(map[string]fyne.Window),
 	}
-	u.iw = infoviewer.New(u)
+	if arg.InfoViewer != nil {
+		u.iw = arg.InfoViewer
+	} else {
+		u.iw = infoviewer.New(u)
+	}
 	return u
 }
 
@@ -382,7 +390,7 @@ func (u *UIFake) IsMobile() bool {
 }
 
 func (u *UIFake) IsOffline() bool {
-	return true
+	return !u.isOnline
 }
 
 func (u *UIFake) IsUpdateDisabled() bool {

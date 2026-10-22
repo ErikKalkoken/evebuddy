@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	"github.com/icrowley/fake"
 
@@ -715,17 +714,16 @@ func (u *DesktopUI) showSearchWindow() {
 		w.Show()
 		return
 	}
-	sb := kxwidget.NewSnackbar(w.Canvas())
 	w.SetOnClosed(func() {
 		if onClosed != nil {
 			onClosed()
 		}
-		sb.Stop()
+		u.gameSearch.Reset() // cancels a running search
 	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
 	w.SetContent(u.gameSearch)
 	w.Show()
-	u.gameSearch.SetWindow(w, sb.Display)
+	u.gameSearch.SetWindow(w)
 	u.gameSearch.Focus()
 }
 
