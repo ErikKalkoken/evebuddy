@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
@@ -191,6 +192,111 @@ func TestUpdateStatus_Update(t *testing.T) {
 	})
 }
 
+func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	t.Run("keeps showing general when a character is removed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(3)
+		a.sectionList.Select(0)
+		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
+		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
+		// then
+		assert.Equal(t, entityKey{category: sectionGeneral, id: app.EveUniverseSectionEntityID}, a.currentEntity)
+		assert.Len(t, a.entitySections, len(app.EveUniverseSections))
+		assert.False(t, a.nav.IsRoot())
+	})
+	t.Run("keeps showing corporation when its position becomes a header", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacter()
+		r := factory.CreateCorporation()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		u.Corporation().Stop() // skip background updates, which would call ESI
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		a.stop()
+		a.sb = kxwidget.NewSnackbar(w.Canvas()) // not started, so messages don't render concurrently
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(4)
+		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
+		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		// when
+		a.update(t.Context())
+		// then
+		assert.Equal(t, entityKey{category: sectionCorporation, id: r.ID}, a.currentEntity)
+		require.Len(t, a.entitySections, len(app.CorporationSections))
+		assert.Equal(t, r.ID, a.entitySections[0].EntityID)
+		assert.NotPanics(t, a.entityMoreButton.MenuItems()[0].Action)
+	})
+	t.Run("keeps showing character when another one is inserted before it", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter(storage.CreateCharacterParams{
+			ID: factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bravo"}).ID,
+		})
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(1)
+		c2 := factory.CreateCharacter(storage.CreateCharacterParams{
+			ID: factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Alpha"}).ID,
+		})
+		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		// when
+		u.Signals().CharacterAdded.Emit(t.Context(), c2)
+		// then
+		assert.Equal(t, entityKey{category: sectionCharacter, id: c.ID}, a.currentEntity)
+		assert.Equal(t, c.ID, a.entitySections[0].EntityID)
+	})
+	t.Run("returns to the entity list when the shown character is removed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(1)
+		a.sectionList.Select(0)
+		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
+		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
+		// then
+		assert.True(t, a.nav.IsRoot())
+		assert.Equal(t, entityKey{}, a.currentEntity)
+		assert.Equal(t, -1, a.currentSectionID)
+		assert.Empty(t, a.entitySections)
+	})
+}
+
 func TestUpdateStatus_Signals(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -251,7 +357,7 @@ func TestUpdateStatus_SelectEntity(t *testing.T) {
 		a.entityList.Select(0)
 		// then
 		assert.True(t, a.nav.IsRoot())
-		assert.Equal(t, -1, a.currentEntityID)
+		assert.Equal(t, entityKey{}, a.currentEntity)
 	})
 	t.Run("shows sections of a character", func(t *testing.T) {
 		// given
@@ -269,7 +375,7 @@ func TestUpdateStatus_SelectEntity(t *testing.T) {
 		a.entityList.Select(1)
 		// then
 		assert.False(t, a.nav.IsRoot())
-		assert.Equal(t, 1, a.currentEntityID)
+		assert.Equal(t, entityKey{category: sectionCharacter, id: c.ID}, a.currentEntity)
 		assert.Equal(t, -1, a.currentSectionID)
 		require.Len(t, a.entitySections, len(app.CharacterSections))
 		assert.Equal(t, c.ID, a.entitySections[0].EntityID)
@@ -475,8 +581,7 @@ func TestUpdateStatus_MakeEntityMenuItems(t *testing.T) {
 			a.stop()
 			a.sb = kxwidget.NewSnackbar(w.Canvas()) // not started, so messages don't render concurrently
 			a.update(t.Context())
-			a.currentEntityID = id
-			items := a.makeEntityMenuItems()
+			items := a.makeEntityMenuItems(a.entities[id])
 			// when/then
 			require.Len(t, items, 1)
 			assert.NotPanics(t, items[0].Action)

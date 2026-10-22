@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -103,10 +104,20 @@ type entity struct {
 	ss       app.StatusSummary
 }
 
+// entityKey identifies an entity. The zero value means no entity.
+type entityKey struct {
+	category sectionCategory
+	id       int64
+}
+
+func (e entity) key() entityKey {
+	return entityKey{category: e.category, id: e.id}
+}
+
 type updateStatus struct {
 	widget.BaseWidget
 
-	currentEntityID   int
+	currentEntity     entityKey
 	currentSectionID  int
 	entities          []entity
 	entityList        *widget.List
@@ -126,7 +137,6 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
 		sectionStatus:    newSectionStatus(u.IsMobile()),
 		sb:               kxwidget.NewSnackbar(w.Canvas()),
-		currentEntityID:  -1,
 		currentSectionID: -1,
 		signalKey:        u.Signals().UniqueKey(),
 		u:                u,
@@ -264,18 +274,18 @@ func (a *updateStatus) makeEntityList() *widget.List {
 			return
 		}
 
-		a.currentEntityID = id
+		x := a.entities[id]
+		a.currentEntity = x.key()
 		a.currentSectionID = -1
 		a.sectionList.UnselectAll()
 
-		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems())
+		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems(x))
 		if a.u.IsOffline() {
 			a.entityMoreButton.Disable()
 		} else {
 			a.entityMoreButton.Enable()
 		}
 
-		x := a.entities[id]
 		subTitle := widget.NewLabel(x.category.name())
 		subTitle.TextStyle.Bold = true
 		c := container.NewBorder(subTitle, nil, nil, nil, a.sectionList)
@@ -290,18 +300,17 @@ func (a *updateStatus) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
+func (a *updateStatus) makeEntityMenuItems(e entity) []*fyne.MenuItem {
 	action := func() {
-		c := a.entities[a.currentEntityID]
-		switch c.category {
+		switch e.category {
 		case sectionGeneral:
 			a.u.EVEUniverse().UpdateSectionsIfNeededAsync(true)
 		case sectionCharacter:
-			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(c.id, true)
+			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(e.id, true)
 		case sectionCorporation:
-			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(c.id, true)
+			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(e.id, true)
 		default:
-			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
+			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", e.category))
 		}
 		a.sb.Display("Started reloading sections")
 	}
@@ -397,10 +406,19 @@ func (a *updateStatus) makeSectionList() *widget.List {
 }
 
 func (a *updateStatus) refreshSections() {
-	if a.currentEntityID == -1 || a.currentEntityID >= len(a.entities) {
+	se := a.currentEntity
+	if se == (entityKey{}) {
 		return
 	}
-	se := a.entities[a.currentEntityID]
+	if !slices.ContainsFunc(a.entities, func(x entity) bool { return x.key() == se }) {
+		// entity was deleted
+		a.currentEntity = entityKey{}
+		a.currentSectionID = -1
+		a.entitySections = nil
+		a.sectionList.Refresh()
+		a.nav.PopAll()
+		return
+	}
 	switch se.category {
 	case sectionCharacter:
 		a.entitySections = a.u.StatusCache().ListCharacterSections(se.id)
@@ -418,8 +436,7 @@ func (a *updateStatus) refreshDetails() {
 		return
 	}
 	ss := a.entitySections[id]
-	c := a.entities[a.currentEntityID].category
-	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss, c))
+	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss, a.currentEntity.category))
 	a.sectionStatus.set(ss)
 	a.sectionStatus.Show()
 }
