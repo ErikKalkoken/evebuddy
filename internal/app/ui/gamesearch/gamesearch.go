@@ -51,8 +51,8 @@ var (
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
-	DisplaySnackbar(text string)
 	EVEImage() ui.EVEImageService
+	ErrorDisplay(err error) string
 	EVEUniverse() *eveuniverseservice.EVEUniverseService
 	InfoViewer() ui.InfoViewer
 	IsOffline() bool
@@ -95,24 +95,22 @@ type GameSearch struct {
 	recentItems         []*app.EveEntity
 	recentLoadFailed    bool
 	recentPage          *fyne.Container
-	resultCount         *widget.Label
 	results             *xwidget.Tree[searchResultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
 	spinner             *kxwidget.Spinner
+	statusLabel         *widget.Label
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
 	u                   baseUI
 	w                   fyne.Window
-	displaySnackbar     func(string)
 }
 
 func NewGameSearch(u baseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
-		displaySnackbar:     u.DisplaySnackbar,
-		resultCount:         widget.NewLabel(""),
 		spinner:             kxwidget.NewSpinner(),
+		statusLabel:         widget.NewLabel(""),
 		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
@@ -137,8 +135,8 @@ func NewGameSearch(u baseUI) *GameSearch {
 	})
 	a.strict.On = false
 
-	a.resultCount.Wrapping = fyne.TextWrapWord
-	a.resultCount.Hide()
+	a.statusLabel.Wrapping = fyne.TextWrapWord
+	a.statusLabel.Hide()
 	a.results = a.makeResults()
 
 	a.searchEntry = xwidget.NewSearchEntry(
@@ -174,7 +172,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.recent = a.makeRecentSelected()
 
 	a.resultsPage = container.NewBorder(
-		a.resultCount,
+		a.statusLabel,
 		nil,
 		nil,
 		nil,
@@ -301,9 +299,8 @@ func (a *GameSearch) clearSearch() {
 	a.clearResults()
 }
 
-func (a *GameSearch) SetWindow(w fyne.Window, displaySnackbar func(string)) {
+func (a *GameSearch) SetWindow(w fyne.Window) {
 	a.w = w
-	a.displaySnackbar = displaySnackbar
 }
 
 func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
@@ -410,7 +407,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 func (a *GameSearch) clearResults() {
 	fyne.Do(func() {
 		a.results.Clear()
-		a.resultCount.Hide()
+		a.statusLabel.Hide()
 		a.showRecent()
 	})
 }
@@ -433,7 +430,7 @@ func (a *GameSearch) startSearch(search string) {
 		a.results.Clear()
 		a.recentPage.Hide()
 		a.resultsPage.Show()
-		a.showResultCount("Select at least one category", widget.MediumImportance)
+		a.showStatus("Select at least one category", widget.MediumImportance)
 		return
 	}
 	strict := a.strict.On
@@ -452,11 +449,11 @@ func (a *GameSearch) stopSearch() {
 	a.cancelSearch = nil
 }
 
-func (a *GameSearch) showResultCount(text string, importance widget.Importance) {
-	a.resultCount.Importance = importance
-	a.resultCount.Text = text
-	a.resultCount.Refresh()
-	a.resultCount.Show()
+func (a *GameSearch) showStatus(text string, importance widget.Importance) {
+	a.statusLabel.Importance = importance
+	a.statusLabel.Text = text
+	a.statusLabel.Refresh()
+	a.statusLabel.Show()
 }
 
 // doSearch runs a search. Results of a canceled search are discarded,
@@ -467,7 +464,7 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 			return
 		}
 		a.results.Clear()
-		a.resultCount.Hide()
+		a.statusLabel.Hide()
 		a.recentPage.Hide()
 		a.resultsPage.Show()
 		a.spinner.Show()
@@ -510,7 +507,13 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 		return
 	}
 	if err != nil {
-		ui.NotifyErrorAndLog("Search failed", err, a.displaySnackbar)
+		slog.Error("Search failed", "error", err)
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			a.showStatus("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		})
 		return
 	}
 	fyne.Do(func() {
@@ -518,13 +521,13 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 			return
 		}
 		if total == maxSearchResults {
-			a.showResultCount(fmt.Sprintf(
+			a.showStatus(fmt.Sprintf(
 				"Search for \"%s\" exceeded the server limit of 500 results "+
 					"and may not contain the items you are looking for.",
 				search,
 			), widget.WarningImportance)
 		} else {
-			a.showResultCount(fmt.Sprintf("%d Results", total), widget.MediumImportance)
+			a.showStatus(fmt.Sprintf("%d Results", total), widget.MediumImportance)
 		}
 	})
 	if total == 0 {

@@ -395,8 +395,8 @@ func TestGameSearch_ChangeOptions(t *testing.T) {
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		assert.True(t, a.resultsPage.Visible())
-		assert.True(t, a.resultCount.Visible())
-		assert.Equal(t, "Select at least one category", a.resultCount.Text)
+		assert.True(t, a.statusLabel.Visible())
+		assert.Equal(t, "Select at least one category", a.statusLabel.Text)
 		assert.Empty(t, a.results.Data().Children(nil))
 		assert.False(t, a.spinner.Visible())
 	})
@@ -495,7 +495,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		wg.Wait()
 		// then
 		assert.Equal(t, []string{"alphabc"}, searches)
-		assert.Equal(t, "1 Results", a.resultCount.Text)
+		assert.Equal(t, "1 Results", a.statusLabel.Text)
 	})
 	t.Run("shows entity found in several categories in each of them", func(t *testing.T) {
 		// given
@@ -543,9 +543,9 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.True(t, a.resultsPage.Visible())
 		assert.False(t, a.recentPage.Visible())
 		assert.False(t, a.spinner.Visible())
-		assert.True(t, a.resultCount.Visible())
-		assert.Equal(t, "2 Results", a.resultCount.Text)
-		assert.Equal(t, widget.MediumImportance, a.resultCount.Importance)
+		assert.True(t, a.statusLabel.Visible())
+		assert.Equal(t, "2 Results", a.statusLabel.Text)
+		assert.Equal(t, widget.MediumImportance, a.statusLabel.Importance)
 		td := a.results.Data()
 		categories := td.Children(nil)
 		require.Len(t, categories, 1)
@@ -574,7 +574,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// when
 		a.startSearch("alpha")
 		// then
-		assert.Equal(t, "2 Results", a.resultCount.Text)
+		assert.Equal(t, "2 Results", a.statusLabel.Text)
 		categories := a.results.Data().Children(nil)
 		got := xslices.Map(categories, func(n *searchResultNode) string {
 			return n.String()
@@ -603,8 +603,8 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// when
 		a.startSearch("alpha")
 		// then
-		assert.Equal(t, widget.WarningImportance, a.resultCount.Importance)
-		assert.Contains(t, a.resultCount.Text, "exceeded the server limit of 500 results")
+		assert.Equal(t, widget.WarningImportance, a.statusLabel.Importance)
+		assert.Contains(t, a.statusLabel.Text, "exceeded the server limit of 500 results")
 	})
 	t.Run("shows no results", func(t *testing.T) {
 		// given
@@ -620,7 +620,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		a.startSearch("alpha")
 		// then
 		assert.True(t, a.resultsPage.Visible())
-		assert.Equal(t, "0 Results", a.resultCount.Text)
+		assert.Equal(t, "0 Results", a.statusLabel.Text)
 		assert.True(t, a.results.Data().IsEmpty())
 	})
 	t.Run("searches with selected categories and strict option", func(t *testing.T) {
@@ -648,18 +648,12 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.Equal(t, "true", q.Get("strict"))
 		assert.Equal(t, "alpha", q.Get("search"))
 	})
-	t.Run("reports error when search fails", func(t *testing.T) {
+	t.Run("shows error when search fails", func(t *testing.T) {
 		// given
 		httpmock.Reset()
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		var snackbar string
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                 test.NewTempApp(t),
-			DisplaySnackbarFunc: func(s string) { snackbar = s },
-			IsOnline:            true,
-			Storage:             st,
-		})
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(500, "internal error"))
@@ -667,9 +661,11 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// when
 		a.startSearch("alpha")
 		// then
-		assert.Equal(t, "Search failed", snackbar)
+		assert.True(t, a.resultsPage.Visible())
 		assert.False(t, a.spinner.Visible())
-		assert.False(t, a.resultCount.Visible())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Contains(t, a.statusLabel.Text, "ERROR")
+		assert.Equal(t, widget.DangerImportance, a.statusLabel.Importance)
 	})
 	t.Run("shows info dialog on window set later", func(t *testing.T) {
 		// given
@@ -682,52 +678,19 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		mainWindow := a.w
 		w := fakeApp.NewWindow("Search")
 		t.Cleanup(w.Close)
-		a.SetWindow(w, func(string) {})
+		a.SetWindow(w)
 		// when
 		a.startSearch("alpha")
 		// then
 		assert.NotNil(t, w.Canvas().Overlays().Top())
 		assert.Nil(t, mainWindow.Canvas().Overlays().Top())
 	})
-	t.Run("reports error to snackbar set later", func(t *testing.T) {
-		// given
-		httpmock.Reset()
-		db, st, factory := testutil.NewDBOnDisk(t)
-		t.Cleanup(func() { db.Close() })
-		var mainSnackbar string
-		fakeApp := test.NewTempApp(t)
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                 fakeApp,
-			DisplaySnackbarFunc: func(s string) { mainSnackbar = s },
-			IsOnline:            true,
-			Storage:             st,
-		})
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(500, "internal error"))
-		a := NewGameSearch(u)
-		w := fakeApp.NewWindow("Search")
-		t.Cleanup(w.Close)
-		var snackbar string
-		a.SetWindow(w, func(s string) { snackbar = s })
-		// when
-		a.startSearch("alpha")
-		// then
-		assert.Equal(t, "Search failed", snackbar)
-		assert.Empty(t, mainSnackbar)
-	})
 	t.Run("cancels running search when a new one starts", func(t *testing.T) {
 		// given
 		httpmock.Reset()
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		var snackbar string
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                 test.NewTempApp(t),
-			DisplaySnackbarFunc: func(s string) { snackbar = s },
-			IsOnline:            true,
-			Storage:             st,
-		})
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
@@ -751,12 +714,11 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		a.startSearch("alphab")
 		wg.Wait()
 		// then
-		assert.Equal(t, "2 Results", a.resultCount.Text)
+		assert.Equal(t, "2 Results", a.statusLabel.Text)
 		categories := a.results.Data().Children(nil)
 		require.Len(t, categories, 1)
 		assert.Equal(t, "Character (2)", categories[0].String())
 		assert.False(t, a.spinner.Visible())
-		assert.Empty(t, snackbar)
 	})
 	t.Run("keeps spinner shown when a new search starts", func(t *testing.T) {
 		// given
@@ -790,13 +752,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		httpmock.Reset()
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		var snackbar string
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                 test.NewTempApp(t),
-			DisplaySnackbarFunc: func(s string) { snackbar = s },
-			IsOnline:            true,
-			Storage:             st,
-		})
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		started := make(chan struct{})
@@ -815,11 +771,10 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		a.Reset()
 		wg.Wait()
 		// then
-		assert.False(t, a.resultCount.Visible())
+		assert.False(t, a.statusLabel.Visible())
 		assert.True(t, a.recentPage.Visible())
 		assert.False(t, a.resultsPage.Visible())
 		assert.False(t, a.spinner.Visible())
-		assert.Empty(t, snackbar)
 	})
 }
 
@@ -963,7 +918,7 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		assert.True(t, a.resultsPage.Visible())
-		assert.Equal(t, "1 Results", a.resultCount.Text)
+		assert.Equal(t, "1 Results", a.statusLabel.Text)
 	})
 	t.Run("does not search when entering less than 3 characters", func(t *testing.T) {
 		// given
@@ -999,7 +954,7 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		// then
 		assert.True(t, a.recentPage.Visible())
 		assert.False(t, a.resultsPage.Visible())
-		assert.False(t, a.resultCount.Visible())
+		assert.False(t, a.statusLabel.Visible())
 		assert.Empty(t, a.results.Data().Children(nil))
 	})
 	t.Run("cancels pending search when text gets too short", func(t *testing.T) {
@@ -1055,7 +1010,7 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		// then
 		assert.True(t, a.recentPage.Visible())
 		assert.False(t, a.resultsPage.Visible())
-		assert.False(t, a.resultCount.Visible())
+		assert.False(t, a.statusLabel.Visible())
 		assert.True(t, a.results.Data().IsEmpty())
 	})
 	t.Run("can reset", func(t *testing.T) {
