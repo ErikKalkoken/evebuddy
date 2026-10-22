@@ -274,3 +274,25 @@ func TestNavRail_CanRenderRail(t *testing.T) {
 	// then
 	test.AssertImageMatches(t, "navrail/rail.png", w.Canvas().Capture())
 }
+
+func TestNavRail_CanRenderIconOnlyRail(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	// given
+	a := xwidget.NewNavRailItem(theme.HomeIcon(), "", widget.NewLabel("Home"))
+	b := xwidget.NewNavRailItem(theme.MailComposeIcon(), "", widget.NewLabel("Mail"))
+	c := xwidget.NewNavRailItem(theme.DocumentIcon(), "", widget.NewLabel("Documents"))
+	s := xwidget.NewNavRailItem(theme.SettingsIcon(), "", widget.NewLabel("Settings"))
+	nr := xwidget.NewNavRail([]*xwidget.NavRailItem{a, b, c}, s)
+	w := test.NewWindow(nr)
+	defer w.Close()
+	w.Resize(fyne.NewSize(500, 500))
+
+	// when
+	nr.Select(b)
+	nr.DisableItem(c)
+
+	// then
+	test.AssertImageMatches(t, "navrail/rail_icon_only.png", w.Canvas().Capture())
+}

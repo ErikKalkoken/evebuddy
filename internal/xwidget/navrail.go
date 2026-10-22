@@ -21,7 +21,7 @@ const (
 	navRailLabelPaddings   = 2   // × theme padding, left and right
 )
 
-// railDestination is a tappable icon with a label in a [NavRail].
+// railDestination is a tappable icon with an optional label in a [NavRail].
 type railDestination struct {
 	widget.DisableableWidget
 	ttwidget.ToolTipWidgetExtend
@@ -98,6 +98,7 @@ func (w *railDestination) Refresh() {
 }
 
 func (w *railDestination) Tapped(_ *fyne.PointEvent) {
+	w.ToolTipWidgetExtend.MouseOut() // so it doesn't show next to an opened menu or window
 	if w.Disabled() || w.onTapped == nil {
 		return
 	}
@@ -131,17 +132,22 @@ func (w *railDestination) CreateRenderer() fyne.WidgetRenderer {
 	p := w.Theme().Size(theme.SizeNamePadding)
 	p1 := navRailIconPaddings * p
 	p2 := navRailLabelPaddings * p
+	labelPadded := container.New(layout.NewCustomPaddedLayout(-p, p2, p2, p2), w.label) // keeps long labels off the separator; bottom matches the space above the icon
+	if w.label.Text == "" {
+		labelPadded.Hide()
+	}
 	c := container.NewStack(
 		w.hover, // covers the whole destination, so it touches the indicator
 		container.New(layout.NewCustomPaddedVBoxLayout(0),
 			container.New(layout.NewCustomPaddedLayout(p1, p1, p1, p1), container.NewCenter(w.icon)),
-			container.New(layout.NewCustomPaddedLayout(-p, p2, p2, p2), w.label), // keeps long labels off the separator; bottom matches the space above the icon
+			labelPadded,
 		),
 	)
 	return widget.NewSimpleRenderer(c)
 }
 
 // NavRailItem is a destination in a [NavRail].
+// An item with an empty label shows only its icon.
 type NavRailItem struct {
 	// OnSelected is an optional callback that fires when this item is selected.
 	OnSelected func()
@@ -192,7 +198,8 @@ func (it *NavRailItem) isAction() bool {
 }
 
 // NavRail lets people switch between the top-level views of an app on desktop.
-// It shows a vertical strip of labeled icons with leading items at the top and trailing items at the bottom.
+// It shows a vertical strip of icons with optional labels.
+// Leading items are at the top, trailing items at the bottom.
 // While no non-action item is enabled, it shows an optional placeholder instead of any content.
 type NavRail struct {
 	widget.BaseWidget

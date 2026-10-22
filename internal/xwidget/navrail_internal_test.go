@@ -361,3 +361,22 @@ func TestNavRail_Hover(t *testing.T) {
 		assert.Equal(t, desktop.DefaultCursor, b.dest.Cursor())
 	})
 }
+
+func TestNavRail_ItemWithoutLabelShowsOnlyIcon(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+
+	// given
+	a := NewNavRailItem(theme.HomeIcon(), "A", widget.NewLabel("A"))
+	b := NewNavRailItem(theme.HomeIcon(), "", widget.NewLabel("B"))
+
+	// when
+	nr := NewNavRail([]*NavRailItem{a, b})
+	w := test.NewWindow(nr)
+	defer w.Close()
+
+	// then
+	got := b.dest.MinSize()
+	assert.Less(t, got.Height, a.dest.MinSize().Height)
+	assert.Equal(t, got.Width, got.Height)
+}
