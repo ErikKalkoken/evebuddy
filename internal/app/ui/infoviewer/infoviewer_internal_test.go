@@ -345,6 +345,45 @@ func TestInfoViewer_show(t *testing.T) {
 		assert.Nil(t, iw.nav)
 		assert.NotNil(t, u.MainWindow().Canvas().Overlays().Top())
 	})
+	t.Run("should show information again for same unknown location", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			Go:       func(_ func(context.Context)) {},
+			IsOnline: true,
+			Storage:  st,
+		})
+		iw := New(u)
+		iw.ShowLocation(app.UnknownLocationID)
+		overlays := u.MainWindow().Canvas().Overlays()
+		require.NotNil(t, overlays.Top())
+		overlays.Remove(overlays.Top())
+		// when
+		iw.ShowLocation(app.UnknownLocationID)
+		// then
+		assert.NotNil(t, u.MainWindow().Canvas().Overlays().Top())
+	})
+	t.Run("should not push page again for same solar system location", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		var jobs []func(context.Context)
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			Go:       func(job func(context.Context)) { jobs = append(jobs, job) },
+			IsOnline: true,
+			Storage:  st,
+		})
+		iw := New(u)
+		iw.ShowLocation(30_000_142)
+		// when
+		iw.ShowLocation(30_000_142)
+		// then
+		assert.True(t, iw.nav.IsRoot())
+		assert.Len(t, jobs, 1)
+	})
 	t.Run("should show information when offline", func(t *testing.T) {
 		// given
 		db, st, _ := testutil.NewDBOnDisk(t)

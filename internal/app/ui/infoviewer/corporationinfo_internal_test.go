@@ -114,8 +114,10 @@ func TestCorporationInfo_update(t *testing.T) {
 			Storage:  st,
 		})
 		alliance := factory.CreateEveEntityAlliance()
+		station := factory.CreateEveEntity(app.EveEntity{ID: 60_000_001, Category: app.EveEntityStation})
 		c := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{
-			AllianceID: optional.New(alliance.ID),
+			AllianceID:    optional.New(alliance.ID),
+			HomeStationID: station.ID,
 		})
 		iw := New(u)
 		a := newCorporationInfo(iw, c.ID)
@@ -128,7 +130,7 @@ func TestCorporationInfo_update(t *testing.T) {
 		// when
 		a.hq.OnTapped()
 		// then
-		assert.Equal(t, &showParams{variant: Location, entityID: c.HomeStation.MustValue().ID}, iw.current)
+		assert.Equal(t, &showParams{variant: Location, entityID: station.ID}, iw.current)
 	})
 }
 

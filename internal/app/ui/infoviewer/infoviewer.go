@@ -283,6 +283,20 @@ func (iw *InfoViewer) show2(arg showParams) {
 		return
 	}
 
+	if arg.variant == Location {
+		switch app.LocationVariantFromID(arg.entityID) {
+		case app.EveLocationSolarSystem:
+			arg.variant = SolarSystem
+		case app.EveLocationUnknown:
+			ui.ShowInformation(
+				"Unknown location",
+				"Can't show info window for an unknown location",
+				parentW,
+			)
+			return
+		}
+	}
+
 	// don't spawn another window if it is already shown.
 	if iw.current != nil && iw.w != nil {
 		if *iw.current == arg {
@@ -298,20 +312,6 @@ func (iw *InfoViewer) show2(arg showParams) {
 			return s
 		}
 		return s + ": Information"
-	}
-
-	if arg.variant == Location {
-		switch app.LocationVariantFromID(arg.entityID) {
-		case app.EveLocationSolarSystem:
-			arg.variant = SolarSystem
-		case app.EveLocationUnknown:
-			ui.ShowInformation(
-				"Unknown location",
-				"Can't show info window for an unknown location",
-				parentW,
-			)
-			return
-		}
 	}
 
 	var title string
