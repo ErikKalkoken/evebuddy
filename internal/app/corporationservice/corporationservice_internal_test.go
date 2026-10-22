@@ -16,6 +16,8 @@ import (
 
 type StatusCacheStub struct{}
 
+func (c *StatusCacheStub) DeleteCorporation(_ int64) {}
+
 func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
 }
 

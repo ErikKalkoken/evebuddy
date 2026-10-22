@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -26,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -65,8 +68,14 @@ func Show(s baseUI) {
 		}
 	})
 	w.Show()
-	go a.update(ctx)
+	runAsync(func() {
+		a.update(ctx)
+	})
 }
+
+// runAsync runs f in a new goroutine.
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
 
 type sectionCategory uint
 
@@ -97,15 +106,26 @@ type entity struct {
 	ss       app.StatusSummary
 }
 
+// entityKey identifies an entity. The zero value means no entity.
+type entityKey struct {
+	category sectionCategory
+	id       int64
+}
+
+func (e entity) key() entityKey {
+	return entityKey{category: e.category, id: e.id}
+}
+
 type updateStatus struct {
 	widget.BaseWidget
 
-	currentEntityID   int
+	currentEntity     entityKey
 	currentSectionID  int
 	entities          []entity
 	entityList        *widget.List
 	entityMoreButton  *xwidget.ContextMenuButton
 	entitySections    []app.CacheSectionStatus
+	moreButton        *xwidget.ContextMenuButton
 	nav               *xwidget.Navigator
 	sb                *kxwidget.Snackbar
 	sectionList       *widget.List
@@ -113,13 +133,13 @@ type updateStatus struct {
 	sectionStatus     *sectionStatus
 	signalKey         string
 	u                 baseUI
+	updateRun         xsync.LatestRun
 }
 
 func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a := &updateStatus{
 		sectionStatus:    newSectionStatus(u.IsMobile()),
 		sb:               kxwidget.NewSnackbar(w.Canvas()),
-		currentEntityID:  -1,
 		currentSectionID: -1,
 		signalKey:        u.Signals().UniqueKey(),
 		u:                u,
@@ -190,13 +210,20 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		)
 	}
 	menu := fyne.NewMenu("", items...)
-	moreButton := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
+	a.moreButton = xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
 	if a.u.IsOffline() {
-		moreButton.Disable()
+		a.moreButton.Disable()
 	}
-	ab := xwidget.NewAppBar("Update status", a.entityList, moreButton)
+	ab := xwidget.NewAppBar("Update status", a.entityList, a.moreButton)
 	ab.HideBackground = !a.u.IsMobile()
 	a.nav = xwidget.NewNavigator(ab)
+	a.nav.OnPop = func(_ fyne.CanvasObject) {
+		a.currentSectionID = -1
+		if a.nav.IsRoot() {
+			a.currentEntity = entityKey{}
+			a.entitySections = nil
+		}
+	}
 
 	// Signals
 	a.sb.Start()
@@ -209,6 +236,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
+	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
+		a.update(ctx)
+	}, a.signalKey)
 	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
 		a.update(ctx)
 	}, a.signalKey)
@@ -219,10 +249,12 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 }
 
 func (a *updateStatus) stop() {
+	a.updateRun.Discard()
 	a.sb.Stop()
 	a.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterSectionUpdated.RemoveListener(a.signalKey)
+	a.u.Signals().CorporationsChanged.RemoveListener(a.signalKey)
 	a.u.Signals().CorporationSectionUpdated.RemoveListener(a.signalKey)
 	a.u.Signals().EveUniverseSectionUpdated.RemoveListener(a.signalKey)
 }
@@ -257,18 +289,16 @@ func (a *updateStatus) makeEntityList() *widget.List {
 			return
 		}
 
-		a.currentEntityID = id
-		a.currentSectionID = -1
-		a.sectionList.UnselectAll()
+		x := a.entities[id]
+		a.currentEntity = x.key()
 
-		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems())
+		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems(x))
 		if a.u.IsOffline() {
 			a.entityMoreButton.Disable()
 		} else {
 			a.entityMoreButton.Enable()
 		}
 
-		x := a.entities[id]
 		subTitle := widget.NewLabel(x.category.name())
 		subTitle.TextStyle.Bold = true
 		c := container.NewBorder(subTitle, nil, nil, nil, a.sectionList)
@@ -283,18 +313,17 @@ func (a *updateStatus) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
+func (a *updateStatus) makeEntityMenuItems(e entity) []*fyne.MenuItem {
 	action := func() {
-		c := a.entities[a.currentEntityID]
-		switch c.category {
+		switch e.category {
 		case sectionGeneral:
 			a.u.EVEUniverse().UpdateSectionsIfNeededAsync(true)
 		case sectionCharacter:
-			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(c.id, true)
+			a.u.Character().UpdateCharacterAndRefreshIfNeededAsync(e.id, true)
 		case sectionCorporation:
-			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(c.id, true)
+			a.u.Corporation().UpdateCorporationAndRefreshIfNeededAsync(e.id, true)
 		default:
-			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", c.category))
+			panic(fmt.Sprintf("makeUpdateAllAction: Undefined category: %v", e.category))
 		}
 		a.sb.Display("Started reloading sections")
 	}
@@ -303,13 +332,26 @@ func (a *updateStatus) makeEntityMenuItems() []*fyne.MenuItem {
 }
 
 func (a *updateStatus) update(ctx context.Context) {
+	isLatest := a.updateRun.Start()
 	entities := a.updateEntityList(ctx)
 	fyne.Do(func() {
-		a.entities = entities
-		a.entityList.Refresh()
-		a.refreshSections()
-		a.refreshDetails()
+		a.applyEntities(isLatest, entities)
 	})
+}
+
+func (a *updateStatus) applyEntities(isLatest func() bool, entities []entity) {
+	if !isLatest() {
+		return
+	}
+	a.entities = entities
+	a.entityList.Refresh()
+	se := a.currentEntity
+	if se != (entityKey{}) && !slices.ContainsFunc(entities, func(x entity) bool { return x.key() == se }) {
+		a.nav.PopAll() // entity was deleted; OnPop clears the selection
+		return
+	}
+	a.refreshSections()
+	a.refreshDetails()
 }
 
 func (a *updateStatus) updateEntityList(_ context.Context) []entity {
@@ -390,10 +432,10 @@ func (a *updateStatus) makeSectionList() *widget.List {
 }
 
 func (a *updateStatus) refreshSections() {
-	if a.currentEntityID == -1 || a.currentEntityID >= len(a.entities) {
+	se := a.currentEntity
+	if se == (entityKey{}) {
 		return
 	}
-	se := a.entities[a.currentEntityID]
 	switch se.category {
 	case sectionCharacter:
 		a.entitySections = a.u.StatusCache().ListCharacterSections(se.id)
@@ -411,8 +453,7 @@ func (a *updateStatus) refreshDetails() {
 		return
 	}
 	ss := a.entitySections[id]
-	c := a.entities[a.currentEntityID].category
-	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss, c))
+	a.sectionMoreButton.SetMenuItems(a.makeSectionMenuItems(ss, a.currentEntity.category))
 	a.sectionStatus.set(ss)
 	a.sectionStatus.Show()
 }
@@ -443,17 +484,19 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 		item1.Disabled = true
 	}
 	items = append(items, item1)
+	issue, _ := sectionIssue(ss)
 	item2 := fyne.NewMenuItem("Copy issue to clipboard", func() {
 		s := fmt.Sprintf(
 			"%s [%d] / %s: %s",
 			ss.EntityName,
 			ss.EntityID,
 			ss.SectionName,
-			ss.ErrorMessage,
+			issue,
 		)
 		fyne.CurrentApp().Clipboard().SetContent(s)
 		a.sb.Display("Issue copied to clipboard")
 	})
+	item2.Disabled = issue == ""
 	items = append(items, item2)
 	return items
 }
@@ -650,14 +693,8 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 	w.status.Text, w.status.Importance = ss.Display()
 	w.status.Refresh()
 
-	var issue string
-	var issueImportance widget.Importance
-	if ss.ErrorMessage != "" {
-		issue = ss.ErrorMessage
-		issueImportance = widget.DangerImportance
-	} else if ss.Comment != "" {
-		issue = ss.Comment
-	} else {
+	issue, issueImportance := sectionIssue(ss)
+	if issue == "" {
 		issue = "-"
 	}
 	w.issue.Text, w.issue.Importance = issue, issueImportance
@@ -666,6 +703,20 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 	w.completedAt.SetText(ihumanize.TimeWithFallback(ss.CompletedAt, "?"))
 	w.startedAt.SetText(ihumanize.TimeWithFallback(ss.StartedAt, "-"))
 	now := time.Now()
-	w.timeout.SetText(humanize.RelTime(now.Add(ss.Timeout), now, "", ""))
-	w.nextUpdate.SetText(humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "", ""))
+	w.timeout.SetText(strings.TrimSpace(humanize.RelTime(now, now.Add(ss.Timeout), "", "")))
+	var nextUpdate string
+	if ss.CompletedAt.IsZero() {
+		nextUpdate = "?"
+	} else {
+		nextUpdate = humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "from now", "ago")
+	}
+	w.nextUpdate.SetText(nextUpdate)
+}
+
+// sectionIssue returns the error of a section, else its comment, else an empty string.
+func sectionIssue(ss app.CacheSectionStatus) (string, widget.Importance) {
+	if ss.ErrorMessage != "" {
+		return ss.ErrorMessage, widget.DangerImportance
+	}
+	return ss.Comment, widget.MediumImportance
 }

@@ -218,6 +218,7 @@ type UIFake struct {
 	cs                   *characterservice.CharacterService
 	dataPaths            xmaps.OrderedMap[string, string]
 	rs                   *corporationservice.CorporationService
+	sc                   *statuscache.StatusCache
 	eis                  ui.EVEImageService
 	eus                  *eveuniverseservice.EVEUniverseService
 	goFunc               func(job func(ctx context.Context))
@@ -251,6 +252,7 @@ type UIParams struct {
 	ResetCorporationFunc func(ctx context.Context)
 	SetColorThemeFunc    func(s settings.ColorTheme)
 	Signals              *app.Signals
+	StatusCache          *statuscache.StatusCache // defaults to an empty cache
 	Storage              *storage.Storage
 	ShowCharacterFunc    func(ctx context.Context, characterID int64)
 	ShowCorporationFunc  func(ctx context.Context, corporationID int64)
@@ -271,6 +273,9 @@ func NewUIFake(args ...UIParams) *UIFake {
 	}
 	if arg.Signals == nil {
 		arg.Signals = newSignalsSync()
+	}
+	if arg.StatusCache == nil {
+		arg.StatusCache = new(statuscache.StatusCache)
 	}
 	if arg.Settings == nil {
 		s, err := settings.New(arg.Storage)
@@ -321,6 +326,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		resetCharacterFunc:   arg.ResetCharacterFunc,
 		resetCorporationFunc: arg.ResetCorporationFunc,
 		rs:                   rs,
+		sc:                   arg.StatusCache,
 		setColorThemeFunc:    arg.SetColorThemeFunc,
 		showCharacterFunc:    arg.ShowCharacterFunc,
 		showCorporationFunc:  arg.ShowCorporationFunc,
@@ -498,6 +504,10 @@ func (u *UIFake) SetCharacterAvatarAsync(characterID int64, setIcon func(fyne.Re
 
 func (u *UIFake) Signals() *app.Signals {
 	return u.signals
+}
+
+func (u *UIFake) StatusCache() *statuscache.StatusCache {
+	return u.sc
 }
 
 func (u *UIFake) UpdateMailIndicator(ctx context.Context) {}
