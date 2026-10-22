@@ -228,7 +228,9 @@ func (a *characterInfo) update(ctx context.Context) error {
 	}
 	isOwned := characterIDs.Contains(a.id)
 	if isOwned {
-		a.ownedIcon.Show()
+		fyne.Do(func() {
+			a.ownedIcon.Show()
+		})
 	}
 
 	attributes, err := a.makeAttributes(ctx, o, isOwned)
@@ -289,12 +291,6 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 		c, err := a.iw.u.Character().GetCharacter(ctx, a.id)
 		if err != nil {
 			return nil, err
-		}
-		if v, ok := c.HomeLocationID.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Home", v))
-		}
-		if v, ok := c.LocationID.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Location", v))
 		}
 		if v, ok := c.LastLoginAt.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Last Login", v))
