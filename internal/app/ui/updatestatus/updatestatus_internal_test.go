@@ -662,6 +662,38 @@ func TestUpdateStatus_MakeSectionMenuItems(t *testing.T) {
 		got := fyne.CurrentApp().Clipboard().Content()
 		assert.Equal(t, "Bruce Wayne [42] / Assets: failed", got)
 	})
+	t.Run("copies comment to clipboard when there is no error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		a.stop()
+		a.sb = kxwidget.NewSnackbar(w.Canvas()) // not started, so messages don't render concurrently
+		items := a.makeSectionMenuItems(app.CacheSectionStatus{
+			Comment:     "skipped",
+			EntityID:    42,
+			EntityName:  "Bruce Wayne",
+			SectionName: "Assets",
+		}, sectionCharacter)
+		// when
+		items[1].Action()
+		// then
+		got := fyne.CurrentApp().Clipboard().Content()
+		assert.Equal(t, "Bruce Wayne [42] / Assets: skipped", got)
+	})
+	t.Run("disables copy when there is no issue", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		// when
+		items := a.makeSectionMenuItems(app.CacheSectionStatus{SectionName: "Assets"}, sectionCharacter)
+		// then
+		assert.True(t, items[1].Disabled)
+	})
 }
 
 func TestEntityItem(t *testing.T) {

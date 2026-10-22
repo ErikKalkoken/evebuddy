@@ -467,17 +467,19 @@ func (a *updateStatus) makeSectionMenuItems(ss app.CacheSectionStatus, c section
 		item1.Disabled = true
 	}
 	items = append(items, item1)
+	issue, _ := sectionIssue(ss)
 	item2 := fyne.NewMenuItem("Copy issue to clipboard", func() {
 		s := fmt.Sprintf(
 			"%s [%d] / %s: %s",
 			ss.EntityName,
 			ss.EntityID,
 			ss.SectionName,
-			ss.ErrorMessage,
+			issue,
 		)
 		fyne.CurrentApp().Clipboard().SetContent(s)
 		a.sb.Display("Issue copied to clipboard")
 	})
+	item2.Disabled = issue == ""
 	items = append(items, item2)
 	return items
 }
@@ -674,14 +676,8 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 	w.status.Text, w.status.Importance = ss.Display()
 	w.status.Refresh()
 
-	var issue string
-	var issueImportance widget.Importance
-	if ss.ErrorMessage != "" {
-		issue = ss.ErrorMessage
-		issueImportance = widget.DangerImportance
-	} else if ss.Comment != "" {
-		issue = ss.Comment
-	} else {
+	issue, issueImportance := sectionIssue(ss)
+	if issue == "" {
 		issue = "-"
 	}
 	w.issue.Text, w.issue.Importance = issue, issueImportance
@@ -697,4 +693,12 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 		nextUpdate = humanize.RelTime(time.Now(), ss.CompletedAt.Add(ss.Timeout), "from now", "ago")
 	}
 	w.nextUpdate.SetText(nextUpdate)
+}
+
+// sectionIssue returns the error of a section, else its comment, else an empty string.
+func sectionIssue(ss app.CacheSectionStatus) (string, widget.Importance) {
+	if ss.ErrorMessage != "" {
+		return ss.ErrorMessage, widget.DangerImportance
+	}
+	return ss.Comment, widget.MediumImportance
 }
