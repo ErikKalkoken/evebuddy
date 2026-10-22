@@ -123,6 +123,27 @@ func TestInventoryTypeInfo_calcAttributesData(t *testing.T) {
 		// then
 		assert.Equal(t, []string{"Structure Hitpoints: 300 HP"}, rowTexts(got))
 	})
+	t.Run("should show electronic resistance of zero", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		a := newInventoryTypeInfo(New(u), 42, 0)
+		attributes := map[int64]*app.EveTypeDogmaAttribute{
+			app.EveDogmaAttributeStasisWebifierResistance: {
+				DogmaAttribute: &app.EveDogmaAttribute{
+					ID:          app.EveDogmaAttributeStasisWebifierResistance,
+					DisplayName: optional.New("Stasis Webifier Resistance"),
+					Unit:        app.EveUnitAbsolutePercent,
+				},
+				Value: 0,
+			},
+		}
+		// when
+		got := a.calcAttributesData(t.Context(), &app.EveType{ID: 42}, attributes)
+		// then
+		assert.Equal(t, []string{"Stasis Webifier Resistance: 0%"}, rowTexts(got))
+	})
 	t.Run("should show drone attributes when type has drone capacity", func(t *testing.T) {
 		// given
 		db, st, _ := testutil.NewDBOnDisk(t)

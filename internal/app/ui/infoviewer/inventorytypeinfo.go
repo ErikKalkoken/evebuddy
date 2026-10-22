@@ -449,13 +449,6 @@ func (a *inventoryTypeInfo) calcAttributesData(ctx context.Context, et *app.EveT
 			if !ok {
 				continue
 			}
-			if ag == attributeGroupElectronicResistances {
-				s := attributeGroupsMap[ag]
-				found := slices.Index(s, o.DogmaAttribute.ID) == -1
-				if found && o.Value == 0 {
-					continue
-				}
-			}
 			switch o.DogmaAttribute.ID {
 			case app.EveDogmaAttributeCapacity, app.EveDogmaAttributeMass:
 				if o.Value == 0 {
