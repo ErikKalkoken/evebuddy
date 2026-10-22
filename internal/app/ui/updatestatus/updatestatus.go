@@ -249,6 +249,7 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 }
 
 func (a *updateStatus) stop() {
+	a.updateRun.Discard()
 	a.sb.Stop()
 	a.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
@@ -290,8 +291,6 @@ func (a *updateStatus) makeEntityList() *widget.List {
 
 		x := a.entities[id]
 		a.currentEntity = x.key()
-		a.currentSectionID = -1
-		a.sectionList.UnselectAll()
 
 		a.entityMoreButton.SetMenuItems(a.makeEntityMenuItems(x))
 		if a.u.IsOffline() {

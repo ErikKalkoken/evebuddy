@@ -212,6 +212,18 @@ func TestUpdateStatus_ApplyEntities(t *testing.T) {
 		// then
 		assert.Len(t, a.entities, 4)
 	})
+	t.Run("stop marks running updates as outdated", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		isLatest := a.updateRun.Start()
+		// when
+		a.stop()
+		// then
+		assert.False(t, isLatest())
+	})
 }
 
 func TestUpdateStatus_Navigation(t *testing.T) {
