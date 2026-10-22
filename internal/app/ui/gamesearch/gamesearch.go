@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -35,6 +36,7 @@ const (
 var (
 	runAsync          = func(f func()) { go f() }
 	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
+	searchDelay       = 300 * time.Millisecond // so typing triggers only one search
 )
 
 type baseUI interface {
@@ -419,16 +421,6 @@ func (a *GameSearch) stopSearch() {
 // doSearch runs a search. Results of a canceled search are discarded,
 // so a slow search can't overwrite the results of a newer one.
 func (a *GameSearch) doSearch(ctx context.Context, search string, categories []app.SearchCategory, strict bool) {
-	if a.u.IsOffline() {
-		fyne.Do(func() {
-			ui.ShowInformation(
-				"Offline",
-				"Can't search when offline",
-				a.w,
-			)
-		})
-		return
-	}
 	if search == "" {
 		a.clearResults()
 		return
@@ -453,6 +445,25 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 			a.indicator.Hide()
 		})
 	}()
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(searchDelay):
+	}
+	if a.u.IsOffline() {
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			a.showRecent()
+			ui.ShowInformation(
+				"Offline",
+				"Can't search when offline",
+				a.w,
+			)
+		})
+		return
+	}
 	results, total, err := a.u.Character().SearchESI(
 		ctx,
 		search,
