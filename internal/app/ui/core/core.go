@@ -596,6 +596,7 @@ func (u *baseUI) ShowAndRun() {
 	slog.Info("Shutting down app")
 	u.settings.Flush() // persist settings before anything can hang
 	u.snackbar.Stop()
+	u.gameSearch.Stop()
 	u.signals.BeginShutdown()
 	// Stop in parallel so shutdown is faster and all update contexts are canceled at once.
 	var wg sync.WaitGroup

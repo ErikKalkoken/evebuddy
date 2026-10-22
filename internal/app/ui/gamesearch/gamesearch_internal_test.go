@@ -796,6 +796,36 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// then
 		assert.True(t, a.spinner.Visible())
 	})
+	t.Run("stops running search", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		e := factory.CreateEveEntityCharacter()
+		started, canceled := make(chan struct{}), make(chan struct{})
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			close(started)
+			<-r.Context().Done()
+			close(canceled)
+			return httpmock.NewJsonResponse(200, map[string][]int64{"character": {e.ID}})
+		})
+		var wg sync.WaitGroup
+		runAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		a := NewGameSearch(u)
+		a.startSearch("alpha")
+		<-started
+		// when
+		a.Stop()
+		wg.Wait()
+		// then
+		<-canceled
+		assert.False(t, a.statusLabel.Visible())
+		assert.Empty(t, a.results.Data().Children(nil))
+	})
 	t.Run("cancels running search on reset", func(t *testing.T) {
 		// given
 		httpmock.Reset()

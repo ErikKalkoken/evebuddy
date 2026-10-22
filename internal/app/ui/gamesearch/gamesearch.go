@@ -301,6 +301,11 @@ func (a *GameSearch) clearSearch() {
 	a.clearResults()
 }
 
+// Stop cancels a running search. Used at shutdown.
+func (a *GameSearch) Stop() {
+	a.stopSearch()
+}
+
 func (a *GameSearch) SetWindow(w fyne.Window) {
 	a.w = w
 }
