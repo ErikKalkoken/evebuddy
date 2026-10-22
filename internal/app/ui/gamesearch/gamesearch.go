@@ -238,7 +238,6 @@ func (a *GameSearch) init(ctx context.Context) {
 func (a *GameSearch) resetOptions() {
 	a.categories.SetSelected(a.defaultCategories)
 	a.strict.SetOn(false)
-	a.updateSearchOptionsTitle()
 }
 
 func (a *GameSearch) updateSearchOptionsTitle() {
@@ -289,7 +288,7 @@ func (a *GameSearch) Focus() {
 }
 
 func (a *GameSearch) Reset() {
-	a.searchEntry.SetText("")
+	a.searchEntry.ClearSilent()
 	a.clearSearch()
 }
 
@@ -298,7 +297,9 @@ func (a *GameSearch) clearSearch() {
 	a.stopSearch()
 	a.spinner.Stop()
 	a.spinner.Hide()
-	a.clearResults()
+	a.results.Clear()
+	a.statusLabel.Hide()
+	a.showRecent()
 }
 
 // Stop cancels a running search. Used at shutdown.
@@ -411,17 +412,16 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 	return l
 }
 
-func (a *GameSearch) clearResults() {
-	fyne.Do(func() {
-		a.results.Clear()
-		a.statusLabel.Hide()
-		a.showRecent()
-	})
-}
-
 func (a *GameSearch) showRecent() {
 	a.resultsPage.Hide()
 	a.recentPage.Show()
+}
+
+// showResultsPage shows the results page. Call it after showing its content.
+func (a *GameSearch) showResultsPage() {
+	a.recentPage.Hide()
+	a.resultsPage.Show()
+	a.resultsPage.Refresh() // Fyne won't repaint a never-visible object on Show
 }
 
 // startSearch starts a new search and cancels the previous one.
@@ -435,9 +435,8 @@ func (a *GameSearch) startSearch(search string) {
 		a.spinner.Stop()
 		a.spinner.Hide()
 		a.results.Clear()
-		a.recentPage.Hide()
-		a.resultsPage.Show()
-		a.showStatus("Select at least one category", widget.MediumImportance)
+		a.showStatus("Select at least one category", widget.WarningImportance)
+		a.showResultsPage()
 		return
 	}
 	strict := a.strict.On
@@ -472,11 +471,9 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 		}
 		a.results.Clear()
 		a.statusLabel.Hide()
-		a.recentPage.Hide()
-		a.resultsPage.Show()
 		a.spinner.Show()
 		a.spinner.Start()
-		a.resultsPage.Refresh() // Fyne won't repaint a never-visible object on Show
+		a.showResultsPage()
 	})
 	defer func() {
 		fyne.Do(func() {

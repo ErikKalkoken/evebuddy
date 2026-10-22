@@ -398,6 +398,7 @@ func TestGameSearch_ChangeOptions(t *testing.T) {
 		assert.True(t, a.resultsPage.Visible())
 		assert.True(t, a.statusLabel.Visible())
 		assert.Equal(t, "Select at least one category", a.statusLabel.Text)
+		assert.Equal(t, widget.WarningImportance, a.statusLabel.Importance)
 		assert.Empty(t, a.results.Data().Children(nil))
 		assert.False(t, a.spinner.Visible())
 	})
