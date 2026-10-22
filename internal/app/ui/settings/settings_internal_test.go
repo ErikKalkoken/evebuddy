@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -580,7 +579,7 @@ func TestGeneralPage(t *testing.T) {
 		findAction(t, actions, "Export application log").Action()
 		// then
 		require.Len(t, messages, 1)
-		assert.True(t, strings.HasPrefix(messages[0], "No file to export: evebuddy_"), messages[0])
+		assert.Equal(t, "No file to export: evebuddy.log", messages[0])
 	})
 	t.Run("can reset main window size", func(t *testing.T) {
 		// given

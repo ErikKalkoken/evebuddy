@@ -451,31 +451,37 @@ func (a *settings) showDeleteFileDialog(name, path string) {
 }
 
 func (a *settings) showExportFileDialog(topic, path string) {
-	filename := filepath.Base(path)
-	ext := filepath.Ext(filename)
-	timestamp := time.Now().Format("060102150405")
-	filename = strings.TrimSuffix(filename, ext) + "_" + timestamp + ext
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		a.displaySnackbar("No file to export: " + filename)
-		return
-	} else if err != nil {
-		ui.ShowErrorAndLog("Failed to open "+filename, err, a.u.IsDeveloperMode(), a.w)
-		return
-	}
+	name := filepath.Base(path)
+	runAsync(func() {
+		data, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
+			a.displaySnackbar("No file to export: " + name)
+			return
+		} else if err != nil {
+			isDeveloperMode := a.u.IsDeveloperMode()
+			fyne.Do(func() {
+				ui.ShowErrorAndLog("Failed to open "+name, err, isDeveloperMode, a.w)
+			})
+			return
+		}
 
-	filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
-		CompletionText:  xstrings.Title(topic) + " exported",
-		Filename:        filename,
-		DisplaySnackbar: a.displaySnackbar,
-		Title:           "Export " + topic,
-		WindowID:        "export-log",
-		WriteFunc: func(_ context.Context, w io.Writer) error {
-			_, err := w.Write(data)
-			return err
-
-		},
-		Window: a.w,
+		ext := filepath.Ext(name)
+		timestamp := time.Now().Format("060102150405")
+		filename := strings.TrimSuffix(name, ext) + "_" + timestamp + ext
+		fyne.Do(func() {
+			filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
+				CompletionText:  xstrings.Title(topic) + " exported",
+				Filename:        filename,
+				DisplaySnackbar: a.displaySnackbar,
+				Title:           "Export " + topic,
+				WindowID:        "export-log",
+				WriteFunc: func(_ context.Context, w io.Writer) error {
+					_, err := w.Write(data)
+					return err
+				},
+				Window: a.w,
+			})
+		})
 	})
 }
 
@@ -728,11 +734,6 @@ func (a *settings) makeNotificationPage() (*settingList, []settingAction) {
 	}
 	return list, []settingAction{reset, all, none, send}
 }
-
-// func (a *userSettings) reportError(text string, err error) {
-// 	slog.Error(text, "error", err)
-// 	a.sb.Display(fmt.Sprintf("ERROR: %s: %s", text, err))
-// }
 
 func makeIconButtonFromActions(actions []settingAction) *xwidget.ContextMenuButton {
 	var items []*fyne.MenuItem
