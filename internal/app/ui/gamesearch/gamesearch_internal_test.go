@@ -8,7 +8,6 @@ import (
 	"slices"
 	"sync"
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
@@ -33,7 +32,7 @@ func TestMain(m *testing.M) {
 	// Leftover goroutines from one test can render text concurrently with the next,
 	// which is not safe in Fyne's shared text shaper.
 	runAsync = func(f func()) { f() }
-	searchDelay = 0
+	waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 	loadResourceAsync = func(initial fyne.Resource, getter func() (fyne.Resource, bool), updater func(fyne.Resource), loader func() (fyne.Resource, error), setter func(fyne.Resource)) {
 		if r, ok := getter(); ok {
 			updater(r)
@@ -428,15 +427,27 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		var wg sync.WaitGroup
 		runAsync = func(f func()) { wg.Go(f) }
-		searchDelay = 200 * time.Millisecond
+		waiting, release := make(chan struct{}), make(chan struct{})
+		waitSearchDelay = func(ctx context.Context) bool {
+			waiting <- struct{}{}
+			select {
+			case <-ctx.Done():
+				return false
+			case <-release:
+				return true
+			}
+		}
 		t.Cleanup(func() {
 			runAsync = func(f func()) { f() }
-			searchDelay = 0
+			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 		})
 		a := NewGameSearch(u)
 		// when
 		a.startSearch("alpha")
+		<-waiting // wait for each search, so only one goroutine touches the UI at a time
 		a.startSearch("alphab")
+		<-waiting
+		close(release)
 		wg.Wait()
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
@@ -458,16 +469,29 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		})
 		var wg sync.WaitGroup
 		runAsync = func(f func()) { wg.Go(f) }
-		searchDelay = 200 * time.Millisecond
+		waiting, release := make(chan struct{}), make(chan struct{})
+		waitSearchDelay = func(ctx context.Context) bool {
+			waiting <- struct{}{}
+			select {
+			case <-ctx.Done():
+				return false
+			case <-release:
+				return true
+			}
+		}
 		t.Cleanup(func() {
 			runAsync = func(f func()) { f() }
-			searchDelay = 0
+			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 		})
 		a := NewGameSearch(u)
 		// when
 		a.startSearch("alpha")
+		<-waiting // wait for each search, so only one goroutine touches the UI at a time
 		a.startSearch("alphab")
+		<-waiting
 		a.startSearch("alphabc")
+		<-waiting
+		close(release)
 		wg.Wait()
 		// then
 		assert.Equal(t, []string{"alphabc"}, searches)
@@ -942,6 +966,62 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		// then
 		assert.Equal(t, 0, httpmock.GetTotalCallCount())
 		assert.False(t, a.resultsPage.Visible())
+	})
+	t.Run("shows recent searches when text gets too short", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		e := factory.CreateEveEntityCharacter()
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{
+			"character": {e.ID},
+		}))
+		a := NewGameSearch(u)
+		a.init(t.Context())
+		a.searchEntry.SetText("abc")
+		// when
+		a.searchEntry.SetText("ab")
+		// then
+		assert.True(t, a.recentPage.Visible())
+		assert.False(t, a.resultsPage.Visible())
+		assert.False(t, a.resultCount.Visible())
+		assert.Empty(t, a.results.Data().Children(nil))
+	})
+	t.Run("cancels pending search when text gets too short", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		var wg sync.WaitGroup
+		runAsync = func(f func()) { wg.Go(f) }
+		waiting := make(chan struct{})
+		waitSearchDelay = func(ctx context.Context) bool {
+			close(waiting)
+			<-ctx.Done() // ends only when canceled
+			return false
+		}
+		t.Cleanup(func() {
+			runAsync = func(f func()) { f() }
+			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
+		})
+		a := NewGameSearch(u)
+		a.init(t.Context())
+		a.searchEntry.SetText("abc")
+		<-waiting
+		// when
+		a.searchEntry.SetText("ab")
+		wg.Wait()
+		// then
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		assert.True(t, a.recentPage.Visible())
+		assert.False(t, a.spinner.Visible())
 	})
 	t.Run("resets when clearing the entry", func(t *testing.T) {
 		// given

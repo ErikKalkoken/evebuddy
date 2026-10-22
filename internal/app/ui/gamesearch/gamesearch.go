@@ -37,7 +37,16 @@ const (
 var (
 	runAsync          = func(f func()) { go f() }
 	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
-	searchDelay       = 300 * time.Millisecond // so typing triggers only one search
+	// waitSearchDelay waits briefly, so typing triggers only one search.
+	// Reports false when the search was canceled while waiting.
+	waitSearchDelay = func(ctx context.Context) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(300 * time.Millisecond):
+			return true
+		}
+	}
 )
 
 type baseUI interface {
@@ -134,10 +143,11 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.searchEntry = xwidget.NewSearchEntry(
 		"Loading...",
 		func(s string) {
-			if s == "" {
-				a.Reset()
+			if len(s) < 3 {
+				a.clearSearch()
+				return
 			}
-			searchIfValid()
+			a.startSearch(s)
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
@@ -278,10 +288,15 @@ func (a *GameSearch) Focus() {
 }
 
 func (a *GameSearch) Reset() {
+	a.searchEntry.SetText("")
+	a.clearSearch()
+}
+
+// clearSearch cancels the running search and shows the recent searches.
+func (a *GameSearch) clearSearch() {
 	a.stopSearch()
 	a.spinner.Stop()
 	a.spinner.Hide()
-	a.searchEntry.SetText("")
 	a.clearResults()
 }
 
@@ -467,10 +482,8 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 			a.spinner.Hide()
 		})
 	}()
-	select {
-	case <-ctx.Done():
+	if !waitSearchDelay(ctx) {
 		return
-	case <-time.After(searchDelay):
 	}
 	if a.u.IsOffline() {
 		fyne.Do(func() {
