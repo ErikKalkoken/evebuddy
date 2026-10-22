@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -27,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -131,6 +133,7 @@ type updateStatus struct {
 	sectionStatus     *sectionStatus
 	signalKey         string
 	u                 baseUI
+	updateRun         xsync.LatestRun
 }
 
 func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
@@ -214,6 +217,13 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 	ab := xwidget.NewAppBar("Update status", a.entityList, a.moreButton)
 	ab.HideBackground = !a.u.IsMobile()
 	a.nav = xwidget.NewNavigator(ab)
+	a.nav.OnPop = func(_ fyne.CanvasObject) {
+		a.currentSectionID = -1
+		if a.nav.IsRoot() {
+			a.currentEntity = entityKey{}
+			a.entitySections = nil
+		}
+	}
 
 	// Signals
 	a.sb.Start()
@@ -224,6 +234,9 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		a.update(ctx)
 	}, a.signalKey)
 	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
+		a.update(ctx)
+	}, a.signalKey)
+	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.update(ctx)
 	}, a.signalKey)
 	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
@@ -240,6 +253,7 @@ func (a *updateStatus) stop() {
 	a.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 	a.u.Signals().CharacterSectionUpdated.RemoveListener(a.signalKey)
+	a.u.Signals().CorporationsChanged.RemoveListener(a.signalKey)
 	a.u.Signals().CorporationSectionUpdated.RemoveListener(a.signalKey)
 	a.u.Signals().EveUniverseSectionUpdated.RemoveListener(a.signalKey)
 }
@@ -319,13 +333,26 @@ func (a *updateStatus) makeEntityMenuItems(e entity) []*fyne.MenuItem {
 }
 
 func (a *updateStatus) update(ctx context.Context) {
+	isLatest := a.updateRun.Start()
 	entities := a.updateEntityList(ctx)
 	fyne.Do(func() {
-		a.entities = entities
-		a.entityList.Refresh()
-		a.refreshSections()
-		a.refreshDetails()
+		a.applyEntities(isLatest, entities)
 	})
+}
+
+func (a *updateStatus) applyEntities(isLatest func() bool, entities []entity) {
+	if !isLatest() {
+		return
+	}
+	a.entities = entities
+	a.entityList.Refresh()
+	se := a.currentEntity
+	if se != (entityKey{}) && !slices.ContainsFunc(entities, func(x entity) bool { return x.key() == se }) {
+		a.nav.PopAll() // entity was deleted; OnPop clears the selection
+		return
+	}
+	a.refreshSections()
+	a.refreshDetails()
 }
 
 func (a *updateStatus) updateEntityList(_ context.Context) []entity {
@@ -408,15 +435,6 @@ func (a *updateStatus) makeSectionList() *widget.List {
 func (a *updateStatus) refreshSections() {
 	se := a.currentEntity
 	if se == (entityKey{}) {
-		return
-	}
-	if !slices.ContainsFunc(a.entities, func(x entity) bool { return x.key() == se }) {
-		// entity was deleted
-		a.currentEntity = entityKey{}
-		a.currentSectionID = -1
-		a.entitySections = nil
-		a.sectionList.Refresh()
-		a.nav.PopAll()
 		return
 	}
 	switch se.category {
@@ -685,12 +703,13 @@ func (w *sectionStatus) set(ss app.CacheSectionStatus) {
 
 	w.completedAt.SetText(ihumanize.TimeWithFallback(ss.CompletedAt, "?"))
 	w.startedAt.SetText(ihumanize.TimeWithFallback(ss.StartedAt, "-"))
-	w.timeout.SetText(ihumanize.Duration(ss.Timeout))
+	now := time.Now()
+	w.timeout.SetText(strings.TrimSpace(humanize.RelTime(now, now.Add(ss.Timeout), "", "")))
 	var nextUpdate string
 	if ss.CompletedAt.IsZero() {
 		nextUpdate = "?"
 	} else {
-		nextUpdate = humanize.RelTime(time.Now(), ss.CompletedAt.Add(ss.Timeout), "from now", "ago")
+		nextUpdate = humanize.RelTime(now, ss.CompletedAt.Add(ss.Timeout), "from now", "ago")
 	}
 	w.nextUpdate.SetText(nextUpdate)
 }

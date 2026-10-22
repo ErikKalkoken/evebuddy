@@ -191,6 +191,77 @@ func TestUpdateStatus_Update(t *testing.T) {
 	})
 }
 
+func TestUpdateStatus_ApplyEntities(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	t.Run("discards entities from an outdated run", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacter()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		older := a.updateRun.Start()
+		a.update(t.Context())
+		// when
+		a.applyEntities(older, nil)
+		// then
+		assert.Len(t, a.entities, 4)
+	})
+}
+
+func TestUpdateStatus_Navigation(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+
+	t.Run("going back from a section keeps the entity selected", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(1)
+		a.sectionList.Select(0)
+		// when
+		a.nav.Pop()
+		// then
+		assert.Equal(t, -1, a.currentSectionID)
+		assert.Equal(t, entityKey{category: sectionCharacter, id: c.ID}, a.currentEntity)
+	})
+	t.Run("going back to the entity list clears the selection", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		factory.CreateCharacter()
+		sc := new(statuscache.StatusCache)
+		require.NoError(t, sc.Init(t.Context(), st))
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st, StatusCache: sc})
+		w := test.NewTempWindow(t, nil)
+		a := newUpdateStatus(u, w)
+		t.Cleanup(a.stop)
+		w.SetContent(a)
+		a.update(t.Context())
+		a.entityList.Select(1)
+		a.sectionList.Select(0)
+		a.nav.Pop()
+		// when
+		a.nav.Pop()
+		// then
+		assert.Equal(t, -1, a.currentSectionID)
+		assert.Equal(t, entityKey{}, a.currentEntity)
+		assert.Empty(t, a.entitySections)
+	})
+}
+
 func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
@@ -312,6 +383,9 @@ func TestUpdateStatus_Signals(t *testing.T) {
 		}},
 		{"character section updated", func(t *testing.T, s *app.Signals) {
 			s.CharacterSectionUpdated.Emit(t.Context(), app.CharacterSectionUpdated{})
+		}},
+		{"corporations changed", func(t *testing.T, s *app.Signals) {
+			s.CorporationsChanged.Emit(t.Context(), struct{}{})
 		}},
 		{"corporation section updated", func(t *testing.T, s *app.Signals) {
 			s.CorporationSectionUpdated.Emit(t.Context(), app.CorporationSectionUpdated{})
@@ -871,7 +945,7 @@ func TestSectionStatus(t *testing.T) {
 		// then
 		assert.Equal(t, "59 minutes ago", w.completedAt.Text)
 		assert.Equal(t, "1 hour ago", w.startedAt.Text)
-		assert.Equal(t, "3h 0m", w.timeout.Text)
+		assert.Equal(t, "3 hours", w.timeout.Text)
 		assert.Equal(t, "2 hours from now", w.nextUpdate.Text)
 	})
 	t.Run("shows overdue next update", func(t *testing.T) {
