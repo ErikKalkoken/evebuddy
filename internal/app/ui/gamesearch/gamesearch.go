@@ -33,7 +33,7 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
-// Hooks for running async work synchronously in tests.
+// Hooks that tests can replace.
 var (
 	runAsync          = func(f func()) { go f() }
 	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
@@ -47,6 +47,8 @@ var (
 			return true
 		}
 	}
+	// searchTimeout limits the ESI call, as a dead connection can otherwise hang for minutes.
+	searchTimeout = 15 * time.Second
 )
 
 type baseUI interface {
@@ -497,8 +499,10 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 		})
 		return
 	}
-	results, total, err := a.u.Character().SearchESI(
-		ctx,
+	esiCtx, cancel := context.WithTimeout(ctx, searchTimeout) // separate, so ctx only reports newer searches
+	defer cancel()
+	results, _, err := a.u.Character().SearchESI(
+		esiCtx,
 		search,
 		categories,
 		strict,
@@ -508,19 +512,27 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 	}
 	if err != nil {
 		slog.Error("Search failed", "error", err)
+		msg := a.u.ErrorDisplay(err)
+		if esiCtx.Err() != nil {
+			msg = "search timed out"
+		}
 		fyne.Do(func() {
 			if ctx.Err() != nil {
 				return
 			}
-			a.showStatus("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+			a.showStatus("ERROR: "+msg, widget.DangerImportance)
 		})
 		return
+	}
+	var total int // entries, not unique IDs, as an entity can be found in several categories
+	for _, c := range categories {
+		total += len(results[c])
 	}
 	fyne.Do(func() {
 		if ctx.Err() != nil {
 			return
 		}
-		if total == maxSearchResults {
+		if total >= maxSearchResults {
 			a.showStatus(fmt.Sprintf(
 				"Search for \"%s\" exceeded the server limit of 500 results "+
 					"and may not contain the items you are looking for.",

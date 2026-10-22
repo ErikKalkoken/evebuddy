@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
@@ -516,6 +517,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// then
 		td := a.results.Data()
 		categories := td.Children(nil)
+		assert.Equal(t, "2 Results", a.statusLabel.Text)
 		require.Len(t, categories, 2)
 		for _, n := range categories {
 			assert.Equal(t, []int64{e.ID}, xslices.Map(td.Children(n), func(x *searchResultNode) int64 {
@@ -606,6 +608,29 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.Equal(t, widget.WarningImportance, a.statusLabel.Importance)
 		assert.Contains(t, a.statusLabel.Text, "exceeded the server limit of 500 results")
 	})
+	t.Run("shows warning when server limit is reached with entities found in several categories", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		var ids []int64
+		for range maxSearchResults / 2 {
+			ids = append(ids, factory.CreateEveEntityCharacter().ID)
+		}
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{
+			"agent":     ids,
+			"character": ids,
+		}))
+		a := NewGameSearch(u)
+		// when
+		a.startSearch("alpha")
+		// then
+		assert.Equal(t, widget.WarningImportance, a.statusLabel.Importance)
+		assert.Contains(t, a.statusLabel.Text, "exceeded the server limit of 500 results")
+	})
 	t.Run("shows no results", func(t *testing.T) {
 		// given
 		httpmock.Reset()
@@ -665,6 +690,30 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.False(t, a.spinner.Visible())
 		assert.True(t, a.statusLabel.Visible())
 		assert.Contains(t, a.statusLabel.Text, "ERROR")
+		assert.Equal(t, widget.DangerImportance, a.statusLabel.Importance)
+	})
+	t.Run("shows error when search times out", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			<-r.Context().Done() // never responds, like a dead connection
+			return nil, r.Context().Err()
+		})
+		oldTimeout := searchTimeout
+		searchTimeout = 50 * time.Millisecond
+		t.Cleanup(func() { searchTimeout = oldTimeout })
+		a := NewGameSearch(u)
+		// when
+		a.startSearch("alpha")
+		// then
+		assert.False(t, a.spinner.Visible())
+		assert.True(t, a.statusLabel.Visible())
+		assert.Equal(t, "ERROR: search timed out", a.statusLabel.Text)
 		assert.Equal(t, widget.DangerImportance, a.statusLabel.Importance)
 	})
 	t.Run("shows info dialog on window set later", func(t *testing.T) {
@@ -966,8 +1015,8 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
+		var search func()
+		runAsync = func(f func()) { search = f }
 		waiting := make(chan struct{})
 		waitSearchDelay = func(ctx context.Context) bool {
 			close(waiting)
@@ -981,6 +1030,8 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		a := NewGameSearch(u)
 		a.init(t.Context())
 		a.searchEntry.SetText("abc")
+		var wg sync.WaitGroup
+		wg.Go(search) // only after SetText is done, so the entry and the search don't render concurrently
 		<-waiting
 		// when
 		a.searchEntry.SetText("ab")
