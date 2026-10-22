@@ -646,7 +646,6 @@ func TestGameSearch_Recent(t *testing.T) {
 		assert.Equal(t, []int64{e.ID}, eveEntityIDs(iv.shown))
 	})
 	t.Run("shows same entity again when selecting a recent search twice", func(t *testing.T) {
-		t.Skip("known bug: recent list never unselects, so a repeated tap is ignored")
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })

@@ -389,6 +389,7 @@ func (a *GameSearch) makeRecentSelected() *widget.List {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
 		if id >= len(a.recentItems) {
 			return
 		}
