@@ -110,13 +110,21 @@ func NewGameSearch(u baseUI) *GameSearch {
 	}
 	a.ExtendBaseWidget(a)
 
+	searchIfValid := func() {
+		if s := a.searchEntry.Text; len(s) >= 3 {
+			a.startSearch(s)
+		}
+	}
+
 	a.categories = kxwidget.NewFilterChipGroup(a.defaultCategories, func(_ []string) {
 		a.updateSearchOptionsTitle()
+		searchIfValid()
 	})
 	a.categories.Selected = a.defaultCategories
 
 	a.strict = kxwidget.NewSwitch(func(_ bool) {
 		a.updateSearchOptionsTitle()
+		searchIfValid()
 	})
 	a.strict.On = false
 
@@ -129,10 +137,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 			if s == "" {
 				a.Reset()
 			}
-			if len(s) < 3 {
-				return
-			}
-			a.startSearch(s)
+			searchIfValid()
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
@@ -403,12 +408,24 @@ func (a *GameSearch) showRecent() {
 // Options are read here, because widgets must only be accessed on the main thread.
 func (a *GameSearch) startSearch(search string) {
 	a.stopSearch()
-	ctx, cancel := context.WithCancel(context.Background())
-	a.cancelSearch = cancel
 	categories := xslices.Map(a.categories.Selected, func(o string) app.SearchCategory {
 		return option2searchCategory(o)
 	})
+	if len(categories) == 0 {
+		a.spinner.Stop()
+		a.spinner.Hide()
+		a.results.Clear()
+		a.recentPage.Hide()
+		a.resultsPage.Show()
+		a.resultCount.Importance = widget.MediumImportance
+		a.resultCount.Text = "Select at least one category"
+		a.resultCount.Refresh()
+		a.resultCount.Show()
+		return
+	}
 	strict := a.strict.On
+	ctx, cancel := context.WithCancel(context.Background())
+	a.cancelSearch = cancel
 	runAsync(func() {
 		a.doSearch(ctx, search, categories, strict)
 	})

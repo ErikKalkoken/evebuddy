@@ -315,6 +315,94 @@ func TestGameSearch_SearchOptions(t *testing.T) {
 	})
 }
 
+func TestGameSearch_ChangeOptions(t *testing.T) {
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+	t.Run("searches again with new categories", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		var req *http.Request
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			req = r
+			return httpmock.NewJsonResponse(200, map[string][]int64{})
+		})
+		a := NewGameSearch(u)
+		a.searchEntry.SetText("alpha")
+		// when
+		a.categories.SetSelected([]string{"Characters"})
+		// then
+		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		require.NotNil(t, req)
+		assert.Equal(t, []string{"character"}, req.URL.Query()["categories"])
+	})
+	t.Run("searches again when strict changes", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		var req *http.Request
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			req = r
+			return httpmock.NewJsonResponse(200, map[string][]int64{})
+		})
+		a := NewGameSearch(u)
+		a.searchEntry.SetText("alpha")
+		// when
+		a.strict.SetOn(true)
+		// then
+		assert.Equal(t, 2, httpmock.GetTotalCallCount())
+		require.NotNil(t, req)
+		assert.Equal(t, "true", req.URL.Query().Get("strict"))
+	})
+	t.Run("does not search when text is too short", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		a := NewGameSearch(u)
+		a.searchEntry.SetText("al")
+		// when
+		a.categories.SetSelected([]string{"Characters"})
+		// then
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+	t.Run("shows hint when no category is selected", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		e := factory.CreateEveEntityCharacter()
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{
+			"character": {e.ID},
+		}))
+		a := NewGameSearch(u)
+		w := test.NewWindow(a) // chips sync their selection on first render
+		t.Cleanup(w.Close)
+		a.searchEntry.SetText("alpha")
+		// when
+		a.categories.SetSelected([]string{})
+		// then
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.True(t, a.resultsPage.Visible())
+		assert.True(t, a.resultCount.Visible())
+		assert.Equal(t, "Select at least one category", a.resultCount.Text)
+		assert.Empty(t, a.results.Data().Children(nil))
+		assert.False(t, a.spinner.Visible())
+	})
+}
+
 func TestGameSearch_DoSearch(t *testing.T) {
 	httpmock.Activate()
 	t.Cleanup(httpmock.DeactivateAndReset)
