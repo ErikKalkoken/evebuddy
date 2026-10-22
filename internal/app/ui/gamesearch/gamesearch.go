@@ -33,6 +33,12 @@ const (
 	maxSearchResults = 500 // max results returned from the server
 )
 
+// Hooks for running async work synchronously in tests.
+var (
+	runAsync          = func(f func()) { go f() }
+	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
+)
+
 type baseUI interface {
 	Character() *characterservice.CharacterService
 	DisplaySnackbar(text string)
@@ -125,7 +131,9 @@ func NewGameSearch(u baseUI) *GameSearch {
 			if len(s) < 3 {
 				return
 			}
-			go a.DoSearch(context.Background(), s)
+			runAsync(func() {
+				a.DoSearch(context.Background(), s)
+			})
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
@@ -292,7 +300,7 @@ func (a *GameSearch) SetWindow(w fyne.Window, displaySnackbar func(string)) {
 
 func (a *GameSearch) loadIconFunc() func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
 	return func(o *app.EveEntity, setIcon func(r fyne.Resource)) {
-		xwidget.LoadResourceAsyncWithCache(
+		loadResourceAsync(
 			icons.BlankSvg,
 			func() (fyne.Resource, bool) {
 				return a.iconCache.Load(o.ID)
