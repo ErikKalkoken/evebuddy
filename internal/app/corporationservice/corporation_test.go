@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
@@ -34,6 +35,30 @@ func TestCorporation_UpdateCorporations(t *testing.T) {
 		got, err := s.ListCorporationIDs(ctx)
 		require.NoError(t, err)
 		xassert.Equal(t, want, got)
+	})
+	t.Run("removes deleted corporations from the status cache", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		corp := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
+		obsolete := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: obsolete.ID,
+			Section:       app.CorporationSections[0],
+		})
+		scs := new(statuscache.StatusCache)
+		require.NoError(t, scs.Init(ctx, st))
+		s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st, StatusCacheService: scs})
+		// when
+		_, err := s.UpdateCorporations(ctx)
+		// then
+		require.NoError(t, err)
+		var got []int64
+		for _, x := range scs.ListCorporations() {
+			got = append(got, x.ID)
+		}
+		assert.Equal(t, []int64{corp.ID}, got)
+		assert.False(t, scs.HasCorporationSection(obsolete.ID, app.CorporationSections[0]))
 	})
 	t.Run("report false when nothing deleted", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

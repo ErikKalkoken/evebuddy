@@ -120,6 +120,10 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 			if err := s.st.DeleteCorporation(ctx, id); err != nil {
 				return false, wrapErr(err)
 			}
+			s.scs.DeleteCorporation(id)
+		}
+		if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
+			return false, wrapErr(err)
 		}
 		slog.Info("Deleted obsolete corporations", "corporationIDs", obsolete)
 	}

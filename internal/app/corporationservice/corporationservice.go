@@ -32,6 +32,7 @@ type Settings interface {
 }
 
 type StatusCache interface {
+	DeleteCorporation(corporationID int64)
 	SetCorporationSection(o *app.CorporationSectionStatus)
 	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
 }

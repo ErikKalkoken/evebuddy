@@ -26,6 +26,8 @@ type statusCacheRecorder struct {
 	calledWithNil bool
 }
 
+func (c *statusCacheRecorder) DeleteCorporation(_ int64) {}
+
 func (c *statusCacheRecorder) SetCorporationSection(o *app.CorporationSectionStatus) {
 	if o == nil {
 		c.calledWithNil = true
