@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -112,8 +113,8 @@ type ContractSlots struct {
 	columnSorter      *xwidget.ColumnSorter[contractSlotRow]
 	corporationSlots  bool
 	filterChip        *xwidget.FilterChipCompact // only on mobile
-	filterRun         latestRun
-	updateRun         latestRun
+	filterRun         xsync.LatestRun
+	updateRun         xsync.LatestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	rows              []contractSlotRow
@@ -346,7 +347,7 @@ func (a *ContractSlots) makeDataTable(headers xwidget.DataColumns[contractSlotRo
 }
 
 func (a *ContractSlots) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -406,7 +407,7 @@ func (a *ContractSlots) filterRowsAsync(sortCol string) {
 }
 
 func (a *ContractSlots) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

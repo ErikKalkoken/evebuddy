@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -41,7 +42,7 @@ type CorporationSheet struct {
 	taxRateLabel *widget.Label
 	tickerLabel  *widget.Label
 	u            baseUI
-	updateRun    latestRun
+	updateRun    xsync.LatestRun
 }
 
 func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
@@ -156,7 +157,7 @@ func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CorporationSheet) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	clearAll := func() {
 		fyne.Do(func() {
 			if !isLatest() {

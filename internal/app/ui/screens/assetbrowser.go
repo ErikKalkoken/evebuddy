@@ -27,6 +27,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -56,7 +57,7 @@ type AssetBrowser struct {
 	corporation    atomic.Pointer[app.Corporation]
 	forCorporation bool
 	u              baseUI
-	updateRun      latestRun
+	updateRun      xsync.LatestRun
 }
 
 func NewCharacterBrowser(u baseUI) *AssetBrowser {
@@ -118,7 +119,7 @@ func (a *AssetBrowser) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *AssetBrowser) Update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -297,8 +298,8 @@ type browserNavigation struct {
 	collapseAll   *ttwidget.Button
 	filterChip    *xwidget.FilterChipCompact
 	filteredTrees map[assetFilter]filteredTree
-	filterRun     latestRun
-	updateRun     latestRun
+	filterRun     xsync.LatestRun
+	updateRun     xsync.LatestRun
 	filters       []assetFilter
 	locations     *xwidget.Tree[containerNode]
 	searchEntry   *xwidget.SearchEntry
@@ -413,8 +414,8 @@ func (a *browserNavigation) resetFilters() {
 
 func (a *browserNavigation) clear() {
 	// discard loads and filters still running, and assets of the previous owner
-	a.updateRun.start()
-	a.filterRun.start()
+	a.updateRun.Discard()
+	a.filterRun.Discard()
 	a.filteredTrees = make(map[assetFilter]filteredTree)
 	a.locations.Clear()
 	a.locations.UnselectAll()
@@ -424,7 +425,7 @@ func (a *browserNavigation) clear() {
 }
 
 func (a *browserNavigation) update(_ context.Context, trees []*asset.Node) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	filteredTrees := make(map[assetFilter]filteredTree)
 	for _, f := range a.filters {
 		td := generateTreeData(trees, f, a.b.forCorporation)
@@ -707,7 +708,7 @@ var assetFilterLookup = map[string]assetFilter{
 }
 
 func (a *browserNavigation) filterLocationsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	selected := a.filterChip.Selected()
 	filter := assetFilterLookup[selected[assetBrowserFilterCategory]]
 	hasShips := selected[assetBrowserFilterHasShips] != ""
@@ -803,14 +804,14 @@ type browserContainer struct {
 	widget.BaseWidget
 
 	ab            *AssetBrowser
-	filterRun     latestRun
+	filterRun     xsync.LatestRun
 	footer        *widget.Label
 	grid          *widget.GridWrap
 	items         []containerItem
 	itemsFiltered []containerItem
 	location      *browserLocation
 	searchEntry   *xwidget.SearchEntry
-	setRun        latestRun
+	setRun        xsync.LatestRun
 }
 
 func newBrowserContainer(ab *AssetBrowser) *browserContainer {
@@ -886,7 +887,7 @@ func (a *browserContainer) makeAssetGrid() *widget.GridWrap {
 }
 
 func (a *browserContainer) set(cn *containerNode) {
-	isLatest := a.setRun.start()
+	isLatest := a.setRun.Start()
 	var nodes []*asset.Node
 	if cn.node.AncestorCount() == 0 {
 		// ensuring the location container shows the same items like the nav tree
@@ -937,7 +938,7 @@ func (a *browserContainer) clear() {
 }
 
 func (a *browserContainer) filterItemsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalItems := len(a.items)
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.searchEntry.Text)

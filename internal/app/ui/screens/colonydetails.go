@@ -68,9 +68,9 @@ type colonyDetails struct {
 	colony        *app.CharacterPlanet
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
 	filterChip    *xwidget.FilterChipCompact
-	filterRun     latestRun
+	filterRun     xsync.LatestRun
 	footer        *widget.Label
-	forecastRun   latestRun
+	forecastRun   xsync.LatestRun
 	icon          *colonyPlanetSymbol
 	installations *widget.List
 	owner         *widget.Hyperlink
@@ -80,8 +80,7 @@ type colonyDetails struct {
 	root          *fyne.Container // content of the renderer
 	rows          []colonyDetailsRow
 	rowsFiltered  []colonyDetailsRow
-	rowsGen       int // incremented when Update replaces rows
-	rowsRun       latestRun
+	rowsRun       xsync.LatestRun
 	searchEntry   *xwidget.SearchEntry
 	helpButton    *xwidget.Button
 	showPin       func(pinID int64, title string)
@@ -166,9 +165,6 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 		page := makePage(title, showWhenLoaded(a, func() {
 			if err := a.Update(context.Background()); err != nil {
 				slog.Error("Failed to show colony installation", "characterID", r.characterID, "planetID", r.planetID, "pinID", pinID, "error", err)
-				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-				})
 			}
 		}), fyne.NewSize(600, 500))
 		pins[page] = a
@@ -309,14 +305,14 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 					return
 				}
 				slog.Error("failed to update colony installations", "error", err)
-				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-				})
 			}
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
+			// at once, so results already queued for the main thread are skipped
+			a.rowsRun.Discard()
+			a.forecastRun.Discard()
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
 				a.setIssue("Character has been removed")
@@ -400,12 +396,11 @@ func (a *colonyDetails) refreshForecast() {
 	if cp == nil {
 		return
 	}
-	isLatest := a.forecastRun.start()
-	gen := a.rowsGen
+	isLatest := a.forecastRun.Start()
 	runAsync(func() {
 		stopped, status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
-			if !isLatest() || a.rowsGen != gen {
+			if !isLatest() {
 				return
 			}
 			a.setStatus(cp, stopped, status)
@@ -416,7 +411,7 @@ func (a *colonyDetails) refreshForecast() {
 }
 
 func (a *colonyDetails) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.filterChip.Selected()
@@ -482,14 +477,14 @@ func (a *colonyDetails) filterRowsAsync() {
 }
 
 func (a *colonyDetails) Update(ctx context.Context) error {
-	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
+	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
 			a.colony = nil // so a refresh can't bring it back
-			a.rowsGen++
+			a.forecastRun.Discard()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
 		})
@@ -511,12 +506,18 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 	}
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current colony
+		}
 		reset()
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	cp, err := a.u.Character().GetPlanet(ctx, c.ID, a.planetID.Load())
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current colony
+		}
 		reset()
 		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
@@ -543,7 +544,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		a.colony = cp
 		a.setStatus(cp, stopped, status)
 		a.rows = rows
-		a.rowsGen++
+		a.forecastRun.Discard()
 		a.filterRowsAsync()
 	})
 	return nil

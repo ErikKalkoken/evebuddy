@@ -20,6 +20,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -42,7 +43,7 @@ type CharacterSheet struct {
 	skillpointsLabel *widget.Label
 	tagsLabel        *widget.Label
 	u                baseUI
-	updateRun        latestRun
+	updateRun        xsync.LatestRun
 	wealthLabel      *widget.Label
 }
 
@@ -161,7 +162,7 @@ func (a *CharacterSheet) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *CharacterSheet) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	clearAll := func() {
 		fyne.Do(func() {
 			if !isLatest() {

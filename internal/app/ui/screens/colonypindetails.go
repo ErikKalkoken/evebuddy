@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 // colonyPinInfo is the information shown for an installation.
@@ -49,7 +50,7 @@ type colonyPinDetails struct {
 	content        *fyne.Container
 	extraTypeNames map[int64]string // of input types not referenced by the colony
 	footer         *widget.Label
-	forecastRun    latestRun
+	forecastRun    xsync.LatestRun
 	header         *colonyPinWidget
 	inputs         *colonyInputList
 	inputsTab      *container.TabItem
@@ -64,8 +65,7 @@ type colonyPinDetails struct {
 	routes         *colonyRouteList
 	routesTab      *container.TabItem
 	showPin        func(pinID int64, title string)
-	rowsGen        int // incremented when Update replaces the colony
-	rowsRun        latestRun
+	rowsRun        xsync.LatestRun
 	signalKey      string
 	storage        *colonyStorageList
 	storageTab     *container.TabItem
@@ -125,13 +125,13 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 				return
 			}
 			slog.Error("Failed to update colony installation", "error", err)
-			fyne.Do(func() {
-				a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-			})
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID {
+			// at once, so results already queued for the main thread are skipped
+			a.rowsRun.Discard()
+			a.forecastRun.Discard()
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
 				a.setIssue("Character has been removed")
@@ -165,19 +165,24 @@ func (a *colonyPinDetails) clearIssue() {
 
 // Update reloads the colony and shows the installation.
 func (a *colonyPinDetails) Update(ctx context.Context) error {
-	isLatest := a.rowsRun.start() // before fetching, so a slower earlier fetch can't win
+	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
 	cp, err := a.u.Character().GetPlanet(ctx, a.characterID, a.planetID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return err // canceled, keeps the current installation
+		}
 		notFound := errors.Is(err, app.ErrNotFound)
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
 			a.colony = nil // so a refresh can't forecast it again
-			a.rowsGen++
+			a.forecastRun.Discard()
 			if notFound {
 				a.set(colonyPinInfo{}) // shows that the installation no longer exists
 				a.clearIssue()
+			} else {
+				a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
 			}
 		})
 		if notFound {
@@ -195,7 +200,7 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 		}
 		a.colony = cp
 		a.extraTypeNames = extraTypeNames
-		a.rowsGen++
+		a.forecastRun.Discard()
 		a.set(info)
 		a.clearIssue()
 	})
@@ -233,14 +238,13 @@ func (a *colonyPinDetails) refreshForecast() {
 		return
 	}
 	extraTypeNames := a.extraTypeNames
-	isLatest := a.forecastRun.start()
-	gen := a.rowsGen
+	isLatest := a.forecastRun.Start()
 	runAsync(func() {
 		now := time.Now()
 		f := a.u.Character().ForecastPlanet(cp, now)
 		info := a.makeInfo(cp, f, extraTypeNames, now)
 		fyne.Do(func() {
-			if !isLatest() || a.rowsGen != gen {
+			if !isLatest() {
 				return
 			}
 			a.set(info)

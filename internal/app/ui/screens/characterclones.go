@@ -22,6 +22,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -64,10 +65,10 @@ type CharacterClones struct {
 	errorLabel  *widget.Label
 	footerLabel *widget.Label
 	jumpInfo    cloneJumpInfo // only accessed on the main thread
-	topRun      latestRun
+	topRun      xsync.LatestRun
 	topText     *xwidget.RichText
 	u           baseUI
-	updateRun   latestRun
+	updateRun   xsync.LatestRun
 }
 
 func NewCharacterClones(u baseUI) *CharacterClones {
@@ -136,7 +137,7 @@ func (a *CharacterClones) makeTree() *xwidget.Tree[characterCloneNode] {
 }
 
 func (a *CharacterClones) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	characterID := a.character.Load().IDOrZero()
 	if characterID == 0 {
 		fyne.Do(func() {
@@ -233,7 +234,7 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xw
 
 // loadJumpInfo loads the inputs for the next clone jump and shows them in the header.
 func (a *CharacterClones) loadJumpInfo(ctx context.Context) {
-	isLatest := a.topRun.start()
+	isLatest := a.topRun.Start()
 	setTop := func(text string, color fyne.ThemeColorName) {
 		fyne.Do(func() {
 			if !isLatest() {

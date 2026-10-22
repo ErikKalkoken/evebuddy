@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -274,6 +275,88 @@ func TestColonyDetails(t *testing.T) {
 		a.rows = nil
 		a.refreshForecast()
 		assert.Empty(t, a.rows)
+	})
+	t.Run("should show error when update fails", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBOnDisk(t)
+		defer db2.Close()
+		cp2 := factory2.CreateCharacterPlanet()
+		u2 := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})
+		a := newColonyDetails(u2, cp2.CharacterID, cp2.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		_, err := db2.Exec("DROP TABLE character_planets") // makes loading the colony fail
+		require.NoError(t, err)
+		// when
+		err = a.Update(t.Context())
+		// then
+		require.Error(t, err)
+		assert.Nil(t, a.colony)
+		assert.Contains(t, a.footer.Text, "Error: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+	})
+	t.Run("should keep colony when update is canceled", func(t *testing.T) {
+		// given
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		// when
+		err := a.Update(ctx)
+		// then
+		require.Error(t, err)
+		assert.NotNil(t, a.colony)
+		assert.Len(t, a.rows, 4)
+		assert.NotEqual(t, widget.DangerImportance, a.footer.Importance)
+	})
+	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		stale := *a.colony
+		stale.Pins = stale.Pins[:1]
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		require.NoError(t, a.Update(t.Context()))
+		refresh()
+		// then
+		assert.Len(t, a.rows, 4)
+	})
+	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		isUpdateLatest := a.rowsRun.Start() // simulates an update in flight
+		stale := *a.colony
+		stale.Pins = stale.Pins[:1]
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		refresh()
+		// then
+		assert.False(t, isUpdateLatest())
+		assert.Len(t, a.rows, 4)
+		assert.Equal(t, "Character has been removed", a.footer.Text)
 	})
 }
 

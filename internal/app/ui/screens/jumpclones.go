@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -87,8 +88,8 @@ type JumpClones struct {
 
 	body              fyne.CanvasObject
 	filterChip        *xwidget.FilterChipCompact // only on mobile
-	filterRun         latestRun
-	updateRun         latestRun
+	filterRun         xsync.LatestRun
+	updateRun         xsync.LatestRun
 	footerLabel       *widget.Label
 	errorLabel        *widget.Label
 	changeOrigin      *ttwidget.Button
@@ -317,7 +318,7 @@ func (a *JumpClones) currentFilter() jumpClonesFilter {
 }
 
 func (a *JumpClones) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -371,7 +372,7 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 }
 
 func (a *JumpClones) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

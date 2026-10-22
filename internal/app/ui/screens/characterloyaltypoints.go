@@ -19,6 +19,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -51,8 +52,8 @@ type CharacterLoyaltyPoints struct {
 	widget.BaseWidget
 
 	filterChip    *xwidget.FilterChipCompact // only on mobile
-	filterRun     latestRun
-	updateRun     latestRun
+	filterRun     xsync.LatestRun
+	updateRun     xsync.LatestRun
 	footerLabel   *widget.Label
 	errorLabel    *widget.Label
 	character     atomic.Pointer[app.Character]
@@ -213,7 +214,7 @@ func (a *CharacterLoyaltyPoints) currentFilter() characterLoyaltyPointsFilter {
 }
 
 func (a *CharacterLoyaltyPoints) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
@@ -255,13 +256,13 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 }
 
 func (a *CharacterLoyaltyPoints) Update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

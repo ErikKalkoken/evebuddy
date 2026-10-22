@@ -828,8 +828,8 @@ func TestMails_DownloadProgress(t *testing.T) {
 	t.Run("discards outdated check", func(t *testing.T) {
 		e := setup(t)
 		p := e.a.NavigationPane
-		older := p.downloadedRun.start()
-		newer := p.downloadedRun.start()
+		older := p.downloadedRun.Start()
+		newer := p.downloadedRun.Start()
 		p.applyDownloaded(newer, mailsDownloaded{total: "2 total", downloaded: "50%", missingPercent: 50}, true)
 		require.Equal(t, []int{50}, e.missing)
 
@@ -1275,8 +1275,8 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		mp := a.MessagePane
 		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
 		mp.currentFolder.Store(inbox)
-		older := mp.updateRun.start()
-		newer := mp.updateRun.start()
+		older := mp.updateRun.Start()
+		newer := mp.updateRun.Start()
 		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1}, {id: 2, mailID: 2}})
 
 		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
@@ -1293,8 +1293,8 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		mp := a.MessagePane
 		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
 		mp.currentFolder.Store(inbox)
-		older := mp.updateRun.start()
-		newer := mp.updateRun.start()
+		older := mp.updateRun.Start()
+		newer := mp.updateRun.Start()
 		mp.applyRows(newer, inbox, []mailRow{{id: 1, mailID: 1, isRead: true, isRead2: true}})
 
 		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
@@ -1312,8 +1312,8 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
 		sent := &mailFolderNode{CharacterID: c.ID, Name: "Sent", Type: folderNodeSent}
 		mp.currentFolder.Store(sent)
-		older := mp.updateRun.start()
-		newer := mp.updateRun.start()
+		older := mp.updateRun.Start()
+		newer := mp.updateRun.Start()
 		mp.applyRows(newer, sent, []mailRow{{id: 2, mailID: 2}})
 
 		mp.applyRows(older, inbox, []mailRow{{id: 1, mailID: 1}})
@@ -1328,7 +1328,7 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		a := NewMailsForCharacter(testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st}))
 		mp := a.MessagePane
 		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
-		pending := mp.updateRun.start()
+		pending := mp.updateRun.Start()
 		a.u.Signals().CurrentCharacterExchanged.Emit(t.Context(), c)
 
 		mp.applyRows(pending, inbox, []mailRow{{id: 1, mailID: 1}})
@@ -1348,7 +1348,7 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		mp := a.MessagePane
 		inbox := &mailFolderNode{CharacterID: c1.ID, Name: "Inbox", Type: folderNodeInbox}
 		mp.currentFolder.Store(inbox) // stored late by an outdated update
-		latest := mp.updateRun.start()
+		latest := mp.updateRun.Start()
 
 		mp.applyRows(latest, inbox, []mailRow{{id: 1, mailID: 1}})
 
@@ -1365,7 +1365,7 @@ func TestMailsMessagePane_UpdateRun(t *testing.T) {
 		inbox := &mailFolderNode{CharacterID: c.ID, Name: "Inbox", Type: folderNodeInbox}
 		sent := &mailFolderNode{CharacterID: c.ID, Name: "Sent", Type: folderNodeSent}
 		mp.currentFolder.Store(sent)
-		latest := mp.updateRun.start()
+		latest := mp.updateRun.Start()
 
 		mp.applyRows(latest, inbox, []mailRow{{id: 1, mailID: 1}})
 

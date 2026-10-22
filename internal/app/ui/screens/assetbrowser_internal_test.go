@@ -1361,8 +1361,8 @@ func TestAssetBrowser_ClearDiscardsPreviousAssets(t *testing.T) {
 	})
 	t.Run("clear discards running loads and filters", func(t *testing.T) {
 		a := newBrowser(t)
-		isUpdateLatest := a.Navigation.updateRun.start()
-		isFilterLatest := a.Navigation.filterRun.start()
+		isUpdateLatest := a.Navigation.updateRun.Start()
+		isFilterLatest := a.Navigation.filterRun.Start()
 
 		a.Navigation.clear()
 

@@ -365,14 +365,38 @@ func TestColonyPinDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Empty(t, a.content.Objects)
 	})
-	t.Run("should stop forecasting when colony can not be loaded", func(t *testing.T) {
+	t.Run("should stop forecasting and show error when colony can not be loaded", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBOnDisk(t)
+		defer db2.Close()
+		cp2 := factory2.CreateCharacterPlanet()
+		u2 := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})
+		a := newColonyPinDetails(u2, cp2.CharacterID, cp2.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		_, err := db2.Exec("DROP TABLE character_planets") // makes loading the colony fail
+		require.NoError(t, err)
+		// when
+		err = a.Update(t.Context())
+		// then
+		require.Error(t, err)
+		assert.Nil(t, a.colony)
+		assert.Contains(t, a.footer.Text, "ERROR: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+	})
+	t.Run("should keep installation when update is canceled", func(t *testing.T) {
+		// given
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
-		require.Error(t, a.Update(ctx))
-		assert.Nil(t, a.colony)
+		// when
+		err := a.Update(ctx)
+		// then
+		require.Error(t, err)
+		assert.NotNil(t, a.colony)
+		assert.Empty(t, a.footer.Text)
 	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
@@ -399,6 +423,56 @@ func TestColonyPinDetails(t *testing.T) {
 		a.content.Objects = nil
 		a.refreshForecast()
 		assert.Empty(t, a.content.Objects)
+	})
+	t.Run("should discard a refresh when update replaced the colony", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		stale := *a.colony
+		stale.Pins = nil
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		require.NoError(t, a.Update(t.Context()))
+		refresh()
+		// then
+		require.Len(t, a.content.Objects, 1)
+		assert.Same(t, a.body, a.content.Objects[0], "shows installation")
+	})
+	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
+		// given
+		var pending []func()
+		orig := runAsync
+		runAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runAsync = orig })
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		require.NoError(t, a.Update(t.Context()))
+		isUpdateLatest := a.rowsRun.Start() // simulates an update in flight
+		stale := *a.colony
+		stale.Pins = nil
+		a.colony = &stale
+		a.refreshForecast()
+		refresh := pending[len(pending)-1]
+		// when
+		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: character.ID})
+		assert.Eventually(t, func() bool {
+			var removed bool
+			fyne.DoAndWait(func() { removed = a.colony == nil })
+			return removed
+		}, time.Second, 10*time.Millisecond)
+		refresh()
+		// then
+		assert.False(t, isUpdateLatest())
+		require.Len(t, a.content.Objects, 1)
+		assert.Same(t, a.body, a.content.Objects[0], "shows installation")
+		assert.Equal(t, "Character has been removed", a.footer.Text)
 	})
 }
 

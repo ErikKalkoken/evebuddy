@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -47,7 +48,7 @@ type CorporationWallets struct {
 	transactions      map[app.Division]*WalletTransactions
 	transactionsStack *fyne.Container
 	u                 baseUI
-	updateRun         latestRun
+	updateRun         xsync.LatestRun
 }
 
 func NewCorporationWallets(u baseUI) *CorporationWallets {
@@ -127,7 +128,7 @@ func (a *CorporationWallets) CreateRenderer() fyne.WidgetRenderer {
 // Update reloads wallet names and balances.
 // The journals, transactions and divisions update themselves.
 func (a *CorporationWallets) Update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	data := fetchCorporationWalletsData(ctx, a.u, a.corporation.Load().IDOrZero())
 	if ctx.Err() != nil {
 		return

@@ -28,6 +28,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -217,8 +218,8 @@ type IndustryJobs struct {
 
 	body            fyne.CanvasObject
 	filterChip      *xwidget.FilterChipCompact // only on mobile
-	filterRun       latestRun
-	updateRun       latestRun
+	filterRun       xsync.LatestRun
+	updateRun       xsync.LatestRun
 	footerLabel     *widget.Label
 	errorLabel      *widget.Label
 	columnSorter    *xwidget.ColumnSorter[industryJobRow]
@@ -658,7 +659,7 @@ func (a *IndustryJobs) makeDataList() *xwidget.StripedList {
 // filterRowsAsync applies all filters and sorting and freshes the list with the changed rows.
 // A new sorting can be applied by providing a sortCol. -1 does not change the current sorting.
 func (a *IndustryJobs) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -714,7 +715,7 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 }
 
 func (a *IndustryJobs) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	var jobs []industryJobRow
 	var err error
 	if a.forCorporation {

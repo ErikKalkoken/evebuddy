@@ -20,6 +20,7 @@ import (
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -100,8 +101,8 @@ type SkillSearch struct {
 	body            fyne.CanvasObject
 	columnSorter    *xwidget.ColumnSorter[skillSearchRow]
 	filterChip      *xwidget.FilterChipCompact // only on mobile
-	filterRun       latestRun
-	updateRun       latestRun
+	filterRun       xsync.LatestRun
+	updateRun       xsync.LatestRun
 	footer          *widget.Label
 	rows            []skillSearchRow
 	rowsFiltered    []skillSearchRow
@@ -334,7 +335,7 @@ func (a *SkillSearch) Focus() {
 }
 
 func (a *SkillSearch) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -396,7 +397,7 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 }
 
 func (a *SkillSearch) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

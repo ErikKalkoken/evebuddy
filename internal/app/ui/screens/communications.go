@@ -24,6 +24,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -65,7 +66,7 @@ type Communications struct {
 	forCharacter atomic.Bool
 	rows         []notificationRow
 	u            baseUI
-	updateRun    latestRun
+	updateRun    xsync.LatestRun
 }
 
 func NewCommunicationsForCharacter(u baseUI) *Communications {
@@ -140,7 +141,7 @@ func (a *Communications) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *Communications) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func(failed bool) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -499,7 +500,7 @@ type communicationsMessagePane struct {
 	columnSorter  *xwidget.ColumnSorter[notificationRow]
 	currentFolder app.EveNotificationGroup
 	filterChip    *xwidget.FilterChipCompact
-	filterRun     latestRun
+	filterRun     xsync.LatestRun
 	footerLabel   *widget.Label
 	messageList   *widget.List
 	moreButton    *xwidget.ContextMenuButton
@@ -669,7 +670,7 @@ func (a *communicationsMessagePane) setNotificationRead(ctx context.Context, id 
 }
 
 func (a *communicationsMessagePane) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	var rows []notificationRow
 	if a.currentFolder == app.GroupAll {
 		rows = slices.Clone(a.co.rows)

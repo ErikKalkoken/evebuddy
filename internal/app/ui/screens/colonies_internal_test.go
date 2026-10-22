@@ -99,23 +99,28 @@ func TestColonies(t *testing.T) {
 	})
 	t.Run("should not invalidate a running update when refreshing", func(t *testing.T) {
 		a := newColonies(t)
-		isLatest := a.rowsRun.start() // simulates an update in flight
+		isLatest := a.rowsRun.Start() // simulates an update in flight
 		a.refreshForecasts()
 		assert.True(t, isLatest())
 	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
+		// given
 		var pending []func()
 		orig := runAsync
 		runAsync = func(f func()) { pending = append(pending, f) }
 		t.Cleanup(func() { runAsync = orig })
 		a := newColonies(t)
-		a.refreshForecasts() // started with no rows
+		a.Update(t.Context())
+		a.rows = a.rows[:1] // stale rows of the refresh
+		a.refreshForecasts()
+		// when
 		a.Update(t.Context())
 		for len(pending) > 0 {
 			f := pending[0]
 			pending = pending[1:]
 			f()
 		}
+		// then
 		assert.Len(t, a.rows, 2)
 		assert.Len(t, a.rowsFiltered, 2)
 	})

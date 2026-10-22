@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -35,8 +36,8 @@ type Members struct {
 	widget.BaseWidget
 
 	corporation  atomic.Pointer[app.Corporation]
-	filterRun    latestRun
-	updateRun    latestRun
+	filterRun    xsync.LatestRun
+	updateRun    xsync.LatestRun
 	footerLabel  *widget.Label
 	errorLabel   *widget.Label
 	list         *widget.List
@@ -130,7 +131,7 @@ func (a *Members) makeList() *widget.List {
 }
 
 func (a *Members) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
@@ -161,13 +162,13 @@ func (a *Members) filterRowsAsync() {
 }
 
 func (a *Members) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

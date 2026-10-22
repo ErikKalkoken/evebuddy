@@ -18,17 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestLatestRun(t *testing.T) {
-	var l latestRun
-	isLatest1 := l.start()
-	assert.True(t, isLatest1())
-	isLatest2 := l.start()
-	assert.False(t, isLatest1())
-	assert.True(t, isLatest2())
-	l.start()
-	assert.False(t, isLatest2())
-}
-
 // renderedTexts returns all texts drawn by a widget.
 func renderedTexts(w fyne.Widget) []string {
 	var texts []string

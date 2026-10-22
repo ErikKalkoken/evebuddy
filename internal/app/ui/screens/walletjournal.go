@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -103,8 +104,8 @@ type WalletJournal struct {
 	corporation     atomic.Pointer[app.Corporation]
 	division        app.Division
 	filterChip      *xwidget.FilterChipCompact // only on mobile
-	filterRun       latestRun
-	updateRun       latestRun
+	filterRun       xsync.LatestRun
+	updateRun       xsync.LatestRun
 	footerLabel     *widget.Label
 	errorLabel      *widget.Label
 	rows            []walletJournalRow
@@ -376,7 +377,7 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 }
 
 func (a *WalletJournal) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -428,7 +429,7 @@ func (a *WalletJournal) Update(ctx context.Context) {
 }
 
 func (a *WalletJournal) updateCharacter(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -453,7 +454,7 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
@@ -534,7 +535,7 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.C
 }
 
 func (a *WalletJournal) updateCorporation(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -559,7 +560,7 @@ func (a *WalletJournal) updateCorporation(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

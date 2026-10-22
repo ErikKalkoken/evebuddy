@@ -27,6 +27,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -148,8 +149,8 @@ type Training struct {
 
 	exportButton *xwidget.ContextMenuButton
 	filterChip   *xwidget.FilterChipCompact // only on mobile
-	filterRun    latestRun
-	updateRun    latestRun
+	filterRun    xsync.LatestRun
+	updateRun    xsync.LatestRun
 	footerLabel  *widget.Label
 	errorLabel   *widget.Label
 	columnSorter *xwidget.ColumnSorter[trainingRow]
@@ -526,7 +527,7 @@ func (a *Training) currentFilter() trainingFilter {
 }
 
 func (a *Training) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -573,7 +574,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 }
 
 func (a *Training) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	rows, err := a.fetchRows(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

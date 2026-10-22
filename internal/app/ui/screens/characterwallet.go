@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -29,7 +30,7 @@ type CharacterWallet struct {
 	transactions  *WalletTransactions
 	loyaltyPoints *CharacterLoyaltyPoints
 	u             baseUI
-	updateRun     latestRun
+	updateRun     xsync.LatestRun
 }
 
 func NewCharacterWallet(u baseUI) *CharacterWallet {
@@ -93,7 +94,7 @@ func (a *CharacterWallet) Update(ctx context.Context) {
 }
 
 func (a *CharacterWallet) UpdateBalance(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

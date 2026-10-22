@@ -18,6 +18,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -29,7 +30,7 @@ type CharacterAugmentations struct {
 	list      *widget.List
 	top       *widget.Label
 	u         baseUI
-	updateRun latestRun
+	updateRun xsync.LatestRun
 }
 
 func NewCharacterAugmentations(s baseUI) *CharacterAugmentations {
@@ -85,7 +86,7 @@ func (a *CharacterAugmentations) makeImplantList() *widget.List {
 }
 
 func (a *CharacterAugmentations) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	reset := func() {
 		fyne.Do(func() {
 			if !isLatest() {

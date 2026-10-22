@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -74,8 +75,8 @@ type LoyaltyPoints struct {
 	widget.BaseWidget
 
 	filterChip       *xwidget.FilterChipCompact // only on mobile
-	filterRun        latestRun
-	updateRun        latestRun
+	filterRun        xsync.LatestRun
+	updateRun        xsync.LatestRun
 	errorLabel       *widget.Label
 	footer           *widget.Label
 	collapseBranches *ttwidget.Button
@@ -244,7 +245,7 @@ func (a *LoyaltyPoints) currentFilter() loyaltyPointsFilter {
 }
 
 func (a *LoyaltyPoints) filterTreeAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	data := maps.Clone(a.data)
 	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
@@ -332,7 +333,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 }
 
 func (a *LoyaltyPoints) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	data, err := a.fetchData(ctx)
 	if err != nil {
 		if ctx.Err() != nil {

@@ -23,6 +23,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -109,8 +110,8 @@ type WalletTransactions struct {
 	widget.BaseWidget
 
 	body           fyne.CanvasObject
-	filterRun      latestRun
-	updateRun      latestRun
+	filterRun      xsync.LatestRun
+	updateRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	errorLabel     *widget.Label
 	character      atomic.Pointer[app.Character]
@@ -438,7 +439,7 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 }
 
 func (a *WalletTransactions) filterRowsAsync(sortCol string) {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -511,7 +512,7 @@ func (a *WalletTransactions) Update(ctx context.Context) {
 }
 
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -536,7 +537,7 @@ func (a *WalletTransactions) updateCharacter(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
@@ -624,7 +625,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 }
 
 func (a *WalletTransactions) updateCorporation(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -649,7 +650,7 @@ func (a *WalletTransactions) updateCorporation(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.filterRun.start() // discard results of filters still running
+			a.filterRun.Discard()
 			a.errorLabel.Hide()
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)

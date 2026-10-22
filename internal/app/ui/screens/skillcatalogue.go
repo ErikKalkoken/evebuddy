@@ -26,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -96,8 +97,8 @@ type SkillCatalogue struct {
 	character      atomic.Pointer[app.Character]
 	columnSorter   *xwidget.ColumnSorter[skillCatalogueRow]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
-	filterRun      latestRun
-	updateRun      latestRun
+	filterRun      xsync.LatestRun
+	updateRun      xsync.LatestRun
 	footer         *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
@@ -324,7 +325,7 @@ func (a *SkillCatalogue) currentFilter() skillCatalogueFilter {
 }
 
 func (a *SkillCatalogue) filterRowsAsync() {
-	isLatest := a.filterRun.start()
+	isLatest := a.filterRun.Start()
 	total := len(a.rows)
 	rows := slices.Clone(a.rows)
 	filter := a.currentFilter()
@@ -368,7 +369,7 @@ func (a *SkillCatalogue) filterRowsAsync() {
 }
 
 func (a *SkillCatalogue) update(ctx context.Context) {
-	isLatest := a.updateRun.start()
+	isLatest := a.updateRun.Start()
 	setTop := func(t string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
