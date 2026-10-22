@@ -51,6 +51,11 @@ func (w *ContextMenuButton) Tapped(e *fyne.PointEvent) {
 	ShowPopUpMenuBelowTrailing(w, w.menu)
 }
 
+// MenuItems returns the menu items.
+func (w *ContextMenuButton) MenuItems() []*fyne.MenuItem {
+	return w.menu.Items
+}
+
 // SetMenuItems replaces the menu items.
 func (w *ContextMenuButton) SetMenuItems(menuItems []*fyne.MenuItem) {
 	w.menu.Items = menuItems

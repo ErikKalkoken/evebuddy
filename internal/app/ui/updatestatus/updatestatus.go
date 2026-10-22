@@ -65,8 +65,14 @@ func Show(s baseUI) {
 		}
 	})
 	w.Show()
-	go a.update(ctx)
+	runAsync(func() {
+		a.update(ctx)
+	})
 }
+
+// runAsync runs f in a new goroutine.
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
 
 type sectionCategory uint
 
@@ -106,6 +112,7 @@ type updateStatus struct {
 	entityList        *widget.List
 	entityMoreButton  *xwidget.ContextMenuButton
 	entitySections    []app.CacheSectionStatus
+	moreButton        *xwidget.ContextMenuButton
 	nav               *xwidget.Navigator
 	sb                *kxwidget.Snackbar
 	sectionList       *widget.List
@@ -190,11 +197,11 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		)
 	}
 	menu := fyne.NewMenu("", items...)
-	moreButton := xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
+	a.moreButton = xwidget.NewIconButtonWithMenu(theme.MoreHorizontalIcon(), menu)
 	if a.u.IsOffline() {
-		moreButton.Disable()
+		a.moreButton.Disable()
 	}
-	ab := xwidget.NewAppBar("Update status", a.entityList, moreButton)
+	ab := xwidget.NewAppBar("Update status", a.entityList, a.moreButton)
 	ab.HideBackground = !a.u.IsMobile()
 	a.nav = xwidget.NewNavigator(ab)
 
