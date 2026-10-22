@@ -122,7 +122,7 @@ func TestGameSearch_Init(t *testing.T) {
 	t.Run("does not save picks after loading fails", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: &testdouble.InfoViewerFake{}, Storage: st})
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		e := factory.CreateEveEntity()
 		picked := factory.CreateEveEntityCharacter()
 		u.Settings().SetRecentSearches([]int64{e.ID})

@@ -714,9 +714,10 @@ func TestAttributeList_toUIItemActions(t *testing.T) {
 		db, st, _ := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
-		w := newAttributeList(New(u))
+		iw := New(u)
+		w := newAttributeList(iw)
 		var opened *url.URL
-		w.openURL = func(x *url.URL) error {
+		iw.openURLFunc = func(x *url.URL) error {
 			opened = x
 			return nil
 		}

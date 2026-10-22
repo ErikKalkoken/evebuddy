@@ -611,14 +611,12 @@ func newAttributeItem(label string, value any) attributeItem {
 type attributeList struct {
 	ui.AttributeList
 
-	iw      *InfoViewer
-	openURL func(*url.URL) error
+	iw *InfoViewer
 }
 
 func newAttributeList(iw *InfoViewer, items ...attributeItem) *attributeList {
 	w := &attributeList{
-		iw:      iw,
-		openURL: fyne.CurrentApp().OpenURL,
+		iw: iw,
 	}
 	w.ExtendBaseWidget(w)
 	w.set(items)
@@ -744,7 +742,7 @@ func (w *attributeList) toUIItem(it attributeItem) ui.AttributeItem {
 	var action func()
 	if x, ok := it.Value.(*url.URL); ok && x != nil {
 		action = func() {
-			err := w.openURL(x)
+			err := w.iw.openURLFunc(x)
 			if err != nil {
 				w.iw.sb.Display(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
 			}
