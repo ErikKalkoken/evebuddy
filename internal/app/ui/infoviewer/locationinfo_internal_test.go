@@ -126,7 +126,7 @@ func TestLocationInfo_update(t *testing.T) {
 		a.owner.OnTapped()
 		// then
 		owner := l.Owner.MustValue()
-		assert.Equal(t, &showParams{variant: eveEntity2InfoVariant(owner), entityID: owner.ID}, iw.current)
+		assert.Equal(t, &showParams{variant: eveEntity2InfoVariant(owner), entityID: owner.ID}, iw.current())
 	})
 	t.Run("should show EVE ID in developer mode", func(t *testing.T) {
 		// given

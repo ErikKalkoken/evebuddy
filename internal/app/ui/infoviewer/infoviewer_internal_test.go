@@ -111,7 +111,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		iw.Show2(app.EveTypeAlliance, 42, 0)
 		// then
-		assert.Equal(t, &showParams{variant: Alliance, entityID: 42}, iw.current)
+		assert.Equal(t, &showParams{variant: Alliance, entityID: 42}, iw.current())
 		assert.Equal(t, "Alliance: Information", iw.nav.Current().(*xwidget.AppBar).Title())
 	})
 	t.Run("should show type when item ID is missing", func(t *testing.T) {
@@ -128,7 +128,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		iw.Show2(app.EveTypeAlliance, 0, 0)
 		// then
-		assert.Equal(t, &showParams{variant: Type, entityID: app.EveTypeAlliance}, iw.current)
+		assert.Equal(t, &showParams{variant: Type, entityID: app.EveTypeAlliance}, iw.current())
 	})
 	t.Run("should show error when type ID is missing", func(t *testing.T) {
 		// given
@@ -144,7 +144,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		iw.Show2(0, 42, 0)
 		// then
-		assert.Nil(t, iw.current)
+		assert.Nil(t, iw.current())
 		assert.NotNil(t, u.MainWindow().Canvas().Overlays().Top())
 	})
 	t.Run("should show location for station category", func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		jobs[0](t.Context())
 		// then
-		assert.Equal(t, &showParams{variant: Location, entityID: 60_000_001}, iw.current)
+		assert.Equal(t, &showParams{variant: Location, entityID: 60_000_001}, iw.current())
 	})
 	t.Run("should show location with character for structure category", func(t *testing.T) {
 		// given
@@ -189,7 +189,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		jobs[0](t.Context())
 		// then
-		assert.Equal(t, &showParams{variant: Location, entityID: 1_000_000_000_001, characterID: 7}, iw.current)
+		assert.Equal(t, &showParams{variant: Location, entityID: 1_000_000_000_001, characterID: 7}, iw.current())
 	})
 	t.Run("should show character for character group", func(t *testing.T) {
 		// given
@@ -210,7 +210,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		jobs[0](t.Context())
 		// then
-		assert.Equal(t, &showParams{variant: Character, entityID: 90_000_001}, iw.current)
+		assert.Equal(t, &showParams{variant: Character, entityID: 90_000_001}, iw.current())
 	})
 	t.Run("should show error for unsupported type", func(t *testing.T) {
 		// given
@@ -232,7 +232,7 @@ func TestInfoViewer_Show2(t *testing.T) {
 		// when
 		jobs[0](t.Context())
 		// then
-		assert.Nil(t, iw.current)
+		assert.Nil(t, iw.current())
 		assert.NotNil(t, u.MainWindow().Canvas().Overlays().Top())
 	})
 }
@@ -548,7 +548,7 @@ func TestInfoViewer_show(t *testing.T) {
 		// then
 		assert.Nil(t, iw.nav)
 		assert.Nil(t, iw.w)
-		assert.Empty(t, iw.pageCancels)
+		assert.Empty(t, iw.pages)
 		assert.NotContains(t, labelTexts(page), "Caldari")
 	})
 	t.Run("should open new window after window was closed", func(t *testing.T) {
@@ -651,7 +651,7 @@ func TestAttributeList_toUIItemActions(t *testing.T) {
 		// when
 		got.InfoAction()
 		// then
-		assert.Equal(t, &showParams{variant: Alliance, entityID: 42}, iw.current)
+		assert.Equal(t, &showParams{variant: Alliance, entityID: 42}, iw.current())
 	})
 	t.Run("should have no info for unsupported entity", func(t *testing.T) {
 		// given
@@ -705,7 +705,7 @@ func TestAttributeList_toUIItemActions(t *testing.T) {
 				// when
 				got.InfoAction()
 				// then
-				assert.Equal(t, &tc.want, iw.current)
+				assert.Equal(t, &tc.want, iw.current())
 			})
 		}
 	})

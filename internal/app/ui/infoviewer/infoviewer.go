@@ -104,11 +104,9 @@ type baseUI interface {
 // InfoViewer represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
 type InfoViewer struct {
-	current     *showParams // parameters for currently shown info window (if any)
 	nav         *xwidget.Navigator
 	openURLFunc func(*url.URL) error
-	pageCancels map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
-	pageParams  map[fyne.CanvasObject]showParams         // parameters of shown pages
+	pages       map[fyne.CanvasObject]pageState // shown pages
 	sb          *kxwidget.Snackbar
 	u           baseUI
 	w           fyne.Window
@@ -262,6 +260,23 @@ type showParams struct {
 	characterID int64
 }
 
+type pageState struct {
+	cancel context.CancelFunc // cancels background work of the page
+	params showParams
+}
+
+// current returns the parameters of the currently shown page or nil if none is shown.
+func (iw *InfoViewer) current() *showParams {
+	if iw.nav == nil {
+		return nil
+	}
+	p, ok := iw.pages[iw.nav.Current()]
+	if !ok {
+		return nil
+	}
+	return &p.params
+}
+
 func (iw *InfoViewer) show2(arg showParams) {
 	parentW := iw.dialogParent()
 
@@ -299,14 +314,13 @@ func (iw *InfoViewer) show2(arg showParams) {
 	}
 
 	// don't spawn another window if it is already shown.
-	if iw.current != nil && iw.w != nil {
-		if *iw.current == arg {
+	if p := iw.current(); p != nil && iw.w != nil {
+		if *p == arg {
 			iw.w.Show()
 			iw.w.RequestFocus()
 			return
 		}
 	}
-	iw.current = &arg
 
 	makeAppBarTitle := func(s string) string {
 		if iw.u.IsMobile() {
@@ -365,14 +379,10 @@ func (iw *InfoViewer) show2(arg showParams) {
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !iw.u.IsMobile()
 	pageCtx, cancel := context.WithCancel(context.Background())
-	if iw.pageCancels == nil {
-		iw.pageCancels = make(map[fyne.CanvasObject]context.CancelFunc)
+	if iw.pages == nil {
+		iw.pages = make(map[fyne.CanvasObject]pageState)
 	}
-	iw.pageCancels[ab] = cancel
-	if iw.pageParams == nil {
-		iw.pageParams = make(map[fyne.CanvasObject]showParams)
-	}
-	iw.pageParams[ab] = arg
+	iw.pages[ab] = pageState{cancel: cancel, params: arg}
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
@@ -380,24 +390,16 @@ func (iw *InfoViewer) show2(arg showParams) {
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		iw.nav.OnPop = func(page fyne.CanvasObject) {
-			if cancel, ok := iw.pageCancels[page]; ok {
-				cancel()
-				delete(iw.pageCancels, page)
-			}
-			delete(iw.pageParams, page)
-			// the previous page is shown again
-			if p, ok := iw.pageParams[iw.nav.Current()]; ok {
-				iw.current = &p
-			} else {
-				iw.current = nil
+			if p, ok := iw.pages[page]; ok {
+				p.cancel()
+				delete(iw.pages, page)
 			}
 		}
 		w.SetOnClosed(func() {
-			for page, cancel := range iw.pageCancels {
-				cancel()
-				delete(iw.pageCancels, page)
+			for _, p := range iw.pages {
+				p.cancel()
 			}
-			clear(iw.pageParams)
+			clear(iw.pages)
 			iw.nav = nil
 			iw.w = nil
 			if onClosed != nil {

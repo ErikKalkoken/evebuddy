@@ -788,6 +788,6 @@ func TestInventoryTypeInfo_makeRequirementsTab(t *testing.T) {
 		// when
 		list.Select(0)
 		// then
-		assert.Equal(t, &showParams{variant: Type, entityID: 3436}, iw.current)
+		assert.Equal(t, &showParams{variant: Type, entityID: 3436}, iw.current())
 	})
 }

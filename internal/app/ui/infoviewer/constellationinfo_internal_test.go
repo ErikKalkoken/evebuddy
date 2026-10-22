@@ -53,7 +53,7 @@ func TestConstellationInfo_update(t *testing.T) {
 		// when
 		a.region.OnTapped()
 		// then
-		assert.Equal(t, &showParams{variant: Region, entityID: constellation.Region.ID}, iw.current)
+		assert.Equal(t, &showParams{variant: Region, entityID: constellation.Region.ID}, iw.current())
 	})
 	t.Run("should report error when solar systems can not be fetched", func(t *testing.T) {
 		// given

@@ -126,11 +126,11 @@ func TestCorporationInfo_update(t *testing.T) {
 		// when
 		a.alliance.OnTapped()
 		// then
-		assert.Equal(t, &showParams{variant: Alliance, entityID: alliance.ID}, iw.current)
+		assert.Equal(t, &showParams{variant: Alliance, entityID: alliance.ID}, iw.current())
 		// when
 		a.hq.OnTapped()
 		// then
-		assert.Equal(t, &showParams{variant: Location, entityID: station.ID}, iw.current)
+		assert.Equal(t, &showParams{variant: Location, entityID: station.ID}, iw.current())
 	})
 }
 

@@ -148,7 +148,7 @@ func TestCharacterInfo_update(t *testing.T) {
 		// when
 		a.corporation.OnTapped()
 		// then
-		assert.Equal(t, &showParams{variant: Corporation, entityID: c.Corporation.ID}, iw.current)
+		assert.Equal(t, &showParams{variant: Corporation, entityID: c.Corporation.ID}, iw.current())
 	})
 }
 
