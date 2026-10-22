@@ -108,6 +108,7 @@ type InfoViewer struct {
 	nav         *xwidget.Navigator
 	openURLFunc func(*url.URL) error
 	pageCancels map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
+	pageParams  map[fyne.CanvasObject]showParams         // parameters of shown pages
 	sb          *kxwidget.Snackbar
 	u           baseUI
 	w           fyne.Window
@@ -368,6 +369,10 @@ func (iw *InfoViewer) show2(arg showParams) {
 		iw.pageCancels = make(map[fyne.CanvasObject]context.CancelFunc)
 	}
 	iw.pageCancels[ab] = cancel
+	if iw.pageParams == nil {
+		iw.pageParams = make(map[fyne.CanvasObject]showParams)
+	}
+	iw.pageParams[ab] = arg
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
@@ -379,12 +384,20 @@ func (iw *InfoViewer) show2(arg showParams) {
 				cancel()
 				delete(iw.pageCancels, page)
 			}
+			delete(iw.pageParams, page)
+			// the previous page is shown again
+			if p, ok := iw.pageParams[iw.nav.Current()]; ok {
+				iw.current = &p
+			} else {
+				iw.current = nil
+			}
 		}
 		w.SetOnClosed(func() {
 			for page, cancel := range iw.pageCancels {
 				cancel()
 				delete(iw.pageCancels, page)
 			}
+			clear(iw.pageParams)
 			iw.nav = nil
 			iw.w = nil
 			if onClosed != nil {

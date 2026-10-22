@@ -487,6 +487,45 @@ func TestInfoViewer_show(t *testing.T) {
 		// then
 		assert.NotContains(t, labelTexts(page), "Caldari")
 	})
+	t.Run("should show page again after going back", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			Go:       func(_ func(context.Context)) {},
+			IsOnline: true,
+			Storage:  st,
+		})
+		iw := New(u)
+		iw.ShowRace(1)
+		iw.ShowBloodline(2)
+		iw.nav.Pop()
+		// when
+		iw.ShowBloodline(2)
+		// then
+		assert.False(t, iw.nav.IsRoot())
+		assert.Equal(t, "Bloodline: Information", iw.nav.Current().(*xwidget.AppBar).Title())
+	})
+	t.Run("should not push previous page again after going back", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			Go:       func(_ func(context.Context)) {},
+			IsOnline: true,
+			Storage:  st,
+		})
+		iw := New(u)
+		iw.ShowRace(1)
+		iw.ShowBloodline(2)
+		iw.nav.Pop()
+		// when
+		iw.ShowRace(1)
+		// then
+		assert.True(t, iw.nav.IsRoot())
+	})
 	t.Run("should reset when window is closed", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
