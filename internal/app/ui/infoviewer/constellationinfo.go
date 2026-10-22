@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -77,11 +76,7 @@ func (a *constellationInfo) update(ctx context.Context) error {
 		}
 
 		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-			x.Action = func(v any) {
-				fyne.CurrentApp().Clipboard().SetContent(v.(string))
-			}
-			attributeList := newAttributeList(a.iw, []attributeItem{x}...)
+			attributeList := newAttributeList(a.iw, newEVEIDAttributeItem(o.ID))
 			attributesTab := ui.NewTabItem("Attributes", attributeList)
 			a.tabs.Append(attributesTab)
 			a.tabs.Refresh()

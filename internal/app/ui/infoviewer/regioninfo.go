@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -87,11 +86,7 @@ func (a *regionInfo) update(ctx context.Context) error {
 	items := xslices.Map(oo, newEntityItemFromEveEntity)
 	fyne.Do(func() {
 		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-			x.Action = func(v any) {
-				fyne.CurrentApp().Clipboard().SetContent(v.(string))
-			}
-			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, newEVEIDAttributeItem(o.ID))))
 		}
 		a.name.SetText(o.Name)
 		a.description.SetText(o.DescriptionPlain())

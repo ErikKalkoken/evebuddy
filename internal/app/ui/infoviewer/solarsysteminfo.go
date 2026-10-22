@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -162,11 +161,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	}
 	fyne.Do(func() {
 		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
-			x.Action = func(v any) {
-				fyne.CurrentApp().Clipboard().SetContent(v.(string))
-			}
-			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, newEVEIDAttributeItem(a.id))))
 		}
 		a.name.SetText(o.Name)
 		a.region.SetText(o.Constellation.Region.Name)

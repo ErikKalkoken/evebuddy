@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -76,11 +75,7 @@ func (a *raceInfo) update(ctx context.Context) error {
 		items = append(items, newAttributeItem("Faction", v))
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-		x.Action = func(v any) {
-			fyne.CurrentApp().Clipboard().SetContent(v.(string))
-		}
-		items = append(items, x)
+		items = append(items, newEVEIDAttributeItem(o.ID))
 	}
 	if len(items) > 0 {
 		fyne.Do(func() {

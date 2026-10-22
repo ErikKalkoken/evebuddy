@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -89,11 +88,7 @@ func (a *factionInfo) update(ctx context.Context) error {
 		}))
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-		x.Action = func(v any) {
-			fyne.CurrentApp().Clipboard().SetContent(v.(string))
-		}
-		items = append(items, x)
+		items = append(items, newEVEIDAttributeItem(o.ID))
 	}
 	fyne.Do(func() {
 		a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, items...)))

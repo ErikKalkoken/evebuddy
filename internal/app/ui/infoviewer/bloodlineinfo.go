@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -85,24 +84,10 @@ func (a *bloodlineInfo) update(ctx context.Context) error {
 		}
 	}
 	if a.iw.u.IsDeveloperMode() {
-		attributes = append(attributes, newAttributeItem("EVE ID", fmt.Sprint(o.ID)))
+		attributes = append(attributes, newEVEIDAttributeItem(o.ID))
 	}
 	fyne.Do(func() {
 		a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, attributes...)))
 	})
-
-	// 	if a.iw.u.IsDeveloperMode() {
-	// 		x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
-	// 		x.Action = func(v any) {
-	// 			fyne.CurrentApp().Clipboard().SetContent(v.(string))
-	// 		}
-	// 	}
-	// 	fyne.Do(func() {
-	// 		a.name.SetText(o.Name)
-	// 		a.description.SetText(o.Description)
-	// 		a.tabs.Refresh()
-	// 	})
-	// 	return nil
-	// })
 	return nil
 }

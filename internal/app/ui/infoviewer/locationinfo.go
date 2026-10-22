@@ -152,12 +152,8 @@ func (a *locationInfo) update(ctx context.Context) error {
 		})
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
 		fyne.Do(func() {
-			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, newEVEIDAttributeItem(o.ID))))
 		})
 	}
 	fyne.Do(func() {

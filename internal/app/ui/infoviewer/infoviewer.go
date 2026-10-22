@@ -608,6 +608,15 @@ func newAttributeItem(label string, value any) attributeItem {
 	return attributeItem{Label: label, Value: value}
 }
 
+// newEVEIDAttributeItem returns the developer mode item for an EVE ID, which copies it on tap.
+func newEVEIDAttributeItem(id int64) attributeItem {
+	x := newAttributeItem("EVE ID", id)
+	x.Action = func(_ any) {
+		fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(id))
+	}
+	return x
+}
+
 type attributeList struct {
 	ui.AttributeList
 
