@@ -418,7 +418,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		// then
 		assert.True(t, a.resultsPage.Visible())
 		assert.False(t, a.recentPage.Visible())
-		assert.False(t, a.indicator.Visible())
+		assert.False(t, a.spinner.Visible())
 		assert.True(t, a.resultCount.Visible())
 		assert.Equal(t, "2 Results", a.resultCount.Text)
 		assert.Equal(t, widget.MediumImportance, a.resultCount.Importance)
@@ -544,8 +544,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		a.startSearch("alpha")
 		// then
 		assert.Equal(t, "Search failed", snackbar)
-		assert.False(t, a.indicator.Visible())
-		assert.False(t, a.indicator.Running())
+		assert.False(t, a.spinner.Visible())
 		assert.False(t, a.resultCount.Visible())
 	})
 	t.Run("shows info dialog on window set later", func(t *testing.T) {
@@ -632,9 +631,35 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		categories := a.results.Data().Children(nil)
 		require.Len(t, categories, 1)
 		assert.Equal(t, "Character (2)", categories[0].String())
-		assert.False(t, a.indicator.Visible())
-		assert.False(t, a.indicator.Running())
+		assert.False(t, a.spinner.Visible())
 		assert.Empty(t, snackbar)
+	})
+	t.Run("keeps spinner shown when a new search starts", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() })
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		started := make(chan struct{})
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			close(started)
+			<-r.Context().Done() // responds only when canceled
+			return nil, r.Context().Err()
+		})
+		var wg sync.WaitGroup
+		t.Cleanup(wg.Wait)
+		runAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		a := NewGameSearch(u)
+		a.startSearch("alpha")
+		<-started
+		runAsync = func(_ func()) {} // hold back the new search, so only startSearch touches the spinner
+		// when
+		a.startSearch("alphab")
+		// then
+		assert.True(t, a.spinner.Visible())
 	})
 	t.Run("cancels running search on reset", func(t *testing.T) {
 		// given
@@ -669,8 +694,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.False(t, a.resultCount.Visible())
 		assert.True(t, a.recentPage.Visible())
 		assert.False(t, a.resultsPage.Visible())
-		assert.False(t, a.indicator.Visible())
-		assert.False(t, a.indicator.Running())
+		assert.False(t, a.spinner.Visible())
 		assert.Empty(t, snackbar)
 	})
 }

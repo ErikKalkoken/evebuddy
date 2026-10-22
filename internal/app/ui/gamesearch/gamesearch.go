@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -81,7 +82,6 @@ type GameSearch struct {
 	defaultCategories   []string
 	searchEntry         *xwidget.SearchEntry
 	iconCache           xsync.Map[int64, fyne.Resource]
-	indicator           *widget.ProgressBarInfinite
 	recent              *widget.List
 	recentItems         []*app.EveEntity
 	recentLoadFailed    bool
@@ -90,6 +90,7 @@ type GameSearch struct {
 	results             *xwidget.Tree[searchResultNode]
 	resultsPage         *fyne.Container
 	searchOptions       *widget.Accordion
+	spinner             *kxwidget.Spinner
 	strict              *kxwidget.Switch
 	supportedCategories set.Set[app.EveEntityCategory]
 	u                   baseUI
@@ -101,8 +102,8 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a := &GameSearch{
 		defaultCategories:   makeOptions(),
 		displaySnackbar:     u.DisplaySnackbar,
-		indicator:           widget.NewProgressBarInfinite(),
 		resultCount:         widget.NewLabel(""),
+		spinner:             kxwidget.NewSpinner(),
 		supportedCategories: infoviewer.SupportedCategories(),
 		u:                   u,
 		w:                   u.MainWindow(),
@@ -135,7 +136,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 		},
 	)
 	a.searchEntry.Disable() // until init, so recent searches can't change before they are loaded
-	a.indicator.Hide()
+	a.spinner.Hide()
 
 	a.searchOptions = widget.NewAccordion(
 		widget.NewAccordionItem(
@@ -157,14 +158,17 @@ func NewGameSearch(u baseUI) *GameSearch {
 	a.recent = a.makeRecentSelected()
 
 	a.resultsPage = container.NewBorder(
-		container.NewVBox(
-			a.indicator,
-			a.resultCount,
+		a.resultCount,
+		nil,
+		nil,
+		nil,
+		container.NewStack(
+			a.results,
+			container.NewCenter(container.NewStack(
+				xwidget.NewSpacer(fyne.NewSquareSize(2*theme.IconInlineSize())),
+				a.spinner,
+			)),
 		),
-		nil,
-		nil,
-		nil,
-		a.results,
 	)
 	a.resultsPage.Hide()
 	a.clearRecent = widget.NewHyperlink("Clear", nil)
@@ -270,6 +274,8 @@ func (a *GameSearch) Focus() {
 
 func (a *GameSearch) Reset() {
 	a.stopSearch()
+	a.spinner.Stop()
+	a.spinner.Hide()
 	a.searchEntry.SetText("")
 	a.clearResults()
 }
@@ -414,8 +420,6 @@ func (a *GameSearch) stopSearch() {
 	}
 	a.cancelSearch()
 	a.cancelSearch = nil
-	a.indicator.Stop()
-	a.indicator.Hide()
 }
 
 // doSearch runs a search. Results of a canceled search are discarded,
@@ -433,16 +437,17 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 		a.resultCount.Hide()
 		a.recentPage.Hide()
 		a.resultsPage.Show()
-		a.indicator.Show()
-		a.indicator.Start()
+		a.spinner.Show()
+		a.spinner.Start()
+		a.resultsPage.Refresh() // Fyne won't repaint a never-visible object on Show
 	})
 	defer func() {
 		fyne.Do(func() {
 			if ctx.Err() != nil {
-				return // indicator belongs to the newer search
+				return // spinner belongs to the newer search
 			}
-			a.indicator.Stop()
-			a.indicator.Hide()
+			a.spinner.Stop()
+			a.spinner.Hide()
 		})
 	}()
 	select {
