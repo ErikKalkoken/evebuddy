@@ -207,7 +207,9 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 	}
 	attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
 	attributes = append(attributes, newAttributeItem("ISK Tax Rate", fmt.Sprintf("%.1f %%", o.TaxRate*100)))
-	attributes = append(attributes, newAttributeItem("War Eligibility", o.WarEligible))
+	if v, ok := o.WarEligible.Value(); ok {
+		attributes = append(attributes, newAttributeItem("War Eligibility", v))
+	}
 	if v, ok := o.URL.Value(); ok {
 		if u, err := url.ParseRequestURI(v); err == nil && u.Host != "" {
 			attributes = append(attributes, newAttributeItem("URL", u))

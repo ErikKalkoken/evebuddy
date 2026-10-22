@@ -177,6 +177,7 @@ func TestCorporationInfo_makeAttributes(t *testing.T) {
 			TaxRate:     0.1,
 			Ticker:      "ALPHA",
 			URL:         optional.New("https://www.example.com"),
+			WarEligible: optional.New(true),
 		}
 		a := newCorporationInfo(New(u), o.ID)
 		// when
@@ -193,6 +194,7 @@ func TestCorporationInfo_makeAttributes(t *testing.T) {
 		assert.Contains(t, got, newAttributeItem("NPC", false))
 		assert.Contains(t, got, newAttributeItem("Member Count", int64(42)))
 		assert.Contains(t, got, newAttributeItem("ISK Tax Rate", "10.0 %"))
+		assert.Contains(t, got, newAttributeItem("War Eligibility", true))
 		assert.Contains(t, got, newAttributeItem("URL", myURL))
 	})
 	t.Run("should not show invalid URL", func(t *testing.T) {
