@@ -137,6 +137,7 @@ func NewGameSearch(u baseUI) *GameSearch {
 	})
 	a.strict.On = false
 
+	a.resultCount.Wrapping = fyne.TextWrapWord
 	a.resultCount.Hide()
 	a.results = a.makeResults()
 
@@ -432,10 +433,7 @@ func (a *GameSearch) startSearch(search string) {
 		a.results.Clear()
 		a.recentPage.Hide()
 		a.resultsPage.Show()
-		a.resultCount.Importance = widget.MediumImportance
-		a.resultCount.Text = "Select at least one category"
-		a.resultCount.Refresh()
-		a.resultCount.Show()
+		a.showResultCount("Select at least one category", widget.MediumImportance)
 		return
 	}
 	strict := a.strict.On
@@ -454,13 +452,16 @@ func (a *GameSearch) stopSearch() {
 	a.cancelSearch = nil
 }
 
+func (a *GameSearch) showResultCount(text string, importance widget.Importance) {
+	a.resultCount.Importance = importance
+	a.resultCount.Text = text
+	a.resultCount.Refresh()
+	a.resultCount.Show()
+}
+
 // doSearch runs a search. Results of a canceled search are discarded,
 // so a slow search can't overwrite the results of a newer one.
 func (a *GameSearch) doSearch(ctx context.Context, search string, categories []app.SearchCategory, strict bool) {
-	if search == "" {
-		a.clearResults()
-		return
-	}
 	fyne.Do(func() {
 		if ctx.Err() != nil {
 			return
@@ -517,20 +518,14 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 			return
 		}
 		if total == maxSearchResults {
-			a.resultCount.Importance = widget.WarningImportance
-			a.resultCount.Wrapping = fyne.TextWrapWord
-			a.resultCount.Text = fmt.Sprintf(
+			a.showResultCount(fmt.Sprintf(
 				"Search for \"%s\" exceeded the server limit of 500 results "+
 					"and may not contain the items you are looking for.",
 				search,
-			)
+			), widget.WarningImportance)
 		} else {
-			a.resultCount.Importance = widget.MediumImportance
-			a.resultCount.Text = fmt.Sprintf("%d Results", total)
+			a.showResultCount(fmt.Sprintf("%d Results", total), widget.MediumImportance)
 		}
-		a.resultCount.Refresh()
-		a.resultCount.Show()
-
 	})
 	if total == 0 {
 		return
@@ -547,14 +542,14 @@ func (a *GameSearch) doSearch(ctx context.Context, search string, categories []a
 		category := &searchResultNode{category: c, count: itemsCount}
 		err := td.Add(nil, category, itemsCount > 0)
 		if err != nil {
-			slog.Error("game search: adding category node", "node", category)
+			slog.Error("game search: adding category node", "node", category, "err", err)
 			continue
 		}
 		for _, o := range items {
-			entity := &searchResultNode{ee: o}
+			entity := &searchResultNode{category: c, ee: o}
 			err := td.Add(category, entity, false)
 			if err != nil {
-				slog.Error("game search: adding item node", "node", category)
+				slog.Error("game search: adding item node", "node", entity, "err", err)
 				continue
 			}
 		}

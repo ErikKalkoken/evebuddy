@@ -239,11 +239,11 @@ func TestSearchResultNode(t *testing.T) {
 	})
 	t.Run("entity node", func(t *testing.T) {
 		// given
-		n := searchResultNode{ee: &app.EveEntity{ID: 42, Name: "Alpha", Category: app.EveEntityCharacter}}
+		n := searchResultNode{category: app.SearchCharacter, ee: &app.EveEntity{ID: 42, Name: "Alpha", Category: app.EveEntityCharacter}}
 		// then
 		assert.False(t, n.isCategory())
 		assert.Equal(t, "Alpha", n.String())
-		assert.Equal(t, "-42", n.UID())
+		assert.Equal(t, "Character-42", n.UID())
 	})
 }
 
@@ -497,19 +497,31 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		assert.Equal(t, []string{"alphabc"}, searches)
 		assert.Equal(t, "1 Results", a.resultCount.Text)
 	})
-	t.Run("shows recent searches for empty search", func(t *testing.T) {
+	t.Run("shows entity found in several categories in each of them", func(t *testing.T) {
 		// given
 		httpmock.Reset()
-		db, st, _ := testutil.NewDBOnDisk(t)
+		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		e := factory.CreateEveEntityCharacter()
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{
+			"agent":     {e.ID},
+			"character": {e.ID},
+		}))
 		a := NewGameSearch(u)
 		// when
-		a.startSearch("")
+		a.startSearch("alpha")
 		// then
-		assert.Equal(t, 0, httpmock.GetTotalCallCount())
-		assert.True(t, a.recentPage.Visible())
-		assert.False(t, a.resultsPage.Visible())
+		td := a.results.Data()
+		categories := td.Children(nil)
+		require.Len(t, categories, 2)
+		for _, n := range categories {
+			assert.Equal(t, []int64{e.ID}, xslices.Map(td.Children(n), func(x *searchResultNode) int64 {
+				return x.ee.ID
+			}), n.String())
+		}
 	})
 	t.Run("shows results from one category with branch opened", func(t *testing.T) {
 		// given

@@ -720,6 +720,7 @@ func (u *DesktopUI) showSearchWindow() {
 		if onClosed != nil {
 			onClosed()
 		}
+		u.gameSearch.Reset() // cancels a running search
 		sb.Stop()
 	})
 	w.Resize(fyne.Size{Width: 700, Height: 400})
