@@ -2,7 +2,7 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -113,63 +113,30 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	stationItems := entityItemsFromEveEntities(stations)
+	structureItems := xslices.Map(structures, func(x *app.EveLocation) entityItem {
+		return newEntityItem(
+			x.ID,
+			x.Name,
+			"Structure",
+			Location,
+		)
+	})
+	var starTypeID int64
+	var stargateItems, planetItems []entityItem
 	g := new(errgroup.Group)
-	g.Go(func() error {
-		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", fmt.Sprint(a.id))
-			x.Action = func(v any) {
-				fyne.CurrentApp().Clipboard().SetContent(v.(string))
-			}
-			fyne.Do(func() {
-				a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
-			})
-		}
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.region.SetText(o.Constellation.Region.Name)
-			a.region.OnTapped = func() {
-				a.iw.Show(o.Constellation.Region.ToEveEntity())
-			}
-			a.constellation.SetText(o.Constellation.Name)
-			a.constellation.OnTapped = func() {
-				a.iw.Show(o.Constellation.ToEveEntity())
-			}
-			a.security.Text = o.SecurityStatusDisplay()
-			a.security.Importance = o.SecurityType().ToImportance()
-			a.security.Refresh()
-			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		stationItems := entityItemsFromEveEntities(stations)
-		structureItems := xslices.Map(structures, func(x *app.EveLocation) entityItem {
-			return newEntityItem(
-				x.ID,
-				x.Name,
-				"Structure",
-				Location,
-			)
-		})
-		fyne.Do(func() {
-			a.stations.set(stationItems...)
-			a.structures.set(structureItems...)
-			a.tabs.Refresh()
-		})
-		return nil
-	})
 	if v, ok := starID.Value(); ok {
 		g.Go(func() error {
 			id, err := a.iw.u.EVEUniverse().GetStarTypeID(ctx, v)
-			if err != nil {
-				return err
+			if ctx.Err() != nil {
+				return nil // page closed or shutting down
 			}
-			fyne.Do(func() {
-				a.iw.u.EVEImage().InventoryTypeIconAsync(id, ui.IconPixelSize, func(r fyne.Resource) {
-					a.logo.Resource = r
-					a.logo.Refresh()
-				})
-			})
+			if err != nil {
+				// only needed for the logo
+				slog.Error("Failed to fetch star type for solar system", "solarSystemID", a.id, "error", err)
+				return nil
+			}
+			starTypeID = id
 			return nil
 		})
 	}
@@ -178,11 +145,7 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		items := xslices.Map(ss, newEntityItemFromEveSolarSystem)
-		fyne.Do(func() {
-			a.stargates.set(items...)
-			a.tabs.Refresh()
-		})
+		stargateItems = xslices.Map(ss, newEntityItemFromEveSolarSystem)
 		return nil
 	})
 	g.Go(func() error {
@@ -190,12 +153,39 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		items := xslices.Map(pp, newEntityItemFromEvePlanet)
-		fyne.Do(func() {
-			a.planets.set(items...)
-			a.tabs.Refresh()
-		})
+		planetItems = xslices.Map(pp, newEntityItemFromEvePlanet)
 		return nil
 	})
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	fyne.Do(func() {
+		if a.iw.u.IsDeveloperMode() {
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, newEVEIDAttributeItem(a.id))))
+		}
+		a.name.SetText(o.Name)
+		a.region.SetText(o.Constellation.Region.Name)
+		a.region.OnTapped = func() {
+			a.iw.Show(o.Constellation.Region.ToEveEntity())
+		}
+		a.constellation.SetText(o.Constellation.Name)
+		a.constellation.OnTapped = func() {
+			a.iw.Show(o.Constellation.ToEveEntity())
+		}
+		a.security.Text = o.SecurityStatusDisplay()
+		a.security.Importance = o.SecurityType().ToImportance()
+		a.security.Refresh()
+		if starTypeID != 0 {
+			a.iw.u.EVEImage().InventoryTypeIconAsync(starTypeID, ui.IconPixelSize, func(r fyne.Resource) {
+				a.logo.Resource = r
+				a.logo.Refresh()
+			})
+		}
+		a.stations.set(stationItems...)
+		a.structures.set(structureItems...)
+		a.stargates.set(stargateItems...)
+		a.planets.set(planetItems...)
+		a.tabs.Refresh()
+	})
+	return nil
 }

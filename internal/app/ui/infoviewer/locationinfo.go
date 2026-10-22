@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
@@ -153,39 +152,28 @@ func (a *locationInfo) update(ctx context.Context) error {
 		})
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
 		fyne.Do(func() {
-			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, newEVEIDAttributeItem(o.ID))))
 		})
 	}
 	fyne.Do(func() {
 		a.tabs.Refresh()
 	})
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		if o.Variant() != app.EveLocationStation {
-			return nil
-		}
-		ss, err := a.iw.u.EVEUniverse().GetStationServicesESI(ctx, a.itemID)
-		if err != nil {
-			return err
-		}
-		items := xslices.Map(ss, func(s string) entityItem {
-			s2 := strings.ReplaceAll(s, "-", " ")
-			name := xstrings.Title(s2)
-			return newEntityItem(0, "Service", name, Undefined)
-		})
-		fyne.Do(func() {
-			a.services.set(items...)
-			a.tabs.Refresh()
-		})
+	if o.Variant() != app.EveLocationStation {
 		return nil
-	})
-	if err := g.Wait(); err != nil {
+	}
+	ss, err := a.iw.u.EVEUniverse().GetStationServicesESI(ctx, a.itemID)
+	if err != nil {
 		return err
 	}
+	items := xslices.Map(ss, func(s string) entityItem {
+		s2 := strings.ReplaceAll(s, "-", " ")
+		name := xstrings.Title(s2)
+		return newEntityItem(0, "Service", name, Undefined)
+	})
+	fyne.Do(func() {
+		a.services.set(items...)
+		a.tabs.Refresh()
+	})
 	return nil
 }

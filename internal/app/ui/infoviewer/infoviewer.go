@@ -104,9 +104,9 @@ type baseUI interface {
 // InfoViewer represents a dedicated window for showing information about Eve objects
 // similar to the in-game info window.
 type InfoViewer struct {
-	current     *showParams // parameters for currently shown info window (if any)
 	nav         *xwidget.Navigator
-	pageCancels map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
+	openURLFunc func(*url.URL) error
+	pages       map[fyne.CanvasObject]pageState // shown pages
 	sb          *kxwidget.Snackbar
 	u           baseUI
 	w           fyne.Window
@@ -127,8 +127,9 @@ const (
 // New returns a new InfoViewer.
 func New(u baseUI) *InfoViewer {
 	iw := &InfoViewer{
-		u: u,
-		w: u.MainWindow(),
+		openURLFunc: fyne.CurrentApp().OpenURL,
+		u:           u,
+		w:           u.MainWindow(),
 	}
 	return iw
 }
@@ -259,6 +260,23 @@ type showParams struct {
 	characterID int64
 }
 
+type pageState struct {
+	cancel context.CancelFunc // cancels background work of the page
+	params showParams
+}
+
+// current returns the parameters of the currently shown page or nil if none is shown.
+func (iw *InfoViewer) current() *showParams {
+	if iw.nav == nil {
+		return nil
+	}
+	p, ok := iw.pages[iw.nav.Current()]
+	if !ok {
+		return nil
+	}
+	return &p.params
+}
+
 func (iw *InfoViewer) show2(arg showParams) {
 	parentW := iw.dialogParent()
 
@@ -281,23 +299,6 @@ func (iw *InfoViewer) show2(arg showParams) {
 		return
 	}
 
-	// don't spawn another window if it is already shown.
-	if iw.current != nil && iw.w != nil {
-		if *iw.current == arg {
-			iw.w.Show()
-			iw.w.RequestFocus()
-			return
-		}
-	}
-	iw.current = &arg
-
-	makeAppBarTitle := func(s string) string {
-		if iw.u.IsMobile() {
-			return s
-		}
-		return s + ": Information"
-	}
-
 	if arg.variant == Location {
 		switch app.LocationVariantFromID(arg.entityID) {
 		case app.EveLocationSolarSystem:
@@ -310,6 +311,22 @@ func (iw *InfoViewer) show2(arg showParams) {
 			)
 			return
 		}
+	}
+
+	// don't spawn another window if it is already shown.
+	if p := iw.current(); p != nil && iw.w != nil {
+		if *p == arg {
+			iw.w.Show()
+			iw.w.RequestFocus()
+			return
+		}
+	}
+
+	makeAppBarTitle := func(s string) string {
+		if iw.u.IsMobile() {
+			return s
+		}
+		return s + ": Information"
 	}
 
 	var title string
@@ -362,10 +379,10 @@ func (iw *InfoViewer) show2(arg showParams) {
 	ab = xwidget.NewAppBar(makeAppBarTitle(title), page)
 	ab.HideBackground = !iw.u.IsMobile()
 	pageCtx, cancel := context.WithCancel(context.Background())
-	if iw.pageCancels == nil {
-		iw.pageCancels = make(map[fyne.CanvasObject]context.CancelFunc)
+	if iw.pages == nil {
+		iw.pages = make(map[fyne.CanvasObject]pageState)
 	}
-	iw.pageCancels[ab] = cancel
+	iw.pages[ab] = pageState{cancel: cancel, params: arg}
 	if iw.nav == nil {
 		w, _, onClosed := iw.u.GetOrCreateWindowWithOnClosed("", "Information")
 		iw.w = w
@@ -373,16 +390,16 @@ func (iw *InfoViewer) show2(arg showParams) {
 		iw.sb.Start()
 		iw.nav = xwidget.NewNavigator(ab)
 		iw.nav.OnPop = func(page fyne.CanvasObject) {
-			if cancel, ok := iw.pageCancels[page]; ok {
-				cancel()
-				delete(iw.pageCancels, page)
+			if p, ok := iw.pages[page]; ok {
+				p.cancel()
+				delete(iw.pages, page)
 			}
 		}
 		w.SetOnClosed(func() {
-			for page, cancel := range iw.pageCancels {
-				cancel()
-				delete(iw.pageCancels, page)
+			for _, p := range iw.pages {
+				p.cancel()
 			}
+			clear(iw.pages)
 			iw.nav = nil
 			iw.w = nil
 			if onClosed != nil {
@@ -412,6 +429,9 @@ func (iw *InfoViewer) show2(arg showParams) {
 		}
 	}
 	iw.u.Go(func(ctx context.Context) {
+		if pageCtx.Err() != nil {
+			return // page closed before load started; AfterFunc would cancel too late
+		}
 		// Ends when the page is closed or the app shuts down. Lives as long as the page,
 		// because the market tab keeps using it after the load.
 		ctx, cancel := context.WithCancel(ctx)
@@ -467,7 +487,7 @@ func (iw *InfoViewer) openURL(s string) {
 		slog.Error("Constructing URL", "url", s, "error", err)
 		return
 	}
-	err = fyne.CurrentApp().OpenURL(x)
+	err = iw.openURLFunc(x)
 	if err != nil {
 		slog.Error("Opening URL", "url", x, "error", err)
 		return
@@ -588,17 +608,24 @@ func newAttributeItem(label string, value any) attributeItem {
 	return attributeItem{Label: label, Value: value}
 }
 
+// newEVEIDAttributeItem returns the developer mode item for an EVE ID, which copies it on tap.
+func newEVEIDAttributeItem(id int64) attributeItem {
+	x := newAttributeItem("EVE ID", id)
+	x.Action = func(_ any) {
+		fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(id))
+	}
+	return x
+}
+
 type attributeList struct {
 	ui.AttributeList
 
-	iw      *InfoViewer
-	openURL func(*url.URL) error
+	iw *InfoViewer
 }
 
 func newAttributeList(iw *InfoViewer, items ...attributeItem) *attributeList {
 	w := &attributeList{
-		iw:      iw,
-		openURL: fyne.CurrentApp().OpenURL,
+		iw: iw,
 	}
 	w.ExtendBaseWidget(w)
 	w.set(items)
@@ -724,7 +751,7 @@ func (w *attributeList) toUIItem(it attributeItem) ui.AttributeItem {
 	var action func()
 	if x, ok := it.Value.(*url.URL); ok && x != nil {
 		action = func() {
-			err := w.openURL(x)
+			err := w.iw.openURLFunc(x)
 			if err != nil {
 				w.iw.sb.Display(fmt.Sprintf("ERROR: Failed to open URL: %s", app.ErrorDisplay(err)))
 			}

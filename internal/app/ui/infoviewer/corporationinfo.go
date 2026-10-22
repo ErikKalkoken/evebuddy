@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -149,33 +148,29 @@ func (a *corporationInfo) update(ctx context.Context) error {
 			a.iw.Show(v)
 		}
 	})
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		history, err := a.iw.u.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
-		if err != nil {
-			return err
-		}
-		var items []entityItem
-		if len(history) > 0 {
-			history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
-				return v.Organization != nil && v.Organization.Category.IsKnown()
-			})
-			items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
-		}
-		var founded string
-		if v, ok := o.DateFounded.Value(); ok {
-			founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
-		} else {
-			founded = "?"
-		}
-		items = append(items, newEntityItem(0, "Corporation Founded", founded, Undefined))
-		fyne.Do(func() {
-			a.allianceHistory.set(items...)
-			a.tabs.Refresh()
+	history, err := a.iw.u.EVEUniverse().FetchCorporationAllianceHistory(ctx, a.id)
+	if err != nil {
+		return err
+	}
+	var items []entityItem
+	if len(history) > 0 {
+		history2 := xslices.Filter(history, func(v app.MembershipHistoryItem) bool {
+			return v.Organization != nil && v.Organization.Category.IsKnown()
 		})
-		return nil
+		items = append(items, xslices.Map(history2, historyItem2EntityItem)...)
+	}
+	var founded string
+	if v, ok := o.DateFounded.Value(); ok {
+		founded = fmt.Sprintf("**%s**", v.Format(app.DateFormat))
+	} else {
+		founded = "?"
+	}
+	items = append(items, newEntityItem(0, "Corporation Founded", founded, Undefined))
+	fyne.Do(func() {
+		a.allianceHistory.set(items...)
+		a.tabs.Refresh()
 	})
-	return g.Wait()
+	return nil
 }
 
 func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem {
@@ -207,18 +202,16 @@ func (a *corporationInfo) makeAttributes(o *app.EveCorporation) []attributeItem 
 	}
 	attributes = append(attributes, newAttributeItem("Member Count", o.MemberCount))
 	attributes = append(attributes, newAttributeItem("ISK Tax Rate", fmt.Sprintf("%.1f %%", o.TaxRate*100)))
-	attributes = append(attributes, newAttributeItem("War Eligibility", o.WarEligible))
+	if v, ok := o.WarEligible.Value(); ok {
+		attributes = append(attributes, newAttributeItem("War Eligibility", v))
+	}
 	if v, ok := o.URL.Value(); ok {
 		if u, err := url.ParseRequestURI(v); err == nil && u.Host != "" {
 			attributes = append(attributes, newAttributeItem("URL", u))
 		}
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
+		attributes = append(attributes, newEVEIDAttributeItem(o.ID))
 	}
 	return attributes
 }

@@ -228,7 +228,9 @@ func (a *characterInfo) update(ctx context.Context) error {
 	}
 	isOwned := characterIDs.Contains(a.id)
 	if isOwned {
-		a.ownedIcon.Show()
+		fyne.Do(func() {
+			a.ownedIcon.Show()
+		})
 	}
 
 	attributes, err := a.makeAttributes(ctx, o, isOwned)
@@ -251,7 +253,7 @@ func (a *characterInfo) update(ctx context.Context) error {
 		return nil
 	}
 	items := xslices.Map(history, historyItem2EntityItem)
-	duration := humanize.RelTime(history[0].StartDate, time.Now(), "", "")
+	duration := strings.TrimSpace(humanize.RelTime(history[0].StartDate, time.Now(), "", ""))
 	fyne.Do(func() {
 		a.employeeHistory.set(items...)
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
@@ -290,22 +292,12 @@ func (a *characterInfo) makeAttributes(ctx context.Context, o *app.EveCharacter,
 		if err != nil {
 			return nil, err
 		}
-		if v, ok := c.HomeLocationID.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Home", v))
-		}
-		if v, ok := c.LocationID.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Location", v))
-		}
 		if v, ok := c.LastLoginAt.Value(); ok {
 			attributes = append(attributes, newAttributeItem("Last Login", v))
 		}
 	}
 	if a.iw.u.IsDeveloperMode() {
-		x := newAttributeItem("EVE ID", o.ID)
-		x.Action = func(_ any) {
-			fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
-		}
-		attributes = append(attributes, x)
+		attributes = append(attributes, newEVEIDAttributeItem(o.ID))
 	}
 	return attributes, nil
 }

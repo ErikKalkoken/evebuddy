@@ -2,7 +2,6 @@ package infoviewer
 
 import (
 	"context"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -21,7 +21,6 @@ type allianceInfo struct {
 	baseInfo
 
 	attributes *attributeList
-	hq         *widget.Hyperlink
 	id         int64
 	logo       *canvas.Image
 	members    *entityList
@@ -29,12 +28,9 @@ type allianceInfo struct {
 }
 
 func newAllianceInfo(iw *InfoViewer, id int64) *allianceInfo {
-	hq := widget.NewHyperlink("", nil)
-	hq.Wrapping = fyne.TextWrapWord
 	a := &allianceInfo{
 		id:   id,
 		logo: makeInfoLogo(),
-		hq:   hq,
 	}
 	a.initBase(iw)
 	a.ExtendBaseWidget(a)
@@ -78,59 +74,52 @@ func (a *allianceInfo) update(ctx context.Context) error {
 			a.logo.Refresh()
 		})
 	})
+	var o *app.EveAlliance
+	var members []*app.EveEntity
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		o, err := a.iw.u.EVEUniverse().FetchAlliance(ctx, a.id)
-		if err != nil {
-			return err
-		}
-		// Attributes
-		var attributes []attributeItem
-		if v, ok := o.ExecutorCorporation.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Executor", v))
-		}
-		if o.Ticker != "" {
-			attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
-		}
-		if o.CreatorCorporation != nil {
-			attributes = append(attributes, newAttributeItem("Created By Corporation", o.CreatorCorporation))
-		}
-		if o.Creator != nil {
-			attributes = append(attributes, newAttributeItem("Created By", o.Creator))
-		}
-		if !o.DateFounded.IsZero() {
-			attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
-		}
-		if v, ok := o.Faction.Value(); ok {
-			attributes = append(attributes, newAttributeItem("Faction", v))
-		}
-		if a.iw.u.IsDeveloperMode() {
-			x := newAttributeItem("EVE ID", o.ID)
-			x.Action = func(_ any) {
-				fyne.CurrentApp().Clipboard().SetContent(fmt.Sprint(o.ID))
-			}
-			attributes = append(attributes, x)
-		}
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.attributes.set(attributes)
-			a.tabs.Refresh()
-		})
-		return nil
+		var err error
+		o, err = a.iw.u.EVEUniverse().FetchAlliance(ctx, a.id)
+		return err
 	})
 	g.Go(func() error {
-		members, err := a.iw.u.EVEUniverse().FetchAllianceCorporations(ctx, a.id)
-		if err != nil {
-			return err
-		}
-		if len(members) == 0 {
-			return nil
-		}
-		fyne.Do(func() {
-			a.members.set(entityItemsFromEveEntities(members)...)
-			a.tabs.Refresh()
-		})
-		return nil
+		var err error
+		members, err = a.iw.u.EVEUniverse().FetchAllianceCorporations(ctx, a.id)
+		return err
 	})
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	// Attributes
+	var attributes []attributeItem
+	if v, ok := o.ExecutorCorporation.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Executor", v))
+	}
+	if o.Ticker != "" {
+		attributes = append(attributes, newAttributeItem("Short Name", o.Ticker))
+	}
+	if o.CreatorCorporation != nil {
+		attributes = append(attributes, newAttributeItem("Created By Corporation", o.CreatorCorporation))
+	}
+	if o.Creator != nil {
+		attributes = append(attributes, newAttributeItem("Created By", o.Creator))
+	}
+	if !o.DateFounded.IsZero() {
+		attributes = append(attributes, newAttributeItem("Start Date", o.DateFounded))
+	}
+	if v, ok := o.Faction.Value(); ok {
+		attributes = append(attributes, newAttributeItem("Faction", v))
+	}
+	if a.iw.u.IsDeveloperMode() {
+		attributes = append(attributes, newEVEIDAttributeItem(o.ID))
+	}
+	fyne.Do(func() {
+		a.name.SetText(o.Name)
+		a.attributes.set(attributes)
+		if len(members) > 0 {
+			a.members.set(entityItemsFromEveEntities(members)...)
+		}
+		a.tabs.Refresh()
+	})
+	return nil
 }
