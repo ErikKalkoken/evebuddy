@@ -129,6 +129,9 @@ func (a *solarSystemInfo) update(ctx context.Context) error {
 	if v, ok := starID.Value(); ok {
 		g.Go(func() error {
 			id, err := a.iw.u.EVEUniverse().GetStarTypeID(ctx, v)
+			if ctx.Err() != nil {
+				return nil // page closed or shutting down
+			}
 			if err != nil {
 				// only needed for the logo
 				slog.Error("Failed to fetch star type for solar system", "solarSystemID", a.id, "error", err)
