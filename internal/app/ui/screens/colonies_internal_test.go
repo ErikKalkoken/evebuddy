@@ -113,12 +113,16 @@ func TestColonies(t *testing.T) {
 		a.Update(t.Context())
 		a.rows = a.rows[:1] // stale rows of the refresh
 		a.refreshForecasts()
-		refresh := pending[len(pending)-1]
 		// when
 		a.Update(t.Context())
-		refresh()
+		for len(pending) > 0 {
+			f := pending[0]
+			pending = pending[1:]
+			f()
+		}
 		// then
 		assert.Len(t, a.rows, 2)
+		assert.Len(t, a.rowsFiltered, 2)
 	})
 	t.Run("can filter by status on mobile", func(t *testing.T) {
 		a := NewColonies(testdouble.NewUIFake(testdouble.UIParams{

@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -275,6 +276,19 @@ func TestColonyDetails(t *testing.T) {
 		a.refreshForecast()
 		assert.Empty(t, a.rows)
 	})
+	t.Run("should show error when update fails", func(t *testing.T) {
+		// given
+		a := newColonyDetails(u, character.ID, cp.EvePlanet.ID)
+		t.Cleanup(a.stop)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		// when
+		err := a.Update(ctx)
+		// then
+		require.Error(t, err)
+		assert.Contains(t, a.footer.Text, "Error: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
 		// given
 		var pending []func()
@@ -321,6 +335,7 @@ func TestColonyDetails(t *testing.T) {
 		// then
 		assert.False(t, isUpdateLatest())
 		assert.Len(t, a.rows, 4)
+		assert.Equal(t, "Character has been removed", a.footer.Text)
 	})
 }
 

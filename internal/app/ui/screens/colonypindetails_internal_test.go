@@ -374,6 +374,19 @@ func TestColonyPinDetails(t *testing.T) {
 		require.Error(t, a.Update(ctx))
 		assert.Nil(t, a.colony)
 	})
+	t.Run("should show error when update fails", func(t *testing.T) {
+		// given
+		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
+		t.Cleanup(a.stop)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		// when
+		err := a.Update(ctx)
+		// then
+		require.Error(t, err)
+		assert.Contains(t, a.footer.Text, "ERROR: ")
+		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+	})
 	t.Run("should recalculate forecast", func(t *testing.T) {
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
@@ -448,6 +461,7 @@ func TestColonyPinDetails(t *testing.T) {
 		assert.False(t, isUpdateLatest())
 		require.Len(t, a.content.Objects, 1)
 		assert.Same(t, a.body, a.content.Objects[0], "shows installation")
+		assert.Equal(t, "Character has been removed", a.footer.Text)
 	})
 }
 

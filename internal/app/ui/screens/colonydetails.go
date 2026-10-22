@@ -165,9 +165,6 @@ func showColonyDetailsWindow(u baseUI, r colonyRow) {
 		page := makePage(title, showWhenLoaded(a, func() {
 			if err := a.Update(context.Background()); err != nil {
 				slog.Error("Failed to show colony installation", "characterID", r.characterID, "planetID", r.planetID, "pinID", pinID, "error", err)
-				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-				})
 			}
 		}), fyne.NewSize(600, 500))
 		pins[page] = a
@@ -308,18 +305,16 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 					return
 				}
 				slog.Error("failed to update colony installations", "error", err)
-				fyne.Do(func() {
-					a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-				})
 			}
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID.Load() {
+			// at once, so results already queued for the main thread are skipped
+			a.rowsRun.Discard()
+			a.forecastRun.Discard()
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
-				a.rowsRun.Discard()
-				a.forecastRun.Discard()
 				a.setIssue("Character has been removed")
 			})
 		}

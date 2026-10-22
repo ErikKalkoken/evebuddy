@@ -125,17 +125,15 @@ func newColonyPinDetails(u baseUI, characterID, planetID, pinID int64, showPin f
 				return
 			}
 			slog.Error("Failed to update colony installation", "error", err)
-			fyne.Do(func() {
-				a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
-			})
 		}
 	}, a.signalKey)
 	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, o *app.EntityShort) {
 		if o.ID == a.characterID {
+			// at once, so results already queued for the main thread are skipped
+			a.rowsRun.Discard()
+			a.forecastRun.Discard()
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
-				a.rowsRun.Discard()
-				a.forecastRun.Discard()
 				a.setIssue("Character has been removed")
 			})
 		}
@@ -180,6 +178,8 @@ func (a *colonyPinDetails) Update(ctx context.Context) error {
 			if notFound {
 				a.set(colonyPinInfo{}) // shows that the installation no longer exists
 				a.clearIssue()
+			} else {
+				a.setIssue("ERROR: " + a.u.ErrorDisplay(err))
 			}
 		})
 		if notFound {
