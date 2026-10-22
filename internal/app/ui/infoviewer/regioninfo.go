@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
@@ -81,35 +80,23 @@ func (a *regionInfo) update(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		if !a.iw.u.IsDeveloperMode() {
+	oo, err := a.iw.u.EVEUniverse().GetRegionConstellationsESI(ctx, o.ID)
+	if err != nil {
+		return err
+	}
+	items := xslices.Map(oo, newEntityItemFromEveEntity)
+	fyne.Do(func() {
+		if a.iw.u.IsDeveloperMode() {
 			x := newAttributeItem("EVE ID", fmt.Sprint(o.ID))
 			x.Action = func(v any) {
 				fyne.CurrentApp().Clipboard().SetContent(v.(string))
 			}
-			fyne.Do(func() {
-				a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
-			})
+			a.tabs.Append(ui.NewTabItem("Attributes", newAttributeList(a.iw, x)))
 		}
-		fyne.Do(func() {
-			a.name.SetText(o.Name)
-			a.description.SetText(o.DescriptionPlain())
-			a.tabs.Refresh()
-		})
-		return nil
-	})
-	g.Go(func() error {
-		oo, err := a.iw.u.EVEUniverse().GetRegionConstellationsESI(ctx, o.ID)
-		if err != nil {
-			return err
-		}
-		items := xslices.Map(oo, newEntityItemFromEveEntity)
-		fyne.Do(func() {
-			a.constellations.set(items...)
-			a.tabs.Refresh()
-		})
-		return nil
+		a.name.SetText(o.Name)
+		a.description.SetText(o.DescriptionPlain())
+		a.constellations.set(items...)
+		a.tabs.Refresh()
 	})
 	return nil
 }

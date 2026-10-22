@@ -26,7 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -219,9 +218,13 @@ type UIFake struct {
 	rs                  *corporationservice.CorporationService
 	eis                 ui.EVEImageService
 	eus                 *eveuniverseservice.EVEUniverseService
+	goFunc              func(job func(ctx context.Context))
+	isDeveloperMode     bool
 	isMobile            bool
 	isOnline            bool
 	iw                  ui.InfoViewer
+	js                  *janiceservice.JaniceService
+	mainWindow          fyne.Window
 	settings            *settings.Settings
 	signals             *app.Signals
 	showCharacterFunc   func(ctx context.Context, characterID int64)
@@ -232,9 +235,12 @@ type UIFake struct {
 
 type UIParams struct {
 	App                 fyne.App
-	InfoViewer          ui.InfoViewer // defaults to a real info viewer
+	Go                  func(job func(ctx context.Context)) // defaults to running the job in a goroutine
+	InfoViewer          ui.InfoViewer                       // defaults to an InfoViewerFake
+	IsDeveloperMode     bool
 	IsMobile            bool
-	IsOnline            bool // defaults to offline, so tests don't call ESI by accident
+	IsOnline            bool   // defaults to offline, so tests don't call ESI by accident
+	JaniceAPIKey        string // defaults to no key, so tests don't call Janice by accident
 	Signals             *app.Signals
 	Storage             *storage.Storage
 	ShowCharacterFunc   func(ctx context.Context, characterID int64)
@@ -296,8 +302,12 @@ func NewUIFake(args ...UIParams) *UIFake {
 		cs:                  cs,
 		eis:                 testutil.NewEveImageServiceStub(),
 		eus:                 eus,
+		goFunc:              arg.Go,
+		isDeveloperMode:     arg.IsDeveloperMode,
 		isMobile:            arg.IsMobile,
 		isOnline:            arg.IsOnline,
+		js:                  janiceservice.New(http.DefaultClient, arg.JaniceAPIKey),
+		mainWindow:          arg.App.NewWindow("Main"),
 		rs:                  rs,
 		showCharacterFunc:   arg.ShowCharacterFunc,
 		showCorporationFunc: arg.ShowCorporationFunc,
@@ -309,7 +319,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 	if arg.InfoViewer != nil {
 		u.iw = arg.InfoViewer
 	} else {
-		u.iw = infoviewer.New(u)
+		u.iw = &InfoViewerFake{}
 	}
 	return u
 }
@@ -377,12 +387,16 @@ func (u *UIFake) InfoViewer() ui.InfoViewer {
 }
 
 func (u *UIFake) Go(job func(ctx context.Context)) bool {
+	if u.goFunc != nil {
+		u.goFunc(job)
+		return true
+	}
 	go job(context.Background())
 	return true
 }
 
 func (u *UIFake) IsDeveloperMode() bool {
-	return false
+	return u.isDeveloperMode
 }
 
 func (u *UIFake) IsMobile() bool {
@@ -398,11 +412,11 @@ func (u *UIFake) IsUpdateDisabled() bool {
 }
 
 func (u *UIFake) Janice() *janiceservice.JaniceService {
-	panic("NOT IMPLEMENTED")
+	return u.js
 }
 
 func (u *UIFake) MainWindow() fyne.Window {
-	return u.app.NewWindow("Dummy")
+	return u.mainWindow
 }
 
 func (u *UIFake) MakeWindowTitle(parts ...string) string {
@@ -446,6 +460,21 @@ func (u *UIFake) Signals() *app.Signals {
 }
 
 func (u *UIFake) UpdateMailIndicator(ctx context.Context) {}
+
+// InfoViewerFake records which entities were shown.
+type InfoViewerFake struct {
+	Shown []*app.EveEntity
+}
+
+func (iv *InfoViewerFake) Show(o *app.EveEntity) {
+	iv.Shown = append(iv.Shown, o)
+}
+
+func (*InfoViewerFake) Show2(_, _, _ int64)   {}
+func (*InfoViewerFake) ShowBloodline(_ int64) {}
+func (*InfoViewerFake) ShowLocation(_ int64)  {}
+func (*InfoViewerFake) ShowRace(_ int64)      {}
+func (*InfoViewerFake) ShowType(_, _ int64)   {}
 
 // newSignalsSync returns signals that call listeners sequentially,
 // because the Fyne test driver runs fyne.Do on the calling goroutine.

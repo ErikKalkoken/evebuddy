@@ -53,21 +53,6 @@ func TestMain(m *testing.M) {
 
 const searchURL = `=~^https://esi\.evetech\.net/characters/\d+/search`
 
-// infoViewerFake records which entities were shown.
-type infoViewerFake struct {
-	shown []*app.EveEntity
-}
-
-func (iv *infoViewerFake) Show(o *app.EveEntity) {
-	iv.shown = append(iv.shown, o)
-}
-
-func (*infoViewerFake) Show2(_, _, _ int64)   {}
-func (*infoViewerFake) ShowBloodline(_ int64) {}
-func (*infoViewerFake) ShowLocation(_ int64)  {}
-func (*infoViewerFake) ShowRace(_ int64)      {}
-func (*infoViewerFake) ShowType(_, _ int64)   {}
-
 func eveEntityIDs(ee []*app.EveEntity) []int64 {
 	return xslices.Map(ee, func(x *app.EveEntity) int64 {
 		return x.ID
@@ -137,7 +122,7 @@ func TestGameSearch_Init(t *testing.T) {
 	t.Run("does not save picks after loading fails", func(t *testing.T) {
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: &infoViewerFake{}, Storage: st})
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: &testdouble.InfoViewerFake{}, Storage: st})
 		e := factory.CreateEveEntity()
 		picked := factory.CreateEveEntityCharacter()
 		u.Settings().SetRecentSearches([]int64{e.ID})
@@ -863,7 +848,7 @@ func TestGameSearch_SelectResult(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		iv := &infoViewerFake{}
+		iv := &testdouble.InfoViewerFake{}
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: iv, Storage: st})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
@@ -879,7 +864,7 @@ func TestGameSearch_SelectResult(t *testing.T) {
 		// when
 		a.results.SelectNode(item)
 		// then
-		assert.Equal(t, []int64{e2.ID}, eveEntityIDs(iv.shown))
+		assert.Equal(t, []int64{e2.ID}, eveEntityIDs(iv.Shown))
 		assert.Equal(t, []int64{e2.ID, e1.ID}, eveEntityIDs(a.recentItems))
 		assert.Equal(t, []int64{e2.ID, e1.ID}, u.Settings().RecentSearches())
 	})
@@ -887,7 +872,7 @@ func TestGameSearch_SelectResult(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		iv := &infoViewerFake{}
+		iv := &testdouble.InfoViewerFake{}
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: iv, Storage: st})
 		e := factory.CreateEveEntityWithCategory(app.EveEntityMailList)
 		a := NewGameSearch(u)
@@ -901,14 +886,14 @@ func TestGameSearch_SelectResult(t *testing.T) {
 		// when
 		a.results.SelectNode(item)
 		// then
-		assert.Empty(t, iv.shown)
+		assert.Empty(t, iv.Shown)
 		assert.Equal(t, []int64{e.ID}, eveEntityIDs(a.recentItems))
 	})
 	t.Run("toggles branch when selecting a category", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		iv := &infoViewerFake{}
+		iv := &testdouble.InfoViewerFake{}
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: iv, Storage: st})
 		e := factory.CreateEveEntityCharacter()
 		a := NewGameSearch(u)
@@ -922,7 +907,7 @@ func TestGameSearch_SelectResult(t *testing.T) {
 		a.results.SelectNode(category)
 		// then
 		assert.True(t, a.results.IsBranchOpenNode(category))
-		assert.Empty(t, iv.shown)
+		assert.Empty(t, iv.Shown)
 		assert.Empty(t, a.recentItems)
 	})
 }
@@ -932,7 +917,7 @@ func TestGameSearch_Recent(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		iv := &infoViewerFake{}
+		iv := &testdouble.InfoViewerFake{}
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: iv, Storage: st})
 		e := factory.CreateEveEntityCharacter()
 		u.Settings().SetRecentSearches([]int64{e.ID})
@@ -941,13 +926,13 @@ func TestGameSearch_Recent(t *testing.T) {
 		// when
 		a.recent.Select(0)
 		// then
-		assert.Equal(t, []int64{e.ID}, eveEntityIDs(iv.shown))
+		assert.Equal(t, []int64{e.ID}, eveEntityIDs(iv.Shown))
 	})
 	t.Run("shows same entity again when selecting a recent search twice", func(t *testing.T) {
 		// given
 		db, st, factory := testutil.NewDBOnDisk(t)
 		t.Cleanup(func() { db.Close() })
-		iv := &infoViewerFake{}
+		iv := &testdouble.InfoViewerFake{}
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), InfoViewer: iv, Storage: st})
 		e := factory.CreateEveEntityCharacter()
 		u.Settings().SetRecentSearches([]int64{e.ID})
@@ -957,7 +942,7 @@ func TestGameSearch_Recent(t *testing.T) {
 		// when
 		a.recent.Select(0)
 		// then
-		assert.Equal(t, []int64{e.ID, e.ID}, eveEntityIDs(iv.shown))
+		assert.Equal(t, []int64{e.ID, e.ID}, eveEntityIDs(iv.Shown))
 	})
 	t.Run("can clear recent searches", func(t *testing.T) {
 		// given

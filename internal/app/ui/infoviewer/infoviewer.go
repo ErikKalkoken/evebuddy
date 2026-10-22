@@ -106,6 +106,7 @@ type baseUI interface {
 type InfoViewer struct {
 	current     *showParams // parameters for currently shown info window (if any)
 	nav         *xwidget.Navigator
+	openURLFunc func(*url.URL) error
 	pageCancels map[fyne.CanvasObject]context.CancelFunc // cancels background work of shown pages
 	sb          *kxwidget.Snackbar
 	u           baseUI
@@ -127,8 +128,9 @@ const (
 // New returns a new InfoViewer.
 func New(u baseUI) *InfoViewer {
 	iw := &InfoViewer{
-		u: u,
-		w: u.MainWindow(),
+		openURLFunc: fyne.CurrentApp().OpenURL,
+		u:           u,
+		w:           u.MainWindow(),
 	}
 	return iw
 }
@@ -467,7 +469,7 @@ func (iw *InfoViewer) openURL(s string) {
 		slog.Error("Constructing URL", "url", s, "error", err)
 		return
 	}
-	err = fyne.CurrentApp().OpenURL(x)
+	err = iw.openURLFunc(x)
 	if err != nil {
 		slog.Error("Opening URL", "url", x, "error", err)
 		return

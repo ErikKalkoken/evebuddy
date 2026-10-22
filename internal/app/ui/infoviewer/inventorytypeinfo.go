@@ -662,35 +662,10 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 		defer ticker.Stop()
 	L:
 		for {
-			var items []attributeItem
-
-			var averagePrice string
-			p, err := a.iw.u.EVEUniverse().MarketPrice(ctx, et.ID)
-			if err != nil {
-				if ctx.Err() != nil {
-					break L
-				}
-				slog.Error("average price", "typeID", et.ID, "error", err)
-				averagePrice = "ERROR: " + a.iw.u.ErrorDisplay(err)
-			} else {
-				averagePrice = p.StringFunc("?", func(v float64) string {
-					return humanize.FormatFloat(priceFormat, v) + currencySuffix
-				})
+			items := a.fetchMarketItems(ctx, et.ID)
+			if ctx.Err() != nil {
+				break L
 			}
-			items = append(items, newAttributeItem("Average price", averagePrice))
-			it, err := a.addJanicePriceItems(ctx, et.ID)
-			if err != nil {
-				if ctx.Err() != nil {
-					break L
-				}
-				slog.Error("janice pricer", "typeID", et.ID, "error", err)
-				s := "ERROR: " + a.iw.u.ErrorDisplay(err)
-				items = append(items, newAttributeItem("Janice prices", s))
-			} else {
-				items = slices.Concat(items, it)
-			}
-			items = slices.Concat(items)
-
 			fyne.Do(func() {
 				marketTab.Content = ui.PadTabContent(newAttributeList(a.iw, items...))
 				a.tabs.Refresh()
@@ -704,6 +679,37 @@ func (a *inventoryTypeInfo) makeMarketTab(ctx context.Context, et *app.EveType) 
 		slog.Debug("Market price updates stopped", "name", et.Name)
 	})
 	return marketTab
+}
+
+// fetchMarketItems returns the current market prices for a type.
+// Failed fetches are reported as items. Returns nil when ctx is canceled.
+func (a *inventoryTypeInfo) fetchMarketItems(ctx context.Context, typeID int64) []attributeItem {
+	var items []attributeItem
+	var averagePrice string
+	p, err := a.iw.u.EVEUniverse().MarketPrice(ctx, typeID)
+	if ctx.Err() != nil {
+		return nil
+	}
+	if err != nil {
+		slog.Error("average price", "typeID", typeID, "error", err)
+		averagePrice = "ERROR: " + a.iw.u.ErrorDisplay(err)
+	} else {
+		averagePrice = p.StringFunc("?", func(v float64) string {
+			return humanize.FormatFloat(priceFormat, v) + currencySuffix
+		})
+	}
+	items = append(items, newAttributeItem("Average price", averagePrice))
+	it, err := a.addJanicePriceItems(ctx, typeID)
+	if ctx.Err() != nil {
+		return nil
+	}
+	if err != nil {
+		slog.Error("janice pricer", "typeID", typeID, "error", err)
+		items = append(items, newAttributeItem("Janice prices", "ERROR: "+a.iw.u.ErrorDisplay(err)))
+	} else {
+		items = slices.Concat(items, it)
+	}
+	return items
 }
 
 func (a *inventoryTypeInfo) addJanicePriceItems(ctx context.Context, typeID int64) ([]attributeItem, error) {
