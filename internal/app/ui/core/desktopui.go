@@ -293,17 +293,24 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Assets",
 		newContentPage("Assets", u.characterAssetBrowser),
 	)
+
 	characterSheetNav := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.PortraitSvg),
 		"Character",
-		newContentPage("Character", container.NewAppTabs(
-			ui.NewTabItem("Character", u.characterSheet),
-			ui.NewTabItem("Corporation", u.characterCorporation),
-			ui.NewTabItem("Augmentations", u.characterAugmentations),
-			ui.NewTabItem("Jump Clones", u.characterJumpClones),
-			ui.NewTabItem("Attributes", u.characterAttributes),
-			ui.NewTabItem("Biography", u.characterBiography),
-		)),
+		newContentPage("Character", container.NewBorder(
+			nil,
+			nil,
+			nil,
+			u.characterPortrait,
+			container.NewAppTabs(
+				ui.NewTabItem("Character", u.characterSheet),
+				ui.NewTabItem("Corporation", u.characterCorporation),
+				ui.NewTabItem("Augmentations", u.characterAugmentations),
+				ui.NewTabItem("Jump Clones", u.characterJumpClones),
+				ui.NewTabItem("Attributes", u.characterAttributes),
+				ui.NewTabItem("Biography", u.characterBiography),
+			)),
+		),
 	)
 	characterNav := xwidget.NewNavDrawer(
 		characterSheetNav,
@@ -372,10 +379,16 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 	corpSheetItem := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.StarCircleOutlineSvg),
 		"Corporation",
-		newContentPage("Corporation", container.NewAppTabs(
-			ui.NewTabItem("Corporation", u.corporationSheet),
-			ui.NewTabItem("Members", u.corporationMember),
-		)),
+		newContentPage("Corporation", container.NewBorder(
+			nil,
+			nil,
+			nil,
+			u.corporationLogo,
+			container.NewAppTabs(
+				ui.NewTabItem("Corporation", u.corporationSheet),
+				ui.NewTabItem("Members", u.corporationMember),
+			)),
+		),
 	)
 
 	corpWealthItem := xwidget.NewNavDrawerItem(

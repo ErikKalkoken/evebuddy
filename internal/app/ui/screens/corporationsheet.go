@@ -35,7 +35,6 @@ type CorporationSheet struct {
 	factionLink  *ui.InfoLink
 	homeLink     *ui.InfoLink
 	isCorpMode   bool
-	logoImage    *xwidget.TappableImage
 	membersLabel *widget.Label
 	nameLink     *ui.InfoLink
 	rolesLabel   *widget.Label
@@ -65,7 +64,6 @@ func NewCorporationSheet(u baseUI, isCorpMode bool) *CorporationSheet {
 		factionLink:  makeInfoLabel(),
 		homeLink:     makeInfoLabel(),
 		isCorpMode:   isCorpMode,
-		logoImage:    logo,
 		membersLabel: makeLabel(),
 		nameLink:     makeInfoLabel(),
 		rolesLabel:   makeLabel(),
@@ -142,17 +140,13 @@ func (a *CorporationSheet) CreateRenderer() fyne.WidgetRenderer {
 	}
 	main := widget.NewForm(items...)
 	main.Orientation = widget.Adaptive
-	portraitDesktop := container.NewVBox(container.NewPadded(a.logoImage))
 	c := container.NewBorder(
 		nil,
 		a.errorLabel,
 		nil,
-		portraitDesktop,
+		nil,
 		main,
 	)
-	if a.u.IsMobile() {
-		portraitDesktop.Hide()
-	}
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -168,7 +162,6 @@ func (a *CorporationSheet) update(ctx context.Context) {
 			a.ceoLink.Clear()
 			a.factionLink.Clear()
 			a.homeLink.Clear()
-			a.logoImage.SetResource(icons.BlankSvg)
 			a.membersLabel.SetText("")
 			a.nameLink.Clear()
 			a.rolesLabel.SetText("")
@@ -258,15 +251,6 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		}
 		a.errorLabel.Hide()
 		a.nameLink.Set(corporation.ToEveEntity())
-		a.logoImage.OnTapped = func() {
-			a.u.InfoViewer().Show(corporation.ToEveEntity())
-		}
-		a.u.EVEImage().CorporationLogoAsync(corporation.ID, 512, func(r fyne.Resource) {
-			if !isLatest() {
-				return
-			}
-			a.logoImage.SetResource(r)
-		})
 		a.rolesLabel.SetText(roles)
 		a.membersLabel.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRateLabel.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
