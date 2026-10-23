@@ -21,6 +21,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
+// TODO: Add tests for export to CSV
+
 func TestWalletJournalFilter_Match(t *testing.T) {
 	inflow := walletJournalRow{amount: optional.New(100.0), refTypeDisplay: "Bounty"}
 	outflow := walletJournalRow{amount: optional.New(-50.0), refTypeDisplay: "Bounty"}

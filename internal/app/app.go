@@ -15,12 +15,13 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
-// Default formats and sizes
+// Default time formats
 const (
-	DateTimeFormat            = "2006.01.02 15:04"
-	DateTimeFormatWithSeconds = "2006.01.02 15:04:05"
 	DateFormat                = "2006.01.02"
+	DateTimeFormat            = "2006.01.02 15:04"
+	DateTimeFormatCondensed   = "200601021504"
 	DateTimeFormatESI         = "2006-01-02T15:04:05Z"
+	DateTimeFormatWithSeconds = "2006.01.02 15:04:05"
 )
 
 // EntityShort is a short representation of an entity.

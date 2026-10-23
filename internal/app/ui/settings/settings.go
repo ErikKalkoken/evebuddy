@@ -466,7 +466,7 @@ func (a *settings) showExportFileDialog(topic, path string) {
 		}
 
 		ext := filepath.Ext(name)
-		timestamp := time.Now().Format("060102150405")
+		timestamp := time.Now().Format(app.DateTimeFormatCondensed)
 		filename := strings.TrimSuffix(name, ext) + "_" + timestamp + ext
 		fyne.Do(func() {
 			filedialog.ShowSave(a.u, filedialog.ShowFileSaveWindowParams{
