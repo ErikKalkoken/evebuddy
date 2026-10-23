@@ -25,7 +25,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
-	"github.com/ErikKalkoken/evebuddy/internal/xlayout"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -607,24 +606,17 @@ func (a *CharacterOverview) fetchRow(ctx context.Context, c *app.Character) (cha
 type characterCard struct {
 	widget.BaseWidget
 
-	allianceLogo             *xwidget.TappableImage
 	background               *canvas.Rectangle
 	border                   *canvas.Rectangle
 	characterName            *widget.Label
-	corporationLogo          *xwidget.TappableImage
 	isSmall                  bool
-	loadAlliance             loadFuncAsync
-	loadCharacter            loadFuncAsync
-	loadCorporation          loadFuncAsync
-	portraitBorder           *canvas.Rectangle
 	mails                    *widget.Label
-	portrait                 *canvas.Image
+	portrait                 *characterPortraitWithLogos
 	resourceTrainingActive   fyne.Resource
 	resourceTrainingExpired  fyne.Resource
 	resourceTrainingInactive fyne.Resource
 	resourceTrainingUnknown  fyne.Resource
 	ship                     *widget.Label
-	showInfo                 func(*app.EveEntity)
 	skillpoints              *widget.Label
 	solarSystem              *xwidget.RichText
 	trainingStatus           *ttwidget.Icon
@@ -639,59 +631,26 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 		l.Truncation = fyne.TextTruncateEllipsis
 		return l
 	}
-	var portrait *canvas.Image
-	if isSmall {
-		portrait = xwidget.NewImageFromResource(
-			icons.Characterplaceholder256Jpeg,
-			fyne.NewSquareSize(PortraitMobileUnitSize),
-		)
-	} else {
-		portrait = xwidget.NewImageFromResource(
-			icons.Characterplaceholder512Jpeg,
-			fyne.NewSquareSize(PortraitDesktopUnitSize),
-		)
-	}
 	resTraining := theme.MediaRecordIcon()
 	trainingUnknown := theme.NewDisabledResource(icons.QuestionmarksmallSvg)
 	w := &characterCard{
-		allianceLogo:             xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		background:               canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
 		border:                   canvas.NewRectangle(color.Transparent),
 		characterName:            widget.NewLabel("Veronica Blomquist"),
-		corporationLogo:          xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		isSmall:                  isSmall,
-		loadAlliance:             loadAlliance,
-		loadCharacter:            loadCharacter,
-		loadCorporation:          loadCorporation,
 		mails:                    makeLabel(numberTemplate),
-		portrait:                 portrait,
-		portraitBorder:           canvas.NewRectangle(color.Transparent),
+		portrait:                 newCharacterPortraitWithLogos(loadCharacter, loadCorporation, loadAlliance, isSmall, showInfo),
 		resourceTrainingActive:   theme.NewSuccessThemedResource(resTraining),
 		resourceTrainingExpired:  theme.NewErrorThemedResource(resTraining),
 		resourceTrainingInactive: theme.NewDisabledResource(resTraining),
 		resourceTrainingUnknown:  trainingUnknown,
 		ship:                     makeLabel("Merlin"),
-		showInfo:                 showInfo,
 		skillpoints:              makeLabel(numberTemplate),
 		solarSystem:              xwidget.NewRichText(),
 		trainingStatus:           ttwidget.NewIcon(trainingUnknown),
 		wallet:                   makeLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
-	var logoSize float32
-	if isSmall {
-		logoSize = ui.IconUnitSize
-	} else {
-		logoSize = 40
-	}
-	w.allianceLogo.SetFillMode(canvas.ImageFillContain)
-	w.allianceLogo.SetMinSize(fyne.NewSquareSize(logoSize))
-	w.allianceLogo.CornerRadius = theme.InputRadiusSize()
-
-	w.corporationLogo.SetFillMode(canvas.ImageFillContain)
-	w.corporationLogo.SetMinSize(fyne.NewSquareSize(logoSize))
-	w.corporationLogo.CornerRadius = theme.InputRadiusSize()
-
 	w.background.CornerRadius = theme.InputRadiusSize()
 
 	w.characterName.SizeName = theme.SizeNameSubHeadingText
@@ -700,10 +659,6 @@ func newCharacterCard(loadCharacter, loadCorporation, loadAlliance loadFuncAsync
 	w.border.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	w.border.StrokeWidth = 1
 	w.border.CornerRadius = theme.InputRadiusSize()
-
-	w.portraitBorder.StrokeColor = theme.Color(theme.ColorNameInputBorder)
-	w.portraitBorder.StrokeWidth = 1
-	w.portraitBorder.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	return w
 }
 
@@ -716,16 +671,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 2*p),
 				container.NewStack(
 					w.background,
-					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
-						container.NewVBox(
-							container.NewStack(w.portrait, w.portraitBorder),
-							container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
-								container.NewHBox(
-									w.corporationLogo, layout.NewSpacer(), w.allianceLogo,
-								),
-							),
-						),
-					),
+					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p), w.portrait),
 				),
 			),
 			nil,
@@ -764,12 +710,6 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 		r := container.New(layout.NewCustomPaddedLayout(p, p, p, p), container.NewStack(c, w.border))
 		return widget.NewSimpleRenderer(r)
 	}
-	logoBorder := &layout.CustomPaddedLayout{
-		TopPadding:    1 * p,
-		BottomPadding: 1 * p,
-		LeftPadding:   1 * p,
-		RightPadding:  1 * p,
-	}
 	skillpoints := ttwidget.NewIcon(theme.NewThemedResource(icons.SchoolSvg))
 	skillpoints.SetToolTip("Skillpoints & Training status")
 	wallet := ttwidget.NewIcon(theme.NewThemedResource(icons.CashSvg))
@@ -799,11 +739,7 @@ func (w *characterCard) CreateRenderer() fyne.WidgetRenderer {
 		),
 		nil,
 		nil,
-		container.NewStack(
-			container.NewStack(w.portrait, w.portraitBorder),
-			container.New(&xlayout.BottomLeftLayout{}, container.New(logoBorder, w.corporationLogo)),
-			container.New(&xlayout.BottomRightLayout{}, container.New(logoBorder, w.allianceLogo)),
-		),
+		w.portrait,
 	)
 	r := container.NewStack(
 		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), c),
@@ -821,45 +757,7 @@ func (w *characterCard) Refresh() {
 }
 
 func (w *characterCard) set(c characterOverviewRow) {
-	var portraitSize, logoSize int
-	if w.isSmall {
-		portraitSize = PortraitMobilePixelSize
-		logoSize = 64
-	} else {
-		portraitSize = PortraitDesktopPixelSize
-		logoSize = 64
-	}
-
-	w.loadCharacter(c.characterID, portraitSize, func(r fyne.Resource) {
-		w.portrait.Resource = r
-		w.portrait.Refresh()
-	})
-
-	if !w.isSmall {
-		w.corporationLogo.OnTapped = func() {
-			w.showInfo(c.corporation)
-		}
-		w.corporationLogo.SetToolTip(c.corporationName())
-	}
-
-	w.loadCorporation(c.corporation.ID, logoSize, func(r fyne.Resource) {
-		w.corporationLogo.SetResource(r)
-	})
-
-	if alliance, ok := c.alliance.Value(); ok {
-		if !w.isSmall {
-			w.allianceLogo.OnTapped = func() {
-				w.showInfo(alliance)
-			}
-			w.allianceLogo.SetToolTip(c.allianceName())
-		}
-		w.allianceLogo.Show()
-		w.loadAlliance(alliance.ID, logoSize, func(r fyne.Resource) {
-			w.allianceLogo.SetResource(r)
-		})
-	} else {
-		w.allianceLogo.Hide()
-	}
+	w.portrait.set(c.characterID, c.corporation, c.alliance)
 
 	w.characterName.SetText(c.characterName)
 
