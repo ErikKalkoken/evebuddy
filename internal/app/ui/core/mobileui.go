@@ -236,12 +236,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch,
-				xwidget.NewIconButtonWithMenu(
-					theme.MoreHorizontalIcon(),
-					fyne.NewMenu("", u.corporationAssetSearch.MoreItems()...),
-				),
-			))
+			corpNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
 			u.corporationAssetSearch.Focus()
 		},
 	)
@@ -846,12 +841,7 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 		"Assets",
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll,
-				xwidget.NewIconButtonWithMenu(
-					theme.MoreHorizontalIcon(),
-					fyne.NewMenu("", u.assetSearchAll.MoreItems()...),
-				),
-			))
+			homeNav.Push(xwidget.NewAppBar("Assets", u.assetSearchAll))
 			u.assetSearchAll.Focus()
 		},
 	)

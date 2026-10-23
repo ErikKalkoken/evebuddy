@@ -24,6 +24,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -391,85 +392,17 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 }
 
 func (a *WalletJournal) exportAsCSV() {
-	filename := "walletjournal"
+	var ids []int64
 	if a.isCorporation() {
-		filename += fmt.Sprintf("_%d_%d", a.corporation.Load().IDOrZero(), a.division)
+		ids = append(ids, a.corporation.Load().IDOrZero())
+		ids = append(ids, int64(a.division))
 	} else {
-		filename += fmt.Sprintf("_%d", a.character.Load().IDOrZero())
+		ids = append(ids, a.character.Load().IDOrZero())
 	}
-	timestamp := time.Now().Format(app.DateTimeFormatCondensed)
-	filename += fmt.Sprintf("_%s.csv", timestamp)
+	filename := filedialog.MakeFilename("walletjournal", ".csv", ids...)
 	exportRowsAsCSV(a.u, "walletjournal", filename, a.rowsFiltered, func(w io.Writer, rows []walletJournalRow) error {
 		return writeJournalRowsToCSV(w, rows)
 	})
-}
-
-func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
-	cw := csv.NewWriter(w)
-	header := []string{
-		"ID",
-		"Date",
-		"Type",
-		"Amount",
-		"Balance",
-		"Description",
-		"First Party ID",
-		"First Party Name",
-		"Second Party ID",
-		"Second Party Name",
-		"Tax Receiver ID",
-		"Tax Receiver Name",
-		"Reason",
-	}
-	if err := cw.Write(header); err != nil {
-		return err
-	}
-	for _, r := range rows {
-		var amount string
-		if v, ok := r.amount.Value(); ok {
-			amount = strconv.FormatFloat(v, 'f', -1, 64)
-		}
-		var balance string
-		if v, ok := r.balance.Value(); ok {
-			balance = strconv.FormatFloat(v, 'f', -1, 64)
-		}
-		var firstPartyID, secondPartyID, taxReceiverID int64
-		var firstPartyName, secondPartyName, taxReceiverName string
-		f := func(o optional.Optional[*app.EveEntity]) (int64, string) {
-			v, ok := o.Value()
-			if !ok {
-				return 0, ""
-			}
-			return v.ID, v.Name
-		}
-		firstPartyID, firstPartyName = f(r.firstParty)
-		secondPartyID, secondPartyName = f(r.secondParty)
-		taxReceiverID, taxReceiverName = f(r.taxReceiver)
-		record := []string{
-			strconv.FormatInt(r.refID, 10),
-			r.date.Format(time.RFC3339),
-			r.refType,
-			amount,
-			balance,
-			r.description,
-			strconv.FormatInt(firstPartyID, 10),
-			firstPartyName,
-			strconv.FormatInt(secondPartyID, 10),
-			secondPartyName,
-			strconv.FormatInt(taxReceiverID, 10),
-			taxReceiverName,
-			r.reason.ValueOrZero(),
-		}
-		if err := cw.Write(record); err != nil {
-			return err
-		}
-
-	}
-	cw.Flush()
-	if err := cw.Error(); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (a *WalletJournal) filterRowsAsync(sortCol string) {
@@ -743,6 +676,74 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *a
 		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
+	cw := csv.NewWriter(w)
+	header := []string{
+		"ID",
+		"Date",
+		"Type",
+		"Amount",
+		"Balance",
+		"Description",
+		"First Party ID",
+		"First Party Name",
+		"Second Party ID",
+		"Second Party Name",
+		"Tax Receiver ID",
+		"Tax Receiver Name",
+		"Reason",
+	}
+	if err := cw.Write(header); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		var amount string
+		if v, ok := r.amount.Value(); ok {
+			amount = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var balance string
+		if v, ok := r.balance.Value(); ok {
+			balance = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var firstPartyID, secondPartyID, taxReceiverID int64
+		var firstPartyName, secondPartyName, taxReceiverName string
+		f := func(o optional.Optional[*app.EveEntity]) (int64, string) {
+			v, ok := o.Value()
+			if !ok {
+				return 0, ""
+			}
+			return v.ID, v.Name
+		}
+		firstPartyID, firstPartyName = f(r.firstParty)
+		secondPartyID, secondPartyName = f(r.secondParty)
+		taxReceiverID, taxReceiverName = f(r.taxReceiver)
+		record := []string{
+			strconv.FormatInt(r.refID, 10),
+			r.date.Format(time.RFC3339),
+			r.refType,
+			amount,
+			balance,
+			r.description,
+			strconv.FormatInt(firstPartyID, 10),
+			firstPartyName,
+			strconv.FormatInt(secondPartyID, 10),
+			secondPartyName,
+			strconv.FormatInt(taxReceiverID, 10),
+			taxReceiverName,
+			r.reason.ValueOrZero(),
+		}
+		if err := cw.Write(record); err != nil {
+			return err
+		}
+
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.

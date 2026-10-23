@@ -26,6 +26,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -289,6 +290,7 @@ type AssetSearch struct {
 	sortChip       *kxwidget.SortChip
 	topLabel       *widget.Label
 	u              baseUI
+	moreButton     *xwidget.ContextMenuButton
 }
 
 func NewAssetSearchForAll(u baseUI) *AssetSearch {
@@ -416,6 +418,16 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	}
 	a.ExtendBaseWidget(a)
 
+	a.moreButton = xwidget.NewContextMenuButtonWithIcon(
+		"",
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("",
+			fyne.NewMenuItem("Copy assets to clipboard", a.consolidateToClipboard),
+			fyne.NewMenuItem("Export assets as CSV", a.exportAsCSV),
+		),
+	)
+	a.moreButton.Importance = widget.LowImportance
+
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
@@ -538,7 +550,13 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 	topBox := container.NewVBox(a.topLabel)
 	if a.u.IsMobile() {
-		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
+		topBox.Add(container.NewBorder(
+			nil,
+			nil,
+			nil,
+			container.NewHBox(a.filterChip, a.sortChip, a.moreButton),
+			a.searchEntry,
+		))
 	} else {
 		filters := container.NewHBox(
 			a.selectCategory,
@@ -552,7 +570,7 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 			filters.Add(a.selectTag)
 			filters.Add(a.selectOwner)
 		}
-		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
+		topBox.Add(container.NewBorder(nil, nil, filters, a.moreButton, a.searchEntry))
 	}
 	c := container.NewBorder(topBox, a.footerLabel, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
@@ -640,14 +658,6 @@ func (a *AssetSearch) Focus() {
 	a.u.MainWindow().Canvas().Focus(a.searchEntry)
 }
 
-// MoreItems returns the list of menu items for the overflow menu.
-func (a *AssetSearch) MoreItems() []*fyne.MenuItem {
-	return []*fyne.MenuItem{
-		fyne.NewMenuItem("Copy assets to clipboard", a.consolidateToClipboard),
-		fyne.NewMenuItem("Export assets as CSV", a.exportAsCSV),
-	}
-}
-
 func (a *AssetSearch) consolidateToClipboard() {
 	copyRowsToClipboard(a.u, "assets", a.rowsFiltered, consolidateAssetRows)
 }
@@ -655,9 +665,9 @@ func (a *AssetSearch) consolidateToClipboard() {
 func (a *AssetSearch) exportAsCSV() {
 	var filename string
 	if a.forCorporation {
-		filename = fmt.Sprintf("assets_%d.csv", a.corporation.Load().IDOrZero())
+		filename = filedialog.MakeFilename("assets", ".csv", a.corporation.Load().IDOrZero())
 	} else {
-		filename = "assets.csv"
+		filename = filedialog.MakeFilename("assets", ".csv")
 	}
 	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(w io.Writer, rows []assetRow) error {
 		return writeAssetRowsToCSV(w, rows, a.forCorporation)
