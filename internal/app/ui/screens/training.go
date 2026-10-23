@@ -147,14 +147,13 @@ type Training struct {
 	// OnUpdate reports the characters with expired training; empty when the update failed.
 	OnUpdate func(expired optional.Optional[int])
 
-	exportButton *xwidget.ContextMenuButton
+	columnSorter *xwidget.ColumnSorter[trainingRow]
+	errorLabel   *widget.Label
 	filterChip   *xwidget.FilterChipCompact // only on mobile
 	filterRun    xsync.LatestRun
-	updateRun    xsync.LatestRun
 	footerLabel  *widget.Label
-	errorLabel   *widget.Label
-	columnSorter *xwidget.ColumnSorter[trainingRow]
 	main         fyne.CanvasObject
+	moreButton   *xwidget.ContextMenuButton
 	rows         []trainingRow
 	rowsFiltered []trainingRow
 	searchEntry  *xwidget.SearchEntry
@@ -162,6 +161,7 @@ type Training struct {
 	selectTag    *kxwidget.FilterChipSelect
 	sortChip     *kxwidget.SortChip
 	u            baseUI
+	updateRun    xsync.LatestRun
 }
 
 func NewTraining(u baseUI) *Training {
@@ -279,6 +279,16 @@ func NewTraining(u baseUI) *Training {
 	a.errorLabel.Importance = widget.DangerImportance
 	a.errorLabel.Hide()
 
+	a.moreButton = xwidget.NewContextMenuButtonWithIcon(
+		"",
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("",
+			fyne.NewMenuItem("Copy training to clipboard", a.copyTrainingToClipboard),
+			fyne.NewMenuItem("Export training as CSV", a.saveTrainingAsCSV),
+		),
+	)
+	a.moreButton.Importance = widget.LowImportance
+
 	placeholder := "Search characters"
 	if a.u.IsMobile() {
 		placeholder = "Search" // shares the row with the chips
@@ -358,10 +368,10 @@ func NewTraining(u baseUI) *Training {
 func (a *Training) CreateRenderer() fyne.WidgetRenderer {
 	var topBox *fyne.Container
 	if a.u.IsMobile() {
-		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+		topBox = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip, a.moreButton), a.searchEntry)
 	} else {
 		filter := container.NewHBox(a.selectStatus, a.selectTag)
-		topBox = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
+		topBox = container.NewBorder(nil, nil, filter, a.moreButton, a.searchEntry)
 	}
 	c := container.NewBorder(
 		topBox,
@@ -457,15 +467,6 @@ func (a *Training) makeDataList() *xwidget.StripedList {
 		a.showTrainingQueueWindow(r)
 	}
 	return l
-}
-
-// MoreItems returns the list of menu items for the overflow menu.
-func (a *Training) MoreItems() []*fyne.MenuItem {
-	items := []*fyne.MenuItem{
-		fyne.NewMenuItem("Copy training to clipboard", a.copyTrainingToClipboard),
-		fyne.NewMenuItem("Export training as CSV", a.saveTrainingAsCSV),
-	}
-	return items
 }
 
 func (a *Training) copyTrainingToClipboard() {

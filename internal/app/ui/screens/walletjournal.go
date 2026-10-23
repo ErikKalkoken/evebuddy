@@ -2,9 +2,12 @@ package screens
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -21,6 +24,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
@@ -72,6 +76,7 @@ type walletJournalRow struct {
 	dateFormatted    string
 	description      string
 	division         app.Division
+	firstParty       optional.Optional[*app.EveEntity]
 	forCorporation   bool
 	ownerID          int64
 	ownerName        string
@@ -80,6 +85,8 @@ type walletJournalRow struct {
 	refType          string
 	refTypeDisplay   string
 	searchTarget     string
+	secondParty      optional.Optional[*app.EveEntity]
+	taxReceiver      optional.Optional[*app.EveEntity]
 }
 
 // setSearchTarget sets the text the search entry matches against.
@@ -103,11 +110,11 @@ type WalletJournal struct {
 	columnSorter    *xwidget.ColumnSorter[walletJournalRow]
 	corporation     atomic.Pointer[app.Corporation]
 	division        app.Division
+	errorLabel      *widget.Label
 	filterChip      *xwidget.FilterChipCompact // only on mobile
 	filterRun       xsync.LatestRun
-	updateRun       xsync.LatestRun
 	footerLabel     *widget.Label
-	errorLabel      *widget.Label
+	moreButton      *xwidget.ContextMenuButton
 	rows            []walletJournalRow
 	rowsFiltered    []walletJournalRow
 	searchEntry     *xwidget.SearchEntry
@@ -116,6 +123,7 @@ type WalletJournal struct {
 	sortChip        *kxwidget.SortChip
 	top             *widget.Label
 	u               baseUI
+	updateRun       xsync.LatestRun
 }
 
 func NewCharacterWalletJournal(u baseUI) *WalletJournal {
@@ -219,6 +227,13 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	a.errorLabel.Importance = widget.DangerImportance
 	a.errorLabel.Hide()
 
+	a.moreButton = xwidget.NewContextMenuButtonWithIcon(
+		"",
+		theme.MoreHorizontalIcon(),
+		fyne.NewMenu("", fyne.NewMenuItem("Export transactions as CSV", a.exportAsCSV)),
+	)
+	a.moreButton.Importance = widget.LowImportance
+
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
@@ -271,10 +286,10 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
+		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip, a.moreButton), a.searchEntry)
 	} else {
 		filter := container.NewHBox(a.selectDirection, a.selectType)
-		top = container.NewBorder(nil, nil, filter, nil, a.searchEntry)
+		top = container.NewBorder(nil, nil, filter, a.moreButton, a.searchEntry)
 	}
 	c := container.NewBorder(
 		top,
@@ -374,6 +389,20 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 	}
 	l.HideSeparators = true
 	return l
+}
+
+func (a *WalletJournal) exportAsCSV() {
+	var ids []int64
+	if a.isCorporation() {
+		ids = append(ids, a.corporation.Load().IDOrZero())
+		ids = append(ids, int64(a.division))
+	} else {
+		ids = append(ids, a.character.Load().IDOrZero())
+	}
+	filename := filedialog.MakeFilename("walletjournal", ".csv", ids...)
+	exportRowsAsCSV(a.u, "walletjournal", filename, a.rowsFiltered, func(w io.Writer, rows []walletJournalRow) error {
+		return writeJournalRowsToCSV(w, rows)
+	})
 }
 
 func (a *WalletJournal) filterRowsAsync(sortCol string) {
@@ -520,6 +549,9 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.C
 			refID:          o.RefID,
 			refType:        o.RefType,
 			refTypeDisplay: o.RefTypeDisplay(),
+			firstParty:     o.FirstParty,
+			secondParty:    o.SecondParty,
+			taxReceiver:    o.TaxReceiver,
 		}
 		r.amountDisplay = xwidget.RichTextSegmentsFromText(
 			r.amountFormatted,
@@ -628,6 +660,9 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *a
 			refID:          o.RefID,
 			refType:        o.RefType,
 			refTypeDisplay: o.RefTypeDisplay(),
+			firstParty:     o.FirstParty,
+			secondParty:    o.SecondParty,
+			taxReceiver:    o.TaxReceiver,
 		}
 
 		r.amountDisplay = xwidget.RichTextSegmentsFromText(
@@ -641,6 +676,74 @@ func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *a
 		rows = append(rows, r)
 	}
 	return rows, nil
+}
+
+func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
+	cw := csv.NewWriter(w)
+	header := []string{
+		"ID",
+		"Date",
+		"Type",
+		"Amount",
+		"Balance",
+		"Description",
+		"First Party ID",
+		"First Party Name",
+		"Second Party ID",
+		"Second Party Name",
+		"Tax Receiver ID",
+		"Tax Receiver Name",
+		"Reason",
+	}
+	if err := cw.Write(header); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		var amount string
+		if v, ok := r.amount.Value(); ok {
+			amount = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var balance string
+		if v, ok := r.balance.Value(); ok {
+			balance = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var firstPartyID, secondPartyID, taxReceiverID int64
+		var firstPartyName, secondPartyName, taxReceiverName string
+		f := func(o optional.Optional[*app.EveEntity]) (int64, string) {
+			v, ok := o.Value()
+			if !ok {
+				return 0, ""
+			}
+			return v.ID, v.Name
+		}
+		firstPartyID, firstPartyName = f(r.firstParty)
+		secondPartyID, secondPartyName = f(r.secondParty)
+		taxReceiverID, taxReceiverName = f(r.taxReceiver)
+		record := []string{
+			strconv.FormatInt(r.refID, 10),
+			r.date.Format(time.RFC3339),
+			r.refType,
+			amount,
+			balance,
+			r.description,
+			strconv.FormatInt(firstPartyID, 10),
+			firstPartyName,
+			strconv.FormatInt(secondPartyID, 10),
+			secondPartyName,
+			strconv.FormatInt(taxReceiverID, 10),
+			taxReceiverName,
+			r.reason.ValueOrZero(),
+		}
+		if err := cw.Write(record); err != nil {
+			return err
+		}
+
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.

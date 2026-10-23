@@ -5,10 +5,17 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strconv"
+	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type baseUI interface {
@@ -158,4 +165,25 @@ func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIRea
 	if !ok {
 		reader.Close()
 	}
+}
+
+// TODO: Add tests
+
+// MakeFilename constructs a standard filename with a timestamp for export dialogs.
+// Constructed filename is sanitized. IDs are optional
+//
+// Example output: "walletjournal_12345678_202610221500.csv"
+func MakeFilename(topic, ext string, ids ...int64) string {
+	if topic == "" || ext == "" {
+		return ""
+	}
+	ids2 := xslices.Map(ids, func(id int64) string {
+		return strconv.FormatInt(id, 10)
+	})
+	var identity string
+	if len(ids) > 0 {
+		identity = "_" + strings.Join(ids2, "_")
+	}
+	timestamp := "_" + time.Now().Format(app.DateTimeFormatCondensed)
+	return xstrings.SanitizeFilename(topic + identity + timestamp + ext)
 }
