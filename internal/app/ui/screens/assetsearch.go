@@ -273,7 +273,7 @@ type AssetSearch struct {
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      xsync.LatestRun
 	updateRun      xsync.LatestRun
-	footer         *widget.Label
+	footerLabel    *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
 	rows           []assetRow
 	rowsFiltered   []assetRow
@@ -287,7 +287,7 @@ type AssetSearch struct {
 	selectTag      *kxwidget.FilterChipSelect
 	selectTotal    *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
-	top            *widget.Label
+	topLabel       *widget.Label
 	u              baseUI
 }
 
@@ -410,8 +410,8 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	a := &AssetSearch{
 		columnSorter:   xwidget.NewColumnSorter(columns, "Item", xwidget.SortAsc),
 		forCorporation: forCorporation,
-		footer:         ui.NewLabelWithTruncation(""),
-		top:            ui.NewLabelWithWrapping(""),
+		footerLabel:    ui.NewLabelWithTruncation(""),
+		topLabel:       ui.NewLabelWithWrapping(""),
 		u:              u,
 	}
 	a.ExtendBaseWidget(a)
@@ -536,7 +536,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 }
 
 func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
-	topBox := container.NewVBox(a.top)
+	topBox := container.NewVBox(a.topLabel)
 	if a.u.IsMobile() {
 		topBox.Add(container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry))
 	} else {
@@ -554,7 +554,7 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 		}
 		topBox.Add(container.NewBorder(nil, nil, filters, nil, a.searchEntry))
 	}
-	c := container.NewBorder(topBox, a.footer, nil, nil, a.body)
+	c := container.NewBorder(topBox, a.footerLabel, nil, nil, a.body)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -652,38 +652,6 @@ func (a *AssetSearch) consolidateToClipboard() {
 	copyRowsToClipboard(a.u, "assets", a.rowsFiltered, consolidateAssetRows)
 }
 
-func consolidateAssetRows(rows []assetRow) (string, error) {
-	type assetItem struct {
-		name     string
-		quantity int
-	}
-	quantities := make(map[int64]int)
-	names := make(map[int64]string)
-	for _, r := range rows {
-		quantities[r.typeID] += r.quantity
-		if _, found := names[r.typeID]; !found {
-			names[r.typeID] = r.typeName
-		}
-	}
-	var items []assetItem
-	for id, name := range names {
-		items = append(items, assetItem{
-			name:     name,
-			quantity: quantities[id],
-		})
-	}
-	slices.SortFunc(items, func(a, b assetItem) int {
-		return strings.Compare(a.name, b.name)
-	})
-	var b strings.Builder
-	for _, it := range items {
-		if _, err := fmt.Fprintf(&b, "%s %d\n", it.name, it.quantity); err != nil {
-			return "", err
-		}
-	}
-	return b.String(), nil
-}
-
 func (a *AssetSearch) exportAsCSV() {
 	var filename string
 	if a.forCorporation {
@@ -694,72 +662,6 @@ func (a *AssetSearch) exportAsCSV() {
 	exportRowsAsCSV(a.u, "assets", filename, a.rowsFiltered, func(w io.Writer, rows []assetRow) error {
 		return writeAssetRowsToCSV(w, rows, a.forCorporation)
 	})
-}
-
-func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) error {
-	cw := csv.NewWriter(w)
-	header := []string{
-		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
-		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
-		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Price", "Total",
-		"Owner ID", "Owner Name",
-	}
-	if !forCorporation {
-		header = append(header, "Tags")
-	}
-	if err := cw.Write(header); err != nil {
-		return err
-	}
-	for _, r := range rows {
-		var price string
-		if v, ok := r.price.Value(); ok {
-			price = strconv.FormatFloat(v, 'f', -1, 64)
-		}
-		var total string
-		if v, ok := r.total.Value(); ok {
-			total = strconv.FormatFloat(v, 'f', -1, 64)
-		}
-		var variant string
-		if r.variant != app.VariantRegular {
-			variant = r.variant.String()
-		}
-		record := []string{
-			strconv.FormatInt(r.itemID, 10),
-			strconv.FormatInt(r.typeID, 10),
-			r.typeName,
-			r.name,
-			strconv.FormatInt(r.groupID, 10),
-			r.groupName,
-			strconv.FormatInt(r.categoryID, 10),
-			r.categoryName,
-			r.locationName,
-			r.locationFlag.String(),
-			r.state,
-			strconv.Itoa(r.quantity),
-			strconv.FormatBool(r.isSingleton),
-			variant,
-			strconv.FormatInt(r.solarSystemID, 10),
-			r.solarSystemName,
-			strconv.FormatInt(r.regionID, 10),
-			r.regionName,
-			price,
-			total,
-			strconv.FormatInt(r.owner.ID, 10),
-			r.owner.Name,
-		}
-		if !forCorporation {
-			record = append(record, r.tagsDisplay)
-		}
-		if err := cw.Write(record); err != nil {
-			return err
-		}
-
-	}
-	cw.Flush()
-	if err := cw.Error(); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (a *AssetSearch) filterRowsAsync(sortCol string) {
@@ -817,9 +719,9 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			if a.filterChip != nil {
 				options := []xwidget.FilterOption{
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterCategory, categoryOptions),
@@ -871,10 +773,10 @@ func (a *AssetSearch) update(ctx context.Context) {
 			if !isLatest() {
 				return
 			}
-			a.top.Text = s
-			a.top.Importance = i
-			a.top.Refresh()
-			a.top.Show()
+			a.topLabel.Text = s
+			a.topLabel.Importance = i
+			a.topLabel.Refresh()
+			a.topLabel.Show()
 		})
 	}
 	if !a.forCorporation {
@@ -914,7 +816,7 @@ func (a *AssetSearch) update(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
-		a.top.Hide()
+		a.topLabel.Hide()
 		a.rows = rows
 		a.filterRowsAsync("")
 	})
@@ -1035,4 +937,102 @@ func (a *AssetSearch) characterCount(ctx context.Context) (int, error) {
 		}
 	}
 	return validCount, nil
+}
+
+func consolidateAssetRows(rows []assetRow) (string, error) {
+	type assetItem struct {
+		name     string
+		quantity int
+	}
+	quantities := make(map[int64]int)
+	names := make(map[int64]string)
+	for _, r := range rows {
+		quantities[r.typeID] += r.quantity
+		if _, found := names[r.typeID]; !found {
+			names[r.typeID] = r.typeName
+		}
+	}
+	var items []assetItem
+	for id, name := range names {
+		items = append(items, assetItem{
+			name:     name,
+			quantity: quantities[id],
+		})
+	}
+	slices.SortFunc(items, func(a, b assetItem) int {
+		return strings.Compare(a.name, b.name)
+	})
+	var b strings.Builder
+	for _, it := range items {
+		if _, err := fmt.Fprintf(&b, "%s %d\n", it.name, it.quantity); err != nil {
+			return "", err
+		}
+	}
+	return b.String(), nil
+}
+
+func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) error {
+	cw := csv.NewWriter(w)
+	header := []string{
+		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
+		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
+		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Price", "Total",
+		"Owner ID", "Owner Name",
+	}
+	if !forCorporation {
+		header = append(header, "Tags")
+	}
+	if err := cw.Write(header); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		var price string
+		if v, ok := r.price.Value(); ok {
+			price = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var total string
+		if v, ok := r.total.Value(); ok {
+			total = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var variant string
+		if r.variant != app.VariantRegular {
+			variant = r.variant.String()
+		}
+		record := []string{
+			strconv.FormatInt(r.itemID, 10),
+			strconv.FormatInt(r.typeID, 10),
+			r.typeName,
+			r.name,
+			strconv.FormatInt(r.groupID, 10),
+			r.groupName,
+			strconv.FormatInt(r.categoryID, 10),
+			r.categoryName,
+			r.locationName,
+			r.locationFlag.String(),
+			r.state,
+			strconv.Itoa(r.quantity),
+			strconv.FormatBool(r.isSingleton),
+			variant,
+			strconv.FormatInt(r.solarSystemID, 10),
+			r.solarSystemName,
+			strconv.FormatInt(r.regionID, 10),
+			r.regionName,
+			price,
+			total,
+			strconv.FormatInt(r.owner.ID, 10),
+			r.owner.Name,
+		}
+		if !forCorporation {
+			record = append(record, r.tagsDisplay)
+		}
+		if err := cw.Write(record); err != nil {
+			return err
+		}
+
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	return nil
 }

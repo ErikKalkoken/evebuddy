@@ -311,8 +311,8 @@ func TestAssetSearchForAll_Update(t *testing.T) {
 		// when
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		// then
-		xassert.Equal(t, "No characters", a.top.Text)
-		xassert.Equal(t, widget.LowImportance, a.top.Importance)
+		xassert.Equal(t, "No characters", a.topLabel.Text)
+		xassert.Equal(t, widget.LowImportance, a.topLabel.Importance)
 		assert.Empty(t, a.rows)
 	})
 	t.Run("shows no characters when no character has asset data", func(t *testing.T) {
@@ -328,7 +328,7 @@ func TestAssetSearchForAll_Update(t *testing.T) {
 		// when
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		// then
-		xassert.Equal(t, "No characters", a.top.Text)
+		xassert.Equal(t, "No characters", a.topLabel.Text)
 		assert.Empty(t, a.rows)
 	})
 	t.Run("shows character assets with owner and tags", func(t *testing.T) {
@@ -349,12 +349,12 @@ func TestAssetSearchForAll_Update(t *testing.T) {
 		// when
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		// then
-		assert.False(t, a.top.Visible())
+		assert.False(t, a.topLabel.Visible())
 		require.Len(t, a.rows, 1)
 		xassert.Equal(t, ca.ItemID, a.rows[0].itemID)
 		xassert.Equal(t, c.EveCharacter.Name, a.rows[0].owner.Name)
 		xassert.Equal(t, "alpha", a.rows[0].tagsDisplay)
-		xassert.Equal(t, "Showing 1 / 1 items", a.footer.Text)
+		xassert.Equal(t, "Showing 1 / 1 items", a.footerLabel.Text)
 	})
 	t.Run("includes corporation assets without office items", func(t *testing.T) {
 		// given
@@ -402,8 +402,8 @@ func TestAssetSearchForAll_Update(t *testing.T) {
 		// when
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		// then
-		assert.Contains(t, a.top.Text, "ERROR:")
-		xassert.Equal(t, widget.DangerImportance, a.top.Importance)
+		assert.Contains(t, a.topLabel.Text, "ERROR:")
+		xassert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
 		assert.Empty(t, a.rows)
 	})
 	t.Run("shows error when section status can not be loaded", func(t *testing.T) {
@@ -421,8 +421,8 @@ func TestAssetSearchForAll_Update(t *testing.T) {
 		// when
 		a.u.Signals().AppInit.Emit(t.Context(), struct{}{})
 		// then
-		assert.Contains(t, a.top.Text, "ERROR:")
-		xassert.Equal(t, widget.DangerImportance, a.top.Importance)
+		assert.Contains(t, a.topLabel.Text, "ERROR:")
+		xassert.Equal(t, widget.DangerImportance, a.topLabel.Importance)
 		assert.Empty(t, a.rows)
 	})
 	t.Run("updates when assets of a character changed", func(t *testing.T) {
