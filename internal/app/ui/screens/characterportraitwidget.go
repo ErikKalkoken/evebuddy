@@ -18,10 +18,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// characterPortraitWithLogos is a widget that shows a character portrait
+// characterPortraitWidget is a widget that shows a character portrait
 // together with the logos of the character's corporation and alliance.
 // It has a large version designed for desktop and a small version designed for mobile.
-type characterPortraitWithLogos struct {
+type characterPortraitWidget struct {
 	widget.BaseWidget
 
 	allianceLogo    *xwidget.TappableImage
@@ -35,7 +35,7 @@ type characterPortraitWithLogos struct {
 	showInfo        func(*app.EveEntity)
 }
 
-func newCharacterPortraitWithLogos(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *characterPortraitWithLogos {
+func newCharacterPortraitWithLogos(loadCharacter, loadCorporation, loadAlliance loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *characterPortraitWidget {
 	var portrait *canvas.Image
 	if isSmall {
 		portrait = xwidget.NewImageFromResource(
@@ -48,7 +48,7 @@ func newCharacterPortraitWithLogos(loadCharacter, loadCorporation, loadAlliance 
 			fyne.NewSquareSize(PortraitDesktopUnitSize),
 		)
 	}
-	w := &characterPortraitWithLogos{
+	w := &characterPortraitWidget{
 		allianceLogo:    xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		corporationLogo: xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		isSmall:         isSmall,
@@ -80,7 +80,7 @@ func newCharacterPortraitWithLogos(loadCharacter, loadCorporation, loadAlliance 
 	return w
 }
 
-func (w *characterPortraitWithLogos) CreateRenderer() fyne.WidgetRenderer {
+func (w *characterPortraitWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	portrait := container.NewStack(w.portrait, w.portraitBorder)
 	if w.isSmall {
@@ -108,7 +108,14 @@ func (w *characterPortraitWithLogos) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *characterPortraitWithLogos) set(characterID int64, corporation *app.EveEntity, alliance optional.Optional[*app.EveEntity]) {
+func (w *characterPortraitWidget) reset() {
+	w.portrait.Resource = icons.Characterplaceholder512Jpeg
+	w.portrait.Refresh()
+	w.corporationLogo.Hide()
+	w.allianceLogo.Hide()
+}
+
+func (w *characterPortraitWidget) set(characterID int64, corporation *app.EveEntity, alliance optional.Optional[*app.EveEntity]) {
 	var portraitSize int
 	if w.isSmall {
 		portraitSize = PortraitMobilePixelSize
@@ -129,6 +136,7 @@ func (w *characterPortraitWithLogos) set(characterID int64, corporation *app.Eve
 		w.corporationLogo.SetToolTip(corporation.Name)
 	}
 
+	w.corporationLogo.Show()
 	w.loadCorporation(corporation.ID, logoSize, func(r fyne.Resource) {
 		w.corporationLogo.SetResource(r)
 	})

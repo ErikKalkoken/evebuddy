@@ -611,7 +611,7 @@ type characterCard struct {
 	characterName            *widget.Label
 	isSmall                  bool
 	mails                    *widget.Label
-	portrait                 *characterPortraitWithLogos
+	portrait                 *characterPortraitWidget
 	resourceTrainingActive   fyne.Resource
 	resourceTrainingExpired  fyne.Resource
 	resourceTrainingInactive fyne.Resource

@@ -300,8 +300,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Character", container.NewBorder(
 			nil,
 			nil,
-			u.characterPortrait,
 			nil,
+			u.characterPortrait,
 			container.NewAppTabs(
 				ui.NewTabItem("Character", u.characterSheet),
 				ui.NewTabItem("Corporation", u.characterCorporation),
@@ -382,8 +382,8 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		newContentPage("Corporation", container.NewBorder(
 			nil,
 			nil,
-			u.corporationLogo,
 			nil,
+			u.corporationLogo,
 			container.NewAppTabs(
 				ui.NewTabItem("Corporation", u.corporationSheet),
 				ui.NewTabItem("Members", u.corporationMember),

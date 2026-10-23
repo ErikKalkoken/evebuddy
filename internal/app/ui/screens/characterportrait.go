@@ -2,66 +2,70 @@ package screens
 
 import (
 	"context"
-	"log/slog"
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/icons"
-	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 type CharacterPortrait struct {
 	widget.BaseWidget
 
 	character atomic.Pointer[app.Character]
-	image     *canvas.Image
+	portrait  *characterPortraitWidget
 	u         baseUI
 }
 
 func NewCharacterPortrait(u baseUI) *CharacterPortrait {
 	a := &CharacterPortrait{
-		image: xwidget.NewImageFromResource(icons.Characterplaceholder512Jpeg, fyne.NewSquareSize(PortraitDesktopUnitSize)),
-		u:     u,
+		portrait: newCharacterPortraitWithLogos(
+			u.EVEImage().CharacterPortraitAsync,
+			u.EVEImage().CorporationLogoAsync,
+			u.EVEImage().AllianceLogoAsync,
+			false,
+			u.InfoViewer().Show,
+		),
+		u: u,
 	}
 	a.ExtendBaseWidget(a)
 
+	// Signals
 	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		a.character.Store(c)
 		a.update(ctx)
+	})
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		characterID := a.character.Load().IDOrZero()
+		if characterID == 0 {
+			return
+		}
+		if arg.Section == app.SectionEveCharacters && arg.Changed.Contains(characterID) {
+			a.update(ctx)
+		}
 	})
 	return a
 }
 
 func (a *CharacterPortrait) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewVBox(container.NewPadded(a.image))
+	p := theme.Padding()
+	c := container.NewVBox(container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, p), a.portrait))
 	return widget.NewSimpleRenderer(c)
 }
 
 func (a *CharacterPortrait) update(_ context.Context) {
-	id := a.character.Load().IDOrZero()
-	if id == 0 {
+	c := a.character.Load()
+	if c == nil || c.EveCharacter == nil {
 		fyne.Do(func() {
-			a.image.Resource = icons.Characterplaceholder512Jpeg
-			a.image.Refresh()
-		})
-		return
-	}
-	r, err := a.u.EVEImage().CharacterPortrait(id, PortraitDesktopPixelSize)
-	if err != nil {
-		slog.Error("Failed to load character portrait", "characterID", id, "error", err)
-		fyne.Do(func() {
-			a.image.Resource = icons.Characterplaceholder512Jpeg
-			a.image.Refresh()
+			a.portrait.reset()
 		})
 		return
 	}
 	fyne.Do(func() {
-		a.image.Resource = r
-		a.image.Refresh()
+		a.portrait.set(c.ID, c.EveCharacter.Corporation, c.EveCharacter.Alliance)
 	})
 }

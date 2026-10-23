@@ -541,10 +541,9 @@ type corporationCard struct {
 	widget.BaseWidget
 
 	activeIndustryJobsLabel   *widget.Label
-	background                *canvas.Rectangle
 	border                    *canvas.Rectangle
 	isSmall                   bool
-	logo                      *corporationLogoWithLogos
+	logo                      *corporationLogoWidget
 	memberCountLabel          *widget.Label
 	nameLabel                 *widget.Label
 	outstandingContractsLabel *widget.Label
@@ -568,7 +567,6 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 
 	w := &corporationCard{
 		activeIndustryJobsLabel:   makeLabel(numberTemplate),
-		background:                canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
 		border:                    canvas.NewRectangle(color.Transparent),
 		isSmall:                   isSmall,
 		logo:                      newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction, isSmall, showInfo),
@@ -582,8 +580,6 @@ func newCorporationCard(loadCorporation, loadAlliance, loadFaction loadFuncAsync
 		walletLabel:               makeLabel(numberTemplate + " ISK"),
 	}
 	w.ExtendBaseWidget(w)
-
-	w.background.CornerRadius = theme.InputRadiusSize()
 
 	w.nameLabel.SizeName = theme.SizeNameSubHeadingText
 	w.nameLabel.Truncation = fyne.TextTruncateEllipsis
@@ -601,12 +597,7 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 		c := container.NewBorder(
 			nil,
 			nil,
-			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 2*p),
-				container.NewStack(
-					w.background,
-					container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p), w.logo),
-				),
-			),
+			container.New(layout.NewCustomPaddedLayout(0, 0, 0, 2*p), w.logo),
 			nil,
 			container.New(layout.NewCustomPaddedVBoxLayout(-3*p),
 				container.New(layout.NewCustomPaddedLayout(0, p, -2*p, 0), w.nameLabel),
@@ -662,7 +653,6 @@ func (w *corporationCard) CreateRenderer() fyne.WidgetRenderer {
 func (w *corporationCard) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.background.FillColor = th.Color(theme.ColorNameHover, v)
 	w.border.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	w.BaseWidget.Refresh()
 }

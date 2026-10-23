@@ -18,13 +18,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// corporationLogoWithLogos is a widget that shows a corporation logo
+// corporationLogoWidget is a widget that shows a corporation logo
 // together with the logos of the corporation's alliance and faction.
 // It has a large version designed for desktop and a small version designed for mobile.
-type corporationLogoWithLogos struct {
+type corporationLogoWidget struct {
 	widget.BaseWidget
 
 	allianceLogo    *xwidget.TappableImage
+	background      *canvas.Rectangle
 	factionLogo     *xwidget.TappableImage
 	isSmall         bool
 	loadAlliance    loadFuncAsync
@@ -36,7 +37,7 @@ type corporationLogoWithLogos struct {
 	showInfo        func(*app.EveEntity)
 }
 
-func newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *corporationLogoWithLogos {
+func newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction loadFuncAsync, isSmall bool, showInfo func(*app.EveEntity)) *corporationLogoWidget {
 	var logo *canvas.Image
 	if isSmall {
 		logo = xwidget.NewImageFromResource(
@@ -49,8 +50,9 @@ func newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction load
 			fyne.NewSquareSize(PortraitDesktopUnitSize),
 		)
 	}
-	w := &corporationLogoWithLogos{
+	w := &corporationLogoWidget{
 		allianceLogo:    xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
+		background:      canvas.NewRectangle(theme.Color(theme.ColorNameHover)),
 		factionLogo:     xwidget.NewTappableImage(icons.Corporationplaceholder64Png, nil),
 		isSmall:         isSmall,
 		loadAlliance:    loadAlliance,
@@ -76,6 +78,8 @@ func newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction load
 	w.factionLogo.SetMinSize(fyne.NewSquareSize(badgeSize))
 	w.factionLogo.CornerRadius = theme.InputRadiusSize()
 
+	w.background.CornerRadius = theme.InputRadiusSize()
+
 	w.logoBackground.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 
 	w.logoBorder.StrokeColor = theme.Color(theme.ColorNameInputBorder)
@@ -84,14 +88,19 @@ func newCorporationLogoWithLogos(loadCorporation, loadAlliance, loadFaction load
 	return w
 }
 
-func (w *corporationLogoWithLogos) CreateRenderer() fyne.WidgetRenderer {
+func (w *corporationLogoWidget) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	logo := container.NewStack(w.logoBackground, w.logo, w.logoBorder)
 	if w.isSmall {
-		c := container.NewVBox(
-			logo,
-			container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
-				container.NewHBox(w.allianceLogo, layout.NewSpacer(), w.factionLogo),
+		c := container.NewStack(
+			w.background,
+			container.New(layout.NewCustomPaddedLayout(2*p, 2*p, 3*p, 3*p),
+				container.NewVBox(
+					logo,
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0),
+						container.NewHBox(w.allianceLogo, layout.NewSpacer(), w.factionLogo),
+					),
+				),
 			),
 		)
 		return widget.NewSimpleRenderer(c)
@@ -110,7 +119,21 @@ func (w *corporationLogoWithLogos) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-func (w *corporationLogoWithLogos) set(corporationID int64, alliance, faction optional.Optional[*app.EveEntity]) {
+func (w *corporationLogoWidget) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.background.FillColor = th.Color(theme.ColorNameHover, v)
+	w.BaseWidget.Refresh()
+}
+
+func (w *corporationLogoWidget) reset() {
+	w.logo.Resource = icons.Corporationplaceholder64Png
+	w.logo.Refresh()
+	w.allianceLogo.Hide()
+	w.factionLogo.Hide()
+}
+
+func (w *corporationLogoWidget) set(corporationID int64, alliance, faction optional.Optional[*app.EveEntity]) {
 	var logoSize int
 	if w.isSmall {
 		logoSize = PortraitMobilePixelSize
