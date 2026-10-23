@@ -273,9 +273,9 @@ type AssetSearch struct {
 	corporation    atomic.Pointer[app.Corporation]
 	filterChip     *xwidget.FilterChipCompact // only on mobile
 	filterRun      xsync.LatestRun
-	updateRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
+	moreButton     *xwidget.ContextMenuButton
 	rows           []assetRow
 	rowsFiltered   []assetRow
 	searchEntry    *xwidget.SearchEntry
@@ -290,7 +290,7 @@ type AssetSearch struct {
 	sortChip       *kxwidget.SortChip
 	topLabel       *widget.Label
 	u              baseUI
-	moreButton     *xwidget.ContextMenuButton
+	updateRun      xsync.LatestRun
 }
 
 func NewAssetSearchForAll(u baseUI) *AssetSearch {

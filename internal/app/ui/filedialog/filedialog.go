@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
 type baseUI interface {
@@ -169,7 +170,7 @@ func handleOpenResult(u baseUI, arg ShowFileOpenWindowParams, reader fyne.URIRea
 // TODO: Add tests
 
 // MakeFilename constructs a standard filename with a timestamp for export dialogs.
-// IDs are optional
+// Constructed filename is sanitized. IDs are optional
 //
 // Example output: "walletjournal_12345678_202610221500.csv"
 func MakeFilename(topic, ext string, ids ...int64) string {
@@ -184,5 +185,5 @@ func MakeFilename(topic, ext string, ids ...int64) string {
 		identity = "_" + strings.Join(ids2, "_")
 	}
 	timestamp := "_" + time.Now().Format(app.DateTimeFormatCondensed)
-	return topic + identity + timestamp + ext
+	return xstrings.SanitizeFilename(topic + identity + timestamp + ext)
 }

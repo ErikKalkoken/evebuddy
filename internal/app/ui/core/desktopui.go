@@ -187,18 +187,13 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)),
 	)
 
-	trainingMore := xwidget.NewIconButtonWithMenu(
-		theme.MoreHorizontalIcon(),
-		fyne.NewMenu("", u.training.MoreItems()...),
-	)
-
 	skills := xwidget.NewNavDrawerItem(
 		theme.NewThemedResource(icons.SchoolSvg),
 		"Skills",
 		newContentPage("Skills", container.NewAppTabs(
 			ui.NewTabItem("Training", u.training),
 			ui.NewTabItem("Search", u.skillSearch),
-		), trainingMore),
+		)),
 	)
 	u.training.OnUpdate = func(count optional.Optional[int]) {
 		skills.SetBadge(formatCount(count, ihumanize.Comma))

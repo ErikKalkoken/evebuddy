@@ -972,9 +972,6 @@ func makeHomeNav(u *MobileUI) (*xwidget.Navigator, *StatusBarItem) {
 			homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
 				ui.NewTabItem("Training", u.training),
 				ui.NewTabItem("Search", u.skillSearch),
-			), xwidget.NewIconButtonWithMenu(
-				theme.MoreHorizontalIcon(),
-				fyne.NewMenu("", u.training.MoreItems()...),
 			)))
 		},
 	)
