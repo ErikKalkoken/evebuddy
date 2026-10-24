@@ -579,20 +579,28 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 }
 
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
-	c := a.character.Load()
-	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletTransactionRow, bool, error) {
-		return a.fetchCharacterRows(ctx, c)
+	a.updateRows(ctx, func(ctx context.Context) ([]walletTransactionRow, bool, bool, error) {
+		c := a.character.Load() // read after Start, so the latest run has the current owner
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchCharacterRows(ctx, c)
+		return rows, true, hasData, err
 	})
 }
 
 func (a *WalletTransactions) updateCorporationRows(ctx context.Context) {
-	c := a.corporation.Load()
-	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletTransactionRow, bool, error) {
-		return a.fetchCorporationRows(ctx, c)
+	a.updateRows(ctx, func(ctx context.Context) ([]walletTransactionRow, bool, bool, error) {
+		c := a.corporation.Load() // read after Start, so the latest run has the current owner
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchCorporationRows(ctx, c)
+		return rows, true, hasData, err
 	})
 }
 
-func (a *WalletTransactions) updateRows(ctx context.Context, hasOwner bool, fetch func(context.Context) ([]walletTransactionRow, bool, error)) {
+func (a *WalletTransactions) updateRows(ctx context.Context, fetch func(context.Context) (rows []walletTransactionRow, hasOwner, hasData bool, err error)) {
 	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
@@ -626,6 +634,15 @@ func (a *WalletTransactions) updateRows(ctx context.Context, hasOwner bool, fetc
 			a.body.Refresh()
 		})
 	}
+	rows, hasOwner, hasData, err := fetch(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		reset()
+		setError(err)
+		return
+	}
 	if !hasOwner {
 		reset()
 		var s string
@@ -635,15 +652,6 @@ func (a *WalletTransactions) updateRows(ctx context.Context, hasOwner bool, fetc
 			s = "No character"
 		}
 		setInfo(s, widget.LowImportance)
-		return
-	}
-	rows, hasData, err := fetch(ctx)
-	if err != nil {
-		if ctx.Err() != nil {
-			return
-		}
-		reset()
-		setError(err)
 		return
 	}
 	if !hasData {

@@ -269,12 +269,14 @@ func (cs CorporationSection) DisplayName() string {
 	return makeSectionDisplayName(cs)
 }
 
+var corporationSectionDivisions = xmaps.Merge(
+	xmaps.Invert(corporationSectionsWalletJournal),
+	xmaps.Invert(corporationSectionsWalletTransactions),
+)
+
 // Division returns the division ID this section is related to or 0 if it has none.
 func (cs CorporationSection) Division() Division {
-	m1 := xmaps.Invert(corporationSectionsWalletJournal)
-	m2 := xmaps.Invert(corporationSectionsWalletTransactions)
-	maps.Copy(m1, m2)
-	return m1[cs]
+	return corporationSectionDivisions[cs]
 }
 
 func (cs CorporationSection) String() string {

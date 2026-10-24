@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestCharacterSectionScopes(t *testing.T) {
+func TestCharacterSection_Scopes(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		got := app.SectionCharacterAssets.Scopes()
 		assert.True(t, got.Size() > 0)
@@ -21,11 +21,11 @@ func TestCharacterSectionScopes(t *testing.T) {
 	})
 }
 
-func TestCharacterSectionString(t *testing.T) {
+func TestCharacterSection_String(t *testing.T) {
 	xassert.Equal(t, "assets", app.SectionCharacterAssets.String())
 }
 
-func TestCharacterSectionTimeout(t *testing.T) {
+func TestCharacterSection_Timeout(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		xassert.EqualDuration(t, 3600*time.Second, app.SectionCharacterAssets.Timeout(), 0)
 	})
@@ -43,7 +43,7 @@ func TestCorporationSectionWalletTransactions(t *testing.T) {
 	xassert.Equal(t, app.SectionCorporationWalletTransactions3, app.CorporationSectionWalletTransactions(app.Division3))
 }
 
-func TestCorporationSectionDivision(t *testing.T) {
+func TestCorporationSection_Division(t *testing.T) {
 	t.Run("wallet journal section", func(t *testing.T) {
 		xassert.Equal(t, app.Division3, app.SectionCorporationWalletJournal3.Division())
 	})
@@ -55,11 +55,11 @@ func TestCorporationSectionDivision(t *testing.T) {
 	})
 }
 
-func TestCorporationSectionString(t *testing.T) {
+func TestCorporationSection_String(t *testing.T) {
 	xassert.Equal(t, "assets", app.SectionCorporationAssets.String())
 }
 
-func TestCorporationSectionTimeout(t *testing.T) {
+func TestCorporationSection_Timeout(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		xassert.EqualDuration(t, 3600*time.Second, app.SectionCorporationAssets.Timeout(), 0)
 	})
@@ -69,7 +69,7 @@ func TestCorporationSectionTimeout(t *testing.T) {
 	})
 }
 
-func TestCorporationSectionRoles(t *testing.T) {
+func TestCorporationSection_Roles(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		got := app.SectionCorporationAssets.Roles()
 		assert.True(t, got.Contains(app.RoleDirector))
@@ -84,7 +84,7 @@ func TestCorporationSectionRoles(t *testing.T) {
 	})
 }
 
-func TestCorporationSectionScopes(t *testing.T) {
+func TestCorporationSection_Scopes(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		got := app.SectionCorporationAssets.Scopes()
 		assert.True(t, got.Size() > 0)
@@ -95,16 +95,16 @@ func TestCorporationSectionScopes(t *testing.T) {
 	})
 }
 
-func TestEveUniverseSectionScopes(t *testing.T) {
+func TestEveUniverseSection_Scopes(t *testing.T) {
 	got := app.SectionEveCharacters.Scopes()
 	xassert.Equal(t, 0, got.Size())
 }
 
-func TestEveUniverseSectionString(t *testing.T) {
+func TestEveUniverseSection_String(t *testing.T) {
 	xassert.Equal(t, "characters", app.SectionEveCharacters.String())
 }
 
-func TestEveUniverseSectionTimeout(t *testing.T) {
+func TestEveUniverseSection_Timeout(t *testing.T) {
 	t.Run("known section", func(t *testing.T) {
 		xassert.EqualDuration(t, time.Hour, app.SectionEveCharacters.Timeout(), 0)
 	})

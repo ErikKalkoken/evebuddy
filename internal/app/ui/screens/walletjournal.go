@@ -231,6 +231,8 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 			return
 		}
 		a.divisionID.Store(d.ID())
+		a.updateRunBalance.Discard() // loads of the previous division must not show after the clear
+		a.updateRunJournal.Discard()
 		a.clearData()
 		a.resetFilters()
 		ctx := context.Background()
@@ -409,6 +411,7 @@ func (a *WalletJournal) clearData() {
 	}
 	clearLabel(a.balanceLabel)
 	clearLabel(a.footerLabel)
+	a.errorLabel.Hide()
 	a.filterRun.Discard()
 	a.rows = nil
 	a.rowsFiltered = nil
@@ -560,15 +563,16 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 }
 
 func (a *WalletJournal) updateBalanceCharacter(ctx context.Context) {
-	a.updateBalance(ctx, a.character.Load().IDOrZero(), a.fetchBalanceCharacter)
+	a.updateBalance(ctx, func() int64 { return a.character.Load().IDOrZero() }, a.fetchBalanceCharacter)
 }
 
 func (a *WalletJournal) updateBalanceCorporation(ctx context.Context) {
-	a.updateBalance(ctx, a.corporation.Load().IDOrZero(), a.fetchBalanceCorporation)
+	a.updateBalance(ctx, func() int64 { return a.corporation.Load().IDOrZero() }, a.fetchBalanceCorporation)
 }
 
-func (a *WalletJournal) updateBalance(ctx context.Context, ownerID int64, fetch func(context.Context, int64) (optional.Optional[float64], error)) {
+func (a *WalletJournal) updateBalance(ctx context.Context, loadOwnerID func() int64, fetch func(context.Context, int64) (optional.Optional[float64], error)) {
 	isLatest := a.updateRunBalance.Start()
+	ownerID := loadOwnerID() // read after Start, so the latest run has the current owner
 	setBalance := func(balance optional.Optional[float64], s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -633,20 +637,28 @@ func (a *WalletJournal) fetchBalanceCorporation(ctx context.Context, corporation
 }
 
 func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
-	c := a.character.Load()
-	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletJournalRow, bool, error) {
-		return a.fetchRowsCharacter(ctx, c)
+	a.updateRows(ctx, func(ctx context.Context) ([]walletJournalRow, bool, bool, error) {
+		c := a.character.Load() // read after Start, so the latest run has the current owner
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchRowsCharacter(ctx, c)
+		return rows, true, hasData, err
 	})
 }
 
 func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
-	c := a.corporation.Load()
-	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletJournalRow, bool, error) {
-		return a.fetchRowsCorporation(ctx, c, app.Division(a.divisionID.Load())) // read after Start, so the latest run has the current division
+	a.updateRows(ctx, func(ctx context.Context) ([]walletJournalRow, bool, bool, error) {
+		c := a.corporation.Load() // read after Start, so the latest run has the current owner and division
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchRowsCorporation(ctx, c, app.Division(a.divisionID.Load()))
+		return rows, true, hasData, err
 	})
 }
 
-func (a *WalletJournal) updateRows(ctx context.Context, hasOwner bool, fetch func(context.Context) ([]walletJournalRow, bool, error)) {
+func (a *WalletJournal) updateRows(ctx context.Context, fetch func(context.Context) (rows []walletJournalRow, hasOwner, hasData bool, err error)) {
 	isLatest := a.updateRunJournal.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
@@ -680,6 +692,15 @@ func (a *WalletJournal) updateRows(ctx context.Context, hasOwner bool, fetch fun
 			a.main.Refresh()
 		})
 	}
+	rows, hasOwner, hasData, err := fetch(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		reset()
+		setError(err)
+		return
+	}
 	if !hasOwner {
 		reset()
 		var s string
@@ -689,15 +710,6 @@ func (a *WalletJournal) updateRows(ctx context.Context, hasOwner bool, fetch fun
 			s = "No character"
 		}
 		setInfo(s, widget.LowImportance)
-		return
-	}
-	rows, hasData, err := fetch(ctx)
-	if err != nil {
-		if ctx.Err() != nil {
-			return
-		}
-		reset()
-		setError(err)
 		return
 	}
 	if !hasData {
