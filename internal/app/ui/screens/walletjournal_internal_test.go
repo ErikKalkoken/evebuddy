@@ -893,7 +893,7 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w := NewDivisionSelect(nil)
 		// then
-		xassert.Equal(t, "Master Wallet [1]", w.Selected)
+		xassert.Equal(t, "[1] Master Wallet", w.Selected)
 		assert.Len(t, w.Options, len(app.Divisions))
 	})
 	t.Run("reports division selected by user", func(t *testing.T) {
@@ -918,7 +918,7 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetDivisionSilent(app.Division2)
 		// then
-		xassert.Equal(t, "2nd Wallet [2]", w.Selected)
+		xassert.Equal(t, "[2] 2nd Wallet", w.Selected)
 		assert.Empty(t, got)
 	})
 	t.Run("keeps division selected by user when names are set", func(t *testing.T) {
@@ -929,7 +929,7 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetNames(map[app.Division]string{app.Division3: "Alpha"})
 		// then
-		xassert.Equal(t, "Alpha [3]", w.Selected)
+		xassert.Equal(t, "[3] Alpha", w.Selected)
 	})
 	t.Run("shows default name for divisions without name", func(t *testing.T) {
 		// given
@@ -938,8 +938,8 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetNames(map[app.Division]string{app.Division3: "Alpha"})
 		// then
-		xassert.Equal(t, "Master Wallet [1]", w.Selected)
-		xassert.Equal(t, "Alpha [3]", w.Options[2])
+		xassert.Equal(t, "[1] Master Wallet", w.Selected)
+		xassert.Equal(t, "[3] Alpha", w.Options[2])
 	})
 	t.Run("resets names to defaults when names are nil", func(t *testing.T) {
 		// given
@@ -949,9 +949,9 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetNames(nil)
 		// then
-		xassert.Equal(t, "Master Wallet [1]", w.Selected)
-		xassert.Equal(t, "Master Wallet [1]", w.Options[0])
-		xassert.Equal(t, app.Division3.DefaultWalletName()+" [3]", w.Options[2])
+		xassert.Equal(t, "[1] Master Wallet", w.Selected)
+		xassert.Equal(t, "[1] Master Wallet", w.Options[0])
+		xassert.Equal(t, "[3] "+app.Division3.DefaultWalletName(), w.Options[2])
 	})
 	t.Run("reports division selected by user after names are reset", func(t *testing.T) {
 		// given

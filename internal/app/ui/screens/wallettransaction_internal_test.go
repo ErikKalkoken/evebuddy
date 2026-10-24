@@ -530,6 +530,6 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		})
 		// then
 		require.Len(t, a.rows, 1)
-		xassert.Equal(t, "Ops [2]", a.rows[0].divisionName)
+		xassert.Equal(t, "[2] Ops", a.rows[0].divisionName)
 	})
 }

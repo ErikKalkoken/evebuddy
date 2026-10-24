@@ -48,12 +48,12 @@ func (a *CorporationWallets) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
-// corporationWalletLabel returns the display label for a wallet, e.g. "Master Wallet [1]".
+// corporationWalletLabel returns the display label for a wallet, e.g. "[1] Master Wallet".
 func corporationWalletLabel(d app.Division, name string) string {
 	if name == "" {
 		name = d.DefaultWalletName()
 	}
-	return fmt.Sprintf("%s [%d]", name, d)
+	return fmt.Sprintf("[%d] %s", d, name)
 }
 
 func defaultCorporationWalletNames() map[app.Division]string {

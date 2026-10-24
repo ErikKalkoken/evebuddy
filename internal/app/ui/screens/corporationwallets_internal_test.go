@@ -18,13 +18,13 @@ func TestCorporationWalletLabel(t *testing.T) {
 		// when
 		got := corporationWalletLabel(app.Division3, "Ops")
 		// then
-		xassert.Equal(t, "Ops [3]", got)
+		xassert.Equal(t, "[3] Ops", got)
 	})
 	t.Run("shows default name when name is empty", func(t *testing.T) {
 		// when
 		got := corporationWalletLabel(app.Division1, "")
 		// then
-		xassert.Equal(t, "Master Wallet [1]", got)
+		xassert.Equal(t, "[1] Master Wallet", got)
 	})
 }
 
