@@ -22,7 +22,6 @@ type CorporationWallets struct {
 	divisions    *CorporationWalletDivisions
 	journal      *WalletJournal
 	transactions *WalletTransactions
-	u            baseUI
 }
 
 func NewCorporationWallets(u baseUI) *CorporationWallets {
@@ -30,7 +29,6 @@ func NewCorporationWallets(u baseUI) *CorporationWallets {
 		divisions:    NewCorporationWalletDivisions(u),
 		journal:      NewCorporationWalletJournal(u),
 		transactions: NewCorporationWalletTransactions(u),
-		u:            u,
 	}
 	a.ExtendBaseWidget(a)
 	a.divisions.onBalanceUpdate = func(balance optional.Optional[float64]) {

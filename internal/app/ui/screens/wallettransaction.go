@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -122,7 +121,6 @@ type WalletTransactions struct {
 	clientSelect   *kxwidget.FilterChipSelect
 	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
 	corporation    atomic.Pointer[app.Corporation]
-	divisionNames  map[app.Division]string
 	divisionSelect *kxwidget.FilterChipSelect
 	errorLabel     *widget.Label
 	filterChip     *xwidget.FilterChipCompact // only on mobile
@@ -137,8 +135,7 @@ type WalletTransactions struct {
 	sortChip       *kxwidget.SortChip
 	typeSelect     *kxwidget.FilterChipSelect
 	u              baseUI
-	updateRunNames xsync.LatestRun
-	updateRunRows  xsync.LatestRun
+	updateRun      xsync.LatestRun
 }
 
 func NewCharacterWalletTransaction(u baseUI) *WalletTransactions {
@@ -308,14 +305,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 			a.corporation.Store(c)
 			fyne.Do(a.resetFilters)
-			var wg sync.WaitGroup
-			wg.Go(func() {
-				a.updateDivisionNames(ctx)
-			})
-			wg.Go(func() {
-				a.updateCorporationRows(ctx)
-			})
-			wg.Wait()
+			a.updateCorporationRows(ctx)
 		})
 		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
@@ -323,6 +313,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 			}
 			switch arg.Section {
 			case
+				app.SectionCorporationDivisions,
 				app.SectionCorporationWalletTransactions1,
 				app.SectionCorporationWalletTransactions2,
 				app.SectionCorporationWalletTransactions3,
@@ -331,8 +322,6 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 				app.SectionCorporationWalletTransactions6,
 				app.SectionCorporationWalletTransactions7:
 				a.updateCorporationRows(ctx)
-			case app.SectionCorporationDivisions:
-				a.updateDivisionNames(ctx)
 			}
 		})
 	} else {
@@ -365,17 +354,19 @@ func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 			a.searchEntry,
 		)
 	} else {
-		filter := []fyne.CanvasObject{
+		filter := make([]fyne.CanvasObject, 0, 8)
+		if a.forCorporation {
+			filter = append(filter, a.divisionSelect)
+		}
+		filter = append(
+			filter,
 			a.activitySelect,
 			a.categorySelect,
 			a.typeSelect,
 			a.clientSelect,
 			a.regionSelect,
 			a.locationSelect,
-		}
-		if a.forCorporation {
-			filter = slices.Insert(filter, 0, []fyne.CanvasObject{a.divisionSelect}...)
-		}
+		)
 		top = container.NewBorder(
 			nil,
 			nil,
@@ -431,6 +422,7 @@ func (a *WalletTransactions) resetFilters() {
 		a.activitySelect,
 		a.categorySelect,
 		a.clientSelect,
+		a.divisionSelect,
 		a.locationSelect,
 		a.regionSelect,
 		a.typeSelect,
@@ -544,15 +536,23 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 			a.footerLabel.Importance = widget.MediumImportance
 			a.footerLabel.Refresh()
 			if a.filterChip != nil {
-				a.filterChip.SetOptions(
+				options := make([]xwidget.FilterOption, 0, 8)
+				if a.forCorporation {
+					options = append(
+						options,
+						xwidget.NewFilterOptionMultiChoice(walletTransactionFilterDivision, divisionOptions),
+					)
+				}
+				options = append(
+					options,
 					xwidget.NewFilterOptionMultiChoiceOrdered(walletTransactionFilterActivity, walletTransactionActivityOptions()),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterCategory, categoryOptions),
-					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),
-					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterDivision, divisionOptions),
-					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterLocation, locationOptions),
-					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterRegion, regionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterType, typeOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterLocation, locationOptions),
 				)
+				a.filterChip.SetOptions(options...)
 			} else {
 				a.divisionSelect.SetOptions(divisionOptions)
 				a.categorySelect.SetOptions(categoryOptions)
@@ -568,7 +568,7 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 }
 
 func (a *WalletTransactions) updateCharacter(ctx context.Context) {
-	isLatest := a.updateRunRows.Start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -681,7 +681,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 }
 
 func (a *WalletTransactions) updateCorporationRows(ctx context.Context) {
-	isLatest := a.updateRunRows.Start()
+	isLatest := a.updateRun.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -740,7 +740,8 @@ func (a *WalletTransactions) updateCorporationRows(ctx context.Context) {
 		setInfo("No data", widget.WarningImportance)
 		return
 	}
-	rows, err := a.fetchCorporationRows(ctx, corporation)
+	names := a.u.Corporation().ListWalletNames(ctx, corporation.ID)
+	rows, err := a.fetchCorporationRows(ctx, corporation, names)
 	if err != nil {
 		reset()
 		setError(err)
@@ -756,7 +757,7 @@ func (a *WalletTransactions) updateCorporationRows(ctx context.Context) {
 	})
 }
 
-func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporation *app.Corporation) ([]walletTransactionRow, error) {
+func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporation *app.Corporation, names map[app.Division]string) ([]walletTransactionRow, error) {
 	entries, err := a.u.Corporation().ListWalletTransactionsAll(ctx, corporation.IDOrZero())
 	if err != nil {
 		return nil, err
@@ -774,7 +775,7 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			date:             o.Date,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
 			division:         division,
-			divisionName:     corporationWalletLabel(division, a.divisionNames[division]),
+			divisionName:     corporationWalletLabel(division, names[division]),
 			isBuy:            o.IsBuy,
 			locationDisplay:  o.Location.DisplayRichText(),
 			locationID:       o.Location.ID,
@@ -803,169 +804,4 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 		rows = append(rows, r)
 	}
 	return rows, nil
-}
-
-func (a *WalletTransactions) updateDivisionNames(ctx context.Context) {
-	isLatest := a.updateRunNames.Start()
-	c := a.corporation.Load()
-	if c == nil {
-		return
-	}
-	fyne.Do(func() {
-		if !isLatest() {
-			return
-		}
-		a.divisionNames = a.u.Corporation().ListWalletNames(ctx, c.ID)
-	})
-}
-
-// ShowCharacterWalletTransactionWindowAsync shows the detail of a character wallet transaction in a window.
-func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, characterName string, transactionID int64) {
-	windowID := fmt.Sprintf("wallettransaction-%d-%d", characterID, transactionID)
-	title := fmt.Sprintf("Character Market Transaction #%d", transactionID)
-	w, created := u.GetOrCreateWindow(windowID, title, characterName)
-	if !created {
-		w.Show()
-		return
-	}
-
-	runAsync(func() {
-		o, err := u.Character().GetWalletTransactions(context.Background(), characterID, transactionID)
-		if err != nil {
-			fyne.Do(func() {
-				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
-			})
-			return
-		}
-		fyne.Do(func() {
-			var activity string
-			total := widget.NewLabel(ui.FormatISKAmount(o.Total()))
-			if o.IsBuy {
-				total.Importance = widget.DangerImportance
-				activity = marketTransactionActivityBuy
-			} else {
-				total.Importance = widget.SuccessImportance
-				activity = marketTransactionActivitySell
-			}
-			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					characterID,
-					characterName,
-					u.InfoViewer().Show,
-				)),
-				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
-				widget.NewFormItem("Activity", widget.NewLabel(activity)),
-				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
-				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoViewer().Show(o.Type.ToEveEntity())
-				})),
-				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
-				widget.NewFormItem("Total", total),
-				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoViewer().Show)),
-				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoViewer().ShowLocation)),
-				// widget.NewFormItem("Related Journal Entry", ui.MakeLinkLabelWithWrap(
-				// 	fmt.Sprintf("#%d", o.JournalRefID), func() {
-				// 		showCharacterWalletJournalEntryWindow(u, characterID, o.JournalRefID)
-				// 	},
-				// )),
-			}
-
-			if u.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem(
-					"Transaction ID",
-					xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(transactionID)),
-				))
-			}
-			f := widget.NewForm(items...)
-			f.Orientation = widget.Adaptive
-			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-				Content: f,
-				ImageAction: func() {
-					u.InfoViewer().ShowType(o.Type.ID, 0)
-				},
-				ImageLoader: func(setter func(r fyne.Resource)) {
-					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)
-				},
-				Title:  title,
-				Window: w,
-			})
-			w.Show()
-		})
-	})
-}
-
-// ShowCorporationWalletTransactionWindowAsync shows the detail of a corporation wallet transaction in a window.
-func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, transactionID int64) {
-	windowID := fmt.Sprintf("wallettransaction-%d-%d", corporationID, transactionID)
-	title := fmt.Sprintf("Corporation Market Transaction #%d", transactionID)
-	w, created := u.GetOrCreateWindow(windowID, title, corporationName)
-	if !created {
-		w.Show()
-		return
-	}
-
-	runAsync(func() {
-		o, err := u.Corporation().GetWalletTransaction(context.Background(), corporationID, division, transactionID)
-		if err != nil {
-			fyne.Do(func() {
-				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show market transaction", err, u.IsDeveloperMode(), u.MainWindow())
-			})
-			return
-		}
-		fyne.Do(func() {
-			var activity string
-			totalLabel := widget.NewLabel(ui.FormatISKAmount(o.Total()))
-			if o.IsBuy {
-				totalLabel.Importance = widget.DangerImportance
-				activity = marketTransactionActivityBuy
-			} else {
-				totalLabel.Importance = widget.SuccessImportance
-				activity = marketTransactionActivitySell
-			}
-			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
-					&app.EveEntity{ID: corporationID, Name: corporationName, Category: app.EveEntityCorporation},
-					u.InfoViewer().Show,
-				)),
-				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
-				widget.NewFormItem("Activity", widget.NewLabel(activity)),
-				widget.NewFormItem("Quantity", widget.NewLabel(humanize.Comma(int64(o.Quantity)))),
-				widget.NewFormItem("Type", ui.MakeLinkLabelWithWrap(o.Type.Name, func() {
-					u.InfoViewer().Show(o.Type.ToEveEntity())
-				})),
-				widget.NewFormItem("Unit price", widget.NewLabel(ui.FormatISKAmount(o.UnitPrice))),
-				widget.NewFormItem("Total", totalLabel),
-				widget.NewFormItem("Client", ui.MakeEveEntityActionLabel(o.Client, u.InfoViewer().Show)),
-				widget.NewFormItem("Location", ui.MakeLocationLabel(o.Location, u.InfoViewer().ShowLocation)),
-				widget.NewFormItem("Related Journal Entry", ui.MakeLinkLabelWithWrap(
-					fmt.Sprintf("#%d", o.JournalRefID), func() {
-						ShowCorporationWalletJournalEntryWindowAsync(u, corporationID, corporationName, division, o.JournalRefID)
-					},
-				)),
-			}
-
-			if u.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem(
-					"Transaction ID",
-					xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(transactionID)),
-				))
-			}
-			f := widget.NewForm(items...)
-			f.Orientation = widget.Adaptive
-			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-				Content: f,
-				ImageAction: func() {
-					u.InfoViewer().ShowType(o.Type.ID, 0)
-				},
-				ImageLoader: func(setter func(r fyne.Resource)) {
-					u.EVEImage().InventoryTypeIconAsync(o.Type.ID, 256, setter)
-				},
-				Title:  title,
-				Window: w,
-			})
-			w.Show()
-		})
-	})
 }

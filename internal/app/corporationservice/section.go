@@ -325,12 +325,11 @@ func (s *CorporationService) HasSections(ctx context.Context, corporationID int6
 	var found set.Set[app.CorporationSection]
 	for _, o := range oo {
 		if !o.IsMissing() {
-			s := o.Section.(app.CorporationSection)
-			found.Add(s)
+			found.Add(o.Section.(app.CorporationSection))
 		}
 	}
 	missing := set.Difference(sections, found)
-	return missing.IsZero(), nil
+	return missing.Size() == 0, nil
 }
 
 // PermittedSection reports whether the user has permission to access a section.

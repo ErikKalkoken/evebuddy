@@ -1745,31 +1745,20 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
 	}
-	var completedAt, startedAt time.Time
-	if v, ok := arg.CompletedAt.Value(); !ok {
-		completedAt = time.Now().UTC()
-	} else {
-		completedAt = v
-	}
-	if v, ok := arg.StartedAt.Value(); !ok {
-		startedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
-	} else {
-		startedAt = v
-	}
 	hash, err := calcContentHash(arg.Data)
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTimeFromTime(completedAt)
-	startedAt2 := optional.New(startedAt)
+	completedAt := storage.NewNullTimeFromTime(arg.CompletedAt.ValueOrFallback(time.Now().UTC()))
+	startedAt := optional.New(arg.StartedAt.ValueOrFallback(time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()))
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
 		Comment:       &arg.Comment,
 		CorporationID: arg.CorporationID,
 		Section:       arg.Section,
 		ErrorMessage:  &arg.ErrorMessage,
-		CompletedAt:   &t,
+		CompletedAt:   &completedAt,
 		ContentHash:   &hash,
-		StartedAt:     &startedAt2,
+		StartedAt:     &startedAt,
 	}
 	o, err := f.st.UpdateOrCreateCorporationSectionStatus(ctx, arg2)
 	if err != nil {

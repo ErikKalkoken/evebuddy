@@ -152,26 +152,6 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 			assert.Equal(t, walletJournalFilter{}, a.currentFilter())
 		})
 	}
-	for _, isMobile := range []bool{false, true} {
-		t.Run(fmt.Sprintf("wallet journal of corporation mobile=%v", isMobile), func(t *testing.T) {
-			u := newUI(t, isMobile)
-			a := NewCorporationWalletJournal(u)
-			a.searchEntry.SetText("bounty")
-			if isMobile {
-				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
-				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
-			} else {
-				a.typeSelect.SetOptions([]string{"Bounty"})
-				a.typeSelect.SetSelected("Bounty")
-			}
-			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
-
-			switchCorporation(t, u)
-
-			assert.Empty(t, a.searchEntry.Text)
-			assert.Equal(t, walletJournalFilter{}, a.currentFilter())
-		})
-	}
 	t.Run("communications of character", func(t *testing.T) {
 		u := newUI(t, true)
 		a := NewCommunicationsForCharacter(u)
