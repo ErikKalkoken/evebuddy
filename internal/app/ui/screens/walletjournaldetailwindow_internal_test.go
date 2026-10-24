@@ -149,7 +149,7 @@ func TestShowCorporationWalletJournalEntryWindowAsync(t *testing.T) {
 		// when
 		ShowCorporationWalletJournalEntryWindowAsync(u, e.CorporationID, "Wayne Enterprises", app.Division1, e.RefID)
 		// then
-		w, created := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", e.CorporationID, e.RefID))
+		w, created := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d-%d", e.CorporationID, app.Division1, e.RefID))
 		assert.False(t, created)
 		assert.NotNil(t, w.Content())
 	})
@@ -166,7 +166,7 @@ func TestShowCorporationWalletJournalEntryWindowAsync(t *testing.T) {
 		// when
 		ShowCorporationWalletJournalEntryWindowAsync(u, c.ID, "Wayne Enterprises", app.Division1, 42)
 		// then
-		_, created := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", c.ID, 42))
+		_, created := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d-%d", c.ID, app.Division1, 42))
 		assert.True(t, created)
 	})
 	t.Run("reuses existing window", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestShowCorporationWalletJournalEntryWindowAsync(t *testing.T) {
 			App:     test.NewTempApp(t),
 			Storage: st,
 		})
-		w, _ := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d", 7, 42))
+		w, _ := u.GetOrCreateWindow(fmt.Sprintf("walletjournalentry-%d-%d-%d", 7, app.Division1, 42))
 		// when
 		ShowCorporationWalletJournalEntryWindowAsync(u, 7, "Wayne Enterprises", app.Division1, 42)
 		// then

@@ -17,7 +17,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -80,7 +79,6 @@ type walletTransactionRow struct {
 	categoryName     string
 	ownerID          int64
 	ownerName        string
-	forCorporation   bool
 	client           *app.EveEntity
 	clientName       string
 	date             time.Time
@@ -327,16 +325,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
-			switch arg.Section {
-			case
-				app.SectionCorporationDivisions,
-				app.SectionCorporationWalletTransactions1,
-				app.SectionCorporationWalletTransactions2,
-				app.SectionCorporationWalletTransactions3,
-				app.SectionCorporationWalletTransactions4,
-				app.SectionCorporationWalletTransactions5,
-				app.SectionCorporationWalletTransactions6,
-				app.SectionCorporationWalletTransactions7:
+			if arg.Section == app.SectionCorporationDivisions || slices.Contains(app.CorporationSectionsWalletTransactions, arg.Section) {
 				a.updateCorporationRows(ctx)
 			}
 		})
@@ -462,10 +451,14 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 			amount.Alignment = fyne.TextAlignTrailing
 			location := widget.NewLabel("Template")
 			location.Truncation = fyne.TextTruncateClip
+			division := widget.NewLabel("Template")
+			if !a.forCorporation {
+				division.Hide()
+			}
 			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
 				container.NewBorder(nil, nil, nil, amount, date),
 				container.NewBorder(nil, nil, nil, total, invType),
-				location,
+				container.NewBorder(nil, nil, nil, division, location),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -486,7 +479,9 @@ func (a *WalletTransactions) makeDataList() *xwidget.StripedList {
 			b1[0].(*widget.Label).SetText(r.typeName)
 			b1[1].(*widget.Label).SetText("x" + r.quantityDisplay)
 
-			c[2].(*widget.Label).SetText(r.locationName)
+			b2 := c[2].(*fyne.Container).Objects
+			b2[0].(*widget.Label).SetText(r.locationName)
+			b2[1].(*widget.Label).SetText(r.divisionName)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -644,6 +639,9 @@ func (a *WalletTransactions) updateRows(ctx context.Context, hasOwner bool, fetc
 	}
 	rows, hasData, err := fetch(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset()
 		setError(err)
 		return
@@ -702,17 +700,8 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 }
 
 func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporation *app.Corporation) ([]walletTransactionRow, bool, error) {
-	sections := set.Of(
-		app.SectionCorporationWalletTransactions1,
-		app.SectionCorporationWalletTransactions2,
-		app.SectionCorporationWalletTransactions3,
-		app.SectionCorporationWalletTransactions4,
-		app.SectionCorporationWalletTransactions5,
-		app.SectionCorporationWalletTransactions6,
-		app.SectionCorporationWalletTransactions7,
-	)
-	hasData, err := a.u.Corporation().HasSections(ctx, corporation.ID, sections)
-	if err != nil || !hasData {
+	completed, err := a.u.Corporation().CompletedSections(ctx, corporation.ID)
+	if err != nil || !completed.ContainsAny(slices.Values(app.CorporationSectionsWalletTransactions)) {
 		return nil, false, err
 	}
 	names := a.u.Corporation().ListWalletNames(ctx, corporation.ID)

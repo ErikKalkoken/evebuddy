@@ -24,7 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// corporationWalletsData is the loaded state for a [CorporationWallets] screen.
+// corporationWalletsData is the loaded state for a [CorporationWalletDivisions] screen.
 type corporationWalletsData struct {
 	balances   map[app.Division]float64 // empty when there is no data
 	importance widget.Importance

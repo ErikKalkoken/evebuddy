@@ -177,7 +177,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 
 // ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
 func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, refID int64) {
-	windowID := fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID)
+	windowID := fmt.Sprintf("walletjournalentry-%d-%d-%d", corporationID, division, refID)
 	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
 	w, created := u.GetOrCreateWindow(windowID, title, corporationName)
 	if !created {

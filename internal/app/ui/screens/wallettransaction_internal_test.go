@@ -313,6 +313,29 @@ func TestCorporationWalletTransactions(t *testing.T) {
 			sell.TransactionID: app.Division2,
 		}, gotDivision)
 	})
+	t.Run("shows transactions when only one division has completed", func(t *testing.T) {
+		// given
+		db, st, factory := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewCorporationWalletTransactions(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletTransactions1,
+		})
+		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		// when
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+		// then
+		require.Len(t, a.rows, 1)
+		xassert.Equal(t, o.TransactionID, a.rows[0].transactionID)
+	})
 	t.Run("shows no corporation when corporation is exchanged to none", func(t *testing.T) {
 		// given
 		db, st, _ := testutil.NewDBOnDisk(t)

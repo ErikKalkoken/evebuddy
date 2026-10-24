@@ -229,6 +229,28 @@ var CorporationSections = []CorporationSection{
 	SectionCorporationWalletTransactions7,
 }
 
+// CorporationSectionsWalletJournal are the wallet journal sections of all divisions.
+var CorporationSectionsWalletJournal = []CorporationSection{
+	SectionCorporationWalletJournal1,
+	SectionCorporationWalletJournal2,
+	SectionCorporationWalletJournal3,
+	SectionCorporationWalletJournal4,
+	SectionCorporationWalletJournal5,
+	SectionCorporationWalletJournal6,
+	SectionCorporationWalletJournal7,
+}
+
+// CorporationSectionsWalletTransactions are the wallet transaction sections of all divisions.
+var CorporationSectionsWalletTransactions = []CorporationSection{
+	SectionCorporationWalletTransactions1,
+	SectionCorporationWalletTransactions2,
+	SectionCorporationWalletTransactions3,
+	SectionCorporationWalletTransactions4,
+	SectionCorporationWalletTransactions5,
+	SectionCorporationWalletTransactions6,
+	SectionCorporationWalletTransactions7,
+}
+
 func CorporationSectionWalletJournal(d Division) CorporationSection {
 	section := map[Division]CorporationSection{
 		Division1: SectionCorporationWalletJournal1,

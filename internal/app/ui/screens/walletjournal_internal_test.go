@@ -308,7 +308,6 @@ func TestCorporationWalletJournal(t *testing.T) {
 		// then
 		require.Len(t, a.rows, 1)
 		xassert.Equal(t, e.RefID, a.rows[0].refID)
-		assert.True(t, a.rows[0].forCorporation)
 		xassert.Equal(t, app.Division1, a.rows[0].division)
 		xassert.Equal(t, "Showing 1 / 1 entries", a.footerLabel.Text)
 	})
@@ -341,7 +340,6 @@ func TestCorporationWalletJournal(t *testing.T) {
 		// then
 		require.Len(t, a.rows, 1)
 		xassert.Equal(t, e.RefID, a.rows[0].refID)
-		assert.True(t, a.rows[0].forCorporation)
 		xassert.Equal(t, app.Division2, a.rows[0].division)
 		xassert.Equal(t, "Showing 1 / 1 entries", a.footerLabel.Text)
 	})

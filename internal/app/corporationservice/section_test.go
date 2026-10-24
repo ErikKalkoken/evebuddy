@@ -70,65 +70,28 @@ func TestHasSection(t *testing.T) {
 	})
 }
 
-func TestHasSections(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
+func TestCompletedSections(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()
 	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
 	ctx := context.Background()
-	const (
-		section1 = app.SectionCorporationIndustryJobs
-		section2 = app.SectionCorporationContracts
-	)
-	t.Run("both section exists", func(t *testing.T) {
+	t.Run("should return completed sections", func(t *testing.T) {
 		// given
-		testutil.MustTruncateTables(db)
 		corporation := factory.CreateCorporation()
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: corporation.ID,
-			Section:       section1,
-		})
-		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
-			CorporationID: corporation.ID,
-			Section:       section2,
-		})
-		// when
-		got, err := s.HasSections(ctx, corporation.ID, set.Of(section1, section2))
-		// then
-		require.NoError(t, err)
-		assert.True(t, got)
-	})
-	t.Run("one section is missing", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		corporation := factory.CreateCorporation()
-		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
-			CorporationID: corporation.ID,
-			Section:       section1,
-		})
-		// when
-		got, err := s.HasSections(ctx, corporation.ID, set.Of(section1, section2))
-		// then
-		require.NoError(t, err)
-		assert.False(t, got)
-	})
-	t.Run("one section is incomplete", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		corporation := factory.CreateCorporation()
-		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
-			CorporationID: corporation.ID,
-			Section:       section1,
+			Section:       app.SectionCorporationContracts,
 			CompletedAt:   optional.New(time.Time{}),
 		})
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: corporation.ID,
-			Section:       section2,
+			Section:       app.SectionCorporationIndustryJobs,
 		})
 		// when
-		got, err := s.HasSections(ctx, corporation.ID, set.Of(section1, section2))
+		got, err := s.CompletedSections(ctx, corporation.ID)
 		// then
 		require.NoError(t, err)
-		assert.False(t, got)
+		xassert.Equal(t, set.Of(app.SectionCorporationIndustryJobs), got)
 	})
 }
 

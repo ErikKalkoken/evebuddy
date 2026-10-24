@@ -80,7 +80,6 @@ type walletJournalRow struct {
 	description      string
 	division         app.Division
 	firstParty       optional.Optional[*app.EveEntity]
-	forCorporation   bool
 	ownerID          int64
 	ownerName        string
 	reason           optional.Optional[string]
@@ -193,12 +192,9 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}), widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.balanceFormatted, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
-			},
-			)
+			})
 		},
 	}, {
 		Label: "Description",
@@ -217,6 +213,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	}
 	a.ExtendBaseWidget(a)
 
+	a.balanceLabel.Selectable = true
 	a.balanceLabel.TextStyle.Bold = true
 
 	a.errorLabel.Importance = widget.DangerImportance
@@ -235,6 +232,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 		}
 		a.divisionID.Store(d.ID())
 		a.clearData()
+		a.resetFilters()
 		ctx := context.Background()
 		runAsync(func() {
 			a.updateBalanceCorporation(ctx)
@@ -411,6 +409,7 @@ func (a *WalletJournal) clearData() {
 	}
 	clearLabel(a.balanceLabel)
 	clearLabel(a.footerLabel)
+	a.filterRun.Discard()
 	a.rows = nil
 	a.rowsFiltered = nil
 	a.main.Refresh()
@@ -642,9 +641,8 @@ func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
 
 func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
 	c := a.corporation.Load()
-	division := app.Division(a.divisionID.Load())
 	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletJournalRow, bool, error) {
-		return a.fetchRowsCorporation(ctx, c, division)
+		return a.fetchRowsCorporation(ctx, c, app.Division(a.divisionID.Load())) // read after Start, so the latest run has the current division
 	})
 }
 
@@ -695,6 +693,9 @@ func (a *WalletJournal) updateRows(ctx context.Context, hasOwner bool, fetch fun
 	}
 	rows, hasData, err := fetch(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset()
 		setError(err)
 		return
@@ -762,7 +763,6 @@ func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *a
 			balance:        o.Balance,
 			ownerID:        corporation.ID,
 			ownerName:      corporation.NameOrZero(),
-			forCorporation: true,
 			division:       division,
 			date:           o.Date,
 			description:    o.Description,
@@ -793,6 +793,9 @@ func (a *WalletJournal) updateWalletNames(ctx context.Context) {
 		return
 	}
 	names := a.u.Corporation().ListWalletNames(ctx, c.ID)
+	if ctx.Err() != nil {
+		return // names are only defaults when canceled
+	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
