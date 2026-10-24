@@ -616,6 +616,21 @@ func (a *WalletJournal) fetchBalanceCorporation(ctx context.Context, corporation
 }
 
 func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
+	c := a.character.Load()
+	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletJournalRow, bool, error) {
+		return a.fetchRowsCharacter(ctx, c)
+	})
+}
+
+func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
+	c := a.corporation.Load()
+	division := app.Division(a.divisionID.Load())
+	a.updateRows(ctx, c != nil, func(ctx context.Context) ([]walletJournalRow, bool, error) {
+		return a.fetchRowsCorporation(ctx, c, division)
+	})
+}
+
+func (a *WalletJournal) updateRows(ctx context.Context, hasOwner bool, fetch func(context.Context) ([]walletJournalRow, bool, error)) {
 	isLatest := a.updateRunJournal.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
@@ -649,13 +664,18 @@ func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
 			a.main.Refresh()
 		})
 	}
-	character := a.character.Load()
-	if character == nil {
+	if !hasOwner {
 		reset()
-		setInfo("No character", widget.LowImportance)
+		var s string
+		if a.forCorporation {
+			s = "No corporation"
+		} else {
+			s = "No character"
+		}
+		setInfo(s, widget.LowImportance)
 		return
 	}
-	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletJournal)
+	rows, hasData, err := fetch(ctx)
 	if err != nil {
 		reset()
 		setError(err)
@@ -664,12 +684,6 @@ func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
 	if !hasData {
 		reset()
 		setInfo("No data", widget.WarningImportance)
-		return
-	}
-	rows, err := a.fetchRowsCharacter(ctx, character)
-	if err != nil {
-		reset()
-		setError(err)
 		return
 	}
 	fyne.Do(func() {
@@ -682,12 +696,16 @@ func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
 	})
 }
 
-func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.Character) ([]walletJournalRow, error) {
+func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.Character) ([]walletJournalRow, bool, error) {
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletJournal)
+	if err != nil || !hasData {
+		return nil, false, err
+	}
 	oo, err := a.u.Character().ListWalletJournalEntries(ctx, character.ID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	var rows []walletJournalRow
+	rows := make([]walletJournalRow, 0, len(oo))
 	for _, o := range oo {
 		r := walletJournalRow{
 			amount: o.Amount,
@@ -721,83 +739,20 @@ func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.C
 		r.setSearchTarget()
 		rows = append(rows, r)
 	}
-	return rows, nil
+	return rows, true, nil
 }
 
-func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
-	isLatest := a.updateRunJournal.Start()
-	setInfo := func(s string, i widget.Importance) {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.footerLabel.Text, a.footerLabel.Importance = s, i
-			a.footerLabel.Refresh()
-		})
+func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletJournalRow, bool, error) {
+	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletJournal(division))
+	if err != nil || !hasData {
+		return nil, false, err
 	}
-	setError := func(err error) {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
-			a.errorLabel.Show()
-			a.Refresh()
-		})
-	}
-	reset := func() {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.filterRun.Discard()
-			a.errorLabel.Hide()
-			xslices.Clear(&a.rows)
-			xslices.Clear(&a.rowsFiltered)
-			a.footerLabel.SetText("")
-			a.main.Refresh()
-		})
-	}
-	corporation := a.corporation.Load()
-	if corporation == nil {
-		reset()
-		setInfo("No corporation", widget.LowImportance)
-		return
-	}
-	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletJournal(app.Division(a.divisionID.Load())))
+	oo, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporation.ID, division)
 	if err != nil {
-		reset()
-		setError(err)
-		return
+		return nil, false, err
 	}
-	if !hasData {
-		reset()
-		setInfo("No data", widget.WarningImportance)
-		return
-	}
-	rows, err := a.fetchRowsCorporation(ctx, corporation, app.Division(a.divisionID.Load()))
-	if err != nil {
-		reset()
-		setError(err)
-		return
-	}
-	fyne.Do(func() {
-		if !isLatest() {
-			return
-		}
-		a.errorLabel.Hide()
-		a.rows = rows
-		a.filterRowsAsync("")
-	})
-}
-
-func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletJournalRow, error) {
-	entries, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporation.ID, division)
-	if err != nil {
-		return nil, err
-	}
-	var rows []walletJournalRow
-	for _, o := range entries {
+	rows := make([]walletJournalRow, 0, len(oo))
+	for _, o := range oo {
 		r := walletJournalRow{
 			amount: o.Amount,
 			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
@@ -833,7 +788,7 @@ func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *a
 		r.setSearchTarget()
 		rows = append(rows, r)
 	}
-	return rows, nil
+	return rows, true, nil
 }
 
 func (a *WalletJournal) updateWalletNames(ctx context.Context) {
