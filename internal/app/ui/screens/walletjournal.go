@@ -92,6 +92,24 @@ type walletJournalRow struct {
 	taxReceiver      optional.Optional[*app.EveEntity]
 }
 
+// setDisplayFields sets the fields derived from the row's data.
+func (r *walletJournalRow) setDisplayFields() {
+	formatISK := func(v float64) string {
+		return humanize.FormatFloat(ui.FloatFormatISK, v)
+	}
+	r.amountFormatted = r.amount.StringFunc("?", formatISK)
+	r.amountDisplay = xwidget.RichTextSegmentsFromText(
+		r.amountFormatted,
+		widget.RichTextStyle{
+			Alignment: fyne.TextAlignTrailing,
+			ColorName: colorISKAmount(r.amount),
+		},
+	)
+	r.balanceFormatted = r.balance.StringFunc("?", formatISK)
+	r.dateFormatted = r.date.Format(app.DateTimeFormat)
+	r.setSearchTarget()
+}
+
 // setSearchTarget sets the text the search entry matches against.
 func (r *walletJournalRow) setSearchTarget() {
 	r.searchTarget = strings.ToLower(r.description + "\n" + r.reason.ValueOrZero()) // separator prevents matches across texts
@@ -708,18 +726,11 @@ func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.C
 	rows := make([]walletJournalRow, 0, len(oo))
 	for _, o := range oo {
 		r := walletJournalRow{
-			amount: o.Amount,
-			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
-			balance: o.Balance,
-			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
+			amount:         o.Amount,
+			balance:        o.Balance,
 			ownerID:        character.ID,
 			ownerName:      character.NameOrZero(),
 			date:           o.Date,
-			dateFormatted:  o.Date.Format(app.DateTimeFormat),
 			description:    o.Description,
 			reason:         o.Reason,
 			refID:          o.RefID,
@@ -729,14 +740,7 @@ func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.C
 			secondParty:    o.SecondParty,
 			taxReceiver:    o.TaxReceiver,
 		}
-		r.amountDisplay = xwidget.RichTextSegmentsFromText(
-			r.amountFormatted,
-			widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: colorISKAmount(o.Amount),
-			},
-		)
-		r.setSearchTarget()
+		r.setDisplayFields()
 		rows = append(rows, r)
 	}
 	return rows, true, nil
@@ -754,20 +758,13 @@ func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *a
 	rows := make([]walletJournalRow, 0, len(oo))
 	for _, o := range oo {
 		r := walletJournalRow{
-			amount: o.Amount,
-			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
-			balance: o.Balance,
-			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
+			amount:         o.Amount,
+			balance:        o.Balance,
 			ownerID:        corporation.ID,
 			ownerName:      corporation.NameOrZero(),
 			forCorporation: true,
 			division:       division,
 			date:           o.Date,
-			dateFormatted:  o.Date.Format(app.DateTimeFormat),
 			description:    o.Description,
 			reason:         o.Reason,
 			refID:          o.RefID,
@@ -777,15 +774,7 @@ func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *a
 			secondParty:    o.SecondParty,
 			taxReceiver:    o.TaxReceiver,
 		}
-
-		r.amountDisplay = xwidget.RichTextSegmentsFromText(
-			r.amountFormatted,
-			widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: colorISKAmount(o.Amount),
-			},
-		)
-		r.setSearchTarget()
+		r.setDisplayFields()
 		rows = append(rows, r)
 	}
 	return rows, true, nil
@@ -796,6 +785,9 @@ func (a *WalletJournal) updateWalletNames(ctx context.Context) {
 	c := a.corporation.Load()
 	if c == nil {
 		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
 			a.divisionSelect.SetNames(nil)
 		})
 		return

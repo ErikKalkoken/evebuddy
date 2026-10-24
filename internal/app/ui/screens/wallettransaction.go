@@ -106,6 +106,22 @@ type walletTransactionRow struct {
 	unitPriceDisplay string
 }
 
+// setDisplayFields sets the fields derived from the row's data.
+func (r *walletTransactionRow) setDisplayFields() {
+	r.dateFormatted = r.date.Format(app.DateTimeFormat)
+	r.quantityDisplay = humanize.Comma(int64(r.quantity))
+	r.totalFormatted = humanize.FormatFloat(ui.FloatFormatISK, r.total)
+	r.unitPriceDisplay = humanize.FormatFloat(ui.FloatFormatISK, r.unitPrice)
+	if r.isBuy {
+		r.totalColor = theme.ColorNameError
+		r.totalImportance = widget.DangerImportance
+	} else {
+		r.totalColor = theme.ColorNameSuccess
+		r.totalImportance = widget.SuccessImportance
+	}
+	r.setSearchTarget()
+}
+
 // setSearchTarget sets the text the search entry matches against.
 func (r *walletTransactionRow) setSearchTarget() {
 	r.searchTarget = strings.ToLower(r.clientName + "\n" + r.typeName) // separator prevents matches across names
@@ -658,40 +674,28 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 	}
 	rows := make([]walletTransactionRow, 0, len(oo))
 	for _, o := range oo {
-		total := o.Total()
 		r := walletTransactionRow{
-			categoryName:     o.Type.Group.Category.Name,
-			ownerID:          character.ID,
-			ownerName:        character.NameOrZero(),
-			client:           o.Client,
-			clientName:       o.Client.Name,
-			date:             o.Date,
-			dateFormatted:    o.Date.Format(app.DateTimeFormat),
-			isBuy:            o.IsBuy,
-			locationDisplay:  o.Location.DisplayRichText(),
-			locationID:       o.Location.ID,
-			locationName:     o.Location.DisplayName(),
-			quantity:         int(o.Quantity),
-			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
-			total:            total,
-			totalFormatted:   humanize.FormatFloat(ui.FloatFormatISK, total),
-			transactionID:    o.TransactionID,
-			typeID:           o.Type.ID,
-			typeName:         o.Type.Name,
-			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormatISK, o.UnitPrice),
-		}
-		if o.IsBuy {
-			r.totalColor = theme.ColorNameError
-			r.totalImportance = widget.DangerImportance
-		} else {
-			r.totalColor = theme.ColorNameSuccess
-			r.totalImportance = widget.SuccessImportance
+			categoryName:    o.Type.Group.Category.Name,
+			ownerID:         character.ID,
+			ownerName:       character.NameOrZero(),
+			client:          o.Client,
+			clientName:      o.Client.Name,
+			date:            o.Date,
+			isBuy:           o.IsBuy,
+			locationDisplay: o.Location.DisplayRichText(),
+			locationID:      o.Location.ID,
+			locationName:    o.Location.DisplayName(),
+			quantity:        int(o.Quantity),
+			total:           o.Total(),
+			transactionID:   o.TransactionID,
+			typeID:          o.Type.ID,
+			typeName:        o.Type.Name,
+			unitPrice:       o.UnitPrice,
 		}
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
-		r.setSearchTarget()
+		r.setDisplayFields()
 		rows = append(rows, r)
 	}
 	return rows, true, nil
@@ -718,43 +722,31 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 	}
 	rows := make([]walletTransactionRow, 0, len(oo))
 	for _, o := range oo {
-		total := o.Total()
 		division := app.Division(o.DivisionID)
 		r := walletTransactionRow{
-			categoryName:     o.Type.Group.Category.Name,
-			client:           o.Client,
-			clientName:       o.Client.Name,
-			ownerID:          corporation.ID,
-			ownerName:        corporation.NameOrZero(),
-			date:             o.Date,
-			dateFormatted:    o.Date.Format(app.DateTimeFormat),
-			division:         division,
-			divisionName:     corporationWalletLabel(division, names[division]),
-			isBuy:            o.IsBuy,
-			locationDisplay:  o.Location.DisplayRichText(),
-			locationID:       o.Location.ID,
-			locationName:     o.Location.DisplayName(),
-			quantity:         int(o.Quantity),
-			quantityDisplay:  humanize.Comma(int64(o.Quantity)),
-			total:            total,
-			totalFormatted:   humanize.FormatFloat(ui.FloatFormatISK, total),
-			transactionID:    o.TransactionID,
-			typeID:           o.Type.ID,
-			typeName:         o.Type.Name,
-			unitPrice:        o.UnitPrice,
-			unitPriceDisplay: humanize.FormatFloat(ui.FloatFormatISK, o.UnitPrice),
-		}
-		if o.IsBuy {
-			r.totalColor = theme.ColorNameError
-			r.totalImportance = widget.DangerImportance
-		} else {
-			r.totalColor = theme.ColorNameSuccess
-			r.totalImportance = widget.SuccessImportance
+			categoryName:    o.Type.Group.Category.Name,
+			client:          o.Client,
+			clientName:      o.Client.Name,
+			ownerID:         corporation.ID,
+			ownerName:       corporation.NameOrZero(),
+			date:            o.Date,
+			division:        division,
+			divisionName:    corporationWalletLabel(division, names[division]),
+			isBuy:           o.IsBuy,
+			locationDisplay: o.Location.DisplayRichText(),
+			locationID:      o.Location.ID,
+			locationName:    o.Location.DisplayName(),
+			quantity:        int(o.Quantity),
+			total:           o.Total(),
+			transactionID:   o.TransactionID,
+			typeID:          o.Type.ID,
+			typeName:        o.Type.Name,
+			unitPrice:       o.UnitPrice,
 		}
 		if o.Region != nil {
 			r.regionName = o.Region.Name
 		}
-		r.setSearchTarget()
+		r.setDisplayFields()
 		rows = append(rows, r)
 	}
 	return rows, true, nil
