@@ -325,7 +325,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
-			if arg.Section == app.SectionCorporationDivisions || slices.Contains(app.CorporationSectionsWalletTransactions, arg.Section) {
+			if arg.Section == app.SectionCorporationDivisions || app.CorporationSectionsWalletTransactions.Contains(arg.Section) {
 				a.updateCorporationRows(ctx)
 			}
 		})
@@ -701,7 +701,7 @@ func (a *WalletTransactions) fetchCharacterRows(ctx context.Context, character *
 
 func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporation *app.Corporation) ([]walletTransactionRow, bool, error) {
 	completed, err := a.u.Corporation().CompletedSections(ctx, corporation.ID)
-	if err != nil || !completed.ContainsAny(slices.Values(app.CorporationSectionsWalletTransactions)) {
+	if err != nil || !completed.ContainsAny(app.CorporationSectionsWalletTransactions.All()) {
 		return nil, false, err
 	}
 	names := a.u.Corporation().ListWalletNames(ctx, corporation.ID)

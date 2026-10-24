@@ -194,16 +194,7 @@ func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corpo
 // TODO: Only read pages with unknown journal IDs
 
 func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
-	sections := set.Of(
-		app.SectionCorporationWalletJournal1,
-		app.SectionCorporationWalletJournal2,
-		app.SectionCorporationWalletJournal3,
-		app.SectionCorporationWalletJournal4,
-		app.SectionCorporationWalletJournal5,
-		app.SectionCorporationWalletJournal6,
-		app.SectionCorporationWalletJournal7,
-	)
-	if arg.corporationID <= 0 || !sections.Contains(arg.section) {
+	if arg.corporationID <= 0 || !app.CorporationSectionsWalletJournal.Contains(arg.section) {
 		return false, fmt.Errorf("updateWalletJournalESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(
@@ -344,18 +335,9 @@ func (s *CorporationService) ListWalletTransactionsForDivision(ctx context.Conte
 	})
 }
 
-// updateWalletTransactionESI updates the wallet journal from ESI and reports whether it has changed.
+// updateWalletTransactionESI updates the wallet transactions from ESI and reports whether they has changed.
 func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
-	sections := set.Of(
-		app.SectionCorporationWalletTransactions1,
-		app.SectionCorporationWalletTransactions2,
-		app.SectionCorporationWalletTransactions3,
-		app.SectionCorporationWalletTransactions4,
-		app.SectionCorporationWalletTransactions5,
-		app.SectionCorporationWalletTransactions6,
-		app.SectionCorporationWalletTransactions7,
-	)
-	if arg.corporationID <= 0 || !sections.Contains(arg.section) {
+	if arg.corporationID <= 0 || !app.CorporationSectionsWalletTransactions.Contains(arg.section) {
 		return false, fmt.Errorf("updateWalletTransactionESI %+v: %w", arg, app.ErrInvalid)
 	}
 	return s.updateSectionIfChanged(

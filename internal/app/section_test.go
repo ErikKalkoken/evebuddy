@@ -44,8 +44,11 @@ func TestCorporationSectionWalletTransactions(t *testing.T) {
 }
 
 func TestCorporationSectionDivision(t *testing.T) {
-	t.Run("wallet section", func(t *testing.T) {
+	t.Run("wallet journal section", func(t *testing.T) {
 		xassert.Equal(t, app.Division3, app.SectionCorporationWalletJournal3.Division())
+	})
+	t.Run("wallet transaction section", func(t *testing.T) {
+		xassert.Equal(t, app.Division2, app.SectionCorporationWalletTransactions2.Division())
 	})
 	t.Run("non-wallet section", func(t *testing.T) {
 		xassert.Equal(t, app.DivisionZero, app.SectionCorporationAssets.Division())

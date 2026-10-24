@@ -2,12 +2,14 @@ package app
 
 import (
 	"log/slog"
+	"maps"
 	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 )
 
@@ -229,53 +231,39 @@ var CorporationSections = []CorporationSection{
 	SectionCorporationWalletTransactions7,
 }
 
-// CorporationSectionsWalletJournal are the wallet journal sections of all divisions.
-var CorporationSectionsWalletJournal = []CorporationSection{
-	SectionCorporationWalletJournal1,
-	SectionCorporationWalletJournal2,
-	SectionCorporationWalletJournal3,
-	SectionCorporationWalletJournal4,
-	SectionCorporationWalletJournal5,
-	SectionCorporationWalletJournal6,
-	SectionCorporationWalletJournal7,
-}
-
-// CorporationSectionsWalletTransactions are the wallet transaction sections of all divisions.
-var CorporationSectionsWalletTransactions = []CorporationSection{
-	SectionCorporationWalletTransactions1,
-	SectionCorporationWalletTransactions2,
-	SectionCorporationWalletTransactions3,
-	SectionCorporationWalletTransactions4,
-	SectionCorporationWalletTransactions5,
-	SectionCorporationWalletTransactions6,
-	SectionCorporationWalletTransactions7,
+var corporationSectionsWalletJournal = map[Division]CorporationSection{
+	Division1: SectionCorporationWalletJournal1,
+	Division2: SectionCorporationWalletJournal2,
+	Division3: SectionCorporationWalletJournal3,
+	Division4: SectionCorporationWalletJournal4,
+	Division5: SectionCorporationWalletJournal5,
+	Division6: SectionCorporationWalletJournal6,
+	Division7: SectionCorporationWalletJournal7,
 }
 
 func CorporationSectionWalletJournal(d Division) CorporationSection {
-	section := map[Division]CorporationSection{
-		Division1: SectionCorporationWalletJournal1,
-		Division2: SectionCorporationWalletJournal2,
-		Division3: SectionCorporationWalletJournal3,
-		Division4: SectionCorporationWalletJournal4,
-		Division5: SectionCorporationWalletJournal5,
-		Division6: SectionCorporationWalletJournal6,
-		Division7: SectionCorporationWalletJournal7,
-	}
-	return section[d]
+	return corporationSectionsWalletJournal[d]
+}
+
+// CorporationSectionsWalletJournal are the wallet journal sections of all divisions.
+var CorporationSectionsWalletJournal = set.Collect(maps.Values(corporationSectionsWalletJournal))
+
+var corporationSectionsWalletTransactions = map[Division]CorporationSection{
+	Division1: SectionCorporationWalletTransactions1,
+	Division2: SectionCorporationWalletTransactions2,
+	Division3: SectionCorporationWalletTransactions3,
+	Division4: SectionCorporationWalletTransactions4,
+	Division5: SectionCorporationWalletTransactions5,
+	Division6: SectionCorporationWalletTransactions6,
+	Division7: SectionCorporationWalletTransactions7,
 }
 
 func CorporationSectionWalletTransactions(d Division) CorporationSection {
-	section := map[Division]CorporationSection{
-		Division1: SectionCorporationWalletTransactions1,
-		Division2: SectionCorporationWalletTransactions2,
-		Division3: SectionCorporationWalletTransactions3,
-		Division4: SectionCorporationWalletTransactions4,
-		Division5: SectionCorporationWalletTransactions5,
-		Division6: SectionCorporationWalletTransactions6,
-		Division7: SectionCorporationWalletTransactions7,
-	}
-	return section[d]
+	return corporationSectionsWalletTransactions[d]
 }
+
+// CorporationSectionsWalletTransactions are the wallet transaction sections of all divisions.
+var CorporationSectionsWalletTransactions = set.Collect(maps.Values(corporationSectionsWalletTransactions))
 
 func (cs CorporationSection) DisplayName() string {
 	return makeSectionDisplayName(cs)
@@ -283,23 +271,10 @@ func (cs CorporationSection) DisplayName() string {
 
 // Division returns the division ID this section is related to or 0 if it has none.
 func (cs CorporationSection) Division() Division {
-	m := map[CorporationSection]Division{
-		SectionCorporationWalletJournal1:      Division1,
-		SectionCorporationWalletJournal2:      Division2,
-		SectionCorporationWalletJournal3:      Division3,
-		SectionCorporationWalletJournal4:      Division4,
-		SectionCorporationWalletJournal5:      Division5,
-		SectionCorporationWalletJournal6:      Division6,
-		SectionCorporationWalletJournal7:      Division7,
-		SectionCorporationWalletTransactions1: Division1,
-		SectionCorporationWalletTransactions2: Division2,
-		SectionCorporationWalletTransactions3: Division3,
-		SectionCorporationWalletTransactions4: Division4,
-		SectionCorporationWalletTransactions5: Division5,
-		SectionCorporationWalletTransactions6: Division6,
-		SectionCorporationWalletTransactions7: Division7,
-	}
-	return m[cs]
+	m1 := xmaps.Invert(corporationSectionsWalletJournal)
+	m2 := xmaps.Invert(corporationSectionsWalletTransactions)
+	maps.Copy(m1, m2)
+	return m1[cs]
 }
 
 func (cs CorporationSection) String() string {
