@@ -1098,7 +1098,7 @@ func TestListWalletTransactions(t *testing.T) {
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
-		tt, err := s.ListWalletTransactions(ctx, c.ID, 1)
+		tt, err := s.ListWalletTransactionsForDivision(ctx, c.ID, 1)
 		// then
 		require.NoError(t, err)
 		got := set.Of(xslices.Map(tt, func(x *app.CorporationWalletTransaction) int64 {

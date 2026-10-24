@@ -326,7 +326,11 @@ func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporati
 	})
 }
 
-func (s *CorporationService) ListWalletTransactions(ctx context.Context, corporationID int64, d app.Division) ([]*app.CorporationWalletTransaction, error) {
+func (s *CorporationService) ListWalletTransactionsAll(ctx context.Context, corporationID int64) ([]*app.CorporationWalletTransaction, error) {
+	return s.st.ListCorporationWalletTransactionsAll(ctx, corporationID)
+}
+
+func (s *CorporationService) ListWalletTransactionsForDivision(ctx context.Context, corporationID int64, d app.Division) ([]*app.CorporationWalletTransaction, error) {
 	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
 	if err != nil {
 		return nil, err

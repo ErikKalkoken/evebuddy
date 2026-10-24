@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -18,9 +19,19 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
+
+// corporationWalletsData is the loaded state for a [CorporationWallets] screen.
+type corporationWalletsData struct {
+	balances   map[app.Division]float64 // empty when there is no data
+	importance widget.Importance
+	names      map[app.Division]string
+	status     string                     // shown instead of balances when not empty
+	total      optional.Optional[float64] // empty when there is no data
+}
 
 type corporationWalletRow struct {
 	balance  float64
@@ -51,6 +62,8 @@ func (r corporationWalletRow) label() string {
 // CorporationWalletDivisions shows the balances of all wallets of the current corporation.
 type CorporationWalletDivisions struct {
 	widget.BaseWidget
+
+	onBalanceUpdate func(balance optional.Optional[float64])
 
 	body         fyne.CanvasObject
 	columnSorter *xwidget.ColumnSorter[corporationWalletRow]
@@ -202,7 +215,58 @@ func (a *CorporationWalletDivisions) Update(ctx context.Context) {
 			return
 		}
 		a.set(data)
+		if a.onBalanceUpdate != nil {
+			a.onBalanceUpdate(data.total)
+		}
 	})
+}
+
+// fetchCorporationWalletsData loads wallet names and balances for a corporation.
+func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID int64) corporationWalletsData {
+	if corporationID == 0 {
+		return corporationWalletsData{names: defaultCorporationWalletNames()}
+	}
+	data := corporationWalletsData{
+		names: u.Corporation().ListWalletNames(ctx, corporationID),
+	}
+	setError := func(err error) corporationWalletsData {
+		if ctx.Err() != nil {
+			return data
+		}
+		slog.Error("Failed to update corp wallets UI", "corporationID", corporationID, "err", err)
+		data.status, data.importance = "Error: "+u.ErrorDisplay(err), widget.DangerImportance
+		return data
+	}
+	hasRole, err := u.Corporation().PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return setError(err)
+	}
+	if !hasRole {
+		data.status, data.importance = "No permission", widget.WarningImportance
+		return data
+	}
+	hasData, err := u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil {
+		return setError(err)
+	}
+	if !hasData {
+		data.status, data.importance = "No data", widget.WarningImportance
+		return data
+	}
+	oo, err := u.Corporation().ListWalletBalances(ctx, corporationID)
+	if err != nil {
+		return setError(err)
+	}
+	if len(oo) == 0 {
+		data.status, data.importance = "No data", widget.WarningImportance
+		return data
+	}
+	data.balances = make(map[app.Division]float64)
+	for _, o := range oo {
+		data.balances[app.Division(o.DivisionID)] = o.Balance
+		data.total = optional.SumNonEmpty(data.total, optional.New(o.Balance))
+	}
+	return data
 }
 
 func (a *CorporationWalletDivisions) set(data corporationWalletsData) {

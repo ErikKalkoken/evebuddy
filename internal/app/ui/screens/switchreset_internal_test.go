@@ -53,7 +53,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 		})
 		t.Run(fmt.Sprintf("wallet transactions of corporation mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
-			a := NewCorporationWalletTransactions(u, app.Division1)
+			a := NewCorporationWalletTransactions(u)
 			a.searchEntry.SetText("trit")
 			if isMobile {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{marketTransactionActivityBuy}))
@@ -155,7 +155,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 	for _, isMobile := range []bool{false, true} {
 		t.Run(fmt.Sprintf("wallet journal of corporation mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
-			a := NewCorporationWalletJournal(u, app.Division1)
+			a := NewCorporationWalletJournal(u)
 			a.searchEntry.SetText("bounty")
 			if isMobile {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))

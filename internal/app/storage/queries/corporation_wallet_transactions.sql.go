@@ -320,3 +320,104 @@ func (q *Queries) ListCorporationWalletTransactions(ctx context.Context, arg Lis
 	}
 	return items, nil
 }
+
+const listCorporationWalletTransactionsAll = `-- name: ListCorporationWalletTransactionsAll :many
+SELECT
+    cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
+    ee.id, ee.category, ee.name,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published,
+    el.name as location_name,
+    ess.security_status as system_security_status,
+    er.id as region_id,
+    er.name as region_name
+FROM
+    corporation_wallet_transactions cwt
+    JOIN eve_entities ee ON ee.id = cwt.client_id
+    JOIN eve_types et ON et.id = cwt.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+    JOIN eve_locations el ON el.id = cwt.location_id
+    LEFT JOIN eve_solar_systems ess ON ess.id = el.eve_solar_system_id
+    LEFT JOIN eve_constellations ON eve_constellations.id = ess.eve_constellation_id
+    LEFT JOIN eve_regions er ON er.id = eve_constellations.eve_region_id
+WHERE
+    corporation_id = ?
+`
+
+type ListCorporationWalletTransactionsAllRow struct {
+	CorporationWalletTransaction CorporationWalletTransaction
+	EveEntity                    EveEntity
+	EveType                      EveType
+	EveGroup                     EveGroup
+	EveCategory                  EveCategory
+	LocationName                 string
+	SystemSecurityStatus         sql.NullFloat64
+	RegionID                     sql.NullInt64
+	RegionName                   sql.NullString
+}
+
+func (q *Queries) ListCorporationWalletTransactionsAll(ctx context.Context, corporationID int64) ([]ListCorporationWalletTransactionsAllRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationWalletTransactionsAll, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCorporationWalletTransactionsAllRow
+	for rows.Next() {
+		var i ListCorporationWalletTransactionsAllRow
+		if err := rows.Scan(
+			&i.CorporationWalletTransaction.ID,
+			&i.CorporationWalletTransaction.CorporationID,
+			&i.CorporationWalletTransaction.ClientID,
+			&i.CorporationWalletTransaction.Date,
+			&i.CorporationWalletTransaction.DivisionID,
+			&i.CorporationWalletTransaction.EveTypeID,
+			&i.CorporationWalletTransaction.IsBuy,
+			&i.CorporationWalletTransaction.JournalRefID,
+			&i.CorporationWalletTransaction.LocationID,
+			&i.CorporationWalletTransaction.Quantity,
+			&i.CorporationWalletTransaction.TransactionID,
+			&i.CorporationWalletTransaction.UnitPrice,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.LocationName,
+			&i.SystemSecurityStatus,
+			&i.RegionID,
+			&i.RegionName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

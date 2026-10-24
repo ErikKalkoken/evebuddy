@@ -137,7 +137,7 @@ type CorporationWalletTransaction struct {
 	CorporationID int64
 	Client        *EveEntity
 	Date          time.Time
-	DivisionID    int64
+	DivisionID    int64 // TODO: Should that be a division type?
 	ID            int64
 	IsBuy         bool
 	JournalRefID  int64
