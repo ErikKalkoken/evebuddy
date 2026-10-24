@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -43,10 +44,10 @@ const (
 	walletTransactionFilterActivity = "Activity"
 	walletTransactionFilterCategory = "Category"
 	walletTransactionFilterClient   = "Client"
+	walletTransactionFilterDivision = "Division"
 	walletTransactionFilterLocation = "Location"
 	walletTransactionFilterRegion   = "Region"
 	walletTransactionFilterType     = "Type"
-	walletTransactionFilterWallet   = "Wallet"
 )
 
 // walletTransactionFilter is the selected value of each wallet transaction filter. Empty means not filtered.
@@ -54,10 +55,10 @@ type walletTransactionFilter struct {
 	activity string
 	category string
 	client   string
+	division string
 	location string
 	region   string
 	typeName string
-	wallet   string
 }
 
 // match reports whether row r passes all filters.
@@ -67,10 +68,10 @@ func (f walletTransactionFilter) match(r walletTransactionRow) bool {
 		f.activity == marketTransactionActivitySell && r.isBuy,
 		f.category != "" && r.categoryName != f.category,
 		f.client != "" && r.clientName != f.client,
+		f.division != "" && r.divisionName != f.division,
 		f.location != "" && r.locationName != f.location,
 		f.region != "" && r.regionName != f.region,
-		f.typeName != "" && r.typeName != f.typeName,
-		f.wallet != "" && r.walletName != f.wallet:
+		f.typeName != "" && r.typeName != f.typeName:
 		return false
 	}
 	return true
@@ -86,7 +87,7 @@ type walletTransactionRow struct {
 	date             time.Time
 	dateFormatted    string
 	division         app.Division
-	walletName       string
+	divisionName     string
 	isBuy            bool
 	locationDisplay  []widget.RichTextSegment
 	locationID       int64
@@ -114,30 +115,30 @@ func (r *walletTransactionRow) setSearchTarget() {
 type WalletTransactions struct {
 	widget.BaseWidget
 
-	body             fyne.CanvasObject
-	character        atomic.Pointer[app.Character]
-	columnSorter     *xwidget.ColumnSorter[walletTransactionRow]
-	corporation      atomic.Pointer[app.Corporation]
-	errorLabel       *widget.Label
-	filterChip       *xwidget.FilterChipCompact // only on mobile
-	filterRun        xsync.LatestRun
-	footerLabel      *widget.Label
-	forCorporation   bool
-	rows             []walletTransactionRow
-	rowsFiltered     []walletTransactionRow
-	searchEntry      *xwidget.SearchEntry
-	selectActivity   *kxwidget.FilterChipSelect // select chips only on desktop
-	selectCategory   *kxwidget.FilterChipSelect
-	selectClient     *kxwidget.FilterChipSelect
-	selectLocation   *kxwidget.FilterChipSelect
-	selectRegion     *kxwidget.FilterChipSelect
-	selectType       *kxwidget.FilterChipSelect
-	sortChip         *kxwidget.SortChip
-	u                baseUI
-	updateRunRows    xsync.LatestRun
-	updateRunWallets xsync.LatestRun
-	walletSelect     *kxwidget.FilterChipSelect
-	walletNames      map[app.Division]string
+	activitySelect *kxwidget.FilterChipSelect // select chips only on desktop
+	body           fyne.CanvasObject
+	categorySelect *kxwidget.FilterChipSelect
+	character      atomic.Pointer[app.Character]
+	clientSelect   *kxwidget.FilterChipSelect
+	columnSorter   *xwidget.ColumnSorter[walletTransactionRow]
+	corporation    atomic.Pointer[app.Corporation]
+	divisionNames  map[app.Division]string
+	divisionSelect *kxwidget.FilterChipSelect
+	errorLabel     *widget.Label
+	filterChip     *xwidget.FilterChipCompact // only on mobile
+	filterRun      xsync.LatestRun
+	footerLabel    *widget.Label
+	forCorporation bool
+	locationSelect *kxwidget.FilterChipSelect
+	regionSelect   *kxwidget.FilterChipSelect
+	rows           []walletTransactionRow
+	rowsFiltered   []walletTransactionRow
+	searchEntry    *xwidget.SearchEntry
+	sortChip       *kxwidget.SortChip
+	typeSelect     *kxwidget.FilterChipSelect
+	u              baseUI
+	updateRunNames xsync.LatestRun
+	updateRunRows  xsync.LatestRun
 }
 
 func NewCharacterWalletTransaction(u baseUI) *WalletTransactions {
@@ -228,7 +229,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 				return cmp.Compare(a.division, b.division)
 			},
 			Update: func(r walletTransactionRow, co fyne.CanvasObject) {
-				co.(*xwidget.RichText).SetWithText(r.walletName)
+				co.(*xwidget.RichText).SetWithText(r.divisionName)
 			},
 		})
 	}
@@ -285,16 +286,16 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 				a.filterRowsAsync("")
 			}, a.u.MainWindow())
 		}
-		a.selectActivity = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, walletTransactionActivityOptions(), func(_ string) {
+		a.activitySelect = kxwidget.NewFilterChipSelect(walletTransactionFilterActivity, walletTransactionActivityOptions(), func(_ string) {
 			a.filterRowsAsync("")
 		})
-		a.selectActivity.SortDisabled = true
-		a.selectCategory = makeSelectWithSearch(walletTransactionFilterCategory)
-		a.selectClient = makeSelectWithSearch(walletTransactionFilterClient)
-		a.selectLocation = makeSelectWithSearch(walletTransactionFilterLocation)
-		a.selectType = makeSelectWithSearch(walletTransactionFilterType)
-		a.selectRegion = makeSelectWithSearch(walletTransactionFilterRegion)
-		a.walletSelect = kxwidget.NewFilterChipSelect(walletTransactionFilterWallet, []string{}, func(_ string) {
+		a.activitySelect.SortDisabled = true
+		a.categorySelect = makeSelectWithSearch(walletTransactionFilterCategory)
+		a.clientSelect = makeSelectWithSearch(walletTransactionFilterClient)
+		a.locationSelect = makeSelectWithSearch(walletTransactionFilterLocation)
+		a.typeSelect = makeSelectWithSearch(walletTransactionFilterType)
+		a.regionSelect = makeSelectWithSearch(walletTransactionFilterRegion)
+		a.divisionSelect = kxwidget.NewFilterChipSelect(walletTransactionFilterDivision, []string{}, func(_ string) {
 			a.filterRowsAsync("")
 		})
 	}
@@ -309,7 +310,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 			fyne.Do(a.resetFilters)
 			var wg sync.WaitGroup
 			wg.Go(func() {
-				a.updateWalletNames(ctx)
+				a.updateDivisionNames(ctx)
 			})
 			wg.Go(func() {
 				a.updateCorporationRows(ctx)
@@ -331,7 +332,7 @@ func newWalletTransaction(u baseUI, forCorporation bool) *WalletTransactions {
 				app.SectionCorporationWalletTransactions7:
 				a.updateCorporationRows(ctx)
 			case app.SectionCorporationDivisions:
-				a.updateWalletNames(ctx)
+				a.updateDivisionNames(ctx)
 			}
 		})
 	} else {
@@ -356,34 +357,24 @@ func (a *WalletTransactions) CreateRenderer() fyne.WidgetRenderer {
 	var top fyne.CanvasObject
 	if a.u.IsMobile() {
 		controls := container.NewHBox(a.filterChip, a.sortChip)
-		if a.forCorporation {
-			top = container.NewBorder(
-				a.walletSelect,
-				nil,
-				nil,
-				controls,
-				a.searchEntry,
-			)
-		} else {
-			top = container.NewBorder(
-				nil,
-				nil,
-				nil,
-				controls,
-				a.searchEntry,
-			)
-		}
+		top = container.NewBorder(
+			nil,
+			nil,
+			nil,
+			controls,
+			a.searchEntry,
+		)
 	} else {
 		filter := []fyne.CanvasObject{
-			a.selectActivity,
-			a.selectCategory,
-			a.selectType,
-			a.selectClient,
-			a.selectRegion,
-			a.selectLocation,
+			a.activitySelect,
+			a.categorySelect,
+			a.typeSelect,
+			a.clientSelect,
+			a.regionSelect,
+			a.locationSelect,
 		}
 		if a.forCorporation {
-			filter = slices.Insert(filter, 0, []fyne.CanvasObject{a.walletSelect}...)
+			filter = slices.Insert(filter, 0, []fyne.CanvasObject{a.divisionSelect}...)
 		}
 		top = container.NewBorder(
 			nil,
@@ -412,18 +403,20 @@ func (a *WalletTransactions) currentFilter() walletTransactionFilter {
 			activity: s[walletTransactionFilterActivity],
 			category: s[walletTransactionFilterCategory],
 			client:   s[walletTransactionFilterClient],
+			division: s[walletTransactionFilterDivision],
 			location: s[walletTransactionFilterLocation],
 			region:   s[walletTransactionFilterRegion],
 			typeName: s[walletTransactionFilterType],
 		}
 	}
 	return walletTransactionFilter{
-		activity: a.selectActivity.Selected,
-		category: a.selectCategory.Selected,
-		client:   a.selectClient.Selected,
-		location: a.selectLocation.Selected,
-		region:   a.selectRegion.Selected,
-		typeName: a.selectType.Selected,
+		activity: a.activitySelect.Selected,
+		category: a.categorySelect.Selected,
+		client:   a.clientSelect.Selected,
+		division: a.divisionSelect.Selected,
+		location: a.locationSelect.Selected,
+		region:   a.regionSelect.Selected,
+		typeName: a.typeSelect.Selected,
 	}
 }
 
@@ -435,12 +428,12 @@ func (a *WalletTransactions) resetFilters() {
 		return
 	}
 	clearSelectsSilent(
-		a.selectActivity,
-		a.selectCategory,
-		a.selectClient,
-		a.selectLocation,
-		a.selectRegion,
-		a.selectType,
+		a.activitySelect,
+		a.categorySelect,
+		a.clientSelect,
+		a.locationSelect,
+		a.regionSelect,
+		a.typeSelect,
 	)
 }
 
@@ -538,8 +531,8 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 		typeOptions := xslices.Map(rows, func(r walletTransactionRow) string {
 			return r.typeName
 		})
-		walletOptions := xslices.Map(rows, func(r walletTransactionRow) string {
-			return r.walletName
+		divisionOptions := xslices.Map(rows, func(r walletTransactionRow) string {
+			return r.divisionName
 		})
 		footer := fmt.Sprintf("Showing %s / %s transactions", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 
@@ -555,18 +548,18 @@ func (a *WalletTransactions) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceOrdered(walletTransactionFilterActivity, walletTransactionActivityOptions()),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterCategory, categoryOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterClient, clientOptions),
+					xwidget.NewFilterOptionMultiChoice(walletTransactionFilterDivision, divisionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterLocation, locationOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterRegion, regionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterType, typeOptions),
-					xwidget.NewFilterOptionMultiChoiceWithSearch(walletTransactionFilterWallet, walletOptions),
 				)
 			} else {
-				a.selectCategory.SetOptions(categoryOptions)
-				a.selectClient.SetOptions(clientOptions)
-				a.selectLocation.SetOptions(locationOptions)
-				a.selectRegion.SetOptions(regionOptions)
-				a.selectType.SetOptions(typeOptions)
-				a.walletSelect.SetOptions(walletOptions)
+				a.divisionSelect.SetOptions(divisionOptions)
+				a.categorySelect.SetOptions(categoryOptions)
+				a.clientSelect.SetOptions(clientOptions)
+				a.locationSelect.SetOptions(locationOptions)
+				a.regionSelect.SetOptions(regionOptions)
+				a.typeSelect.SetOptions(typeOptions)
 			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -727,7 +720,16 @@ func (a *WalletTransactions) updateCorporationRows(ctx context.Context) {
 		setInfo("No corporation", widget.LowImportance)
 		return
 	}
-	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletTransactions(app.Division1))
+	sections := set.Of(
+		app.SectionCorporationWalletTransactions1,
+		app.SectionCorporationWalletTransactions2,
+		app.SectionCorporationWalletTransactions3,
+		app.SectionCorporationWalletTransactions4,
+		app.SectionCorporationWalletTransactions5,
+		app.SectionCorporationWalletTransactions6,
+		app.SectionCorporationWalletTransactions7,
+	)
+	hasData, err := a.u.Corporation().HasSections(ctx, corporation.ID, sections)
 	if err != nil {
 		reset()
 		setError(err)
@@ -772,7 +774,7 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			date:             o.Date,
 			dateFormatted:    o.Date.Format(app.DateTimeFormat),
 			division:         division,
-			walletName:       corporationWalletLabel(division, a.walletNames[division]),
+			divisionName:     corporationWalletLabel(division, a.divisionNames[division]),
 			isBuy:            o.IsBuy,
 			locationDisplay:  o.Location.DisplayRichText(),
 			locationID:       o.Location.ID,
@@ -803,8 +805,8 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 	return rows, nil
 }
 
-func (a *WalletTransactions) updateWalletNames(ctx context.Context) {
-	isLatest := a.updateRunWallets.Start()
+func (a *WalletTransactions) updateDivisionNames(ctx context.Context) {
+	isLatest := a.updateRunNames.Start()
 	c := a.corporation.Load()
 	if c == nil {
 		return
@@ -813,7 +815,7 @@ func (a *WalletTransactions) updateWalletNames(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
-		a.walletNames = a.u.Corporation().ListWalletNames(ctx, c.ID)
+		a.divisionNames = a.u.Corporation().ListWalletNames(ctx, c.ID)
 	})
 }
 

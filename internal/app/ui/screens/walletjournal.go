@@ -116,7 +116,9 @@ type WalletJournal struct {
 	character        atomic.Pointer[app.Character]
 	columnSorter     *xwidget.ColumnSorter[walletJournalRow]
 	corporation      atomic.Pointer[app.Corporation]
+	directionSelect  *kxwidget.FilterChipSelect // select chips only on desktop
 	divisionID       atomic.Int64
+	divisionSelect   *divisionSelect
 	errorLabel       *widget.Label
 	filterChip       *xwidget.FilterChipCompact // only on mobile
 	filterRun        xsync.LatestRun
@@ -126,14 +128,12 @@ type WalletJournal struct {
 	rows             []walletJournalRow
 	rowsFiltered     []walletJournalRow
 	searchEntry      *xwidget.SearchEntry
-	selectDirection  *kxwidget.FilterChipSelect // select chips only on desktop
-	selectType       *kxwidget.FilterChipSelect
 	sortChip         *kxwidget.SortChip
+	typeSelect       *kxwidget.FilterChipSelect
 	u                baseUI
 	updateRunBalance xsync.LatestRun
 	updateRunJournal xsync.LatestRun
-	updateRunWallets xsync.LatestRun
-	walletSelect     *corporationWalletSelect
+	updateRunNames   xsync.LatestRun
 }
 
 func NewCharacterWalletJournal(u baseUI) *WalletJournal {
@@ -212,7 +212,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	)
 	a.moreButton.Importance = widget.LowImportance
 
-	a.walletSelect = newCorporationWalletSelect(func(d app.Division) {
+	a.divisionSelect = newDivisionSelect(func(d app.Division) {
 		a.divisionID.Store(d.ID())
 		ctx := context.Background()
 		var wg sync.WaitGroup
@@ -261,11 +261,11 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 			a.filterRowsAsync("")
 		})
 	} else {
-		a.selectDirection = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
+		a.directionSelect = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
 			a.filterRowsAsync("")
 		})
-		a.selectDirection.SortDisabled = true
-		a.selectType = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
+		a.directionSelect.SortDisabled = true
+		a.typeSelect = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
 	}
@@ -344,7 +344,7 @@ func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	if a.u.IsMobile() {
 		var top2 fyne.CanvasObject
 		if a.forCorporation {
-			top2 = container.NewVBox(a.walletSelect, a.balanceLabel)
+			top2 = container.NewVBox(a.divisionSelect, a.balanceLabel)
 		} else {
 			top2 = a.balanceLabel
 		}
@@ -359,11 +359,11 @@ func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 		var top2 fyne.CanvasObject
 		if a.forCorporation {
 			a.balanceLabel.Alignment = fyne.TextAlignTrailing
-			top2 = container.NewBorder(nil, nil, a.walletSelect, nil, a.balanceLabel)
+			top2 = container.NewBorder(nil, nil, a.divisionSelect, nil, a.balanceLabel)
 		} else {
 			top2 = a.balanceLabel
 		}
-		filter := container.NewHBox(a.selectDirection, a.selectType)
+		filter := container.NewHBox(a.directionSelect, a.typeSelect)
 		top = container.NewBorder(
 			top2,
 			nil,
@@ -393,8 +393,8 @@ func (a *WalletJournal) currentFilter() walletJournalFilter {
 		}
 	}
 	return walletJournalFilter{
-		direction: a.selectDirection.Selected,
-		refType:   a.selectType.Selected,
+		direction: a.directionSelect.Selected,
+		refType:   a.typeSelect.Selected,
 	}
 }
 
@@ -405,7 +405,7 @@ func (a *WalletJournal) resetFilters() {
 		a.filterChip.ResetSilent()
 		return
 	}
-	clearSelectsSilent(a.selectDirection, a.selectType)
+	clearSelectsSilent(a.directionSelect, a.typeSelect)
 }
 
 func (a *WalletJournal) makeDataList() *xwidget.StripedList {
@@ -518,7 +518,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, typeOptions),
 				)
 			} else {
-				a.selectType.SetOptions(typeOptions)
+				a.typeSelect.SetOptions(typeOptions)
 			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -898,7 +898,7 @@ func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *a
 }
 
 func (a *WalletJournal) updateWalletNames(ctx context.Context) {
-	isLatest := a.updateRunWallets.Start()
+	isLatest := a.updateRunNames.Start()
 	c := a.corporation.Load()
 	if c == nil {
 		return
@@ -907,7 +907,7 @@ func (a *WalletJournal) updateWalletNames(ctx context.Context) {
 		if !isLatest() {
 			return
 		}
-		a.walletSelect.set(a.u.Corporation().ListWalletNames(ctx, c.ID))
+		a.divisionSelect.set(a.u.Corporation().ListWalletNames(ctx, c.ID))
 	})
 }
 
@@ -979,16 +979,16 @@ func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
 	return nil
 }
 
-// corporationWalletSelect is a custom select for corporation wallets.
-// There always is a wallet selected. The default is the master wallet.
-type corporationWalletSelect struct {
+// divisionSelect is a custom select for corporation wallet divisions.
+// There always is a division selected. The default is the master wallet.
+type divisionSelect struct {
 	widget.Select
 
 	names map[app.Division]string
 }
 
-func newCorporationWalletSelect(changed func(d app.Division)) *corporationWalletSelect {
-	w := &corporationWalletSelect{}
+func newDivisionSelect(changed func(d app.Division)) *divisionSelect {
+	w := &divisionSelect{}
 	w.ExtendBaseWidget(w)
 	w.OnChanged = func(s string) {
 		if changed == nil {
@@ -1005,7 +1005,7 @@ func newCorporationWalletSelect(changed func(d app.Division)) *corporationWallet
 	return w
 }
 
-func (w *corporationWalletSelect) set(names map[app.Division]string) {
+func (w *divisionSelect) set(names map[app.Division]string) {
 	w.names = names
 
 	var options []string

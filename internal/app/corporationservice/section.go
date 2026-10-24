@@ -316,6 +316,23 @@ func (s *CorporationService) HasSection(ctx context.Context, corporationID int64
 	return !x.IsMissing(), nil
 }
 
+// HasSections reports whether all sections exist.
+func (s *CorporationService) HasSections(ctx context.Context, corporationID int64, sections set.Set[app.CorporationSection]) (bool, error) {
+	oo, err := s.st.ListCorporationSectionStatus(ctx, corporationID)
+	if err != nil {
+		return false, err
+	}
+	var found set.Set[app.CorporationSection]
+	for _, o := range oo {
+		if !o.IsMissing() {
+			s := o.Section.(app.CorporationSection)
+			found.Add(s)
+		}
+	}
+	missing := set.Difference(sections, found)
+	return missing.IsZero(), nil
+}
+
 // PermittedSection reports whether the user has permission to access a section.
 func (s *CorporationService) PermittedSection(ctx context.Context, corporationID int64, section app.CorporationSection) (bool, error) {
 	sections, err := s.PermittedSections(ctx, corporationID)

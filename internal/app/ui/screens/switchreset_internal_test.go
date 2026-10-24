@@ -43,7 +43,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{marketTransactionActivityBuy}))
 				a.filterChip.SetSelected(map[string]string{walletTransactionFilterActivity: marketTransactionActivityBuy})
 			} else {
-				a.selectActivity.SetSelected(marketTransactionActivityBuy)
+				a.activitySelect.SetSelected(marketTransactionActivityBuy)
 			}
 
 			switchCharacter(t, u)
@@ -59,7 +59,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{marketTransactionActivityBuy}))
 				a.filterChip.SetSelected(map[string]string{walletTransactionFilterActivity: marketTransactionActivityBuy})
 			} else {
-				a.selectActivity.SetSelected(marketTransactionActivityBuy)
+				a.activitySelect.SetSelected(marketTransactionActivityBuy)
 			}
 
 			switchCorporation(t, u)
@@ -141,8 +141,8 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
 				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
 			} else {
-				a.selectType.SetOptions([]string{"Bounty"})
-				a.selectType.SetSelected("Bounty")
+				a.typeSelect.SetOptions([]string{"Bounty"})
+				a.typeSelect.SetSelected("Bounty")
 			}
 			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
 
@@ -161,8 +161,8 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
 				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
 			} else {
-				a.selectType.SetOptions([]string{"Bounty"})
-				a.selectType.SetSelected("Bounty")
+				a.typeSelect.SetOptions([]string{"Bounty"})
+				a.typeSelect.SetSelected("Bounty")
 			}
 			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
 

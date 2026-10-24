@@ -111,8 +111,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CorporationID: c.ID,
 					Section:       section,
 					ErrorMessage:  "",
-					StartedAt:     time.Now(),
-					CompletedAt:   time.Now(),
 				})
 				sc.SetCorporationSection(o)
 			}
@@ -160,8 +158,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CorporationID: c.ID,
 					Section:       section,
 					ErrorMessage:  "",
-					StartedAt:     time.Now(),
-					CompletedAt:   time.Now(),
 				})
 				sc.SetCorporationSection(o)
 			}
@@ -219,8 +215,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CorporationID: c.ID,
 					Section:       section,
 					ErrorMessage:  "",
-					StartedAt:     time.Now(),
-					CompletedAt:   time.Now(),
 				})
 				sc.SetCorporationSection(o)
 			}
@@ -276,8 +270,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CorporationID: c.ID,
 					Section:       section,
 					ErrorMessage:  "",
-					StartedAt:     time.Now(),
-					CompletedAt:   time.Now(),
 				})
 				sc.SetCorporationSection(o)
 			}
@@ -320,8 +312,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CharacterID:  c.ID,
 					Section:      section,
 					ErrorMessage: "",
-					StartedAt:    time.Now(),
-					CompletedAt:  time.Now(),
 				})
 				sc.SetCharacterSection(o)
 			}
@@ -333,8 +323,6 @@ func TestStatusCacheSummary(t *testing.T) {
 					CorporationID: c.ID,
 					Section:       section,
 					ErrorMessage:  "",
-					StartedAt:     time.Now(),
-					CompletedAt:   time.Now(),
 				})
 				sc.SetCorporationSection(o)
 			}
@@ -382,8 +370,6 @@ func TestStatusCacheSummary(t *testing.T) {
 				CorporationID: corporation1.ID,
 				Section:       section,
 				ErrorMessage:  "",
-				StartedAt:     time.Now(),
-				CompletedAt:   time.Now(),
 			})
 			sc.SetCorporationSection(o)
 		}

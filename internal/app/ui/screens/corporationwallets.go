@@ -19,9 +19,9 @@ type CorporationWallets struct {
 	// OnBalanceUpdate is called on the main thread with the total balance after each update.
 	OnBalanceUpdate func(total optional.Optional[float64])
 
+	divisions    *CorporationWalletDivisions
 	journal      *WalletJournal
 	transactions *WalletTransactions
-	divisions    *CorporationWalletDivisions
 	u            baseUI
 }
 
