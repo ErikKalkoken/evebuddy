@@ -25,18 +25,18 @@ func TestCorporationWalletName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      app.Division3,
 			Name:          "Alpha",
 		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      app.Division3,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, c.ID, x.CorporationID)
-		xassert.Equal(t, 3, x.DivisionID)
+		xassert.Equal(t, 3, x.Division)
 		xassert.Equal(t, "Alpha", x.Name)
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -46,14 +46,14 @@ func TestCorporationWalletName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.DivisionID,
+			Division:      x1.Division,
 			Name:          "Alpha",
 		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.DivisionID,
+			Division:      x1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, "Alpha", x.Name)
@@ -64,23 +64,23 @@ func TestCorporationWalletName(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletName()
 		// when
 		oo, err := st.ListCorporationWalletNames(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletName) (int64, string) {
-			return x.DivisionID, x.Name
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletName) (app.Division, string) {
+			return x.Division, x.Name
 		}))
-		want := map[int64]string{
-			e1.DivisionID: e1.Name,
-			e2.DivisionID: e2.Name,
+		want := map[app.Division]string{
+			e1.Division: e1.Name,
+			e2.Division: e2.Name,
 		}
 		xassert.Equal(t, want, got)
 	})

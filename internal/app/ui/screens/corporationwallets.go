@@ -55,11 +55,3 @@ func corporationWalletLabel(d app.Division, name string) string {
 	}
 	return fmt.Sprintf("[%d] %s", d, name)
 }
-
-func defaultCorporationWalletNames() map[app.Division]string {
-	m := make(map[app.Division]string)
-	for _, d := range app.Divisions {
-		m[d] = d.DefaultWalletName()
-	}
-	return m
-}

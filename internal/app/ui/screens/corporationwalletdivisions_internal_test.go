@@ -111,7 +111,7 @@ func TestCorporationWalletDivisions(t *testing.T) {
 		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
 		factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 			Name:          "Logistics",
 		})
 
@@ -162,7 +162,7 @@ func TestCorporationWalletDivisions(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 
@@ -185,17 +185,17 @@ func createCorporationWithWalletBalances(factory testutil.Factory) *app.Corporat
 	})
 	factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 		CorporationID: c.ID,
-		DivisionID:    1,
+		Division:      app.Division1,
 		Balance:       1000,
 	})
 	factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 		CorporationID: c.ID,
-		DivisionID:    2,
+		Division:      app.Division2,
 		Balance:       234.5,
 	})
 	factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 		CorporationID: c.ID,
-		DivisionID:    2,
+		Division:      app.Division2,
 		Name:          "Ops",
 	})
 	return c

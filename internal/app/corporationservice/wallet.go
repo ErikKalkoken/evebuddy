@@ -1,11 +1,9 @@
 package corporationservice
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 	"slices"
 
@@ -23,7 +21,7 @@ import (
 func (s *CorporationService) GetWalletName(ctx context.Context, corporationID int64, division app.Division) (string, error) {
 	n, err := s.st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		Division:      division,
 	})
 	if err != nil {
 		return "", err
@@ -32,19 +30,11 @@ func (s *CorporationService) GetWalletName(ctx context.Context, corporationID in
 }
 
 func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID int64) map[app.Division]string {
-	m := map[app.Division]string{
-		app.Division1: "Master Wallet",
-		app.Division2: "2nd Wallet Division",
-		app.Division3: "3rd Wallet Division",
-		app.Division4: "4th Wallet Division",
-		app.Division5: "5th Wallet Division",
-		app.Division6: "6th Wallet Division",
-		app.Division7: "7th Wallet Division",
-	}
+	m := app.DefaultCorporationWalletNames()
 	oo, err := s.st.ListCorporationWalletNames(ctx, corporationID)
 	if err != nil {
 		if ctx.Err() == nil {
-			slog.Error("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+			slog.Warn("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
 		}
 		return m
 	}
@@ -52,7 +42,7 @@ func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID 
 		if o.Name == "" {
 			continue
 		}
-		m[app.Division(o.DivisionID)] = o.Name
+		m[o.Division] = o.Name
 	}
 	return m
 }
@@ -67,7 +57,7 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 	}
 	x, err := s.st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    division.ID(),
+		Division:      division,
 	})
 	if err != nil {
 		return 0, err
@@ -76,6 +66,7 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 }
 
 // ListWalletBalances returns the wallet balances for all divisions.
+// It returns an empty slice if there is no data.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int64) ([]app.CorporationWalletBalanceWithName, error) {
 	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
@@ -88,23 +79,23 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
+	if len(oo) == 0 {
+		return []app.CorporationWalletBalanceWithName{}, nil
+	}
+	balances := make(map[app.Division]float64)
 	for _, o := range oo {
-		d := app.Division(o.DivisionID)
-		m[d] = app.CorporationWalletBalanceWithName{
-			Balance:       o.Balance,
-			CorporationID: o.CorporationID,
-			DivisionID:    o.DivisionID,
-		}
+		balances[o.Division] = o.Balance
 	}
-	for d, n := range s.ListWalletNames(ctx, corporationID) {
-		x := m[d]
-		x.Name = n
-		m[d] = x
+	names := s.ListWalletNames(ctx, corporationID)
+	w := make([]app.CorporationWalletBalanceWithName, 0, len(app.Divisions))
+	for _, d := range app.Divisions {
+		w = append(w, app.CorporationWalletBalanceWithName{
+			Balance:       balances[d],
+			CorporationID: corporationID,
+			Division:      d,
+			Name:          names[d],
+		})
 	}
-	w := slices.SortedFunc(maps.Values(m), func(a, b app.CorporationWalletBalanceWithName) int {
-		return cmp.Compare(a.DivisionID, b.DivisionID)
-	})
 	return w, nil
 }
 
@@ -151,7 +142,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg co
 			for _, w := range wallets {
 				if err := s.st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 					CorporationID: arg.corporationID,
-					DivisionID:    w.Division,
+					Division:      app.Division(w.Division),
 					Balance:       w.Balance,
 				}); err != nil {
 					return false, err
@@ -172,7 +163,7 @@ func (s *CorporationService) GetWalletJournalEntry(ctx context.Context, corporat
 	}
 	return s.st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		Division:      d,
 		RefID:         refID,
 	})
 }
@@ -187,7 +178,7 @@ func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corpo
 	}
 	return s.st.ListCorporationWalletJournalEntries(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		Division:      d,
 	})
 }
 
@@ -201,12 +192,12 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
-			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.corporationID, arg.section.Division().ID())
+			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.corporationID, arg.section.Division())
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
 			entries, err := xgoesi.FetchPagesWithStop(
 				func(page int32) ([]esi.CorporationsCorporationIdWalletsDivisionJournalGetInner, *http.Response, error) {
-					return s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionJournal(ctx, arg.corporationID, arg.section.Division().ID()).Page(page).Execute()
+					return s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionJournal(ctx, arg.corporationID, int64(arg.section.Division())).Page(page).Execute()
 				}, func(x esi.CorporationsCorporationIdWalletsDivisionJournalGetInner) bool {
 					return checkLastID && x.Id <= lastID
 				})
@@ -231,7 +222,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 			entries := data.([]esi.CorporationsCorporationIdWalletsDivisionJournalGetInner)
 			existingIDs, err := s.st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 				CorporationID: arg.corporationID,
-				DivisionID:    arg.section.Division().ID(),
+				Division:      arg.section.Division(),
 			})
 			if err != nil {
 				return false, err
@@ -274,7 +265,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 					ContextIDType: optional.FromPtr(o.ContextIdType),
 					Date:          o.Date,
 					Description:   o.Description,
-					DivisionID:    arg.section.Division().ID(),
+					Division:      arg.section.Division(),
 					FirstPartyID:  optional.FromPtr(o.FirstPartyId),
 					RefID:         o.Id,
 					CorporationID: arg.corporationID,
@@ -312,7 +303,7 @@ func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporati
 	}
 	return s.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		Division:      d,
 		TransactionID: transactionID,
 	})
 }
@@ -331,7 +322,7 @@ func (s *CorporationService) ListWalletTransactionsForDivision(ctx context.Conte
 	}
 	return s.st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		Division:      d,
 	})
 }
 
@@ -343,7 +334,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
-			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division().ID())
+			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division())
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
 			transactions, err := s.fetchWalletTransactionsESI(ctx, arg, lastID, checkLastID)
@@ -362,7 +353,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			transactions := data.([]esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner)
 			existingIDs, err := s.st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 				CorporationID: arg.corporationID,
-				DivisionID:    arg.section.Division().ID(),
+				Division:      arg.section.Division(),
 			})
 			if err != nil {
 				return false, err
@@ -411,7 +402,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					ClientID:      o.ClientId,
 					CorporationID: arg.corporationID,
 					Date:          o.Date,
-					DivisionID:    arg.section.Division().ID(),
+					Division:      arg.section.Division(),
 					EveTypeID:     o.TypeId,
 					IsBuy:         o.IsBuy,
 					JournalRefID:  o.JournalRefId,
@@ -444,9 +435,9 @@ func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg
 		var oo []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
 		var err error
 		if fromID > 0 {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, arg.section.Division().ID()).FromId(fromID).Execute()
+			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).FromId(fromID).Execute()
 		} else {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, arg.section.Division().ID()).Execute()
+			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).Execute()
 		}
 		if err != nil {
 			return nil, err

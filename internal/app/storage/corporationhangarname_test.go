@@ -25,18 +25,18 @@ func TestCorporationHangarName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      app.Division3,
 			Name:          "Alpha",
 		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      app.Division3,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, c.ID, x.CorporationID)
-		xassert.Equal(t, 3, x.DivisionID)
+		xassert.Equal(t, 3, x.Division)
 		xassert.Equal(t, "Alpha", x.Name)
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -46,14 +46,14 @@ func TestCorporationHangarName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.DivisionID,
+			Division:      x1.Division,
 			Name:          "Alpha",
 		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.DivisionID,
+			Division:      x1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, "Alpha", x.Name)
@@ -64,23 +64,23 @@ func TestCorporationHangarName(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationHangarName()
 		// when
 		oo, err := st.ListCorporationHangarNames(ctx, c.ID)
 		// then
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (int64, string) {
-			return x.DivisionID, x.Name
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationHangarName) (app.Division, string) {
+			return x.Division, x.Name
 		}))
-		want := map[int64]string{
-			e1.DivisionID: e1.Name,
-			e2.DivisionID: e2.Name,
+		want := map[app.Division]string{
+			e1.Division: e1.Name,
+			e2.Division: e2.Name,
 		}
 		xassert.Equal(t, want, got)
 	})

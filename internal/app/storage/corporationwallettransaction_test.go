@@ -32,7 +32,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		arg := storage.CreateCorporationWalletTransactionParams{
 			ClientID:      client.ID,
 			Date:          date,
-			DivisionID:    1,
+			Division:      app.Division1,
 			EveTypeID:     eveType.ID,
 			IsBuy:         true,
 			JournalRefID:  99,
@@ -49,7 +49,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		require.NoError(t, err)
 		i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			TransactionID: 42,
 		})
 		require.NoError(t, err)
@@ -86,21 +86,21 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
 		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -113,21 +113,21 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
 		oo, err := st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -143,15 +143,15 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		t3 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
@@ -170,18 +170,18 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		e1 := factory.CreateCorporationWalletTransaction()
 		e2 := factory.CreateCorporationWalletTransaction()
 		// when
-		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
+		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, e1.Division)
 		// then
 		require.NoError(t, err)
 		x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: e1.CorporationID,
-			DivisionID:    e1.DivisionID,
+			Division:      e1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 0, x1.Size())
 		x2, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: e2.CorporationID,
-			DivisionID:    e2.DivisionID,
+			Division:      e2.Division,
 		})
 		require.NoError(t, err)
 		assert.Greater(t, x2.Size(), 0)

@@ -201,7 +201,7 @@ func (a *CorporationWealth) update(ctx context.Context) {
 	var divisionAssetValue float64
 	walletByDivision := make(map[app.Division]corporationWalletEntry)
 	for _, wb := range v.walletBalances {
-		walletByDivision[app.Division(wb.DivisionID)] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
+		walletByDivision[wb.Division] = corporationWalletEntry{name: wb.Name, balance: wb.Balance}
 		totalWalletBalance += wb.Balance
 	}
 	for _, d := range app.Divisions {

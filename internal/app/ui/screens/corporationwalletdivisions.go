@@ -224,11 +224,9 @@ func (a *CorporationWalletDivisions) Update(ctx context.Context) {
 // fetchCorporationWalletsData loads wallet names and balances for a corporation.
 func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID int64) corporationWalletsData {
 	if corporationID == 0 {
-		return corporationWalletsData{names: defaultCorporationWalletNames()}
+		return corporationWalletsData{}
 	}
-	data := corporationWalletsData{
-		names: u.Corporation().ListWalletNames(ctx, corporationID),
-	}
+	var data corporationWalletsData
 	setError := func(err error) corporationWalletsData {
 		if ctx.Err() != nil {
 			return data
@@ -262,8 +260,10 @@ func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID in
 		return data
 	}
 	data.balances = make(map[app.Division]float64)
+	data.names = make(map[app.Division]string)
 	for _, o := range oo {
-		data.balances[app.Division(o.DivisionID)] = o.Balance
+		data.balances[o.Division] = o.Balance
+		data.names[o.Division] = o.Name
 		data.total = optional.SumNonEmpty(data.total, optional.New(o.Balance))
 	}
 	return data
@@ -273,14 +273,10 @@ func (a *CorporationWalletDivisions) set(data corporationWalletsData) {
 	var rows []corporationWalletRow
 	if data.status == "" && data.balances != nil {
 		for _, d := range app.Divisions {
-			name := data.names[d]
-			if name == "" {
-				name = d.DefaultWalletName()
-			}
 			rows = append(rows, corporationWalletRow{
 				balance:  data.balances[d],
 				division: d,
-				name:     name,
+				name:     data.names[d],
 			})
 		}
 	}

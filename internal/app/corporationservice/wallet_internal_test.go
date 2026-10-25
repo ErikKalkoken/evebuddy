@@ -29,7 +29,7 @@ func TestGetWalletName(t *testing.T) {
 	t.Run("can return existing wallet name", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
-		w := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{CorporationID: c.ID, DivisionID: 1})
+		w := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{CorporationID: c.ID, Division: app.Division1})
 		got, err := s.GetWalletName(ctx, c.ID, app.Division1)
 		require.NoError(t, err)
 		assert.Equal(t, w.Name, got)
@@ -52,7 +52,7 @@ func TestListWalletNames(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Name:          "Awesome Wallet",
 		})
 		got := s.ListWalletNames(ctx, c.ID)
@@ -77,23 +77,38 @@ func TestListWalletBalances(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       123.45,
 		})
 		got, err := s.ListWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		m := make(map[int64]app.CorporationWalletBalanceWithName)
+		m := make(map[app.Division]app.CorporationWalletBalanceWithName)
 		for _, x := range got {
-			m[x.DivisionID] = x
+			m[x.Division] = x
 		}
-		require.Contains(t, m, int64(1))
-		assert.Equal(t, 123.45, m[1].Balance)
-		assert.Equal(t, "Master Wallet", m[1].Name)
+		require.Contains(t, m, app.Division1)
+		assert.Equal(t, 123.45, m[app.Division1].Balance)
+		assert.Equal(t, "Master Wallet", m[app.Division1].Name)
+		require.Contains(t, m, app.Division2)
+		assert.Equal(t, c.ID, m[app.Division2].CorporationID)
+		assert.Equal(t, 0.0, m[app.Division2].Balance)
+		assert.Equal(t, "2nd Wallet Division", m[app.Division2].Name)
 	})
 	t.Run("returns empty when section not enabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		got, err := s.ListWalletBalances(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+	t.Run("returns empty when no balances stored", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+		// when
+		got, err := s.ListWalletBalances(ctx, c.ID)
+		// then
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
@@ -110,7 +125,7 @@ func TestGetWalletJournalEntry(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletJournal(app.Division1))
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		got, err := s.GetWalletJournalEntry(ctx, c.ID, app.Division1, e.RefID)
 		require.NoError(t, err)
@@ -135,7 +150,7 @@ func TestGetWalletTransaction(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletTransactions(app.Division1))
 		x := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		got, err := s.GetWalletTransaction(ctx, c.ID, app.Division1, x.TransactionID)
 		require.NoError(t, err)
@@ -205,17 +220,17 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
-			return x.DivisionID, x.Balance
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (app.Division, float64) {
+			return x.Division, x.Balance
 		}))
-		want := map[int64]float64{
-			1: 123.45,
-			2: 223.45,
-			3: 323.45,
-			4: 423.45,
-			5: 523.45,
-			6: 623.45,
-			7: 723.45,
+		want := map[app.Division]float64{
+			app.Division1: 123.45,
+			app.Division2: 223.45,
+			app.Division3: 323.45,
+			app.Division4: 423.45,
+			app.Division5: 523.45,
+			app.Division6: 623.45,
+			app.Division7: 723.45,
 		}
 		xassert.Equal(t, want, got)
 	})
@@ -227,10 +242,10 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 			AccessToken: "accessToken",
 		}}})
 		c := factory.CreateCorporation()
-		for id := range 7 {
+		for _, d := range app.Divisions {
 			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 				CorporationID: c.ID,
-				DivisionID:    int64(id + 1),
+				Division:      d,
 			})
 			assert.NoError(t, err)
 		}
@@ -278,17 +293,17 @@ func TestUpdateWalletBalancesESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
-			return x.DivisionID, x.Balance
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (app.Division, float64) {
+			return x.Division, x.Balance
 		}))
-		want := map[int64]float64{
-			1: 123.45,
-			2: 223.45,
-			3: 323.45,
-			4: 423.45,
-			5: 523.45,
-			6: 623.45,
-			7: 723.45,
+		want := map[app.Division]float64{
+			app.Division1: 123.45,
+			app.Division2: 223.45,
+			app.Division3: 323.45,
+			app.Division4: 423.45,
+			app.Division5: 523.45,
+			app.Division6: 623.45,
+			app.Division7: 723.45,
 		}
 		xassert.Equal(t, want, got)
 	})
@@ -336,7 +351,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.True(t, changed)
 		e, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			RefID:         89,
 		})
 		require.NoError(t, err)
@@ -351,7 +366,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		xassert.EqualOptional(t, secondParty, e.SecondParty)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
@@ -391,7 +406,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.True(t, changed)
 		e2, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			RefID:         89,
 		})
 		require.NoError(t, err)
@@ -399,7 +414,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 2, ids.Size())
@@ -412,7 +427,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			RefID:         89,
 			Description:   "existing",
 		})
@@ -443,7 +458,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		require.NoError(t, err)
 		e2, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			RefID:         89,
 		})
 		require.NoError(t, err)
@@ -451,7 +466,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
@@ -477,7 +492,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.False(t, changed)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
@@ -535,20 +550,20 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.True(t, changed)
 		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		if xassert.Equal(t, 2, ids.Size()) {
 			x1, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
-				DivisionID:    1,
+				Division:      app.Division1,
 				RefID:         89,
 			})
 			require.NoError(t, err)
 			xassert.Equal(t, "First", x1.Description)
 			x2, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 				CorporationID: c.ID,
-				DivisionID:    1,
+				Division:      app.Division1,
 				RefID:         90,
 			})
 			require.NoError(t, err)
@@ -689,15 +704,15 @@ func TestListWalletJournalEntries(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
@@ -752,7 +767,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		assert.True(t, changed)
 		e, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			TransactionID: 1234567890,
 		})
 		require.NoError(t, err)
@@ -766,7 +781,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		xassert.Equal(t, 1.23, e.UnitPrice)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 1, ids.Size())
@@ -806,7 +821,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		assert.True(t, changed)
 		e, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			TransactionID: 1234567890,
 		})
 		require.NoError(t, err)
@@ -820,7 +835,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		xassert.Equal(t, 1.23, e.UnitPrice)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 2, ids.Size())
@@ -833,7 +848,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			TransactionID: 1234567890,
 		})
 		httpmock.RegisterResponder(
@@ -860,7 +875,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		require.NoError(t, err)
 		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		want := set.Of[int64](1234567890)
@@ -887,7 +902,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		assert.False(t, changed)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 0, ids.Size())
@@ -945,7 +960,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		require.NoError(t, err)
 		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 2501, ids.Size())
@@ -1086,15 +1101,15 @@ func TestListWalletTransactions(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletTransactions(1))
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when

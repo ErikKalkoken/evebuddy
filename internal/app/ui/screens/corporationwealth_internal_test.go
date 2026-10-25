@@ -148,12 +148,12 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 			Balance:       234.5,
 		})
 		a.corporation.Store(c)
@@ -357,7 +357,7 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 		a.corporation.Store(c)
@@ -389,7 +389,7 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 		a.corporation.Store(c)

@@ -1,12 +1,6 @@
 package app
 
-import (
-	"strings"
-	"time"
-
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
-)
+import "maps"
 
 // Division represents a division in an EVE Online corporation.
 type Division uint
@@ -22,38 +16,39 @@ const (
 	Division7
 )
 
-// TODO: Move ID resolution into storage layer
-
-func (d Division) ID() int64 {
-	return int64(d)
+var defaultWalletNames = map[Division]string{
+	Division1: "Master Wallet",
+	Division2: "2nd Wallet Division",
+	Division3: "3rd Wallet Division",
+	Division4: "4th Wallet Division",
+	Division5: "5th Wallet Division",
+	Division6: "6th Wallet Division",
+	Division7: "7th Wallet Division",
 }
 
 func (d Division) DefaultWalletName() string {
-	m := map[Division]string{
-		Division1: "Master Wallet",
-		Division2: "2nd Wallet",
-		Division3: "3rd Wallet",
-		Division4: "4th Wallet",
-		Division5: "5th Wallet",
-		Division6: "6th Wallet",
-		Division7: "7th Wallet",
-	}
-	return m[d]
+	return defaultWalletNames[d]
+}
+
+// DefaultCorporationWalletNames returns the default wallet names of all divisions.
+func DefaultCorporationWalletNames() map[Division]string {
+	return maps.Clone(defaultWalletNames)
+}
+
+var defaultHangarNames = map[Division]string{
+	Division1: "1st Division",
+	Division2: "2nd Division",
+	Division3: "3rd Division",
+	Division4: "4th Division",
+	Division5: "5th Division",
+	Division6: "6th Division",
+	Division7: "7th Division",
 }
 
 // DefaultHangarName returns the generic in-game name for a corporation hangar division,
 // used when the corporation has not set a custom name for it.
 func (d Division) DefaultHangarName() string {
-	m := map[Division]string{
-		Division1: "1st Division",
-		Division2: "2nd Division",
-		Division3: "3rd Division",
-		Division4: "4th Division",
-		Division5: "5th Division",
-		Division6: "6th Division",
-		Division7: "7th Division",
-	}
-	return m[d]
+	return defaultHangarNames[d]
 }
 
 var Divisions = []Division{
@@ -87,70 +82,8 @@ func (c *Corporation) NameOrZero() string {
 
 type CorporationHangarName struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      Division
 	Name          string
-}
-
-type CorporationWalletBalance struct {
-	Balance       float64
-	CorporationID int64
-	DivisionID    int64
-}
-
-type CorporationWalletBalanceWithName struct {
-	Balance       float64
-	CorporationID int64
-	DivisionID    int64
-	Name          string
-}
-
-type CorporationWalletName struct {
-	CorporationID int64
-	DivisionID    int64
-	Name          string
-}
-
-type CorporationWalletJournalEntry struct {
-	Amount        optional.Optional[float64]
-	Balance       optional.Optional[float64]
-	CorporationID int64
-	ContextID     optional.Optional[int64]
-	ContextIDType optional.Optional[string]
-	Date          time.Time
-	Description   string
-	DivisionID    int64
-	FirstParty    optional.Optional[*EveEntity]
-	ID            int64
-	Reason        optional.Optional[string]
-	RefID         int64
-	RefType       string
-	SecondParty   optional.Optional[*EveEntity]
-	Tax           optional.Optional[float64]
-	TaxReceiver   optional.Optional[*EveEntity]
-}
-
-func (we CorporationWalletJournalEntry) RefTypeDisplay() string {
-	return xstrings.Title(strings.ReplaceAll(we.RefType, "_", " "))
-}
-
-type CorporationWalletTransaction struct {
-	CorporationID int64
-	Client        *EveEntity
-	Date          time.Time
-	DivisionID    int64 // TODO: Should that be a division type?
-	ID            int64
-	IsBuy         bool
-	JournalRefID  int64
-	Location      *EveLocationShort
-	Region        *EntityShort
-	Quantity      int64
-	TransactionID int64
-	Type          *EveType
-	UnitPrice     float64
-}
-
-func (wt *CorporationWalletTransaction) Total() float64 {
-	return wt.UnitPrice * float64(wt.Quantity)
 }
 
 // CorporationMember represents a member in an EVE Online corporation.

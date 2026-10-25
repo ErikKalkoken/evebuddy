@@ -288,12 +288,12 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		}
 		buy := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			IsBuy:         true,
 		})
 		sell := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		// when
 		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
@@ -328,7 +328,7 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		})
 		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		// when
 		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
@@ -430,7 +430,7 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		}
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -458,7 +458,7 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		}
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -486,7 +486,7 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		}
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		other := factory.CreateCorporation()
@@ -515,12 +515,12 @@ func TestCorporationWalletTransactions(t *testing.T) {
 		}
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
 		factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 			Name:          "Ops",
 		})
 		// when

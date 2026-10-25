@@ -165,7 +165,7 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg corpora
 				}
 				if err := s.st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 					CorporationID: arg.corporationID,
-					DivisionID:    *w.Division,
+					Division:      app.Division(*w.Division),
 					Name:          *w.Name,
 				}); err != nil {
 					return false, err
@@ -178,7 +178,7 @@ func (s *CorporationService) updateDivisionsESI(ctx context.Context, arg corpora
 				}
 				if err := s.st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 					CorporationID: arg.corporationID,
-					DivisionID:    *w.Division,
+					Division:      app.Division(*w.Division),
 					Name:          *w.Name,
 				}); err != nil {
 					return false, err
@@ -204,7 +204,7 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 		if o.Name == "" {
 			continue
 		}
-		m[app.Division(o.DivisionID)] = o.Name
+		m[o.Division] = o.Name
 	}
 	return m, nil
 }

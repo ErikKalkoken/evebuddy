@@ -41,14 +41,14 @@ check-device:
 	@echo device found
 
 
-interfaces:
-	ifacemaker -f internal/eveimageservice/eveimageservice.go -i EveImageService -p app -s EveImageService > internal/app/eveimageservice.go
+# interfaces:
+# 	ifacemaker -f internal/eveimageservice/eveimageservice.go -i EveImageService -p app -s EveImageService > internal/app/eveimageservice.go
 
 check_race:
-	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo .
+	GOMAXPROCS=4 GORACE="halt_on_error=1" go run -race --tags migrated_fynedo .
 
 check_race_mobile:
-	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo . --mobile --dev
+	GOMAXPROCS=4 GORACE="halt_on_error=1" go run -race --tags migrated_fynedo,mobile . --dev
 
 build:
 	fyne build --tags migrated_fynedo
@@ -57,10 +57,10 @@ ratelimitdoc:
 	go run ./tools/genratelimit/ -f md  > ratelimits.md ;
 
 test:
-	go test ./... ;
+	GOMAXPROCS=4 go test ./... ;
 
 test_race:
-	GORACE="halt_on_error=1" go test -race --tags migrated_fynedo ./... ;
+	GOMAXPROCS=4 GORACE="halt_on_error=1" go test -race --tags migrated_fynedo ./... ;
 
 deadcode:
 	deadcode -test ./...

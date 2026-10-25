@@ -719,7 +719,6 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 	}
 	rows := make([]walletTransactionRow, 0, len(oo))
 	for _, o := range oo {
-		division := app.Division(o.DivisionID)
 		r := walletTransactionRow{
 			categoryName:    o.Type.Group.Category.Name,
 			client:          o.Client,
@@ -727,8 +726,8 @@ func (a *WalletTransactions) fetchCorporationRows(ctx context.Context, corporati
 			ownerID:         corporation.ID,
 			ownerName:       corporation.NameOrZero(),
 			date:            o.Date,
-			division:        division,
-			divisionName:    corporationWalletLabel(division, names[division]),
+			division:        o.Division,
+			divisionName:    corporationWalletLabel(o.Division, names[o.Division]),
 			isBuy:           o.IsBuy,
 			locationDisplay: o.Location.DisplayRichText(),
 			locationID:      o.Location.ID,

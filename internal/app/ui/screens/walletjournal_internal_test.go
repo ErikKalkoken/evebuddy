@@ -296,11 +296,11 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		a.corporation.Store(c)
 		// when
@@ -327,14 +327,14 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
-		a.divisionID.Store(app.Division2.ID())
+		a.division.Store(app.Division2)
 		// when
 		a.updateRowsCorporation(t.Context())
 		// then
@@ -438,7 +438,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -465,7 +465,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -492,7 +492,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		other := factory.CreateCorporation()
@@ -749,7 +749,7 @@ func TestWalletJournal_UpdateBalanceCorporation(t *testing.T) {
 			Storage: st,
 		}))
 		a.corporation.Store(createCorporationWithWalletBalances(factory))
-		a.divisionID.Store(app.Division2.ID())
+		a.division.Store(app.Division2)
 		// when
 		a.updateBalanceCorporation(t.Context())
 		// then
@@ -815,7 +815,7 @@ func TestWalletJournal_UpdateBalanceCorporation(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 		a.corporation.Store(c)
@@ -918,7 +918,7 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetDivisionSilent(app.Division2)
 		// then
-		xassert.Equal(t, "[2] 2nd Wallet", w.Selected)
+		xassert.Equal(t, "[2] 2nd Wallet Division", w.Selected)
 		assert.Empty(t, got)
 	})
 	t.Run("keeps division selected by user when names are set", func(t *testing.T) {
