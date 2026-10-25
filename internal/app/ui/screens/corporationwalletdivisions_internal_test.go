@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -18,7 +19,7 @@ func TestCorporationWalletRow(t *testing.T) {
 	r := corporationWalletRow{balance: 1234.5, division: app.Division2, name: "Ops"}
 	assert.Equal(t, "1,234.50", r.balanceDisplay())
 	assert.Equal(t, "2", r.divisionDisplay())
-	assert.Equal(t, "Ops [2]", r.label())
+	assert.Equal(t, "[2] Ops", r.label())
 
 	total := corporationWalletRow{balance: 1, isTotal: true, name: "Total"}
 	assert.Equal(t, "", total.divisionDisplay())
@@ -76,15 +77,15 @@ func TestCorporationWalletDivisions(t *testing.T) {
 		a.sortRows("Balance") // ascending
 
 		if assert.Len(t, a.rowsSorted, 8) {
-			assert.Equal(t, "Ops [2]", a.rowsSorted[5].label())
-			assert.Equal(t, "Master Wallet [1]", a.rowsSorted[6].label())
+			assert.Equal(t, "[2] Ops", a.rowsSorted[5].label())
+			assert.Equal(t, "[1] Master Wallet", a.rowsSorted[6].label())
 			assert.True(t, a.rowsSorted[7].isTotal)
 		}
 
 		a.sortRows("Balance") // descending
 
 		if assert.Len(t, a.rowsSorted, 8) {
-			assert.Equal(t, []string{"Master Wallet [1]", "Ops [2]"}, labels(a.rowsSorted[:2]))
+			assert.Equal(t, []string{"[1] Master Wallet", "[2] Ops"}, labels(a.rowsSorted[:2]))
 			assert.True(t, a.rowsSorted[7].isTotal)
 		}
 	})
@@ -101,7 +102,7 @@ func TestCorporationWalletDivisions(t *testing.T) {
 			Section:       app.SectionCorporationWalletBalances,
 		})
 
-		assert.Equal(t, []string{"Master Wallet [1]", "Ops [2]"}, labels(a.rowsSorted[:2]))
+		assert.Equal(t, []string{"[1] Master Wallet", "[2] Ops"}, labels(a.rowsSorted[:2]))
 	})
 	t.Run("updates when wallet is renamed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -120,7 +121,7 @@ func TestCorporationWalletDivisions(t *testing.T) {
 		})
 
 		if assert.Len(t, a.rowsSorted, 8) {
-			assert.Equal(t, "Logistics [2]", a.rowsSorted[1].label())
+			assert.Equal(t, "[2] Logistics", a.rowsSorted[1].label())
 		}
 	})
 	t.Run("shows no data when balances are missing", func(t *testing.T) {
@@ -135,4 +136,67 @@ func TestCorporationWalletDivisions(t *testing.T) {
 		assert.True(t, a.status.Visible())
 		assert.Empty(t, a.rowsSorted)
 	})
+	t.Run("reports total balance", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		a := newDivisions(t, false)
+		var got optional.Optional[float64]
+		a.onBalanceUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), createCorporationWithWalletBalances(factory))
+
+		assert.Equal(t, optional.New(1234.5), got)
+	})
+	t.Run("hides balances without permission", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		a := newDivisions(t, false)
+		got := optional.New(1.0)
+		a.onBalanceUpdate = func(total optional.Optional[float64]) {
+			got = total
+		}
+		c := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: c.ID,
+			Section:       app.SectionCorporationWalletBalances,
+		})
+		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+			Balance:       1000,
+		})
+
+		a.u.Signals().CurrentCorporationExchanged.Emit(t.Context(), c)
+
+		assert.Equal(t, "No permission", a.status.Text)
+		assert.Empty(t, a.rowsSorted)
+		assert.True(t, got.IsEmpty())
+	})
+}
+
+// createCorporationWithWalletBalances returns a corporation with balances for wallets 1 and 2,
+// where wallet 2 is named "Ops".
+func createCorporationWithWalletBalances(factory testutil.Factory) *app.Corporation {
+	c := factory.CreateCorporation()
+	factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+	factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+		CorporationID: c.ID,
+		Section:       app.SectionCorporationWalletBalances,
+	})
+	factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+		CorporationID: c.ID,
+		DivisionID:    1,
+		Balance:       1000,
+	})
+	factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
+		CorporationID: c.ID,
+		DivisionID:    2,
+		Balance:       234.5,
+	})
+	factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
+		CorporationID: c.ID,
+		DivisionID:    2,
+		Name:          "Ops",
+	})
+	return c
 }

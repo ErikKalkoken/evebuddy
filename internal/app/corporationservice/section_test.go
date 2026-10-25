@@ -18,9 +18,82 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
+
+func TestHasSection(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+	ctx := context.Background()
+	const section = app.SectionCorporationIndustryJobs
+	t.Run("section exists", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       section,
+		})
+		// when
+		got, err := s.HasSection(ctx, corporation.ID, section)
+		// then
+		require.NoError(t, err)
+		assert.True(t, got)
+	})
+	t.Run("section does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		// when
+		got, err := s.HasSection(ctx, corporation.ID, section)
+		// then
+		require.NoError(t, err)
+		assert.False(t, got)
+	})
+	t.Run("section exists, but incomplete", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		corporation := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       section,
+			CompletedAt:   optional.New(time.Time{}),
+		})
+		// when
+		got, err := s.HasSection(ctx, corporation.ID, section)
+		// then
+		require.NoError(t, err)
+		assert.False(t, got)
+	})
+}
+
+func TestCompletedSections(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("should return completed sections", func(t *testing.T) {
+		// given
+		corporation := factory.CreateCorporation()
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationContracts,
+			CompletedAt:   optional.New(time.Time{}),
+		})
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationIndustryJobs,
+		})
+		// when
+		got, err := s.CompletedSections(ctx, corporation.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(app.SectionCorporationIndustryJobs), got)
+	})
+}
 
 func TestRemoveSectionDataWhenPermissionLost(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)

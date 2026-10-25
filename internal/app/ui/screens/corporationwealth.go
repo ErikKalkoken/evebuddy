@@ -325,12 +325,12 @@ func (a *CorporationWealth) updateWallets(rows []corporationDivisionValue) {
 	a.walletsTitleLabel.SetText("Wallet Balance by Division")
 }
 
-// corporationHangarLabel returns the display label for a hangar division, e.g. "1st Division [1]".
+// corporationHangarLabel returns the display label for a hangar division, e.g. "[1] 1st Division".
 func corporationHangarLabel(d app.Division, name string) string {
 	if name == "" {
 		name = d.DefaultHangarName()
 	}
-	return fmt.Sprintf("%s [%d]", name, d)
+	return fmt.Sprintf("[%d] %s", d, name)
 }
 
 // corporationAssetRows returns the rows for the assets chart.

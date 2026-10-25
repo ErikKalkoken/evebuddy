@@ -158,6 +158,31 @@ func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg Co
 	return oo, nil
 }
 
+func (st *Storage) ListCorporationWalletTransactionsAll(ctx context.Context, corporationID int64) ([]*app.CorporationWalletTransaction, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCorporationWalletTransactionsAll %d: %w", corporationID, err)
+	}
+	rows, err := st.qRO.ListCorporationWalletTransactionsAll(ctx, corporationID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]*app.CorporationWalletTransaction, len(rows))
+	for i, r := range rows {
+		oo[i] = corporationWalletTransactionFromDBModel(
+			r.CorporationWalletTransaction,
+			r.EveEntity,
+			r.EveType,
+			r.EveGroup,
+			r.EveCategory,
+			r.LocationName,
+			r.SystemSecurityStatus,
+			r.RegionID,
+			r.RegionName,
+		)
+	}
+	return oo, nil
+}
+
 func corporationWalletTransactionFromDBModel(
 	o queries.CorporationWalletTransaction,
 	client queries.EveEntity,

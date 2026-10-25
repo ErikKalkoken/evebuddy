@@ -1724,8 +1724,8 @@ type CorporationSectionStatusParams struct {
 	CorporationID int64
 	Section       app.CorporationSection
 	ErrorMessage  string
-	CompletedAt   time.Time
-	StartedAt     time.Time
+	CompletedAt   optional.Optional[time.Time]
+	StartedAt     optional.Optional[time.Time]
 	Data          any
 }
 
@@ -1745,24 +1745,18 @@ func (f Factory) CreateCorporationSectionStatus(args ...CorporationSectionStatus
 	if arg.Data == nil {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CorporationID, arg.Section, time.Now())
 	}
-	if arg.CompletedAt.IsZero() {
-		arg.CompletedAt = time.Now().UTC()
-	}
-	if arg.StartedAt.IsZero() {
-		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()
-	}
 	hash, err := calcContentHash(arg.Data)
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTimeFromTime(arg.CompletedAt)
-	startedAt := optional.New(arg.StartedAt)
+	completedAt := storage.NewNullTimeFromTime(arg.CompletedAt.ValueOrFallback(time.Now().UTC()))
+	startedAt := optional.New(arg.StartedAt.ValueOrFallback(time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second).UTC()))
 	arg2 := storage.UpdateOrCreateCorporationSectionStatusParams{
 		Comment:       &arg.Comment,
 		CorporationID: arg.CorporationID,
 		Section:       arg.Section,
 		ErrorMessage:  &arg.ErrorMessage,
-		CompletedAt:   &t,
+		CompletedAt:   &completedAt,
 		ContentHash:   &hash,
 		StartedAt:     &startedAt,
 	}

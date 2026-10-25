@@ -137,6 +137,33 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		want := set.Of(t1.TransactionID, t2.TransactionID)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("can list existing entries for a corporation for all divisions", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    1,
+		})
+		t3 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
+			CorporationID: c.ID,
+			DivisionID:    2,
+		})
+		factory.CreateCorporationWalletTransaction()
+		// when
+		oo, err := st.ListCorporationWalletTransactionsAll(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		got := set.Of(xslices.Map(oo, func(x *app.CorporationWalletTransaction) int64 {
+			return x.TransactionID
+		})...)
+		want := set.Of(t1.TransactionID, t2.TransactionID, t3.TransactionID)
+		xassert.Equal(t, want, got)
+	})
 	t.Run("can delete transactions", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

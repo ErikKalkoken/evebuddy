@@ -1,16 +1,20 @@
 package screens
 
 import (
+	"cmp"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -18,16 +22,15 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/ErikKalkoken/go-set"
+
 	"github.com/dustin/go-humanize"
-	"github.com/fnt-eve/goesi-openapi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
@@ -77,7 +80,6 @@ type walletJournalRow struct {
 	description      string
 	division         app.Division
 	firstParty       optional.Optional[*app.EveEntity]
-	forCorporation   bool
 	ownerID          int64
 	ownerName        string
 	reason           optional.Optional[string]
@@ -87,6 +89,24 @@ type walletJournalRow struct {
 	searchTarget     string
 	secondParty      optional.Optional[*app.EveEntity]
 	taxReceiver      optional.Optional[*app.EveEntity]
+}
+
+// setDisplayFields sets the fields derived from the row's data.
+func (r *walletJournalRow) setDisplayFields() {
+	formatISK := func(v float64) string {
+		return humanize.FormatFloat(ui.FloatFormatISK, v)
+	}
+	r.amountFormatted = r.amount.StringFunc("?", formatISK)
+	r.amountDisplay = xwidget.RichTextSegmentsFromText(
+		r.amountFormatted,
+		widget.RichTextStyle{
+			Alignment: fyne.TextAlignTrailing,
+			ColorName: colorISKAmount(r.amount),
+		},
+	)
+	r.balanceFormatted = r.balance.StringFunc("?", formatISK)
+	r.dateFormatted = r.date.Format(app.DateTimeFormat)
+	r.setSearchTarget()
 }
 
 // setSearchTarget sets the text the search entry matches against.
@@ -105,70 +125,42 @@ func (r walletJournalRow) descriptionWithReason() string {
 type WalletJournal struct {
 	widget.BaseWidget
 
-	body            fyne.CanvasObject
-	character       atomic.Pointer[app.Character]
-	columnSorter    *xwidget.ColumnSorter[walletJournalRow]
-	corporation     atomic.Pointer[app.Corporation]
-	division        app.Division
-	errorLabel      *widget.Label
-	filterChip      *xwidget.FilterChipCompact // only on mobile
-	filterRun       xsync.LatestRun
-	footerLabel     *widget.Label
-	moreButton      *xwidget.ContextMenuButton
-	rows            []walletJournalRow
-	rowsFiltered    []walletJournalRow
-	searchEntry     *xwidget.SearchEntry
-	selectDirection *kxwidget.FilterChipSelect // select chips only on desktop
-	selectType      *kxwidget.FilterChipSelect
-	sortChip        *kxwidget.SortChip
-	top             *widget.Label
-	u               baseUI
-	updateRun       xsync.LatestRun
+	onBalanceUpdate func(balance optional.Optional[float64])
+
+	balanceLabel     *widget.Label
+	main             fyne.CanvasObject
+	character        atomic.Pointer[app.Character]
+	columnSorter     *xwidget.ColumnSorter[walletJournalRow]
+	corporation      atomic.Pointer[app.Corporation]
+	directionSelect  *kxwidget.FilterChipSelect // select chips only on desktop
+	divisionID       atomic.Int64
+	divisionSelect   *DivisionSelect
+	errorLabel       *widget.Label
+	filterChip       *xwidget.FilterChipCompact // only on mobile
+	filterRun        xsync.LatestRun
+	footerLabel      *widget.Label
+	forCorporation   bool
+	moreButton       *xwidget.ContextMenuButton
+	rows             []walletJournalRow
+	rowsFiltered     []walletJournalRow
+	searchEntry      *xwidget.SearchEntry
+	sortChip         *kxwidget.SortChip
+	typeSelect       *kxwidget.FilterChipSelect
+	u                baseUI
+	updateRunBalance xsync.LatestRun
+	updateRunJournal xsync.LatestRun
+	updateRunNames   xsync.LatestRun
 }
 
 func NewCharacterWalletJournal(u baseUI) *WalletJournal {
-	a := newWalletJournal(u, app.DivisionZero)
-	a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
-		a.character.Store(c)
-		fyne.Do(func() {
-			a.resetFilters()
-		})
-		a.Update(ctx)
-	})
-	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		if a.character.Load().IDOrZero() != arg.CharacterID {
-			return
-		}
-		if arg.Section == app.SectionCharacterWalletJournal {
-			a.Update(ctx)
-		}
-	})
-	return a
+	return newWalletJournal(u, false)
 }
 
-func NewCorporationWalletJournal(u baseUI, d app.Division) *WalletJournal {
-	a := newWalletJournal(u, d)
-	a.u.Signals().CurrentCorporationExchanged.AddListener(
-		func(ctx context.Context, c *app.Corporation) {
-			a.corporation.Store(c)
-			fyne.Do(func() {
-				a.resetFilters()
-			})
-			a.Update(ctx)
-		},
-	)
-	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
-		if a.corporation.Load().IDOrZero() != arg.CorporationID {
-			return
-		}
-		if arg.Section == app.CorporationSectionWalletJournal(d) {
-			a.Update(ctx)
-		}
-	})
-	return a
+func NewCorporationWalletJournal(u baseUI) *WalletJournal {
+	return newWalletJournal(u, true)
 }
 
-func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
+func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	columns := xwidget.NewDataColumns([]xwidget.DataColumn[walletJournalRow]{{
 		Label: "Date",
 		Width: 150,
@@ -200,12 +192,9 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		Label: "Balance",
 		Width: 200,
 		Update: func(r walletJournalRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}), widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.balanceFormatted, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
-			},
-			)
+			})
 		},
 	}, {
 		Label: "Description",
@@ -215,14 +204,17 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 		},
 	}})
 	a := &WalletJournal{
-		columnSorter: xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
-		division:     division,
-		footerLabel:  ui.NewLabelWithTruncation(""),
-		errorLabel:   ui.NewLabelWithWrapping(""),
-		top:          ui.NewLabelWithTruncation(""),
-		u:            u,
+		balanceLabel:   ui.NewLabelWithTruncation(""),
+		columnSorter:   xwidget.NewColumnSorter(columns, "Date", xwidget.SortDesc),
+		errorLabel:     ui.NewLabelWithWrapping(""),
+		footerLabel:    ui.NewLabelWithTruncation(""),
+		forCorporation: forCorporation,
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
+
+	a.balanceLabel.Selectable = true
+	a.balanceLabel.TextStyle.Bold = true
 
 	a.errorLabel.Importance = widget.DangerImportance
 	a.errorLabel.Hide()
@@ -234,10 +226,29 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 	)
 	a.moreButton.Importance = widget.LowImportance
 
+	a.divisionSelect = NewDivisionSelect(func(d app.Division) {
+		if a.divisionID.Load() == d.ID() {
+			return
+		}
+		a.divisionID.Store(d.ID())
+		a.updateRunBalance.Discard() // loads of the previous division must not show after the clear
+		a.updateRunJournal.Discard()
+		a.clearData()
+		a.resetFilters()
+		ctx := context.Background()
+		runAsync(func() {
+			a.updateBalanceCorporation(ctx)
+		})
+		runAsync(func() {
+			a.updateRowsCorporation(ctx)
+		})
+	})
+	a.divisionID.Store(app.Division1.ID())
+
 	if a.u.IsMobile() {
-		a.body = a.makeDataList()
+		a.main = a.makeDataList()
 	} else {
-		a.body = xwidget.MakeDataTable(
+		a.main = xwidget.MakeDataTable(
 			columns,
 			&a.rowsFiltered,
 			func() fyne.CanvasObject {
@@ -248,7 +259,7 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			a.columnSorter,
 			a.filterRowsAsync,
 			func(_ int, r walletJournalRow) {
-				if a.isCorporation() {
+				if a.forCorporation {
 					ShowCorporationWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.refID)
 				} else {
 					ShowCharacterWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.refID)
@@ -269,36 +280,142 @@ func newWalletJournal(u baseUI, division app.Division) *WalletJournal {
 			a.filterRowsAsync("")
 		})
 	} else {
-		a.selectDirection = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
+		a.directionSelect = kxwidget.NewFilterChipSelect(walletJournalFilterDirection, walletJournalDirectionOptions(), func(string) {
 			a.filterRowsAsync("")
 		})
-		a.selectDirection.SortDisabled = true
-		a.selectType = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
+		a.directionSelect.SortDisabled = true
+		a.typeSelect = kxwidget.NewFilterChipSelectWithSearch(walletJournalFilterType, []string{}, func(string) {
 			a.filterRowsAsync("")
 		}, a.u.MainWindow())
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
 		a.filterRowsAsync("")
 	})
+
+	// signals
+	if a.forCorporation {
+		a.u.Signals().CurrentCorporationExchanged.AddListener(
+			func(ctx context.Context, c *app.Corporation) {
+				a.corporation.Store(c)
+				a.divisionID.Store(app.Division1.ID())
+				fyne.Do(func() {
+					a.clearData()
+					a.divisionSelect.SetDivisionSilent(app.Division1)
+					a.resetFilters()
+				})
+				var wg sync.WaitGroup
+				wg.Go(func() {
+					a.updateBalanceCorporation(ctx)
+				})
+				wg.Go(func() {
+					a.updateWalletNames(ctx)
+				})
+				wg.Go(func() {
+					a.updateRowsCorporation(ctx)
+				})
+				wg.Wait()
+			},
+		)
+		a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
+			if a.corporation.Load().IDOrZero() != arg.CorporationID {
+				return
+			}
+			if arg.Section == app.CorporationSectionWalletJournal(app.Division(a.divisionID.Load())) {
+				a.updateRowsCorporation(ctx)
+			}
+			if arg.Section == app.SectionCorporationDivisions {
+				a.updateWalletNames(ctx)
+			}
+			if arg.Section == app.SectionCorporationWalletBalances {
+				a.updateBalanceCorporation(ctx)
+			}
+		})
+	} else {
+		a.u.Signals().CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
+			a.character.Store(c)
+			fyne.Do(func() {
+				a.resetFilters()
+			})
+			var wg sync.WaitGroup
+			wg.Go(func() {
+				a.updateBalanceCharacter(ctx)
+			})
+			wg.Go(func() {
+				a.updateRowsCharacter(ctx)
+			})
+			wg.Wait()
+		})
+		a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
+			if a.character.Load().IDOrZero() != arg.CharacterID {
+				return
+			}
+			switch arg.Section {
+			case app.SectionCharacterWalletBalance:
+				a.updateBalanceCharacter(ctx)
+			case app.SectionCharacterWalletJournal:
+				a.updateRowsCharacter(ctx)
+			}
+		})
+	}
 	return a
 }
 
 func (a *WalletJournal) CreateRenderer() fyne.WidgetRenderer {
 	var top fyne.CanvasObject
 	if a.u.IsMobile() {
-		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip, a.moreButton), a.searchEntry)
+		var top2 fyne.CanvasObject
+		if a.forCorporation {
+			top2 = container.NewVBox(a.divisionSelect, a.balanceLabel)
+		} else {
+			top2 = a.balanceLabel
+		}
+		top = container.NewBorder(
+			top2,
+			nil,
+			nil,
+			container.NewHBox(a.filterChip, a.sortChip, a.moreButton),
+			a.searchEntry,
+		)
 	} else {
-		filter := container.NewHBox(a.selectDirection, a.selectType)
-		top = container.NewBorder(nil, nil, filter, a.moreButton, a.searchEntry)
+		var top2 fyne.CanvasObject
+		if a.forCorporation {
+			a.balanceLabel.Alignment = fyne.TextAlignTrailing
+			top2 = container.NewBorder(nil, nil, a.divisionSelect, nil, a.balanceLabel)
+		} else {
+			top2 = a.balanceLabel
+		}
+		filter := container.NewHBox(a.directionSelect, a.typeSelect)
+		top = container.NewBorder(
+			top2,
+			nil,
+			filter,
+			a.moreButton,
+			a.searchEntry,
+		)
 	}
 	c := container.NewBorder(
 		top,
 		container.NewVBox(a.errorLabel, a.footerLabel),
 		nil,
 		nil,
-		a.body,
+		a.main,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+func (a *WalletJournal) clearData() {
+	clearLabel := func(l *widget.Label) {
+		l.Text = ""
+		l.Importance = widget.MediumImportance
+		l.Refresh()
+	}
+	clearLabel(a.balanceLabel)
+	clearLabel(a.footerLabel)
+	a.errorLabel.Hide()
+	a.filterRun.Discard()
+	a.rows = nil
+	a.rowsFiltered = nil
+	a.main.Refresh()
 }
 
 // currentFilter returns the selected filters: from the compact chip on mobile
@@ -312,8 +429,8 @@ func (a *WalletJournal) currentFilter() walletJournalFilter {
 		}
 	}
 	return walletJournalFilter{
-		direction: a.selectDirection.Selected,
-		refType:   a.selectType.Selected,
+		direction: a.directionSelect.Selected,
+		refType:   a.typeSelect.Selected,
 	}
 }
 
@@ -324,11 +441,7 @@ func (a *WalletJournal) resetFilters() {
 		a.filterChip.ResetSilent()
 		return
 	}
-	clearSelectsSilent(a.selectDirection, a.selectType)
-}
-
-func (a *WalletJournal) isCorporation() bool {
-	return a.division != app.DivisionZero
+	clearSelectsSilent(a.directionSelect, a.typeSelect)
 }
 
 func (a *WalletJournal) makeDataList() *xwidget.StripedList {
@@ -381,7 +494,7 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 			return
 		}
 		r := a.rowsFiltered[id]
-		if a.isCorporation() {
+		if a.forCorporation {
 			ShowCorporationWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.division, r.refID)
 		} else {
 			ShowCharacterWalletJournalEntryWindowAsync(a.u, r.ownerID, r.ownerName, r.refID)
@@ -393,9 +506,9 @@ func (a *WalletJournal) makeDataList() *xwidget.StripedList {
 
 func (a *WalletJournal) exportAsCSV() {
 	var ids []int64
-	if a.isCorporation() {
+	if a.forCorporation {
 		ids = append(ids, a.corporation.Load().IDOrZero())
-		ids = append(ids, int64(a.division))
+		ids = append(ids, int64(a.divisionID.Load()))
 	} else {
 		ids = append(ids, a.character.Load().IDOrZero())
 	}
@@ -441,24 +554,112 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, typeOptions),
 				)
 			} else {
-				a.selectType.SetOptions(typeOptions)
+				a.typeSelect.SetOptions(typeOptions)
 			}
 			a.rowsFiltered = rows
-			a.body.Refresh()
+			a.main.Refresh()
 		})
 	})
 }
 
-func (a *WalletJournal) Update(ctx context.Context) {
-	if a.isCorporation() {
-		a.updateCorporation(ctx)
-	} else {
-		a.updateCharacter(ctx)
-	}
+func (a *WalletJournal) updateBalanceCharacter(ctx context.Context) {
+	a.updateBalance(ctx, func() int64 { return a.character.Load().IDOrZero() }, a.fetchBalanceCharacter)
 }
 
-func (a *WalletJournal) updateCharacter(ctx context.Context) {
-	isLatest := a.updateRun.Start()
+func (a *WalletJournal) updateBalanceCorporation(ctx context.Context) {
+	a.updateBalance(ctx, func() int64 { return a.corporation.Load().IDOrZero() }, a.fetchBalanceCorporation)
+}
+
+func (a *WalletJournal) updateBalance(ctx context.Context, loadOwnerID func() int64, fetch func(context.Context, int64) (optional.Optional[float64], error)) {
+	isLatest := a.updateRunBalance.Start()
+	ownerID := loadOwnerID() // read after Start, so the latest run has the current owner
+	setBalance := func(balance optional.Optional[float64], s string, i widget.Importance) {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.balanceLabel.Text, a.balanceLabel.Importance = s, i
+			a.balanceLabel.Refresh()
+			if a.onBalanceUpdate != nil {
+				a.onBalanceUpdate(balance)
+			}
+		})
+	}
+	if ownerID == 0 {
+		setBalance(optional.Optional[float64]{}, "", widget.MediumImportance)
+		return
+	}
+	balance, err := fetch(ctx, ownerID)
+	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to update wallet balance UI", "forCorporation", a.forCorporation, "ownerID", ownerID, "err", err)
+		setBalance(optional.Optional[float64]{}, "ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		return
+	}
+	v, ok := balance.Value()
+	if !ok {
+		setBalance(balance, "No data", widget.WarningImportance)
+		return
+	}
+	setBalance(balance, humanize.FormatFloat(ui.FloatFormatISK, v)+" ISK", widget.MediumImportance)
+}
+
+func (a *WalletJournal) fetchBalanceCharacter(ctx context.Context, characterID int64) (optional.Optional[float64], error) {
+	hasData, err := a.u.Character().HasSection(ctx, characterID, app.SectionCharacterWalletBalance)
+	if err != nil || !hasData {
+		return optional.Optional[float64]{}, err
+	}
+	c, err := a.u.Character().GetCharacter(ctx, characterID)
+	if errors.Is(err, app.ErrNotFound) {
+		return optional.Optional[float64]{}, nil
+	}
+	if err != nil {
+		return optional.Optional[float64]{}, err
+	}
+	return c.WalletBalance, nil
+}
+
+func (a *WalletJournal) fetchBalanceCorporation(ctx context.Context, corporationID int64) (optional.Optional[float64], error) {
+	hasData, err := a.u.Corporation().HasSection(ctx, corporationID, app.SectionCorporationWalletBalances)
+	if err != nil || !hasData {
+		return optional.Optional[float64]{}, err
+	}
+	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, app.Division(a.divisionID.Load()))
+	if errors.Is(err, app.ErrNotFound) {
+		return optional.Optional[float64]{}, nil
+	}
+	if err != nil {
+		return optional.Optional[float64]{}, err
+	}
+	return optional.New(balance), nil
+}
+
+func (a *WalletJournal) updateRowsCharacter(ctx context.Context) {
+	a.updateRows(ctx, func(ctx context.Context) ([]walletJournalRow, bool, bool, error) {
+		c := a.character.Load() // read after Start, so the latest run has the current owner
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchRowsCharacter(ctx, c)
+		return rows, true, hasData, err
+	})
+}
+
+func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
+	a.updateRows(ctx, func(ctx context.Context) ([]walletJournalRow, bool, bool, error) {
+		c := a.corporation.Load() // read after Start, so the latest run has the current owner and division
+		if c == nil {
+			return nil, false, false, nil
+		}
+		rows, hasData, err := a.fetchRowsCorporation(ctx, c, app.Division(a.divisionID.Load()))
+		return rows, true, hasData, err
+	})
+}
+
+func (a *WalletJournal) updateRows(ctx context.Context, fetch func(context.Context) (rows []walletJournalRow, hasOwner, hasData bool, err error)) {
+	isLatest := a.updateRunJournal.Start()
 	setInfo := func(s string, i widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
@@ -488,30 +689,32 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 			xslices.Clear(&a.rows)
 			xslices.Clear(&a.rowsFiltered)
 			a.footerLabel.SetText("")
-			a.body.Refresh()
+			a.main.Refresh()
 		})
 	}
-	character := a.character.Load()
-	if character == nil {
-		reset()
-		setInfo("No character", widget.LowImportance)
-		return
-	}
-	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletJournal)
+	rows, hasOwner, hasData, err := fetch(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		reset()
 		setError(err)
+		return
+	}
+	if !hasOwner {
+		reset()
+		var s string
+		if a.forCorporation {
+			s = "No corporation"
+		} else {
+			s = "No character"
+		}
+		setInfo(s, widget.LowImportance)
 		return
 	}
 	if !hasData {
 		reset()
 		setInfo("No data", widget.WarningImportance)
-		return
-	}
-	rows, err := a.fetchCharacterRows(ctx, character)
-	if err != nil {
-		reset()
-		setError(err)
 		return
 	}
 	fyne.Do(func() {
@@ -524,26 +727,23 @@ func (a *WalletJournal) updateCharacter(ctx context.Context) {
 	})
 }
 
-func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.Character) ([]walletJournalRow, error) {
+func (a *WalletJournal) fetchRowsCharacter(ctx context.Context, character *app.Character) ([]walletJournalRow, bool, error) {
+	hasData, err := a.u.Character().HasSection(ctx, character.ID, app.SectionCharacterWalletJournal)
+	if err != nil || !hasData {
+		return nil, false, err
+	}
 	oo, err := a.u.Character().ListWalletJournalEntries(ctx, character.ID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	var rows []walletJournalRow
+	rows := make([]walletJournalRow, 0, len(oo))
 	for _, o := range oo {
 		r := walletJournalRow{
-			amount: o.Amount,
-			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
-			balance: o.Balance,
-			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
+			amount:         o.Amount,
+			balance:        o.Balance,
 			ownerID:        character.ID,
 			ownerName:      character.NameOrZero(),
 			date:           o.Date,
-			dateFormatted:  o.Date.Format(app.DateTimeFormat),
 			description:    o.Description,
 			reason:         o.Reason,
 			refID:          o.RefID,
@@ -553,129 +753,67 @@ func (a *WalletJournal) fetchCharacterRows(ctx context.Context, character *app.C
 			secondParty:    o.SecondParty,
 			taxReceiver:    o.TaxReceiver,
 		}
-		r.amountDisplay = xwidget.RichTextSegmentsFromText(
-			r.amountFormatted,
-			widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: colorISKAmount(o.Amount),
-			},
-		)
-		r.setSearchTarget()
+		r.setDisplayFields()
 		rows = append(rows, r)
 	}
-	return rows, nil
+	return rows, true, nil
 }
 
-func (a *WalletJournal) updateCorporation(ctx context.Context) {
-	isLatest := a.updateRun.Start()
-	setInfo := func(s string, i widget.Importance) {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.footerLabel.Text, a.footerLabel.Importance = s, i
-			a.footerLabel.Refresh()
-		})
+func (a *WalletJournal) fetchRowsCorporation(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletJournalRow, bool, error) {
+	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletJournal(division))
+	if err != nil || !hasData {
+		return nil, false, err
 	}
-	setError := func(err error) {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.errorLabel.SetText("ERROR: " + a.u.ErrorDisplay(err))
-			a.errorLabel.Show()
-			a.Refresh()
-		})
-	}
-	reset := func() {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.filterRun.Discard()
-			a.errorLabel.Hide()
-			xslices.Clear(&a.rows)
-			xslices.Clear(&a.rowsFiltered)
-			a.footerLabel.SetText("")
-			a.body.Refresh()
-		})
-	}
-	corporation := a.corporation.Load()
-	if corporation == nil {
-		reset()
-		setInfo("No corporation", widget.LowImportance)
-		return
-	}
-	hasData, err := a.u.Corporation().HasSection(ctx, corporation.ID, app.CorporationSectionWalletJournal(a.division))
+	oo, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporation.ID, division)
 	if err != nil {
-		reset()
-		setError(err)
+		return nil, false, err
+	}
+	rows := make([]walletJournalRow, 0, len(oo))
+	for _, o := range oo {
+		r := walletJournalRow{
+			amount:         o.Amount,
+			balance:        o.Balance,
+			ownerID:        corporation.ID,
+			ownerName:      corporation.NameOrZero(),
+			division:       division,
+			date:           o.Date,
+			description:    o.Description,
+			reason:         o.Reason,
+			refID:          o.RefID,
+			refType:        o.RefType,
+			refTypeDisplay: o.RefTypeDisplay(),
+			firstParty:     o.FirstParty,
+			secondParty:    o.SecondParty,
+			taxReceiver:    o.TaxReceiver,
+		}
+		r.setDisplayFields()
+		rows = append(rows, r)
+	}
+	return rows, true, nil
+}
+
+func (a *WalletJournal) updateWalletNames(ctx context.Context) {
+	isLatest := a.updateRunNames.Start()
+	c := a.corporation.Load()
+	if c == nil {
+		fyne.Do(func() {
+			if !isLatest() {
+				return
+			}
+			a.divisionSelect.SetNames(nil)
+		})
 		return
 	}
-	if !hasData {
-		reset()
-		setInfo("No data", widget.WarningImportance)
-		return
-	}
-	rows, err := a.fetchCorporationRows(ctx, corporation, a.division)
-	if err != nil {
-		reset()
-		setError(err)
-		return
+	names := a.u.Corporation().ListWalletNames(ctx, c.ID)
+	if ctx.Err() != nil {
+		return // names are only defaults when canceled
 	}
 	fyne.Do(func() {
 		if !isLatest() {
 			return
 		}
-		a.errorLabel.Hide()
-		a.rows = rows
-		a.filterRowsAsync("")
+		a.divisionSelect.SetNames(names)
 	})
-}
-
-func (a *WalletJournal) fetchCorporationRows(ctx context.Context, corporation *app.Corporation, division app.Division) ([]walletJournalRow, error) {
-	entries, err := a.u.Corporation().ListWalletJournalEntries(ctx, corporation.ID, division)
-	if err != nil {
-		return nil, err
-	}
-	var rows []walletJournalRow
-	for _, o := range entries {
-		r := walletJournalRow{
-			amount: o.Amount,
-			amountFormatted: o.Amount.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
-			balance: o.Balance,
-			balanceFormatted: o.Balance.StringFunc("?", func(v float64) string {
-				return humanize.FormatFloat(ui.FloatFormatISK, v)
-			}),
-			ownerID:        corporation.ID,
-			ownerName:      corporation.NameOrZero(),
-			forCorporation: true,
-			division:       division,
-			date:           o.Date,
-			dateFormatted:  o.Date.Format(app.DateTimeFormat),
-			description:    o.Description,
-			reason:         o.Reason,
-			refID:          o.RefID,
-			refType:        o.RefType,
-			refTypeDisplay: o.RefTypeDisplay(),
-			firstParty:     o.FirstParty,
-			secondParty:    o.SecondParty,
-			taxReceiver:    o.TaxReceiver,
-		}
-
-		r.amountDisplay = xwidget.RichTextSegmentsFromText(
-			r.amountFormatted,
-			widget.RichTextStyle{
-				Alignment: fyne.TextAlignTrailing,
-				ColorName: colorISKAmount(o.Amount),
-			},
-		)
-		r.setSearchTarget()
-		rows = append(rows, r)
-	}
-	return rows, nil
 }
 
 func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
@@ -746,296 +884,70 @@ func writeJournalRowsToCSV(w io.Writer, rows []walletJournalRow) error {
 	return nil
 }
 
-// ShowCharacterWalletJournalEntryWindowAsync shows a wallet journal entry for a character in a new window.
-func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, characterName string, refID int64) {
-	windowID := fmt.Sprintf("walletjournalentry-%d-%d", characterID, refID)
-	title := fmt.Sprintf("Character Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(windowID, title, characterName)
-	if !created {
-		w.Show()
-		return
-	}
+// DivisionSelect is a select widget for corporation wallet divisions.
+// A division is always selected; the default is the master wallet.
+type DivisionSelect struct {
+	widget.Select
 
-	runAsync(func() {
-		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
-		if err != nil {
-			fyne.Do(func() {
-				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
-			})
-			return
-		}
-
-		fyne.Do(func() {
-			f := widget.NewForm()
-			f.Orientation = widget.Adaptive
-
-			amount := widget.NewLabel(o.Amount.StringFunc("?", ui.FormatISKAmount))
-			amount.Importance = importanceISKAmount(o.Amount)
-			reason := o.Reason.ValueOrFallback("-")
-
-			contextDefaultWidget := widget.NewLabel("?")
-			contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
-			reportError := func(o *app.CharacterWalletJournalEntry, err error) {
-				slog.Error(
-					"Failed to fetch related context",
-					slog.Any("contextIDType", o.ContextIDType),
-					slog.Any("contextID", o.ContextID),
-					slog.Any("error", err),
-				)
-				fyne.Do(func() {
-					contextDefaultWidget.SetText("Failed to load related item: " + u.ErrorDisplay(err))
-				})
-			}
-			// TODO: Add support for industry jobs
-			var hasContext bool
-			if v, ok := o.ContextIDType.Value(); ok {
-				hasContext = true
-				switch v {
-				case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
-					runAsync(func() {
-						ee, err := u.EVEUniverse().GetOrCreateEntityESI(context.Background(), o.ContextID.ValueOrZero())
-						if err != nil {
-							reportError(o, err)
-							return
-						}
-						fyne.Do(func() {
-							contextItem.Text = "Related " + ee.CategoryDisplay()
-							contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoViewer().Show)
-							f.Refresh()
-						})
-					})
-				case "contract_id":
-					runAsync(func() {
-						c, err := u.Character().GetContract(context.Background(), characterID, o.ContextID.ValueOrZero())
-						if err != nil {
-							reportError(o, err)
-							return
-						}
-						fyne.Do(func() {
-							contextItem.Text = "Related contract"
-							contextItem.Widget = ui.MakeLinkLabelWithWrap(c.NameDisplay(), func() {
-								ShowCharacterContractByID(u, c.CharacterID, c.ContractID)
-							})
-							f.Refresh()
-						})
-					})
-				case "market_transaction_id":
-					contextItem.Text = "Related market transaction"
-					contextItem.Widget = ui.MakeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID.ValueOrZero()), func() {
-						ShowCharacterWalletTransactionWindowAsync(u, characterID, characterName, o.ContextID.ValueOrZero())
-					})
-					f.Refresh()
-				case "station_id", "structure_id":
-					contextItem.Text = "Related location"
-					runAsync(func() {
-						ctx := context.Background()
-						ts, err := u.Character().TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
-						if err != nil {
-							reportError(o, err)
-							return
-						}
-						ctx = xgoesi.NewContextWithAuth(ctx, characterID, ts)
-						el, err := u.EVEUniverse().GetOrCreateLocationESI(ctx, o.ContextID.ValueOrZero())
-						if err != nil {
-							reportError(o, err)
-							return
-						}
-						fyne.Do(func() {
-							contextItem.Widget = ui.MakeLocationLabel(el.ToEveLocationShort(), u.InfoViewer().ShowLocation)
-							f.Refresh()
-						})
-					})
-				default:
-					hasContext = false // unsupported types would show "?" forever
-				}
-			}
-			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeCharacterActionLabel(
-					characterID,
-					characterName,
-					u.InfoViewer().Show,
-				)),
-				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
-				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
-				widget.NewFormItem("Amount", amount),
-				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", ui.FormatISKAmount))),
-				widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
-				widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
-			}
-			if v, ok := o.FirstParty.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"First Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-				))
-			}
-			if v, ok := o.SecondParty.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"Second Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-				))
-			}
-			if v, ok := o.TaxReceiver.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"Tax",
-					widget.NewLabel(o.Tax.StringFunc("?", ui.FormatISKAmount)),
-				))
-				items = append(items, widget.NewFormItem(
-					"Tax Receiver",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
-				)
-			}
-			if hasContext {
-				items = append(items, contextItem)
-			}
-			if u.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
-			}
-
-			for _, it := range items {
-				f.AppendItem(it)
-			}
-			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-				Title:   title,
-				Content: f,
-				Window:  w,
-			})
-			w.Show()
-		})
-	})
+	names            map[app.Division]string
+	selectedDivision app.Division
 }
 
-// ShowCorporationWalletJournalEntryWindowAsync shows a wallet journal entry for a corporation in a new window.
-func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64, corporationName string, division app.Division, refID int64) {
-	windowID := fmt.Sprintf("walletjournalentry-%d-%d", corporationID, refID)
-	title := fmt.Sprintf("Corporation Wallet Transaction #%d", refID)
-	w, created := u.GetOrCreateWindow(windowID, title, corporationName)
-	if !created {
-		w.Show()
-		return
+// NewDivisionSelect returns a new DivisionSelect with the default wallet names.
+// changed is called with the division the user selects and may be nil.
+func NewDivisionSelect(changed func(d app.Division)) *DivisionSelect {
+	const defaultDivision = app.Division1
+	w := &DivisionSelect{
+		selectedDivision: defaultDivision,
 	}
-
-	runAsync(func() {
-		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
-		if err != nil {
-			fyne.Do(func() {
-				u.DestroyWindow(windowID)
-				ui.ShowErrorAndLog("Failed to show wallet transaction", err, u.IsDeveloperMode(), u.MainWindow())
-			})
-			return
+	w.ExtendBaseWidget(w)
+	w.OnChanged = func(s string) {
+		for _, d := range app.Divisions {
+			if corporationWalletLabel(d, w.names[d]) == s {
+				w.selectedDivision = d
+				if changed != nil {
+					changed(d)
+				}
+				break
+			}
 		}
+	}
+	w.setNames(nil)
+	return w
+}
 
-		fyne.Do(func() {
-			f := widget.NewForm()
-			f.Orientation = widget.Adaptive
+// SetDivisionSilent selects division d without calling changed.
+func (w *DivisionSelect) SetDivisionSilent(d app.Division) {
+	w.setDivisionSilent(d)
+	w.Refresh()
+}
 
-			amount := widget.NewLabel(o.Amount.StringFunc("?", ui.FormatISKAmount))
-			amount.Importance = importanceISKAmount(o.Amount)
-			reason := o.Reason.ValueOrFallback("-")
+func (w *DivisionSelect) setDivisionSilent(d app.Division) {
+	w.Selected = corporationWalletLabel(d, w.names[d])
+	w.selectedDivision = d
+}
 
-			// contextDefaultWidget := widget.NewLabel("?")
-			// contextItem := widget.NewFormItem("Related item", contextDefaultWidget)
-			// ctx := context.Background()
-			// reportError := func(o *app.CorporationWalletJournalEntry, err error) {
-			// 	slog.Error("Failed to fetch related context", "contextIDType", o.ContextIDType, "contextID", o.ContextID, "error", err)
-			// 	contextDefaultWidget.SetText("Failed to load related item: " + a.u.ErrorDisplay(err))
-			// }
-			// TODO: Add support for industry jobs
-			// switch o.ContextIDType {
-			// case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
-			// 	go func() {
-			// 		ee, err := u.EVEUniverse().GetOrCreateEntityESI(ctx, int64(o.ContextID))
-			// 		if err != nil {
-			// 			reportError(o, err)
-			// 			return
-			// 		}
-			// 		contextItem.Text = "Related " + ee.CategoryDisplay()
-			// 		contextItem.Widget = ui.MakeEveEntityActionLabel(ee, u.InfoViewer().ShowEntity)
-			// 		f.Refresh()
-			// 	}()
-			// case "contract_id":
-			// 	c, err := u.Character().GetContract(ctx, corporationID, int64(o.ContextID))
-			// 	if err != nil {
-			// 		reportError(o, err)
-			// 		break
-			// 	}
-			// 	contextItem.Text = "Related contract"
-			// 	contextItem.Widget = ui.MakeLinkLabelWithWrap(c.NameDisplay(), func() {
-			// 		showContract(u, c.CorporationID, c.ContractID)
-			// 	})
-			// case "market_transaction_id":
-			// 	contextItem.Text = "Related market transaction"
-			// 	contextItem.Widget = ui.MakeLinkLabelWithWrap(fmt.Sprintf("#%d", o.ContextID), func() {
-			// 		showCorporationWalletTransaction(u, o.CorporationID, o.ContextID)
-			// 	})
-			// case "station_id", "structure_id":
-			// 	contextItem.Text = "Related location"
-			// 	go func() {
-			// 		token, err := u.Character().GetValidCorporationToken(ctx, corporationID)
-			// 		if err != nil {
-			// 			reportError(o, err)
-			// 			return
-			// 		}
-			// 		ctx = xesi.NewContextWithAuth(ctx, token.CharacterID, token.AccessToken)
-			// 		el, err := u.EVEUniverse().GetOrCreateLocationESI(ctx, o.ContextID)
-			// 		if err != nil {
-			// 			reportError(o, err)
-			// 			return
-			// 		}
-			// 		contextItem.Widget = ui.MakeLocationLabel(el.ToShort(), u.InfoViewer().ShowLocation)
-			// 		f.Refresh()
-			// 	}()
-			// }
-			items := []*widget.FormItem{
-				widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(
-					&app.EveEntity{ID: corporationID, Name: corporationName, Category: app.EveEntityCorporation},
-					u.InfoViewer().Show,
-				)),
-				widget.NewFormItem("Date", widget.NewLabel(o.Date.Format(app.DateTimeFormatWithSeconds))),
-				widget.NewFormItem("Type", makeLabelWithWrap(o.RefTypeDisplay())),
-				widget.NewFormItem("Amount", amount),
-				widget.NewFormItem("Balance", widget.NewLabel(o.Balance.StringFunc("?", ui.FormatISKAmount))),
-				widget.NewFormItem("Description", makeLabelWithWrap(o.Description)),
-				widget.NewFormItem("Reason", makeLabelWithWrap(reason)),
-			}
-			if v, ok := o.FirstParty.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"First Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-				))
-			}
-			if v, ok := o.SecondParty.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"Second Party",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show),
-				))
-			}
-			if v, ok := o.TaxReceiver.Value(); ok {
-				items = append(items, widget.NewFormItem(
-					"Tax",
-					widget.NewLabel(o.Tax.StringFunc("?", ui.FormatISKAmount)),
-				))
-				items = append(items, widget.NewFormItem(
-					"Tax Receiver",
-					ui.MakeEveEntityActionLabel(v, u.InfoViewer().Show)),
-				)
-			}
-			// items = append(items, contextItem)
-			if u.IsDeveloperMode() {
-				items = append(items, widget.NewFormItem("Ref ID", xwidget.NewTappableLabelWithClipboardCopy(fmt.Sprint(refID))))
-			}
+// SetNames sets the wallet names, keeping the selected division.
+// Divisions missing from names are shown with their default name.
+// Passing in a nil map resets all names to their defaults.
+func (w *DivisionSelect) SetNames(names map[app.Division]string) {
+	w.setNames(names)
+	w.Refresh()
+}
 
-			for _, it := range items {
-				f.AppendItem(it)
-			}
-			ui.MakeDetailWindow(ui.MakeDetailWindowParams{
-				Title:   title,
-				Content: f,
-				Window:  w,
-			})
-			w.Show()
-		})
+func (w *DivisionSelect) setNames(names map[app.Division]string) {
+	w.names = names
+
+	var options []string
+	for _, d := range app.Divisions {
+		options = append(options, corporationWalletLabel(d, names[d]))
+	}
+	// Select sizes itself by the placeholder, which is never shown since a wallet is always selected.
+	w.PlaceHolder = slices.MaxFunc(options, func(x, y string) int {
+		return cmp.Compare(utf8.RuneCountInString(x), utf8.RuneCountInString(y))
 	})
+	w.Options = options
+	w.setDivisionSilent(w.selectedDivision)
 }
 
 func colorISKAmount(amount optional.Optional[float64]) fyne.ThemeColorName {
@@ -1061,10 +973,4 @@ func importanceISKAmount(amount optional.Optional[float64]) widget.Importance {
 		return widget.DangerImportance
 	}
 	return widget.MediumImportance
-}
-
-func makeLabelWithWrap(s string) *widget.Label {
-	l := widget.NewLabel(s)
-	l.Wrapping = fyne.TextWrapWord
-	return l
 }

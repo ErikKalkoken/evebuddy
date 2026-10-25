@@ -3,7 +3,6 @@ package screens
 import (
 	"slices"
 	"testing"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
@@ -51,7 +50,6 @@ func TestCorporationWealth_ErrorDisplay(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationContracts,
-			CompletedAt:   time.Now(),
 		})
 		a.corporation.Store(c)
 		a.categorySplitTitleLabel.SetText("Total Net Worth By Category - Total: 1.0 B")
@@ -76,7 +74,6 @@ func TestCorporationWealth_ErrorDisplay(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
-			CompletedAt:   time.Now(),
 		})
 		a.corporation.Store(c)
 		a.categorySplitTitleLabel.SetText("Total Net Worth By Category - Total: 1.0 B")
@@ -148,7 +145,6 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
-			CompletedAt:   time.Now(),
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
@@ -180,7 +176,6 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationContracts,
-			CompletedAt:   time.Now(),
 		})
 		o := factory.CreateCorporationContract(storage.CreateCorporationContractParams{
 			CorporationID:  c.ID,
@@ -222,7 +217,6 @@ func TestCorporationWealth_OnUpdate(t *testing.T) {
 			factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 				CorporationID: c.ID,
 				Section:       s,
-				CompletedAt:   time.Now(),
 			})
 		}
 		a.corporation.Store(c)
@@ -360,7 +354,6 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
-			CompletedAt:   time.Now(),
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
@@ -393,7 +386,6 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       app.SectionCorporationWalletBalances,
-			CompletedAt:   time.Now(),
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
@@ -411,6 +403,6 @@ func TestCorporationWealth_SectionChanged(t *testing.T) {
 }
 
 func TestCorporationHangarLabel(t *testing.T) {
-	assert.Equal(t, "Alpha [3]", corporationHangarLabel(app.Division3, "Alpha"))
-	assert.Equal(t, "1st Division [1]", corporationHangarLabel(app.Division1, ""))
+	assert.Equal(t, "[3] Alpha", corporationHangarLabel(app.Division3, "Alpha"))
+	assert.Equal(t, "[1] 1st Division", corporationHangarLabel(app.Division1, ""))
 }

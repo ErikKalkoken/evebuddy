@@ -43,7 +43,7 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{marketTransactionActivityBuy}))
 				a.filterChip.SetSelected(map[string]string{walletTransactionFilterActivity: marketTransactionActivityBuy})
 			} else {
-				a.selectActivity.SetSelected(marketTransactionActivityBuy)
+				a.activitySelect.SetSelected(marketTransactionActivityBuy)
 			}
 
 			switchCharacter(t, u)
@@ -53,13 +53,13 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 		})
 		t.Run(fmt.Sprintf("wallet transactions of corporation mobile=%v", isMobile), func(t *testing.T) {
 			u := newUI(t, isMobile)
-			a := NewCorporationWalletTransactions(u, app.Division1)
+			a := NewCorporationWalletTransactions(u)
 			a.searchEntry.SetText("trit")
 			if isMobile {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoice(walletTransactionFilterActivity, []string{marketTransactionActivityBuy}))
 				a.filterChip.SetSelected(map[string]string{walletTransactionFilterActivity: marketTransactionActivityBuy})
 			} else {
-				a.selectActivity.SetSelected(marketTransactionActivityBuy)
+				a.activitySelect.SetSelected(marketTransactionActivityBuy)
 			}
 
 			switchCorporation(t, u)
@@ -141,32 +141,12 @@ func TestResetFiltersOnSwitch(t *testing.T) {
 				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
 				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
 			} else {
-				a.selectType.SetOptions([]string{"Bounty"})
-				a.selectType.SetSelected("Bounty")
+				a.typeSelect.SetOptions([]string{"Bounty"})
+				a.typeSelect.SetSelected("Bounty")
 			}
 			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
 
 			switchCharacter(t, u)
-
-			assert.Empty(t, a.searchEntry.Text)
-			assert.Equal(t, walletJournalFilter{}, a.currentFilter())
-		})
-	}
-	for _, isMobile := range []bool{false, true} {
-		t.Run(fmt.Sprintf("wallet journal of corporation mobile=%v", isMobile), func(t *testing.T) {
-			u := newUI(t, isMobile)
-			a := NewCorporationWalletJournal(u, app.Division1)
-			a.searchEntry.SetText("bounty")
-			if isMobile {
-				a.filterChip.SetOptions(xwidget.NewFilterOptionMultiChoiceWithSearch(walletJournalFilterType, []string{"Bounty"}))
-				a.filterChip.SetSelected(map[string]string{walletJournalFilterType: "Bounty"})
-			} else {
-				a.selectType.SetOptions([]string{"Bounty"})
-				a.selectType.SetSelected("Bounty")
-			}
-			require.Equal(t, walletJournalFilter{refType: "Bounty"}, a.currentFilter())
-
-			switchCorporation(t, u)
 
 			assert.Empty(t, a.searchEntry.Text)
 			assert.Equal(t, walletJournalFilter{}, a.currentFilter())

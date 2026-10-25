@@ -78,7 +78,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CorporationID: c.ID,
 			Section:       section,
 			ErrorMessage:  "error",
-			CompletedAt:   time.Now().Add(-5 * time.Second),
+			CompletedAt:   optional.New(time.Now().Add(-5 * time.Second)),
 		})
 		var hasUpdated bool
 		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
@@ -109,7 +109,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CorporationID: c.ID,
 			Section:       section,
 			Data:          "old",
-			CompletedAt:   time.Now().Add(-5 * time.Second),
+			CompletedAt:   optional.New(time.Now().Add(-5 * time.Second)),
 		})
 		hasUpdated := false
 		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
@@ -180,7 +180,7 @@ func TestUpdateSectionIfChanged(t *testing.T) {
 			CorporationID: c.ID,
 			Section:       section,
 			Data:          "old",
-			CompletedAt:   time.Now().Add(-5 * time.Second),
+			CompletedAt:   optional.New(time.Now().Add(-5 * time.Second)),
 		})
 		var hasUpdated bool
 		arg := corporationSectionUpdateParams{
@@ -431,7 +431,7 @@ func TestRecordUpdateFailed(t *testing.T) {
 		old := factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
 			CorporationID: c.ID,
 			Section:       section,
-			CompletedAt:   completedAt,
+			CompletedAt:   optional.New(completedAt),
 			ErrorMessage:  "old error",
 		})
 		arg := corporationSectionUpdateParams{corporationID: c.ID, section: section}
