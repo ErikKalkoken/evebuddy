@@ -89,6 +89,10 @@ func TestListWalletBalances(t *testing.T) {
 		require.Contains(t, m, app.Division1)
 		assert.Equal(t, 123.45, m[1].Balance)
 		assert.Equal(t, "Master Wallet", m[1].Name)
+		require.Contains(t, m, app.Division2)
+		assert.Equal(t, c.ID, m[app.Division2].CorporationID)
+		assert.Equal(t, 0.0, m[app.Division2].Balance)
+		assert.Equal(t, "2nd Wallet Division", m[app.Division2].Name)
 	})
 	t.Run("returns empty when section not enabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

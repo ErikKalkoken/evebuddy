@@ -77,6 +77,9 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 
 // ListWalletBalances returns the wallet balances for all divisions.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int64) ([]app.CorporationWalletBalanceWithName, error) {
+	if corporationID == 0 {
+		return nil, app.ErrInvalid
+	}
 	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
 		return nil, err
@@ -84,17 +87,21 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 	if !enabled {
 		return []app.CorporationWalletBalanceWithName{}, nil
 	}
+	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
+	for _, d := range app.Divisions {
+		m[d] = app.CorporationWalletBalanceWithName{
+			CorporationID: corporationID,
+			Division:      d,
+		}
+	}
 	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
 	for _, o := range oo {
-		m[o.Division] = app.CorporationWalletBalanceWithName{
-			Balance:       o.Balance,
-			CorporationID: o.CorporationID,
-			Division:      o.Division,
-		}
+		x := m[o.Division]
+		x.Balance = o.Balance
+		m[o.Division] = x
 	}
 	for d, n := range s.ListWalletNames(ctx, corporationID) {
 		x := m[d]
