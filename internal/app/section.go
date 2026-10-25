@@ -274,7 +274,7 @@ var corporationSectionDivisions = xmaps.Merge(
 	xmaps.Invert(corporationSectionsWalletTransactions),
 )
 
-// Division returns the division ID this section is related to or 0 if it has none.
+// Division returns the division this section is related to or [app.DivisionNone] if it has none.
 func (cs CorporationSection) Division() Division {
 	return corporationSectionDivisions[cs]
 }

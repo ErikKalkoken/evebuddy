@@ -60,12 +60,12 @@ func TestWalletBalancesTotal(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    app.Division1.ID(),
+			Division:      app.Division1,
 			Balance:       12,
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    app.Division2.ID(),
+			Division:      app.Division2,
 			Balance:       24,
 		})
 		// when

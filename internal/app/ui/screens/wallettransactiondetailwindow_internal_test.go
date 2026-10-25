@@ -90,7 +90,7 @@ func TestShowCorporationWalletTransactionWindowAsync(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
 		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 			IsBuy:         true,
 		})
 		// when
@@ -112,7 +112,7 @@ func TestShowCorporationWalletTransactionWindowAsync(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletTransactions1)
 		o := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		// when
 		ShowCorporationWalletTransactionWindowAsync(u, c.ID, "Wayne Enterprises", app.Division1, o.TransactionID)

@@ -1587,8 +1587,8 @@ func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorpo
 		x := f.CreateCorporation()
 		arg.CorporationID = x.ID
 	}
-	if arg.DivisionID == 0 {
-		arg.DivisionID = 1
+	if arg.Division == 0 {
+		arg.Division = 1
 	}
 	if arg.Name == "" {
 		arg.Name = fake.Color()
@@ -1599,7 +1599,7 @@ func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorpo
 	}
 	x, err := f.st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		Division:      app.Division(arg.DivisionID),
+		Division:      app.Division(arg.Division),
 	})
 	if err != nil {
 		panic(err)
@@ -1822,8 +1822,8 @@ func (f Factory) CreateCorporationWalletBalance(args ...storage.UpdateOrCreateCo
 		x := f.CreateCorporation()
 		arg.CorporationID = x.ID
 	}
-	if arg.DivisionID == 0 {
-		arg.DivisionID = 1
+	if arg.Division == 0 {
+		arg.Division = 1
 	}
 	if arg.Balance == 0 {
 		arg.Balance = rand.Float64()*100_000_000_000 + rand.Float64()
@@ -1834,7 +1834,7 @@ func (f Factory) CreateCorporationWalletBalance(args ...storage.UpdateOrCreateCo
 	}
 	x, err := f.st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		Division:      app.Division(arg.DivisionID),
+		Division:      app.Division(arg.Division),
 	})
 	if err != nil {
 		panic(err)
@@ -1852,8 +1852,8 @@ func (f Factory) CreateCorporationWalletName(args ...storage.UpdateOrCreateCorpo
 		x := f.CreateCorporation()
 		arg.CorporationID = x.ID
 	}
-	if arg.DivisionID == 0 {
-		arg.DivisionID = 1
+	if arg.Division == 0 {
+		arg.Division = 1
 	}
 	if arg.Name == "" {
 		arg.Name = fake.Color()
@@ -1864,7 +1864,7 @@ func (f Factory) CreateCorporationWalletName(args ...storage.UpdateOrCreateCorpo
 	}
 	x, err := f.st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		Division:      app.Division(arg.DivisionID),
+		Division:      app.Division(arg.Division),
 	})
 	if err != nil {
 		panic(err)
@@ -1882,13 +1882,13 @@ func (f Factory) CreateCorporationWalletJournalEntry(args ...storage.CreateCorpo
 		x := f.CreateCorporation()
 		arg.CorporationID = x.ID
 	}
-	if arg.DivisionID == 0 {
-		arg.DivisionID = 1
+	if arg.Division == 0 {
+		arg.Division = 1
 	}
 	if arg.RefID == 0 {
 		arg.RefID = int64(f.calcNewIDWithParams("corporation_wallet_journal_entries", "id", map[string]any{
 			"corporation_id": arg.CorporationID,
-			"division_id":    arg.DivisionID,
+			"division_id":    arg.Division,
 		}))
 	}
 	if arg.Amount.IsEmpty() {
@@ -1930,7 +1930,7 @@ func (f Factory) CreateCorporationWalletJournalEntry(args ...storage.CreateCorpo
 	}
 	i, err := f.st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 		CorporationID: arg.CorporationID,
-		Division:      app.Division(arg.DivisionID),
+		Division:      app.Division(arg.Division),
 		RefID:         arg.RefID,
 	})
 	if err != nil {
@@ -1949,8 +1949,8 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 		x := f.CreateCorporation()
 		arg.CorporationID = x.ID
 	}
-	if arg.DivisionID == 0 {
-		arg.DivisionID = 1
+	if arg.Division == app.DivisionZero {
+		arg.Division = app.Division1
 	}
 	if arg.TransactionID == 0 {
 		arg.TransactionID = f.calcNewIDWithParams(
@@ -1958,7 +1958,7 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 			"transaction_id",
 			map[string]any{
 				"corporation_id": arg.CorporationID,
-				"division_id":    arg.DivisionID,
+				"division_id":    arg.Division,
 			},
 		)
 	}
@@ -1995,7 +1995,7 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 	}
 	x, err := f.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		Division:      arg.Division,
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {

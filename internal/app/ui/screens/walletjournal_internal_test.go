@@ -296,11 +296,11 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		a.corporation.Store(c)
 		// when
@@ -327,11 +327,11 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		a.corporation.Store(c)
 		a.divisionID.Store(app.Division2.ID())
@@ -438,7 +438,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -465,7 +465,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -492,7 +492,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		a.corporation.Store(c)
 		other := factory.CreateCorporation()
@@ -815,7 +815,7 @@ func TestWalletJournal_UpdateBalanceCorporation(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 			Balance:       1000,
 		})
 		a.corporation.Store(c)

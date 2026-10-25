@@ -7,10 +7,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestDivisionID(t *testing.T) {
-	xassert.Equal(t, int64(1), app.Division1.ID())
-}
-
 func TestDivisionDefaultWalletName(t *testing.T) {
 	xassert.Equal(t, "Master Wallet", app.Division1.DefaultWalletName())
 	xassert.Equal(t, "", app.DivisionZero.DefaultWalletName())

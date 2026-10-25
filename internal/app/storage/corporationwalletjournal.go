@@ -21,7 +21,7 @@ type CreateCorporationWalletJournalEntryParams struct {
 	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	DivisionID    int64
+	Division      app.Division
 	FirstPartyID  optional.Optional[int64]
 	RefID         int64
 	CorporationID int64
@@ -36,7 +36,7 @@ func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg 
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.Division == 0 || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, queries.CreateCorporationWalletJournalEntryParams{
@@ -46,7 +46,7 @@ func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg 
 		ContextIDType: arg.ContextIDType.ValueOrZero(),
 		Date:          arg.Date,
 		Description:   arg.Description,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    int64(arg.Division),
 		RefID:         arg.RefID,
 		CorporationID: arg.CorporationID,
 		RefType:       arg.RefType,
@@ -71,7 +71,7 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 	}
 	n, err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		DivisionID:    int64(d),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -97,7 +97,7 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 	}
 	r, err := st.qRO.GetCorporationWalletJournalEntry(ctx, queries.GetCorporationWalletJournalEntryParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 		RefID:         arg.RefID,
 	})
 	if err != nil {
@@ -116,7 +116,7 @@ type CorporationDivision struct {
 }
 
 func (cd CorporationDivision) IsInvalid() bool {
-	return cd.CorporationID <= 0 || cd.Division.ID() <= 0
+	return cd.CorporationID <= 0 || cd.Division == app.DivisionZero
 }
 
 func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg CorporationDivision) (set.Set[int64], error) {
@@ -128,7 +128,7 @@ func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg
 	}
 	ids, err := st.qRO.ListCorporationWalletJournalEntryRefIDs(ctx, queries.ListCorporationWalletJournalEntryRefIDsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -145,7 +145,7 @@ func (st *Storage) ListCorporationWalletJournalEntries(ctx context.Context, arg 
 	}
 	rows, err := st.qRO.ListCorporationWalletJournalEntries(ctx, queries.ListCorporationWalletJournalEntriesParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 	})
 	if err != nil {
 		return nil, wrapErr(err)

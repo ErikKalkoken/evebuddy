@@ -33,7 +33,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
-			DivisionID:    1,
+			Division:      1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),
@@ -76,7 +76,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			FirstPartyID:  optional.New(firstParty.ID),
 			Date:          date,
 			Description:   "bla bla",
-			DivisionID:    1,
+			Division:      1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),
@@ -114,15 +114,15 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		e2 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
@@ -141,15 +141,15 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		e2 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
@@ -177,7 +177,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
-			DivisionID:    1,
+			Division:      1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),

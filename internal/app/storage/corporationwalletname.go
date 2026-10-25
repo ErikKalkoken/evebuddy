@@ -17,7 +17,7 @@ func (st *Storage) GetCorporationWalletName(ctx context.Context, arg Corporation
 	}
 	o, err := st.qRO.GetCorporationWalletName(ctx, queries.GetCorporationWalletNameParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -45,7 +45,7 @@ func (st *Storage) ListCorporationWalletNames(ctx context.Context, corporationID
 
 type UpdateOrCreateCorporationWalletNameParams struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      app.Division
 	Name          string
 }
 
@@ -53,12 +53,12 @@ func (st *Storage) UpdateOrCreateCorporationWalletName(ctx context.Context, arg 
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateCorporationWalletName %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.DivisionID == 0 {
+	if arg.CorporationID == 0 || arg.Division == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationWalletName(ctx, queries.UpdateOrCreateCorporationWalletNameParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    int64(arg.Division),
 		Name:          arg.Name,
 	})
 	if err != nil {

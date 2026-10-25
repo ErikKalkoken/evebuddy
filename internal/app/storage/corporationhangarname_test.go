@@ -25,7 +25,7 @@ func TestCorporationHangarName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      3,
 			Name:          "Alpha",
 		})
 		// then
@@ -46,7 +46,7 @@ func TestCorporationHangarName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationHangarName(ctx, storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.Division.ID(),
+			Division:      x1.Division,
 			Name:          "Alpha",
 		})
 		// then
@@ -64,11 +64,11 @@ func TestCorporationHangarName(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		e2 := factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		factory.CreateCorporationHangarName()
 		// when

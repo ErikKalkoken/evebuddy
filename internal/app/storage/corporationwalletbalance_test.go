@@ -26,7 +26,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    3,
+			Division:      3,
 			Balance:       12.34,
 		})
 		// then
@@ -47,7 +47,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: x1.CorporationID,
-			DivisionID:    x1.Division.ID(),
+			Division:      x1.Division,
 			Balance:       12.34,
 		})
 		// then
@@ -65,11 +65,11 @@ func TestCorporationWalletBalance(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		e2 := factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			DivisionID:    2,
+			Division:      2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when

@@ -18,7 +18,7 @@ import (
 type CreateCorporationWalletTransactionParams struct {
 	ClientID      int64
 	Date          time.Time
-	DivisionID    int64
+	Division      app.Division
 	EveTypeID     int64
 	IsBuy         bool
 	JournalRefID  int64
@@ -33,13 +33,13 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletTransaction: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
+	if arg.CorporationID == 0 || arg.Division == 0 || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
 		ClientID:      arg.ClientID,
 		Date:          arg.Date,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    int64(arg.Division),
 		EveTypeID:     arg.EveTypeID,
 		IsBuy:         arg.IsBuy,
 		JournalRefID:  arg.JournalRefID,
@@ -64,7 +64,7 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 	}
 	n, err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		DivisionID:    int64(d),
 	})
 	if err != nil {
 		return wrapErr(err)
@@ -77,7 +77,7 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 
 type GetCorporationWalletTransactionParams struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      app.Division
 	TransactionID int64
 }
 
@@ -85,12 +85,12 @@ func (st *Storage) GetCorporationWalletTransaction(ctx context.Context, arg GetC
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationWalletTransaction: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.TransactionID == 0 {
+	if arg.CorporationID == 0 || arg.Division == 0 || arg.TransactionID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletTransaction(ctx, queries.GetCorporationWalletTransactionParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    int64(arg.Division),
 		TransactionID: arg.TransactionID,
 	})
 	if err != nil {
@@ -119,7 +119,7 @@ func (st *Storage) ListCorporationWalletTransactionIDs(ctx context.Context, arg 
 	}
 	ids, err := st.qRO.ListCorporationWalletTransactionIDs(ctx, queries.ListCorporationWalletTransactionIDsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -136,7 +136,7 @@ func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg Co
 	}
 	rows, err := st.qRO.ListCorporationWalletTransactions(ctx, queries.ListCorporationWalletTransactionsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.Division.ID(),
+		DivisionID:    int64(arg.Division),
 	})
 	if err != nil {
 		return nil, wrapErr(err)

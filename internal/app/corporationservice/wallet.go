@@ -151,7 +151,7 @@ func (s *CorporationService) updateWalletBalancesESI(ctx context.Context, arg co
 			for _, w := range wallets {
 				if err := s.st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 					CorporationID: arg.corporationID,
-					DivisionID:    w.Division,
+					Division:      app.Division(w.Division),
 					Balance:       w.Balance,
 				}); err != nil {
 					return false, err
@@ -201,12 +201,12 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
-			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.corporationID, arg.section.Division().ID())
+			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.corporationID, arg.section.Division())
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
 			entries, err := xgoesi.FetchPagesWithStop(
 				func(page int32) ([]esi.CorporationsCorporationIdWalletsDivisionJournalGetInner, *http.Response, error) {
-					return s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionJournal(ctx, arg.corporationID, arg.section.Division().ID()).Page(page).Execute()
+					return s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionJournal(ctx, arg.corporationID, int64(arg.section.Division())).Page(page).Execute()
 				}, func(x esi.CorporationsCorporationIdWalletsDivisionJournalGetInner) bool {
 					return checkLastID && x.Id <= lastID
 				})
@@ -274,7 +274,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 					ContextIDType: optional.FromPtr(o.ContextIdType),
 					Date:          o.Date,
 					Description:   o.Description,
-					DivisionID:    arg.section.Division().ID(),
+					Division:      arg.section.Division(),
 					FirstPartyID:  optional.FromPtr(o.FirstPartyId),
 					RefID:         o.Id,
 					CorporationID: arg.corporationID,
@@ -312,7 +312,7 @@ func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporati
 	}
 	return s.st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 		CorporationID: corporationID,
-		DivisionID:    d.ID(),
+		Division:      d,
 		TransactionID: transactionID,
 	})
 }
@@ -343,7 +343,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
-			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division().ID())
+			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division())
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
 			transactions, err := s.fetchWalletTransactionsESI(ctx, arg, lastID, checkLastID)
@@ -411,7 +411,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					ClientID:      o.ClientId,
 					CorporationID: arg.corporationID,
 					Date:          o.Date,
-					DivisionID:    arg.section.Division().ID(),
+					Division:      arg.section.Division(),
 					EveTypeID:     o.TypeId,
 					IsBuy:         o.IsBuy,
 					JournalRefID:  o.JournalRefId,
@@ -444,9 +444,9 @@ func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg
 		var oo []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
 		var err error
 		if fromID > 0 {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, arg.section.Division().ID()).FromId(fromID).Execute()
+			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).FromId(fromID).Execute()
 		} else {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, arg.section.Division().ID()).Execute()
+			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).Execute()
 		}
 		if err != nil {
 			return nil, err

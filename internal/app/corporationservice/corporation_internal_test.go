@@ -85,10 +85,10 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		httpmock.Reset()
 		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
 		c := factory.CreateCorporation()
-		for id := range 7 {
+		for _, d := range app.Divisions {
 			err := st.UpdateOrCreateCorporationWalletBalance(ctx, storage.UpdateOrCreateCorporationWalletBalanceParams{
 				CorporationID: c.ID,
-				DivisionID:    int64(id + 1),
+				Division:      d,
 			})
 			assert.NoError(t, err)
 		}
@@ -156,7 +156,7 @@ func TestListHangarNames(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 			Name:          "Awesome Hangar",
 		})
 		// when
