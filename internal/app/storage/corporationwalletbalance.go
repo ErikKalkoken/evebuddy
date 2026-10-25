@@ -35,7 +35,7 @@ func (st *Storage) GetCorporationWalletBalance(ctx context.Context, arg Corporat
 	}
 	o, err := st.qRO.GetCorporationWalletBalance(ctx, queries.GetCorporationWalletBalanceParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -88,7 +88,7 @@ func (st *Storage) UpdateOrCreateCorporationWalletBalance(ctx context.Context, a
 func corporationWalletBalanceFromDBModel(o queries.CorporationWalletBalance) *app.CorporationWalletBalance {
 	o2 := &app.CorporationWalletBalance{
 		CorporationID: o.CorporationID,
-		DivisionID:    o.DivisionID,
+		Division:      app.Division(o.DivisionID),
 		Balance:       o.Balance,
 	}
 	return o2

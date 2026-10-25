@@ -11,19 +11,19 @@ import (
 type CorporationWalletBalance struct {
 	Balance       float64
 	CorporationID int64
-	DivisionID    int64
+	Division      Division
 }
 
 type CorporationWalletBalanceWithName struct {
 	Balance       float64
 	CorporationID int64
-	DivisionID    int64
+	Division      Division
 	Name          string
 }
 
 type CorporationWalletName struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      Division
 	Name          string
 }
 
@@ -35,7 +35,7 @@ type CorporationWalletJournalEntry struct {
 	ContextIDType optional.Optional[string]
 	Date          time.Time
 	Description   string
-	DivisionID    int64
+	Division      Division
 	FirstParty    optional.Optional[*EveEntity]
 	ID            int64
 	Reason        optional.Optional[string]
@@ -54,7 +54,7 @@ type CorporationWalletTransaction struct {
 	CorporationID int64
 	Client        *EveEntity
 	Date          time.Time
-	DivisionID    int64 // TODO: Should that be a division type?
+	Division      Division
 	ID            int64
 	IsBuy         bool
 	JournalRefID  int64

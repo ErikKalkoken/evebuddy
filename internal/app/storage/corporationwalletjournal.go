@@ -84,7 +84,7 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 
 type GetCorporationWalletJournalEntryParams struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      app.Division
 	RefID         int64
 }
 
@@ -92,12 +92,12 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.DivisionID == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.Division == 0 || arg.RefID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletJournalEntry(ctx, queries.GetCorporationWalletJournalEntryParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 		RefID:         arg.RefID,
 	})
 	if err != nil {
@@ -112,11 +112,11 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 
 type CorporationDivision struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      app.Division
 }
 
 func (cd CorporationDivision) IsInvalid() bool {
-	return cd.CorporationID <= 0 || cd.DivisionID <= 0
+	return cd.CorporationID <= 0 || cd.Division.ID() <= 0
 }
 
 func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg CorporationDivision) (set.Set[int64], error) {
@@ -128,7 +128,7 @@ func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg
 	}
 	ids, err := st.qRO.ListCorporationWalletJournalEntryRefIDs(ctx, queries.ListCorporationWalletJournalEntryRefIDsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -145,7 +145,7 @@ func (st *Storage) ListCorporationWalletJournalEntries(ctx context.Context, arg 
 	}
 	rows, err := st.qRO.ListCorporationWalletJournalEntries(ctx, queries.ListCorporationWalletJournalEntriesParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -172,7 +172,7 @@ func corporationWalletJournalEntryFromDBModel(
 		ContextIDType: optional.FromZeroValue(o.ContextIDType),
 		Date:          o.Date,
 		Description:   o.Description,
-		DivisionID:    o.DivisionID,
+		Division:      app.Division(o.DivisionID),
 		FirstParty:    eveEntityFromNullableDBModel(firstParty),
 		ID:            o.ID,
 		RefID:         o.RefID,

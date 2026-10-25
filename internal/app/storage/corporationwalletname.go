@@ -17,7 +17,7 @@ func (st *Storage) GetCorporationWalletName(ctx context.Context, arg Corporation
 	}
 	o, err := st.qRO.GetCorporationWalletName(ctx, queries.GetCorporationWalletNameParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return nil, wrapErr(convertGetError(err))
@@ -70,7 +70,7 @@ func (st *Storage) UpdateOrCreateCorporationWalletName(ctx context.Context, arg 
 func corporationWalletNameFromDBModel(o queries.CorporationWalletName) *app.CorporationWalletName {
 	o2 := &app.CorporationWalletName{
 		CorporationID: o.CorporationID,
-		DivisionID:    o.DivisionID,
+		Division:      app.Division(o.DivisionID),
 		Name:          o.Name,
 	}
 	return o2

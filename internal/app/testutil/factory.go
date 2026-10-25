@@ -1599,7 +1599,7 @@ func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorpo
 	}
 	x, err := f.st.GetCorporationHangarName(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		Division:      app.Division(arg.DivisionID),
 	})
 	if err != nil {
 		panic(err)
@@ -1834,7 +1834,7 @@ func (f Factory) CreateCorporationWalletBalance(args ...storage.UpdateOrCreateCo
 	}
 	x, err := f.st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		Division:      app.Division(arg.DivisionID),
 	})
 	if err != nil {
 		panic(err)
@@ -1864,7 +1864,7 @@ func (f Factory) CreateCorporationWalletName(args ...storage.UpdateOrCreateCorpo
 	}
 	x, err := f.st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		Division:      app.Division(arg.DivisionID),
 	})
 	if err != nil {
 		panic(err)
@@ -1930,7 +1930,7 @@ func (f Factory) CreateCorporationWalletJournalEntry(args ...storage.CreateCorpo
 	}
 	i, err := f.st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		Division:      app.Division(arg.DivisionID),
 		RefID:         arg.RefID,
 	})
 	if err != nil {

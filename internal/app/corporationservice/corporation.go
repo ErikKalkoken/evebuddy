@@ -204,7 +204,7 @@ func (s *CorporationService) ListHangarNames(ctx context.Context, corporationID 
 		if o.Name == "" {
 			continue
 		}
-		m[app.Division(o.DivisionID)] = o.Name
+		m[app.Division(o.Division)] = o.Name
 	}
 	return m, nil
 }

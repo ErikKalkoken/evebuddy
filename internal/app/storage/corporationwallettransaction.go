@@ -119,7 +119,7 @@ func (st *Storage) ListCorporationWalletTransactionIDs(ctx context.Context, arg 
 	}
 	ids, err := st.qRO.ListCorporationWalletTransactionIDs(ctx, queries.ListCorporationWalletTransactionIDsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return set.Set[int64]{}, wrapErr(err)
@@ -136,7 +136,7 @@ func (st *Storage) ListCorporationWalletTransactions(ctx context.Context, arg Co
 	}
 	rows, err := st.qRO.ListCorporationWalletTransactions(ctx, queries.ListCorporationWalletTransactionsParams{
 		CorporationID: arg.CorporationID,
-		DivisionID:    arg.DivisionID,
+		DivisionID:    arg.Division.ID(),
 	})
 	if err != nil {
 		return nil, wrapErr(err)
@@ -197,7 +197,7 @@ func corporationWalletTransactionFromDBModel(
 	o2 := &app.CorporationWalletTransaction{
 		Client:       eveEntityFromDBModel(client),
 		Date:         o.Date,
-		DivisionID:   o.DivisionID,
+		Division:     app.Division(o.DivisionID),
 		Type:         eveTypeFromDBModel(et, eg, ec),
 		ID:           o.ID,
 		IsBuy:        o.IsBuy,

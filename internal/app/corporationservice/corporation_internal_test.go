@@ -61,21 +61,21 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		// wallets
 		wallets, err := st.ListCorporationWalletNames(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(wallets, func(x *app.CorporationWalletName) (int64, string) {
-			return x.DivisionID, x.Name
+		got := maps.Collect(xiter.MapSlice2(wallets, func(x *app.CorporationWalletName) (app.Division, string) {
+			return x.Division, x.Name
 		}))
-		want := map[int64]string{
-			1: "Rich Wallet 1",
+		want := map[app.Division]string{
+			app.Division1: "Rich Wallet 1",
 		}
 		xassert.Equal(t, want, got)
 		// hangar
 		hangars, err := st.ListCorporationHangarNames(ctx, c.ID)
 		require.NoError(t, err)
-		got2 := maps.Collect(xiter.MapSlice2(hangars, func(x *app.CorporationHangarName) (int64, string) {
-			return x.DivisionID, x.Name
+		got2 := maps.Collect(xiter.MapSlice2(hangars, func(x *app.CorporationHangarName) (app.Division, string) {
+			return x.Division, x.Name
 		}))
-		want2 := map[int64]string{
-			1: "Awesome Hangar 1",
+		want2 := map[app.Division]string{
+			app.Division1: "Awesome Hangar 1",
 		}
 		xassert.Equal(t, want2, got2)
 	})
@@ -129,17 +129,17 @@ func TestUpdateDivisionsESI(t *testing.T) {
 		assert.True(t, changed)
 		oo, err := st.ListCorporationWalletBalances(ctx, c.ID)
 		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (int64, float64) {
-			return x.DivisionID, x.Balance
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationWalletBalance) (app.Division, float64) {
+			return x.Division, x.Balance
 		}))
-		want := map[int64]float64{
-			1: 123.45,
-			2: 223.45,
-			3: 323.45,
-			4: 423.45,
-			5: 523.45,
-			6: 623.45,
-			7: 723.45,
+		want := map[app.Division]float64{
+			app.Division1: 123.45,
+			app.Division2: 223.45,
+			app.Division3: 323.45,
+			app.Division4: 423.45,
+			app.Division5: 523.45,
+			app.Division6: 623.45,
+			app.Division7: 723.45,
 		}
 		xassert.Equal(t, want, got)
 	})

@@ -100,7 +100,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// when
 		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		// then
 		require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// when
 		oo, err := st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			DivisionID:    1,
+			Division:      1,
 		})
 		// then
 		require.NoError(t, err)
@@ -170,18 +170,18 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		e1 := factory.CreateCorporationWalletTransaction()
 		e2 := factory.CreateCorporationWalletTransaction()
 		// when
-		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.DivisionID))
+		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.Division))
 		// then
 		require.NoError(t, err)
 		x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: e1.CorporationID,
-			DivisionID:    e1.DivisionID,
+			Division:      e1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 0, x1.Size())
 		x2, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: e2.CorporationID,
-			DivisionID:    e2.DivisionID,
+			Division:      e2.Division,
 		})
 		require.NoError(t, err)
 		assert.Greater(t, x2.Size(), 0)

@@ -79,7 +79,7 @@ func (c *Corporation) NameOrZero() string {
 
 type CorporationHangarName struct {
 	CorporationID int64
-	DivisionID    int64
+	Division      Division
 	Name          string
 }
 

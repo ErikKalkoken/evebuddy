@@ -263,7 +263,7 @@ func fetchCorporationWalletsData(ctx context.Context, u baseUI, corporationID in
 	}
 	data.balances = make(map[app.Division]float64)
 	for _, o := range oo {
-		data.balances[app.Division(o.DivisionID)] = o.Balance
+		data.balances[o.Division] = o.Balance
 		data.total = optional.SumNonEmpty(data.total, optional.New(o.Balance))
 	}
 	return data
