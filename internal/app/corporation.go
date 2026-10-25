@@ -14,12 +14,6 @@ const (
 	Division7
 )
 
-// TODO: Move ID resolution into storage layer
-
-func (d Division) ID() int64 {
-	return int64(d)
-}
-
 func (d Division) DefaultWalletName() string {
 	m := map[Division]string{
 		Division1: "Master Wallet",

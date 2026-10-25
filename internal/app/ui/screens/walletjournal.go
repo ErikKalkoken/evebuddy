@@ -30,6 +30,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/filedialog"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xatomic"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -133,7 +134,7 @@ type WalletJournal struct {
 	columnSorter     *xwidget.ColumnSorter[walletJournalRow]
 	corporation      atomic.Pointer[app.Corporation]
 	directionSelect  *kxwidget.FilterChipSelect // select chips only on desktop
-	divisionID       atomic.Int64
+	division         xatomic.Enum[app.Division]
 	divisionSelect   *DivisionSelect
 	errorLabel       *widget.Label
 	filterChip       *xwidget.FilterChipCompact // only on mobile
@@ -227,10 +228,10 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	a.moreButton.Importance = widget.LowImportance
 
 	a.divisionSelect = NewDivisionSelect(func(d app.Division) {
-		if a.divisionID.Load() == d.ID() {
+		if a.division.Load() == d {
 			return
 		}
-		a.divisionID.Store(d.ID())
+		a.division.Store(d)
 		a.updateRunBalance.Discard() // loads of the previous division must not show after the clear
 		a.updateRunJournal.Discard()
 		a.clearData()
@@ -243,7 +244,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 			a.updateRowsCorporation(ctx)
 		})
 	})
-	a.divisionID.Store(app.Division1.ID())
+	a.division.Store(app.Division1)
 
 	if a.u.IsMobile() {
 		a.main = a.makeDataList()
@@ -297,7 +298,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(
 			func(ctx context.Context, c *app.Corporation) {
 				a.corporation.Store(c)
-				a.divisionID.Store(app.Division1.ID())
+				a.division.Store(app.Division1)
 				fyne.Do(func() {
 					a.clearData()
 					a.divisionSelect.SetDivisionSilent(app.Division1)
@@ -320,7 +321,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
-			if arg.Section == app.CorporationSectionWalletJournal(app.Division(a.divisionID.Load())) {
+			if arg.Section == app.CorporationSectionWalletJournal(app.Division(a.division.Load())) {
 				a.updateRowsCorporation(ctx)
 			}
 			if arg.Section == app.SectionCorporationDivisions {
@@ -508,7 +509,7 @@ func (a *WalletJournal) exportAsCSV() {
 	var ids []int64
 	if a.forCorporation {
 		ids = append(ids, a.corporation.Load().IDOrZero())
-		ids = append(ids, int64(a.divisionID.Load()))
+		ids = append(ids, int64(a.division.Load()))
 	} else {
 		ids = append(ids, a.character.Load().IDOrZero())
 	}
@@ -626,7 +627,7 @@ func (a *WalletJournal) fetchBalanceCorporation(ctx context.Context, corporation
 	if err != nil || !hasData {
 		return optional.Optional[float64]{}, err
 	}
-	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, app.Division(a.divisionID.Load()))
+	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, app.Division(a.division.Load()))
 	if errors.Is(err, app.ErrNotFound) {
 		return optional.Optional[float64]{}, nil
 	}
@@ -653,7 +654,7 @@ func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
 		if c == nil {
 			return nil, false, false, nil
 		}
-		rows, hasData, err := a.fetchRowsCorporation(ctx, c, app.Division(a.divisionID.Load()))
+		rows, hasData, err := a.fetchRowsCorporation(ctx, c, app.Division(a.division.Load()))
 		return rows, true, hasData, err
 	})
 }

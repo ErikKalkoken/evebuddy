@@ -334,7 +334,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 			Division:      1,
 		})
 		a.corporation.Store(c)
-		a.divisionID.Store(app.Division2.ID())
+		a.division.Store(app.Division2)
 		// when
 		a.updateRowsCorporation(t.Context())
 		// then
@@ -749,7 +749,7 @@ func TestWalletJournal_UpdateBalanceCorporation(t *testing.T) {
 			Storage: st,
 		}))
 		a.corporation.Store(createCorporationWithWalletBalances(factory))
-		a.divisionID.Store(app.Division2.ID())
+		a.division.Store(app.Division2)
 		// when
 		a.updateBalanceCorporation(t.Context())
 		// then
