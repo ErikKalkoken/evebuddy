@@ -140,7 +140,7 @@ func TestShowCorporationWalletJournalEntryWindowAsync(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletJournal1)
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			FirstPartyID:  optional.New(factory.CreateEveEntityCharacter().ID),
 			SecondPartyID: optional.New(factory.CreateEveEntityCharacter().ID),
 			Tax:           optional.New(10.0),

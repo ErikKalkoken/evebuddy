@@ -384,7 +384,7 @@ func TestAsyncUpdates(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		// when
 		s.UpdateAfterPermissionChangeAsync(c.ID)

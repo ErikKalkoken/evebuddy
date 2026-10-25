@@ -33,7 +33,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
-			Division:      1,
+			Division:      app.Division1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),
@@ -46,7 +46,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		require.NoError(t, err)
 		i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			RefID:         4,
 		})
 		require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			FirstPartyID:  optional.New(firstParty.ID),
 			Date:          date,
 			Description:   "bla bla",
-			Division:      1,
+			Division:      app.Division1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),
@@ -91,7 +91,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		require.NoError(t, err)
 		i, err := st.GetCorporationWalletJournalEntry(ctx, storage.GetCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			RefID:         4,
 		})
 		require.NoError(t, err)
@@ -114,21 +114,21 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
 		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -141,21 +141,21 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletJournalEntry()
 		// when
 		oo, err := st.ListCorporationWalletJournalEntries(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -177,7 +177,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 			ContextIDType: optional.New("corporation"),
 			Date:          date,
 			Description:   "bla bla",
-			Division:      1,
+			Division:      app.Division1,
 			RefID:         4,
 			CorporationID: c.ID,
 			Reason:        optional.New("my reason"),
@@ -192,7 +192,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		require.NoError(t, err)
 		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		require.NoError(t, err)
 		want := set.Of[int64](4, 5)

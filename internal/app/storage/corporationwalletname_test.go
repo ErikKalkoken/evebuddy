@@ -25,14 +25,14 @@ func TestCorporationWalletName(t *testing.T) {
 		// when
 		err := st.UpdateOrCreateCorporationWalletName(ctx, storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			Division:      3,
+			Division:      app.Division3,
 			Name:          "Alpha",
 		})
 		// then
 		require.NoError(t, err)
 		x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      3,
+			Division:      app.Division3,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, c.ID, x.CorporationID)
@@ -64,11 +64,11 @@ func TestCorporationWalletName(t *testing.T) {
 		c := factory.CreateCorporation()
 		e1 := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		e2 := factory.CreateCorporationWalletName(storage.UpdateOrCreateCorporationWalletNameParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletName()
 		// when

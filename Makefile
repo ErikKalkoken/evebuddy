@@ -48,7 +48,7 @@ check_race:
 	GOMAXPROCS=4 GORACE="halt_on_error=1" go run -race --tags migrated_fynedo .
 
 check_race_mobile:
-	GORACE="halt_on_error=1" go run -race --tags migrated_fynedo,mobile . --dev
+	GOMAXPROCS=4 GORACE="halt_on_error=1" go run -race --tags migrated_fynedo,mobile . --dev
 
 build:
 	fyne build --tags migrated_fynedo
@@ -60,7 +60,7 @@ test:
 	GOMAXPROCS=4 go test ./... ;
 
 test_race:
-	GORACE="halt_on_error=1" go test -race --tags migrated_fynedo ./... ;
+	GOMAXPROCS=4 GORACE="halt_on_error=1" go test -race --tags migrated_fynedo ./... ;
 
 deadcode:
 	deadcode -test ./...

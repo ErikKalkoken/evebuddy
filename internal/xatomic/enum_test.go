@@ -36,24 +36,31 @@ func (s State) String() string {
 type plain uint8
 
 func TestZeroValue(t *testing.T) {
+	// given
 	var a xatomic.Enum[State]
-	assert.Equal(t, Idle, a.Load())
+	// when
+	got := a.Load()
+	// then
+	assert.Equal(t, Idle, got)
 }
 
 func TestStoreAndLoad(t *testing.T) {
+	// given
 	var a xatomic.Enum[State]
 	a.Store(Stopped)
-	assert.Equal(t, Stopped, a.Load())
+	// when
 	a.Store(Running)
+	// then
 	assert.Equal(t, Running, a.Load())
 }
 
 func TestSwap(t *testing.T) {
+	// given
 	var a xatomic.Enum[State]
 	a.Store(Idle)
-
+	// when
 	old := a.Swap(Running)
-
+	// then
 	assert.Equal(t, Idle, old)
 	assert.Equal(t, Running, a.Load())
 }
@@ -72,11 +79,12 @@ func TestCompareAndSwap(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			var a xatomic.Enum[State]
 			a.Store(tc.initial)
-
+			// when
 			swapped := a.CompareAndSwap(tc.old, tc.new)
-
+			// then
 			assert.Equal(t, tc.wantSwapped, swapped)
 			assert.Equal(t, tc.want, a.Load())
 		})
@@ -85,14 +93,22 @@ func TestCompareAndSwap(t *testing.T) {
 
 func TestString(t *testing.T) {
 	t.Run("uses Stringer of T", func(t *testing.T) {
+		// given
 		var a xatomic.Enum[State]
 		a.Store(Running)
-		assert.Equal(t, "Running", a.String())
+		// when
+		got := a.String()
+		// then
+		assert.Equal(t, "Running", got)
 	})
 	t.Run("falls back to number", func(t *testing.T) {
+		// given
 		var a xatomic.Enum[plain]
 		a.Store(plain(42))
-		assert.Equal(t, "42", a.String())
+		// when
+		got := a.String()
+		// then
+		assert.Equal(t, "42", got)
 	})
 }
 
@@ -111,7 +127,7 @@ func roundTrip[T constraints.Integer](t *testing.T, values ...T) {
 }
 
 func TestAllIntegerKindsAndExtremeValues(t *testing.T) {
-	t.Run("int", func(t *testing.T) { roundTrip[int](t, -1, 1, math.MinInt, math.MaxInt) })
+	t.Run("int", func(t *testing.T) { roundTrip(t, -1, 1, math.MinInt, math.MaxInt) })
 	t.Run("int8", func(t *testing.T) { roundTrip[int8](t, -1, math.MinInt8, math.MaxInt8) })
 	t.Run("int16", func(t *testing.T) { roundTrip[int16](t, -1, math.MinInt16, math.MaxInt16) })
 	t.Run("int32", func(t *testing.T) { roundTrip[int32](t, -1, math.MinInt32, math.MaxInt32) })
@@ -121,24 +137,38 @@ func TestAllIntegerKindsAndExtremeValues(t *testing.T) {
 	t.Run("uint16", func(t *testing.T) { roundTrip[uint16](t, 1, math.MaxUint16) })
 	t.Run("uint32", func(t *testing.T) { roundTrip[uint32](t, 1, math.MaxUint32) })
 	t.Run("uint64", func(t *testing.T) { roundTrip[uint64](t, 1, math.MaxUint64) })
-	t.Run("uintptr", func(t *testing.T) { roundTrip[uintptr](t, 1, ^uintptr(0)) })
+	t.Run("uintptr", func(t *testing.T) { roundTrip(t, 1, ^uintptr(0)) })
 	t.Run("named type", func(t *testing.T) { roundTrip(t, Idle, Stopped, State(-1)) })
 }
 
 func TestCompareAndSwapFailsForWrongNegativeOld(t *testing.T) {
 	// -1 is stored with all bits set; other edge values must not match it.
-	var a xatomic.Enum[int8]
-	a.Store(-1)
-	assert.False(t, a.CompareAndSwap(1, 0))
-	assert.False(t, a.CompareAndSwap(math.MinInt8, 0))
-	assert.Equal(t, int8(-1), a.Load())
+	cases := []struct {
+		name string
+		old  int8
+	}{
+		{"one", 1},
+		{"min", math.MinInt8},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			var a xatomic.Enum[int8]
+			a.Store(-1)
+			// when
+			swapped := a.CompareAndSwap(tc.old, 0)
+			// then
+			assert.False(t, swapped)
+			assert.Equal(t, int8(-1), a.Load())
+		})
+	}
 }
 
 func TestConcurrentCompareAndSwapOnlyOneWins(t *testing.T) {
+	// given
 	const goroutines = 100
 	var a xatomic.Enum[State]
 	a.Store(Idle)
-
 	var (
 		wg    sync.WaitGroup
 		mu    sync.Mutex
@@ -146,48 +176,46 @@ func TestConcurrentCompareAndSwapOnlyOneWins(t *testing.T) {
 		start = make(chan struct{})
 	)
 	for range goroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			<-start
 			if a.CompareAndSwap(Idle, Running) {
 				mu.Lock()
 				wins++
 				mu.Unlock()
 			}
-		}()
+		})
 	}
+	// when
 	close(start)
 	wg.Wait()
-
+	// then
 	assert.Equal(t, 1, wins)
 	assert.Equal(t, Running, a.Load())
 }
 
 func TestConcurrentStoreAndLoadNeverSeesInvalidValue(t *testing.T) {
+	// given
 	var a xatomic.Enum[State]
 	a.Store(Idle)
 	valid := map[State]bool{Idle: true, Running: true, Stopped: true}
-
+	// when
 	var wg sync.WaitGroup
 	for i := range 10 {
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range 1000 {
 				a.Store(State((i + j) % 3))
 			}
-		}()
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			for range 1000 {
 				v := a.Load()
+				// then
 				if !valid[v] {
 					assert.Failf(t, "invalid value", "got %d", v)
 					return
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -195,23 +223,22 @@ func TestConcurrentStoreAndLoadNeverSeesInvalidValue(t *testing.T) {
 func TestConcurrentSwapsPreserveAllValues(t *testing.T) {
 	// Each goroutine swaps in a unique value. Every value written must be
 	// observed exactly once, either as a returned old value or as the final value.
+	// given
 	const n = 1000
 	type id int32
 	var a xatomic.Enum[id]
 	a.Store(id(-1))
-
+	// when
 	results := make(chan id, n)
 	var wg sync.WaitGroup
 	for i := range n {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			results <- a.Swap(id(i))
-		}()
+		})
 	}
 	wg.Wait()
 	close(results)
-
+	// then
 	seen := make(map[id]int, n+1)
 	for v := range results {
 		seen[v]++

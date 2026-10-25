@@ -296,11 +296,11 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		a.corporation.Store(c)
 		// when
@@ -327,11 +327,11 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		e := factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		a.division.Store(app.Division2)
@@ -438,7 +438,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -465,7 +465,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		// when
@@ -492,7 +492,7 @@ func TestCorporationWalletJournal(t *testing.T) {
 		})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		a.corporation.Store(c)
 		other := factory.CreateCorporation()
@@ -815,7 +815,7 @@ func TestWalletJournal_UpdateBalanceCorporation(t *testing.T) {
 		})
 		factory.CreateCorporationWalletBalance(storage.UpdateOrCreateCorporationWalletBalanceParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			Balance:       1000,
 		})
 		a.corporation.Store(c)

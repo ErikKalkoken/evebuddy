@@ -32,7 +32,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		arg := storage.CreateCorporationWalletTransactionParams{
 			ClientID:      client.ID,
 			Date:          date,
-			Division:      1,
+			Division:      app.Division1,
 			EveTypeID:     eveType.ID,
 			IsBuy:         true,
 			JournalRefID:  99,
@@ -49,7 +49,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		require.NoError(t, err)
 		i, err := st.GetCorporationWalletTransaction(ctx, storage.GetCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			TransactionID: 42,
 		})
 		require.NoError(t, err)
@@ -86,21 +86,21 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
 		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -113,21 +113,21 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when
 		oo, err := st.ListCorporationWalletTransactions(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		// then
 		require.NoError(t, err)
@@ -143,15 +143,15 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		c := factory.CreateCorporation()
 		t1 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		t2 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 		})
 		t3 := factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{
 			CorporationID: c.ID,
-			Division:      2,
+			Division:      app.Division2,
 		})
 		factory.CreateCorporationWalletTransaction()
 		// when

@@ -156,7 +156,7 @@ func TestListHangarNames(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationHangarName(storage.UpdateOrCreateCorporationHangarNameParams{
 			CorporationID: c.ID,
-			Division:      1,
+			Division:      app.Division1,
 			Name:          "Awesome Hangar",
 		})
 		// when
