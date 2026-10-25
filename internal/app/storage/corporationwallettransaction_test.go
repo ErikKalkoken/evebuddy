@@ -170,7 +170,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		e1 := factory.CreateCorporationWalletTransaction()
 		e2 := factory.CreateCorporationWalletTransaction()
 		// when
-		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, app.Division(e1.Division))
+		err := st.DeleteCorporationWalletTransactions(ctx, e1.CorporationID, e1.Division)
 		// then
 		require.NoError(t, err)
 		x1, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{

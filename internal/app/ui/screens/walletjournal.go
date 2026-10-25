@@ -321,7 +321,7 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 			if a.corporation.Load().IDOrZero() != arg.CorporationID {
 				return
 			}
-			if arg.Section == app.CorporationSectionWalletJournal(app.Division(a.division.Load())) {
+			if arg.Section == app.CorporationSectionWalletJournal(a.division.Load()) {
 				a.updateRowsCorporation(ctx)
 			}
 			if arg.Section == app.SectionCorporationDivisions {
@@ -627,7 +627,7 @@ func (a *WalletJournal) fetchBalanceCorporation(ctx context.Context, corporation
 	if err != nil || !hasData {
 		return optional.Optional[float64]{}, err
 	}
-	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, app.Division(a.division.Load()))
+	balance, err := a.u.Corporation().GetWalletBalance(ctx, corporationID, a.division.Load())
 	if errors.Is(err, app.ErrNotFound) {
 		return optional.Optional[float64]{}, nil
 	}
@@ -654,7 +654,7 @@ func (a *WalletJournal) updateRowsCorporation(ctx context.Context) {
 		if c == nil {
 			return nil, false, false, nil
 		}
-		rows, hasData, err := a.fetchRowsCorporation(ctx, c, app.Division(a.division.Load()))
+		rows, hasData, err := a.fetchRowsCorporation(ctx, c, a.division.Load())
 		return rows, true, hasData, err
 	})
 }

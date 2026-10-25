@@ -71,7 +71,7 @@ func (st *Storage) UpdateOrCreateCorporationWalletBalance(ctx context.Context, a
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateCorporationWalletBalance %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationWalletBalance(ctx, queries.UpdateOrCreateCorporationWalletBalanceParams{

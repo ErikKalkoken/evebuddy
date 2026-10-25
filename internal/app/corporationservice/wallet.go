@@ -52,7 +52,7 @@ func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID 
 		if o.Name == "" {
 			continue
 		}
-		m[app.Division(o.Division)] = o.Name
+		m[o.Division] = o.Name
 	}
 	return m
 }
@@ -90,8 +90,7 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 	}
 	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
 	for _, o := range oo {
-		d := app.Division(o.Division)
-		m[d] = app.CorporationWalletBalanceWithName{
+		m[o.Division] = app.CorporationWalletBalanceWithName{
 			Balance:       o.Balance,
 			CorporationID: o.CorporationID,
 			Division:      o.Division,

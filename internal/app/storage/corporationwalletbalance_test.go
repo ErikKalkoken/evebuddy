@@ -54,7 +54,7 @@ func TestCorporationWalletBalance(t *testing.T) {
 		require.NoError(t, err)
 		x, err := st.GetCorporationWalletBalance(ctx, storage.CorporationDivision{
 			CorporationID: x1.CorporationID,
-			Division:      app.Division(x1.Division),
+			Division:      x1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, 12.34, x.Balance)

@@ -204,7 +204,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		e1 := factory.CreateCorporationWalletJournalEntry()
 		e2 := factory.CreateCorporationWalletJournalEntry()
 		// when
-		err := st.DeleteCorporationWalletJournal(ctx, e1.CorporationID, app.Division(e1.Division))
+		err := st.DeleteCorporationWalletJournal(ctx, e1.CorporationID, e1.Division)
 		// then
 		require.NoError(t, err)
 		x1, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{

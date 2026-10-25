@@ -53,7 +53,7 @@ func (st *Storage) UpdateOrCreateCorporationWalletName(ctx context.Context, arg 
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateCorporationWalletName %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCorporationWalletName(ctx, queries.UpdateOrCreateCorporationWalletNameParams{

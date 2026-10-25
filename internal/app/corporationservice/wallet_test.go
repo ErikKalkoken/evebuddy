@@ -28,7 +28,7 @@ func TestGetWalletBalance(t *testing.T) {
 			CorporationID: c.ID,
 		})
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
-		got, err := s.GetWalletBalance(ctx, b.CorporationID, app.Division(b.Division))
+		got, err := s.GetWalletBalance(ctx, b.CorporationID, b.Division)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, b.Balance, got)

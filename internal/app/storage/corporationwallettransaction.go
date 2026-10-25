@@ -33,7 +33,7 @@ func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg C
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletTransaction: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
@@ -85,7 +85,7 @@ func (st *Storage) GetCorporationWalletTransaction(ctx context.Context, arg GetC
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationWalletTransaction: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 || arg.TransactionID == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.TransactionID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletTransaction(ctx, queries.GetCorporationWalletTransactionParams{

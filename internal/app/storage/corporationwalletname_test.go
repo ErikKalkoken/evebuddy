@@ -53,7 +53,7 @@ func TestCorporationWalletName(t *testing.T) {
 		require.NoError(t, err)
 		x, err := st.GetCorporationWalletName(ctx, storage.CorporationDivision{
 			CorporationID: x1.CorporationID,
-			Division:      app.Division(x1.Division),
+			Division:      x1.Division,
 		})
 		require.NoError(t, err)
 		xassert.Equal(t, "Alpha", x.Name)

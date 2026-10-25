@@ -36,7 +36,7 @@ func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg 
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, queries.CreateCorporationWalletJournalEntryParams{
@@ -92,7 +92,7 @@ func (st *Storage) GetCorporationWalletJournalEntry(ctx context.Context, arg Get
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
-	if arg.CorporationID == 0 || arg.Division == 0 || arg.RefID == 0 {
+	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.RefID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
 	r, err := st.qRO.GetCorporationWalletJournalEntry(ctx, queries.GetCorporationWalletJournalEntryParams{
