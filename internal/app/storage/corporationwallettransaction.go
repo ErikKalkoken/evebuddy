@@ -59,7 +59,7 @@ func (st *Storage) DeleteCorporationWalletTransactions(ctx context.Context, corp
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationWalletTransactions: %d %d %w", corporationID, d, err)
 	}
-	if corporationID == 0 {
+	if corporationID == 0 || d == app.DivisionZero {
 		return wrapErr(app.ErrInvalid)
 	}
 	n, err := st.qRW.DeleteCorporationWalletTransactions(ctx, queries.DeleteCorporationWalletTransactionsParams{

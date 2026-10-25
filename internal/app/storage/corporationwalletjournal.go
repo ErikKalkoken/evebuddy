@@ -66,7 +66,7 @@ func (st *Storage) DeleteCorporationWalletJournal(ctx context.Context, corporati
 	wrapErr := func(err error) error {
 		return fmt.Errorf("DeleteCorporationWalletJournalEntries: %d %d: %w", corporationID, d, err)
 	}
-	if corporationID == 0 {
+	if corporationID == 0 || d == app.DivisionZero {
 		return wrapErr(app.ErrInvalid)
 	}
 	n, err := st.qRW.DeleteCorporationWalletJournalEntries(ctx, queries.DeleteCorporationWalletJournalEntriesParams{

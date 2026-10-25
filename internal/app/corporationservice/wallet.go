@@ -32,19 +32,14 @@ func (s *CorporationService) GetWalletName(ctx context.Context, corporationID in
 }
 
 func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID int64) map[app.Division]string {
-	m := map[app.Division]string{
-		app.Division1: "Master Wallet",
-		app.Division2: "2nd Wallet Division",
-		app.Division3: "3rd Wallet Division",
-		app.Division4: "4th Wallet Division",
-		app.Division5: "5th Wallet Division",
-		app.Division6: "6th Wallet Division",
-		app.Division7: "7th Wallet Division",
+	m := make(map[app.Division]string)
+	for _, d := range app.Divisions {
+		m[d] = d.DefaultWalletName()
 	}
 	oo, err := s.st.ListCorporationWalletNames(ctx, corporationID)
 	if err != nil {
 		if ctx.Err() == nil {
-			slog.Error("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
+			slog.Warn("Failed to fetch wallet names. Falling back to defaults.", "corporationID", corporationID, "error", err)
 		}
 		return m
 	}
@@ -77,9 +72,6 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 
 // ListWalletBalances returns the wallet balances for all divisions.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int64) ([]app.CorporationWalletBalanceWithName, error) {
-	if corporationID == 0 {
-		return nil, app.ErrInvalid
-	}
 	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
 		return nil, err

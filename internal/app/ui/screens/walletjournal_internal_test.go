@@ -918,7 +918,7 @@ func TestDivisionSelect(t *testing.T) {
 		// when
 		w.SetDivisionSilent(app.Division2)
 		// then
-		xassert.Equal(t, "[2] 2nd Wallet", w.Selected)
+		xassert.Equal(t, "[2] 2nd Wallet Division", w.Selected)
 		assert.Empty(t, got)
 	})
 	t.Run("keeps division selected by user when names are set", func(t *testing.T) {

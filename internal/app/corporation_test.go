@@ -17,6 +17,7 @@ func TestDivisionDefaultHangarName(t *testing.T) {
 	xassert.Equal(t, "7th Division", app.Division7.DefaultHangarName())
 	xassert.Equal(t, "", app.DivisionZero.DefaultHangarName())
 }
+
 func TestCorporation_IDorZero(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var c *app.Corporation

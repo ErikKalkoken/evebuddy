@@ -1888,7 +1888,7 @@ func (f Factory) CreateCorporationWalletJournalEntry(args ...storage.CreateCorpo
 	if arg.RefID == 0 {
 		arg.RefID = int64(f.calcNewIDWithParams("corporation_wallet_journal_entries", "id", map[string]any{
 			"corporation_id": arg.CorporationID,
-			"division_id":    arg.Division,
+			"division_id":    int64(arg.Division),
 		}))
 	}
 	if arg.Amount.IsEmpty() {
@@ -1958,7 +1958,7 @@ func (f Factory) CreateCorporationWalletTransaction(args ...storage.CreateCorpor
 			"transaction_id",
 			map[string]any{
 				"corporation_id": arg.CorporationID,
-				"division_id":    arg.Division,
+				"division_id":    int64(arg.Division),
 			},
 		)
 	}

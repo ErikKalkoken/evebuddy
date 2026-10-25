@@ -17,12 +17,12 @@ const (
 func (d Division) DefaultWalletName() string {
 	m := map[Division]string{
 		Division1: "Master Wallet",
-		Division2: "2nd Wallet",
-		Division3: "3rd Wallet",
-		Division4: "4th Wallet",
-		Division5: "5th Wallet",
-		Division6: "6th Wallet",
-		Division7: "7th Wallet",
+		Division2: "2nd Wallet Division",
+		Division3: "3rd Wallet Division",
+		Division4: "4th Wallet Division",
+		Division5: "5th Wallet Division",
+		Division6: "6th Wallet Division",
+		Division7: "7th Wallet Division",
 	}
 	return m[d]
 }
