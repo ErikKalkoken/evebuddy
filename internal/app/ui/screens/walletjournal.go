@@ -228,10 +228,9 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	a.moreButton.Importance = widget.LowImportance
 
 	a.divisionSelect = NewDivisionSelect(func(d app.Division) {
-		if a.division.Load() == d {
+		if a.division.Swap(d) == d {
 			return
 		}
-		a.division.Store(d)
 		a.updateRunBalance.Discard() // loads of the previous division must not show after the clear
 		a.updateRunJournal.Discard()
 		a.clearData()
@@ -297,9 +296,9 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 	if a.forCorporation {
 		a.u.Signals().CurrentCorporationExchanged.AddListener(
 			func(ctx context.Context, c *app.Corporation) {
-				a.corporation.Store(c)
-				a.division.Store(app.Division1)
-				fyne.Do(func() {
+				fyne.DoAndWait(func() {
+					a.corporation.Store(c)
+					a.division.Store(app.Division1)
 					a.clearData()
 					a.divisionSelect.SetDivisionSilent(app.Division1)
 					a.resetFilters()

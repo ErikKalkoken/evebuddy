@@ -1,11 +1,9 @@
 package corporationservice
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 	"slices"
 
@@ -71,6 +69,7 @@ func (s *CorporationService) GetWalletBalance(ctx context.Context, corporationID
 }
 
 // ListWalletBalances returns the wallet balances for all divisions.
+// It returns an empty slice if there is no data.
 func (s *CorporationService) ListWalletBalances(ctx context.Context, corporationID int64) ([]app.CorporationWalletBalanceWithName, error) {
 	enabled, err := s.PermittedSection(ctx, corporationID, app.SectionCorporationWalletBalances)
 	if err != nil {
@@ -79,30 +78,27 @@ func (s *CorporationService) ListWalletBalances(ctx context.Context, corporation
 	if !enabled {
 		return []app.CorporationWalletBalanceWithName{}, nil
 	}
-	m := make(map[app.Division]app.CorporationWalletBalanceWithName)
-	for _, d := range app.Divisions {
-		m[d] = app.CorporationWalletBalanceWithName{
-			CorporationID: corporationID,
-			Division:      d,
-		}
-	}
 	oo, err := s.st.ListCorporationWalletBalances(ctx, corporationID)
 	if err != nil {
 		return nil, err
 	}
+	if len(oo) == 0 {
+		return []app.CorporationWalletBalanceWithName{}, nil
+	}
+	balances := make(map[app.Division]float64)
 	for _, o := range oo {
-		x := m[o.Division]
-		x.Balance = o.Balance
-		m[o.Division] = x
+		balances[o.Division] = o.Balance
 	}
-	for d, n := range s.ListWalletNames(ctx, corporationID) {
-		x := m[d]
-		x.Name = n
-		m[d] = x
+	names := s.ListWalletNames(ctx, corporationID)
+	w := make([]app.CorporationWalletBalanceWithName, 0, len(app.Divisions))
+	for _, d := range app.Divisions {
+		w = append(w, app.CorporationWalletBalanceWithName{
+			Balance:       balances[d],
+			CorporationID: corporationID,
+			Division:      d,
+			Name:          names[d],
+		})
 	}
-	w := slices.SortedFunc(maps.Values(m), func(a, b app.CorporationWalletBalanceWithName) int {
-		return cmp.Compare(a.Division, b.Division)
-	})
 	return w, nil
 }
 

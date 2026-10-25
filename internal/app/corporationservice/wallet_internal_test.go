@@ -101,6 +101,17 @@ func TestListWalletBalances(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
+	t.Run("returns empty when no balances stored", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
+		// when
+		got, err := s.ListWalletBalances(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
 }
 
 func TestGetWalletJournalEntry(t *testing.T) {
