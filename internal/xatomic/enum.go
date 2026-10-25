@@ -4,17 +4,13 @@ package xatomic
 import (
 	"fmt"
 	"sync/atomic"
-)
 
-// Integer is any type whose underlying type is an integer.
-type Integer interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64 |
-		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
-}
+	"golang.org/x/exp/constraints"
+)
 
 // Enum is an atomic value of an integer-based type T.
 // The zero value holds T(0). Must not be copied after first use.
-type Enum[T Integer] struct {
+type Enum[T constraints.Integer] struct {
 	_ noCopy
 	v atomic.Uint64 // any integer round-trips losslessly through uint64
 }

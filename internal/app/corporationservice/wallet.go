@@ -30,10 +30,7 @@ func (s *CorporationService) GetWalletName(ctx context.Context, corporationID in
 }
 
 func (s *CorporationService) ListWalletNames(ctx context.Context, corporationID int64) map[app.Division]string {
-	m := make(map[app.Division]string)
-	for _, d := range app.Divisions {
-		m[d] = d.DefaultWalletName()
-	}
+	m := app.DefaultCorporationWalletNames()
 	oo, err := s.st.ListCorporationWalletNames(ctx, corporationID)
 	if err != nil {
 		if ctx.Err() == nil {

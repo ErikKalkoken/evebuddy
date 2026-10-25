@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/constraints"
 
 	"github.com/ErikKalkoken/evebuddy/internal/xatomic"
 )
@@ -96,7 +97,7 @@ func TestString(t *testing.T) {
 }
 
 // roundTrip checks that each value survives Store/Load, Swap and CompareAndSwap.
-func roundTrip[T xatomic.Integer](t *testing.T, values ...T) {
+func roundTrip[T constraints.Integer](t *testing.T, values ...T) {
 	t.Helper()
 	for _, v := range values {
 		var a xatomic.Enum[T]
