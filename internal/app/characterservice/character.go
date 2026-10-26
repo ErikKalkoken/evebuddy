@@ -34,9 +34,6 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int6
 	s.clearForecasts(characterID)
 	s.scs.DeleteCharacter(characterID)
 	slog.Info("Character deleted", "characterID", characterID)
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
-		return false, wrapErr(err)
-	}
 
 	// remove character's corporation if it becomes orphaned
 	orphans, err := s.st.ListOrphanedCorporationIDs(ctx)
@@ -52,9 +49,6 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int6
 	}
 	s.scs.DeleteCorporation(corporationID)
 	slog.Info("Corporation deleted", "corporationID", corporationID)
-	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-		return false, wrapErr(err)
-	}
 	return true, nil
 }
 

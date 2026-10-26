@@ -220,7 +220,7 @@ func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSumm
 	return calcSectionSummary(sc.ListCharacterSections(characterID))
 }
 
-// DeleteCharacter removes all cached section status for a character.
+// DeleteCharacter removes a character and all its cached section status.
 func (sc *StatusCache) DeleteCharacter(characterID int64) {
 	if sc == nil || characterID == 0 {
 		return
@@ -228,6 +228,12 @@ func (sc *StatusCache) DeleteCharacter(characterID int64) {
 	for _, section := range app.CharacterSections {
 		sc.sections.Delete(cacheKey{id: characterID, section: section.String()})
 	}
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.characters = slices.DeleteFunc(slices.Clone(sc.characters), func(x *app.EntityShort) bool {
+		return x.ID == characterID
+	})
+	delete(sc.charactersByID, characterID)
 }
 
 // SetCharacterSection updates a character section.
@@ -375,7 +381,7 @@ func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) status
 	return calcSectionSummary(sc.ListCorporationSections(corporationID))
 }
 
-// DeleteCorporation removes all cached section status for a corporation.
+// DeleteCorporation removes a corporation and all its cached section status.
 func (sc *StatusCache) DeleteCorporation(corporationID int64) {
 	if sc == nil || corporationID == 0 {
 		return
@@ -383,6 +389,12 @@ func (sc *StatusCache) DeleteCorporation(corporationID int64) {
 	for _, section := range app.CorporationSections {
 		sc.sections.Delete(cacheKey{id: corporationID, section: section.String()})
 	}
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.corporations = slices.DeleteFunc(slices.Clone(sc.corporations), func(x *app.EntityShort) bool {
+		return x.ID == corporationID
+	})
+	delete(sc.corporationsByID, corporationID)
 }
 
 func (sc *StatusCache) SetCorporationSection(o *app.CorporationSectionStatus) {

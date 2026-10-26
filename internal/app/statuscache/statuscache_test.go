@@ -574,6 +574,23 @@ func TestCharacter(t *testing.T) {
 		}
 		assert.Equal(t, []string{"Alice", "Bob", "Charlie"}, names)
 	})
+	t.Run("delete character removes it from the list", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		err := sc.UpdateCharacters(ctx, st)
+		require.NoError(t, err)
+		// when
+		sc.DeleteCharacter(c1.ID)
+		// then
+		got := sc.ListCharacters()
+		assert.Len(t, got, 1)
+		xassert.Equal(t, c2.ID, got[0].ID)
+		xassert.Equal(t, set.Of(c2.ID), sc.ListCharacterIDs())
+		assert.Empty(t, sc.CharacterName(c1.ID))
+	})
 }
 
 func TestCorporations(t *testing.T) {
@@ -616,6 +633,22 @@ func TestCorporations(t *testing.T) {
 			names[i] = c.Name
 		}
 		assert.Equal(t, []string{"Alice Corp", "Bob Corp", "Charlie Corp"}, names)
+	})
+	t.Run("delete corporation removes it from the list", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		sc.Clear()
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		err := sc.UpdateCorporations(ctx, st)
+		require.NoError(t, err)
+		// when
+		sc.DeleteCorporation(c1.ID)
+		// then
+		got := sc.ListCorporations()
+		assert.Len(t, got, 1)
+		xassert.Equal(t, c2.ID, got[0].ID)
+		assert.Empty(t, sc.CorporationName(c1.ID))
 	})
 }
 
