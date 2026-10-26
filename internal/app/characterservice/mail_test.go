@@ -368,6 +368,24 @@ func TestCountMails(t *testing.T) {
 	})
 }
 
+func TestListMailRecipientsByPartialName(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	t.Run("returns matching mail recipients", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		factory.CreateEveEntity(app.EveEntity{Name: "Bruce System", Category: app.EveEntitySolarSystem})
+		// when
+		got, err := s.ListMailRecipientsByPartialName(t.Context(), c.ID, "Bruce")
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, []*app.EveEntity{e}, got)
+	})
+}
+
 func TestCountMailsUnread(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

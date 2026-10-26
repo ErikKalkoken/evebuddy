@@ -3,8 +3,10 @@ package mailer
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
@@ -24,6 +26,7 @@ func TestMain(m *testing.M) {
 	// Leftover goroutines from one test can render text concurrently with the next,
 	// which is not safe in Fyne's shared text shaper.
 	runAsync = func(f func()) { f() }
+	waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 	os.Exit(m.Run())
 }
 
@@ -60,6 +63,16 @@ func TestNewWindow(t *testing.T) {
 	t.Run("should return error when mail is missing for reply", func(t *testing.T) {
 		_, err := NewWindow(u, c, Reply, nil)
 		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+	t.Run("closing the window cancels the mailer context", func(t *testing.T) {
+		// given
+		w, err := NewWindow(u, c, New, nil)
+		require.NoError(t, err)
+		a := w.Content().(*mailer)
+		// when
+		w.Close()
+		// then
+		assert.Error(t, a.ctx.Err())
 	})
 	t.Run("can render window", func(t *testing.T) {
 		// given
@@ -351,23 +364,40 @@ func TestAddDialog(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	t.Run("does not search with less than 3 characters", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
+	t.Run("shows empty footer before first search", func(t *testing.T) {
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
-		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		w := test.NewWindow(nil)
-		defer w.Close()
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, w)
-		// when
-		d.searchEntry.SetText("Br")
-		// then
-		assert.Empty(t, d.results)
-		assert.Zero(t, httpmock.GetTotalCallCount())
+		d := newAddDialog(t.Context(), u, 42, func(_ *app.EveEntity) {})
+		assert.Empty(t, d.statusLabel.Text)
+		assert.False(t, d.spinner.Visible())
+	})
+	t.Run("does not search with less than 3 characters", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			search string
+		}{
+			{"short", "Br"},
+			{"short with spaces", "  Br  "},
+			{"short with multi-byte characters", "äb"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				httpmock.Reset()
+				u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+				c := factory.CreateCharacter()
+				factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+				factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+				httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+				d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+				// when
+				d.searchEntry.SetText(tc.search)
+				// then
+				assert.Empty(t, d.results)
+				assert.Zero(t, httpmock.GetTotalCallCount())
+				assert.Empty(t, d.statusLabel.Text)
+			})
+		}
 	})
 	t.Run("clears results when search becomes too short", func(t *testing.T) {
 		// given
@@ -378,15 +408,14 @@ func TestAddDialog(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		w := test.NewWindow(nil)
-		defer w.Close()
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, w)
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
 		d.searchEntry.SetText("Bru")
 		require.Len(t, d.results, 1)
 		// when
 		d.searchEntry.SetText("Br")
 		// then
 		assert.Empty(t, d.results)
+		assert.Empty(t, d.statusLabel.Text)
 	})
 	t.Run("shows known entities matching the search", func(t *testing.T) {
 		// given
@@ -397,15 +426,18 @@ func TestAddDialog(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Clark Kent"})
-		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		w := test.NewWindow(nil)
-		defer w.Close()
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, w)
+		var searched string
+		httpmock.RegisterResponder("GET", searchURL, func(req *http.Request) (*http.Response, error) {
+			searched = req.URL.Query().Get("search")
+			return httpmock.NewJsonResponse(200, map[string][]int64{})
+		})
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
 		// when
-		d.searchEntry.SetText("Bru")
+		d.searchEntry.SetText(" Bru ")
 		// then
 		assert.Equal(t, []*app.EveEntity{e}, d.results)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.Equal(t, "Bru", searched)
 	})
 	t.Run("shows entities newly found on ESI", func(t *testing.T) {
 		// given
@@ -426,9 +458,7 @@ func TestAddDialog(t *testing.T) {
 				"category": "character",
 			}}),
 		)
-		w := test.NewWindow(nil)
-		defer w.Close()
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, w)
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
 		// when
 		d.searchEntry.SetText("Bru")
 		// then
@@ -444,13 +474,190 @@ func TestAddDialog(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(400, `{"error":"bad request"}`))
-		w := test.NewWindow(nil)
-		defer w.Close()
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, w)
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
 		// when
 		d.searchEntry.SetText("Bru")
 		// then
-		assert.Contains(t, dialogTexts(t, w), "Search for 'Bru' failed")
+		assert.Equal(t, "ERROR: undefined response type", d.statusLabel.Text)
+		assert.Equal(t, widget.DangerImportance, d.statusLabel.Importance)
+		assert.Empty(t, d.results)
+		assert.False(t, d.spinner.Visible())
+	})
+	t.Run("shows error when ESI search times out", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder("GET", searchURL, func(r *http.Request) (*http.Response, error) {
+			<-r.Context().Done()
+			return nil, r.Context().Err()
+		})
+		searchTimeout = time.Millisecond
+		t.Cleanup(func() { searchTimeout = 15 * time.Second })
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		// when
+		d.searchEntry.SetText("Bru")
+		// then
+		assert.Equal(t, "ERROR: search timed out", d.statusLabel.Text)
+		assert.Equal(t, widget.DangerImportance, d.statusLabel.Importance)
+	})
+	t.Run("shows only valid recipients", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		factory.CreateEveEntity(app.EveEntity{Name: "Bruce System", Category: app.EveEntitySolarSystem})
+		ml1 := factory.CreateEveEntity(app.EveEntity{Name: "Bruce's Friends", Category: app.EveEntityMailList})
+		factory.CreateCharacterMailList(c.ID, *ml1)
+		ml2 := factory.CreateEveEntity(app.EveEntity{Name: "Bruce's Foes", Category: app.EveEntityMailList})
+		factory.CreateCharacterMailList(0, *ml2) // list of another character
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		// when
+		d.searchEntry.SetText("Bru")
+		// then
+		assert.Equal(t, []*app.EveEntity{e, ml1}, d.results)
+	})
+	t.Run("shows message when nothing found", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		// when
+		d.searchEntry.SetText("Bru")
+		// then
+		assert.Empty(t, d.results)
+		assert.Equal(t, "No results", d.statusLabel.Text)
+		assert.Equal(t, widget.MediumImportance, d.statusLabel.Importance)
+		assert.False(t, d.spinner.Visible())
+	})
+	t.Run("shows spinner while searching", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		var jobs []func()
+		runAsync = func(f func()) { jobs = append(jobs, f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		// when
+		d.searchEntry.SetText("Bru")
+		// then
+		assert.True(t, d.spinner.Visible())
+		assert.Equal(t, "Searching...", d.statusLabel.Text)
+		require.Len(t, jobs, 1)
+		jobs[0]()
+		assert.False(t, d.spinner.Visible())
+		assert.Len(t, d.results, 1)
+		assert.Equal(t, "1 result", d.statusLabel.Text)
+	})
+	t.Run("shows results of newer search when older search finishes last", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Clark Kent"})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		var jobs []func()
+		runAsync = func(f func()) { jobs = append(jobs, f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		d.searchEntry.SetText("Bru")
+		d.searchEntry.SetText("Cla")
+		require.Len(t, jobs, 2)
+		jobs[1]()
+		// when
+		jobs[0]()
+		// then
+		assert.Equal(t, []*app.EveEntity{e}, d.results)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+	})
+	t.Run("shortening the search cancels the running search", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
+		var jobs []func()
+		runAsync = func(f func()) { jobs = append(jobs, f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		d.searchEntry.SetText("Bru")
+		d.searchEntry.SetText("Br")
+		require.Len(t, jobs, 1)
+		// when
+		jobs[0]()
+		// then
+		assert.Empty(t, d.results)
+		assert.False(t, d.spinner.Visible())
+		assert.Empty(t, d.statusLabel.Text)
+		assert.Zero(t, httpmock.GetTotalCallCount())
+	})
+	t.Run("closing the dialog cancels the running search", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(400, `{"error":"bad request"}`))
+		var jobs []func()
+		runAsync = func(f func()) { jobs = append(jobs, f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
+		d.searchEntry.SetText("Bru")
+		require.Len(t, jobs, 1)
+		test.Tap(d.cancelButton)
+		// when
+		jobs[0]()
+		// then
+		assert.Empty(t, d.results)
+		assert.Zero(t, httpmock.GetTotalCallCount())
+		assert.NotContains(t, d.statusLabel.Text, "ERROR")
+	})
+	t.Run("canceling the parent context cancels the running search", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
+		httpmock.RegisterResponder("GET", searchURL, httpmock.NewStringResponder(400, `{"error":"bad request"}`))
+		var jobs []func()
+		runAsync = func(f func()) { jobs = append(jobs, f) }
+		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		ctx, cancel := context.WithCancel(t.Context())
+		d := newAddDialog(ctx, u, c.ID, func(_ *app.EveEntity) {})
+		d.searchEntry.SetText("Bru")
+		require.Len(t, jobs, 1)
+		cancel()
+		// when
+		jobs[0]()
+		// then
+		assert.Empty(t, d.results)
+		assert.Zero(t, httpmock.GetTotalCallCount())
+		assert.NotContains(t, d.statusLabel.Text, "ERROR")
 	})
 	t.Run("selecting a result reports it and closes the dialog", func(t *testing.T) {
 		// given
@@ -461,12 +668,10 @@ func TestAddDialog(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		w := test.NewWindow(nil)
-		defer w.Close()
 		var selected []*app.EveEntity
-		d := newAddDialog(u, c.ID, func(ee *app.EveEntity) {
+		d := newAddDialog(t.Context(), u, c.ID, func(ee *app.EveEntity) {
 			selected = append(selected, ee)
-		}, w)
+		})
 		var isClosed bool
 		d.onClose = func() { isClosed = true }
 		d.searchEntry.SetText("Bru")
@@ -479,12 +684,10 @@ func TestAddDialog(t *testing.T) {
 	t.Run("cancel closes the dialog", func(t *testing.T) {
 		// given
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), IsOnline: true, Storage: st})
-		w := test.NewWindow(nil)
-		defer w.Close()
 		var selected []*app.EveEntity
-		d := newAddDialog(u, 42, func(ee *app.EveEntity) {
+		d := newAddDialog(t.Context(), u, 42, func(ee *app.EveEntity) {
 			selected = append(selected, ee)
-		}, w)
+		})
 		var isClosed bool
 		d.onClose = func() { isClosed = true }
 		// when
@@ -502,7 +705,7 @@ func TestAddDialog(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Bruce Wayne"})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
-		d := newAddDialog(u, c.ID, func(_ *app.EveEntity) {}, test.NewWindow(nil))
+		d := newAddDialog(t.Context(), u, c.ID, func(_ *app.EveEntity) {})
 		w := test.NewWindow(d)
 		defer w.Close()
 		w.Resize(fyne.NewSize(400, 300))

@@ -35,13 +35,24 @@ SELECT
 FROM
     eve_entities;
 
--- name: ListEveEntitiesByPartialName :many
+-- name: ListEveEntitiesForMailRecipients :many
 SELECT
     *
 FROM
     eve_entities
 WHERE
-    name LIKE ?
+    (name LIKE ? ESCAPE '!') -- sqlc can't parse ESCAPE without parentheses
+    AND (
+        category IN (sqlc.slice('categories'))
+        OR id IN (
+            SELECT
+                eve_entity_id
+            FROM
+                character_mail_lists
+            WHERE
+                character_id = ?
+        )
+    )
 ORDER BY
     name COLLATE NOCASE;
 

@@ -123,24 +123,6 @@ func TestEveEntity(t *testing.T) {
 		_, err := st.GetEveEntity(ctx, 99)
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
-	t.Run("should return objs with matching names in order", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Y_alpha2"})
-		factory.CreateEveEntityAlliance(app.EveEntity{Name: "X_alpha1"})
-		factory.CreateEveEntityCharacter(app.EveEntity{Name: "charlie"})
-		factory.CreateEveEntityCharacter(app.EveEntity{Name: "other"})
-		// when
-		ee, err := st.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
-		// then
-		require.NoError(t, err)
-		var got []string
-		for _, e := range ee {
-			got = append(got, e.Name)
-		}
-		want := []string{"X_alpha1", "Y_alpha2"}
-		xassert.Equal(t, want, got)
-	})
 	t.Run("should not store with invalid ID 1", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -347,6 +329,106 @@ func TestListEveEntities(t *testing.T) {
 		})
 		want := []int64{o1.ID, o2.ID}
 		xassert.Equal(t, want, ids)
+	})
+}
+
+func TestListEveEntitiesForMailRecipients(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return valid recipients with matching names in order", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Y_alpha2"})
+		factory.CreateEveEntityAlliance(app.EveEntity{Name: "X_alpha1"})
+		factory.CreateEveEntityCorporation(app.EveEntity{Name: "Z_alpha3"})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "other"})
+		// when
+		ee, err := st.ListEveEntitiesForMailRecipients(ctx, c.ID, "ALPHA")
+		// then
+		require.NoError(t, err)
+		got := xslices.Map(ee, func(x *app.EveEntity) string {
+			return x.Name
+		})
+		xassert.Equal(t, []string{"X_alpha1", "Y_alpha2", "Z_alpha3"}, got)
+	})
+	t.Run("should not return other categories", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		for _, category := range []app.EveEntityCategory{
+			app.EveEntityConstellation,
+			app.EveEntityFaction,
+			app.EveEntityInventoryType,
+			app.EveEntityRegion,
+			app.EveEntitySolarSystem,
+			app.EveEntityStation,
+			app.EveEntityUnknown,
+		} {
+			factory.CreateEveEntity(app.EveEntity{Name: "alpha", Category: category})
+		}
+		// when
+		ee, err := st.ListEveEntitiesForMailRecipients(ctx, c.ID, "alpha")
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, ee)
+	})
+	t.Run("should return only mailing lists of the character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		ml1 := factory.CreateEveEntity(app.EveEntity{Name: "alpha list 1", Category: app.EveEntityMailList})
+		factory.CreateCharacterMailList(c.ID, *ml1)
+		ml2 := factory.CreateEveEntity(app.EveEntity{Name: "alpha list 2", Category: app.EveEntityMailList})
+		factory.CreateCharacterMailList(0, *ml2) // list of another character
+		factory.CreateEveEntity(app.EveEntity{Name: "alpha list 3", Category: app.EveEntityMailList})
+		// when
+		ee, err := st.ListEveEntitiesForMailRecipients(ctx, c.ID, "alpha")
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveEntity{ml1}, ee)
+	})
+	t.Run("should not return NPCs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 3_000_001, Name: "alpha agent"})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1_000_001, Name: "alpha navy"})
+		e := factory.CreateEveEntityCharacter(app.EveEntity{Name: "alpha player"})
+		// when
+		ee, err := st.ListEveEntitiesForMailRecipients(ctx, c.ID, "alpha")
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveEntity{e}, ee)
+	})
+	t.Run("should match wildcard characters literally", func(t *testing.T) {
+		cases := []struct {
+			partial string
+			want    string
+		}{
+			{"_", "a_c"},
+			{"%", "a%c"},
+			{"!", "a!c"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.partial, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCharacter()
+				for _, name := range []string{"a_c", "a%c", "a!c", "abc"} {
+					factory.CreateEveEntityCharacter(app.EveEntity{Name: name})
+				}
+				// when
+				ee, err := st.ListEveEntitiesForMailRecipients(ctx, c.ID, tc.partial)
+				// then
+				require.NoError(t, err)
+				got := xslices.Map(ee, func(x *app.EveEntity) string {
+					return x.Name
+				})
+				xassert.Equal(t, []string{tc.want}, got)
+			})
+		}
 	})
 }
 

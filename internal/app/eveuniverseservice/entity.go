@@ -193,10 +193,6 @@ func (s *EVEUniverseService) resolveIDsFromESI(ctx context.Context, ids []int64)
 	return ee, []int64{}, nil
 }
 
-func (s *EVEUniverseService) ListEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
-	return s.st.ListEveEntitiesByPartialName(ctx, partial)
-}
-
 // ListExistingEntitiesForIDs returns EveEntities in the same order as ids.
 // IDs without an EveEntity in the database are skipped.
 func (s *EVEUniverseService) ListExistingEntitiesForIDs(ctx context.Context, ids []int64) ([]*app.EveEntity, error) {

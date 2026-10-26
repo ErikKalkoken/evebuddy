@@ -76,19 +76,27 @@ func (q *Queries) ListEveEntities(ctx context.Context) ([]EveEntity, error) {
 	return items, nil
 }
 
-const listEveEntitiesByPartialName = `-- name: ListEveEntitiesByPartialName :many
+const listEveEntitiesForIDs = `-- name: ListEveEntitiesForIDs :many
 SELECT
     id, category, name
 FROM
     eve_entities
 WHERE
-    name LIKE ?
-ORDER BY
-    name COLLATE NOCASE
+    id IN (/*SLICE:ids*/?)
 `
 
-func (q *Queries) ListEveEntitiesByPartialName(ctx context.Context, name string) ([]EveEntity, error) {
-	rows, err := q.db.QueryContext(ctx, listEveEntitiesByPartialName, name)
+func (q *Queries) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]EveEntity, error) {
+	query := listEveEntitiesForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,26 +118,47 @@ func (q *Queries) ListEveEntitiesByPartialName(ctx context.Context, name string)
 	return items, nil
 }
 
-const listEveEntitiesForIDs = `-- name: ListEveEntitiesForIDs :many
+const listEveEntitiesForMailRecipients = `-- name: ListEveEntitiesForMailRecipients :many
 SELECT
     id, category, name
 FROM
     eve_entities
 WHERE
-    id IN (/*SLICE:ids*/?)
+    (name LIKE ? ESCAPE '!') -- sqlc can't parse ESCAPE without parentheses
+    AND (
+        category IN (/*SLICE:categories*/?)
+        OR id IN (
+            SELECT
+                eve_entity_id
+            FROM
+                character_mail_lists
+            WHERE
+                character_id = ?
+        )
+    )
+ORDER BY
+    name COLLATE NOCASE
 `
 
-func (q *Queries) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]EveEntity, error) {
-	query := listEveEntitiesForIDs
+type ListEveEntitiesForMailRecipientsParams struct {
+	Name        string
+	Categories  []string
+	CharacterID int64
+}
+
+func (q *Queries) ListEveEntitiesForMailRecipients(ctx context.Context, arg ListEveEntitiesForMailRecipientsParams) ([]EveEntity, error) {
+	query := listEveEntitiesForMailRecipients
 	var queryParams []interface{}
-	if len(ids) > 0 {
-		for _, v := range ids {
+	queryParams = append(queryParams, arg.Name)
+	if len(arg.Categories) > 0 {
+		for _, v := range arg.Categories {
 			queryParams = append(queryParams, v)
 		}
-		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+		query = strings.Replace(query, "/*SLICE:categories*/?", strings.Repeat(",?", len(arg.Categories))[1:], 1)
 	} else {
-		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+		query = strings.Replace(query, "/*SLICE:categories*/?", "NULL", 1)
 	}
+	queryParams = append(queryParams, arg.CharacterID)
 	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err

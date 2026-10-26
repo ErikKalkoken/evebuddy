@@ -88,9 +88,11 @@ func TestAddEveEntitiesFromSearchESI(t *testing.T) {
 			}}),
 		)
 		// when
-		got, err := s.AddEveEntitiesFromSearchESI(ctx, c.ID, "abc")
+		err := s.AddEveEntitiesFromSearchESI(ctx, c.ID, "abc")
 		// then
 		require.NoError(t, err)
-		assert.True(t, got.Contains(characterID2))
+		got, err := st.GetEveEntity(ctx, characterID2)
+		require.NoError(t, err)
+		assert.Equal(t, "Bruce Wayne", got.Name)
 	})
 }

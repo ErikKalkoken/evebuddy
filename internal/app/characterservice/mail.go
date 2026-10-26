@@ -128,6 +128,12 @@ func (s *CharacterService) ListAllMailHeadersForListOrdered(ctx context.Context,
 	return s.st.ListAllCharacterMailHeadersForListOrdered(ctx, listID)
 }
 
+// ListMailRecipientsByPartialName returns the entities matching partial,
+// which a character can send mails to, ordered by name.
+func (s *CharacterService) ListMailRecipientsByPartialName(ctx context.Context, characterID int64, partial string) ([]*app.EveEntity, error) {
+	return s.st.ListEveEntitiesForMailRecipients(ctx, characterID, partial)
+}
+
 func (s *CharacterService) ListMailLists(ctx context.Context, characterID int64) ([]*app.EveEntity, error) {
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
