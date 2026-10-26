@@ -3,10 +3,11 @@
 package statuscache
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -58,24 +59,16 @@ type Storage interface {
 // The zero value is ready to use.
 // The struct is save for concurrent use.
 type StatusCache struct {
-	sections xsync.Map[cacheKey, cacheValue]
-
-	mu               sync.RWMutex
-	characters       []*app.EntityShort
-	charactersByID   map[int64]*app.EntityShort
-	corporations     []*app.EntityShort
-	corporationsByID map[int64]*app.EntityShort
+	sections     xsync.Map[cacheKey, cacheValue]
+	characters   xsync.Map[int64, *app.EntityShort]
+	corporations xsync.Map[int64, *app.EntityShort]
 }
 
 // Clear removes all items.
 func (sc *StatusCache) Clear() {
 	sc.sections.Clear()
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	sc.characters = nil
-	sc.charactersByID = nil
-	sc.corporations = nil
-	sc.corporationsByID = nil
+	sc.characters.Clear()
+	sc.corporations.Clear()
 }
 
 // Init initializes the internal state from local storage.
@@ -84,11 +77,13 @@ func (sc *StatusCache) Init(ctx context.Context, st Storage) error {
 	if sc == nil || st == nil {
 		return fmt.Errorf("StatusCache.Init: %w", app.ErrInvalid)
 	}
-	cc, err := sc.updateCharacters(ctx, st)
+	cc, err := st.ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
+	sc.characters.Clear()
 	for _, c := range cc {
+		sc.SetCharacter(c.ID, c.Name)
 		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
 		if err != nil {
 			return err
@@ -97,11 +92,13 @@ func (sc *StatusCache) Init(ctx context.Context, st Storage) error {
 			sc.SetCharacterSection(o)
 		}
 	}
-	rr, err := sc.updateCorporations(ctx, st)
+	rr, err := st.ListCorporationsShort(ctx)
 	if err != nil {
 		return err
 	}
+	sc.corporations.Clear()
 	for _, r := range rr {
+		sc.SetCorporation(r.ID, r.Name)
 		oo, err := st.ListCorporationSectionStatus(ctx, r.ID)
 		if err != nil {
 			return err
@@ -220,11 +217,12 @@ func (sc *StatusCache) calcCharacterSectionSummary(characterID int64) statusSumm
 	return calcSectionSummary(sc.ListCharacterSections(characterID))
 }
 
-// DeleteCharacter removes all cached section status for a character.
+// DeleteCharacter removes a character and all its cached section status.
 func (sc *StatusCache) DeleteCharacter(characterID int64) {
 	if sc == nil || characterID == 0 {
 		return
 	}
+	sc.characters.Delete(characterID)
 	for _, section := range app.CharacterSections {
 		sc.sections.Delete(cacheKey{id: characterID, section: section.String()})
 	}
@@ -252,9 +250,7 @@ func (sc *StatusCache) CharacterName(characterID int64) string {
 	if sc == nil || characterID == 0 {
 		return ""
 	}
-	sc.mu.RLock()
-	defer sc.mu.RUnlock()
-	c, ok := sc.charactersByID[characterID]
+	c, ok := sc.characters.Load(characterID)
 	if !ok {
 		return ""
 	}
@@ -276,34 +272,15 @@ func (sc *StatusCache) ListCharacters() []*app.EntityShort {
 	if sc == nil {
 		return nil
 	}
-	sc.mu.RLock()
-	defer sc.mu.RUnlock()
-	return slices.Clone(sc.characters)
+	return sortedEntities(&sc.characters)
 }
 
-// UpdateCharacters updates all characters from storage.
-func (sc *StatusCache) UpdateCharacters(ctx context.Context, st Storage) error {
-	if sc == nil || st == nil {
-		return fmt.Errorf("StatusCache.UpdateCharacters: %w", app.ErrInvalid)
+// SetCharacter adds a character or updates its name.
+func (sc *StatusCache) SetCharacter(characterID int64, name string) {
+	if sc == nil || characterID == 0 {
+		return
 	}
-	_, err := sc.updateCharacters(ctx, st)
-	return err
-}
-
-func (sc *StatusCache) updateCharacters(ctx context.Context, st Storage) ([]*app.EntityShort, error) {
-	cc, err := st.ListCharactersShort(ctx)
-	if err != nil {
-		return nil, err
-	}
-	byID := make(map[int64]*app.EntityShort, len(cc))
-	for _, c := range cc {
-		byID[c.ID] = c
-	}
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	sc.characters = cc
-	sc.charactersByID = byID
-	return cc, nil
+	sc.characters.Store(characterID, &app.EntityShort{ID: characterID, Name: name})
 }
 
 // Corporation sections
@@ -375,11 +352,12 @@ func (sc *StatusCache) calcCorporationSectionSummary(corporationID int64) status
 	return calcSectionSummary(sc.ListCorporationSections(corporationID))
 }
 
-// DeleteCorporation removes all cached section status for a corporation.
+// DeleteCorporation removes a corporation and all its cached section status.
 func (sc *StatusCache) DeleteCorporation(corporationID int64) {
 	if sc == nil || corporationID == 0 {
 		return
 	}
+	sc.corporations.Delete(corporationID)
 	for _, section := range app.CorporationSections {
 		sc.sections.Delete(cacheKey{id: corporationID, section: section.String()})
 	}
@@ -407,9 +385,7 @@ func (sc *StatusCache) CorporationName(corporationID int64) string {
 	if sc == nil || corporationID == 0 {
 		return ""
 	}
-	sc.mu.RLock()
-	defer sc.mu.RUnlock()
-	c, ok := sc.corporationsByID[corporationID]
+	c, ok := sc.corporations.Load(corporationID)
 	if !ok {
 		return ""
 	}
@@ -421,33 +397,15 @@ func (sc *StatusCache) ListCorporations() []*app.EntityShort {
 	if sc == nil {
 		return nil
 	}
-	sc.mu.RLock()
-	defer sc.mu.RUnlock()
-	return slices.Clone(sc.corporations)
+	return sortedEntities(&sc.corporations)
 }
 
-func (sc *StatusCache) UpdateCorporations(ctx context.Context, st Storage) error {
-	if sc == nil || st == nil {
-		return fmt.Errorf("StatusCache.UpdateCorporations: %w", app.ErrInvalid)
+// SetCorporation adds a corporation or updates its name.
+func (sc *StatusCache) SetCorporation(corporationID int64, name string) {
+	if sc == nil || corporationID == 0 {
+		return
 	}
-	_, err := sc.updateCorporations(ctx, st)
-	return err
-}
-
-func (sc *StatusCache) updateCorporations(ctx context.Context, st Storage) ([]*app.EntityShort, error) {
-	cc, err := st.ListCorporationsShort(ctx)
-	if err != nil {
-		return nil, err
-	}
-	byID := make(map[int64]*app.EntityShort, len(cc))
-	for _, c := range cc {
-		byID[c.ID] = c
-	}
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	sc.corporations = cc
-	sc.corporationsByID = byID
-	return cc, nil
+	sc.corporations.Store(corporationID, &app.EntityShort{ID: corporationID, Name: name})
 }
 
 // general sections
@@ -550,4 +508,17 @@ func calcSectionSummary(list []app.CacheSectionStatus) statusSummary {
 		}
 	}
 	return ss
+}
+
+// sortedEntities returns the entities of m sorted by name.
+func sortedEntities(m *xsync.Map[int64, *app.EntityShort]) []*app.EntityShort {
+	var list []*app.EntityShort
+	m.Range(func(_ int64, v *app.EntityShort) bool {
+		list = append(list, v)
+		return true
+	})
+	slices.SortFunc(list, func(a, b *app.EntityShort) int {
+		return cmp.Or(strings.Compare(a.Name, b.Name), cmp.Compare(a.ID, b.ID))
+	})
+	return list
 }

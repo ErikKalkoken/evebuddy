@@ -526,45 +526,74 @@ func TestCharacter(t *testing.T) {
 
 	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
-	t.Run("update and list characters", func(t *testing.T) {
+	t.Run("init loads characters from storage", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		sc.Clear()
 		c := factory.CreateCharacterFull()
 		// when
-		if err := sc.UpdateCharacters(ctx, st); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// then
 		got := sc.ListCharacters()
-		assert.Len(t, got, 1)
+		require.Len(t, got, 1)
 		xassert.Equal(t, c.ID, got[0].ID)
 		xassert.Equal(t, c.EveCharacter.Name, got[0].Name)
 	})
-	t.Run("list character IDs", func(t *testing.T) {
+	t.Run("init removes characters no longer in storage", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		sc.Clear()
-		c1 := factory.CreateCharacterFull()
-		c2 := factory.CreateCharacterFull()
-		err := sc.UpdateCharacters(ctx, st)
-		require.NoError(t, err)
+		sc.SetCharacter(42, "Stale")
+		c := factory.CreateCharacterFull()
+		// when
+		if err := sc.Init(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+		// then
+		xassert.Equal(t, set.Of(c.ID), sc.ListCharacterIDs())
+	})
+	t.Run("set character adds it", func(t *testing.T) {
+		// given
+		sc.Clear()
+		// when
+		sc.SetCharacter(42, "Alice")
+		// then
+		got := sc.ListCharacters()
+		require.Len(t, got, 1)
+		xassert.Equal(t, int64(42), got[0].ID)
+		xassert.Equal(t, "Alice", got[0].Name)
+		xassert.Equal(t, "Alice", sc.CharacterName(42))
+	})
+	t.Run("set character updates name of existing character", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCharacter(42, "Alice")
+		// when
+		sc.SetCharacter(42, "Bob")
+		// then
+		got := sc.ListCharacters()
+		require.Len(t, got, 1)
+		xassert.Equal(t, "Bob", got[0].Name)
+		xassert.Equal(t, "Bob", sc.CharacterName(42))
+	})
+	t.Run("list character IDs", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCharacter(1, "Alice")
+		sc.SetCharacter(2, "Bob")
 		// when
 		got := sc.ListCharacterIDs()
 		// then
-		want := set.Of(c1.ID, c2.ID)
-		xassert.Equal(t, want, got)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
 	})
 	t.Run("list characters in alphabetical order", func(t *testing.T) {
 		// given
-		testutil.MustTruncateTables(db)
 		sc.Clear()
-		for _, name := range []string{"Charlie", "Alice", "Bob"} {
-			c := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: name})
-			factory.CreateCharacterFull(storage.CreateCharacterParams{ID: c.ID})
-		}
-		err := sc.UpdateCharacters(ctx, st)
-		require.NoError(t, err)
+		sc.SetCharacter(1, "Charlie")
+		sc.SetCharacter(2, "Alice")
+		sc.SetCharacter(3, "Bob")
 		// when
 		got := sc.ListCharacters()
 		// then
@@ -574,6 +603,27 @@ func TestCharacter(t *testing.T) {
 		}
 		assert.Equal(t, []string{"Alice", "Bob", "Charlie"}, names)
 	})
+	t.Run("delete character removes it and its sections", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCharacter(1, "Alice")
+		sc.SetCharacter(2, "Bob")
+		section := app.SectionCharacterImplants
+		sc.SetCharacterSection(&app.CharacterSectionStatus{
+			CharacterID:   1,
+			SectionStatus: app.SectionStatus{Section: section, CompletedAt: time.Now()},
+		})
+		// when
+		sc.DeleteCharacter(1)
+		// then
+		got := sc.ListCharacters()
+		require.Len(t, got, 1)
+		xassert.Equal(t, int64(2), got[0].ID)
+		xassert.Equal(t, set.Of[int64](2), sc.ListCharacterIDs())
+		assert.Empty(t, sc.CharacterName(1))
+		_, found := sc.CharacterSection(1, section)
+		assert.False(t, found)
+	})
 }
 
 func TestCorporations(t *testing.T) {
@@ -582,32 +632,67 @@ func TestCorporations(t *testing.T) {
 
 	sc := new(statuscache.StatusCache)
 	ctx := context.Background()
-	t.Run("update and list corporations", func(t *testing.T) {
+	t.Run("init loads corporations from storage", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		sc.Clear()
 		ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: "Alpha"})
 		c := factory.CreateCorporation(ec.ID)
 		// when
-		if err := sc.UpdateCorporations(ctx, st); err != nil {
+		if err := sc.Init(ctx, st); err != nil {
 			t.Fatal(err)
 		}
 		// then
 		xx := sc.ListCorporations()
-		assert.Len(t, xx, 1)
+		require.Len(t, xx, 1)
 		xassert.Equal(t, c.ID, xx[0].ID)
 		xassert.Equal(t, "Alpha", xx[0].Name)
 	})
-	t.Run("list corporations in alphabetical order", func(t *testing.T) {
+	t.Run("init removes corporations no longer in storage", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		sc.Clear()
-		for _, name := range []string{"Charlie Corp", "Alice Corp", "Bob Corp"} {
-			ec := factory.CreateEveCorporation(storage.UpdateOrCreateEveCorporationParams{Name: name})
-			factory.CreateCorporation(ec.ID)
+		sc.SetCorporation(42, "Stale")
+		c := factory.CreateCorporation()
+		// when
+		if err := sc.Init(ctx, st); err != nil {
+			t.Fatal(err)
 		}
-		err := sc.UpdateCorporations(ctx, st)
-		require.NoError(t, err)
+		// then
+		xx := sc.ListCorporations()
+		require.Len(t, xx, 1)
+		xassert.Equal(t, c.ID, xx[0].ID)
+	})
+	t.Run("set corporation adds it", func(t *testing.T) {
+		// given
+		sc.Clear()
+		// when
+		sc.SetCorporation(42, "Alpha")
+		// then
+		xx := sc.ListCorporations()
+		require.Len(t, xx, 1)
+		xassert.Equal(t, int64(42), xx[0].ID)
+		xassert.Equal(t, "Alpha", xx[0].Name)
+		xassert.Equal(t, "Alpha", sc.CorporationName(42))
+	})
+	t.Run("set corporation updates name of existing corporation", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCorporation(42, "Alpha")
+		// when
+		sc.SetCorporation(42, "Bravo")
+		// then
+		xx := sc.ListCorporations()
+		require.Len(t, xx, 1)
+		xassert.Equal(t, "Bravo", xx[0].Name)
+		xassert.Equal(t, "Bravo", sc.CorporationName(42))
+	})
+	t.Run("list corporations in alphabetical order", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCorporation(1, "Charlie Corp")
+		sc.SetCorporation(2, "Alice Corp")
+		sc.SetCorporation(3, "Bob Corp")
 		// when
 		got := sc.ListCorporations()
 		// then
@@ -616,6 +701,26 @@ func TestCorporations(t *testing.T) {
 			names[i] = c.Name
 		}
 		assert.Equal(t, []string{"Alice Corp", "Bob Corp", "Charlie Corp"}, names)
+	})
+	t.Run("delete corporation removes it and its sections", func(t *testing.T) {
+		// given
+		sc.Clear()
+		sc.SetCorporation(1, "Alpha")
+		sc.SetCorporation(2, "Bravo")
+		section := app.SectionCorporationDivisions
+		sc.SetCorporationSection(&app.CorporationSectionStatus{
+			CorporationID: 1,
+			SectionStatus: app.SectionStatus{Section: section, CompletedAt: time.Now()},
+		})
+		// when
+		sc.DeleteCorporation(1)
+		// then
+		got := sc.ListCorporations()
+		require.Len(t, got, 1)
+		xassert.Equal(t, int64(2), got[0].ID)
+		assert.Empty(t, sc.CorporationName(1))
+		_, found := sc.CorporationSection(1, section)
+		assert.False(t, found)
 	})
 }
 

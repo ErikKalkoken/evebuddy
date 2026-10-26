@@ -293,7 +293,7 @@ func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
 		a.entityList.Select(3)
 		a.sectionList.Select(0)
 		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
-		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		sc.DeleteCharacter(c.ID)
 		// when
 		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
 		// then
@@ -319,7 +319,7 @@ func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
 		a.update(t.Context())
 		a.entityList.Select(4)
 		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
-		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		sc.DeleteCharacter(c.ID)
 		// when
 		a.update(t.Context())
 		// then
@@ -346,7 +346,7 @@ func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
 		c2 := factory.CreateCharacter(storage.CreateCharacterParams{
 			ID: factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Alpha"}).ID,
 		})
-		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		sc.SetCharacter(c2.ID, c2.EveCharacter.Name)
 		// when
 		u.Signals().CharacterAdded.Emit(t.Context(), c2)
 		// then
@@ -368,7 +368,7 @@ func TestUpdateStatus_UpdateChangesEntities(t *testing.T) {
 		a.entityList.Select(1)
 		a.sectionList.Select(0)
 		require.NoError(t, st.DeleteCharacter(t.Context(), c.ID))
-		require.NoError(t, sc.UpdateCharacters(t.Context(), st))
+		sc.DeleteCharacter(c.ID)
 		// when
 		u.Signals().CharacterRemoved.Emit(t.Context(), &app.EntityShort{ID: c.ID})
 		// then

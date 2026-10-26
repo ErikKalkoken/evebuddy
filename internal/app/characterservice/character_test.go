@@ -12,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
@@ -527,6 +528,46 @@ func TestDeleteCharacter(t *testing.T) {
 		assert.NoError(t, err)
 		_, err = st.GetCorporation(ctx, corporation.ID)
 		assert.NoError(t, err)
+	})
+
+	t.Run("removes character and orphaned corporation from the status cache", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		ec := factory.CreateEveCorporation()
+		corporation := factory.CreateCorporation(ec.ID)
+		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
+		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
+		character := factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: character.ID,
+			Section:     app.SectionCharacterImplants,
+		})
+		factory.CreateCorporationSectionStatus(testutil.CorporationSectionStatusParams{
+			CorporationID: corporation.ID,
+			Section:       app.SectionCorporationDivisions,
+		})
+		scs := new(statuscache.StatusCache)
+		require.NoError(t, scs.Init(ctx, st))
+		cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st, StatusCacheService: scs})
+		// when
+		_, err := cs.DeleteCharacter(ctx, character.ID)
+		// then
+		require.NoError(t, err)
+		var characterIDs []int64
+		for _, x := range scs.ListCharacters() {
+			characterIDs = append(characterIDs, x.ID)
+		}
+		assert.Equal(t, []int64{other.ID}, characterIDs)
+		var corporationIDs []int64
+		for _, x := range scs.ListCorporations() {
+			corporationIDs = append(corporationIDs, x.ID)
+		}
+		assert.NotContains(t, corporationIDs, corporation.ID)
+		_, found := scs.CharacterSection(character.ID, app.SectionCharacterImplants)
+		assert.False(t, found)
+		_, found = scs.CorporationSection(corporation.ID, app.SectionCorporationDivisions)
+		assert.False(t, found)
 	})
 
 	t.Run("completes delete when context is canceled", func(t *testing.T) {

@@ -18,11 +18,9 @@ type StatusCacheStub struct{}
 
 func (c *StatusCacheStub) DeleteCorporation(_ int64) {}
 
-func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
-}
+func (c *StatusCacheStub) SetCorporation(_ int64, _ string) {}
 
-func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
-	return nil
+func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
 }
 
 type SettingsFake struct {

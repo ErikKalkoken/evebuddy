@@ -42,9 +42,7 @@ func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corpora
 	if err != nil {
 		return nil, err
 	}
-	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-		return nil, err
-	}
+	s.scs.SetCorporation(corporation.ID, corporation.Name)
 	return o, nil
 }
 
@@ -121,9 +119,6 @@ func (s *CorporationService) UpdateCorporations(ctx context.Context) (bool, erro
 				return false, wrapErr(err)
 			}
 			s.scs.DeleteCorporation(id)
-		}
-		if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-			return false, wrapErr(err)
 		}
 		slog.Info("Deleted obsolete corporations", "corporationIDs", obsolete)
 	}

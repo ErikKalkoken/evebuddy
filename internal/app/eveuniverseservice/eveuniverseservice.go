@@ -14,7 +14,6 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -22,7 +21,6 @@ import (
 
 type StatusCache interface {
 	SetEveUniverseSection(o *app.EveUniverseSectionStatus)
-	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
 }
 
 // EVEUniverseService provides access to EVE Online models with on-demand loading from ESI and persistent local caching.

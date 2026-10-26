@@ -13,7 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
-	"github.com/icrowley/fake"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -83,25 +82,6 @@ func (s *EVEUniverseService) FetchAllianceCorporations(ctx context.Context, alli
 		return strings.Compare(a.Name, b.Name)
 	})
 	return oo, nil
-}
-
-// RandomizeAllAllianceNames randomizes the names of all alliances.
-func (s *EVEUniverseService) RandomizeAllAllianceNames(ctx context.Context) error {
-	ee, err := s.st.ListEveEntities(ctx)
-	if err != nil {
-		return err
-	}
-	alliances := xslices.Filter(ee, func(x *app.EveEntity) bool {
-		return x.Category == app.EveEntityAlliance
-	})
-	for _, alliance := range alliances {
-		name := fake.Company()
-		err = s.updateEntityNameIfExists(ctx, alliance.ID, name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (s *EVEUniverseService) GetCorporation(ctx context.Context, corporationID int64) (*app.EveCorporation, error) {
@@ -219,30 +199,6 @@ func (s *EVEUniverseService) UpdateAllCorporationsESI(ctx context.Context) (set.
 	}
 	slog.Info("Finished updating eve corporations", "count", ids.Size(), "changed", changed)
 	return changed, nil
-}
-
-// RandomizeAllCorporationNames randomizes the names of all characters.
-func (s *EVEUniverseService) RandomizeAllCorporationNames(ctx context.Context) error {
-	ids, err := s.st.ListEveCorporationIDs(ctx)
-	if err != nil {
-		return err
-	}
-	if ids.Size() == 0 {
-		return nil
-	}
-	for id := range ids.All() {
-		name := fake.Company()
-		err := s.st.UpdateEveCorporationName(ctx, id, name)
-		if err != nil {
-			return err
-		}
-		err = s.updateEntityNameIfExists(ctx, id, name)
-		if err != nil {
-			return err
-		}
-
-	}
-	return s.scs.UpdateCorporations(ctx, s.st)
 }
 
 // FetchCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
