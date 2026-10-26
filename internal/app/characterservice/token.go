@@ -17,7 +17,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
-const tokenTimeout = time.Second * 60
+const (
+	tokenTimeout        = time.Second * 60
+	tokenRefreshTimeout = time.Second * 15
+)
 
 // HasTokenWithScopes reports whether a character's token has the requested scopes.
 func (s *CharacterService) HasTokenWithScopes(ctx context.Context, characterID int64, scopes set.Set[string]) (bool, error) {
@@ -96,24 +99,61 @@ func (s *CharacterService) TokenSource(ctx context.Context, characterID int64, s
 
 // ensureValidToken will try to refresh token if it is about to become invalid
 // and report whether it was refreshed.
+//
+// Concurrent callers share one refresh.
+// Canceled callers (including the one that started it) return early without aborting the refresh for others.
+//
+// Callers can't cancel the refresh. It is only aborted when tokenRefreshTimeout expires
+// or the service stops, and Stop waits until a received token is persisted.
 func (s *CharacterService) ensureValidToken(ctx context.Context, token *app.CharacterToken) (bool, error) {
 	if token.RemainsValid(tokenTimeout) {
 		return false, nil
 	}
+	if err := ctx.Err(); err != nil {
+		return false, fmt.Errorf("%w: %w", app.ErrCanceled, err)
+	}
 	slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-	token2, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("ensureValidToken-%d", token.ID), func() (*app.CharacterToken, error) {
-		token2, err := s.refreshToken(ctx, token.CharacterID)
-		if err != nil && ctx.Err() != nil {
-			// Tag with the ctx used for the refresh; a follower's own ctx may not be canceled.
-			err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
+	type result struct {
+		token *app.CharacterToken
+		err   error
+	}
+	characterID := token.CharacterID
+	// Only the first caller starts a task; the others just wait on the channel.
+	ch := s.sfg.DoChan(fmt.Sprintf("ensureValidToken-%d", token.ID), func() (any, error) {
+		done := make(chan result, 1)
+		ok := s.tasks.Go(func(taskCtx context.Context) {
+			// Not the caller's ctx, so one canceled caller doesn't abort the refresh for all.
+			refreshCtx, cancel := context.WithTimeout(taskCtx, tokenRefreshTimeout)
+			defer cancel()
+			token2, err := s.refreshToken(refreshCtx, characterID)
+			if err != nil && taskCtx.Err() != nil {
+				// Tag with the task's ctx; a waiting caller's own ctx may not be canceled yet.
+				err = fmt.Errorf("%w: %w", app.ErrCanceled, err)
+			}
+			done <- result{token2, err}
+		})
+		if !ok {
+			return nil, fmt.Errorf("%w: service stopped", app.ErrCanceled)
 		}
-		return token2, err
+		r := <-done
+		return r.token, r.err
 	})
-	if err != nil {
-		return false, err
+	var r singleflight.Result
+	select {
+	case <-ctx.Done():
+		// Return early; the refresh keeps running for other callers.
+		return false, fmt.Errorf("%w: %w", app.ErrCanceled, ctx.Err())
+	case r = <-ch:
+	}
+	if r.Err != nil {
+		return false, r.Err
+	}
+	token2, ok := r.Val.(*app.CharacterToken)
+	if !ok {
+		return false, fmt.Errorf("ensureValidToken: unexpected type %T", r.Val)
 	}
 	*token = *token2
-	return true, err
+	return true, nil
 }
 
 func (s *CharacterService) refreshToken(ctx context.Context, characterID int64) (*app.CharacterToken, error) {
@@ -128,7 +168,7 @@ func (s *CharacterService) refreshToken(ctx context.Context, characterID int64) 
 	if err := s.authClient.RefreshToken(ctx, at); err != nil {
 		return nil, err
 	}
-	// Persist even if canceled: the refresh already happened and the old token may be invalid.
+	// Persist even if timed out: the refresh already happened and the old token may be invalid.
 	if err = s.st.UpdateOrCreateCharacterToken(context.WithoutCancel(ctx), storage.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  at.AccessToken,
 		CharacterID:  int64(at.CharacterID),
