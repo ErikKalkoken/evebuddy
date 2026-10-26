@@ -94,18 +94,19 @@ func TestWriteNotificationTypeFixtures(t *testing.T) {
 
 	// sender ID and IDs in text are anonymized
 	assert.NotEqual(t, sender.ID, corpAppNewMsg.SenderID)
-	assert.NotContains(t, corpAppNewMsg.Text, "1011")
-	assert.NotContains(t, corpAppNewMsg.Text, "2001")
-
-	// the same original ID (charID and allyCharID both 1011) maps to the same placeholder
 	var data map[string]any
 	require.NoError(t, yaml.Unmarshal([]byte(corpAppNewMsg.Text), &data))
 	charID, ok := data["charID"]
 	require.True(t, ok)
+	assert.NotEqual(t, uint64(1011), charID)
+	corpID, ok := data["corpID"]
+	require.True(t, ok)
+	assert.NotEqual(t, uint64(2001), corpID)
+
+	// the same original ID (charID and allyCharID both 1011) maps to the same placeholder
 	allyCharID, ok := data["allyCharID"]
 	require.True(t, ok)
 	assert.Equal(t, charID, allyCharID)
-	assert.NotEqual(t, int64(1011), charID)
 }
 
 func TestWriteNotificationTypeFixtures_AnonymizesStrings(t *testing.T) {
