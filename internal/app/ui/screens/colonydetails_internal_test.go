@@ -112,7 +112,7 @@ func TestColonyDetails(t *testing.T) {
 		w.Resize(fyne.NewSize(160, 640)) // narrow, so the header texts wrap
 		require.NoError(t, a.Update(t.Context()))
 		w.Resize(fyne.NewSize(360, 640))
-		for _, o := range []fyne.CanvasObject{a.planet, a.planetType, a.owner, a.statusText} {
+		for _, o := range []fyne.CanvasObject{a.planetText, a.planetTypeLink, a.ownerLink, a.statusText} {
 			assert.Equal(t, o.MinSize().Height, o.Size().Height)
 		}
 	})
@@ -186,7 +186,7 @@ func TestColonyDetails(t *testing.T) {
 		defer func() { a.showPin = nil }()
 		i := slices.IndexFunc(a.rowsFiltered, func(r colonyDetailsRow) bool { return r.pinType == pinTypeStorage })
 		require.NotEqual(t, -1, i)
-		a.installations.Select(i)
+		a.installationsList.Select(i)
 		assert.EqualValues(t, 2, pinID)
 		assert.Equal(t, "Storage 31-111 on "+cp.EvePlanet.Name, title) // pin ID 2
 	})
@@ -251,11 +251,11 @@ func TestColonyDetails(t *testing.T) {
 		assertPages(t, 0, "after close")
 	})
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
-		a.icon.icon.Resource = nil
+		a.planetSymbol.icon.Resource = nil
 		a.refreshForecast()
 		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), false) // not setup, but still extracting
-		assert.Equal(t, want, a.icon.icon.Resource)
-		assert.False(t, a.icon.attention.Visible())
+		assert.Equal(t, want, a.planetSymbol.icon.Resource)
+		assert.False(t, a.planetSymbol.attention.Visible())
 	})
 	t.Run("should not restore colony on refresh after a failed update", func(t *testing.T) {
 		a.characterID.Store(0)
@@ -292,8 +292,9 @@ func TestColonyDetails(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.Nil(t, a.colony)
-		assert.Contains(t, a.footer.Text, "Error: ")
-		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR: ")
+		assert.Equal(t, widget.DangerImportance, a.errorLabel.Importance)
 	})
 	t.Run("should keep colony when update is canceled", func(t *testing.T) {
 		// given
@@ -308,7 +309,7 @@ func TestColonyDetails(t *testing.T) {
 		require.Error(t, err)
 		assert.NotNil(t, a.colony)
 		assert.Len(t, a.rows, 4)
-		assert.NotEqual(t, widget.DangerImportance, a.footer.Importance)
+		assert.False(t, a.errorLabel.Visible())
 	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
 		// given
@@ -356,7 +357,8 @@ func TestColonyDetails(t *testing.T) {
 		// then
 		assert.False(t, isUpdateLatest())
 		assert.Len(t, a.rows, 4)
-		assert.Equal(t, "Character has been removed", a.footer.Text)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Equal(t, "Character has been removed", a.errorLabel.Text)
 	})
 }
 
