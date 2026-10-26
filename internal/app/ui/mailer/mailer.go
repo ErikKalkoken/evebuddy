@@ -90,8 +90,8 @@ func NewWindow(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail) (
 	if c == nil {
 		return nil, fmt.Errorf("missing character: %w", app.ErrInvalid)
 	}
-	if mode == Undefined {
-		return nil, fmt.Errorf("undefined mode: %w", app.ErrInvalid)
+	if mode == Undefined || mode > Forward {
+		return nil, fmt.Errorf("invalid mode %s: %w", mode, app.ErrInvalid)
 	}
 	if mail == nil && mode != New {
 		return nil, fmt.Errorf("missing mail for mode %s: %w", mode, app.ErrInvalid)
@@ -171,11 +171,11 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 		a.bodyEntry.SetText(sep + mail.String())
 	case ReplyAll:
-		oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
-		oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
+		// like the game client: keep the sender, even when it's the character itself
+		others := slices.DeleteFunc(slices.Clone(mail.Recipients), func(o *app.EveEntity) bool {
 			return o.ID == c.EveCharacter.ID
 		})
-		a.toEntry.Set(oo)
+		a.toEntry.Set(slices.Concat([]*app.EveEntity{mail.From}, others))
 		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 		a.bodyEntry.SetText(sep + mail.String())
 	case Forward:
@@ -188,13 +188,12 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.sendButton = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
 		// TODO: Convert to dynamic enable/disable of send button
 		var issue string
-		if a.toEntry.IsEmpty() {
-			issue = "Needs to have at least one recipient."
-		}
-		if a.subjectEntry.Text == "" {
+		switch {
+		case a.toEntry.IsEmpty():
+			issue = "Add at least one recipient"
+		case strings.TrimSpace(a.subjectEntry.Text) == "":
 			issue = "Subject can not be empty"
-		}
-		if a.bodyEntry.Text == "" {
+		case strings.TrimSpace(a.bodyEntry.Text) == "":
 			issue = "Message can not be empty"
 		}
 		if issue != "" {

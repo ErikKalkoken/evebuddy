@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -62,9 +63,17 @@ func (w *eveEntityEntry) Items() []*app.EveEntity {
 	return slices.Clone(w.items)
 }
 
-// Set replaces the list of items with a copy of s.
+// Set replaces the list of items with a copy of s without duplicates.
 func (w *eveEntityEntry) Set(s []*app.EveEntity) {
-	w.items = slices.Clone(s)
+	var seen set.Set[int64]
+	w.items = nil
+	for _, o := range s {
+		if seen.Contains(o.ID) {
+			continue
+		}
+		seen.Add(o.ID)
+		w.items = append(w.items, o)
+	}
 	w.Refresh()
 }
 

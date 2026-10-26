@@ -56,8 +56,10 @@ func TestNewWindow(t *testing.T) {
 		_, err := NewWindow(u, nil, New, nil)
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
-	t.Run("should return error when mode is undefined", func(t *testing.T) {
+	t.Run("should return error when mode is invalid", func(t *testing.T) {
 		_, err := NewWindow(u, c, Undefined, nil)
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		_, err = NewWindow(u, c, Mode(99), &app.CharacterMail{})
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 	t.Run("should return error when mail is missing for reply", func(t *testing.T) {
@@ -109,10 +111,12 @@ func TestMailer_Modes(t *testing.T) {
 	u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 	c := factory.CreateCharacterFull()
 	self := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+	sender := factory.CreateEveEntityCharacter()
 	other := factory.CreateEveEntityCharacter()
 	m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 		CharacterID:  c.ID,
-		RecipientIDs: []int64{self.ID, other.ID},
+		FromID:       sender.ID,
+		RecipientIDs: []int64{sender.ID, self.ID, other.ID},
 		Subject:      optional.New("Hello"),
 	})
 
@@ -139,18 +143,18 @@ func TestMailer_Modes(t *testing.T) {
 		for _, o := range a.toEntry.Items() {
 			ids = append(ids, o.ID)
 		}
-		assert.ElementsMatch(t, []int64{m.From.ID, other.ID}, ids)
+		assert.ElementsMatch(t, []int64{sender.ID, other.ID}, ids)
 		assert.Equal(t, "Re: Hello", a.subjectEntry.Text)
 		assert.Contains(t, a.bodyEntry.Text, m.String())
 	})
-	t.Run("reply all to own mail is addressed to other recipients only", func(t *testing.T) {
+	t.Run("reply all to own mail is addressed to self and other recipients", func(t *testing.T) {
 		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID:  c.ID,
 			FromID:       self.ID,
 			RecipientIDs: []int64{other.ID},
 		})
 		a := newMailer(u, c, ReplyAll, m2, test.NewWindow(nil))
-		assert.Equal(t, []*app.EveEntity{other}, a.toEntry.Items())
+		assert.Equal(t, []*app.EveEntity{self, other}, a.toEntry.Items())
 	})
 	t.Run("forward has no recipients", func(t *testing.T) {
 		a := newMailer(u, c, Forward, m, test.NewWindow(nil))
@@ -217,9 +221,11 @@ func TestMailer_Send(t *testing.T) {
 			body       string
 			want       string
 		}{
-			{"no recipient", false, "subject", "body", "Needs to have at least one recipient."},
+			{"no recipient", false, "subject", "body", "Add at least one recipient"},
 			{"no subject", true, "", "body", "Subject can not be empty"},
+			{"whitespace subject", true, " \n", "body", "Subject can not be empty"},
 			{"no body", true, "subject", "", "Message can not be empty"},
+			{"empty mail", false, "", "", "Add at least one recipient"},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
