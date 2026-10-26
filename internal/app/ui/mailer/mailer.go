@@ -5,10 +5,14 @@ package mailer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"slices"
+	"strings"
 
 	"sync/atomic"
+	"time"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 
@@ -25,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/settings"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -41,7 +46,27 @@ const (
 	Forward
 )
 
-const labelWith = 45
+const (
+	labelWith       = 45
+	minSearchLength = 3
+)
+
+// Hooks that tests can replace.
+var (
+	runAsync = func(f func()) { go f() }
+	// waitSearchDelay waits briefly, so typing triggers only one search.
+	// Reports false when the search was canceled while waiting.
+	waitSearchDelay = func(ctx context.Context) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(300 * time.Millisecond):
+			return true
+		}
+	}
+	// searchTimeout limits the ESI requests of a search, as a dead connection can otherwise hang for minutes.
+	searchTimeout = 15 * time.Second
+)
 
 type baseUI interface {
 	Character() *characterservice.CharacterService
@@ -65,8 +90,8 @@ func NewWindow(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail) (
 	if c == nil {
 		return nil, fmt.Errorf("missing character: %w", app.ErrInvalid)
 	}
-	if mode == Undefined {
-		return nil, fmt.Errorf("undefined mode: %w", app.ErrInvalid)
+	if mode == Undefined || mode > Forward {
+		return nil, fmt.Errorf("invalid mode %s: %w", mode, app.ErrInvalid)
 	}
 	if mail == nil && mode != New {
 		return nil, fmt.Errorf("missing mail for mode %s: %w", mode, app.ErrInvalid)
@@ -75,6 +100,7 @@ func NewWindow(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail) (
 	title := fmt.Sprintf("New message [%s]", c.EveCharacter.Name)
 	w := fyne.CurrentApp().NewWindow(u.MakeWindowTitle(title))
 	a := newMailer(u, c, mode, mail, w)
+	w.SetOnClosed(a.cancel)
 	w.SetContent(a)
 	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
@@ -84,10 +110,13 @@ type mailer struct {
 	widget.BaseWidget
 
 	bodyEntry    *widget.Entry
+	cancel       context.CancelFunc
 	character    atomic.Pointer[app.Character]
+	ctx          context.Context // canceled when the window closes
 	fromEntry    *eveEntityEntry
 	sendButton   *kxwidget.LoadingButton
 	subjectEntry *widget.Entry
+	toButton     *widget.Button
 	toEntry      *eveEntityEntry
 	u            baseUI
 	w            fyne.Window
@@ -98,6 +127,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		u: u,
 		w: w,
 	}
+	a.ctx, a.cancel = context.WithCancel(context.Background())
 	a.character.Store(c)
 	a.ExtendBaseWidget(a)
 
@@ -108,18 +138,18 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		Name:     c.EveCharacter.Name,
 		Category: app.EveEntityCharacter,
 	}})
-	a.fromEntry.Disable()
+	a.fromEntry.readOnly = true
 
-	toButton := widget.NewButton("To", func() {
+	a.toButton = widget.NewButton("To", func() {
 		if a.u.IsOffline() {
 			ui.ShowInformation("OFFLINE", "Search not available while offline", a.w)
 			return
 		}
-		showAddDialog(u, c.ID, func(ee *app.EveEntity) {
+		showAddDialog(a.ctx, u, c.ID, func(ee *app.EveEntity) {
 			a.toEntry.Add(ee)
 		}, a.w)
 	})
-	a.toEntry = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
+	a.toEntry = newEveEntityEntry(a.toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.toEntry.showInfo = u.InfoViewer().Show
 	a.toEntry.placeholderText = "Tap To-Button to add recipients..."
 
@@ -141,11 +171,11 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 		a.bodyEntry.SetText(sep + mail.String())
 	case ReplyAll:
-		oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
-		oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
+		// like the game client: keep the sender, even when it's the character itself
+		others := slices.DeleteFunc(slices.Clone(mail.Recipients), func(o *app.EveEntity) bool {
 			return o.ID == c.EveCharacter.ID
 		})
-		a.toEntry.Set(oo)
+		a.toEntry.Set(slices.Concat([]*app.EveEntity{mail.From}, others))
 		a.subjectEntry.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 		a.bodyEntry.SetText(sep + mail.String())
 	case Forward:
@@ -158,13 +188,12 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	a.sendButton = kxwidget.NewLoadingButton("Send", theme.MailSendIcon(), func(done func()) {
 		// TODO: Convert to dynamic enable/disable of send button
 		var issue string
-		if a.toEntry.IsEmpty() {
-			issue = "Needs to have at least one recipient."
-		}
-		if a.subjectEntry.Text == "" {
+		switch {
+		case a.toEntry.IsEmpty():
+			issue = "Add at least one recipient"
+		case strings.TrimSpace(a.subjectEntry.Text) == "":
 			issue = "Subject can not be empty"
-		}
-		if a.bodyEntry.Text == "" {
+		case strings.TrimSpace(a.bodyEntry.Text) == "":
 			issue = "Message can not be empty"
 		}
 		if issue != "" {
@@ -175,7 +204,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		characterID := a.character.Load().ID
 		subject := a.subjectEntry.Text
 		body := a.bodyEntry.Text
-		recipients := slices.Clone(a.toEntry.Items())
+		recipients := a.toEntry.Items()
 		to := a.toEntry.String()
 		ok := a.u.Go(func(ctx context.Context) {
 			err := a.send(ctx, characterID, subject, recipients, body)
@@ -230,104 +259,204 @@ func (a *mailer) send(ctx context.Context, characterID int64, subject string, re
 	if err != nil {
 		return err
 	}
-	go a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
-		CharacterID: characterID,
-		Section:     app.SectionCharacterMailHeaders,
+	runAsync(func() {
+		a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
+			CharacterID: characterID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
 	})
 	return nil
 }
 
-func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
-	var modal *widget.PopUp
-	var results []*app.EveEntity
-	list := widget.NewList(
+func showAddDialog(ctx context.Context, u baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
+	d := newAddDialog(ctx, u, characterID, onSelected)
+	modal := widget.NewModalPopUp(d, w.Canvas())
+	d.onClose = modal.Hide
+	_, s := w.Canvas().InteractiveArea()
+	modal.Resize(fyne.NewSize(s.Width, s.Height))
+	modal.Show()
+	w.Canvas().Focus(d.searchEntry)
+}
+
+// addDialog is a widget for searching and adding a recipient.
+type addDialog struct {
+	widget.BaseWidget
+
+	onClose func()
+
+	cancelButton *widget.Button
+	cancelSearch context.CancelFunc
+	characterID  int64
+	ctx          context.Context // parent of all searches
+	list         *widget.List
+	results      []*app.EveEntity
+	searchEntry  *xwidget.SearchEntry
+	spinner      *kxwidget.Spinner
+	statusLabel  *widget.Label
+	u            baseUI
+}
+
+func newAddDialog(ctx context.Context, u baseUI, characterID int64, onSelected func(ee *app.EveEntity)) *addDialog {
+	d := &addDialog{
+		characterID: characterID,
+		ctx:         ctx,
+		spinner:     kxwidget.NewSpinner(),
+		statusLabel: widget.NewLabel(""),
+		u:           u,
+	}
+	d.ExtendBaseWidget(d)
+	d.spinner.Hide()
+	d.statusLabel.Truncation = fyne.TextTruncateEllipsis
+	d.list = widget.NewList(
 		func() int {
-			return len(results)
+			return len(d.results)
 		},
 		func() fyne.CanvasObject {
 			return newEntityItem(u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(results) {
+			if id >= len(d.results) {
 				return
 			}
-			co.(*entityItem).set(results[id])
+			co.(*entityItem).set(d.results[id])
 		},
 	)
-	list.HideSeparators = true
-	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(results) {
-			list.UnselectAll()
+	d.list.HideSeparators = true
+	d.list.OnSelected = func(id widget.ListItemID) {
+		if id >= len(d.results) {
+			d.list.UnselectAll()
 			return
 		}
-		onSelected(results[id])
-		modal.Hide()
+		onSelected(d.results[id])
+		d.close()
 	}
-	showErrorDialog := func(search string, err error) {
-		fyne.Do(func() {
-			ui.ShowErrorAndLog("Search for '"+search+"' failed", err, u.IsDeveloperMode(), w)
-		})
-	}
-	entry := xwidget.NewSearchEntry("Type to start searching...", func(search string) {
-		if len(search) < 3 {
-			results = results[:0]
-			list.Refresh()
-			return
-		}
-		ctx := context.Background()
-		go func() {
-			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
-			if err != nil {
-				showErrorDialog(search, err)
-				return
-			}
-			fyne.Do(func() {
-				results = r
-				list.Refresh()
-			})
-		}()
-		go func() {
-			missingIDs, err := u.Character().AddEveEntitiesFromSearchESI(
-				ctx,
-				characterID,
-				search,
-			)
-			if err != nil {
-				showErrorDialog(search, err)
-				return
-			}
-			if missingIDs.Size() == 0 {
-				return // no need to update when not changed
-			}
-			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
-			if err != nil {
-				showErrorDialog(search, err)
-				return
-			}
-			fyne.Do(func() {
-				results = r
-				list.Refresh()
-			})
-		}()
+	d.searchEntry = xwidget.NewSearchEntry("Type to start searching...", d.startSearch)
+	d.cancelButton = widget.NewButton("Cancel", func() {
+		d.close()
 	})
+	return d
+}
+
+func (d *addDialog) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewBorder(
 			widget.NewLabel("Add Recipient"),
 			nil,
 			nil,
-			widget.NewButton("Cancel", func() {
-				modal.Hide()
-			}),
-			entry,
+			d.cancelButton,
+			d.searchEntry,
 		),
+		d.statusLabel,
 		nil,
 		nil,
-		nil,
-		list,
+		container.NewStack(
+			d.list,
+			container.NewCenter(container.NewStack(
+				xwidget.NewSpacer(fyne.NewSquareSize(2*theme.IconInlineSize())),
+				d.spinner,
+			)),
+		),
 	)
-	modal = widget.NewModalPopUp(c, w.Canvas())
-	_, s := w.Canvas().InteractiveArea()
-	modal.Resize(fyne.NewSize(s.Width, s.Height))
-	modal.Show()
-	w.Canvas().Focus(entry)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (d *addDialog) close() {
+	d.stopSearch()
+	d.spinner.Stop()
+	if d.onClose != nil {
+		d.onClose()
+	}
+}
+
+// startSearch starts a new search and cancels the previous one.
+func (d *addDialog) startSearch(search string) {
+	d.stopSearch()
+	d.results = d.results[:0]
+	d.list.Refresh()
+	search = strings.TrimSpace(search)
+	if utf8.RuneCountInString(search) < minSearchLength {
+		d.spinner.Stop()
+		d.spinner.Hide()
+		d.setStatus("", widget.MediumImportance)
+		return
+	}
+	d.setStatus("Searching...", widget.MediumImportance)
+	d.spinner.Show()
+	d.spinner.Start()
+	ctx, cancel := context.WithCancel(d.ctx)
+	d.cancelSearch = cancel
+	runAsync(func() {
+		d.doSearch(ctx, search)
+	})
+}
+
+func (d *addDialog) stopSearch() {
+	if d.cancelSearch == nil {
+		return
+	}
+	d.cancelSearch()
+	d.cancelSearch = nil
+}
+
+// doSearch runs a search. Results of a canceled search are discarded,
+// so a slow search can't overwrite the results of a newer one.
+func (d *addDialog) doSearch(ctx context.Context, search string) {
+	if !waitSearchDelay(ctx) {
+		return
+	}
+	esiCtx, cancel := context.WithTimeout(ctx, searchTimeout) // separate, so ctx only reports newer searches
+	defer cancel()
+
+	showError := func(timedOut bool, err error) {
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Recipient search failed", "search", search, "error", err)
+		var msg string
+		if timedOut {
+			msg = "search timed out"
+		} else {
+			msg = d.u.ErrorDisplay(err)
+		}
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			d.spinner.Stop()
+			d.spinner.Hide()
+			d.setStatus("ERROR: "+msg, widget.DangerImportance)
+		})
+	}
+
+	err := d.u.Character().AddEveEntitiesFromSearchESI(esiCtx, d.characterID, search)
+	if err != nil {
+		timedOut := esiCtx.Err() != nil
+		showError(timedOut, err)
+		return
+	}
+	r, err := d.u.Character().ListMailRecipientsByPartialName(ctx, d.characterID, search)
+	if err != nil {
+		showError(false, err)
+		return
+	}
+	fyne.Do(func() {
+		if ctx.Err() != nil {
+			return
+		}
+		d.spinner.Stop()
+		d.spinner.Hide()
+		d.results = r
+		d.list.Refresh()
+		if len(r) == 0 {
+			d.setStatus("No results", widget.MediumImportance)
+		} else {
+			d.setStatus(ihumanize.Plural(len(r), "result", "results"), widget.MediumImportance)
+		}
+	})
+}
+
+func (d *addDialog) setStatus(text string, importance widget.Importance) {
+	d.statusLabel.Importance = importance
+	d.statusLabel.Text = text
+	d.statusLabel.Refresh()
 }

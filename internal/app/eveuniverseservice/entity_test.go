@@ -19,25 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
-func TestListEntitiesByPartialName(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
-	t.Run("should return entities matching partial name", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		e1 := factory.CreateEveEntity(app.EveEntity{Name: "Erik Kalkoken"})
-		factory.CreateEveEntity(app.EveEntity{Name: "Someone Else"})
-		// when
-		oo, err := s.ListEntitiesByPartialName(t.Context(), "Kalkoken")
-		// then
-		require.NoError(t, err)
-		if assert.Len(t, oo, 1) {
-			xassert.Equal(t, e1.ID, oo[0].ID)
-		}
-	})
-}
-
 func TestListExistingEntitiesForIDs(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

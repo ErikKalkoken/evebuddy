@@ -18,7 +18,7 @@ import (
 )
 
 type eveEntityBadge struct {
-	widget.DisableableWidget
+	widget.BaseWidget
 
 	OnTapped func()
 
@@ -47,9 +47,6 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 	p := th.Size(theme.SizeNamePadding)
 
 	name := widget.NewLabel(w.ee.Name)
-	if w.Disabled() {
-		name.Importance = widget.LowImportance
-	}
 	icon := xwidget.NewImageFromResource(
 		w.fallbackIcon,
 		fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon)),
@@ -76,9 +73,6 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *eveEntityBadge) Tapped(_ *fyne.PointEvent) {
-	if w.Disabled() {
-		return
-	}
 	if w.OnTapped != nil {
 		w.OnTapped()
 	}
@@ -89,7 +83,7 @@ func (w *eveEntityBadge) TappedSecondary(_ *fyne.PointEvent) {
 
 // Cursor returns the cursor type of this widget
 func (w *eveEntityBadge) Cursor() desktop.Cursor {
-	if !w.Disabled() && w.hovered {
+	if w.hovered {
 		return desktop.PointerCursor
 	}
 	return desktop.DefaultCursor
@@ -97,9 +91,6 @@ func (w *eveEntityBadge) Cursor() desktop.Cursor {
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *eveEntityBadge) MouseIn(_ *desktop.MouseEvent) {
-	if w.Disabled() {
-		return
-	}
 	w.hovered = true
 }
 
@@ -109,8 +100,5 @@ func (w *eveEntityBadge) MouseMoved(*desktop.MouseEvent) {
 
 // MouseOut is a hook that is called if the mouse pointer leaves the element.
 func (w *eveEntityBadge) MouseOut() {
-	if w.Disabled() {
-		return
-	}
 	w.hovered = false
 }

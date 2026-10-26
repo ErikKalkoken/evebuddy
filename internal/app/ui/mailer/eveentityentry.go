@@ -12,18 +12,21 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
+	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infoviewer"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // eveEntityEntry represents an entry widget for Eve Entity items.
 type eveEntityEntry struct {
-	widget.DisableableWidget
+	widget.BaseWidget
 
 	placeholderText string
+	readOnly        bool // items can not be removed
 	showInfo        func(*app.EveEntity)
 
 	loadIcon    ui.EveEntityIconLoader
@@ -55,14 +58,22 @@ func newEveEntityEntry(label fyne.CanvasObject, labelWidth float32, loadIcon ui.
 	return w
 }
 
-// Items returns the current list of EveEntities items.
+// Items returns a copy of the current list of EveEntities items.
 func (w *eveEntityEntry) Items() []*app.EveEntity {
-	return w.items
+	return slices.Clone(w.items)
 }
 
-// Set replaces the list of items.
+// Set replaces the list of items with a copy of s without duplicates.
 func (w *eveEntityEntry) Set(s []*app.EveEntity) {
-	w.items = s
+	var seen set.Set[int64]
+	w.items = nil
+	for _, o := range s {
+		if seen.Contains(o.ID) {
+			continue
+		}
+		seen.Add(o.ID)
+		w.items = append(w.items, o)
+	}
 	w.Refresh()
 }
 
@@ -117,7 +128,6 @@ func (w *eveEntityEntry) update() {
 		w.main.Add(container.New(columns, w.label, w.placeholder))
 	} else {
 		firstRow := true
-		isDisabled := w.Disabled()
 		for _, ee := range w.items {
 			var label fyne.CanvasObject
 			if firstRow {
@@ -128,30 +138,53 @@ func (w *eveEntityEntry) update() {
 			}
 			badge := newEveEntityBadge(ee, w.loadIcon)
 			badge.OnTapped = func() {
-				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
-				nameItem := fyne.NewMenuItem(s, nil)
-				nameItem.Icon = icons.Questionmark32Png
-				if ee.Category == app.EveEntityCharacter && w.showInfo != nil {
-					nameItem.Action = func() {
-						w.showInfo(ee)
-					}
-				}
-				removeItem := fyne.NewMenuItem("Remove", func() {
-					w.Remove(ee.ID)
-				})
-				removeItem.Icon = theme.DeleteIcon()
-				removeItem.Disabled = isDisabled
-				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
+				menu := w.makeBadgeMenu(ee)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
-				w.loadIcon(ee, ui.IconPixelSize, func(r fyne.Resource) {
-					nameItem.Icon = r
-					pm.Refresh()
-				})
 			}
 			w.main.Add(container.New(columns, label, badge))
 		}
 	}
+}
+
+// makeBadgeMenu returns the context menu for the badge of ee.
+// The first item is the name item.
+func (w *eveEntityEntry) makeBadgeMenu(ee *app.EveEntity) *fyne.Menu {
+	nameItem := fyne.NewMenuItem(fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay()), nil)
+	nameItem.Icon = categoryIcon(ee.Category)
+	nameItem.Disabled = true
+	var actions []*fyne.MenuItem
+	if w.showInfo != nil && infoviewer.SupportedCategories().Contains(ee.Category) {
+		infoItem := fyne.NewMenuItem("Show Info", func() {
+			w.showInfo(ee)
+		})
+		infoItem.Icon = theme.InfoIcon()
+		actions = append(actions, infoItem)
+	}
+	if !w.readOnly {
+		removeItem := fyne.NewMenuItem("Remove", func() {
+			w.Remove(ee.ID)
+		})
+		removeItem.Icon = theme.DeleteIcon()
+		actions = append(actions, removeItem)
+	}
+	if len(actions) == 0 {
+		return fyne.NewMenu("", nameItem)
+	}
+	return fyne.NewMenu("", slices.Concat([]*fyne.MenuItem{nameItem, fyne.NewMenuItemSeparator()}, actions)...)
+}
+
+// categoryIcon returns the icon for the name item of an entity with category c.
+func categoryIcon(c app.EveEntityCategory) fyne.Resource {
+	switch c {
+	case app.EveEntityCharacter:
+		return theme.NewThemedResource(icons.AccountCircleSvg)
+	case app.EveEntityCorporation, app.EveEntityAlliance:
+		return theme.NewThemedResource(icons.StarCircleOutlineSvg)
+	case app.EveEntityMailList:
+		return theme.MailComposeIcon()
+	}
+	return theme.QuestionIcon()
 }
 
 func (w *eveEntityEntry) Refresh() {

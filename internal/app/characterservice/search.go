@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 
@@ -15,11 +16,10 @@ import (
 
 // AddEveEntitiesFromSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
 // This method performs a character specific search and needs a token.
-func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int64, search string) (set.Set[int64], error) {
-	var z set.Set[int64]
+func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, characterID int64, search string) error {
 	ts, err := s.TokenSource(ctx, characterID, set.Of(goesi.ScopeSearchSearchStructuresV1))
 	if err != nil {
-		return z, err
+		return err
 	}
 	categories := []string{
 		"corporation",
@@ -30,15 +30,13 @@ func (s *CharacterService) AddEveEntitiesFromSearchESI(ctx context.Context, char
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSearch")
 	r, _, err := s.esiClient.SearchAPI.GetCharactersCharacterIdSearch(ctx, characterID).Search(search).Categories(categories).Execute()
 	if err != nil {
-		return z, err
+		return err
 	}
 	ids := set.Union(set.Of(r.Alliance...), set.Of(r.Character...), set.Of(r.Corporation...))
-	missingIDs, err := s.eus.AddMissingEntities(ctx, ids)
-	if err != nil {
-		slog.Error("Failed to fetch missing IDs", "error", err)
-		return z, err
+	if _, err := s.eus.AddMissingEntities(ctx, ids); err != nil {
+		return fmt.Errorf("fetch missing IDs: %w", err)
 	}
-	return missingIDs, nil
+	return nil
 }
 
 // SearchESI performs a name search for items on the ESI server

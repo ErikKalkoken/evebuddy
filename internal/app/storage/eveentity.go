@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -124,15 +125,28 @@ func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name stri
 	return oo, nil
 }
 
-func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
-	rows, err := st.qRO.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
+// likeEscaper escapes LIKE wildcards for queries with ESCAPE '!'.
+var likeEscaper = strings.NewReplacer("!", "!!", "%", "!%", "_", "!_")
+
+// ListEveEntitiesForMailRecipients returns the entities matching partial,
+// which a character can send mails to, ordered by name.
+// These are alliances, player characters, player corporations and the character's mailing lists.
+func (st *Storage) ListEveEntitiesForMailRecipients(ctx context.Context, characterID int64, partial string) ([]*app.EveEntity, error) {
+	rows, err := st.qRO.ListEveEntitiesForMailRecipients(ctx, queries.ListEveEntitiesForMailRecipientsParams{
+		Name:        "%" + likeEscaper.Replace(partial) + "%",
+		Categories:  []string{eveEntityAlliance, eveEntityCharacter, eveEntityCorporation},
+		CharacterID: characterID,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("list eve entity by partial name %s: %w", partial, err)
+		return nil, fmt.Errorf("list eve entities for mail recipients %d %s: %w", characterID, partial, err)
 	}
 	oo := make([]*app.EveEntity, len(rows))
 	for i, e := range rows {
 		oo[i] = eveEntityFromDBModel(e)
 	}
+	oo = slices.DeleteFunc(oo, func(x *app.EveEntity) bool {
+		return x.IsNPC().ValueOrZero() // NPCs can not receive mails
+	})
 	return oo, nil
 }
 
