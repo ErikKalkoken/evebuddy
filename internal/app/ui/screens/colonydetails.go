@@ -67,6 +67,7 @@ type colonyDetails struct {
 	characterID   atomic.Int64
 	colony        *app.CharacterPlanet
 	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
+	errorLabel    *widget.Label
 	filterChip    *xwidget.FilterChipCompact
 	filterRun     xsync.LatestRun
 	footer        *widget.Label
@@ -226,6 +227,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	planet.Wrapping = fyne.TextWrapWord
 	a := &colonyDetails{
 		columnSorter: columnSorter,
+		errorLabel:   ui.NewLabelWithWrapping(""),
 		footer:       ui.NewLabelWithTruncation(""),
 		icon:         newColonyPlanetSymbol(colonyDetailsIconSize, 2),
 		owner:        makeHyperLink(),
@@ -241,6 +243,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 	a.planetID.Store(planetID)
 
 	a.statusText.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
+	a.errorLabel.Hide()
 	a.icon.icon.CornerRadius = theme.InputRadiusSize()
 
 	list := widget.NewList(
@@ -315,7 +318,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 			a.forecastRun.Discard()
 			fyne.Do(func() {
 				a.colony = nil // so a refresh can't forecast it again
-				a.setIssue("Character has been removed")
+				a.setIssue("Character has been removed", widget.DangerImportance)
 			})
 		}
 	}, a.signalKey)
@@ -352,7 +355,7 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 			filter,
 		),
-		container.NewBorder(nil, nil, nil, a.helpButton, a.footer),
+		container.NewVBox(a.errorLabel, container.NewBorder(nil, nil, nil, a.helpButton, a.footer)),
 		nil,
 		nil,
 		a.installations,
@@ -383,10 +386,12 @@ func (a *colonyDetails) stop() {
 	a.u.Signals().CharacterRemoved.RemoveListener(a.signalKey)
 }
 
-func (a *colonyDetails) setIssue(s string) {
-	a.footer.Text = s
-	a.footer.Importance = widget.DangerImportance
-	a.footer.Refresh()
+// setIssue shows s in the error label, separate from the footer which the async filter overwrites.
+func (a *colonyDetails) setIssue(s string, importance widget.Importance) {
+	a.errorLabel.Text = s
+	a.errorLabel.Importance = importance
+	a.errorLabel.Refresh()
+	a.errorLabel.Show()
 }
 
 // refreshForecast recalculates the forecast for the colony.
@@ -494,8 +499,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text, a.footer.Importance = s, i
-			a.footer.Refresh()
+			a.setIssue(s, i)
 		})
 	}
 	characterID := a.characterID.Load()
@@ -510,7 +514,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			return err // canceled, keeps the current colony
 		}
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setInfo("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	cp, err := a.u.Character().GetPlanet(ctx, c.ID, a.planetID.Load())
@@ -519,7 +523,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			return err // canceled, keeps the current colony
 		}
 		reset()
-		setInfo("Error: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		setInfo("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	stopped, status, rows := a.makeRows(cp, time.Now())
@@ -541,6 +545,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
 
+		a.errorLabel.Hide()
 		a.colony = cp
 		a.setStatus(cp, stopped, status)
 		a.rows = rows

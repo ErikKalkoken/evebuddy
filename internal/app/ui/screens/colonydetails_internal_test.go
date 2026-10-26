@@ -292,8 +292,9 @@ func TestColonyDetails(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.Nil(t, a.colony)
-		assert.Contains(t, a.footer.Text, "Error: ")
-		assert.Equal(t, widget.DangerImportance, a.footer.Importance)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Contains(t, a.errorLabel.Text, "ERROR: ")
+		assert.Equal(t, widget.DangerImportance, a.errorLabel.Importance)
 	})
 	t.Run("should keep colony when update is canceled", func(t *testing.T) {
 		// given
@@ -308,7 +309,7 @@ func TestColonyDetails(t *testing.T) {
 		require.Error(t, err)
 		assert.NotNil(t, a.colony)
 		assert.Len(t, a.rows, 4)
-		assert.NotEqual(t, widget.DangerImportance, a.footer.Importance)
+		assert.False(t, a.errorLabel.Visible())
 	})
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
 		// given
@@ -356,7 +357,8 @@ func TestColonyDetails(t *testing.T) {
 		// then
 		assert.False(t, isUpdateLatest())
 		assert.Len(t, a.rows, 4)
-		assert.Equal(t, "Character has been removed", a.footer.Text)
+		assert.True(t, a.errorLabel.Visible())
+		assert.Equal(t, "Character has been removed", a.errorLabel.Text)
 	})
 }
 
