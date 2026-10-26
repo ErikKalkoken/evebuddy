@@ -64,31 +64,31 @@ const colonyDetailsIconSize = 104 // matches the height of the header text
 type colonyDetails struct {
 	widget.BaseWidget
 
-	characterID   atomic.Int64
-	colony        *app.CharacterPlanet
-	columnSorter  *xwidget.ColumnSorter[colonyDetailsRow]
-	errorLabel    *widget.Label
-	filterChip    *xwidget.FilterChipCompact
-	filterRun     xsync.LatestRun
-	footer        *widget.Label
-	forecastRun   xsync.LatestRun
-	icon          *colonyPlanetSymbol
-	installations *widget.List
-	owner         *widget.Hyperlink
-	planet        *xwidget.TappableRichText
-	planetID      atomic.Int64
-	planetType    *widget.Hyperlink
-	root          *fyne.Container // content of the renderer
-	rows          []colonyDetailsRow
-	rowsFiltered  []colonyDetailsRow
-	rowsRun       xsync.LatestRun
-	searchEntry   *xwidget.SearchEntry
-	helpButton    *xwidget.Button
-	showPin       func(pinID int64, title string)
-	signalKey     string
-	sortChip      *kxwidget.SortChip
-	statusText    *xwidget.RichText
-	u             baseUI
+	characterID       atomic.Int64
+	colony            *app.CharacterPlanet
+	columnSorter      *xwidget.ColumnSorter[colonyDetailsRow]
+	errorLabel        *widget.Label
+	filterChip        *xwidget.FilterChipCompact
+	filterRun         xsync.LatestRun
+	footerLabel       *widget.Label
+	forecastRun       xsync.LatestRun
+	helpButton        *xwidget.Button
+	installationsList *widget.List
+	ownerLink         *widget.Hyperlink
+	planetText        *xwidget.TappableRichText
+	planetID          atomic.Int64
+	planetSymbol      *colonyPlanetSymbol
+	planetTypeLink    *widget.Hyperlink
+	root              *fyne.Container // content of the renderer
+	rows              []colonyDetailsRow
+	rowsFiltered      []colonyDetailsRow
+	rowsRun           xsync.LatestRun
+	searchEntry       *xwidget.SearchEntry
+	showPin           func(pinID int64, title string)
+	signalKey         string
+	sortChip          *kxwidget.SortChip
+	statusText        *xwidget.RichText
+	u                 baseUI
 }
 
 var colonyDetailsHelpText = fmt.Sprintf(`Status: The estimated current status of the colony and when it will stop working completely.
@@ -223,19 +223,19 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 		"Group",
 		xwidget.SortAsc,
 	)
-	planet := xwidget.NewTappableRichText(nil, nil)
-	planet.Wrapping = fyne.TextWrapWord
+	planetText := xwidget.NewTappableRichText(nil, nil)
+	planetText.Wrapping = fyne.TextWrapWord
 	a := &colonyDetails{
-		columnSorter: columnSorter,
-		errorLabel:   ui.NewLabelWithWrapping(""),
-		footer:       ui.NewLabelWithTruncation(""),
-		icon:         newColonyPlanetSymbol(colonyDetailsIconSize, 2),
-		owner:        makeHyperLink(),
-		planet:       planet,
-		planetType:   makeHyperLink(),
-		signalKey:    u.Signals().UniqueKey(),
-		statusText:   xwidget.NewRichText(),
-		u:            u,
+		columnSorter:   columnSorter,
+		errorLabel:     ui.NewLabelWithWrapping(""),
+		footerLabel:    ui.NewLabelWithTruncation(""),
+		ownerLink:      makeHyperLink(),
+		planetText:     planetText,
+		planetSymbol:   newColonyPlanetSymbol(colonyDetailsIconSize, 2),
+		planetTypeLink: makeHyperLink(),
+		signalKey:      u.Signals().UniqueKey(),
+		statusText:     xwidget.NewRichText(),
+		u:              u,
 	}
 	a.ExtendBaseWidget(a)
 
@@ -244,7 +244,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 
 	a.statusText.Wrapping = fyne.TextWrapWord // long status would widen the window on mobile
 	a.errorLabel.Hide()
-	a.icon.icon.CornerRadius = theme.InputRadiusSize()
+	a.planetSymbol.icon.CornerRadius = theme.InputRadiusSize()
 
 	list := widget.NewList(
 		func() int {
@@ -275,7 +275,7 @@ func newColonyDetails(u baseUI, characterID, planetID int64) *colonyDetails {
 			a.showPin(r.pinID, title)
 		}
 	}
-	a.installations = list
+	a.installationsList = list
 
 	// filters
 	a.filterChip = xwidget.NewFilterChipCompact(nil, func(map[string]string) {
@@ -334,11 +334,11 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			// aligns the icon with the first text line, which has inner padding
 			container.New(
 				layout.NewCustomPaddedLayout(theme.InnerPadding(), 0, 0, 0),
-				a.icon,
+				a.planetSymbol,
 			),
 		),
 		nil,
-		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.planet, a.planetType, a.owner, a.statusText),
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p), a.planetText, a.planetTypeLink, a.ownerLink, a.statusText),
 	)
 
 	filter := container.NewBorder(
@@ -355,10 +355,10 @@ func (a *colonyDetails) CreateRenderer() fyne.WidgetRenderer {
 			xwidget.NewStandardSpacer(),
 			filter,
 		),
-		container.NewVBox(a.errorLabel, container.NewBorder(nil, nil, nil, a.helpButton, a.footer)),
+		container.NewVBox(a.errorLabel, container.NewBorder(nil, nil, nil, a.helpButton, a.footerLabel)),
 		nil,
 		nil,
-		a.installations,
+		a.installationsList,
 	)
 
 	a.root = container.NewBorder(
@@ -470,12 +470,12 @@ func (a *colonyDetails) filterRowsAsync() {
 			if !isLatest() {
 				return
 			}
-			a.footer.Text = footer
-			a.footer.Importance = widget.MediumImportance
-			a.footer.Refresh()
+			a.footerLabel.Text = footer
+			a.footerLabel.Importance = widget.MediumImportance
+			a.footerLabel.Refresh()
 			a.rowsFiltered = rows
 			a.filterChip.SetOptions(options...)
-			a.installations.Refresh()
+			a.installationsList.Refresh()
 
 		})
 	})
@@ -483,7 +483,7 @@ func (a *colonyDetails) filterRowsAsync() {
 
 func (a *colonyDetails) Update(ctx context.Context) error {
 	isLatest := a.rowsRun.Start() // before fetching, so a slower earlier fetch can't win
-	reset := func() {
+	reset := func(issue string, importance widget.Importance) {
 		fyne.Do(func() {
 			if !isLatest() {
 				return
@@ -492,20 +492,12 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 			a.forecastRun.Discard()
 			xslices.Clear(&a.rows)
 			a.filterRowsAsync()
-		})
-	}
-	setInfo := func(s string, i widget.Importance) {
-		fyne.Do(func() {
-			if !isLatest() {
-				return
-			}
-			a.setIssue(s, i)
+			a.setIssue(issue, importance)
 		})
 	}
 	characterID := a.characterID.Load()
 	if characterID == 0 {
-		reset()
-		setInfo("No character", widget.WarningImportance)
+		reset("No character", widget.WarningImportance)
 		return nil
 	}
 	c, err := a.u.Character().GetCharacter(ctx, characterID)
@@ -513,8 +505,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		if ctx.Err() != nil {
 			return err // canceled, keeps the current colony
 		}
-		reset()
-		setInfo("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	cp, err := a.u.Character().GetPlanet(ctx, c.ID, a.planetID.Load())
@@ -522,8 +513,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		if ctx.Err() != nil {
 			return err // canceled, keeps the current colony
 		}
-		reset()
-		setInfo("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
+		reset("ERROR: "+a.u.ErrorDisplay(err), widget.DangerImportance)
 		return err
 	}
 	stopped, status, rows := a.makeRows(cp, time.Now())
@@ -532,16 +522,16 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 		if !isLatest() {
 			return
 		}
-		a.planet.Set(cp.NameRichText())
-		a.planet.OnTapped = func() {
+		a.planetText.Set(cp.NameRichText())
+		a.planetText.OnTapped = func() {
 			a.u.InfoViewer().Show(cp.EvePlanet.SolarSystem.ToEveEntity())
 		}
-		a.planetType.SetText(cp.EvePlanet.TypeDisplay())
-		a.planetType.OnTapped = func() {
+		a.planetTypeLink.SetText(cp.EvePlanet.TypeDisplay())
+		a.planetTypeLink.OnTapped = func() {
 			a.u.InfoViewer().Show(cp.EvePlanet.Type.ToEveEntity())
 		}
-		a.owner.SetText(c.NameOrZero())
-		a.owner.OnTapped = func() {
+		a.ownerLink.SetText(c.NameOrZero())
+		a.ownerLink.OnTapped = func() {
 			a.u.InfoViewer().Show(&app.EveEntity{Category: app.EveEntityCharacter, ID: cp.CharacterID})
 		}
 
@@ -558,7 +548,7 @@ func (a *colonyDetails) Update(ctx context.Context) error {
 // setStatus shows the status of the colony and its planet icon.
 func (a *colonyDetails) setStatus(cp *app.CharacterPlanet, stopped bool, display []widget.RichTextSegment) {
 	a.statusText.Set(display)
-	a.icon.set(cp.EvePlanet.Type.IconID.ValueOrZero(), stopped)
+	a.planetSymbol.set(cp.EvePlanet.Type.IconID.ValueOrZero(), stopped)
 }
 
 // makeRows returns whether the colony has stopped, the display of its status

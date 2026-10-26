@@ -112,7 +112,7 @@ func TestColonyDetails(t *testing.T) {
 		w.Resize(fyne.NewSize(160, 640)) // narrow, so the header texts wrap
 		require.NoError(t, a.Update(t.Context()))
 		w.Resize(fyne.NewSize(360, 640))
-		for _, o := range []fyne.CanvasObject{a.planet, a.planetType, a.owner, a.statusText} {
+		for _, o := range []fyne.CanvasObject{a.planetText, a.planetTypeLink, a.ownerLink, a.statusText} {
 			assert.Equal(t, o.MinSize().Height, o.Size().Height)
 		}
 	})
@@ -186,7 +186,7 @@ func TestColonyDetails(t *testing.T) {
 		defer func() { a.showPin = nil }()
 		i := slices.IndexFunc(a.rowsFiltered, func(r colonyDetailsRow) bool { return r.pinType == pinTypeStorage })
 		require.NotEqual(t, -1, i)
-		a.installations.Select(i)
+		a.installationsList.Select(i)
 		assert.EqualValues(t, 2, pinID)
 		assert.Equal(t, "Storage 31-111 on "+cp.EvePlanet.Name, title) // pin ID 2
 	})
@@ -251,11 +251,11 @@ func TestColonyDetails(t *testing.T) {
 		assertPages(t, 0, "after close")
 	})
 	t.Run("should update planet icon on refresh", func(t *testing.T) {
-		a.icon.icon.Resource = nil
+		a.planetSymbol.icon.Resource = nil
 		a.refreshForecast()
 		want := colonyPlanetIcon(cp.EvePlanet.Type.IconID.ValueOrZero(), false) // not setup, but still extracting
-		assert.Equal(t, want, a.icon.icon.Resource)
-		assert.False(t, a.icon.attention.Visible())
+		assert.Equal(t, want, a.planetSymbol.icon.Resource)
+		assert.False(t, a.planetSymbol.attention.Visible())
 	})
 	t.Run("should not restore colony on refresh after a failed update", func(t *testing.T) {
 		a.characterID.Store(0)
