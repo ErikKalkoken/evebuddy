@@ -125,7 +125,7 @@ func TestMailer_Modes(t *testing.T) {
 	t.Run("from is the character and can not be changed", func(t *testing.T) {
 		a := newMailer(u, c, New, nil, test.NewWindow(nil))
 		assert.Equal(t, []*app.EveEntity{{ID: c.ID, Name: c.EveCharacter.Name, Category: app.EveEntityCharacter}}, a.fromEntry.Items())
-		assert.True(t, a.fromEntry.Disabled())
+		assert.True(t, a.fromEntry.readOnly)
 	})
 	t.Run("reply is addressed to sender", func(t *testing.T) {
 		a := newMailer(u, c, Reply, m, test.NewWindow(nil))

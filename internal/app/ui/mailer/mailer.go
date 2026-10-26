@@ -138,7 +138,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		Name:     c.EveCharacter.Name,
 		Category: app.EveEntityCharacter,
 	}})
-	a.fromEntry.Disable()
+	a.fromEntry.readOnly = true
 
 	a.toButton = widget.NewButton("To", func() {
 		if a.u.IsOffline() {
@@ -205,7 +205,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 		characterID := a.character.Load().ID
 		subject := a.subjectEntry.Text
 		body := a.bodyEntry.Text
-		recipients := slices.Clone(a.toEntry.Items())
+		recipients := a.toEntry.Items()
 		to := a.toEntry.String()
 		ok := a.u.Go(func(ctx context.Context) {
 			err := a.send(ctx, characterID, subject, recipients, body)

@@ -3,7 +3,9 @@ package mailer
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/icons"
 )
 
 func TestEveEntityEntry(t *testing.T) {
@@ -72,29 +75,40 @@ func TestEveEntityEntry_BadgeMenu(t *testing.T) {
 	test.NewTempApp(t)
 	loadIcon := testutil.NewEveImageServiceStub().EveEntityLogoAsync
 
-	t.Run("name item of character shows info", func(t *testing.T) {
-		// given
-		iv := &testdouble.InfoViewerFake{}
+	t.Run("menu has disabled name item and actions", func(t *testing.T) {
 		ee := &app.EveEntity{ID: 1, Name: "Bruce Wayne", Category: app.EveEntityCharacter}
 		w := newEveEntityEntry(widget.NewLabel("To"), labelWith, loadIcon)
-		w.showInfo = iv.Show
+		w.showInfo = (&testdouble.InfoViewerFake{}).Show
 		w.Set([]*app.EveEntity{ee})
 		menu := w.makeBadgeMenu(ee)
-		require.NotNil(t, menu.Items[0].Action)
-		// when
-		menu.Items[0].Action()
-		// then
-		assert.Equal(t, "Bruce Wayne (Character)", menu.Items[0].Label)
-		assert.Equal(t, []*app.EveEntity{ee}, iv.Shown)
+		assert.Equal(t, []string{"Bruce Wayne (Character)", "", "Show Info", "Remove"}, menuLabels(menu))
+		assert.True(t, menu.Items[0].Disabled)
+		assert.Nil(t, menu.Items[0].Action)
+		assert.Equal(t, theme.NewThemedResource(icons.AccountCircleSvg).Name(), menu.Items[0].Icon.Name())
 	})
-	t.Run("name item of other categories has no action", func(t *testing.T) {
+	t.Run("show info item shows info", func(t *testing.T) {
+		// given
 		iv := &testdouble.InfoViewerFake{}
 		ee := &app.EveEntity{ID: 1, Name: "Wayne Enterprises", Category: app.EveEntityCorporation}
 		w := newEveEntityEntry(widget.NewLabel("To"), labelWith, loadIcon)
 		w.showInfo = iv.Show
 		w.Set([]*app.EveEntity{ee})
 		menu := w.makeBadgeMenu(ee)
-		assert.Nil(t, menu.Items[0].Action)
+		require.Equal(t, "Show Info", menu.Items[2].Label)
+		assert.Equal(t, theme.NewThemedResource(icons.StarCircleOutlineSvg).Name(), menu.Items[0].Icon.Name())
+		// when
+		menu.Items[2].Action()
+		// then
+		assert.Equal(t, []*app.EveEntity{ee}, iv.Shown)
+	})
+	t.Run("mailing list has no show info item", func(t *testing.T) {
+		ee := &app.EveEntity{ID: 1, Name: "Justice League", Category: app.EveEntityMailList}
+		w := newEveEntityEntry(widget.NewLabel("To"), labelWith, loadIcon)
+		w.showInfo = (&testdouble.InfoViewerFake{}).Show
+		w.Set([]*app.EveEntity{ee})
+		menu := w.makeBadgeMenu(ee)
+		assert.Equal(t, []string{"Justice League (Mailing List)", "", "Remove"}, menuLabels(menu))
+		assert.Equal(t, theme.MailComposeIcon().Name(), menu.Items[0].Icon.Name())
 	})
 	t.Run("remove item removes the entity", func(t *testing.T) {
 		// given
@@ -103,19 +117,28 @@ func TestEveEntityEntry_BadgeMenu(t *testing.T) {
 		w := newEveEntityEntry(widget.NewLabel("To"), labelWith, loadIcon)
 		w.Set([]*app.EveEntity{e1, e2})
 		menu := w.makeBadgeMenu(e1)
-		require.False(t, menu.Items[2].Disabled)
+		require.Equal(t, "Remove", menu.Items[2].Label)
 		// when
 		menu.Items[2].Action()
 		// then
 		assert.Equal(t, []*app.EveEntity{e2}, w.Items())
 	})
-	t.Run("remove item is disabled when entry is disabled", func(t *testing.T) {
+	t.Run("read-only entry has no remove item", func(t *testing.T) {
 		ee := &app.EveEntity{ID: 1, Name: "Bruce Wayne", Category: app.EveEntityCharacter}
 		w := newEveEntityEntry(widget.NewLabel("From"), labelWith, loadIcon)
+		w.readOnly = true
+		w.showInfo = (&testdouble.InfoViewerFake{}).Show
 		w.Set([]*app.EveEntity{ee})
-		w.Disable()
 		menu := w.makeBadgeMenu(ee)
-		assert.True(t, menu.Items[2].Disabled)
+		assert.Equal(t, []string{"Bruce Wayne (Character)", "", "Show Info"}, menuLabels(menu))
+	})
+	t.Run("read-only entry without actions has only name item", func(t *testing.T) {
+		ee := &app.EveEntity{ID: 1, Name: "Justice League", Category: app.EveEntityMailList}
+		w := newEveEntityEntry(widget.NewLabel("From"), labelWith, loadIcon)
+		w.readOnly = true
+		w.Set([]*app.EveEntity{ee})
+		menu := w.makeBadgeMenu(ee)
+		assert.Equal(t, []string{"Justice League (Mailing List)"}, menuLabels(menu))
 	})
 	t.Run("tapping a badge shows its menu", func(t *testing.T) {
 		// given
@@ -136,4 +159,12 @@ func TestEveEntityEntry_BadgeMenu(t *testing.T) {
 		// then
 		assert.NotNil(t, win.Canvas().Overlays().Top())
 	})
+}
+
+func menuLabels(menu *fyne.Menu) []string {
+	var s []string
+	for _, it := range menu.Items {
+		s = append(s, it.Label)
+	}
+	return s
 }
