@@ -89,7 +89,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Industry: Browse industry jobs for all characters and related corporations
   - Location: Browse the location of all characters and their current ships
   - Mails: A unified mails browser for all characters
-  - Skills: Keep track of the training status for all characters, search for skills across all characters and export training status to clipboard or file
+  - Skills: Keep track of the training status for all characters, search for skills across all characters and export training status to clipboard or file. Create skill plans and compare all characters against their requirements, grouped by account tags
   - Structures: Unified view of all corporation structures across all your corporations, with filtering by owner, system, region, type, state and services
   - Wealth: Charts showing wealth distribution across all characters
 
@@ -146,6 +146,47 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
 - **Customizable UI**: The UI can be customized:
   - Color theme: Dark or Light theme
   - UI scaling: Custom scaling of the whole UI (desktop only)
+
+### Skill plans
+
+Open **Skills > Plans** in the overview on desktop or mobile:
+
+Mobile is view-only: select existing saved plans, filter characters, and inspect
+requirements and qualification status. Creating, importing, editing, and deleting
+plans are available only on desktop.
+
+1. On desktop, select **New / Import** and enter a plan name. Add skills with the skill picker,
+   or paste a list with one skill name and required level per line, for example:
+
+   ```text
+   Navigation IV
+   Afterburner 3
+   ```
+
+   Levels can be `I` through `V` or `1` through `5`. Duplicate skills are merged
+   at the highest requested level. Unknown skills, invalid levels, empty plans,
+   and duplicate plan names are rejected. Refresh the skill catalogue if a skill
+   is not yet available.
+2. Save the plan and select it to compare every added character. Plans are stored
+   locally and can be edited or deleted without changing character skills.
+3. Assign character tags in **Manage characters** to represent accounts. The
+   overview shows portraits beside character names and groups characters by
+   those tags; a character with several tags
+   appears in each group, and characters without tags appear under **Untagged**.
+4. Filter by account tag, search by character or tag name, or enable
+   **Qualified only**. Compact, padded skill rows show the name on the left and
+   required level on the right. Select a character to see active and missing
+   levels beneath each skill alongside the character list.
+
+A character qualifies only when **all active skill levels** meet the plan.
+Trained but restricted skills and queued skills do not count. Results use the
+last successful ESI skills sync and refresh after skills syncs and tag changes.
+Characters whose skills have never synced are **Unknown**, not qualified.
+The detail panel shows the snapshot date and any latest sync error.
+
+ESI currently does not expose saved in-game skill plans. Plans are therefore
+created in EVE Buddy or imported by pasting a skill list, not fetched from ESI.
+All characters to be checked must first be added to EVE Buddy.
 
 ## Installing
 
