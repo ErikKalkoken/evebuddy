@@ -28,14 +28,12 @@ type statusCacheRecorder struct {
 
 func (c *statusCacheRecorder) DeleteCorporation(_ int64) {}
 
+func (c *statusCacheRecorder) SetCorporation(_ int64, _ string) {}
+
 func (c *statusCacheRecorder) SetCorporationSection(o *app.CorporationSectionStatus) {
 	if o == nil {
 		c.calledWithNil = true
 	}
-}
-
-func (c *statusCacheRecorder) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
-	return nil
 }
 
 func TestUpdateSectionIfChanged(t *testing.T) {

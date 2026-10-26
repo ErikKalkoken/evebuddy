@@ -14,7 +14,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/singleinstance"
@@ -60,9 +59,9 @@ type Settings interface {
 type StatusCache interface {
 	DeleteCharacter(characterID int64)
 	DeleteCorporation(corporationID int64)
+	SetCharacter(characterID int64, name string)
 	SetCharacterSection(o *app.CharacterSectionStatus)
-	UpdateCharacters(ctx context.Context, st statuscache.Storage) error
-	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
+	SetCorporation(corporationID int64, name string)
 }
 
 // CharacterService provides access to all managed EVE Online characters both online and from local storage.

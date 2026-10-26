@@ -42,9 +42,7 @@ func (s *CorporationService) getOrCreateCorporation(ctx context.Context, corpora
 	if err != nil {
 		return nil, err
 	}
-	if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-		return nil, err
-	}
+	s.scs.SetCorporation(corporation.ID, corporation.Name)
 	return o, nil
 }
 

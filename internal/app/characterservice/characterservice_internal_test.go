@@ -28,15 +28,13 @@ func (c *StatusCacheStub) DeleteCharacter(characterID int64) {
 func (c *StatusCacheStub) DeleteCorporation(corporationID int64) {
 }
 
+func (c *StatusCacheStub) SetCharacter(_ int64, _ string) {
+}
+
 func (c *StatusCacheStub) SetCharacterSection(o *app.CharacterSectionStatus) {
 }
 
-func (c *StatusCacheStub) UpdateCharacters(ctx context.Context, st statuscache.Storage) error {
-	return nil
-}
-
-func (c *StatusCacheStub) UpdateCorporations(ctx context.Context, st statuscache.Storage) error {
-	return nil
+func (c *StatusCacheStub) SetCorporation(_ int64, _ string) {
 }
 
 type EVENotificationServiceStub struct {

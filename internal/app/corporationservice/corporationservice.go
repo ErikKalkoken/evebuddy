@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverseservice"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
@@ -33,8 +32,8 @@ type Settings interface {
 
 type StatusCache interface {
 	DeleteCorporation(corporationID int64)
+	SetCorporation(corporationID int64, name string)
 	SetCorporationSection(o *app.CorporationSectionStatus)
-	UpdateCorporations(ctx context.Context, st statuscache.Storage) error
 }
 
 // CorporationService provides access to all managed EVE Online corporations both online and from local storage.

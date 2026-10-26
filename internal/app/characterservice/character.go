@@ -158,7 +158,8 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	}
 
 	setInfo("Fetching corporation from game server...")
-	if _, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID); err != nil {
+	corporation, err := s.eus.UpdateOrCreateCorporationFromESI(ctx, character.Corporation.ID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -184,16 +185,12 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, s
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, token); err != nil {
 		return nil, err
 	}
-	if err := s.scs.UpdateCharacters(ctx, s.st); err != nil {
-		return nil, err
-	}
+	s.scs.SetCharacter(characterID, character.Name)
 	if isNPC, _ := character.Corporation.IsNPC().Value(); !isNPC {
 		if _, err = s.st.GetOrCreateCorporation(ctx, character.Corporation.ID); err != nil {
 			return nil, err
 		}
-		if err := s.scs.UpdateCorporations(ctx, s.st); err != nil {
-			return nil, err
-		}
+		s.scs.SetCorporation(corporation.ID, corporation.Name)
 	}
 	c, err := s.st.GetCharacter(ctx, characterID)
 	if err != nil {
