@@ -43,6 +43,10 @@ const (
 
 const labelWith = 45
 
+// runAsync runs f in a new goroutine.
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
+
 type baseUI interface {
 	Character() *characterservice.CharacterService
 	ErrorDisplay(err error) string
@@ -88,6 +92,7 @@ type mailer struct {
 	fromEntry    *eveEntityEntry
 	sendButton   *kxwidget.LoadingButton
 	subjectEntry *widget.Entry
+	toButton     *widget.Button
 	toEntry      *eveEntityEntry
 	u            baseUI
 	w            fyne.Window
@@ -110,7 +115,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 	}})
 	a.fromEntry.Disable()
 
-	toButton := widget.NewButton("To", func() {
+	a.toButton = widget.NewButton("To", func() {
 		if a.u.IsOffline() {
 			ui.ShowInformation("OFFLINE", "Search not available while offline", a.w)
 			return
@@ -119,7 +124,7 @@ func newMailer(u baseUI, c *app.Character, mode Mode, mail *app.CharacterMail, w
 			a.toEntry.Add(ee)
 		}, a.w)
 	})
-	a.toEntry = newEveEntityEntry(toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
+	a.toEntry = newEveEntityEntry(a.toButton, labelWith, u.EVEImage().EveEntityLogoAsync)
 	a.toEntry.showInfo = u.InfoViewer().Show
 	a.toEntry.placeholderText = "Tap To-Button to add recipients..."
 
@@ -230,63 +235,87 @@ func (a *mailer) send(ctx context.Context, characterID int64, subject string, re
 	if err != nil {
 		return err
 	}
-	go a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
-		CharacterID: characterID,
-		Section:     app.SectionCharacterMailHeaders,
+	runAsync(func() {
+		a.u.Signals().CharacterSectionChanged.Emit(ctx, app.CharacterSectionUpdated{
+			CharacterID: characterID,
+			Section:     app.SectionCharacterMailHeaders,
+		})
 	})
 	return nil
 }
 
 func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) {
-	var modal *widget.PopUp
-	var results []*app.EveEntity
-	list := widget.NewList(
+	d := newAddDialog(u, characterID, onSelected, w)
+	modal := widget.NewModalPopUp(d, w.Canvas())
+	d.onClose = modal.Hide
+	_, s := w.Canvas().InteractiveArea()
+	modal.Resize(fyne.NewSize(s.Width, s.Height))
+	modal.Show()
+	w.Canvas().Focus(d.searchEntry)
+}
+
+// addDialog is a widget for searching and adding a recipient.
+type addDialog struct {
+	widget.BaseWidget
+
+	onClose func()
+
+	cancelButton *widget.Button
+	list         *widget.List
+	results      []*app.EveEntity
+	searchEntry  *xwidget.SearchEntry
+}
+
+func newAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntity), w fyne.Window) *addDialog {
+	d := &addDialog{}
+	d.ExtendBaseWidget(d)
+	d.list = widget.NewList(
 		func() int {
-			return len(results)
+			return len(d.results)
 		},
 		func() fyne.CanvasObject {
 			return newEntityItem(u.EVEImage().EveEntityLogoAsync)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(results) {
+			if id >= len(d.results) {
 				return
 			}
-			co.(*entityItem).set(results[id])
+			co.(*entityItem).set(d.results[id])
 		},
 	)
-	list.HideSeparators = true
-	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(results) {
-			list.UnselectAll()
+	d.list.HideSeparators = true
+	d.list.OnSelected = func(id widget.ListItemID) {
+		if id >= len(d.results) {
+			d.list.UnselectAll()
 			return
 		}
-		onSelected(results[id])
-		modal.Hide()
+		onSelected(d.results[id])
+		d.close()
 	}
 	showErrorDialog := func(search string, err error) {
 		fyne.Do(func() {
 			ui.ShowErrorAndLog("Search for '"+search+"' failed", err, u.IsDeveloperMode(), w)
 		})
 	}
-	entry := xwidget.NewSearchEntry("Type to start searching...", func(search string) {
+	d.searchEntry = xwidget.NewSearchEntry("Type to start searching...", func(search string) {
 		if len(search) < 3 {
-			results = results[:0]
-			list.Refresh()
+			d.results = d.results[:0]
+			d.list.Refresh()
 			return
 		}
 		ctx := context.Background()
-		go func() {
+		runAsync(func() {
 			r, err := u.EVEUniverse().ListEntitiesByPartialName(ctx, search)
 			if err != nil {
 				showErrorDialog(search, err)
 				return
 			}
 			fyne.Do(func() {
-				results = r
-				list.Refresh()
+				d.results = r
+				d.list.Refresh()
 			})
-		}()
-		go func() {
+		})
+		runAsync(func() {
 			missingIDs, err := u.Character().AddEveEntitiesFromSearchESI(
 				ctx,
 				characterID,
@@ -305,29 +334,36 @@ func showAddDialog(u baseUI, characterID int64, onSelected func(ee *app.EveEntit
 				return
 			}
 			fyne.Do(func() {
-				results = r
-				list.Refresh()
+				d.results = r
+				d.list.Refresh()
 			})
-		}()
+		})
 	})
+	d.cancelButton = widget.NewButton("Cancel", func() {
+		d.close()
+	})
+	return d
+}
+
+func (d *addDialog) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		container.NewBorder(
 			widget.NewLabel("Add Recipient"),
 			nil,
 			nil,
-			widget.NewButton("Cancel", func() {
-				modal.Hide()
-			}),
-			entry,
+			d.cancelButton,
+			d.searchEntry,
 		),
 		nil,
 		nil,
 		nil,
-		list,
+		d.list,
 	)
-	modal = widget.NewModalPopUp(c, w.Canvas())
-	_, s := w.Canvas().InteractiveArea()
-	modal.Resize(fyne.NewSize(s.Width, s.Height))
-	modal.Show()
-	w.Canvas().Focus(entry)
+	return widget.NewSimpleRenderer(c)
+}
+
+func (d *addDialog) close() {
+	if d.onClose != nil {
+		d.onClose()
+	}
 }

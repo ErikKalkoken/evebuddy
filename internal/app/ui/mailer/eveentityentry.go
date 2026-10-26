@@ -117,7 +117,6 @@ func (w *eveEntityEntry) update() {
 		w.main.Add(container.New(columns, w.label, w.placeholder))
 	} else {
 		firstRow := true
-		isDisabled := w.Disabled()
 		for _, ee := range w.items {
 			var label fyne.CanvasObject
 			if firstRow {
@@ -128,30 +127,36 @@ func (w *eveEntityEntry) update() {
 			}
 			badge := newEveEntityBadge(ee, w.loadIcon)
 			badge.OnTapped = func() {
-				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
-				nameItem := fyne.NewMenuItem(s, nil)
-				nameItem.Icon = icons.Questionmark32Png
-				if ee.Category == app.EveEntityCharacter && w.showInfo != nil {
-					nameItem.Action = func() {
-						w.showInfo(ee)
-					}
-				}
-				removeItem := fyne.NewMenuItem("Remove", func() {
-					w.Remove(ee.ID)
-				})
-				removeItem.Icon = theme.DeleteIcon()
-				removeItem.Disabled = isDisabled
-				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
+				menu := w.makeBadgeMenu(ee)
 				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
 				pm.ShowAtRelativePosition(fyne.Position{}, badge)
 				w.loadIcon(ee, ui.IconPixelSize, func(r fyne.Resource) {
-					nameItem.Icon = r
+					menu.Items[0].Icon = r
 					pm.Refresh()
 				})
 			}
 			w.main.Add(container.New(columns, label, badge))
 		}
 	}
+}
+
+// makeBadgeMenu returns the context menu for the badge of ee.
+// The first item is the name item.
+func (w *eveEntityEntry) makeBadgeMenu(ee *app.EveEntity) *fyne.Menu {
+	s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
+	nameItem := fyne.NewMenuItem(s, nil)
+	nameItem.Icon = icons.Questionmark32Png
+	if ee.Category == app.EveEntityCharacter && w.showInfo != nil {
+		nameItem.Action = func() {
+			w.showInfo(ee)
+		}
+	}
+	removeItem := fyne.NewMenuItem("Remove", func() {
+		w.Remove(ee.ID)
+	})
+	removeItem.Icon = theme.DeleteIcon()
+	removeItem.Disabled = w.Disabled()
+	return fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
 }
 
 func (w *eveEntityEntry) Refresh() {
