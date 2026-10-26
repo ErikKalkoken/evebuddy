@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/ErikKalkoken/eveauth"
@@ -77,9 +78,157 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 		xassert.Equal(t, "refresh-new", token.RefreshToken)
 		assert.True(t, token.ExpiresAt.After(time.Now()))
 	})
-	t.Run("should persist refreshed token when canceled after refresh", func(t *testing.T) {
+}
+
+func TestCharacterService_EnsureValidToken_RefreshTimeout(t *testing.T) {
+	// given
+	_, st, factory := testutil.NewDBOnDisk(t)
+	synctest.Test(t, func(t *testing.T) {
+		character := factory.CreateCharacter()
+		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  "access-old",
+			CharacterID:  character.ID,
+			ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
+			RefreshToken: "refresh-old",
+		})
+		cs := NewFake(Params{Storage: st, AuthClient: authClientWaitForCtx{}})
+		start := time.Now()
+		// when
+		_, err := cs.ensureValidToken(context.Background(), token)
+		// then
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.NotErrorIs(t, err, app.ErrCanceled)
+		xassert.Equal(t, tokenRefreshTimeout, time.Since(start))
+		x, err := st.GetCharacterToken(context.Background(), character.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "refresh-old", x.RefreshToken)
+	})
+}
+
+func TestCharacterService_EnsureValidToken_SingleflightLeaderCanceled(t *testing.T) {
+	// given
+	_, st, factory := testutil.NewDBOnDisk(t)
+	synctest.Test(t, func(t *testing.T) {
+		character := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  "access-old",
+			CharacterID:  character.ID,
+			ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
+			RefreshToken: "refresh-old",
+		})
+		token2 := factory.CreateToken(app.Token{
+			AccessToken:   "access-new",
+			CharacterID:   character.ID,
+			CharacterName: character.EveCharacter.Name,
+			RefreshToken:  "refresh-new",
+		})
+		getToken := func() *app.CharacterToken {
+			x, err := st.GetCharacterToken(context.Background(), character.ID)
+			require.NoError(t, err)
+			return x
+		}
+		ac := authClientBlockRefresh{
+			AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
+			release:        make(chan struct{}),
+		}
+		cs := NewFake(Params{Storage: st, AuthClient: ac})
+
+		// leader: cancelable ctx, e.g. from a game search
+		ctxLeader, cancelLeader := context.WithCancel(context.Background())
+		tokenLeader := getToken()
+		var errLeader error
+		leaderDone := make(chan struct{})
+		go func() {
+			defer close(leaderDone)
+			_, errLeader = cs.ensureValidToken(ctxLeader, tokenLeader)
+		}()
+		synctest.Wait() // the leader's refresh is now in flight
+
+		// follower: independent, never-canceled ctx, e.g. from a section update
+		tokenFollower := getToken()
+		var errFollower error
+		followerDone := make(chan struct{})
+		go func() {
+			defer close(followerDone)
+			_, errFollower = cs.ensureValidToken(context.Background(), tokenFollower)
+		}()
+		synctest.Wait() // the follower has joined the in-flight singleflight call
+
+		// when
+		cancelLeader()
+		synctest.Wait()
+
+		// then
+		select {
+		case <-leaderDone:
+		default:
+			assert.Fail(t, "leader waited for the refresh after cancel")
+		}
+		close(ac.release)
+		<-leaderDone
+		<-followerDone
+		assert.ErrorIs(t, errLeader, app.ErrCanceled)
+		require.NoError(t, errFollower)
+		xassert.Equal(t, "refresh-new", tokenFollower.RefreshToken)
+		xassert.Equal(t, "refresh-new", getToken().RefreshToken)
+	})
+}
+
+func TestCharacterService_EnsureValidToken_Stop(t *testing.T) {
+	t.Run("should wait for a refreshed token to be persisted", func(t *testing.T) {
 		// given
-		testutil.MustTruncateTables(db)
+		_, st, factory := testutil.NewDBOnDisk(t)
+		synctest.Test(t, func(t *testing.T) {
+			character := factory.CreateCharacter()
+			token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+				AccessToken:  "access-old",
+				CharacterID:  character.ID,
+				ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
+				RefreshToken: "refresh-old",
+			})
+			token2 := factory.CreateToken(app.Token{
+				AccessToken:   "access-new",
+				CharacterID:   character.ID,
+				CharacterName: character.EveCharacter.Name,
+				RefreshToken:  "refresh-new",
+			})
+			ac := authClientBlockRefreshIgnoreCtx{
+				AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
+				release:        make(chan struct{}),
+			}
+			cs := NewFake(Params{Storage: st, AuthClient: ac})
+			ctx, cancel := context.WithCancel(context.Background())
+			callerDone := make(chan struct{})
+			go func() {
+				defer close(callerDone)
+				_, _ = cs.ensureValidToken(ctx, token)
+			}()
+			synctest.Wait() // the refresh is now in flight
+			cancel()
+			<-callerDone
+			// when
+			stopDone := make(chan struct{})
+			go func() {
+				defer close(stopDone)
+				cs.Stop()
+			}()
+			synctest.Wait()
+			// then
+			select {
+			case <-stopDone:
+				assert.Fail(t, "Stop returned before the refresh finished")
+			default:
+			}
+			close(ac.release)
+			<-stopDone
+			x, err := st.GetCharacterToken(context.Background(), character.ID)
+			require.NoError(t, err)
+			xassert.Equal(t, "refresh-new", x.RefreshToken)
+		})
+	})
+	t.Run("should not start a refresh after stop", func(t *testing.T) {
+		// given
+		_, st, factory := testutil.NewDBOnDisk(t)
 		character := factory.CreateCharacter()
 		token := factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
 			AccessToken:  "access-old",
@@ -93,108 +242,53 @@ func TestCharacterService_EnsureValidToken(t *testing.T) {
 			CharacterName: character.EveCharacter.Name,
 			RefreshToken:  "refresh-new",
 		})
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		cs := NewFake(Params{Storage: st, AuthClient: authClientCancelAfterRefresh{
-			AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
-			cancel:         cancel,
-		}})
+		cs := NewFake(Params{Storage: st, AuthClient: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)}})
+		cs.Stop()
 		// when
-		changed, err := cs.ensureValidToken(ctx, token)
+		_, err := cs.ensureValidToken(context.Background(), token)
 		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
+		assert.ErrorIs(t, err, app.ErrCanceled)
 		x, err := st.GetCharacterToken(context.Background(), character.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, "access-new", x.AccessToken)
-		xassert.Equal(t, "refresh-new", x.RefreshToken)
+		xassert.Equal(t, "refresh-old", x.RefreshToken)
 	})
 }
 
-func TestCharacterService_EnsureValidToken_SingleflightLeaderCanceled(t *testing.T) {
-	_, st, factory := testutil.NewDBOnDisk(t)
-	character := factory.CreateCharacter()
-	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
-		AccessToken:  "access-old",
-		CharacterID:  character.ID,
-		ExpiresAt:    time.Now().UTC().Add(-10 * time.Second),
-		RefreshToken: "refresh-old",
-	})
-	token2 := factory.CreateToken(app.Token{
-		AccessToken:   "access-new",
-		CharacterID:   character.ID,
-		CharacterName: character.EveCharacter.Name,
-		RefreshToken:  "refresh-new",
-	})
-	ac := authClientBlockRefresh{
-		AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
-		entered:        make(chan struct{}),
-	}
-	cs := NewFake(Params{Storage: st, AuthClient: ac})
-	getToken := func() *app.CharacterToken {
-		x, err := st.GetCharacterToken(context.Background(), character.ID)
-		require.NoError(t, err)
-		return x
-	}
-
-	// leader: cancelable ctx, e.g. tied to the update scheduler
-	ctxLeader, cancelLeader := context.WithCancel(context.Background())
-	var errLeader error
-	leaderDone := make(chan struct{})
-	go func() {
-		defer close(leaderDone)
-		_, errLeader = cs.ensureValidToken(ctxLeader, getToken())
-	}()
-	select {
-	case <-ac.entered:
-		// the leader's refresh is now in flight
-	case <-time.After(time.Second):
-		t.Fatal("leader never reached the refresh")
-	}
-
-	// follower: independent, never-canceled ctx, e.g. from a manual reload
-	tokenFollower := getToken()
-	var errFollower error
-	followerDone := make(chan struct{})
-	go func() {
-		defer close(followerDone)
-		_, errFollower = cs.ensureValidToken(context.Background(), tokenFollower)
-	}()
-	time.Sleep(20 * time.Millisecond) // let the follower join the in-flight singleflight call
-
-	// when
-	cancelLeader()
-	<-leaderDone
-	<-followerDone
-
-	// then
-	assert.ErrorIs(t, errLeader, app.ErrCanceled)
-	assert.ErrorIs(t, errFollower, app.ErrCanceled, "follower must see the leader's cancel as a cancel")
-	xassert.Equal(t, "refresh-old", getToken().RefreshToken)
+// authClientBlockRefreshIgnoreCtx blocks the refresh until released
+// and then succeeds, like a response that arrived before a cancel.
+type authClientBlockRefreshIgnoreCtx struct {
+	testutil.AuthClientStub
+	release chan struct{}
 }
 
-// authClientBlockRefresh blocks the refresh until its ctx is canceled.
+func (s authClientBlockRefreshIgnoreCtx) RefreshToken(ctx context.Context, token *eveauth.Token) error {
+	<-s.release
+	return s.AuthClientStub.RefreshToken(ctx, token)
+}
+
+// authClientBlockRefresh blocks the refresh until released
+// and fails if its ctx was canceled meanwhile.
 type authClientBlockRefresh struct {
 	testutil.AuthClientStub
-	entered chan struct{}
+	release chan struct{}
 }
 
 func (s authClientBlockRefresh) RefreshToken(ctx context.Context, token *eveauth.Token) error {
-	close(s.entered)
+	<-s.release
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return s.AuthClientStub.RefreshToken(ctx, token)
+}
+
+// authClientWaitForCtx blocks the refresh until its ctx is done.
+type authClientWaitForCtx struct {
+	testutil.AuthClientStub
+}
+
+func (authClientWaitForCtx) RefreshToken(ctx context.Context, _ *eveauth.Token) error {
 	<-ctx.Done()
 	return ctx.Err()
-}
-
-// authClientCancelAfterRefresh cancels the ctx after a successful refresh.
-type authClientCancelAfterRefresh struct {
-	testutil.AuthClientStub
-	cancel func()
-}
-
-func (s authClientCancelAfterRefresh) RefreshToken(ctx context.Context, token *eveauth.Token) error {
-	err := s.AuthClientStub.RefreshToken(ctx, token)
-	s.cancel()
-	return err
 }
 
 func TestTokenSource_New(t *testing.T) {
