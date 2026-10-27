@@ -47,6 +47,12 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(false)
+		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
+			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
+				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
+				Handler:  func(_ fyne.Shortcut) {},
+			}, du.MainWindow())
+		}
 		// when
 		m := makeManageMenu(du)
 		// then
@@ -57,16 +63,44 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(true)
+		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
+			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
+				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
+				Handler:  func(_ fyne.Shortcut) {},
+			}, du.MainWindow())
+		}
 		// when
 		m := makeManageMenu(du)
 		// then
 		want := []string{"Settings", "Manage Characters", "Update Status", "-", "User Data", "About", "-", "Close", "Quit"}
 		xassert.Equal(t, want, itemLabels(m))
 	})
+	t.Run("should leave out items whose shortcut is missing", func(t *testing.T) {
+		// given
+		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
+		du.settings.SetSysTrayEnabled(false)
+		for _, name := range []string{"settings", "quit"} {
+			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
+				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
+				Handler:  func(_ fyne.Shortcut) {},
+			}, du.MainWindow())
+		}
+		// when
+		m := makeManageMenu(du)
+		// then
+		want := []string{"Settings", "-", "User Data", "About", "-", "Quit"}
+		xassert.Equal(t, want, itemLabels(m))
+	})
 	t.Run("should define shortcut for close", func(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(true)
+		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
+			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
+				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
+				Handler:  func(_ fyne.Shortcut) {},
+			}, du.MainWindow())
+		}
 		// when
 		m := makeManageMenu(du)
 		// then
