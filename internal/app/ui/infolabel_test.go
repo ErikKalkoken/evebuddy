@@ -89,6 +89,28 @@ func TestInfoLink(t *testing.T) {
 		xassert.Equal(t, "Caldari", link.Text)
 		xassert.Equal(t, []int64{1}, iv.ShownRaces)
 	})
+	cases := []struct {
+		name string
+		set  func(w *ui.InfoLink)
+	}{
+		{"entity", func(w *ui.InfoLink) { w.Set(nil) }},
+		{"bloodline", func(w *ui.InfoLink) { w.SetBloodline(nil) }},
+		{"location", func(w *ui.InfoLink) { w.SetLocation(nil) }},
+		{"race", func(w *ui.InfoLink) { w.SetRace(nil) }},
+	}
+	for _, tc := range cases {
+		t.Run("shows placeholder when setting nil "+tc.name, func(t *testing.T) {
+			// given
+			w := ui.NewInfoLink(&testdouble.InfoViewerFake{})
+			w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+			// when
+			tc.set(w)
+			// then
+			link, label := parts(w)
+			assert.False(t, link.Visible())
+			assert.True(t, label.Visible())
+		})
+	}
 	t.Run("shows placeholder after clear", func(t *testing.T) {
 		// given
 		w := ui.NewInfoLink(&testdouble.InfoViewerFake{})

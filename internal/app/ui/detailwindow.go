@@ -131,6 +131,5 @@ func MakeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	x := MakeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
 	})
-	x.Wrapping = fyne.TextWrapWord
 	return x
 }
