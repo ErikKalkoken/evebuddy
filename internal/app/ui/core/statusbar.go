@@ -114,7 +114,6 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewVBox(
 		widget.NewSeparator(),
 		container.NewHBox(
-			a.u.statusText,
 			layout.NewSpacer(),
 			a.updateHint,
 			widget.NewSeparator(),
