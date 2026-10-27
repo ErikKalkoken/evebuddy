@@ -13,11 +13,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/mobile"
 
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/go-set"
@@ -61,6 +59,10 @@ const (
 
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
+
+// runAsync runs f in a new goroutine.
+// Tests replace it to run f synchronously.
+var runAsync = func(f func()) { go f() }
 
 type UIParams struct {
 	App         fyne.App
@@ -147,7 +149,6 @@ type baseUI struct {
 	marketOrdersSell           *screens.MarketOrders
 	skillSearch                *screens.SkillSearch
 	snackbar                   *kxwidget.Snackbar
-	statusText                 *statusText
 	training                   *screens.Training
 	unifiedCommunications      *screens.Communications
 	unifiedMails               *screens.Mails
@@ -236,7 +237,6 @@ func newBaseUI(arg UIParams) *baseUI {
 		scs:                            arg.StatusCache,
 		settings:                       arg.Settings,
 		signals:                        arg.Signals,
-		statusText:                     newStatusText(),
 		tasks:                          xsync.NewTaskGroup(context.Background()),
 		windows:                        make(map[string]fyne.Window),
 		characterAvatarPlaceholder64:   characterAvatarPlaceholder64,
@@ -265,125 +265,38 @@ func newBaseUI(arg UIParams) *baseUI {
 		defaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
-	// updateStatus refreshes all status pages and dynamic menus.
-	updateStatus := func(ctx context.Context) {
-		if u.onUpdateStatus == nil {
-			return
-		}
-		u.onUpdateStatus(ctx)
-	}
-
 	// Core signal listeners and signal logging
 	u.signals.AppInit.AddListener(func(ctx context.Context, s struct{}) {
 		slog.Debug("Signal: AppInit")
 	})
 	u.signals.CharacterAdded.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: CharacterAdded", "characterID", c.IDOrZero())
-		updateStatus(ctx)
+		u.updateStatus(ctx)
 	})
 	u.signals.CharacterChanged.AddListener(func(ctx context.Context, id int64) {
 		slog.Debug("Signal: CharacterChanged", "characterID", id)
 	})
 	u.signals.CharacterRemoved.AddListener(func(ctx context.Context, c *app.EntityShort) {
 		slog.Debug("Signal: CharacterRemoved", "characterID", c.IDOrZero())
-		updateStatus(ctx)
+		u.updateStatus(ctx)
 	})
-	u.signals.CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		slog.Debug("Signal: CharacterSectionChanged", "arg", arg)
-		logErr := func(err error) {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
-		}
-		isShown := arg.CharacterID == u.character.Load().IDOrZero()
-		switch arg.Section {
-		case app.SectionCharacterAssets:
-			if isShown {
-				u.ReloadCurrentCharacter(ctx)
-			}
-		case
-			app.SectionCharacterJumpClones,
-			app.SectionCharacterLocation,
-			app.SectionCharacterOnline,
-			app.SectionCharacterShip,
-			app.SectionCharacterSkills,
-			app.SectionCharacterWalletBalance:
-			if isShown {
-				u.ReloadCurrentCharacter(ctx)
-			}
-		case app.SectionCharacterMailHeaders:
-			u.UpdateMailIndicator(ctx)
-		case app.SectionCharacterRoles:
-			updateStatus(ctx)
-			character, err := u.eus.GetCharacter(ctx, arg.CharacterID)
-			if err != nil {
-				logErr(err)
-				return
-			}
-			corporationID := character.Corporation.ID
-			if app.IsNPCCorporation(corporationID) {
-				return
-			}
-			u.rs.UpdateAfterPermissionChangeAsync(corporationID)
-		}
-	})
+	u.signals.CharacterSectionChanged.AddListener(u.handleCharacterSectionChanged)
 	u.signals.CharacterSectionUpdated.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
 		slog.Debug("Signal: CharacterSectionUpdated", "arg", arg)
 	})
 	u.signals.CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		slog.Debug("Signal: CorporationsChanged")
-		updateStatus(ctx)
+		u.updateStatus(ctx)
 	})
 	u.signals.CurrentCharacterExchanged.AddListener(func(ctx context.Context, c *app.Character) {
 		slog.Debug("Signal: CurrentCharacterExchanged", "characterID", c.IDOrZero())
-		updateStatus(ctx)
+		u.updateStatus(ctx)
 	})
 	u.signals.CurrentCorporationExchanged.AddListener(func(ctx context.Context, c *app.Corporation) {
 		slog.Debug("Signal: CurrentCorporationExchanged", "corporationID", c.IDOrZero())
-		updateStatus(ctx)
+		u.updateStatus(ctx)
 	})
-	u.signals.EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
-		slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
-		switch arg.Section {
-		case app.SectionEveCharacters:
-			if arg.Changed.Contains(u.character.Load().IDOrZero()) {
-				u.ReloadCurrentCharacter(ctx)
-			}
-			characterIDs, err := u.cs.ListCharacterIDs(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
-				return
-			}
-			if characterIDs.ContainsAny(arg.Changed.All()) {
-				updateStatus(ctx)
-			}
-		case app.SectionEveCorporations:
-			corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to update status", "arg", arg, "err", err)
-				return
-			}
-			if arg.Changed.ContainsAny(corporationIDs.All()) {
-				updateStatus(ctx)
-			}
-		case app.SectionEveMarketPrices:
-			err := u.cs.UpdateAllCalculatedValues(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				slog.Error("Failed to update total net worth", "arg", arg, "err", err)
-				return
-			}
-		}
-	})
+	u.signals.EveUniverseSectionChanged.AddListener(u.handleEveUniverseSectionChanged)
 	u.signals.EveUniverseSectionUpdated.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
 		slog.Debug("Signal: EveUniverseSectionUpdated", "arg", arg)
 	})
@@ -516,6 +429,91 @@ func newBaseUI(arg UIParams) *baseUI {
 		}
 	})
 	return u
+}
+
+// updateStatus refreshes all status pages and dynamic menus.
+func (u *baseUI) updateStatus(ctx context.Context) {
+	if u.onUpdateStatus == nil {
+		return
+	}
+	u.onUpdateStatus(ctx)
+}
+
+func (u *baseUI) handleCharacterSectionChanged(ctx context.Context, arg app.CharacterSectionUpdated) {
+	slog.Debug("Signal: CharacterSectionChanged", "arg", arg)
+	isShown := arg.CharacterID == u.character.Load().IDOrZero()
+	switch arg.Section {
+	case
+		app.SectionCharacterAssets,
+		app.SectionCharacterJumpClones,
+		app.SectionCharacterLocation,
+		app.SectionCharacterOnline,
+		app.SectionCharacterShip,
+		app.SectionCharacterSkills,
+		app.SectionCharacterWalletBalance:
+		if isShown {
+			u.ReloadCurrentCharacter(ctx)
+		}
+	case app.SectionCharacterMailHeaders:
+		u.UpdateMailIndicator(ctx)
+	case app.SectionCharacterRoles:
+		u.updateStatus(ctx)
+		character, err := u.eus.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
+			return
+		}
+		corporationID := character.Corporation.ID
+		if app.IsNPCCorporation(corporationID) {
+			return
+		}
+		u.rs.UpdateAfterPermissionChangeAsync(corporationID)
+	}
+}
+
+func (u *baseUI) handleEveUniverseSectionChanged(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+	slog.Debug("Signal: EveUniverseSectionChanged", "arg", arg)
+	switch arg.Section {
+	case app.SectionEveCharacters:
+		if arg.Changed.Contains(u.character.Load().IDOrZero()) {
+			u.ReloadCurrentCharacter(ctx)
+		}
+		characterIDs, err := u.cs.ListCharacterIDs(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("Failed to update status", "arg", arg, "err", err)
+			return
+		}
+		if characterIDs.ContainsAny(arg.Changed.All()) {
+			u.updateStatus(ctx)
+		}
+	case app.SectionEveCorporations:
+		corporationIDs, err := u.cs.ListCharacterCorporationIDs(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("Failed to update status", "arg", arg, "err", err)
+			return
+		}
+		if arg.Changed.ContainsAny(corporationIDs.All()) {
+			u.updateStatus(ctx)
+		}
+	case app.SectionEveMarketPrices:
+		err := u.cs.UpdateAllCalculatedValues(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("Failed to update total net worth", "arg", arg, "err", err)
+			return
+		}
+	}
 }
 
 func (u *baseUI) appInit(ctx context.Context) {
@@ -813,24 +811,39 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 		slog.Error("reload character", "characterID", id, "error", err)
 		return
 	}
-	u.character.Store(c)
+	for {
+		cur := u.character.Load()
+		if cur.IDOrZero() != id {
+			return // a newer selection wins
+		}
+		if u.character.CompareAndSwap(cur, c) {
+			return
+		}
+	}
 }
 
 func (u *baseUI) ResetCharacter(_ context.Context) {
 	u.character.Store(nil)
-	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
+	runAsync(func() {
+		if u.character.Load().IDOrZero() != 0 {
+			return // a newer selection follows
+		}
+		u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
+	})
 	u.settings.ResetLastCharacterID()
-	// if u.onSetCharacter != nil {
-	// 	u.onSetCharacter(nil)
-	// }
 }
 
 func (u *baseUI) SetCharacter(_ context.Context, c *app.Character) {
 	u.character.Store(c)
-	if u.onSetCharacter != nil {
-		go u.onSetCharacter(c)
-	}
-	go u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
+	runAsync(func() {
+		if u.character.Load().IDOrZero() != c.ID {
+			return // a newer selection follows
+		}
+		if u.onSetCharacter != nil {
+			u.onSetCharacter(c)
+		}
+		u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
+	})
 	u.settings.SetLastCharacterID(c.ID)
 }
 
@@ -897,19 +910,26 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 
 func (u *baseUI) ResetCorporation(_ context.Context) {
 	u.corporation.Store(nil)
-	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
+	runAsync(func() {
+		if u.corporation.Load().IDOrZero() != 0 {
+			return // a newer selection follows
+		}
+		u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
+	})
 	u.settings.ResetLastCorporationID()
-	// if u.onSetCorporation != nil {
-	// 	u.onSetCorporation(nil)
-	// }
 }
 
 func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
-	if u.onSetCorporation != nil {
-		go u.onSetCorporation(c)
-	}
-	go u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
+	runAsync(func() {
+		if u.corporation.Load().IDOrZero() != c.ID {
+			return // a newer selection follows
+		}
+		if u.onSetCorporation != nil {
+			u.onSetCorporation(c)
+		}
+		u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
+	})
 	u.settings.SetLastCorporationID(c.ID)
 }
 
@@ -1043,13 +1063,16 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 	currentID := u.character.Load().IDOrZero()
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			go func() {
-				err := u.LoadCharacter(context.Background(), c.ID)
+			u.Go(func(ctx context.Context) {
+				err := u.LoadCharacter(ctx, c.ID)
 				if err != nil {
+					if ctx.Err() != nil {
+						return
+					}
 					slog.Error("make character switch menu", "error", err)
 					u.snackbar.Display("Failed to switch character. Try again later.")
 				}
-			}()
+			})
 		})
 		if c.ID == currentID {
 			it.Icon = theme.NewThemedResource(icons.AccountCircleSvg)
@@ -1097,8 +1120,14 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	}))
 	currentID := u.CurrentCorporation().IDOrZero()
 	if currentID != 0 && !corporations.Contains(currentID) {
-		u.SetAnyCorporation(ctx)
-		return
+		err := u.LoadCorporation(ctx, cc[0].ID)
+		if err == nil {
+			return // the exchange triggers a status update, which rebuilds this menu
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to switch to a listed corporation", "corporationID", cc[0].ID, "error", err)
 	}
 
 	it := fyne.NewMenuItem("Switch to...", nil)
@@ -1106,13 +1135,16 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	items := []*fyne.MenuItem{it}
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
-			go func() {
-				err := u.LoadCorporation(context.Background(), c.ID)
+			u.Go(func(ctx context.Context) {
+				err := u.LoadCorporation(ctx, c.ID)
 				if err != nil {
+					if ctx.Err() != nil {
+						return
+					}
 					slog.Error("make corporation switch menu", "error", err)
 					u.snackbar.Display("Failed to switch corporation. Try again later.")
 				}
-			}()
+			})
 		})
 		if c.ID == currentID {
 			it.Icon = theme.NewThemedResource(icons.StarCircleOutlineSvg)
@@ -1211,58 +1243,6 @@ func (u *baseUI) DestroyWindow(id string) bool {
 		return true
 	}
 	return false
-}
-
-// statusText is a widget that can show/hide multiple status texts with a spinner.
-type statusText struct {
-	widget.BaseWidget
-
-	label    *widget.Label
-	messages map[string]string
-	spinner  *kxwidget.Spinner
-}
-
-func newStatusText() *statusText {
-	w := &statusText{
-		messages: make(map[string]string),
-		label:    widget.NewLabel(""),
-		spinner:  kxwidget.NewSpinner(),
-	}
-	w.label.Hide()
-	w.spinner.Hide()
-	w.spinner.Stop()
-	w.ExtendBaseWidget(w)
-	return w
-}
-
-func (w *statusText) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewHBox(w.label, w.spinner)
-	return widget.NewSimpleRenderer(c)
-}
-
-func (w *statusText) Set(key, text string) {
-	w.messages[key] = text
-	if w.label.Hidden {
-		w.label.SetText(text)
-		w.spinner.Start()
-		w.label.Show()
-		w.spinner.Show()
-	}
-}
-
-func (w *statusText) Unset(key string) {
-	delete(w.messages, key)
-	if len(w.messages) == 0 {
-		w.label.Hide()
-		w.spinner.Hide()
-		w.spinner.Stop()
-	}
-	var text string
-	for _, s := range w.messages {
-		text = s
-		break
-	}
-	w.label.SetText(text)
 }
 
 // formatCount returns "?" for an unknown count and nothing for 0.
