@@ -405,7 +405,10 @@ func TestStatusBar_ShowEveStatusDialog(t *testing.T) {
 
 func TestStatusBar_ShowClockDialog(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
+	// closes the DB after the cleanup of MakeFakeBaseUI
+	t.Cleanup(func() {
+		db.Close()
+	})
 	// given
 	du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 	du.tasks.Stop() // don't start the ticker

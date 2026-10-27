@@ -30,6 +30,7 @@ type aboutPage struct {
 	currentVersionLabel *widget.Label
 	dummyEntry          *widget.Entry
 	releaseNotesLink    *widget.Hyperlink
+	rootURL             *url.URL
 	showSnackbarButton  *widget.Button
 	techInfoBox         *fyne.Container
 	u                   *baseUI
@@ -45,6 +46,7 @@ func newAboutPage(u *baseUI) *aboutPage {
 		currentVersionLabel: widget.NewLabel(""),
 		dummyEntry:          widget.NewEntry(),
 		releaseNotesLink:    widget.NewHyperlink("What's new", nil),
+		rootURL:             rootURL,
 		u:                   u,
 		updateAvailableLink: updateAvailableLink,
 		updateAvailableRow: container.NewHBox(
@@ -57,7 +59,8 @@ func newAboutPage(u *baseUI) *aboutPage {
 	w.ExtendBaseWidget(w)
 
 	v, err := github.NormalizeVersion(u.app.Metadata().Version)
-	if err != nil {
+	isVersionValid := err == nil
+	if !isVersionValid {
 		slog.Error("normalize local version", "error", err)
 		w.currentVersionLabel.SetText("?")
 		w.releaseNotesLink.Hide()
@@ -92,7 +95,8 @@ func newAboutPage(u *baseUI) *aboutPage {
 	}
 
 	w.updateAvailableRow.Hide()
-	if !u.isOfflineMode {
+	// the check would fail on an invalid version
+	if isVersionValid && !u.isOfflineMode {
 		u.Go(w.checkForUpdate)
 	}
 	return w
@@ -104,7 +108,6 @@ func (w *aboutPage) CreateRenderer() fyne.WidgetRenderer {
 	title.TextStyle.Bold = true
 	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
 	support.Wrapping = fyne.TextWrapWord
-	rootURL := ui.WebsiteRootURL()
 	discordURL, _ := url.Parse(discordServerURL)
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
@@ -116,8 +119,8 @@ func (w *aboutPage) CreateRenderer() fyne.WidgetRenderer {
 		w.dummyEntry,
 		support,
 		container.NewHBox(
-			widget.NewHyperlink("Website", rootURL),
-			widget.NewHyperlink("Downloads", rootURL.JoinPath("releases")),
+			widget.NewHyperlink("Website", w.rootURL),
+			widget.NewHyperlink("Downloads", w.rootURL.JoinPath("releases")),
 			widget.NewHyperlink("Discord", discordURL),
 		),
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
@@ -139,7 +142,10 @@ func (w *aboutPage) checkForUpdate(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
-		w.updateAvailableLink.SetURL(ui.WebsiteRootURL().JoinPath("releases", "tag", "v"+v.Latest))
+		if w.u.Signals().IsShuttingDown() {
+			return
+		}
+		w.updateAvailableLink.SetURL(w.rootURL.JoinPath("releases", "tag", "v"+v.Latest))
 		w.updateAvailableRow.Show()
 		w.Refresh() // the row may not have been visible before
 	})

@@ -220,6 +220,9 @@ func (a *statusBar) updateVersionHint(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return
+		}
 		a.updateHint.set(v)
 		a.updateHint.Show()
 	})
@@ -314,7 +317,8 @@ func (a *statusBar) showClockDialog() {
 		// Ends when the dialog is closed or the app shuts down.
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		context.AfterFunc(dialogCtx, cancel)
+		stop := context.AfterFunc(dialogCtx, cancel)
+		defer stop()
 		xsync.RunEvery(ctx, time.Second, func(_ context.Context) {
 			s := formatNow()
 			fyne.Do(func() {

@@ -47,6 +47,9 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(false)
+		t.Cleanup(func() {
+			xdesktop.RemoveAllShortcuts(du.MainWindow())
+		})
 		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
 			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
 				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
@@ -63,6 +66,9 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(true)
+		t.Cleanup(func() {
+			xdesktop.RemoveAllShortcuts(du.MainWindow())
+		})
 		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
 			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
 				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
@@ -79,6 +85,9 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(false)
+		t.Cleanup(func() {
+			xdesktop.RemoveAllShortcuts(du.MainWindow())
+		})
 		for _, name := range []string{"settings", "quit"} {
 			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
 				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
@@ -95,6 +104,9 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		du.settings.SetSysTrayEnabled(true)
+		t.Cleanup(func() {
+			xdesktop.RemoveAllShortcuts(du.MainWindow())
+		})
 		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
 			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
 				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},
@@ -111,6 +123,9 @@ func TestMakeManageMenu(t *testing.T) {
 		// given
 		du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
 		var called []string
+		t.Cleanup(func() {
+			xdesktop.RemoveAllShortcuts(du.MainWindow())
+		})
 		for _, name := range []string{"settings", "manageCharacters", "updateStatus", "quit"} {
 			xdesktop.AddShortcut(name, xdesktop.ShortcutWithHandler{
 				Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyA, Modifier: fyne.KeyModifierAlt},

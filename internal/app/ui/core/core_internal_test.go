@@ -99,6 +99,7 @@ func (a *AppFake) Metadata() fyne.AppMetadata {
 }
 
 // SetMetadata sets the metadata returned by Metadata.
+// It does not change fyne.CurrentApp(), which still returns the metadata of the inner test app.
 func (a *AppFake) SetMetadata(m fyne.AppMetadata) {
 	a.metadata = m
 }
@@ -202,7 +203,10 @@ func MakeFakeBaseUI(t testing.TB, st *storage.Storage, fyneApp fyne.App) *baseUI
 // sender, recipient, or icon in the mail or notification detail views.
 func TestNewBaseUI_InfoViewerInitializedBeforeWidgets(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
+	// closes the DB after the cleanup of MakeFakeBaseUI
+	t.Cleanup(func() {
+		db.Close()
+	})
 	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 	assert.NotNil(t, u.iw)
 }
