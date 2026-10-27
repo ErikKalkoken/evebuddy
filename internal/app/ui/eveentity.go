@@ -17,6 +17,12 @@ import (
 // EveEntityIconLoader is defines the function signature for a EveEntity icon loader
 type EveEntityIconLoader func(*app.EveEntity, int, func(r fyne.Resource))
 
+// entityKey identifies an EveEntity.
+type entityKey struct {
+	id       int64
+	category app.EveEntityCategory
+}
+
 // EveEntityListItem is a list item widget that renders an EveEntity with icon and name.
 type EveEntityListItem struct {
 	widget.BaseWidget
@@ -26,6 +32,7 @@ type EveEntityListItem struct {
 	IsAvatar      bool                // can be set always
 	Truncation    fyne.TextTruncation // can be set before first render
 
+	entity     entityKey // entity currently shown
 	iconImage  *canvas.Image
 	iconLoader EveEntityIconLoader
 	nameLabel  *widget.Label
@@ -83,19 +90,25 @@ func (w *EveEntityListItem) Set(o *app.EveEntity) {
 		w.iconImage.CornerRadius = w.IconUnitSize / 2
 	}
 	if o == nil {
+		w.entity = entityKey{}
 		w.iconImage.Resource = icons.BlankSvg
 		w.iconImage.Refresh()
 		w.nameLabel.Text = "?"
 		w.nameLabel.Refresh()
 		return
 	}
+	w.entity = entityKey{id: o.ID, category: o.Category}
 	if o.ID == 0 {
 		w.nameLabel.TextStyle.Bold = true
 		w.iconImage.Resource = icons.BlankSvg
 		w.iconImage.Refresh()
 	} else {
 		w.nameLabel.TextStyle.Bold = false
+		loading := w.entity
 		w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
+			if w.entity != loading {
+				return // row now shows another entity
+			}
 			w.iconImage.Resource = r
 			w.iconImage.Refresh()
 		})

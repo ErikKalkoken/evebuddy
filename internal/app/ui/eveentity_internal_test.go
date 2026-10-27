@@ -86,6 +86,47 @@ func TestEveEntityListItem(t *testing.T) {
 		xassert.Equal(t, "Wayne Enterprises", w.nameLabel.Text)
 		xassert.Equal(t, []*app.EveEntity{{ID: 42, Name: "Wayne Enterprises", Category: app.EveEntityCorporation}}, loaded)
 	})
+	t.Run("ignores icon loaded for previous entity", func(t *testing.T) {
+		// given
+		setters := make(map[int64]func(fyne.Resource))
+		w := NewEveEntityListItem(func(o *app.EveEntity, _ int, setter func(fyne.Resource)) {
+			setters[o.ID] = setter
+		})
+		w.Set(&app.EveEntity{ID: 1, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.Set(&app.EveEntity{ID: 2, Name: "Clark Kent", Category: app.EveEntityCharacter})
+		setters[2](icons.Characterplaceholder64Jpeg)
+		// when
+		setters[1](icons.Corporationplaceholder64Png)
+		// then
+		xassert.Equal[fyne.Resource](t, icons.Characterplaceholder64Jpeg, w.iconImage.Resource)
+	})
+	t.Run("ignores icon loaded for entity with same ID but other category", func(t *testing.T) {
+		// given
+		setters := make(map[app.EveEntityCategory]func(fyne.Resource))
+		w := NewEveEntityListItem(func(o *app.EveEntity, _ int, setter func(fyne.Resource)) {
+			setters[o.Category] = setter
+		})
+		w.Set(&app.EveEntity{ID: 1, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.Set(&app.EveEntity{ID: 1, Name: "Wayne Enterprises", Category: app.EveEntityCorporation})
+		setters[app.EveEntityCorporation](icons.Corporationplaceholder64Png)
+		// when
+		setters[app.EveEntityCharacter](icons.Characterplaceholder64Jpeg)
+		// then
+		xassert.Equal[fyne.Resource](t, icons.Corporationplaceholder64Png, w.iconImage.Resource)
+	})
+	t.Run("keeps blank icon when previous load finishes after totals row", func(t *testing.T) {
+		// given
+		var setter func(fyne.Resource)
+		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, s func(fyne.Resource)) {
+			setter = s
+		})
+		w.Set(&app.EveEntity{ID: 1, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.Set(&app.EveEntity{Name: "Total"})
+		// when
+		setter(icons.Characterplaceholder64Jpeg)
+		// then
+		xassert.Equal[fyne.Resource](t, icons.BlankSvg, w.iconImage.Resource)
+	})
 	t.Run("shows round icon for avatars", func(t *testing.T) {
 		// given
 		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, _ func(fyne.Resource)) {})
