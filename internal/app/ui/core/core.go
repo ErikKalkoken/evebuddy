@@ -811,7 +811,15 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 		slog.Error("reload character", "characterID", id, "error", err)
 		return
 	}
-	u.character.Store(c)
+	for {
+		cur := u.character.Load()
+		if cur.IDOrZero() != id {
+			return // a newer selection wins
+		}
+		if u.character.CompareAndSwap(cur, c) {
+			return
+		}
+	}
 }
 
 func (u *baseUI) ResetCharacter(_ context.Context) {
