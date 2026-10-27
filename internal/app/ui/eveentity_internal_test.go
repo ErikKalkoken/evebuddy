@@ -67,10 +67,12 @@ func TestEveEntityListItem(t *testing.T) {
 		w := NewEveEntityListItem(func(o *app.EveEntity, _ int, _ func(fyne.Resource)) {
 			loaded = append(loaded, o)
 		})
+		w.Set(&app.EveEntity{Name: "Total"})
 		// when
 		w.Set(nil)
 		// then
 		xassert.Equal(t, "?", w.nameLabel.Text)
+		assert.False(t, w.nameLabel.TextStyle.Bold)
 		assert.Empty(t, loaded)
 		xassert.Equal[fyne.Resource](t, icons.BlankSvg, w.iconImage.Resource)
 	})
@@ -135,6 +137,52 @@ func TestEveEntityListItem(t *testing.T) {
 		w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
 		// then
 		xassert.Equal(t, float32(IconUnitSize/2), w.iconImage.CornerRadius)
+	})
+	t.Run("shows square icon when no longer avatar", func(t *testing.T) {
+		// given
+		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, _ func(fyne.Resource)) {})
+		w.IsAvatar = true
+		w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.IsAvatar = false
+		// when
+		w.Set(&app.EveEntity{ID: 43, Name: "Wayne Enterprises", Category: app.EveEntityCorporation})
+		// then
+		xassert.Equal(t, float32(0), w.iconImage.CornerRadius)
+	})
+	t.Run("applies avatar change on refresh", func(t *testing.T) {
+		// given
+		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, _ func(fyne.Resource)) {})
+		test.NewWindow(w)
+		w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.IsAvatar = true
+		// when
+		w.Refresh()
+		// then
+		xassert.Equal(t, float32(IconUnitSize/2), w.iconImage.CornerRadius)
+	})
+	t.Run("applies icon size change on refresh", func(t *testing.T) {
+		// given
+		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, _ func(fyne.Resource)) {})
+		test.NewWindow(w)
+		w.IsAvatar = true
+		w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.IconUnitSize = 40
+		// when
+		w.Refresh()
+		// then
+		xassert.Equal(t, fyne.NewSquareSize(40), w.iconImage.MinSize())
+		xassert.Equal(t, float32(20), w.iconImage.CornerRadius)
+	})
+	t.Run("applies truncation change on refresh", func(t *testing.T) {
+		// given
+		w := NewEveEntityListItem(func(_ *app.EveEntity, _ int, _ func(fyne.Resource)) {})
+		test.NewWindow(w)
+		w.Set(&app.EveEntity{ID: 42, Name: "Bruce Wayne", Category: app.EveEntityCharacter})
+		w.Truncation = fyne.TextTruncateEllipsis
+		// when
+		w.Refresh()
+		// then
+		xassert.Equal(t, fyne.TextTruncateEllipsis, w.nameLabel.Truncation)
 	})
 }
 

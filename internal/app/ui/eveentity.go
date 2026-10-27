@@ -27,10 +27,10 @@ type entityKey struct {
 type EveEntityListItem struct {
 	widget.BaseWidget
 
-	IconPixelSize int                 // can be set before first render
-	IconUnitSize  float32             // can be set before first render
-	IsAvatar      bool                // can be set always
-	Truncation    fyne.TextTruncation // can be set before first render
+	IconPixelSize int // takes effect when calling Set()
+	IconUnitSize  float32
+	IsAvatar      bool
+	Truncation    fyne.TextTruncation
 
 	entity     entityKey // entity currently shown
 	iconImage  *canvas.Image
@@ -57,11 +57,7 @@ func NewEveEntityListItem(iconLoader EveEntityIconLoader) *EveEntityListItem {
 }
 
 func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
-	w.nameLabel.Truncation = w.Truncation
-	w.iconImage.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
-	if w.IsAvatar {
-		w.iconImage.CornerRadius = w.IconUnitSize / 2
-	}
+	w.updateFromFields()
 	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
@@ -81,40 +77,49 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (w *EveEntityListItem) Refresh() {
+	w.updateFromFields()
+	w.BaseWidget.Refresh()
+}
+
+// updateFromFields applies the exported fields to the inner widgets.
+func (w *EveEntityListItem) updateFromFields() {
+	w.nameLabel.Truncation = w.Truncation
+	w.iconImage.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
+	if w.IsAvatar {
+		w.iconImage.CornerRadius = w.IconUnitSize / 2
+	} else {
+		w.iconImage.CornerRadius = 0
+	}
+}
+
 // Set updates the widget.
 //
 // If o.ID is zero it will render no icon and the name in bold style.
 // This can be used to show totals in tables.
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
-	if w.IsAvatar {
-		w.iconImage.CornerRadius = w.IconUnitSize / 2
-	}
 	if o == nil {
 		w.entity = entityKey{}
-		w.iconImage.Resource = icons.BlankSvg
-		w.iconImage.Refresh()
 		w.nameLabel.Text = "?"
-		w.nameLabel.Refresh()
+		w.nameLabel.TextStyle.Bold = false
+	} else {
+		w.entity = entityKey{id: o.ID, category: o.Category}
+		w.nameLabel.Text = o.Name
+		w.nameLabel.TextStyle.Bold = o.ID == 0
+	}
+	w.iconImage.Resource = icons.BlankSvg
+	w.Refresh()
+	if o == nil || o.ID == 0 {
 		return
 	}
-	w.entity = entityKey{id: o.ID, category: o.Category}
-	if o.ID == 0 {
-		w.nameLabel.TextStyle.Bold = true
-		w.iconImage.Resource = icons.BlankSvg
+	loading := w.entity
+	w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
+		if w.entity != loading {
+			return // row now shows another entity
+		}
+		w.iconImage.Resource = r
 		w.iconImage.Refresh()
-	} else {
-		w.nameLabel.TextStyle.Bold = false
-		loading := w.entity
-		w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
-			if w.entity != loading {
-				return // row now shows another entity
-			}
-			w.iconImage.Resource = r
-			w.iconImage.Refresh()
-		})
-	}
-	w.nameLabel.Text = o.NameOrZero()
-	w.nameLabel.Refresh()
+	})
 }
 
 // Set2 updates the widget.
