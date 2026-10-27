@@ -817,22 +817,23 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 func (u *baseUI) ResetCharacter(_ context.Context) {
 	u.character.Store(nil)
 	runAsync(func() {
+		if u.character.Load().IDOrZero() != 0 {
+			return // a newer selection follows
+		}
 		u.signals.CurrentCharacterExchanged.Emit(context.Background(), nil)
 	})
 	u.settings.ResetLastCharacterID()
-	// if u.onSetCharacter != nil {
-	// 	u.onSetCharacter(nil)
-	// }
 }
 
 func (u *baseUI) SetCharacter(_ context.Context, c *app.Character) {
 	u.character.Store(c)
-	if u.onSetCharacter != nil {
-		runAsync(func() {
-			u.onSetCharacter(c)
-		})
-	}
 	runAsync(func() {
+		if u.character.Load().IDOrZero() != c.ID {
+			return // a newer selection follows
+		}
+		if u.onSetCharacter != nil {
+			u.onSetCharacter(c)
+		}
 		u.signals.CurrentCharacterExchanged.Emit(context.Background(), c)
 	})
 	u.settings.SetLastCharacterID(c.ID)
@@ -902,22 +903,23 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 func (u *baseUI) ResetCorporation(_ context.Context) {
 	u.corporation.Store(nil)
 	runAsync(func() {
+		if u.corporation.Load().IDOrZero() != 0 {
+			return // a newer selection follows
+		}
 		u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
 	})
 	u.settings.ResetLastCorporationID()
-	// if u.onSetCorporation != nil {
-	// 	u.onSetCorporation(nil)
-	// }
 }
 
 func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
 	u.corporation.Store(c)
-	if u.onSetCorporation != nil {
-		runAsync(func() {
-			u.onSetCorporation(c)
-		})
-	}
 	runAsync(func() {
+		if u.corporation.Load().IDOrZero() != c.ID {
+			return // a newer selection follows
+		}
+		if u.onSetCorporation != nil {
+			u.onSetCorporation(c)
+		}
 		u.signals.CurrentCorporationExchanged.Emit(context.Background(), c)
 	})
 	u.settings.SetLastCorporationID(c.ID)
