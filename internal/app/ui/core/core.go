@@ -1110,8 +1110,14 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	}))
 	currentID := u.CurrentCorporation().IDOrZero()
 	if currentID != 0 && !corporations.Contains(currentID) {
-		u.SetAnyCorporation(ctx)
-		return
+		err := u.LoadCorporation(ctx, cc[0].ID)
+		if err == nil {
+			return // the exchange triggers a status update, which rebuilds this menu
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to switch to a listed corporation", "corporationID", cc[0].ID, "error", err)
 	}
 
 	it := fyne.NewMenuItem("Switch to...", nil)

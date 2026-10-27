@@ -1318,9 +1318,15 @@ func TestBaseUI_SetCorporationSwitchMenu(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		u.signals = testdouble.NewSignalsSync()
+		u.settings.SetHideLimitedCorporations(true)
 		c := factory.CreateCorporation()
-		factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
-		u.corporation.Store(&app.Corporation{ID: c.ID + 1})
+		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletJournal(app.Division1))
+		var hidden *app.Corporation
+		for range 4 {
+			hidden = factory.CreateCorporation()
+			factory.CreateCorporationToken(hidden.ID, set.Of[app.Role](), set.Of[string]())
+		}
+		u.corporation.Store(hidden)
 		var called bool
 		// when
 		u.setCorporationSwitchMenu(t.Context(), func(_ []*fyne.MenuItem) {
