@@ -204,22 +204,24 @@ func (a *statusBar) start(startupCtx context.Context) {
 		xsync.RunEvery(ctx, refreshUITick, a.updateEveStatus)
 	})
 	a.u.tasks.Go(func(ctx context.Context) {
-		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
-			v, err := a.u.availableUpdate(ctx)
-			if err != nil {
-				if !app.IsContextCanceled(ctx, err) {
-					slog.Error("fetch latest github version for download hint", "err", err)
-				}
-				return
-			}
-			if !v.IsRemoteNewer {
-				return
-			}
-			fyne.Do(func() {
-				a.updateHint.set(v)
-				a.updateHint.Show()
-			})
-		})
+		xsync.RunEvery(ctx, versionTicker, a.updateVersionHint)
+	})
+}
+
+func (a *statusBar) updateVersionHint(ctx context.Context) {
+	v, err := a.u.availableUpdate(ctx)
+	if err != nil {
+		if !app.IsContextCanceled(ctx, err) {
+			slog.Error("fetch latest github version for download hint", "err", err)
+		}
+		return
+	}
+	if !v.IsRemoteNewer {
+		return
+	}
+	fyne.Do(func() {
+		a.updateHint.set(v)
+		a.updateHint.Show()
 	})
 }
 

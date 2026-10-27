@@ -73,7 +73,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 		updateAvailableLink,
 	)
 	updateAvailableRow.Hide()
-	go func() {
+	runAsync(func() {
 		v, err := u.availableUpdate(context.Background())
 		if err != nil {
 			slog.Error("Failed to fetch available updates")
@@ -86,7 +86,7 @@ func makeAboutPage(u *baseUI) fyne.CanvasObject {
 			updateAvailableLink.URL = rootURL.JoinPath("releases", "tag", "v"+v.Latest)
 			updateAvailableRow.Show()
 		})
-	}()
+	})
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),
 		title,

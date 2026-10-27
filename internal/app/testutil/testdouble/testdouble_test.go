@@ -7,7 +7,7 @@ import (
 
 // Guards against new fields in app.Signals being left nil in tests.
 func TestNewSignalsSync_AllFieldsSet(t *testing.T) {
-	v := reflect.ValueOf(newSignalsSync()).Elem()
+	v := reflect.ValueOf(NewSignalsSync()).Elem()
 	for i := range v.NumField() {
 		f := v.Type().Field(i)
 		if !f.IsExported() || f.Type.Kind() != reflect.Interface {
