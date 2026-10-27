@@ -365,8 +365,9 @@ func TestShakedown(t *testing.T) {
 	})
 	t.Run("can render about page", func(t *testing.T) {
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.tasks.Stop() // don't check for updates
 		u.SetDeveloperMode(true)
-		w := test.NewWindow(makeAboutPage(u))
+		w := test.NewWindow(newAboutPage(u))
 		defer w.Close()
 		w.Resize(fyne.NewSize(600, 600))
 	})

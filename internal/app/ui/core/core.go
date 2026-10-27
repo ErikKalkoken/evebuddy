@@ -62,10 +62,6 @@ const (
 // Default ScaleMode for images
 var defaultImageScaleMode canvas.ImageScale
 
-// runAsync runs f in a new goroutine.
-// Tests replace it to run f synchronously.
-var runAsync = func(f func()) { go f() }
-
 type UIParams struct {
 	App         fyne.App
 	Character   *characterservice.CharacterService
