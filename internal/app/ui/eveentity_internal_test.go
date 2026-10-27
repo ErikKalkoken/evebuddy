@@ -270,5 +270,6 @@ func TestMakeEveEntityColumn(t *testing.T) {
 		assert.Negative(t, c.Sort(alpha, bravo))
 		assert.Positive(t, c.Sort(bravo, alpha))
 		assert.Zero(t, c.Sort(alpha, row{ee: &app.EveEntity{ID: 3, Name: "ALPHA"}}))
+		assert.Negative(t, c.Sort(row{}, alpha))
 	})
 }

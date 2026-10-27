@@ -167,7 +167,7 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 			co.(*EveEntityListItem).Set(arg.GetEntity(r))
 		},
 		Sort: func(a, b T) int {
-			return xstrings.CompareIgnoreCase(arg.GetEntity(a).Name, arg.GetEntity(b).Name)
+			return xstrings.CompareIgnoreCase(arg.GetEntity(a).NameOrZero(), arg.GetEntity(b).NameOrZero())
 		},
 	}
 	return c
