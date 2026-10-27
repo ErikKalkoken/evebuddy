@@ -403,6 +403,28 @@ func TestStatusBar_ShowEveStatusDialog(t *testing.T) {
 	})
 }
 
+func TestStatusBar_ShowClockDialog(t *testing.T) {
+	db, st, _ := testutil.NewDBInMemory()
+	defer db.Close()
+	// given
+	du := &DesktopUI{baseUI: MakeFakeBaseUI(t, st, test.NewTempApp(t))}
+	du.tasks.Stop() // don't start the ticker
+	sb := newStatusBar(du)
+	// when
+	sb.showClockDialog()
+	// then
+	top := du.MainWindow().Canvas().Overlays().Top()
+	require.NotNil(t, top, "no dialog shown")
+	var texts []string
+	for _, o := range test.LaidOutObjects(top) {
+		if x, ok := o.(*widget.Label); ok {
+			texts = append(texts, x.Text)
+		}
+	}
+	require.NotEmpty(t, texts)
+	assert.Regexp(t, `^\d\d:\d\d:\d\d$`, texts[0])
+}
+
 func TestStatusBar_UpdateVersionHint(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
 	defer db.Close()
