@@ -89,6 +89,7 @@ func (w *InfoLink) setLink(text string, onTapped func()) {
 
 // Clear shows a placeholder to indicate that the entity does not exist.
 func (w *InfoLink) Clear() {
+	w.link.OnTapped = nil
 	w.label.Show()
 	w.link.Hide()
 }

@@ -32,10 +32,11 @@ type EveEntityListItem struct {
 	IsAvatar      bool
 	Truncation    fyne.TextTruncation
 
-	entity     entityKey // entity currently shown
-	iconImage  *canvas.Image
-	iconLoader EveEntityIconLoader
-	nameLabel  *widget.Label
+	defaultCornerRadius float32
+	entity              entityKey // entity currently shown
+	iconImage           *canvas.Image
+	iconLoader          EveEntityIconLoader
+	nameLabel           *widget.Label
 }
 
 // NewEveEntityListItem returns a new EveEntityListItem widget.
@@ -45,12 +46,13 @@ func NewEveEntityListItem(iconLoader EveEntityIconLoader) *EveEntityListItem {
 		fyne.NewSquareSize(IconUnitSize),
 	)
 	w := &EveEntityListItem{
-		iconImage:     iconImage,
-		IconPixelSize: IconPixelSize,
-		IconUnitSize:  IconUnitSize,
-		iconLoader:    iconLoader,
-		nameLabel:     widget.NewLabel(""),
-		Truncation:    fyne.TextTruncateClip,
+		defaultCornerRadius: iconImage.CornerRadius,
+		iconImage:           iconImage,
+		iconLoader:          iconLoader,
+		IconPixelSize:       IconPixelSize,
+		IconUnitSize:        IconUnitSize,
+		nameLabel:           widget.NewLabel(""),
+		Truncation:          fyne.TextTruncateClip,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -89,7 +91,7 @@ func (w *EveEntityListItem) updateFromFields() {
 	if w.IsAvatar {
 		w.iconImage.CornerRadius = w.IconUnitSize / 2
 	} else {
-		w.iconImage.CornerRadius = 0
+		w.iconImage.CornerRadius = w.defaultCornerRadius
 	}
 }
 
@@ -107,11 +109,12 @@ func (w *EveEntityListItem) Set(o *app.EveEntity) {
 		w.nameLabel.Text = o.Name
 		w.nameLabel.TextStyle.Bold = o.ID == 0
 	}
-	w.iconImage.Resource = icons.BlankSvg
-	w.Refresh()
 	if o == nil || o.ID == 0 {
+		w.iconImage.Resource = icons.BlankSvg
+		w.Refresh()
 		return
 	}
+	w.Refresh()
 	loading := w.entity
 	w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
 		if w.entity != loading {

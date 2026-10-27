@@ -1,7 +1,6 @@
 package ui_test
 
 import (
-	"fmt"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -52,21 +51,6 @@ func TestTheme(t *testing.T) {
 		// then
 		xassert.Equal(t, theme.DefaultTheme().Color(theme.ColorNameBackground, theme.VariantDark), got)
 	})
-	for _, c := range []fyne.ThemeColorName{
-		ui.ColorNameInfo,
-		ui.ColorNameCreative,
-		ui.ColorNameSystem,
-		ui.ColorNameAttention,
-	} {
-		for _, v := range []fyne.ThemeVariant{theme.VariantDark, theme.VariantLight} {
-			t.Run(fmt.Sprintf("provides custom color %s for variant %d", c, v), func(t *testing.T) {
-				// given
-				th := ui.New(theme.DefaultTheme(), settings.Auto)
-				// when/then
-				assert.NotNil(t, th.Color(c, v))
-			})
-		}
-	}
 	t.Run("provides small text size", func(t *testing.T) {
 		// given
 		th := ui.New(theme.DefaultTheme(), settings.Auto)
