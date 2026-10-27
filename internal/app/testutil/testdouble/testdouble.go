@@ -510,18 +510,30 @@ func (u *UIFake) UpdateMailIndicator(ctx context.Context) {}
 
 // InfoViewerFake records which entities were shown.
 type InfoViewerFake struct {
-	Shown []*app.EveEntity
+	Shown           []*app.EveEntity
+	ShownBloodlines []int64
+	ShownLocations  []int64
+	ShownRaces      []int64
 }
 
 func (iv *InfoViewerFake) Show(o *app.EveEntity) {
 	iv.Shown = append(iv.Shown, o)
 }
 
-func (*InfoViewerFake) Show2(_, _, _ int64)   {}
-func (*InfoViewerFake) ShowBloodline(_ int64) {}
-func (*InfoViewerFake) ShowLocation(_ int64)  {}
-func (*InfoViewerFake) ShowRace(_ int64)      {}
-func (*InfoViewerFake) ShowType(_, _ int64)   {}
+func (iv *InfoViewerFake) ShowBloodline(id int64) {
+	iv.ShownBloodlines = append(iv.ShownBloodlines, id)
+}
+
+func (iv *InfoViewerFake) ShowLocation(id int64) {
+	iv.ShownLocations = append(iv.ShownLocations, id)
+}
+
+func (iv *InfoViewerFake) ShowRace(id int64) {
+	iv.ShownRaces = append(iv.ShownRaces, id)
+}
+
+func (*InfoViewerFake) Show2(_, _, _ int64) {}
+func (*InfoViewerFake) ShowType(_, _ int64) {}
 
 // newSignalsSync returns signals that call listeners sequentially,
 // because the Fyne test driver runs fyne.Do on the calling goroutine.

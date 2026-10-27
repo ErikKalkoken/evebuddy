@@ -35,43 +35,61 @@ func (w *InfoLink) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewStack(w.link, w.label))
 }
 
+// Set shows a link to entity o. A nil o clears the widget.
 func (w *InfoLink) Set(o *app.EveEntity) {
-	w.link.SetText(o.Name)
-	w.link.OnTapped = func() {
+	if o == nil {
+		w.Clear()
+		return
+	}
+	w.setLink(o.Name, func() {
 		w.iw.Show(o)
-	}
-	w.link.Show()
-	w.label.Hide()
+	})
 }
 
+// SetBloodline shows a link to bloodline o. A nil o clears the widget.
 func (w *InfoLink) SetBloodline(o *app.EntityShort) {
-	w.link.SetText(o.Name)
-	w.link.OnTapped = func() {
+	if o == nil {
+		w.Clear()
+		return
+	}
+	w.setLink(o.Name, func() {
 		w.iw.ShowBloodline(o.ID)
-	}
-	w.link.Show()
-	w.label.Hide()
+	})
 }
 
+// SetLocation shows a link to location o. A nil o clears the widget.
 func (w *InfoLink) SetLocation(o *app.EveLocation) {
-	w.link.SetText(o.Name)
-	w.link.OnTapped = func() {
+	if o == nil {
+		w.Clear()
+		return
+	}
+	w.setLink(o.Name, func() {
 		w.iw.ShowLocation(o.ID)
-	}
-	w.link.Show()
-	w.label.Hide()
+	})
 }
 
+// SetRace shows a link to race o. A nil o clears the widget.
 func (w *InfoLink) SetRace(o *app.EveRace) {
-	w.link.SetText(o.Name)
-	w.link.OnTapped = func() {
-		w.iw.ShowRace(o.ID)
+	if o == nil {
+		w.Clear()
+		return
 	}
+	w.setLink(o.Name, func() {
+		w.iw.ShowRace(o.ID)
+	})
+}
+
+// setLink shows a link with text that runs onTapped.
+func (w *InfoLink) setLink(text string, onTapped func()) {
+	w.link.SetText(text)
+	w.link.OnTapped = onTapped
 	w.link.Show()
 	w.label.Hide()
 }
 
+// Clear shows a placeholder to indicate that the entity does not exist.
 func (w *InfoLink) Clear() {
+	w.link.OnTapped = nil
 	w.label.Show()
 	w.link.Hide()
 }

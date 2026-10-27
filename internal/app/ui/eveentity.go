@@ -17,18 +17,26 @@ import (
 // EveEntityIconLoader is defines the function signature for a EveEntity icon loader
 type EveEntityIconLoader func(*app.EveEntity, int, func(r fyne.Resource))
 
+// entityKey identifies an EveEntity.
+type entityKey struct {
+	id       int64
+	category app.EveEntityCategory
+}
+
 // EveEntityListItem is a list item widget that renders an EveEntity with icon and name.
 type EveEntityListItem struct {
 	widget.BaseWidget
 
-	IconPixelSize int                 // can be set before first render
-	IconUnitSize  float32             // can be set before first render
-	IsAvatar      bool                // can be set always
-	Truncation    fyne.TextTruncation // can be set before first render
+	IconPixelSize int // takes effect when calling Set()
+	IconUnitSize  float32
+	IsAvatar      bool
+	Truncation    fyne.TextTruncation
 
-	iconImage  *canvas.Image
-	iconLoader EveEntityIconLoader
-	nameLabel  *widget.Label
+	defaultCornerRadius float32
+	entity              entityKey // entity currently shown
+	iconImage           *canvas.Image
+	iconLoader          EveEntityIconLoader
+	nameLabel           *widget.Label
 }
 
 // NewEveEntityListItem returns a new EveEntityListItem widget.
@@ -38,23 +46,20 @@ func NewEveEntityListItem(iconLoader EveEntityIconLoader) *EveEntityListItem {
 		fyne.NewSquareSize(IconUnitSize),
 	)
 	w := &EveEntityListItem{
-		iconImage:     iconImage,
-		IconPixelSize: IconPixelSize,
-		IconUnitSize:  IconUnitSize,
-		iconLoader:    iconLoader,
-		nameLabel:     widget.NewLabel(""),
-		Truncation:    fyne.TextTruncateClip,
+		defaultCornerRadius: iconImage.CornerRadius,
+		iconImage:           iconImage,
+		iconLoader:          iconLoader,
+		IconPixelSize:       IconPixelSize,
+		IconUnitSize:        IconUnitSize,
+		nameLabel:           widget.NewLabel(""),
+		Truncation:          fyne.TextTruncateClip,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
-	w.nameLabel.Truncation = w.Truncation
-	w.iconImage.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
-	if w.IsAvatar {
-		w.iconImage.CornerRadius = w.IconUnitSize / 2
-	}
+	w.updateFromFields()
 	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
@@ -74,34 +79,50 @@ func (w *EveEntityListItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+func (w *EveEntityListItem) Refresh() {
+	w.updateFromFields()
+	w.BaseWidget.Refresh()
+}
+
+// updateFromFields applies the exported fields to the inner widgets.
+func (w *EveEntityListItem) updateFromFields() {
+	w.nameLabel.Truncation = w.Truncation
+	w.iconImage.SetMinSize(fyne.NewSquareSize(w.IconUnitSize))
+	if w.IsAvatar {
+		w.iconImage.CornerRadius = w.IconUnitSize / 2
+	} else {
+		w.iconImage.CornerRadius = w.defaultCornerRadius
+	}
+}
+
 // Set updates the widget.
 //
 // If o.ID is zero it will render no icon and the name in bold style.
 // This can be used to show totals in tables.
 func (w *EveEntityListItem) Set(o *app.EveEntity) {
-	if w.IsAvatar {
-		w.iconImage.CornerRadius = w.IconUnitSize / 2
-	}
 	if o == nil {
-		w.iconImage.Resource = icons.BlankSvg
-		w.iconImage.Refresh()
+		w.entity = entityKey{}
 		w.nameLabel.Text = "?"
-		w.nameLabel.Refresh()
+		w.nameLabel.TextStyle.Bold = false
+	} else {
+		w.entity = entityKey{id: o.ID, category: o.Category}
+		w.nameLabel.Text = o.Name
+		w.nameLabel.TextStyle.Bold = o.ID == 0
+	}
+	if o == nil || o.ID == 0 {
+		w.iconImage.Resource = icons.BlankSvg
+		w.Refresh()
 		return
 	}
-	if o.ID == 0 {
-		w.nameLabel.TextStyle.Bold = true
-		w.iconImage.Resource = icons.BlankSvg
+	w.Refresh()
+	loading := w.entity
+	w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
+		if w.entity != loading {
+			return // row now shows another entity
+		}
+		w.iconImage.Resource = r
 		w.iconImage.Refresh()
-	} else {
-		w.nameLabel.TextStyle.Bold = false
-		w.iconLoader(o, w.IconPixelSize, func(r fyne.Resource) {
-			w.iconImage.Resource = r
-			w.iconImage.Refresh()
-		})
-	}
-	w.nameLabel.Text = o.NameOrZero()
-	w.nameLabel.Refresh()
+	})
 }
 
 // Set2 updates the widget.
@@ -149,7 +170,7 @@ func MakeEveEntityColumn[T any](arg MakeEveEntityColumnParams[T]) xwidget.DataCo
 			co.(*EveEntityListItem).Set(arg.GetEntity(r))
 		},
 		Sort: func(a, b T) int {
-			return xstrings.CompareIgnoreCase(arg.GetEntity(a).Name, arg.GetEntity(b).Name)
+			return xstrings.CompareIgnoreCase(arg.GetEntity(a).NameOrZero(), arg.GetEntity(b).NameOrZero())
 		},
 	}
 	return c

@@ -242,16 +242,8 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		a.errorLabel.Hide()
 		a.nameLink.Set(c.EveCharacter.ToEveEntity())
 		a.raceLink.SetRace(c.EveCharacter.Race)
-		if v, ok := c.EveCharacter.Bloodline.Value(); ok {
-			a.bloodlineLink.SetBloodline(v)
-		} else {
-			a.bloodlineLink.Clear()
-		}
-		if v, ok := c.EveCharacter.Faction.Value(); ok {
-			a.factionLink.Set(v)
-		} else {
-			a.factionLink.Clear()
-		}
+		a.bloodlineLink.SetBloodline(c.EveCharacter.Bloodline.ValueOrZero())
+		a.factionLink.Set(c.EveCharacter.Faction.ValueOrZero())
 		a.bornLabel.SetText(c.EveCharacter.Birthday.Format(app.DateTimeFormat))
 		a.securityLabel.SetText(c.EveCharacter.SecurityStatus.StringFunc("?", func(v float64) string {
 			return fmt.Sprintf("%.1f", v)
@@ -259,16 +251,8 @@ func (a *CharacterSheet) update(ctx context.Context) {
 		a.lastLoginAtLabel.SetText(c.LastLoginAt.StringFunc("?", func(v time.Time) string {
 			return v.Format(app.DateTimeFormat)
 		}))
-		if home != nil {
-			a.homeLink.SetLocation(home)
-		} else {
-			a.homeLink.Clear()
-		}
-		if location != nil {
-			a.locationLink.SetLocation(location)
-		} else {
-			a.locationLink.Clear()
-		}
+		a.homeLink.SetLocation(home)
+		a.locationLink.SetLocation(location)
 		if shipType != nil {
 			a.shipLink.Set(shipType.ToEveEntity())
 		} else {

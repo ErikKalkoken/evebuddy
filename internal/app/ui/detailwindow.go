@@ -93,16 +93,6 @@ func FormatISKAmount(v float64) string {
 	return t
 }
 
-// FormatISKAmountLong returns a formatted ISK amount using the given number format,
-// with a long form appended in parentheses when the amount exceeds 1000.
-func FormatISKAmountLong(v float64, format string) string {
-	s := fmt.Sprintf("%s ISK", humanize.FormatFloat(format, v))
-	if v > 1000 {
-		s += fmt.Sprintf(" (%s)", ihumanize.NumberF(v, 1))
-	}
-	return s
-}
-
 func MakeCharacterActionLabel(id int64, name string, action func(o *app.EveEntity)) fyne.CanvasObject {
 	o := &app.EveEntity{
 		ID:       id,
@@ -141,6 +131,5 @@ func MakeLocationLabel(o *app.EveLocationShort, show func(int64)) fyne.CanvasObj
 	x := MakeLinkLabelWithWrap(o.DisplayName(), func() {
 		show(o.ID)
 	})
-	x.Wrapping = fyne.TextWrapWord
 	return x
 }

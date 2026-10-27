@@ -255,25 +255,9 @@ func (a *CorporationSheet) update(ctx context.Context) {
 		a.membersLabel.SetText(humanize.Comma(corporation.MemberCount))
 		a.taxRateLabel.SetText(fmt.Sprintf("%.0f%%", corporation.TaxRate*100))
 		a.tickerLabel.SetText(corporation.Ticker)
-		if alliance, ok := corporation.Alliance.Value(); ok {
-			a.allianceLink.Set(alliance)
-		} else {
-			a.allianceLink.Clear()
-		}
-		if faction, ok := corporation.Faction.Value(); ok {
-			a.factionLink.Set(faction)
-		} else {
-			a.factionLink.Clear()
-		}
-		if ceo, ok := corporation.Ceo.Value(); ok {
-			a.ceoLink.Set(ceo)
-		} else {
-			a.ceoLink.Clear()
-		}
-		if home, ok := corporation.HomeStation.Value(); ok {
-			a.homeLink.Set(home)
-		} else {
-			a.homeLink.Clear()
-		}
+		a.allianceLink.Set(corporation.Alliance.ValueOrZero())
+		a.factionLink.Set(corporation.Faction.ValueOrZero())
+		a.ceoLink.Set(corporation.Ceo.ValueOrZero())
+		a.homeLink.Set(corporation.HomeStation.ValueOrZero())
 	})
 }
