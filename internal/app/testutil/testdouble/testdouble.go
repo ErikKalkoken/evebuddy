@@ -45,7 +45,7 @@ func NewEVEUniverseServiceFake(args ...eveuniverseservice.Params) *eveuniversese
 		})
 	}
 	if arg.Signals == nil {
-		arg.Signals = newSignalsSync()
+		arg.Signals = NewSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -105,7 +105,7 @@ func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.
 		arg.EveNotificationService = &EVENotificationServiceStub{}
 	}
 	if arg.Signals == nil {
-		arg.Signals = newSignalsSync()
+		arg.Signals = NewSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -159,7 +159,7 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 		arg.Cache = testutil.NewCacheFake2()
 	}
 	if arg.Signals == nil {
-		arg.Signals = newSignalsSync()
+		arg.Signals = NewSignalsSync()
 	}
 	if arg.StatusCacheService == nil {
 		arg.StatusCacheService = new(StatusCacheStub)
@@ -268,7 +268,7 @@ func NewUIFake(args ...UIParams) *UIFake {
 		panic("must define app")
 	}
 	if arg.Signals == nil {
-		arg.Signals = newSignalsSync()
+		arg.Signals = NewSignalsSync()
 	}
 	if arg.StatusCache == nil {
 		arg.StatusCache = new(statuscache.StatusCache)
@@ -535,9 +535,9 @@ func (iv *InfoViewerFake) ShowRace(id int64) {
 func (*InfoViewerFake) Show2(_, _, _ int64) {}
 func (*InfoViewerFake) ShowType(_, _ int64) {}
 
-// newSignalsSync returns signals that call listeners sequentially,
+// NewSignalsSync returns signals that call listeners sequentially,
 // because the Fyne test driver runs fyne.Do on the calling goroutine.
-func newSignalsSync() *app.Signals {
+func NewSignalsSync() *app.Signals {
 	return &app.Signals{
 		AppInit:                     signals.NewSync[struct{}](),
 		CharacterAdded:              signals.NewSync[*app.Character](),

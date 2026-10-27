@@ -851,7 +851,7 @@ func (u *DesktopUI) defineShortcuts() {
 }
 
 func (u *DesktopUI) showAboutDialog() {
-	d := dialog.NewCustom("About", "Close", makeAboutPage(u.baseUI), u.MainWindow())
+	d := dialog.NewCustom("About", "Close", newAboutPage(u.baseUI), u.MainWindow())
 	xdesktop.DisableShortcutsForDialog(d, u.MainWindow())
 	d.Show()
 }

@@ -204,22 +204,27 @@ func (a *statusBar) start(startupCtx context.Context) {
 		xsync.RunEvery(ctx, refreshUITick, a.updateEveStatus)
 	})
 	a.u.tasks.Go(func(ctx context.Context) {
-		xsync.RunEvery(ctx, versionTicker, func(ctx context.Context) {
-			v, err := a.u.availableUpdate(ctx)
-			if err != nil {
-				if !app.IsContextCanceled(ctx, err) {
-					slog.Error("fetch latest github version for download hint", "err", err)
-				}
-				return
-			}
-			if !v.IsRemoteNewer {
-				return
-			}
-			fyne.Do(func() {
-				a.updateHint.set(v)
-				a.updateHint.Show()
-			})
-		})
+		xsync.RunEvery(ctx, versionTicker, a.updateVersionHint)
+	})
+}
+
+func (a *statusBar) updateVersionHint(ctx context.Context) {
+	v, err := a.u.availableUpdate(ctx)
+	if err != nil {
+		if !app.IsContextCanceled(ctx, err) {
+			slog.Error("fetch latest github version for download hint", "err", err)
+		}
+		return
+	}
+	if !v.IsRemoteNewer {
+		return
+	}
+	fyne.Do(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return
+		}
+		a.updateHint.set(v)
+		a.updateHint.Show()
 	})
 }
 
@@ -296,32 +301,33 @@ func (a *statusBar) updateUpdateStatus(_ context.Context) {
 }
 
 func (a *statusBar) showClockDialog() {
-	clock := widget.NewLabel("")
+	formatNow := func() string {
+		return time.Now().UTC().Format("15:04:05")
+	}
+	clock := widget.NewLabel(formatNow()) // shows the time even before the first tick
 	clock.SizeName = theme.SizeNameHeadingText
 	d := dialog.NewCustom("EVE Clock", "Close", clock, a.u.MainWindow())
 	xdesktop.DisableShortcutsForDialog(d, a.u.MainWindow())
-
-	stop := make(chan struct{})
-	timer := time.NewTicker(1 * time.Second)
-	go func() {
-		defer timer.Stop()
-		for {
-			if a.u.Signals().IsShuttingDown() {
-				return
-			}
-			s := time.Now().UTC().Format("15:04:05")
+	dialogCtx, dialogCancel := context.WithCancel(context.Background())
+	d.SetOnClosed(dialogCancel)
+	a.u.Go(func(ctx context.Context) {
+		if dialogCtx.Err() != nil {
+			return // dialog closed before the job started
+		}
+		// Ends when the dialog is closed or the app shuts down.
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		stop := context.AfterFunc(dialogCtx, cancel)
+		defer stop()
+		xsync.RunEvery(ctx, time.Second, func(_ context.Context) {
+			s := formatNow()
 			fyne.Do(func() {
+				if a.u.Signals().IsShuttingDown() {
+					return
+				}
 				clock.SetText(s)
 			})
-			select {
-			case <-stop:
-				return
-			case <-timer.C:
-			}
-		}
-	}()
-	d.SetOnClosed(func() {
-		close(stop) // don't block: the ticker may have already returned on shutdown
+		})
 	})
 	d.Show()
 }

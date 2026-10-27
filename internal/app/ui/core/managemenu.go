@@ -1,6 +1,8 @@
 package core
 
 import (
+	"log/slog"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 
@@ -9,27 +11,29 @@ import (
 
 // makeManageMenu returns the menu for the nav rail's Manage item.
 func makeManageMenu(u *DesktopUI) *fyne.Menu {
-	makeMenuItem := func(title string, sc xdesktop.ShortcutWithHandler) *fyne.MenuItem {
+	w := u.MainWindow()
+	var items []*fyne.MenuItem
+	addShortcutItem := func(title, name string) {
+		sc, ok := xdesktop.Shortcut(name, w)
+		if !ok {
+			slog.Error("manage menu: shortcut not found", "name", name)
+			return
+		}
 		it := fyne.NewMenuItem(title, func() {
 			sc.Handler(sc.Shortcut)
 		})
 		it.Shortcut = sc.Shortcut
-		return it
+		items = append(items, it)
 	}
-	w := u.MainWindow()
-	settings, _ := xdesktop.Shortcut("settings", w)
-	characters, _ := xdesktop.Shortcut("manageCharacters", w)
-	status, _ := xdesktop.Shortcut("updateStatus", w)
-	quit, _ := xdesktop.Shortcut("quit", w)
-	items := []*fyne.MenuItem{
-		makeMenuItem("Settings", settings),
-		makeMenuItem("Manage Characters", characters),
-		makeMenuItem("Update Status", status),
+	addShortcutItem("Settings", "settings")
+	addShortcutItem("Manage Characters", "manageCharacters")
+	addShortcutItem("Update Status", "updateStatus")
+	items = append(items,
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User Data", u.showUserDataDialog),
 		fyne.NewMenuItem("About", u.showAboutDialog),
 		fyne.NewMenuItemSeparator(),
-	}
+	)
 	// without a tray icon a hidden window can not be shown again
 	if u.settings.SysTrayEnabled() {
 		it := fyne.NewMenuItem("Close", func() {
@@ -41,6 +45,6 @@ func makeManageMenu(u *DesktopUI) *fyne.Menu {
 		}
 		items = append(items, it)
 	}
-	items = append(items, makeMenuItem("Quit", quit))
+	addShortcutItem("Quit", "quit")
 	return fyne.NewMenu("", items...)
 }
