@@ -793,6 +793,7 @@ func (u *MobileUI) updateUpdateStatus(_ context.Context) {
 
 	if u.ess.IsDailyDowntime() {
 		u.isOffline.Store(true)
+		u.hasUpdateError.Store(false) // errors are not shown during downtime
 		set(
 			fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
 			"OFF",

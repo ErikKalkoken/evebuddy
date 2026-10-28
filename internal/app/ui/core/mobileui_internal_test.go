@@ -524,6 +524,25 @@ func TestMobileUI_UpdateUpdateStatus(t *testing.T) {
 		xassert.Equal(t, widget.WarningImportance, importance)
 		assert.True(t, u.IsOffline())
 	})
+	t.Run("shows warning badge during daily downtime after errors", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID:  c.ID,
+			Section:      app.SectionCharacterSkills,
+			ErrorMessage: "error",
+		})
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		setNow("2026-09-24T12:00:00Z")
+		u.updateUpdateStatus(t.Context())
+		setNow("2026-09-24T11:05:00Z")
+		// when
+		u.updateUpdateStatus(t.Context())
+		// then
+		importance, ok := u.navBar.Badge(moreDestination)
+		assert.True(t, ok)
+		xassert.Equal(t, widget.WarningImportance, importance)
+	})
 	t.Run("is online again after daily downtime", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
