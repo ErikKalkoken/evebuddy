@@ -102,15 +102,9 @@ func main() {
 
 	// set manual log level for this session if requested
 	if v := *logLevelFlag; v != "" {
-		m := map[string]slog.Level{
-			"debug": slog.LevelDebug,
-			"info":  slog.LevelInfo,
-			"warn":  slog.LevelWarn,
-			"error": slog.LevelError,
-		}
-		l, ok := m[strings.ToLower(v)]
-		if !ok {
-			fmt.Println("valid log levels are: ", strings.Join(slices.Collect(maps.Keys(m)), ", "))
+		l, err := parseLogLevel(v)
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		slog.SetLogLoggerLevel(l)
@@ -118,7 +112,7 @@ func main() {
 
 	// Set CPUs utilization limit
 	cpuTotal := runtime.NumCPU()
-	cpuLimit := max(1, int(math.Floor(float64(cpuTotal)*maxCPUShare)))
+	cpuLimit := calcCPULimit(cpuTotal)
 	slog.Info("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
 	runtime.GOMAXPROCS(cpuLimit)
 
@@ -144,14 +138,11 @@ func main() {
 	} else {
 		dataDir = fyneApp.Storage().RootURI().Path()
 	}
-	dbPath := filepath.Join(dataDir, dbFileName)
-	logDir := filepath.Join(dataDir, logFolderName)
-	logFilePath := filepath.Join(logDir, logFileName)
-	crashFilePath := filepath.Join(logDir, crashFileName)
+	paths := newAppPaths(dataDir)
 	dataPaths := xmaps.OrderedMap[string, string]{
-		"db":        dbPath, // also holds settings, see internal/app/settings
-		"log":       logFilePath,
-		"crashfile": crashFilePath,
+		"db":        paths.db, // also holds settings, see internal/app/settings
+		"log":       paths.logFile,
+		"crashfile": paths.crashFile,
 	}
 
 	if *filesFlag {
@@ -162,11 +153,11 @@ func main() {
 	}
 
 	// setup logfile for desktop
-	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(paths.logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
 	logger := &lumberjack.Logger{
-		Filename:   logFilePath,
+		Filename:   paths.logFile,
 		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
 	}
@@ -197,7 +188,7 @@ func main() {
 
 	if isDesktop {
 		// ensure single instance
-		mu, err := ensureSingleInstance()
+		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
 		if errors.Is(err, mutex.ErrTimeout) {
 			err := remoteservice.ShowPrimaryInstance(remotePort)
 			if err != nil {
@@ -214,7 +205,7 @@ func main() {
 	}
 
 	// crashfile
-	if err := setupCrashFile(crashFilePath); err != nil {
+	if err := setupCrashFile(paths.crashFile); err != nil {
 		log.Fatalf("Failed to setup crash report file: %s", err)
 	}
 
@@ -242,7 +233,7 @@ func main() {
 	}
 
 	// init database
-	dsn := "file:///" + filepath.ToSlash(dbPath)
+	dsn := "file:///" + filepath.ToSlash(paths.db)
 	dbRW, dbRO, err := storage.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
@@ -464,6 +455,44 @@ func main() {
 	slog.Info("Shutdown completed")
 }
 
+// parseLogLevel returns the slog level for a log level name.
+func parseLogLevel(s string) (slog.Level, error) {
+	m := map[string]slog.Level{
+		"debug": slog.LevelDebug,
+		"info":  slog.LevelInfo,
+		"warn":  slog.LevelWarn,
+		"error": slog.LevelError,
+	}
+	l, ok := m[strings.ToLower(s)]
+	if !ok {
+		return 0, fmt.Errorf("valid log levels are:  %s", strings.Join(slices.Collect(maps.Keys(m)), ", "))
+	}
+	return l, nil
+}
+
+// calcCPULimit returns how many of the total CPUs the app may use.
+func calcCPULimit(total int) int {
+	return max(1, int(math.Floor(float64(total)*maxCPUShare)))
+}
+
+// appPaths holds the paths to the app's data files.
+type appPaths struct {
+	db        string
+	logDir    string
+	logFile   string
+	crashFile string
+}
+
+func newAppPaths(dataDir string) appPaths {
+	logDir := filepath.Join(dataDir, logFolderName)
+	return appPaths{
+		db:        filepath.Join(dataDir, dbFileName),
+		logDir:    logDir,
+		logFile:   filepath.Join(logDir, logFileName),
+		crashFile: filepath.Join(logDir, crashFileName),
+	}
+}
+
 // realtime represents the current time.
 type realtime struct{}
 
@@ -482,10 +511,10 @@ func (r realtime) Now() time.Time {
 
 // ensureSingleInstance sets and returns a mutex for this application instance.
 // The returned mutex must not be released until the application terminates.
-func ensureSingleInstance() (mutex.Releaser, error) {
+func ensureSingleInstance(name string) (mutex.Releaser, error) {
 	slog.Debug("Checking for other instances")
 	mu, err := mutex.Acquire(mutex.Spec{
-		Name:    strings.ReplaceAll(appID, ".", "-"),
+		Name:    name,
 		Clock:   realtime{},
 		Delay:   mutexDelay,
 		Timeout: mutexTimeout,
