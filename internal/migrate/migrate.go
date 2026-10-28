@@ -23,23 +23,14 @@ type MigrateFS interface {
 
 // Run applies all unapplied migrations.
 func Run(db *sql.DB, migrations MigrateFS) error {
-	isEmpty, err := isEmpty(db)
-	if err != nil {
-		return err
+	if err := createMigrationTracking(db); err != nil {
+		return fmt.Errorf("create migrations table: %w", err)
 	}
-	if isEmpty {
-		if err := createMigrationTracking(db); err != nil {
-			return err
-		}
-	}
-	if err := applyNewMigrations(db, migrations); err != nil {
-		return err
-	}
-	return nil
+	return applyNewMigrations(db, migrations)
 }
 
 var createMigrationTrackingSQL = `
-CREATE TABLE migrations(
+CREATE TABLE IF NOT EXISTS migrations(
     id INTEGER PRIMARY KEY NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	name TEXT NOT NULL,
@@ -85,7 +76,7 @@ type migration struct {
 func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	names, err := listMigrationNames(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("list applied migrations: %w", err)
 	}
 	appliedMigrations := set.Collect(slices.Values(names))
 	c, err := migrations.ReadDir("migrations")
@@ -114,40 +105,30 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		return cmp.Compare(a.name, b.name)
 	})
 	for _, m := range unapplied {
+		wrapErr := func(err error) error {
+			return fmt.Errorf("migration %s: %w", m.name, err)
+		}
 		p := fmt.Sprintf("migrations/%s", m.filename) // FS uses slashes on all platforms incl. Windows
 		data, err := migrations.ReadFile(p)
 		if err != nil {
-			return err
+			return wrapErr(err)
 		}
 		tx, err := db.Begin()
 		if err != nil {
-			return err
+			return wrapErr(err)
 		}
 		if _, err := tx.Exec(string(data)); err != nil {
 			tx.Rollback()
-			return err
+			return wrapErr(err)
 		}
 		if _, err := tx.Exec(`INSERT INTO migrations(name) VALUES(?);`, m.name); err != nil {
 			tx.Rollback()
-			return err
+			return wrapErr(err)
 		}
 		if err := tx.Commit(); err != nil {
-			return err
+			return wrapErr(err)
 		}
 		slog.Info("Successfully applied new migration", "name", m.name)
 	}
 	return nil
-}
-
-// isEmpty reports whether the database is empty.
-func isEmpty(db *sql.DB) (bool, error) {
-	rows, err := db.Query("SELECT NAME from sqlite_master;")
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		return false, nil
-	}
-	return true, nil
 }
