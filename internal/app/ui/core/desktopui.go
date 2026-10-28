@@ -104,7 +104,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 
 	formatBadge := func(count optional.Optional[int], mx int) string {
 		return formatCount(count, func(v int) string {
-			if v >= mx {
+			if v > mx {
 				return fmt.Sprintf("%d+", mx)
 			}
 			return fmt.Sprint(v)
