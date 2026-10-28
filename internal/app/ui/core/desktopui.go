@@ -720,9 +720,6 @@ func (u *DesktopUI) quit() {
 }
 
 func (u *DesktopUI) saveAppState() {
-	if u.MainWindow() == nil || u.app == nil {
-		slog.Warn("Failed to save app state")
-	}
 	u.settings.SetWindowSize(u.MainWindow().Canvas().Size())
 	slog.Debug("Saved app state")
 }
