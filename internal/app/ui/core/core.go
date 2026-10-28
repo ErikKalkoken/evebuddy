@@ -175,6 +175,7 @@ type baseUI struct {
 	corporationAvatarPlaceholder64 fyne.Resource
 	dataPaths                      xmaps.OrderedMap[string, string] // Paths to user data
 	defaultTheme                   fyne.Theme
+	hasSysTray                     bool // whether the system tray was created at startup
 	isDeveloperMode                atomic.Bool
 	isFakeMobile                   bool        // Show mobile variant on a desktop (for development)
 	isForeground                   atomic.Bool // whether the app is currently shown in the foreground
@@ -954,10 +955,10 @@ func (u *baseUI) SetColorTheme(s settings.ColorTheme) {
 }
 
 func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
-	if u.showMailIndicator == nil || u.hideMailIndicator == nil {
+	if !u.hasSysTray {
 		return
 	}
-	if !u.settings.SysTrayEnabled() {
+	if u.showMailIndicator == nil || u.hideMailIndicator == nil {
 		return
 	}
 	n, err := u.cs.CountAllMailsUnread(ctx)

@@ -89,13 +89,6 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		panic("Could not start in desktop mode")
 	}
 
-	u.showMailIndicator = func() {
-		deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
-	}
-	u.hideMailIndicator = func() {
-		deskApp.SetSystemTrayIcon(icons.IconPng)
-	}
-
 	u.showManageCharacters = func() {
 		charactermanager.Show(u)
 	}
@@ -530,11 +523,18 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		)
 		deskApp.SetSystemTrayMenu(m)
 		deskApp.SetSystemTrayWindow(u.MainWindow())
+		u.hasSysTray = true
+		u.showMailIndicator = func() {
+			deskApp.SetSystemTrayIcon(icons.IconmarkedPng)
+		}
+		u.hideMailIndicator = func() {
+			deskApp.SetSystemTrayIcon(icons.IconPng)
+		}
+		u.hideMailIndicator() // init system tray icon
 		u.MainWindow().SetCloseIntercept(func() {
 			u.MainWindow().Hide()
 		})
 	}
-	u.hideMailIndicator() // init system tray icon
 
 	u.onSetCharacter = func(c *app.Character) {
 		fyne.Do(func() {

@@ -96,6 +96,10 @@ func TestNewDesktopUI(t *testing.T) {
 		// then
 		assert.True(t, u.signals.IsShuttingDown())
 		assert.Nil(t, fa.trayMenu)
+		assert.Nil(t, fa.trayIcon)
+		assert.False(t, u.hasSysTray)
+		assert.Nil(t, u.showMailIndicator)
+		assert.Nil(t, u.hideMailIndicator)
 	})
 }
 

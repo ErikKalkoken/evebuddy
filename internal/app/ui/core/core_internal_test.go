@@ -1033,7 +1033,7 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 	t.Run("updates mail indicator when mail headers changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		var shown bool
@@ -1169,7 +1169,7 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 	t.Run("shows indicator when there are unread mails", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail()
 		var shown, hidden bool
 		u.showMailIndicator = func() {
@@ -1187,7 +1187,7 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 	t.Run("hides indicator when there are no unread mails", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{IsRead: optional.New(true)})
 		var shown, hidden bool
 		u.showMailIndicator = func() {
@@ -1202,10 +1202,9 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 		assert.False(t, shown)
 		assert.True(t, hidden)
 	})
-	t.Run("does nothing when system tray is disabled", func(t *testing.T) {
+	t.Run("does nothing without a system tray", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(false)
 		factory.CreateCharacterMail()
 		var called bool
 		u.showMailIndicator = func() {
@@ -1219,10 +1218,10 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 		// then
 		assert.False(t, called)
 	})
-	t.Run("does nothing when indicator is not supported", func(t *testing.T) {
+	t.Run("does nothing when indicator is not set", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail()
 		// when
 		u.UpdateMailIndicator(t.Context())
