@@ -60,11 +60,13 @@ const (
 	appNameVerbose      = "EVE Buddy"
 	authClientID        = "11ae857fe4d149b2be60d875649c05f1"
 	authPort            = 30123
-	remotePort          = 30125
 	cacheCleanUpTimeout = time.Minute * 30
 	concurrentLimit     = 10 // max concurrent Goroutines per group
 	crashFileName       = "crash.txt"
 	dbFileName          = appName + ".sqlite"
+	httpCacheTimeout    = 24 * time.Hour
+	httpRetryMax        = 3
+	httpRetryWaitMax    = 30 * time.Second
 	logFileName         = appName + ".log"
 	logFolderName       = "log"
 	logLevelDefault     = slog.LevelWarn // for startup only
@@ -73,6 +75,7 @@ const (
 	maxCPUShare         = 0.5
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
+	remotePort          = 30125
 	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	userAgentEmail      = "kalkoken87@gmail.com"
 )
@@ -273,12 +276,12 @@ func main() {
 	// HTTP client for ESI with automatic retries, HTTP caching, rate limit support,
 	// error limit support, blocking during daily downtime period and response logging.
 	rhc1 := retryablehttp.NewClient()
-	rhc1.RetryWaitMax = 30 * time.Second // overruled by retry-after and error-reset header
-	rhc1.RetryMax = 3
+	rhc1.RetryWaitMax = httpRetryWaitMax // overruled by retry-after and error-reset header
+	rhc1.RetryMax = httpRetryMax
 	rhc1.CheckRetry = xgoesi.CustomCheckRetry // also retry on 420s
 	rhc1.Backoff = xgoesi.CustomBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", httpCacheTimeout),
 		MarkCachedResponses: true,
 		CacheKey:            xgoesi.CacheKeyWithForceRefresh,
 		Transport: &xgoesi.TokenRefresher{
@@ -297,10 +300,10 @@ func main() {
 
 	// HTTP client for SSO and EVE image server with HTTP caching and response logging.
 	rhc2 := retryablehttp.NewClient()
-	rhc2.RetryWaitMax = 30 * time.Second
-	rhc2.RetryMax = 4
+	rhc2.RetryWaitMax = httpRetryWaitMax
+	rhc2.RetryMax = httpRetryMax
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", httpCacheTimeout),
 		MarkCachedResponses: true,
 	}
 	rhc2.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
