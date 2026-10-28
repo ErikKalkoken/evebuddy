@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -59,11 +60,13 @@ const (
 	appNameVerbose      = "EVE Buddy"
 	authClientID        = "11ae857fe4d149b2be60d875649c05f1"
 	authPort            = 30123
-	remotePort          = 30125
 	cacheCleanUpTimeout = time.Minute * 30
 	concurrentLimit     = 10 // max concurrent Goroutines per group
 	crashFileName       = "crash.txt"
 	dbFileName          = appName + ".sqlite"
+	httpCacheTimeout    = 24 * time.Hour
+	httpRetryMax        = 3
+	httpRetryWaitMax    = 30 * time.Second
 	logFileName         = appName + ".log"
 	logFolderName       = "log"
 	logLevelDefault     = slog.LevelWarn // for startup only
@@ -72,6 +75,7 @@ const (
 	maxCPUShare         = 0.5
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
+	remotePort          = 30125
 	sourceURL           = "https://github.com/ErikKalkoken/evebuddy"
 	userAgentEmail      = "kalkoken87@gmail.com"
 )
@@ -102,15 +106,9 @@ func main() {
 
 	// set manual log level for this session if requested
 	if v := *logLevelFlag; v != "" {
-		m := map[string]slog.Level{
-			"debug": slog.LevelDebug,
-			"info":  slog.LevelInfo,
-			"warn":  slog.LevelWarn,
-			"error": slog.LevelError,
-		}
-		l, ok := m[strings.ToLower(v)]
-		if !ok {
-			fmt.Println("valid log levels are: ", strings.Join(slices.Collect(maps.Keys(m)), ", "))
+		l, err := parseLogLevel(v)
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		slog.SetLogLoggerLevel(l)
@@ -118,7 +116,7 @@ func main() {
 
 	// Set CPUs utilization limit
 	cpuTotal := runtime.NumCPU()
-	cpuLimit := max(1, int(math.Floor(float64(cpuTotal)*maxCPUShare)))
+	cpuLimit := calcCPULimit(cpuTotal)
 	slog.Info("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
 	runtime.GOMAXPROCS(cpuLimit)
 
@@ -144,14 +142,11 @@ func main() {
 	} else {
 		dataDir = fyneApp.Storage().RootURI().Path()
 	}
-	dbPath := filepath.Join(dataDir, dbFileName)
-	logDir := filepath.Join(dataDir, logFolderName)
-	logFilePath := filepath.Join(logDir, logFileName)
-	crashFilePath := filepath.Join(logDir, crashFileName)
+	paths := newAppPaths(dataDir)
 	dataPaths := xmaps.OrderedMap[string, string]{
-		"db":        dbPath, // also holds settings, see internal/app/settings
-		"log":       logFilePath,
-		"crashfile": crashFilePath,
+		"db":        paths.db, // also holds settings, see internal/app/settings
+		"log":       paths.logFile,
+		"crashfile": paths.crashFile,
 	}
 
 	if *filesFlag {
@@ -162,11 +157,11 @@ func main() {
 	}
 
 	// setup logfile for desktop
-	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(paths.logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
 	logger := &lumberjack.Logger{
-		Filename:   logFilePath,
+		Filename:   paths.logFile,
 		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
 	}
@@ -197,7 +192,7 @@ func main() {
 
 	if isDesktop {
 		// ensure single instance
-		mu, err := ensureSingleInstance()
+		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
 		if errors.Is(err, mutex.ErrTimeout) {
 			err := remoteservice.ShowPrimaryInstance(remotePort)
 			if err != nil {
@@ -214,7 +209,7 @@ func main() {
 	}
 
 	// crashfile
-	if err := setupCrashFile(crashFilePath); err != nil {
+	if err := setupCrashFile(paths.crashFile); err != nil {
 		log.Fatalf("Failed to setup crash report file: %s", err)
 	}
 
@@ -242,7 +237,7 @@ func main() {
 	}
 
 	// init database
-	dsn := "file:///" + filepath.ToSlash(dbPath)
+	dsn := "file:///" + filepath.ToSlash(paths.db)
 	dbRW, dbRO, err := storage.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
@@ -281,12 +276,12 @@ func main() {
 	// HTTP client for ESI with automatic retries, HTTP caching, rate limit support,
 	// error limit support, blocking during daily downtime period and response logging.
 	rhc1 := retryablehttp.NewClient()
-	rhc1.RetryWaitMax = 30 * time.Second // overruled by retry-after and error-reset header
-	rhc1.RetryMax = 3
+	rhc1.RetryWaitMax = httpRetryWaitMax // overruled by retry-after and error-reset header
+	rhc1.RetryMax = httpRetryMax
 	rhc1.CheckRetry = xgoesi.CustomCheckRetry // also retry on 420s
 	rhc1.Backoff = xgoesi.CustomBackoff       // also retry on 420s
 	rhc1.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "esicache-", httpCacheTimeout),
 		MarkCachedResponses: true,
 		CacheKey:            xgoesi.CacheKeyWithForceRefresh,
 		Transport: &xgoesi.TokenRefresher{
@@ -305,10 +300,10 @@ func main() {
 
 	// HTTP client for SSO and EVE image server with HTTP caching and response logging.
 	rhc2 := retryablehttp.NewClient()
-	rhc2.RetryWaitMax = 30 * time.Second
-	rhc2.RetryMax = 4
+	rhc2.RetryWaitMax = httpRetryWaitMax
+	rhc2.RetryMax = httpRetryMax
 	rhc2.HTTPClient.Transport = &httpcache.Transport{
-		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		Cache:               pcache.NewHTTPCacheAdapter(pc, "httpcache-", httpCacheTimeout),
 		MarkCachedResponses: true,
 	}
 	rhc2.Logger = xgoesi.CanceledDowngradeLogger{Logger: slog.Default()}
@@ -464,16 +459,52 @@ func main() {
 	slog.Info("Shutdown completed")
 }
 
+// parseLogLevel returns the slog level for a log level name.
+func parseLogLevel(s string) (slog.Level, error) {
+	m := map[string]slog.Level{
+		"debug": slog.LevelDebug,
+		"info":  slog.LevelInfo,
+		"warn":  slog.LevelWarn,
+		"error": slog.LevelError,
+	}
+	l, ok := m[strings.ToLower(s)]
+	if !ok {
+		names := slices.SortedFunc(maps.Keys(m), func(a, b string) int {
+			return cmp.Compare(m[a], m[b])
+		})
+		return 0, fmt.Errorf("valid log levels are: %s", strings.Join(names, ", "))
+	}
+	return l, nil
+}
+
+// calcCPULimit returns how many of the total CPUs the app may use.
+func calcCPULimit(total int) int {
+	return max(1, int(math.Floor(float64(total)*maxCPUShare)))
+}
+
+// appPaths holds the paths to the app's data files.
+type appPaths struct {
+	db        string
+	logDir    string
+	logFile   string
+	crashFile string
+}
+
+func newAppPaths(dataDir string) appPaths {
+	logDir := filepath.Join(dataDir, logFolderName)
+	return appPaths{
+		db:        filepath.Join(dataDir, dbFileName),
+		logDir:    logDir,
+		logFile:   filepath.Join(logDir, logFileName),
+		crashFile: filepath.Join(logDir, crashFileName),
+	}
+}
+
 // realtime represents the current time.
 type realtime struct{}
 
 func (r realtime) After(d time.Duration) <-chan time.Time {
-	c := make(chan time.Time)
-	go func() {
-		time.Sleep(d)
-		c <- time.Now()
-	}()
-	return c
+	return time.After(d)
 }
 
 func (r realtime) Now() time.Time {
@@ -482,10 +513,10 @@ func (r realtime) Now() time.Time {
 
 // ensureSingleInstance sets and returns a mutex for this application instance.
 // The returned mutex must not be released until the application terminates.
-func ensureSingleInstance() (mutex.Releaser, error) {
+func ensureSingleInstance(name string) (mutex.Releaser, error) {
 	slog.Debug("Checking for other instances")
 	mu, err := mutex.Acquire(mutex.Spec{
-		Name:    strings.ReplaceAll(appID, ".", "-"),
+		Name:    name,
 		Clock:   realtime{},
 		Delay:   mutexDelay,
 		Timeout: mutexTimeout,
@@ -500,15 +531,12 @@ func ensureSingleInstance() (mutex.Releaser, error) {
 	return mu, nil
 }
 
-// setupCrashFile create a dedicated file for storing crash reports and returns it's path.
+// setupCrashFile creates or opens the file at path and directs crash reports to it.
 func setupCrashFile(path string) error {
 	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		return err
-	}
-	crashFile.Close()
-	return nil
+	defer crashFile.Close()
+	return debug.SetCrashOutput(crashFile, debug.CrashOptions{})
 }

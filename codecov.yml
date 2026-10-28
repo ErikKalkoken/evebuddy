@@ -1,5 +1,5 @@
 ignore:
-  - "evebuddy/internal/app/icons"
+  - "internal/icons"
   - "internal/app/storage/queries"
   - "internal/app/storage/testutil"
   - "internal/eveicon/mapping.go"
