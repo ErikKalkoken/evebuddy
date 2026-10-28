@@ -47,6 +47,8 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12
 	badge := canvas.NewCircle(color.Transparent)
+	badge.Resize(fyne.NewSquareSize(6))
+	badge.Hide() // not in CreateRenderer, which runs again when Fyne rebuilds an expired renderer
 	w := &destination{
 		badge:           badge,
 		icon:            iconImage,
@@ -163,9 +165,6 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 		},
 	)
 	w.tapAnim.Curve = fyne.AnimationEaseOut
-
-	w.badge.Resize(fyne.NewSquareSize(6))
-	w.badge.Hide()
 
 	p := theme.Padding()
 	c := container.New(
@@ -327,6 +326,15 @@ func (w *NavBar) HideBadge(id int) {
 		return
 	}
 	d.hideBadge()
+}
+
+// Badge reports the importance of a destination's badge and whether it is shown.
+func (w *NavBar) Badge(id int) (widget.Importance, bool) {
+	d := w.destination(id)
+	if d == nil || !d.badge.Visible() {
+		return 0, false
+	}
+	return d.badgeImportance, true
 }
 
 // destination returns the destination object for a given id.
