@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -130,4 +131,49 @@ func TestNavBar_ShowAndHideBadgeAndBar(t *testing.T) {
 	assert.NotPanics(t, func() { nb.HideBadge(0) })
 	assert.NotPanics(t, nb.HideBar)
 	assert.NotPanics(t, nb.ShowBar)
+}
+
+func TestNavBar_Badge(t *testing.T) {
+	test.NewTempApp(t)
+	test.ApplyTheme(t, test.Theme())
+	t.Run("reports no badge initially", func(t *testing.T) {
+		nb := xwidget.NewNavBar(xwidget.NewDestinationDef("A", theme.HomeIcon(), widget.NewLabel("A")))
+		w := test.NewWindow(nb)
+		defer w.Close()
+		// when
+		_, ok := nb.Badge(0)
+		// then
+		assert.False(t, ok)
+	})
+	t.Run("reports shown badge with importance", func(t *testing.T) {
+		nb := xwidget.NewNavBar(xwidget.NewDestinationDef("A", theme.HomeIcon(), widget.NewLabel("A")))
+		w := test.NewWindow(nb)
+		defer w.Close()
+		nb.ShowBadge(0, widget.DangerImportance)
+		// when
+		got, ok := nb.Badge(0)
+		// then
+		assert.True(t, ok)
+		xassert.Equal(t, widget.DangerImportance, got)
+	})
+	t.Run("reports no badge after hiding it", func(t *testing.T) {
+		nb := xwidget.NewNavBar(xwidget.NewDestinationDef("A", theme.HomeIcon(), widget.NewLabel("A")))
+		w := test.NewWindow(nb)
+		defer w.Close()
+		nb.ShowBadge(0, widget.DangerImportance)
+		nb.HideBadge(0)
+		// when
+		_, ok := nb.Badge(0)
+		// then
+		assert.False(t, ok)
+	})
+	t.Run("reports no badge for unknown destination", func(t *testing.T) {
+		nb := xwidget.NewNavBar(xwidget.NewDestinationDef("A", theme.HomeIcon(), widget.NewLabel("A")))
+		w := test.NewWindow(nb)
+		defer w.Close()
+		// when
+		_, ok := nb.Badge(99)
+		// then
+		assert.False(t, ok)
+	})
 }

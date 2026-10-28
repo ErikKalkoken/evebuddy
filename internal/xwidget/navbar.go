@@ -329,6 +329,15 @@ func (w *NavBar) HideBadge(id int) {
 	d.hideBadge()
 }
 
+// Badge reports the importance of a destination's badge and whether it is shown.
+func (w *NavBar) Badge(id int) (widget.Importance, bool) {
+	d := w.destination(id)
+	if d == nil || !d.badge.Visible() {
+		return 0, false
+	}
+	return d.badgeImportance, true
+}
+
 // destination returns the destination object for a given id.
 // Returns nil for invalid IDs.
 func (w *NavBar) destination(id int) *destination {

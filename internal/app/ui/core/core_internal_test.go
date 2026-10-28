@@ -176,6 +176,23 @@ func MakeFakeDesktopUIWithParams(t testing.TB, params UIParams) *DesktopUI {
 	return u
 }
 
+// MakeFakeMobileUI returns a MobileUI with test doubles of its services, like [MakeFakeBaseUI].
+// Its screens show their mobile variants.
+func MakeFakeMobileUI(t testing.TB, st *storage.Storage, fyneApp *AppFake) *MobileUI {
+	params := MakeFakeUIParams(t, st, fyneApp)
+	params.IsMobile = true
+	return MakeFakeMobileUIWithParams(t, params)
+}
+
+// MakeFakeMobileUIWithParams is like [MakeFakeMobileUI], but with custom params.
+func MakeFakeMobileUIWithParams(t testing.TB, params UIParams) *MobileUI {
+	u := NewMobileUI(params)
+	t.Cleanup(func() {
+		u.tasks.Stop()
+	})
+	return u
+}
+
 // MakeFakeUIParams returns UI params with test doubles of the services.
 // Signals call their listeners synchronously. Settings are closed at the end of the test.
 func MakeFakeUIParams(t testing.TB, st *storage.Storage, fyneApp fyne.App) UIParams {
@@ -424,6 +441,47 @@ func TestShakedown(t *testing.T) {
 		for _, it := range []*xwidget.NavRailItem{u.homeRailItem, u.characterRailItem, u.corporationRailItem} {
 			u.rail.Select(it)
 			w.Canvas().Capture()
+		}
+	})
+	t.Run("can render mobile UI", func(t *testing.T) {
+		// On disk, because settings are persisted in a goroutine, which would wipe an in-memory DB.
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() }) // after the UI cleanups, which flush settings
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCharacterFull()
+		factory.CreateCorporation()
+		u.character.Store(c)
+		u.handleCurrentCharacterExchanged(ctx, c)
+		u.updateCorporationDestination(ctx)
+		w := u.MainWindow()
+		w.Resize(fyne.NewSize(340, 700))
+		for _, tc := range []struct {
+			id  int
+			nav *xwidget.Navigator
+		}{
+			{homeDestination, u.homeNav},
+			{characterDestination, u.characterNav},
+			{corporationDestination, u.corporationNav},
+			{searchDestination, u.searchNav},
+			{moreDestination, u.moreNav},
+		} {
+			u.navBar.Select(tc.id)
+			w.Canvas().Capture()
+			var items []*xwidget.NavListItem
+			for _, o := range test.LaidOutObjects(tc.nav) {
+				if it, ok := o.(*xwidget.NavListItem); ok {
+					items = append(items, it)
+				}
+			}
+			for _, it := range items {
+				switch it.Headline {
+				case "Settings", "Manage characters", "Update status":
+					continue // open dialogs, which start background jobs
+				}
+				it.OnTapped()
+				w.Canvas().Capture()
+				tc.nav.PopAll()
+			}
 		}
 	})
 	t.Run("can render nav selector", func(t *testing.T) {
