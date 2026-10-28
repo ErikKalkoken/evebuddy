@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -85,15 +86,21 @@ func TestMobileUI_HandleCurrentCharacterExchanged(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
 		u.handleCurrentCharacterExchanged(t.Context(), factory.CreateCharacter())
+		u.navBar.Enable(corporationDestination)
+		u.homeNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
+		u.characterNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
 		u.navBar.Select(characterDestination)
 		// when
 		u.handleCurrentCharacterExchanged(t.Context(), nil)
 		// then
 		assert.False(t, u.navBar.Enabled(homeDestination))
 		assert.False(t, u.navBar.Enabled(characterDestination))
+		assert.False(t, u.navBar.Enabled(corporationDestination))
 		assert.False(t, u.navBar.Enabled(searchDestination))
 		id, _ := u.navBar.Selected()
 		xassert.Equal(t, moreDestination, id)
+		assert.True(t, u.homeNav.IsRoot())
+		assert.True(t, u.characterNav.IsRoot())
 	})
 }
 
@@ -167,6 +174,17 @@ func TestMobileUI_UpdateCorporationDestination(t *testing.T) {
 		u.updateCorporationDestination(t.Context())
 		// then
 		assert.True(t, u.navBar.Enabled(corporationDestination))
+	})
+	t.Run("keeps corporation destination disabled when there is no current character", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCorporation()
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: c.ID})
+		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID}) // so the corporation is listed
+		// when
+		u.updateCorporationDestination(t.Context())
+		// then
+		assert.False(t, u.navBar.Enabled(corporationDestination))
 	})
 	t.Run("disables corporation destination and shows home when there are no corporations", func(t *testing.T) {
 		testutil.MustTruncateTables(db)

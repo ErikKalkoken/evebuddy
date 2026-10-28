@@ -646,8 +646,11 @@ func (u *MobileUI) handleCurrentCharacterExchanged(_ context.Context, c *app.Cha
 		if c == nil {
 			u.navBar.Disable(homeDestination)
 			u.navBar.Disable(characterDestination)
+			u.navBar.Disable(corporationDestination) // don't wait for the status update
 			u.navBar.Disable(searchDestination)
 			u.navBar.Select(moreDestination)
+			u.homeNav.PopAll()
+			u.characterNav.PopAll()
 		} else {
 			wasDisabled := !u.navBar.Enabled(homeDestination)
 			u.navBar.Enable(homeDestination)
@@ -681,6 +684,9 @@ func (u *MobileUI) updateCorporationDestination(ctx context.Context) {
 		return
 	}
 	fyne.Do(func() {
+		if u.CurrentCharacter() == nil {
+			return // enabled by the status update that follows a character exchange
+		}
 		u.navBar.Enable(corporationDestination)
 	})
 }
