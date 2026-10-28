@@ -556,7 +556,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		fyne.Do(func() {
 			u.corporationSelector.SetTitle(c.EveCorporation.Name)
 		})
-		runAsync(u.updatePermittedSections)
+		// permitted sections are updated by the status update that follows the exchange
 	}
 
 	u.Signals().CurrentCharacterExchanged.AddListener(u.handleCurrentCharacterExchanged)
@@ -575,7 +575,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		u.saveAppState()
 	}
 	u.onUpdateStatus = func(ctx context.Context) {
-		runAsync(u.updatePermittedSections)
+		u.Go(u.updatePermittedSections)
 		var wg sync.WaitGroup
 		wg.Go(func() {
 			u.setCharacterSwitchMenu(
@@ -608,66 +608,41 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 }
 
 // updatePermittedSections enables the corporation pages the current corporation permits.
-func (u *DesktopUI) updatePermittedSections() {
-	sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
+func (u *DesktopUI) updatePermittedSections(ctx context.Context) {
+	corporationID := u.CurrentCorporation().IDOrZero()
+	sections, err := u.Corporation().PermittedSections(ctx, corporationID)
 	if err != nil {
+		if ctx.Err() != nil {
+			return
+		}
 		slog.Error("Failed to identify permitted sections", "error", err)
 		sections.Clear()
 	}
 	fyne.Do(func() {
-		var hasDisabled bool
-
-		if sections.Contains(app.SectionCorporationAssets) {
-			u.corporationNav.EnableItem(u.corporationAssetsItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationAssetsItem)
-			hasDisabled = true
+		if u.CurrentCorporation().IDOrZero() != corporationID {
+			return // a newer run follows for the current corporation
 		}
-
-		if sections.Contains(app.SectionCorporationIndustryJobs) {
-			u.corporationNav.EnableItem(u.corporationIndustryItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationIndustryItem)
-			hasDisabled = true
+		setEnabled := func(it *xwidget.NavDrawerItem, enabled bool) {
+			if enabled {
+				u.corporationNav.EnableItem(it)
+			} else {
+				u.corporationNav.DisableItem(it)
+			}
 		}
-
-		if sections.Contains(app.SectionCorporationStructures) {
-			u.corporationNav.EnableItem(u.corporationStructuresItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationStructuresItem)
-			hasDisabled = true
-		}
-
-		if sections.Contains(app.SectionCorporationContracts) {
-			u.corporationNav.EnableItem(u.corporationContractsItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationContractsItem)
-			hasDisabled = true
-		}
+		setEnabled(u.corporationAssetsItem, sections.Contains(app.SectionCorporationAssets))
+		setEnabled(u.corporationIndustryItem, sections.Contains(app.SectionCorporationIndustryJobs))
+		setEnabled(u.corporationStructuresItem, sections.Contains(app.SectionCorporationStructures))
+		setEnabled(u.corporationContractsItem, sections.Contains(app.SectionCorporationContracts))
 
 		u.corporationWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
-		if u.corporationWalletEnabled {
-			u.corporationNav.EnableItem(u.corporationWalletsItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationWalletsItem)
-			hasDisabled = true
-		}
+		setEnabled(u.corporationWalletsItem, u.corporationWalletEnabled)
 		u.refreshCorporationWalletBadge()
 
 		u.corporationWealthEnabled = sections.Contains(app.SectionCorporationAssets) &&
 			sections.Contains(app.SectionCorporationContracts) &&
 			sections.Contains(app.SectionCorporationWalletBalances)
-		if u.corporationWealthEnabled {
-			u.corporationNav.EnableItem(u.corporationWealthItem)
-		} else {
-			u.corporationNav.DisableItem(u.corporationWealthItem)
-			hasDisabled = true
-		}
+		setEnabled(u.corporationWealthItem, u.corporationWealthEnabled)
 		u.refreshCorporationWealthBadge()
-
-		if hasDisabled {
-			u.corporationNav.Select(u.corporationSheetItem)
-		}
 	})
 }
 

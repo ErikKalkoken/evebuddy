@@ -260,7 +260,7 @@ func TestDesktopUI_UpdatePermittedSections(t *testing.T) {
 			}
 			u.corporation.Store(c)
 			// when
-			u.updatePermittedSections()
+			u.updatePermittedSections(t.Context())
 			// then
 			items := map[string]*xwidget.NavDrawerItem{
 				"assets":     u.corporationAssetsItem,
@@ -280,6 +280,18 @@ func TestDesktopUI_UpdatePermittedSections(t *testing.T) {
 			assert.True(t, u.corporationNav.ItemEnabled(u.corporationSheetItem))
 		})
 	}
+	t.Run("keeps the selected page when it is still permitted", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeDesktopUI(t, st, NewFakeApp(t))
+		c := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationAssets)
+		u.corporation.Store(c)
+		u.corporationNav.Select(u.corporationAssetsItem)
+		// when
+		u.updatePermittedSections(t.Context())
+		// then
+		assert.Same(t, u.corporationAssetsItem, u.corporationNav.Selected())
+	})
 	t.Run("shows corporation sheet when the selected page is no longer permitted", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeDesktopUI(t, st, NewFakeApp(t))
@@ -287,7 +299,7 @@ func TestDesktopUI_UpdatePermittedSections(t *testing.T) {
 		u.corporation.Store(c)
 		u.corporationNav.Select(u.corporationAssetsItem)
 		// when
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// then
 		assert.Same(t, u.corporationSheetItem, u.corporationNav.Selected())
 	})
@@ -302,7 +314,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// then
@@ -316,7 +328,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		u.corporation.Store(c)
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// when
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// then
 		xassert.Equal(t, "1.5 B", u.corporationWalletsItem.Badge())
 	})
@@ -324,7 +336,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeDesktopUI(t, st, NewFakeApp(t))
 		u.corporation.Store(factory.CreateCorporation())
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// then
@@ -338,7 +350,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationContracts)
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// then
@@ -354,7 +366,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		u.corporation.Store(c)
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// when
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// then
 		xassert.Equal(t, "1.5 B", u.corporationWealthItem.Badge())
 	})
@@ -364,7 +376,7 @@ func TestDesktopUI_CorporationTotalBadges(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// then
