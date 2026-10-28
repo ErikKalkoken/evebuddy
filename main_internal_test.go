@@ -170,9 +170,7 @@ func TestParseLogLevel(t *testing.T) {
 		_, err := parseLogLevel("verbose")
 		// then
 		require.Error(t, err)
-		for _, s := range []string{"debug", "info", "warn", "error"} {
-			assert.Contains(t, err.Error(), s)
-		}
+		xassert.Equal(t, "valid log levels are: debug, info, warn, error", err.Error())
 	})
 }
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -465,7 +466,10 @@ func parseLogLevel(s string) (slog.Level, error) {
 	}
 	l, ok := m[strings.ToLower(s)]
 	if !ok {
-		return 0, fmt.Errorf("valid log levels are:  %s", strings.Join(slices.Collect(maps.Keys(m)), ", "))
+		names := slices.SortedFunc(maps.Keys(m), func(a, b string) int {
+			return cmp.Compare(m[a], m[b])
+		})
+		return 0, fmt.Errorf("valid log levels are: %s", strings.Join(names, ", "))
 	}
 	return l, nil
 }
@@ -497,12 +501,7 @@ func newAppPaths(dataDir string) appPaths {
 type realtime struct{}
 
 func (r realtime) After(d time.Duration) <-chan time.Time {
-	c := make(chan time.Time)
-	go func() {
-		time.Sleep(d)
-		c <- time.Now()
-	}()
-	return c
+	return time.After(d)
 }
 
 func (r realtime) Now() time.Time {
@@ -529,15 +528,12 @@ func ensureSingleInstance(name string) (mutex.Releaser, error) {
 	return mu, nil
 }
 
-// setupCrashFile create a dedicated file for storing crash reports and returns it's path.
+// setupCrashFile creates or opens the file at path and directs crash reports to it.
 func setupCrashFile(path string) error {
 	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		return err
-	}
-	crashFile.Close()
-	return nil
+	defer crashFile.Close()
+	return debug.SetCrashOutput(crashFile, debug.CrashOptions{})
 }
