@@ -86,7 +86,6 @@ type MobileUI struct {
 	corporationWealthItem       *xwidget.NavListItem
 
 	moreAboutItem            *xwidget.NavListItem
-	moreList                 *xwidget.NavList
 	moreManageCharactersItem *xwidget.NavListItem
 	moreUpdateStatusItem     *xwidget.NavListItem
 
@@ -387,11 +386,11 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 	u.corporationWallets.OnBalanceUpdate = func(total optional.Optional[float64]) {
 		u.corporationWalletTotal = total
-		u.refreshCorporationWalletSupporting()
+		setTotalSupporting(u.corporationWalletsItem, u.corporationWalletEnabled, u.corporationWalletTotal)
 	}
 	u.corporationWealth.OnUpdate = func(total optional.Optional[float64]) {
 		u.corporationWealthTotal = total
-		u.refreshCorporationWealthSupporting()
+		setTotalSupporting(u.corporationWealthItem, u.corporationWealthEnabled, u.corporationWealthTotal)
 	}
 
 	u.corporationPage = newCorpAppBar("Corporations", corpList)
@@ -428,7 +427,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 			u.moreNav.Push(xwidget.NewAppBar("About", newAboutPage(u.baseUI)))
 		},
 	)
-	u.moreList = xwidget.NewNavList(
+	moreList := xwidget.NewNavList(
 		xwidget.NewNavListItem(
 			"Settings",
 			theme.NewThemedResource(icons.TuneVariantSvg),
@@ -440,7 +439,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		u.moreUpdateStatusItem,
 		u.moreAboutItem,
 	)
-	u.moreNav = xwidget.NewNavigator(xwidget.NewAppBar("Manage", u.moreList))
+	u.moreNav = xwidget.NewNavigator(xwidget.NewAppBar("Manage", moreList))
 
 	// navigation bar
 	characterDest := xwidget.NewDestinationDef("Characters", theme.NewThemedResource(icons.AccountSvg), u.characterNav)
@@ -521,6 +520,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		fyne.Do(func() {
 			u.characterPage.SetTitle(c.EveCharacter.Name)
 			u.characterNav.PopAll()
+			u.characterCommunications.MessagePane.ResetHeaders()
 		})
 		u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
 			fyne.Do(func() {
@@ -528,11 +528,6 @@ func NewMobileUI(params UIParams) *MobileUI {
 					return // avatar of a previous selection
 				}
 				u.characterSelector.SetIcon(r)
-			})
-		})
-		runAsync(func() {
-			fyne.Do(func() {
-				u.characterCommunications.MessagePane.ResetHeaders()
 			})
 		})
 	}
@@ -611,7 +606,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		}
 		fyne.Do(func() {
 			u.moreManageCharactersItem.Trailing = icon
-			u.moreList.Refresh()
+			u.moreManageCharactersItem.Refresh()
 			u.refreshMoreBadge()
 		})
 	}
@@ -629,17 +624,9 @@ func (u *MobileUI) handleTypedKey(ev *fyne.KeyEvent) {
 	if !ok {
 		return
 	}
-	switch id {
-	case homeDestination:
-		u.homeNav.Pop()
-	case characterDestination:
-		u.characterNav.Pop()
-	case corporationDestination:
-		u.corporationNav.Pop()
-	case searchDestination:
-		u.searchNav.Pop()
-	case moreDestination:
-		u.moreNav.Pop()
+	navs := []*xwidget.Navigator{u.homeNav, u.characterNav, u.corporationNav, u.searchNav, u.moreNav} // indexed by destination
+	if id < len(navs) {
+		navs[id].Pop()
 	}
 }
 
@@ -722,46 +709,37 @@ func (u *MobileUI) updatePermittedSections(ctx context.Context) {
 		setEnabled(u.corporationContractsItem, sections.Contains(app.SectionCorporationContracts))
 		u.corporationWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
 		setEnabled(u.corporationWalletsItem, u.corporationWalletEnabled)
-		u.refreshCorporationWalletSupporting()
+		setTotalSupporting(u.corporationWalletsItem, u.corporationWalletEnabled, u.corporationWalletTotal)
 		u.corporationWealthEnabled = sections.Contains(app.SectionCorporationAssets) &&
 			sections.Contains(app.SectionCorporationContracts) &&
 			sections.Contains(app.SectionCorporationWalletBalances)
 		setEnabled(u.corporationWealthItem, u.corporationWealthEnabled)
-		u.refreshCorporationWealthSupporting()
+		setTotalSupporting(u.corporationWealthItem, u.corporationWealthEnabled, u.corporationWealthTotal)
 	})
 }
 
-func (u *MobileUI) refreshCorporationWalletSupporting() {
+// setTotalSupporting shows the total on item only while it is enabled.
+func setTotalSupporting(item *xwidget.NavListItem, enabled bool, total optional.Optional[float64]) {
 	var s string
-	if u.corporationWalletEnabled {
-		s = formatISKValue(u.corporationWalletTotal, ui.FloatFormatISKRounded)
+	if enabled {
+		s = formatISKValue(total, ui.FloatFormatISKRounded)
 	}
-	u.corporationWalletsItem.Supporting = s
-	u.corporationWalletsItem.Refresh()
-}
-
-func (u *MobileUI) refreshCorporationWealthSupporting() {
-	var s string
-	if u.corporationWealthEnabled {
-		s = formatISKValue(u.corporationWealthTotal, ui.FloatFormatISKRounded)
-	}
-	u.corporationWealthItem.Supporting = s
-	u.corporationWealthItem.Refresh()
+	item.Supporting = s
+	item.Refresh()
 }
 
 // refreshMoreBadge shows a badge on the more destination when something needs attention.
 func (u *MobileUI) refreshMoreBadge() {
-	if u.hasUpdateError.Load() || u.hasUpdate.Load() || u.hasScopeError.Load() || u.isOffline.Load() {
-		var importance widget.Importance
-		if u.hasUpdateError.Load() {
-			importance = widget.DangerImportance
-		} else if u.hasScopeError.Load() || u.isOffline.Load() {
-			importance = widget.WarningImportance
-		} else if u.hasUpdate.Load() {
-			importance = widget.HighImportance
-		}
-		u.navBar.ShowBadge(moreDestination, importance)
-	} else {
+	switch {
+	case u.isOffline.Load():
+		u.navBar.ShowBadge(moreDestination, widget.WarningImportance) // errors are not shown while offline
+	case u.hasUpdateError.Load():
+		u.navBar.ShowBadge(moreDestination, widget.DangerImportance)
+	case u.hasScopeError.Load():
+		u.navBar.ShowBadge(moreDestination, widget.WarningImportance)
+	case u.hasUpdate.Load():
+		u.navBar.ShowBadge(moreDestination, widget.HighImportance)
+	default:
 		u.navBar.HideBadge(moreDestination)
 	}
 }
@@ -795,7 +773,6 @@ func (u *MobileUI) updateUpdateStatus(_ context.Context) {
 
 	if u.ess.IsDailyDowntime() {
 		u.isOffline.Store(true)
-		u.hasUpdateError.Store(false) // errors are not shown during downtime
 		set(
 			fmt.Sprintf("Off during daily downtime: %s", u.ess.DailyDowntime()),
 			"OFF",

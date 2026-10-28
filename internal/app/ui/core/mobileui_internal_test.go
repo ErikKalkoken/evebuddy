@@ -457,7 +457,8 @@ func TestMobileUI_RefreshMoreBadge(t *testing.T) {
 		{"scope error", false, true, false, false, true, widget.WarningImportance},
 		{"offline", false, false, true, false, true, widget.WarningImportance},
 		{"update available", false, false, false, true, true, widget.HighImportance},
-		{"update error before others", true, true, true, true, true, widget.DangerImportance},
+		{"offline before others", true, true, true, true, true, widget.WarningImportance},
+		{"update error before scope error and update", true, true, false, true, true, widget.DangerImportance},
 		{"scope error before update", false, true, false, true, true, widget.WarningImportance},
 	}
 	for _, tc := range cases {
