@@ -514,6 +514,7 @@ type InfoViewerFake struct {
 	ShownBloodlines []int64
 	ShownLocations  []int64
 	ShownRaces      []int64
+	ShownTypes      []int64
 }
 
 func (iv *InfoViewerFake) Show(o *app.EveEntity) {
@@ -532,8 +533,11 @@ func (iv *InfoViewerFake) ShowRace(id int64) {
 	iv.ShownRaces = append(iv.ShownRaces, id)
 }
 
+func (iv *InfoViewerFake) ShowType(typeID, _ int64) {
+	iv.ShownTypes = append(iv.ShownTypes, typeID)
+}
+
 func (*InfoViewerFake) Show2(_, _, _ int64) {}
-func (*InfoViewerFake) ShowType(_, _ int64) {}
 
 // NewSignalsSync returns signals that call listeners sequentially,
 // because the Fyne test driver runs fyne.Do on the calling goroutine.

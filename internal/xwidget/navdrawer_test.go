@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
@@ -59,4 +60,13 @@ func TestNavDrawer_CanShowPlaceholder(t *testing.T) {
 	w.Resize(fyne.NewSize(500, 500))
 
 	test.AssertImageMatches(t, "navdrawer/placeholder.png", w.Canvas().Capture())
+}
+
+func TestNavDrawerItem_Badge(t *testing.T) {
+	test.NewTempApp(t)
+	it := xwidget.NewNavDrawerItem(theme.HomeIcon(), "First", widget.NewLabel("PLACEHOLDER 1"))
+	// when
+	it.SetBadge("42")
+	// then
+	xassert.Equal(t, "42", it.Badge())
 }

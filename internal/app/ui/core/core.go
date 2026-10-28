@@ -143,7 +143,7 @@ type baseUI struct {
 	industrySlotsManufacturing *screens.IndustrySlots
 	industrySlotsReactions     *screens.IndustrySlots
 	industrySlotsResearch      *screens.IndustrySlots
-	iw                         *infoviewer.InfoViewer
+	iw                         ui.InfoViewer
 	loyaltyPoints              *screens.LoyaltyPoints
 	marketOrdersBuy            *screens.MarketOrders
 	marketOrdersSell           *screens.MarketOrders
