@@ -31,13 +31,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/janiceservice"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xdesktop"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 // AppFake is an extension of the Fyne test app which also conforms to the desktop app interface.
 type AppFake struct {
 	app      fyne.App
 	metadata fyne.AppMetadata
+	trayIcon fyne.Resource // last icon set for the system tray
+	trayMenu *fyne.Menu    // last menu set for the system tray
 }
 
 func NewFakeApp(t testing.TB) *AppFake {
@@ -119,12 +123,12 @@ func (a *AppFake) SetCloudProvider(o fyne.CloudProvider) {
 	a.app.SetCloudProvider(o)
 }
 
-func (a *AppFake) SetSystemTrayMenu(_ *fyne.Menu) {
-	// noop
+func (a *AppFake) SetSystemTrayMenu(m *fyne.Menu) {
+	a.trayMenu = m
 }
 
-func (a *AppFake) SetSystemTrayIcon(_ fyne.Resource) {
-	// noop
+func (a *AppFake) SetSystemTrayIcon(r fyne.Resource) {
+	a.trayIcon = r
 }
 
 func (a *AppFake) SetSystemTrayWindow(fyne.Window) {
@@ -149,6 +153,32 @@ var _ desktop.App = (*AppFake)(nil)
 // MakeFakeBaseUI returns a baseUI with test doubles of its services.
 // Signals call their listeners synchronously. Background tasks and settings are stopped at the end of the test.
 func MakeFakeBaseUI(t testing.TB, st *storage.Storage, fyneApp fyne.App) *baseUI {
+	u := newBaseUI(MakeFakeUIParams(t, st, fyneApp))
+	t.Cleanup(func() {
+		u.tasks.Stop()
+	})
+	return u
+}
+
+// MakeFakeDesktopUI returns a DesktopUI with test doubles of its services, like [MakeFakeBaseUI].
+// Its shortcuts are removed at the end of the test.
+func MakeFakeDesktopUI(t testing.TB, st *storage.Storage, fyneApp *AppFake) *DesktopUI {
+	return MakeFakeDesktopUIWithParams(t, MakeFakeUIParams(t, st, fyneApp))
+}
+
+// MakeFakeDesktopUIWithParams is like [MakeFakeDesktopUI], but with custom params.
+func MakeFakeDesktopUIWithParams(t testing.TB, params UIParams) *DesktopUI {
+	u := NewDesktopUI(params)
+	t.Cleanup(func() {
+		u.tasks.Stop()
+		xdesktop.RemoveAllShortcuts(u.MainWindow())
+	})
+	return u
+}
+
+// MakeFakeUIParams returns UI params with test doubles of the services.
+// Signals call their listeners synchronously. Settings are closed at the end of the test.
+func MakeFakeUIParams(t testing.TB, st *storage.Storage, fyneApp fyne.App) UIParams {
 	esiClient := goesi.NewESIClientWithOptions(http.DefaultClient, goesi.ClientOptions{
 		UserAgent: "EveBuddy/1.0 (test@kalkoken.net)",
 	})
@@ -184,7 +214,8 @@ func MakeFakeBaseUI(t testing.TB, st *storage.Storage, fyneApp fyne.App) *baseUI
 		StatusCacheService: scs,
 		Storage:            st,
 	})
-	u := newBaseUI(UIParams{
+	t.Cleanup(settings.Close)
+	return UIParams{
 		App:         fyneApp,
 		Character:   cs,
 		Corporation: rs,
@@ -195,12 +226,7 @@ func MakeFakeBaseUI(t testing.TB, st *storage.Storage, fyneApp fyne.App) *baseUI
 		Settings:    settings,
 		Signals:     signals,
 		StatusCache: scs,
-	})
-	t.Cleanup(func() {
-		u.tasks.Stop()
-		settings.Close()
-	})
-	return u
+	}
 }
 
 // TestNewBaseUI_InfoViewerInitializedBeforeWidgets is a regression test for the bug where
@@ -220,7 +246,7 @@ func TestNewBaseUI_InfoViewerInitializedBeforeWidgets(t *testing.T) {
 
 func TestMakeOrFindWindow(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 	t.Run("should create new window when it does not yet exist", func(t *testing.T) {
 		ui := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		w, ok := ui.GetOrCreateWindow("abc", "title")
@@ -271,7 +297,7 @@ func TestMakeOrFindWindow(t *testing.T) {
 
 func TestBaseUI_Go(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 	t.Run("runs the job", func(t *testing.T) {
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		done := make(chan struct{})
@@ -310,7 +336,8 @@ func TestBaseUI_Go(t *testing.T) {
 
 func TestBaseUI_InitKeepsLastSelectionWhenCanceled(t *testing.T) {
 	// On disk, because a canceled query drops its connection, which would wipe an in-memory DB.
-	_, st, factory := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	t.Run("character", func(t *testing.T) {
@@ -362,7 +389,7 @@ func TestFormatMailUnread(t *testing.T) {
 
 func TestShakedown(t *testing.T) {
 	db, st, _ := testutil.NewDBInMemory()
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 	ctx := context.Background()
 
 	t.Run("can render status bar", func(t *testing.T) {
@@ -381,6 +408,23 @@ func TestShakedown(t *testing.T) {
 		w := test.NewWindow(newAboutPage(u))
 		defer w.Close()
 		w.Resize(fyne.NewSize(600, 600))
+	})
+	t.Run("can render desktop UI", func(t *testing.T) {
+		// On disk, because settings are persisted in a goroutine, which would wipe an in-memory DB.
+		db, st, factory := testutil.NewDBOnDisk(t)
+		t.Cleanup(func() { db.Close() }) // after the UI cleanups, which flush settings
+		u := MakeFakeDesktopUI(t, st, NewFakeApp(t))
+		c := factory.CreateCharacterFull()
+		factory.CreateCorporation()
+		u.character.Store(c)
+		u.handleCurrentCharacterExchanged(ctx, c)
+		u.updateCorporationRailItem(ctx)
+		w := u.MainWindow()
+		w.Resize(fyne.NewSize(1200, 800))
+		for _, it := range []*xwidget.NavRailItem{u.homeRailItem, u.characterRailItem, u.corporationRailItem} {
+			u.rail.Select(it)
+			w.Canvas().Capture()
+		}
 	})
 	t.Run("can render nav selector", func(t *testing.T) {
 		test.NewTempApp(t)
@@ -495,6 +539,7 @@ func TestBaseUI_ClearAllCaches(t *testing.T) {
 func TestBaseUI_ListCorporationsForSelection(t *testing.T) {
 	// On disk, because settings are persisted in a goroutine, which would wipe an in-memory DB.
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("lists all corporations of characters", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -532,6 +577,7 @@ func TestBaseUI_ListCorporationsForSelection(t *testing.T) {
 
 func TestBaseUI_InitCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("uses last character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -578,7 +624,8 @@ func TestBaseUI_InitCharacter(t *testing.T) {
 }
 
 func TestBaseUI_SetCharacter(t *testing.T) {
-	_, st, factory := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 	u.signals = testdouble.NewSignalsSync()
 	c := factory.CreateCharacterFull()
@@ -599,7 +646,8 @@ func TestBaseUI_SetCharacter(t *testing.T) {
 }
 
 func TestBaseUI_ResetCharacter(t *testing.T) {
-	_, st, factory := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 	u.signals = testdouble.NewSignalsSync()
 	c := factory.CreateCharacterFull()
@@ -618,6 +666,7 @@ func TestBaseUI_ResetCharacter(t *testing.T) {
 
 func TestBaseUI_LoadCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("sets loaded character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -645,6 +694,7 @@ func TestBaseUI_LoadCharacter(t *testing.T) {
 
 func TestBaseUI_SetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("sets a character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -671,6 +721,7 @@ func TestBaseUI_SetAnyCharacter(t *testing.T) {
 
 func TestBaseUI_ReloadCurrentCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("reloads current character from storage", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -707,6 +758,7 @@ func TestBaseUI_ReloadCurrentCharacter(t *testing.T) {
 
 func TestBaseUI_ShowCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("shows and loads another character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -755,6 +807,7 @@ func TestBaseUI_ShowCharacter(t *testing.T) {
 
 func TestBaseUI_InitCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("uses last corporation", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -801,7 +854,8 @@ func TestBaseUI_InitCorporation(t *testing.T) {
 }
 
 func TestBaseUI_SetCorporation(t *testing.T) {
-	_, st, factory := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 	u.signals = testdouble.NewSignalsSync()
 	c := factory.CreateCorporation()
@@ -822,7 +876,8 @@ func TestBaseUI_SetCorporation(t *testing.T) {
 }
 
 func TestBaseUI_ResetCorporation(t *testing.T) {
-	_, st, factory := testutil.NewDBOnDisk(t)
+	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 	u.signals = testdouble.NewSignalsSync()
 	c := factory.CreateCorporation()
@@ -841,6 +896,7 @@ func TestBaseUI_ResetCorporation(t *testing.T) {
 
 func TestBaseUI_LoadCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("sets loaded corporation", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -868,6 +924,7 @@ func TestBaseUI_LoadCorporation(t *testing.T) {
 
 func TestBaseUI_SetAnyCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("sets a corporation", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -894,6 +951,7 @@ func TestBaseUI_SetAnyCorporation(t *testing.T) {
 
 func TestBaseUI_ShowCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("shows and loads another corporation", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -942,6 +1000,7 @@ func TestBaseUI_ShowCorporation(t *testing.T) {
 
 func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("reloads shown character", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -974,7 +1033,7 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 	t.Run("updates mail indicator when mail headers changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		c := factory.CreateCharacterFull()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		var shown bool
@@ -1012,6 +1071,7 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 
 func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("reloads current character and updates status when it changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -1105,10 +1165,11 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 
 func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("shows indicator when there are unread mails", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail()
 		var shown, hidden bool
 		u.showMailIndicator = func() {
@@ -1126,7 +1187,7 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 	t.Run("hides indicator when there are no unread mails", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{IsRead: optional.New(true)})
 		var shown, hidden bool
 		u.showMailIndicator = func() {
@@ -1141,10 +1202,9 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 		assert.False(t, shown)
 		assert.True(t, hidden)
 	})
-	t.Run("does nothing when system tray is disabled", func(t *testing.T) {
+	t.Run("does nothing without a system tray", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(false)
 		factory.CreateCharacterMail()
 		var called bool
 		u.showMailIndicator = func() {
@@ -1158,10 +1218,10 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 		// then
 		assert.False(t, called)
 	})
-	t.Run("does nothing when indicator is not supported", func(t *testing.T) {
+	t.Run("does nothing when indicator is not set", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.settings.SetSysTrayEnabled(true)
+		u.hasSysTray = true
 		factory.CreateCharacterMail()
 		// when
 		u.UpdateMailIndicator(t.Context())
@@ -1171,6 +1231,7 @@ func TestBaseUI_UpdateMailIndicator(t *testing.T) {
 
 func TestBaseUI_SetCharacterSwitchMenu(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("lists characters with current one disabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -1242,6 +1303,7 @@ func TestBaseUI_SetCharacterSwitchMenu(t *testing.T) {
 
 func TestBaseUI_SetCorporationSwitchMenu(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
+	t.Cleanup(func() { db.Close() })
 	t.Run("lists corporations with current one disabled", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))

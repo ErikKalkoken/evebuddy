@@ -35,6 +35,11 @@ func NewNavDrawerItem(icon fyne.Resource, text string, content fyne.CanvasObject
 	return it
 }
 
+// Badge returns the badge text of an item.
+func (it *NavDrawerItem) Badge() string {
+	return it.dest.badge.Text
+}
+
 // SetBadge sets the badge text of an item. An empty text hides the badge.
 func (it *NavDrawerItem) SetBadge(text string) {
 	it.dest.setBadge(text)
