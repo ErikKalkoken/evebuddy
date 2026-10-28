@@ -203,9 +203,10 @@ func TestMobileUI_UpdatePermittedSections(t *testing.T) {
 		want     []string // labels of enabled items
 	}{
 		{"no sections", nil, nil},
-		{"assets", []app.CorporationSection{app.SectionCorporationAssets}, []string{"assets"}},
+		{"assets", []app.CorporationSection{app.SectionCorporationAssets}, []string{"assets", "asset search"}},
 		{"contracts", []app.CorporationSection{app.SectionCorporationContracts}, []string{"contracts"}},
 		{"industry jobs", []app.CorporationSection{app.SectionCorporationIndustryJobs}, []string{"industry"}},
+		{"structures", []app.CorporationSection{app.SectionCorporationStructures}, []string{"structures"}},
 		{"wallet balances", []app.CorporationSection{app.SectionCorporationWalletBalances}, []string{"wallets"}},
 		{
 			"wealth sections",
@@ -214,7 +215,7 @@ func TestMobileUI_UpdatePermittedSections(t *testing.T) {
 				app.SectionCorporationContracts,
 				app.SectionCorporationWalletBalances,
 			},
-			[]string{"assets", "contracts", "wallets", "wealth"},
+			[]string{"assets", "asset search", "contracts", "wallets", "wealth"},
 		},
 	}
 	for _, tc := range cases {
@@ -227,17 +228,19 @@ func TestMobileUI_UpdatePermittedSections(t *testing.T) {
 			}
 			u.corporation.Store(c)
 			// when
-			u.updatePermittedSections()
+			u.updatePermittedSections(t.Context())
 			// then
 			items := map[string]*xwidget.NavListItem{
-				"assets":    u.corporationAssetBrowserItem,
-				"contracts": u.corporationContractsItem,
-				"industry":  u.corporationIndustryItem,
-				"wallets":   u.corporationWalletsItem,
-				"wealth":    u.corporationWealthItem,
+				"assets":       u.corporationAssetBrowserItem,
+				"asset search": u.corporationAssetSearchItem,
+				"contracts":    u.corporationContractsItem,
+				"industry":     u.corporationIndustryItem,
+				"structures":   u.corporationStructuresItem,
+				"wallets":      u.corporationWalletsItem,
+				"wealth":       u.corporationWealthItem,
 			}
 			var got []string
-			for _, label := range []string{"assets", "contracts", "industry", "wallets", "wealth"} {
+			for _, label := range []string{"assets", "asset search", "contracts", "industry", "structures", "wallets", "wealth"} {
 				if !items[label].Disabled() {
 					got = append(got, label)
 				}
@@ -257,7 +260,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// then
@@ -271,7 +274,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		u.corporation.Store(c)
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// when
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// then
 		xassert.Equal(t, "1,500,000,000 ISK", u.corporationWalletsItem.Supporting)
 	})
@@ -279,7 +282,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
 		u.corporation.Store(factory.CreateCorporation())
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWallets.OnBalanceUpdate(optional.New(1.5e9))
 		// then
@@ -293,7 +296,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationContracts)
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// then
@@ -309,7 +312,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		u.corporation.Store(c)
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// when
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// then
 		xassert.Equal(t, "1,500,000,000 ISK", u.corporationWealthItem.Supporting)
 	})
@@ -319,7 +322,7 @@ func TestMobileUI_CorporationTotals(t *testing.T) {
 		c := factory.CreateCorporation()
 		factory.CreateCorporationTokenForSection(c.ID, app.SectionCorporationWalletBalances)
 		u.corporation.Store(c)
-		u.updatePermittedSections()
+		u.updatePermittedSections(t.Context())
 		// when
 		u.corporationWealth.OnUpdate(optional.New(1.5e9))
 		// then

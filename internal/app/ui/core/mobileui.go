@@ -490,7 +490,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 	u.navBar.Select(moreDestination)
 
 	u.onUpdateStatus = func(ctx context.Context) {
-		runAsync(u.updatePermittedSections)
+		u.Go(u.updatePermittedSections)
 		var wg sync.WaitGroup
 		wg.Go(func() {
 			u.setCharacterSwitchMenu(
@@ -558,7 +558,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 				})
 			})
 		})
-		runAsync(u.updatePermittedSections)
+		// permitted sections are updated by the status update that follows the exchange
 	}
 
 	u.onShowAndRun = func() {
@@ -686,10 +686,14 @@ func (u *MobileUI) updateCorporationDestination(ctx context.Context) {
 }
 
 // updatePermittedSections enables the corporation pages the current corporation permits.
-func (u *MobileUI) updatePermittedSections() {
-	sections, err := u.Corporation().PermittedSections(context.Background(), u.CurrentCorporation().IDOrZero())
+func (u *MobileUI) updatePermittedSections(ctx context.Context) {
+	corporationID := u.CurrentCorporation().IDOrZero()
+	sections, err := u.Corporation().PermittedSections(ctx, corporationID)
 	if err != nil {
-		slog.Error("Failed to enable corporation tab", "error", err)
+		if ctx.Err() != nil {
+			return
+		}
+		slog.Error("Failed to identify permitted sections", "error", err)
 		sections.Clear()
 	}
 	setEnabled := func(it *xwidget.NavListItem, enabled bool) {
@@ -700,8 +704,13 @@ func (u *MobileUI) updatePermittedSections() {
 		}
 	}
 	fyne.Do(func() {
+		if u.CurrentCorporation().IDOrZero() != corporationID {
+			return // a newer run follows for the current corporation
+		}
 		setEnabled(u.corporationAssetBrowserItem, sections.Contains(app.SectionCorporationAssets))
+		setEnabled(u.corporationAssetSearchItem, sections.Contains(app.SectionCorporationAssets))
 		setEnabled(u.corporationIndustryItem, sections.Contains(app.SectionCorporationIndustryJobs))
+		setEnabled(u.corporationStructuresItem, sections.Contains(app.SectionCorporationStructures))
 		setEnabled(u.corporationContractsItem, sections.Contains(app.SectionCorporationContracts))
 		u.corporationWalletEnabled = sections.Contains(app.SectionCorporationWalletBalances)
 		setEnabled(u.corporationWalletsItem, u.corporationWalletEnabled)
