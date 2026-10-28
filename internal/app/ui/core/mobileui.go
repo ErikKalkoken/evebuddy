@@ -295,7 +295,7 @@ func NewMobileUI(params UIParams) *MobileUI {
 		corpAssetSearchTitle,
 		theme.NewThemedResource(icons.Inventory2Svg),
 		func() {
-			u.corporationNav.Push(xwidget.NewAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
+			u.corporationNav.Push(newCorpAppBar(corpAssetSearchTitle, u.corporationAssetSearch))
 			u.corporationAssetSearch.Focus()
 		},
 	)
@@ -522,11 +522,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 			u.characterPage.SetTitle(c.EveCharacter.Name)
 			u.characterNav.PopAll()
 		})
-		runAsync(func() {
-			u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					u.characterSelector.SetIcon(r)
-				})
+		u.SetCharacterAvatarAsync(c.ID, func(r fyne.Resource) {
+			fyne.Do(func() {
+				if u.CurrentCharacter().IDOrZero() != c.ID {
+					return // avatar of a previous selection
+				}
+				u.characterSelector.SetIcon(r)
 			})
 		})
 		runAsync(func() {
@@ -551,11 +552,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 			u.corporationPage.SetTitle(c.EveCorporation.Name)
 			u.corporationNav.PopAll()
 		})
-		runAsync(func() {
-			u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
-				fyne.Do(func() {
-					u.corporationSelector.SetIcon(r)
-				})
+		u.setCorporationAvatarAsync(c.ID, func(r fyne.Resource) {
+			fyne.Do(func() {
+				if u.CurrentCorporation().IDOrZero() != c.ID {
+					return // avatar of a previous selection
+				}
+				u.corporationSelector.SetIcon(r)
 			})
 		})
 		// permitted sections are updated by the status update that follows the exchange

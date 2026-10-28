@@ -107,34 +107,66 @@ func TestMobileUI_HandleCurrentCharacterExchanged(t *testing.T) {
 func TestMobileUI_OnSetCharacter(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	t.Cleanup(func() { db.Close() })
-	u := MakeFakeMobileUI(t, st, NewFakeApp(t))
-	c := factory.CreateCharacter()
-	avatar := theme.AccountIcon()
-	u.avatarCache.Store(c.ID, avatar) // avoids loading avatars in the background
-	u.handleCurrentCharacterExchanged(t.Context(), c)
-	u.characterNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
-	// when
-	u.onSetCharacter(c)
-	// then
-	xassert.Equal(t, c.EveCharacter.Name, u.characterPage.Title())
-	assert.True(t, u.characterNav.IsRoot())
-	xassert.Equal[fyne.Resource](t, avatar, u.characterSelector.Icon)
+	t.Run("shows character", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCharacter()
+		avatar := theme.AccountIcon()
+		u.avatarCache.Store(c.ID, avatar) // avoids loading avatars in the background
+		u.character.Store(c)
+		u.handleCurrentCharacterExchanged(t.Context(), c)
+		u.characterNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
+		// when
+		u.onSetCharacter(c)
+		// then
+		xassert.Equal(t, c.EveCharacter.Name, u.characterPage.Title())
+		assert.True(t, u.characterNav.IsRoot())
+		xassert.Equal[fyne.Resource](t, avatar, u.characterSelector.Icon)
+	})
+	t.Run("keeps avatar when another character is current", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCharacter()
+		u.avatarCache.Store(c.ID, theme.AccountIcon()) // avoids loading avatars in the background
+		u.character.Store(factory.CreateCharacter())
+		want := u.characterSelector.Icon
+		// when
+		u.onSetCharacter(c)
+		// then
+		xassert.Equal(t, want, u.characterSelector.Icon)
+	})
 }
 
 func TestMobileUI_OnSetCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	t.Cleanup(func() { db.Close() })
-	u := MakeFakeMobileUI(t, st, NewFakeApp(t))
-	c := factory.CreateCorporation()
-	avatar := theme.AccountIcon()
-	u.avatarCache.Store(c.ID, avatar) // avoids loading avatars in the background
-	u.corporationNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
-	// when
-	u.onSetCorporation(c)
-	// then
-	xassert.Equal(t, c.EveCorporation.Name, u.corporationPage.Title())
-	assert.True(t, u.corporationNav.IsRoot())
-	xassert.Equal[fyne.Resource](t, avatar, u.corporationSelector.Icon)
+	t.Run("shows corporation", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCorporation()
+		avatar := theme.AccountIcon()
+		u.avatarCache.Store(c.ID, avatar) // avoids loading avatars in the background
+		u.corporation.Store(c)
+		u.corporationNav.Push(xwidget.NewAppBar("Dummy", widget.NewLabel("Dummy")))
+		// when
+		u.onSetCorporation(c)
+		// then
+		xassert.Equal(t, c.EveCorporation.Name, u.corporationPage.Title())
+		assert.True(t, u.corporationNav.IsRoot())
+		xassert.Equal[fyne.Resource](t, avatar, u.corporationSelector.Icon)
+	})
+	t.Run("keeps avatar when another corporation is current", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeMobileUI(t, st, NewFakeApp(t))
+		c := factory.CreateCorporation()
+		u.avatarCache.Store(c.ID, theme.AccountIcon()) // avoids loading avatars in the background
+		u.corporation.Store(factory.CreateCorporation())
+		want := u.corporationSelector.Icon
+		// when
+		u.onSetCorporation(c)
+		// then
+		xassert.Equal(t, want, u.corporationSelector.Icon)
+	})
 }
 
 func TestMobileUI_OnShowCharacter(t *testing.T) {
