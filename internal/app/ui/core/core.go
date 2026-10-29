@@ -184,6 +184,7 @@ type baseUI struct {
 	isOfflineMode                  bool
 	isUpdateDisabled               atomic.Bool // Whether to disable update tickers (useful for debugging)
 	signals                        *app.Signals
+	syncCorporationRun             xsync.LatestRun        // drops outdated corporation syncs
 	tasks                          *xsync.TaskGroup       // UI tickers, stopped at shutdown
 	wasStarted                     atomic.Bool            // whether the app has already been started at least once
 	window                         fyne.Window            // main window
@@ -433,7 +434,11 @@ func newBaseUI(arg UIParams) *baseUI {
 }
 
 // updateStatus refreshes all status pages and dynamic menus.
+// It first syncs the current corporation, so a failed or missed sync heals with the next status update.
 func (u *baseUI) updateStatus(ctx context.Context) {
+	if err := u.syncCorporation(ctx); err != nil && ctx.Err() == nil {
+		slog.Error("Failed to sync corporation", "error", err)
+	}
 	if u.onUpdateStatus == nil {
 		return
 	}
@@ -526,7 +531,9 @@ func (u *baseUI) appInit(ctx context.Context) {
 		u.initCharacter(ctx)
 	})
 	wg.Go(func() {
-		u.initCorporation(ctx)
+		if err := u.syncCorporation(ctx); err != nil && ctx.Err() == nil {
+			slog.Error("Failed to set corporation at startup", "error", err)
+		}
 	})
 	wg.Wait()
 	u.cs.UpdateAllCalculatedValuesAsync()
@@ -778,7 +785,7 @@ func (u *baseUI) initCharacter(ctx context.Context) {
 		}
 	}
 	if c == nil {
-		u.ResetCharacter(ctx)
+		u.resetCharacter(ctx)
 		return
 	}
 	u.SetCharacter(ctx, c)
@@ -823,7 +830,7 @@ func (u *baseUI) ReloadCurrentCharacter(ctx context.Context) {
 	}
 }
 
-func (u *baseUI) ResetCharacter(_ context.Context) {
+func (u *baseUI) resetCharacter(_ context.Context) {
 	u.character.Store(nil)
 	runAsync(func() {
 		if u.character.Load().IDOrZero() != 0 {
@@ -851,7 +858,7 @@ func (u *baseUI) SetCharacter(_ context.Context, c *app.Character) {
 func (u *baseUI) SetAnyCharacter(ctx context.Context) error {
 	c, err := u.cs.GetAnyCharacter(ctx)
 	if errors.Is(err, app.ErrNotFound) {
-		u.ResetCharacter(ctx)
+		u.resetCharacter(ctx)
 		return nil
 	} else if err != nil {
 		return err
@@ -862,38 +869,6 @@ func (u *baseUI) SetAnyCharacter(ctx context.Context) error {
 
 //////////////////
 // Current corporation
-
-func (u *baseUI) initCorporation(ctx context.Context) {
-	var c *app.Corporation
-	var err error
-	if cID := u.settings.LastCorporationID(); cID != 0 {
-		c, err = u.rs.GetCorporation(ctx, int64(cID))
-		if ctx.Err() != nil {
-			return // shutting down; keep the last selection
-		}
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load corporation", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		c, err = u.rs.GetAnyCorporation(ctx)
-		if ctx.Err() != nil {
-			return // shutting down; keep the last selection
-		}
-		if err != nil {
-			if !errors.Is(err, app.ErrNotFound) {
-				slog.Error("Failed to load corporation", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		u.ResetCorporation(ctx)
-		return
-	}
-	u.SetCorporation(ctx, c)
-}
 
 // CurrentCorporation returns the current corporation or nil if not set.
 func (u *baseUI) CurrentCorporation() *app.Corporation {
@@ -909,7 +884,9 @@ func (u *baseUI) LoadCorporation(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (u *baseUI) ResetCorporation(_ context.Context) {
+// clearCorporation clears the current corporation.
+func (u *baseUI) clearCorporation() {
+	u.syncCorporationRun.Discard() // an explicit selection wins over running syncs
 	u.corporation.Store(nil)
 	runAsync(func() {
 		if u.corporation.Load().IDOrZero() != 0 {
@@ -917,10 +894,10 @@ func (u *baseUI) ResetCorporation(_ context.Context) {
 		}
 		u.signals.CurrentCorporationExchanged.Emit(context.Background(), nil)
 	})
-	u.settings.ResetLastCorporationID()
 }
 
 func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
+	u.syncCorporationRun.Discard() // an explicit selection wins over running syncs
 	u.corporation.Store(c)
 	runAsync(func() {
 		if u.corporation.Load().IDOrZero() != c.ID {
@@ -934,16 +911,35 @@ func (u *baseUI) SetCorporation(_ context.Context, c *app.Corporation) {
 	u.settings.SetLastCorporationID(c.ID)
 }
 
-func (u *baseUI) SetAnyCorporation(ctx context.Context) error {
-	c, err := u.rs.GetAnyCorporation(ctx)
-	if errors.Is(err, app.ErrNotFound) {
-		u.ResetCorporation(ctx)
-		return nil
-	}
+// syncCorporation makes sure the current corporation is one of the listed ones.
+// It keeps a listed current corporation, else selects the last one if listed or the lowest one.
+// It clears the current corporation when none are listed, but keeps the last one for restoring it.
+func (u *baseUI) syncCorporation(ctx context.Context) error {
+	isLatest := u.syncCorporationRun.Start()
+	ids, err := u.listCorporationIDsForSelection(ctx)
 	if err != nil {
 		return err
 	}
-	u.SetCorporation(ctx, c)
+	if ids.Size() == 0 {
+		if isLatest() && u.CurrentCorporation() != nil {
+			u.clearCorporation()
+		}
+		return nil
+	}
+	if ids.Contains(u.CurrentCorporation().IDOrZero()) {
+		return nil
+	}
+	id := set.Min(ids)
+	if lastID := u.settings.LastCorporationID(); ids.Contains(lastID) {
+		id = lastID
+	}
+	c, err := u.rs.GetCorporation(ctx, id)
+	if err != nil {
+		return fmt.Errorf("load corporation ID %d: %w", id, err)
+	}
+	if isLatest() {
+		u.SetCorporation(ctx, c)
+	}
 	return nil
 }
 
@@ -978,11 +974,18 @@ func (u *baseUI) UpdateMailIndicator(ctx context.Context) {
 	})
 }
 
-func (u *baseUI) ListCorporationsForSelection(ctx context.Context) ([]*app.EntityShort, error) {
-	if u.settings.HideLimitedCorporations() {
-		return u.rs.ListPrivilegedCorporations(ctx)
+// listCorporationsForSelection returns the corporations to show in the selection
+// and takes into account the setting for hiding limited corporations.
+func (u *baseUI) listCorporationsForSelection(ctx context.Context) ([]*app.EntityShort, error) {
+	return u.rs.ListCorporationsForSelection(ctx, u.settings.HideLimitedCorporations())
+}
+
+func (u *baseUI) listCorporationIDsForSelection(ctx context.Context) (set.Set[int64], error) {
+	oo, err := u.listCorporationsForSelection(ctx)
+	if err != nil {
+		return set.Set[int64]{}, err
 	}
-	return u.cs.ListCharacterCorporations(ctx)
+	return set.Collect(xiter.MapSlice(oo, func(x *app.EntityShort) int64 { return x.ID })), nil
 }
 
 func (u *baseUI) availableUpdate(ctx context.Context) (github.VersionInfo, error) {
@@ -1095,7 +1098,7 @@ func (u *baseUI) setCharacterSwitchMenu(ctx context.Context, setItems func(items
 }
 
 func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(items []*fyne.MenuItem), refresh func()) {
-	cc, err := u.ListCorporationsForSelection(ctx)
+	cc, err := u.listCorporationsForSelection(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return
@@ -1108,29 +1111,13 @@ func (u *baseUI) setCorporationSwitchMenu(ctx context.Context, setItems func(ite
 	}
 
 	if len(cc) == 0 {
-		it := fyne.NewMenuItem("No corporations", nil)
-		it.Disabled = true
 		fyne.Do(func() {
 			setItems(nil)
 		})
 		return
 	}
 
-	corporations := set.Collect(xiter.MapSlice(cc, func(x *app.EntityShort) int64 {
-		return x.ID
-	}))
 	currentID := u.CurrentCorporation().IDOrZero()
-	if currentID != 0 && !corporations.Contains(currentID) {
-		err := u.LoadCorporation(ctx, cc[0].ID)
-		if err == nil {
-			return // the exchange triggers a status update, which rebuilds this menu
-		}
-		if ctx.Err() != nil {
-			return
-		}
-		slog.Error("Failed to switch to a listed corporation", "corporationID", cc[0].ID, "error", err)
-	}
-
 	it := fyne.NewMenuItem("Switch to...", nil)
 	it.Disabled = true
 	items := []*fyne.MenuItem{it}

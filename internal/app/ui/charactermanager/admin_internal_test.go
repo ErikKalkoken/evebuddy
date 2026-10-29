@@ -221,7 +221,7 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		// then
 		assert.Equal(t, 0, u.setAnyCharacterCalls)
 	})
-	t.Run("sets another current corporation when the corporation was deleted", func(t *testing.T) {
+	t.Run("deletes corporation when it has no characters left", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
@@ -239,9 +239,8 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		// then
 		_, err := st.GetCorporation(context.Background(), corporation.ID)
 		require.ErrorIs(t, err, app.ErrNotFound)
-		assert.Equal(t, 1, u.setAnyCorporationCalls)
 	})
-	t.Run("keeps current corporation when it still has characters", func(t *testing.T) {
+	t.Run("keeps corporation when it still has characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
@@ -259,7 +258,8 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		// when
 		cw.characterAdmin.deleteCharacter(context.Background(), r)
 		// then
-		assert.Equal(t, 0, u.setAnyCorporationCalls)
+		_, err := st.GetCorporation(context.Background(), corporation.ID)
+		require.NoError(t, err)
 	})
 	t.Run("removes corporation data before CharacterRemoved", func(t *testing.T) {
 		// given
@@ -318,7 +318,6 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		if assert.Len(t, messages, 1) {
 			assert.Contains(t, messages[0], "ERROR: Failed to delete character Alpha")
 		}
-		assert.Equal(t, 0, u.setAnyCorporationCalls)
 	})
 	t.Run("skips UI updates when canceled", func(t *testing.T) {
 		// given
@@ -344,7 +343,6 @@ func TestAdmin_DeleteCharacter(t *testing.T) {
 		// then
 		assert.Empty(t, messages)
 		assert.Equal(t, 0, u.setAnyCharacterCalls)
-		assert.Equal(t, 0, u.setAnyCorporationCalls)
 	})
 }
 

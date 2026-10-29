@@ -210,50 +210,46 @@ func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus)
 func (c *StatusCacheStub) SetEveUniverseSection(o *app.EveUniverseSectionStatus) {}
 
 type UIFake struct {
-	app                  fyne.App
-	cs                   *characterservice.CharacterService
-	dataPaths            xmaps.OrderedMap[string, string]
-	rs                   *corporationservice.CorporationService
-	sc                   *statuscache.StatusCache
-	eis                  ui.EVEImageService
-	eus                  *eveuniverseservice.EVEUniverseService
-	goFunc               func(job func(ctx context.Context))
-	isDeveloperMode      bool
-	isMobile             bool
-	isOnline             bool
-	iw                   ui.InfoViewer
-	js                   *janiceservice.JaniceService
-	mainWindow           fyne.Window
-	resetCharacterFunc   func(ctx context.Context)
-	resetCorporationFunc func(ctx context.Context)
-	setColorThemeFunc    func(s settings.ColorTheme)
-	settings             *settings.Settings
-	signals              *app.Signals
-	showCharacterFunc    func(ctx context.Context, characterID int64)
-	showCorporationFunc  func(ctx context.Context, corporationID int64)
-	showSnackbarFunc     func(text string)
-	windows              map[string]fyne.Window
+	app                 fyne.App
+	cs                  *characterservice.CharacterService
+	dataPaths           xmaps.OrderedMap[string, string]
+	rs                  *corporationservice.CorporationService
+	sc                  *statuscache.StatusCache
+	eis                 ui.EVEImageService
+	eus                 *eveuniverseservice.EVEUniverseService
+	goFunc              func(job func(ctx context.Context))
+	isDeveloperMode     bool
+	isMobile            bool
+	isOnline            bool
+	iw                  ui.InfoViewer
+	js                  *janiceservice.JaniceService
+	mainWindow          fyne.Window
+	setColorThemeFunc   func(s settings.ColorTheme)
+	settings            *settings.Settings
+	signals             *app.Signals
+	showCharacterFunc   func(ctx context.Context, characterID int64)
+	showCorporationFunc func(ctx context.Context, corporationID int64)
+	showSnackbarFunc    func(text string)
+	windows             map[string]fyne.Window
 }
 
 type UIParams struct {
-	App                  fyne.App
-	DataPaths            xmaps.OrderedMap[string, string]
-	Go                   func(job func(ctx context.Context)) // defaults to running the job in a goroutine
-	InfoViewer           ui.InfoViewer                       // defaults to an InfoViewerFake
-	IsDeveloperMode      bool
-	IsMobile             bool
-	IsOnline             bool   // defaults to offline, so tests don't call ESI by accident
-	JaniceAPIKey         string // defaults to no key, so tests don't call Janice by accident
-	ResetCharacterFunc   func(ctx context.Context)
-	ResetCorporationFunc func(ctx context.Context)
-	SetColorThemeFunc    func(s settings.ColorTheme)
-	Signals              *app.Signals
-	StatusCache          *statuscache.StatusCache // defaults to an empty cache
-	Storage              *storage.Storage
-	ShowCharacterFunc    func(ctx context.Context, characterID int64)
-	ShowCorporationFunc  func(ctx context.Context, corporationID int64)
-	DisplaySnackbarFunc  func(text string)
-	Settings             *settings.Settings
+	App                 fyne.App
+	DataPaths           xmaps.OrderedMap[string, string]
+	Go                  func(job func(ctx context.Context)) // defaults to running the job in a goroutine
+	InfoViewer          ui.InfoViewer                       // defaults to an InfoViewerFake
+	IsDeveloperMode     bool
+	IsMobile            bool
+	IsOnline            bool   // defaults to offline, so tests don't call ESI by accident
+	JaniceAPIKey        string // defaults to no key, so tests don't call Janice by accident
+	SetColorThemeFunc   func(s settings.ColorTheme)
+	Signals             *app.Signals
+	StatusCache         *statuscache.StatusCache // defaults to an empty cache
+	Storage             *storage.Storage
+	ShowCharacterFunc   func(ctx context.Context, characterID int64)
+	ShowCorporationFunc func(ctx context.Context, corporationID int64)
+	DisplaySnackbarFunc func(text string)
+	Settings            *settings.Settings
 }
 
 func NewUIFake(args ...UIParams) *UIFake {
@@ -308,28 +304,26 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Settings:           arg.Settings,
 	})
 	u := &UIFake{
-		app:                  arg.App,
-		cs:                   cs,
-		dataPaths:            arg.DataPaths,
-		eis:                  testutil.NewEveImageServiceStub(),
-		eus:                  eus,
-		goFunc:               arg.Go,
-		isDeveloperMode:      arg.IsDeveloperMode,
-		isMobile:             arg.IsMobile,
-		isOnline:             arg.IsOnline,
-		js:                   janiceservice.New(http.DefaultClient, arg.JaniceAPIKey),
-		mainWindow:           arg.App.NewWindow("Main"),
-		resetCharacterFunc:   arg.ResetCharacterFunc,
-		resetCorporationFunc: arg.ResetCorporationFunc,
-		rs:                   rs,
-		sc:                   arg.StatusCache,
-		setColorThemeFunc:    arg.SetColorThemeFunc,
-		showCharacterFunc:    arg.ShowCharacterFunc,
-		showCorporationFunc:  arg.ShowCorporationFunc,
-		showSnackbarFunc:     arg.DisplaySnackbarFunc,
-		signals:              arg.Signals,
-		settings:             arg.Settings,
-		windows:              make(map[string]fyne.Window),
+		app:                 arg.App,
+		cs:                  cs,
+		dataPaths:           arg.DataPaths,
+		eis:                 testutil.NewEveImageServiceStub(),
+		eus:                 eus,
+		goFunc:              arg.Go,
+		isDeveloperMode:     arg.IsDeveloperMode,
+		isMobile:            arg.IsMobile,
+		isOnline:            arg.IsOnline,
+		js:                  janiceservice.New(http.DefaultClient, arg.JaniceAPIKey),
+		mainWindow:          arg.App.NewWindow("Main"),
+		rs:                  rs,
+		sc:                  arg.StatusCache,
+		setColorThemeFunc:   arg.SetColorThemeFunc,
+		showCharacterFunc:   arg.ShowCharacterFunc,
+		showCorporationFunc: arg.ShowCorporationFunc,
+		showSnackbarFunc:    arg.DisplaySnackbarFunc,
+		signals:             arg.Signals,
+		settings:            arg.Settings,
+		windows:             make(map[string]fyne.Window),
 	}
 	if arg.InfoViewer != nil {
 		u.iw = arg.InfoViewer
@@ -442,18 +436,6 @@ func (u *UIFake) MainWindow() fyne.Window {
 
 func (u *UIFake) MakeWindowTitle(parts ...string) string {
 	return "Dummy title"
-}
-
-func (u *UIFake) ResetCharacter(ctx context.Context) {
-	if f := u.resetCharacterFunc; f != nil {
-		f(ctx)
-	}
-}
-
-func (u *UIFake) ResetCorporation(ctx context.Context) {
-	if f := u.resetCorporationFunc; f != nil {
-		f(ctx)
-	}
 }
 
 func (u *UIFake) SetColorTheme(s settings.ColorTheme) {

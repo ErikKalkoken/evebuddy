@@ -129,7 +129,13 @@ func TestListCorporations(t *testing.T) {
 		}))
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can list priviledged corporations", func(t *testing.T) {
+}
+
+func TestListPrivilegedCorporationsShort(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should return corporation when character has at least one matching role", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
@@ -137,7 +143,7 @@ func TestListCorporations(t *testing.T) {
 		factory.SetCharacterRoles(c.ID, set.Of(app.RoleBrandManager))
 		factory.CreateCorporation()
 		// when
-		xx, err := st.ListPrivilegedCorporationsShort(ctx, set.Of(app.RoleBrandManager, app.RoleAccountant))
+		xx, err := st.ListPrivilegedCorporationsShort(t.Context(), set.Of(app.RoleBrandManager, app.RoleAccountant))
 		// then
 		require.NoError(t, err)
 		want := set.Of(corp1.ID)
@@ -145,6 +151,23 @@ func TestListCorporations(t *testing.T) {
 			return x.ID
 		}))
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should not return corporation when character has no matching role", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCorporation(c.EveCharacter.Corporation.ID)
+		factory.SetCharacterRoles(c.ID, set.Of(app.RoleAuditor))
+		factory.CreateCorporation()
+		// when
+		xx, err := st.ListPrivilegedCorporationsShort(t.Context(), set.Of(app.RoleBrandManager, app.RoleAccountant))
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
+			return x.ID
+		}))
+		xassert.Equal(t, 0, got.Size())
 	})
 }
 

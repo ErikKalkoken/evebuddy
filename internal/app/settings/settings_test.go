@@ -185,14 +185,6 @@ func TestLastCharacterIDReset(t *testing.T) {
 	assert.Equal(t, int64(0), s.LastCharacterID())
 }
 
-func TestLastCorporationIDReset(t *testing.T) {
-	s := newTestSettings(t)
-	s.SetLastCorporationID(123)
-	assert.Equal(t, int64(123), s.LastCorporationID())
-	s.ResetLastCorporationID()
-	assert.Equal(t, int64(0), s.LastCorporationID())
-}
-
 func TestMaxWalletTransactions(t *testing.T) {
 	s := newTestSettings(t)
 	minimum, maximum, def := s.MaxWalletTransactionsPresets()
@@ -367,7 +359,6 @@ func TestSettingsNilReceiverIsSafe(t *testing.T) {
 		s.SetLastCharacterID(1)
 
 		assert.Equal(t, int64(0), s.LastCorporationID())
-		s.ResetLastCorporationID()
 		s.SetLastCorporationID(1)
 
 		assert.Equal(t, 0, s.MaxWalletTransactions())

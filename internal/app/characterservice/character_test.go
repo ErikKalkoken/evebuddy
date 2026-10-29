@@ -688,29 +688,6 @@ func TestListCharacterCorporationIDs(t *testing.T) {
 	})
 }
 
-func TestListCharacterCorporations(t *testing.T) {
-	db, st, factory := testutil.NewDBInMemory()
-	defer db.Close()
-	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
-	ctx := context.Background()
-	t.Run("can return corporations of characters", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		ec := factory.CreateEveCorporation()
-		factory.CreateCorporation(ec.ID)
-		factory.CreateEveEntityWithCategory(app.EveEntityCorporation, app.EveEntity{ID: ec.ID})
-		x := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: ec.ID})
-		factory.CreateCharacterFull(storage.CreateCharacterParams{ID: x.ID})
-		// when
-		got, err := cs.ListCharacterCorporations(ctx)
-		// then
-		require.NoError(t, err)
-		if assert.Len(t, got, 1) {
-			assert.Equal(t, ec.ID, got[0].ID)
-		}
-	})
-}
-
 func TestUpdateAllCalculatedValues(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

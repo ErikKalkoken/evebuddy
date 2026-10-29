@@ -25,26 +25,17 @@ func TestMain(m *testing.M) {
 type uiFake struct {
 	*testdouble.UIFake
 
-	currentCharacter       *app.Character
-	currentCorporation     *app.Corporation
-	isOffline              bool
-	setAnyCharacterCalls   int
-	setAnyCorporationCalls int
+	currentCharacter     *app.Character
+	isOffline            bool
+	setAnyCharacterCalls int
 }
 
-func (u *uiFake) CurrentCharacter() *app.Character                 { return u.currentCharacter }
-func (u *uiFake) CurrentCorporation() *app.Corporation             { return u.currentCorporation }
-func (u *uiFake) IsOffline() bool                                  { return u.isOffline }
-func (u *uiFake) LoadCharacter(_ context.Context, _ int64) error   { return nil }
-func (u *uiFake) LoadCorporation(_ context.Context, _ int64) error { return nil }
+func (u *uiFake) CurrentCharacter() *app.Character               { return u.currentCharacter }
+func (u *uiFake) IsOffline() bool                                { return u.isOffline }
+func (u *uiFake) LoadCharacter(_ context.Context, _ int64) error { return nil }
 
 func (u *uiFake) SetAnyCharacter(_ context.Context) error {
 	u.setAnyCharacterCalls++
-	return nil
-}
-
-func (u *uiFake) SetAnyCorporation(_ context.Context) error {
-	u.setAnyCorporationCalls++
 	return nil
 }
 

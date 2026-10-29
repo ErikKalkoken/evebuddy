@@ -232,20 +232,54 @@ func TestCorporation_CorporationNames(t *testing.T) {
 	})
 }
 
-func TestCorporation_ListPrivilegedCorporations(t *testing.T) {
+func TestCorporation_ListCorporationsForSelection(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()
 	ctx := context.Background()
 	s := testdouble.NewCorporationServiceFake(corporationservice.Params{Storage: st})
-	t.Run("can list corporations with privileged access", func(t *testing.T) {
+
+	t.Run("should list all corporations of characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		// when
+		corporations, err := s.ListCorporationsForSelection(ctx, false)
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(corporations, func(x *app.EntityShort) int64 { return x.ID }))
+		xassert.Equal(t, set.Of(c1.ID, c2.ID), got)
+	})
+
+	t.Run("should list corporations where character has privileged access when limited ones are hidden", func(t *testing.T) {
+		// given
 		testutil.MustTruncateTables(db)
 		character := factory.CreateCharacter()
 		corp1 := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
-		factory.SetCharacterRoles(character.ID, app.CorporationSectionWalletJournal(app.Division1).Roles())
+		factory.SetCharacterRoles(character.ID, set.Of(app.RoleDirector))
 		factory.CreateCorporation()
-		got, err := s.ListPrivilegedCorporations(ctx)
+		// when
+		corporations, err := s.ListCorporationsForSelection(ctx, true)
+		// then
 		require.NoError(t, err)
-		ids := set.Collect(xiter.MapSlice(got, func(x *app.EntityShort) int64 { return x.ID }))
-		xassert.Equal(t, set.Of(corp1.ID), ids)
+		got := set.Collect(xiter.MapSlice(corporations, func(x *app.EntityShort) int64 { return x.ID }))
+		want := set.Of(corp1.ID)
+		xassert.Equal(t, want, got)
+	})
+
+	t.Run("should not list corporations where character has no privileged access when limited ones are hidden", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		character := factory.CreateCharacter()
+		factory.CreateCorporation(character.EveCharacter.Corporation.ID)
+		factory.CreateCorporation()
+		// when
+		corporations, err := s.ListCorporationsForSelection(ctx, true)
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(corporations, func(x *app.EntityShort) int64 { return x.ID }))
+		xassert.Equal(t, 0, got.Size())
 	})
 }

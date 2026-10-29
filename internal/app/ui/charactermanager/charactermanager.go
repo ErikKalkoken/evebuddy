@@ -25,7 +25,6 @@ type baseUI interface {
 	Character() *characterservice.CharacterService
 	Corporation() *corporationservice.CorporationService
 	CurrentCharacter() *app.Character
-	CurrentCorporation() *app.Corporation
 	ErrorDisplay(err error) string
 	EVEImage() ui.EVEImageService
 	GetOrCreateWindow(id string, titles ...string) (window fyne.Window, created bool)
@@ -36,10 +35,8 @@ type baseUI interface {
 	IsOffline() bool
 	IsUpdateDisabled() bool
 	LoadCharacter(ctx context.Context, id int64) error
-	LoadCorporation(ctx context.Context, id int64) error
 	MainWindow() fyne.Window
 	SetAnyCharacter(ctx context.Context) error
-	SetAnyCorporation(ctx context.Context) error
 	Signals() *app.Signals
 }
 

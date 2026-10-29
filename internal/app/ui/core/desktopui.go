@@ -687,7 +687,7 @@ func (u *DesktopUI) handleCurrentCharacterExchanged(_ context.Context, c *app.Ch
 
 // updateCorporationRailItem enables the corporation page when there are corporations to show.
 func (u *DesktopUI) updateCorporationRailItem(ctx context.Context) {
-	cc, err := u.ListCorporationsForSelection(ctx)
+	cc, err := u.listCorporationsForSelection(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return
