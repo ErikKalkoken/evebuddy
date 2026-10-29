@@ -210,22 +210,6 @@ func (a *admin) showAddCharacterDialog() {
 					a.cw.displaySnackbar("Failed to load character")
 				}
 			}
-			if a.cw.u.CurrentCorporation() == nil {
-				if c := character.EveCharacter.Corporation; !c.IsNPC().ValueOrZero() {
-					err := a.cw.u.LoadCorporation(ctx, c.ID)
-					if ctx.Err() != nil {
-						return nil // shutting down
-					}
-					if err != nil {
-						slog.Error(
-							"Setting newly added corporation",
-							slog.Int64("corporationID", c.ID),
-							slog.Any("error", err),
-						)
-						a.cw.displaySnackbar("Failed to load corporation")
-					}
-				}
-			}
 			runAsync(func() {
 				a.cw.u.Signals().CharacterAdded.Emit(ctx, character)
 			})
@@ -290,16 +274,7 @@ func (a *admin) deleteCharacter(ctx context.Context, r adminRow) {
 		}
 	}
 
-	if wasCorpDeleted {
-		err := a.cw.u.SetAnyCorporation(ctx)
-		if ctx.Err() != nil {
-			return
-		}
-		if err != nil {
-			slog.Warn("Failed to set current corporation after deletion", "error", err)
-		}
-
-	} else if !app.IsNPCCorporation(r.corporationID) {
+	if !wasCorpDeleted && !app.IsNPCCorporation(r.corporationID) {
 		err := a.cw.u.Corporation().RemoveSectionDataWhenPermissionLost(ctx, r.corporationID)
 		// A corporation not stored yet has nothing to remove or update.
 		if !errors.Is(err, app.ErrNotFound) {

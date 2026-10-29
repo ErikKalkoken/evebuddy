@@ -654,7 +654,7 @@ func (u *MobileUI) handleCurrentCharacterExchanged(_ context.Context, c *app.Cha
 
 // updateCorporationDestination enables the corporation destination when there are corporations.
 func (u *MobileUI) updateCorporationDestination(ctx context.Context) {
-	cc, err := u.ListCorporationsForSelection(ctx)
+	cc, err := u.listCorporationsForSelection(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return

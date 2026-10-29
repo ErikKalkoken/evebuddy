@@ -44,8 +44,6 @@ type baseUI interface {
 	IsDeveloperMode() bool
 	IsMobile() bool
 	MainWindow() fyne.Window
-	ResetCharacter(ctx context.Context)
-	ResetCorporation(ctx context.Context)
 	SetColorTheme(s asettings.ColorTheme)
 	SetDeveloperMode(b bool)
 	Settings() *asettings.Settings
@@ -397,24 +395,6 @@ func (a *settings) makeGeneralPage() (*settingList, []settingAction) {
 			Action: func() {
 				a.u.Settings().ResetWindowSize()
 				a.u.MainWindow().Resize(a.u.Settings().WindowSize())
-			},
-		})
-	}
-	if a.u.IsDeveloperMode() {
-		actions = append(actions, settingAction{
-			Label: "Reset shown character (debug)",
-			Action: func() {
-				runAsync(func() {
-					a.u.ResetCharacter(context.Background())
-				})
-			},
-		})
-		actions = append(actions, settingAction{
-			Label: "Reset shown corporation (debug)",
-			Action: func() {
-				runAsync(func() {
-					a.u.ResetCorporation(context.Background())
-				})
 			},
 		})
 	}

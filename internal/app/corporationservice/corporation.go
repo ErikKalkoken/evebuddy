@@ -80,13 +80,22 @@ func (s *CorporationService) CorporationNames(ctx context.Context) (map[int64]st
 	return m, nil
 }
 
-// ListPrivilegedCorporations returns all corporations with privileged access.
-func (s *CorporationService) ListPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort, error) {
+// listPrivilegedCorporations returns all corporations with privileged access.
+func (s *CorporationService) listPrivilegedCorporations(ctx context.Context) ([]*app.EntityShort, error) {
 	var roles set.Set[app.Role]
-	for _, s := range []app.CorporationSection{app.CorporationSectionWalletJournal(app.Division1)} {
+	for _, s := range app.CorporationSections {
 		roles.AddSeq(s.Roles().All())
 	}
 	return s.st.ListPrivilegedCorporationsShort(ctx, roles)
+}
+
+// ListCorporationsForSelection returns the corporations of the characters
+// or only the privileged ones when hideLimited is true.
+func (s *CorporationService) ListCorporationsForSelection(ctx context.Context, hideLimited bool) ([]*app.EntityShort, error) {
+	if hideLimited {
+		return s.listPrivilegedCorporations(ctx)
+	}
+	return s.st.ListCharacterCorporations(ctx)
 }
 
 // ListCorporationIDs returns all corporation IDs.

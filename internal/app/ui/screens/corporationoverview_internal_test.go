@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -82,6 +85,73 @@ func TestCorporationOverview_Filter(t *testing.T) {
 			corporationOverviewFilterAlliance: "",
 			corporationOverviewFilterFaction:  "",
 		}, a.filterChip.Selected())
+	})
+}
+
+func TestCorporationOverview_Update(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	corporationIDs := func(a *CorporationOverview) set.Set[int64] {
+		return set.Collect(xiter.MapSlice(a.rows, func(r corporationOverviewRow) int64 {
+			return r.corporationID
+		}))
+	}
+	t.Run("lists all corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		a := NewCorporationOverview(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		// when
+		a.update(t.Context())
+		// then
+		xassert.Equal(t, set.Of(c1.ID, c2.ID), corporationIDs(a))
+	})
+	t.Run("does not list hidden corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		u.Settings().SetHideLimitedCorporations(true)
+		a := NewCorporationOverview(u)
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		// when
+		a.update(t.Context())
+		// then
+		xassert.Equal(t, set.Of(c1.ID), corporationIDs(a))
+	})
+	t.Run("removes corporation that lost privileged access on roles change", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		})
+		u.Settings().SetHideLimitedCorporations(true)
+		a := NewCorporationOverview(u)
+		character := factory.CreateCharacter()
+		c1 := factory.CreateCorporation(character.EveCharacter.Corporation.ID)
+		factory.SetCharacterRoles(character.ID, set.Of(app.RoleDirector))
+		a.update(t.Context())
+		require.Equal(t, set.Of(c1.ID), corporationIDs(a))
+		factory.SetCharacterRoles(character.ID, set.Of[app.Role]())
+		// when
+		u.Signals().CharacterSectionChanged.Emit(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: character.ID,
+			Section:     app.SectionCharacterRoles,
+		})
+		// then
+		xassert.Equal(t, 0, corporationIDs(a).Size())
 	})
 }
 

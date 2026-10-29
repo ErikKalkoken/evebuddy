@@ -423,21 +423,6 @@ func TestGeneralPage(t *testing.T) {
 		assert.NotContains(t, labels, "Disable DPI detection")
 		assert.NotContains(t, actionLabels(actions), "Resets main window size to defaults")
 	})
-	t.Run("shows debug actions in developer mode only", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
-		t.Cleanup(u.Settings().Close)
-		a := makeSettings(t, u)
-		_, actions1 := a.makeGeneralPage()
-		u.SetDeveloperMode(true)
-		// when
-		_, actions2 := a.makeGeneralPage()
-		// then
-		assert.NotContains(t, actionLabels(actions1), "Reset shown character (debug)")
-		assert.Contains(t, actionLabels(actions2), "Reset shown character (debug)")
-		assert.Contains(t, actionLabels(actions2), "Reset shown corporation (debug)")
-	})
 	t.Run("hiding limited corporations emits signal", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -594,42 +579,6 @@ func TestGeneralPage(t *testing.T) {
 		// then
 		assert.Equal(t, fyne.NewSize(1000, 600), u.Settings().WindowSize())
 		assert.Equal(t, fyne.NewSize(1000, 600), u.MainWindow().Canvas().Size())
-	})
-	t.Run("can reset shown character", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var called bool
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                test.NewTempApp(t),
-			Storage:            st,
-			IsDeveloperMode:    true,
-			ResetCharacterFunc: func(_ context.Context) { called = true },
-		})
-		t.Cleanup(u.Settings().Close)
-		a := makeSettings(t, u)
-		_, actions := a.makeGeneralPage()
-		// when
-		findAction(t, actions, "Reset shown character (debug)").Action()
-		// then
-		assert.True(t, called)
-	})
-	t.Run("can reset shown corporation", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		var called bool
-		u := testdouble.NewUIFake(testdouble.UIParams{
-			App:                  test.NewTempApp(t),
-			Storage:              st,
-			IsDeveloperMode:      true,
-			ResetCorporationFunc: func(_ context.Context) { called = true },
-		})
-		t.Cleanup(u.Settings().Close)
-		a := makeSettings(t, u)
-		_, actions := a.makeGeneralPage()
-		// when
-		findAction(t, actions, "Reset shown corporation (debug)").Action()
-		// then
-		assert.True(t, called)
 	})
 }
 

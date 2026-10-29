@@ -416,13 +416,6 @@ func (s *Settings) LastCorporationID() int64 {
 	return s.getInt64(settingLastCorporationID, 0)
 }
 
-func (s *Settings) ResetLastCorporationID() {
-	if s == nil {
-		return
-	}
-	s.SetLastCorporationID(0)
-}
-
 func (s *Settings) SetLastCorporationID(id int64) {
 	if s == nil {
 		return

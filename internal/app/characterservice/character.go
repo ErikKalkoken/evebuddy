@@ -119,11 +119,6 @@ func (s *CharacterService) ListCharacterCorporationIDs(ctx context.Context) (set
 	return s.st.ListCharacterCorporationIDs(ctx)
 }
 
-// ListCharacterCorporations returns the corporations of the characters.
-func (s *CharacterService) ListCharacterCorporations(ctx context.Context) ([]*app.EntityShort, error) {
-	return s.st.ListCharacterCorporations(ctx)
-}
-
 // HasCharacter reports whether a character exists.
 func (s *CharacterService) HasCharacter(ctx context.Context, id int64) (bool, error) {
 	_, err := s.GetCharacter(ctx, id)

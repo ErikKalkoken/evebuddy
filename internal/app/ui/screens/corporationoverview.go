@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/ErikKalkoken/go-set"
 	"github.com/dustin/go-humanize"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
 	"github.com/ErikKalkoken/evebuddy/internal/xsync"
@@ -195,6 +197,29 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
 		a.update(ctx)
 	})
+	// characters can change which corporations are listed
+	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
+		a.update(ctx)
+	})
+	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
+		a.update(ctx)
+	})
+	a.u.Signals().EveUniverseSectionChanged.AddListener(func(ctx context.Context, arg app.EveUniverseSectionUpdated) {
+		if arg.Section != app.SectionEveCharacters {
+			return
+		}
+		characterIDs, err := a.u.Character().ListCharacterIDs(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Error("corporationOverview: Failed to list characters", "error", err)
+			return
+		}
+		if characterIDs.ContainsAny(arg.Changed.All()) {
+			a.update(ctx) // a character may have changed corporation
+		}
+	})
 	a.u.Signals().CorporationSectionChanged.AddListener(func(ctx context.Context, arg app.CorporationSectionUpdated) {
 		switch arg.Section {
 		case
@@ -207,28 +232,8 @@ func NewCorporationOverview(u baseUI) *CorporationOverview {
 		}
 	})
 	a.u.Signals().CharacterSectionChanged.AddListener(func(ctx context.Context, arg app.CharacterSectionUpdated) {
-		logErr := func(err error) {
-			if ctx.Err() != nil {
-				return
-			}
-			slog.Error("Failed to process CharacterSectionChanged", "arg", arg, "error", err)
-		}
 		if arg.Section == app.SectionCharacterRoles {
-			character, err := u.Character().GetCharacter(ctx, arg.CharacterID)
-			if err != nil {
-				logErr(err)
-				return
-			}
-			corporationID := character.EveCharacter.Corporation.ID
-			ok, err := u.Corporation().HasCorporation(ctx, corporationID)
-			if err != nil {
-				logErr(err)
-				return
-			}
-			if !ok {
-				return
-			}
-			a.updateItem(ctx, corporationID)
+			a.update(ctx) // roles can change which corporations are listed
 		}
 	})
 	return a
@@ -470,8 +475,18 @@ func (a *CorporationOverview) fetchRows(ctx context.Context) ([]corporationOverv
 	if err != nil {
 		return nil, err
 	}
+	selectable, err := a.u.Corporation().ListCorporationsForSelection(ctx, a.u.Settings().HideLimitedCorporations())
+	if err != nil {
+		return nil, err
+	}
+	selectableIDs := set.Collect(xiter.MapSlice(selectable, func(x *app.EntityShort) int64 {
+		return x.ID
+	}))
 	var rows []corporationOverviewRow
 	for _, c := range corporations {
+		if !selectableIDs.Contains(c.ID) {
+			continue
+		}
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrNotFound) {
 			continue

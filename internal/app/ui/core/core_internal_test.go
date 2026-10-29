@@ -371,8 +371,9 @@ func TestBaseUI_InitKeepsLastSelectionWhenCanceled(t *testing.T) {
 		c := factory.CreateCorporation()
 		u.settings.SetLastCorporationID(c.ID)
 		// when
-		u.initCorporation(ctx)
+		err := u.syncCorporation(ctx)
 		// then
+		assert.ErrorIs(t, err, context.Canceled)
 		assert.Equal(t, c.ID, u.settings.LastCorporationID())
 	})
 }
@@ -598,22 +599,6 @@ func TestBaseUI_ListCorporationsForSelection(t *testing.T) {
 	// On disk, because settings are persisted in a goroutine, which would wipe an in-memory DB.
 	db, st, factory := testutil.NewDBOnDisk(t)
 	t.Cleanup(func() { db.Close() })
-	t.Run("lists all corporations of characters", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		c1 := factory.CreateCorporation()
-		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
-		c2 := factory.CreateCorporation()
-		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
-		// when
-		xx, err := u.ListCorporationsForSelection(t.Context())
-		// then
-		require.NoError(t, err)
-		got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
-			return x.ID
-		}))
-		xassert.Equal(t, set.Of(c1.ID, c2.ID), got)
-	})
 	t.Run("lists privileged corporations only when limited ones are hidden", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
@@ -623,7 +608,7 @@ func TestBaseUI_ListCorporationsForSelection(t *testing.T) {
 		c2 := factory.CreateCorporation()
 		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
 		// when
-		xx, err := u.ListCorporationsForSelection(t.Context())
+		xx, err := u.listCorporationsForSelection(t.Context())
 		// then
 		require.NoError(t, err)
 		got := set.Collect(xiter.MapSlice(xx, func(x *app.EntityShort) int64 {
@@ -715,7 +700,7 @@ func TestBaseUI_ResetCharacter(t *testing.T) {
 		emitted = c == nil
 	})
 	// when
-	u.ResetCharacter(t.Context())
+	u.resetCharacter(t.Context())
 	// then
 	assert.Nil(t, u.CurrentCharacter())
 	assert.True(t, emitted)
@@ -863,7 +848,7 @@ func TestBaseUI_ShowCharacter(t *testing.T) {
 	})
 }
 
-func TestBaseUI_InitCorporation(t *testing.T) {
+func TestBaseUI_SyncCorporation(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	t.Cleanup(func() { db.Close() })
 	t.Run("uses last corporation", func(t *testing.T) {
@@ -872,42 +857,195 @@ func TestBaseUI_InitCorporation(t *testing.T) {
 		u.signals = testdouble.NewSignalsSync()
 		// several, so that falling back to any corporation would likely pick another one
 		for range 4 {
-			factory.CreateCorporation()
+			c := factory.CreateCorporation()
+			factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
 		}
 		c := factory.CreateCorporation()
+		factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
 		u.settings.SetLastCorporationID(c.ID)
 		// when
-		u.initCorporation(t.Context())
+		err := u.syncCorporation(t.Context())
 		// then
+		require.NoError(t, err)
 		xassert.Equal(t, c.ID, u.CurrentCorporation().IDOrZero())
 	})
-	t.Run("uses any corporation when last one is gone", func(t *testing.T) {
+	t.Run("uses lowest listed corporation when last one is gone", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c1.ID, set.Of[app.Role](), set.Of[string]())
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		u.settings.SetLastCorporationID(max(c1.ID, c2.ID) + 1)
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		want := min(c1.ID, c2.ID)
+		xassert.Equal(t, want, u.CurrentCorporation().IDOrZero())
+		xassert.Equal(t, want, u.settings.LastCorporationID())
+	})
+	t.Run("ignores last corporation when it has no member character", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c1.ID, set.Of[app.Role](), set.Of[string]())
+		c2 := factory.CreateCorporation()
+		u.settings.SetLastCorporationID(c2.ID)
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, c1.ID, u.CurrentCorporation().IDOrZero())
+		xassert.Equal(t, c1.ID, u.settings.LastCorporationID())
+	})
+	t.Run("ignores last corporation when it is hidden", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		u.settings.SetHideLimitedCorporations(true)
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		u.settings.SetLastCorporationID(c2.ID)
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, c1.ID, u.CurrentCorporation().IDOrZero())
+		xassert.Equal(t, c1.ID, u.settings.LastCorporationID())
+	})
+	t.Run("keeps current corporation when it is listed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c1.ID, set.Of[app.Role](), set.Of[string]())
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		u.SetCorporation(t.Context(), c2)
+		u.settings.SetLastCorporationID(c1.ID)
+		var emitted bool
+		u.signals.CurrentCorporationExchanged.AddListener(func(_ context.Context, _ *app.Corporation) {
+			emitted = true
+		})
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Same(t, c2, u.CurrentCorporation())
+		assert.False(t, emitted)
+	})
+	t.Run("switches current corporation when it is no longer listed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		u.settings.SetHideLimitedCorporations(true)
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(c1.ID, app.CorporationSectionWalletJournal(app.Division1))
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		u.SetCorporation(t.Context(), c2)
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, c1.ID, u.CurrentCorporation().IDOrZero())
+	})
+	t.Run("selects a corporation when none is selected", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		u.signals = testdouble.NewSignalsSync()
 		c := factory.CreateCorporation()
-		u.settings.SetLastCorporationID(c.ID + 1)
+		factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
 		// when
-		u.initCorporation(t.Context())
+		err := u.syncCorporation(t.Context())
 		// then
+		require.NoError(t, err)
 		xassert.Equal(t, c.ID, u.CurrentCorporation().IDOrZero())
-		xassert.Equal(t, c.ID, u.settings.LastCorporationID())
 	})
-	t.Run("resets when there are no corporations", func(t *testing.T) {
+	t.Run("clears current corporation and keeps last one when none are listed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		u.signals = testdouble.NewSignalsSync()
-		u.settings.SetLastCorporationID(42)
+		u.settings.SetHideLimitedCorporations(true)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
+		u.SetCorporation(t.Context(), c)
 		var emitted bool
 		u.signals.CurrentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
 			emitted = c == nil
 		})
 		// when
-		u.initCorporation(t.Context())
+		err := u.syncCorporation(t.Context())
 		// then
+		require.NoError(t, err)
 		assert.Nil(t, u.CurrentCorporation())
-		xassert.Equal(t, 0, u.settings.LastCorporationID())
+		xassert.Equal(t, c.ID, u.settings.LastCorporationID())
 		assert.True(t, emitted)
+	})
+	t.Run("clears current corporation when there are no corporations", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		u.corporation.Store(&app.Corporation{ID: 42})
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Nil(t, u.CurrentCorporation())
+	})
+	t.Run("restores last corporation when hiding is turned off again", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c1.ID, set.Of[app.Role](), set.Of[string]())
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		u.SetCorporation(t.Context(), c2)
+		u.settings.SetHideLimitedCorporations(true)
+		require.NoError(t, u.syncCorporation(t.Context()))
+		require.Nil(t, u.CurrentCorporation())
+		u.settings.SetHideLimitedCorporations(false)
+		// when
+		err := u.syncCorporation(t.Context())
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, c2.ID, u.CurrentCorporation().IDOrZero())
+	})
+	t.Run("returns error and keeps last corporation when listing fails", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c := factory.CreateCorporation()
+		factory.CreateCorporationToken(c.ID, set.Of[app.Role](), set.Of[string]())
+		u.SetCorporation(t.Context(), c)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		// when
+		err := u.syncCorporation(ctx)
+		// then
+		assert.Error(t, err)
+		assert.Same(t, c, u.CurrentCorporation())
+		xassert.Equal(t, c.ID, u.settings.LastCorporationID())
+	})
+	t.Run("SetCorporation discards running syncs", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		c1 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c1.ID, set.Of[app.Role](), set.Of[string]())
+		c2 := factory.CreateCorporation()
+		factory.CreateCorporationToken(c2.ID, set.Of[app.Role](), set.Of[string]())
+		isLatest := u.syncCorporationRun.Start() // a sync that started earlier
+		// when
+		u.SetCorporation(t.Context(), c2)
+		// then
+		assert.False(t, isLatest())
 	})
 }
 
@@ -931,25 +1069,6 @@ func TestBaseUI_SetCorporation(t *testing.T) {
 	assert.Same(t, c, emitted)
 	assert.Same(t, c, called)
 	xassert.Equal(t, c.ID, u.settings.LastCorporationID())
-}
-
-func TestBaseUI_ResetCorporation(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	t.Cleanup(func() { db.Close() })
-	u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-	u.signals = testdouble.NewSignalsSync()
-	c := factory.CreateCorporation()
-	u.SetCorporation(t.Context(), c)
-	var emitted bool
-	u.signals.CurrentCorporationExchanged.AddListener(func(_ context.Context, c *app.Corporation) {
-		emitted = c == nil
-	})
-	// when
-	u.ResetCorporation(t.Context())
-	// then
-	assert.Nil(t, u.CurrentCorporation())
-	assert.True(t, emitted)
-	xassert.Equal(t, 0, u.settings.LastCorporationID())
 }
 
 func TestBaseUI_LoadCorporation(t *testing.T) {
@@ -977,33 +1096,6 @@ func TestBaseUI_LoadCorporation(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 		assert.Same(t, c, u.CurrentCorporation())
-	})
-}
-
-func TestBaseUI_SetAnyCorporation(t *testing.T) {
-	db, st, factory := testutil.NewDBOnDisk(t)
-	t.Cleanup(func() { db.Close() })
-	t.Run("sets a corporation", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.signals = testdouble.NewSignalsSync()
-		c := factory.CreateCorporation()
-		// when
-		err := u.SetAnyCorporation(t.Context())
-		// then
-		require.NoError(t, err)
-		xassert.Equal(t, c.ID, u.CurrentCorporation().IDOrZero())
-	})
-	t.Run("resets when there are no corporations", func(t *testing.T) {
-		testutil.MustTruncateTables(db)
-		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.signals = testdouble.NewSignalsSync()
-		u.corporation.Store(&app.Corporation{ID: 42})
-		// when
-		err := u.SetAnyCorporation(t.Context())
-		// then
-		require.NoError(t, err)
-		assert.Nil(t, u.CurrentCorporation())
 	})
 }
 
@@ -1110,6 +1202,7 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 	t.Run("updates status when roles changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
 		// NPC corporation, so no corporation update is started
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: 1_000_001})
 		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
@@ -1125,6 +1218,28 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 		// then
 		assert.True(t, updated)
 	})
+	t.Run("switches current corporation when roles changed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		u.onUpdateStatus = func(_ context.Context) {}
+		u.settings.SetHideLimitedCorporations(true)
+		// NPC corporation, so no corporation update is started
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: 1_000_001})
+		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
+		listed := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(listed.ID, app.CorporationSectionWalletJournal(app.Division1))
+		hidden := factory.CreateCorporation()
+		factory.CreateCorporationToken(hidden.ID, set.Of[app.Role](), set.Of[string]())
+		u.corporation.Store(hidden)
+		// when
+		u.handleCharacterSectionChanged(t.Context(), app.CharacterSectionUpdated{
+			CharacterID: c.ID,
+			Section:     app.SectionCharacterRoles,
+		})
+		// then
+		xassert.Equal(t, listed.ID, u.CurrentCorporation().IDOrZero())
+	})
 }
 
 func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
@@ -1133,6 +1248,7 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 	t.Run("reloads current character and updates status when it changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
 		c := factory.CreateCharacterFull()
 		stale := &app.Character{ID: c.ID}
 		u.character.Store(stale)
@@ -1152,6 +1268,7 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 	t.Run("updates status when another own character changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
 		c := factory.CreateCharacterFull()
 		other := factory.CreateCharacterFull()
 		stale := &app.Character{ID: c.ID}
@@ -1168,6 +1285,26 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 		// then
 		assert.Same(t, stale, u.CurrentCharacter())
 		assert.True(t, updated)
+	})
+	t.Run("switches current corporation when a character changed", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
+		u.signals = testdouble.NewSignalsSync()
+		u.onUpdateStatus = func(_ context.Context) {}
+		u.settings.SetHideLimitedCorporations(true)
+		listed := factory.CreateCorporation()
+		factory.CreateCorporationTokenForSection(listed.ID, app.CorporationSectionWalletJournal(app.Division1))
+		hidden := factory.CreateCorporation()
+		factory.CreateCorporationToken(hidden.ID, set.Of[app.Role](), set.Of[string]())
+		u.corporation.Store(hidden)
+		c := factory.CreateCharacterFull()
+		// when
+		u.handleEveUniverseSectionChanged(t.Context(), app.EveUniverseSectionUpdated{
+			Changed: set.Of(c.ID),
+			Section: app.SectionEveCharacters,
+		})
+		// then
+		xassert.Equal(t, listed.ID, u.CurrentCorporation().IDOrZero())
 	})
 	t.Run("ignores characters that are not owned", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
@@ -1434,27 +1571,25 @@ func TestBaseUI_SetCorporationSwitchMenu(t *testing.T) {
 		assert.True(t, called)
 		assert.Empty(t, items)
 	})
-	t.Run("switches current corporation when it is no longer listed", func(t *testing.T) {
+	t.Run("keeps current corporation when it is no longer listed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
 		u.signals = testdouble.NewSignalsSync()
 		u.settings.SetHideLimitedCorporations(true)
 		c := factory.CreateCorporation()
 		factory.CreateCorporationTokenForSection(c.ID, app.CorporationSectionWalletJournal(app.Division1))
-		var hidden *app.Corporation
-		for range 4 {
-			hidden = factory.CreateCorporation()
-			factory.CreateCorporationToken(hidden.ID, set.Of[app.Role](), set.Of[string]())
-		}
+		u.avatarCache.Store(c.ID, theme.AccountIcon()) // avoids loading avatars in the background
+		hidden := factory.CreateCorporation()
+		factory.CreateCorporationToken(hidden.ID, set.Of[app.Role](), set.Of[string]())
 		u.corporation.Store(hidden)
-		var called bool
+		var items []*fyne.MenuItem
 		// when
-		u.setCorporationSwitchMenu(t.Context(), func(_ []*fyne.MenuItem) {
-			called = true
+		u.setCorporationSwitchMenu(t.Context(), func(x []*fyne.MenuItem) {
+			items = x
 		}, func() {})
 		// then
-		assert.False(t, called)
-		xassert.Equal(t, c.ID, u.CurrentCorporation().IDOrZero())
+		assert.Len(t, items, 2)
+		assert.Same(t, hidden, u.CurrentCorporation())
 	})
 }
 
