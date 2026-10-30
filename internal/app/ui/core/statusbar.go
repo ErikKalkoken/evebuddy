@@ -129,23 +129,34 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusBar) start(startupCtx context.Context) {
+	// lives as long as the app; late runs are no-ops after shutdown began
+	updateThrottle := newUpdateStatusThrottle(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return // runs delayed, so Emit's shutdown guard doesn't cover it
+		}
+		a.updateUpdateStatus(context.Background())
+	})
+
 	// signals
 	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 		a.updateCharacterCount(ctx)
-		a.updateUpdateStatus(ctx)
+		updateThrottle.Trigger()
 	})
 	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 		a.updateCharacterCount(ctx)
-		a.updateUpdateStatus(ctx)
+		updateThrottle.Trigger()
 	})
-	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
-		a.updateUpdateStatus(ctx)
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(_ context.Context, _ app.CharacterSectionUpdated) {
+		updateThrottle.Trigger()
 	})
-	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
-		a.updateUpdateStatus(ctx)
+	a.u.Signals().CorporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+		updateThrottle.Trigger()
 	})
-	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
-		a.updateUpdateStatus(ctx)
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(_ context.Context, _ app.CorporationSectionUpdated) {
+		updateThrottle.Trigger()
+	})
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(_ context.Context, _ app.EveUniverseSectionUpdated) {
+		updateThrottle.Trigger()
 	})
 
 	var mu sync.Mutex
@@ -181,7 +192,7 @@ func (a *statusBar) start(startupCtx context.Context) {
 		})
 	})
 	a.updateCharacterCount(startupCtx)
-	a.updateUpdateStatus(startupCtx)
+	updateThrottle.Trigger()
 
 	a.u.tasks.Go(func(ctx context.Context) {
 		xsync.RunEvery(ctx, clockUpdateTicker, func(ctx context.Context) {
@@ -289,12 +300,18 @@ func (a *statusBar) updateCharacterCount(ctx context.Context) {
 func (a *statusBar) updateUpdateStatus(_ context.Context) {
 	if a.u.isUpdateDisabled.Load() || a.u.ess.IsDailyDowntime() {
 		fyne.Do(func() {
+			if a.u.Signals().IsShuttingDown() {
+				return
+			}
 			a.updateStatus.SetTextAndImportance("OFF", widget.MediumImportance)
 		})
 		return
 	}
 	x := a.u.StatusCache().Summary()
 	fyne.Do(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return
+		}
 		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
 }

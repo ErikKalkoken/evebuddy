@@ -566,27 +566,38 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	u.onAppFirstStarted = func(startupCtx context.Context) {
+		// lives as long as the app; late runs are no-ops after shutdown began
+		updateThrottle := newUpdateStatusThrottle(func() {
+			if u.Signals().IsShuttingDown() {
+				return // runs delayed, so Emit's shutdown guard doesn't cover it
+			}
+			u.updateUpdateStatus(context.Background())
+		})
+
 		// signals
 		u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
 			u.updateCharacterCount(ctx)
-			u.updateUpdateStatus(ctx)
+			updateThrottle.Trigger()
 		})
 		u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
 			u.updateCharacterCount(ctx)
-			u.updateUpdateStatus(ctx)
+			updateThrottle.Trigger()
 		})
-		u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
-			u.updateUpdateStatus(ctx)
+		u.Signals().CharacterSectionUpdated.AddListener(func(_ context.Context, _ app.CharacterSectionUpdated) {
+			updateThrottle.Trigger()
 		})
-		u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
-			u.updateUpdateStatus(ctx)
+		u.Signals().CorporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+			updateThrottle.Trigger()
 		})
-		u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
-			u.updateUpdateStatus(ctx)
+		u.Signals().CorporationSectionUpdated.AddListener(func(_ context.Context, _ app.CorporationSectionUpdated) {
+			updateThrottle.Trigger()
+		})
+		u.Signals().EveUniverseSectionUpdated.AddListener(func(_ context.Context, _ app.EveUniverseSectionUpdated) {
+			updateThrottle.Trigger()
 		})
 
 		u.updateCharacterCount(startupCtx)
-		u.updateUpdateStatus(startupCtx)
+		updateThrottle.Trigger()
 
 		if !u.isOfflineMode {
 			u.tasks.Go(func(ctx context.Context) {
@@ -762,6 +773,9 @@ func (u *MobileUI) updateCharacterCount(ctx context.Context) {
 func (u *MobileUI) updateUpdateStatus(_ context.Context) {
 	set := func(full, short string, i widget.Importance, icon fyne.Resource) {
 		fyne.Do(func() {
+			if u.Signals().IsShuttingDown() {
+				return
+			}
 			u.refreshMoreBadge()
 			u.moreUpdateStatusItem.Supporting = full
 			u.moreUpdateStatusItem.SupportingImportance = i
