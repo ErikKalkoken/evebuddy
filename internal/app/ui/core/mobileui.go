@@ -566,15 +566,12 @@ func NewMobileUI(params UIParams) *MobileUI {
 	}
 
 	u.onAppFirstStarted = func(startupCtx context.Context) {
+		// lives as long as the app; late runs are no-ops after shutdown began
 		updateThrottle := newUpdateStatusThrottle(func() {
 			if u.Signals().IsShuttingDown() {
 				return // runs delayed, so Emit's shutdown guard doesn't cover it
 			}
 			u.updateUpdateStatus(context.Background())
-		})
-		u.tasks.Go(func(ctx context.Context) {
-			<-ctx.Done()
-			updateThrottle.Stop()
 		})
 
 		// signals

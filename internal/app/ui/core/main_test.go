@@ -17,4 +17,3 @@ func TestMain(m *testing.M) {
 type syncThrottle struct{ f func() }
 
 func (s syncThrottle) Trigger() { s.f() }
-func (s syncThrottle) Stop()    {}

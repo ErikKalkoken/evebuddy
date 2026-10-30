@@ -66,7 +66,6 @@ var runAsync = func(f func()) { go f() }
 
 type throttle interface {
 	Trigger()
-	Stop()
 }
 
 // newUpdateStatusThrottle merges bursts of signals into fewer status updates.

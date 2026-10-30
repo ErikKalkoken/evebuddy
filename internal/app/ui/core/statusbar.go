@@ -129,15 +129,12 @@ func (a *statusBar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (a *statusBar) start(startupCtx context.Context) {
+	// lives as long as the app; late runs are no-ops after shutdown began
 	updateThrottle := newUpdateStatusThrottle(func() {
 		if a.u.Signals().IsShuttingDown() {
 			return // runs delayed, so Emit's shutdown guard doesn't cover it
 		}
 		a.updateUpdateStatus(context.Background())
-	})
-	a.u.tasks.Go(func(ctx context.Context) {
-		<-ctx.Done()
-		updateThrottle.Stop()
 	})
 
 	// signals
