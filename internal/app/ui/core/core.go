@@ -64,6 +64,17 @@ var defaultImageScaleMode canvas.ImageScale
 // Tests replace it to run f synchronously.
 var runAsync = func(f func()) { go f() }
 
+type throttle interface {
+	Trigger()
+	Stop()
+}
+
+// newUpdateStatusThrottle merges bursts of signals into fewer status updates.
+// Tests replace it to run f synchronously.
+var newUpdateStatusThrottle = func(f func()) throttle {
+	return xsync.NewThrottle(500*time.Millisecond, f)
+}
+
 type UIParams struct {
 	App         fyne.App
 	Character   *characterservice.CharacterService
