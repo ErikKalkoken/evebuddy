@@ -157,6 +157,18 @@ func TestThrottle(t *testing.T) {
 			xassert.Equal(t, 0, count.Load())
 		})
 	})
+	t.Run("should allow stop to be called twice", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			// given
+			th := xsync.NewThrottle(time.Second, func() {})
+			th.Stop()
+
+			// when
+			th.Stop()
+
+			// then: returned instead of blocking (synctest fails on deadlock)
+		})
+	})
 	t.Run("should wait for a running run when stopped", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			// given
