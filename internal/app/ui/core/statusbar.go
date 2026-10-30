@@ -149,6 +149,9 @@ func (a *statusBar) start(startupCtx context.Context) {
 	a.u.Signals().CharacterSectionUpdated.AddListener(func(_ context.Context, _ app.CharacterSectionUpdated) {
 		updateThrottle.Trigger()
 	})
+	a.u.Signals().CorporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+		updateThrottle.Trigger()
+	})
 	a.u.Signals().CorporationSectionUpdated.AddListener(func(_ context.Context, _ app.CorporationSectionUpdated) {
 		updateThrottle.Trigger()
 	})

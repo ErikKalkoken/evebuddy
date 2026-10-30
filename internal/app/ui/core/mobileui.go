@@ -586,6 +586,9 @@ func NewMobileUI(params UIParams) *MobileUI {
 		u.Signals().CharacterSectionUpdated.AddListener(func(_ context.Context, _ app.CharacterSectionUpdated) {
 			updateThrottle.Trigger()
 		})
+		u.Signals().CorporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+			updateThrottle.Trigger()
+		})
 		u.Signals().CorporationSectionUpdated.AddListener(func(_ context.Context, _ app.CorporationSectionUpdated) {
 			updateThrottle.Trigger()
 		})
