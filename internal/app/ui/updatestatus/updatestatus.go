@@ -59,23 +59,26 @@ func Show(s baseUI) {
 	a := newUpdateStatus(s, w)
 	w.SetContent(a)
 	w.Resize(fyne.Size{Width: 400, Height: 700})
-	ctx, cancel := context.WithCancel(context.Background())
 	w.SetOnClosed(func() {
-		cancel()
 		a.stop()
 		if onClosed != nil {
 			onClosed()
 		}
 	})
 	w.Show()
-	runAsync(func() {
-		a.update(ctx)
-	})
+	a.updateThrottle.Trigger()
 }
 
-// runAsync runs f in a new goroutine.
+type throttle interface {
+	Trigger()
+	Stop()
+}
+
+// newUpdateThrottle merges bursts of signals into fewer updates.
 // Tests replace it to run f synchronously.
-var runAsync = func(f func()) { go f() }
+var newUpdateThrottle = func(f func()) throttle {
+	return xsync.NewThrottle(500*time.Millisecond, f)
+}
 
 type sectionCategory uint
 
@@ -134,6 +137,7 @@ type updateStatus struct {
 	signalKey         string
 	u                 baseUI
 	updateRun         xsync.LatestRun
+	updateThrottle    throttle
 }
 
 func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
@@ -145,6 +149,12 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 		u:                u,
 	}
 	a.ExtendBaseWidget(a)
+	a.updateThrottle = newUpdateThrottle(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return // runs delayed, so Emit's shutdown guard doesn't cover it
+		}
+		a.update(context.Background())
+	})
 
 	a.entityList = a.makeEntityList()
 	a.sectionList = a.makeSectionList()
@@ -227,28 +237,29 @@ func newUpdateStatus(u baseUI, w fyne.Window) *updateStatus {
 
 	// Signals
 	a.sb.Start()
-	a.u.Signals().CharacterAdded.AddListener(func(ctx context.Context, _ *app.Character) {
-		a.update(ctx)
+	a.u.Signals().CharacterAdded.AddListener(func(_ context.Context, _ *app.Character) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
-	a.u.Signals().CharacterRemoved.AddListener(func(ctx context.Context, _ *app.EntityShort) {
-		a.update(ctx)
+	a.u.Signals().CharacterRemoved.AddListener(func(_ context.Context, _ *app.EntityShort) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
-	a.u.Signals().CharacterSectionUpdated.AddListener(func(ctx context.Context, _ app.CharacterSectionUpdated) {
-		a.update(ctx)
+	a.u.Signals().CharacterSectionUpdated.AddListener(func(_ context.Context, _ app.CharacterSectionUpdated) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
-	a.u.Signals().CorporationsChanged.AddListener(func(ctx context.Context, _ struct{}) {
-		a.update(ctx)
+	a.u.Signals().CorporationsChanged.AddListener(func(_ context.Context, _ struct{}) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
-	a.u.Signals().CorporationSectionUpdated.AddListener(func(ctx context.Context, _ app.CorporationSectionUpdated) {
-		a.update(ctx)
+	a.u.Signals().CorporationSectionUpdated.AddListener(func(_ context.Context, _ app.CorporationSectionUpdated) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
-	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(ctx context.Context, _ app.EveUniverseSectionUpdated) {
-		a.update(ctx)
+	a.u.Signals().EveUniverseSectionUpdated.AddListener(func(_ context.Context, _ app.EveUniverseSectionUpdated) {
+		a.updateThrottle.Trigger()
 	}, a.signalKey)
 	return a
 }
 
 func (a *updateStatus) stop() {
+	a.updateThrottle.Stop()
 	a.updateRun.Discard()
 	a.sb.Stop()
 	a.u.Signals().CharacterAdded.RemoveListener(a.signalKey)
