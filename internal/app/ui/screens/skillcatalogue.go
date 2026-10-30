@@ -473,9 +473,9 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 		queued[it.SkillID] = max(queued[it.SkillID], it.FinishedLevel)
 	}
 
-	var rows []skillCatalogueRow
-	for _, o := range skills {
-		rows = append(rows, skillCatalogueRow{
+	rows := make([]skillCatalogueRow, len(skills))
+	for i, o := range skills {
+		rows[i] = skillCatalogueRow{
 			description:      o.Skill.Type.DescriptionPlain(),
 			groupID:          o.Skill.Type.Group.ID,
 			groupName:        o.Skill.Type.Group.Name,
@@ -488,7 +488,7 @@ func (a *SkillCatalogue) update(ctx context.Context) {
 			spMax:            o.Skill.Skillpoints,
 			spTrained:        int(o.SkillPointsInSkill),
 			typeID:           o.Skill.Type.ID,
-		})
+		}
 	}
 
 	totalSP := optional.SumNonEmpty(c.TrainedSP, c.UnallocatedSP)

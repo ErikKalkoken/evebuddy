@@ -59,9 +59,9 @@ func (st *Storage) ListAllCharacterLoyaltyPointEntries(ctx context.Context) ([]*
 	if err != nil {
 		return nil, fmt.Errorf("ListAllCharacterLoyaltyPointEntries: %w", err)
 	}
-	var oo []*app.CharacterLoyaltyPointEntry
-	for _, r := range rows {
-		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
+	oo := make([]*app.CharacterLoyaltyPointEntry, len(rows))
+	for i, r := range rows {
+		oo[i] = characterLoyaltyPointEntryFromDBModel(
 			r.CharacterLoyaltyPointEntry,
 			r.CorporationName,
 			nullEveEntity{
@@ -69,7 +69,7 @@ func (st *Storage) ListAllCharacterLoyaltyPointEntries(ctx context.Context) ([]*
 				category: r.FactionCategory,
 				name:     r.FactionName,
 			},
-		))
+		)
 	}
 	return oo, nil
 }
@@ -87,9 +87,9 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterLoyaltyPointEntry for character %d: %w", characterID, err)
 	}
-	var oo []*app.CharacterLoyaltyPointEntry
-	for _, r := range rows {
-		oo = append(oo, characterLoyaltyPointEntryFromDBModel(
+	oo := make([]*app.CharacterLoyaltyPointEntry, len(rows))
+	for i, r := range rows {
+		oo[i] = characterLoyaltyPointEntryFromDBModel(
 			r.CharacterLoyaltyPointEntry,
 			r.CorporationName,
 			nullEveEntity{
@@ -97,7 +97,7 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 				category: r.FactionCategory,
 				name:     r.FactionName,
 			},
-		))
+		)
 	}
 	return oo, nil
 }

@@ -20,13 +20,13 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.CharacterShipAbility
-	for _, row := range rows {
-		oo = append(oo, &app.CharacterShipAbility{
+	oo := make([]*app.CharacterShipAbility, len(rows))
+	for i, row := range rows {
+		oo[i] = &app.CharacterShipAbility{
 			Group:  app.EntityShort{ID: row.GroupID, Name: row.GroupName},
 			Type:   app.EntityShort{ID: row.TypeID, Name: row.TypeName},
 			CanFly: row.CanFly,
-		})
+		}
 	}
 	return oo, nil
 }
@@ -42,9 +42,9 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.CharacterShipSkill
-	for _, r := range rows {
-		oo = append(oo, characterShiSkillFromDBModel(r))
+	oo := make([]*app.CharacterShipSkill, len(rows))
+	for i, r := range rows {
+		oo[i] = characterShiSkillFromDBModel(r)
 	}
 	return oo, nil
 }

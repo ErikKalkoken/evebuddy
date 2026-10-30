@@ -139,14 +139,14 @@ func (st *Storage) ListAllCharacterIndustryJobActiveCounts(ctx context.Context) 
 	if err != nil {
 		return nil, fmt.Errorf("ListAllCharacterIndustryJobActiveCounts: %w", err)
 	}
-	var result []app.IndustryJobActivityCount
-	for _, r := range rows {
-		result = append(result, app.IndustryJobActivityCount{
+	result := make([]app.IndustryJobActivityCount, len(rows))
+	for i, r := range rows {
+		result[i] = app.IndustryJobActivityCount{
 			Activity:    app.IndustryActivity(r.ActivityID),
 			Count:       int(r.Number),
 			InstallerID: r.InstallerID,
 			Status:      jobStatusFromDBValue[r.Status],
-		})
+		}
 	}
 	return result, nil
 }

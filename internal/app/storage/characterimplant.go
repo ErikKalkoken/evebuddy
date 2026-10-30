@@ -56,15 +56,15 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int64)
 	if err != nil {
 		return nil, fmt.Errorf("list implants for character ID %d: %w", characterID, err)
 	}
-	var oo []*app.CharacterImplant
-	for _, r := range rows {
-		oo = append(oo, characterImplantFromDBModel(
+	oo := make([]*app.CharacterImplant, len(rows))
+	for i, r := range rows {
+		oo[i] = characterImplantFromDBModel(
 			r.CharacterImplant,
 			r.EveType,
 			r.EveGroup,
 			r.EveCategory,
 			r.SlotNum,
-		))
+		)
 	}
 	return oo, nil
 }
@@ -74,15 +74,15 @@ func (st *Storage) ListAllCharacterImplants(ctx context.Context) ([]*app.Charact
 	if err != nil {
 		return nil, fmt.Errorf("list implants for all characters: %w", err)
 	}
-	var oo []*app.CharacterImplant
-	for _, r := range rows {
-		oo = append(oo, characterImplantFromDBModel(
+	oo := make([]*app.CharacterImplant, len(rows))
+	for i, r := range rows {
+		oo[i] = characterImplantFromDBModel(
 			r.CharacterImplant,
 			r.EveType,
 			r.EveGroup,
 			r.EveCategory,
 			r.SlotNum,
-		))
+		)
 	}
 	return oo, nil
 }

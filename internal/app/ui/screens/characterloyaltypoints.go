@@ -335,8 +335,8 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 		return x.LoyaltyPoints == 0
 	})
 
-	var rows []characterLoyaltyPointsRow
-	for _, o := range entries {
+	rows := make([]characterLoyaltyPointsRow, len(entries))
+	for i, o := range entries {
 		r := characterLoyaltyPointsRow{
 			characterID:     characterID,
 			corporationID:   o.Corporation.ID,
@@ -348,7 +348,7 @@ func (a *CharacterLoyaltyPoints) fetchRows(ctx context.Context, characterID int6
 			r.factionID = f.ID
 			r.factionName = f.Name
 		}
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

@@ -87,8 +87,8 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 	if err != nil {
 		return nil, err
 	}
-	var skills2 []*app.CharacterSkill2
-	for _, es := range eveSkills {
+	skills2 := make([]*app.CharacterSkill2, len(eveSkills))
+	for i, es := range eveSkills {
 		o := &app.CharacterSkill2{
 			CharacterID: characterID,
 			Skill:       es,
@@ -111,7 +111,7 @@ func (s *CharacterService) ListSkills(ctx context.Context, characterID int64) ([
 			}
 		}
 		o.HasPrerequisites = hasPrerequisites
-		skills2 = append(skills2, o)
+		skills2[i] = o
 	}
 	return skills2, nil
 }
@@ -289,8 +289,9 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 			return items, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			var items []storage.SkillqueueItemParams
-			for _, o := range data.([]esi.CharactersSkillqueueSkill) {
+			queue := data.([]esi.CharactersSkillqueueSkill)
+			items := make([]storage.SkillqueueItemParams, 0, len(queue))
+			for _, o := range queue {
 				if o.SkillId == 0 || o.FinishedLevel == 0 {
 					continue
 				}

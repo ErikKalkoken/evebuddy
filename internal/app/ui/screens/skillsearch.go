@@ -449,8 +449,8 @@ func (a *SkillSearch) fetchRows(ctx context.Context) ([]skillSearchRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	var rows []skillSearchRow
-	for _, s := range skills {
+	rows := make([]skillSearchRow, len(skills))
+	for i, s := range skills {
 		r := skillSearchRow{
 			activeLevel:        s.ActiveSkillLevel,
 			activeLevelRoman:   ihumanize.RomanLetter(s.ActiveSkillLevel),
@@ -466,7 +466,7 @@ func (a *SkillSearch) fetchRows(ctx context.Context) ([]skillSearchRow, error) {
 			typeID:             s.Type.ID,
 			typeName:           s.Type.Name,
 		}
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

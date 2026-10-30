@@ -167,7 +167,7 @@ func newContractRow(o *app.Contract, ownerID int64, ownerName string, isCorporat
 }
 
 func makeSearchTarget(items []string, title optional.Optional[string]) string {
-	var token []string
+	token := make([]string, 0, len(items)+1)
 	for _, it := range items {
 		token = append(token, strings.ToLower(it))
 	}
@@ -813,10 +813,10 @@ func (a *Contracts) fetchRowsCorporation(ctx context.Context) ([]contractRow, er
 	if err != nil {
 		return nil, err
 	}
-	var rows []contractRow
-	for _, c := range oo {
+	rows := make([]contractRow, len(oo))
+	for i, c := range oo {
 		r := newContractRow(&c.Contract, corporation.ID, corporation.NameOrZero(), true, myCharacterIDs, myCorporationIDs)
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }
@@ -835,9 +835,9 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 	if err != nil {
 		return nil, err
 	}
-	var rows []contractRow
+	rows := make([]contractRow, len(oo))
 	tagsByCharacter := make(map[int64]set.Set[string])
-	for _, c := range oo {
+	for i, c := range oo {
 		r := newContractRow(&c.Contract, c.CharacterID, characters[c.CharacterID], false, myCharacterIDs, myCorporationIDs)
 		tags, ok := tagsByCharacter[c.CharacterID]
 		if !ok {
@@ -848,7 +848,7 @@ func (a *Contracts) fetchRowsOverview(ctx context.Context) ([]contractRow, error
 			tagsByCharacter[c.CharacterID] = tags
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

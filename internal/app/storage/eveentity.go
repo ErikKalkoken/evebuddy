@@ -118,9 +118,9 @@ func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name stri
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.EveEntity
-	for _, r := range rows {
-		oo = append(oo, eveEntityFromDBModel(r))
+	oo := make([]*app.EveEntity, len(rows))
+	for i, r := range rows {
+		oo[i] = eveEntityFromDBModel(r)
 	}
 	return oo, nil
 }
@@ -182,13 +182,13 @@ func (st *Storage) ListEveEntitiesForIDs(ctx context.Context, ids []int64) ([]*a
 	if err != nil {
 		return nil, err
 	}
-	var oo []*app.EveEntity
-	for _, id := range ids {
+	oo := make([]*app.EveEntity, len(ids))
+	for i, id := range ids {
 		o, found := m[id]
 		if !found {
 			return nil, app.ErrNotFound
 		}
-		oo = append(oo, o)
+		oo[i] = o
 	}
 	return oo, nil
 }
@@ -203,7 +203,7 @@ func (st *Storage) ListExistingEveEntitiesForIDs(ctx context.Context, ids []int6
 	if err != nil {
 		return nil, err
 	}
-	oo := []*app.EveEntity{}
+	oo := make([]*app.EveEntity, 0, len(ids))
 	for _, id := range ids {
 		o, found := m[id]
 		if !found {

@@ -55,9 +55,9 @@ func (st *Storage) ListTagsByName(ctx context.Context) ([]*app.CharacterTag, err
 		return nil, fmt.Errorf("list tags: %w", err)
 
 	}
-	var tags []*app.CharacterTag
-	for _, r := range rows {
-		tags = append(tags, tagFromDBModel(r))
+	tags := make([]*app.CharacterTag, len(rows))
+	for i, r := range rows {
+		tags[i] = tagFromDBModel(r)
 	}
 	return tags, nil
 }
@@ -172,12 +172,12 @@ func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int6
 		return nil, wrapErr(err)
 
 	}
-	var cc []*app.EntityShort
-	for _, r := range rows {
-		cc = append(cc, &app.EntityShort{
+	cc := make([]*app.EntityShort, len(rows))
+	for i, r := range rows {
+		cc[i] = &app.EntityShort{
 			ID:   r.ID,
 			Name: r.Name,
-		})
+		}
 	}
 	return cc, nil
 }
@@ -194,9 +194,9 @@ func (st *Storage) ListCharacterTagsForCharacter(ctx context.Context, characterI
 		return nil, wrapErr(err)
 
 	}
-	var tags []*app.CharacterTag
-	for _, r := range rows {
-		tags = append(tags, tagFromDBModel(r))
+	tags := make([]*app.CharacterTag, len(rows))
+	for i, r := range rows {
+		tags[i] = tagFromDBModel(r)
 	}
 	return tags, nil
 }

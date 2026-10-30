@@ -412,15 +412,15 @@ func (a *JumpClones) fetchRows(ctx context.Context) ([]jumpCloneRow, error) {
 	slices.SortFunc(oo, func(a, b *app.CharacterJumpClone2) int {
 		return cmp.Compare(a.Location.SolarSystemName(), b.Location.SolarSystemName())
 	})
-	var rows []jumpCloneRow
-	for _, o := range oo {
+	rows := make([]jumpCloneRow, len(oo))
+	for i, o := range oo {
 		r := jumpCloneRow{jc: o}
 		tags, err := a.u.Character().ListTagsForCharacter(ctx, o.Character.ID)
 		if err != nil {
 			return nil, err
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

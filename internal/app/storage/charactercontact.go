@@ -100,10 +100,9 @@ func (st *Storage) ListCharacterContacts(ctx context.Context, characterID int64)
 	for _, r := range labelRows {
 		labels[r.ContactID] = append(labels[r.ContactID], r.Name)
 	}
-	var oo []*app.CharacterContact
-	for _, r := range rows {
-		o := characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels[r.CharacterContact.ID])
-		oo = append(oo, o)
+	oo := make([]*app.CharacterContact, len(rows))
+	for i, r := range rows {
+		oo[i] = characterContactFromDBModel(r.CharacterContact, r.EveEntity, labels[r.CharacterContact.ID])
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, wrapErr(err)

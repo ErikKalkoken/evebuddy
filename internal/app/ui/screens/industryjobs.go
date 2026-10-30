@@ -814,9 +814,15 @@ func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 		tagsPerCharacter[id] = tags
 	}
 
-	var characterJobs []industryJobRow
+	var myCorpJobs int
+	for _, j := range rj {
+		if myCharacters.Contains(j.Installer.ID) {
+			myCorpJobs++
+		}
+	}
+	jobs := make([]industryJobRow, 0, len(cj)+myCorpJobs)
 	for _, j := range cj {
-		characterJobs = append(characterJobs, industryJobRow{
+		jobs = append(jobs, industryJobRow{
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
@@ -843,13 +849,11 @@ func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			tags:               tagsPerCharacter[j.Installer.ID],
 		})
 	}
-
-	var corporationJobs []industryJobRow
 	for _, j := range rj {
 		if !myCharacters.Contains(j.Installer.ID) {
 			continue
 		}
-		corporationJobs = append(corporationJobs, industryJobRow{
+		jobs = append(jobs, industryJobRow{
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
@@ -876,7 +880,6 @@ func (a *IndustryJobs) fetchCombinedJobs(ctx context.Context) ([]industryJobRow,
 			tags:               tagsPerCharacter[j.Installer.ID],
 		})
 	}
-	jobs := slices.Concat(characterJobs, corporationJobs)
 	return jobs, nil
 }
 
@@ -905,9 +908,9 @@ func (a *IndustryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 	if err != nil {
 		return nil, err
 	}
-	var jobs []industryJobRow
-	for _, j := range rj {
-		jobs = append(jobs, industryJobRow{
+	jobs := make([]industryJobRow, len(rj))
+	for i, j := range rj {
+		jobs[i] = industryJobRow{
 			activity:           j.Activity,
 			blueprintID:        j.BlueprintID,
 			blueprintType:      j.BlueprintType,
@@ -931,7 +934,7 @@ func (a *IndustryJobs) fetchCorporationJobs(ctx context.Context) ([]industryJobR
 			startDate:          j.StartDate,
 			status:             j.Status,
 			successfulRuns:     j.SuccessfulRuns,
-		})
+		}
 	}
 	return jobs, nil
 }

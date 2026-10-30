@@ -117,23 +117,22 @@ func (a *admin) update(ctx context.Context) {
 }
 
 func (a *admin) fetchRows(ctx context.Context) ([]adminRow, error) {
-	var rows []adminRow
 	cc, err := a.cw.u.Character().ListEveCharacters(ctx)
 	if err != nil {
-		return rows, err
+		return nil, err
 	}
-	for _, c := range cc {
+	rows := make([]adminRow, len(cc))
+	for i, c := range cc {
 		missing, err := a.cw.u.Character().MissingScopes(ctx, c.ID, app.Scopes())
 		if err != nil {
-			return rows, err
+			return nil, err
 		}
-		r := adminRow{
+		rows[i] = adminRow{
 			characterID:   c.ID,
 			corporationID: c.Corporation.ID,
 			characterName: c.Name,
 			missingScopes: missing,
 		}
-		rows = append(rows, r)
 	}
 	slices.SortFunc(rows, func(a, b adminRow) int {
 		return strings.Compare(a.characterName, b.characterName)

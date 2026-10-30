@@ -187,10 +187,9 @@ func (sc *StatusCache) ListCharacterSections(characterID int64) []app.CacheSecti
 		return nil
 	}
 
-	var list []app.CacheSectionStatus
-	for _, section := range app.CharacterSections {
-		v, _ := sc.CharacterSection(characterID, section)
-		list = append(list, v)
+	list := make([]app.CacheSectionStatus, len(app.CharacterSections))
+	for i, section := range app.CharacterSections {
+		list[i], _ = sc.CharacterSection(characterID, section)
 	}
 	return list
 }
@@ -323,10 +322,9 @@ func (sc *StatusCache) ListCorporationSections(corporationID int64) []app.CacheS
 	if sc == nil || corporationID == 0 {
 		return nil
 	}
-	var list []app.CacheSectionStatus
-	for _, section := range app.CorporationSections {
-		v, _ := sc.CorporationSection(corporationID, section)
-		list = append(list, v)
+	list := make([]app.CacheSectionStatus, len(app.CorporationSections))
+	for i, section := range app.CorporationSections {
+		list[i], _ = sc.CorporationSection(corporationID, section)
 	}
 	return list
 }
@@ -446,10 +444,9 @@ func (sc *StatusCache) ListEveUniverseSections() []app.CacheSectionStatus {
 	if sc == nil {
 		return []app.CacheSectionStatus{}
 	}
-	var list []app.CacheSectionStatus
-	for _, section := range app.EveUniverseSections {
-		v, _ := sc.EveUniverseSection(section)
-		list = append(list, v)
+	list := make([]app.CacheSectionStatus, len(app.EveUniverseSections))
+	for i, section := range app.EveUniverseSections {
+		list[i], _ = sc.EveUniverseSection(section)
 	}
 	return list
 }

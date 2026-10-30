@@ -31,18 +31,18 @@ type Tree struct {
 
 // NewFromCharacterAssets returns a new tree from character assets.
 func NewFromCharacterAssets(assets []*app.CharacterAsset, locations []*app.EveLocation) Tree {
-	var items []Item
-	for _, ca := range assets {
-		items = append(items, ca)
+	items := make([]Item, len(assets))
+	for i, ca := range assets {
+		items[i] = ca
 	}
 	return newTree(items, locations, false)
 }
 
 // NewFromCorporationAssets returns a new tree from corporation assets.
 func NewFromCorporationAssets(assets []*app.CorporationAsset, locations []*app.EveLocation) Tree {
-	var items []Item
-	for _, ca := range assets {
-		items = append(items, ca)
+	items := make([]Item, len(assets))
+	for i, ca := range assets {
+		items[i] = ca
 	}
 	return newTree(items, locations, true)
 }

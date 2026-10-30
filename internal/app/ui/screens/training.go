@@ -655,7 +655,7 @@ func (a *Training) fetchRows(ctx context.Context) ([]trainingRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	var rows []trainingRow
+	rows := make([]trainingRow, 0, len(characters))
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrInvalid) {

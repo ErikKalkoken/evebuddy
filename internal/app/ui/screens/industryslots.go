@@ -465,8 +465,8 @@ func (a *IndustrySlots) fetchData(ctx context.Context, slotType app.IndustryJobT
 	if err != nil {
 		return nil, err
 	}
-	var rows []industrySlotRow
-	for _, o := range oo {
+	rows := make([]industrySlotRow, len(oo))
+	for i, o := range oo {
 		r := industrySlotRow{
 			characterID:   o.CharacterID,
 			characterName: o.CharacterName,
@@ -480,7 +480,7 @@ func (a *IndustrySlots) fetchData(ctx context.Context, slotType app.IndustryJobT
 			return nil, err
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

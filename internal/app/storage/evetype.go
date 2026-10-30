@@ -118,9 +118,9 @@ func (st *Storage) ListEveTypes(ctx context.Context) ([]*app.EveType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ListEveTypes: %w", err)
 	}
-	var oo []*app.EveType
-	for _, r := range rows {
-		oo = append(oo, eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory))
+	oo := make([]*app.EveType, len(rows))
+	for i, r := range rows {
+		oo[i] = eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }
@@ -130,9 +130,9 @@ func (st *Storage) ListEveSkills(ctx context.Context) ([]*app.EveType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ListEveSkills: %w", err)
 	}
-	var oo []*app.EveType
-	for _, r := range rows {
-		oo = append(oo, eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory))
+	oo := make([]*app.EveType, len(rows))
+	for i, r := range rows {
+		oo[i] = eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }

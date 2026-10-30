@@ -359,9 +359,9 @@ func (a *FlyableShips) update(ctx context.Context) {
 		reportError(err)
 		return
 	}
-	var rows []flyableShipRow
-	for _, o := range oo {
-		rows = append(rows, flyableShipRow{
+	rows := make([]flyableShipRow, len(oo))
+	for i, o := range oo {
+		rows[i] = flyableShipRow{
 			canFly:      o.CanFly,
 			characterID: characterID,
 			groupID:     o.Group.ID,
@@ -369,7 +369,7 @@ func (a *FlyableShips) update(ctx context.Context) {
 			searchText:  strings.ToLower(fmt.Sprintf("%s|%s", o.Type.Name, o.Group.Name)),
 			typeID:      o.Type.ID,
 			typeName:    o.Type.Name,
-		})
+		}
 	}
 
 	k := 0

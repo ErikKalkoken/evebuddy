@@ -482,7 +482,7 @@ func (a *CorporationOverview) fetchRows(ctx context.Context) ([]corporationOverv
 	selectableIDs := set.Collect(xiter.MapSlice(selectable, func(x *app.EntityShort) int64 {
 		return x.ID
 	}))
-	var rows []corporationOverviewRow
+	rows := make([]corporationOverviewRow, 0, len(corporations))
 	for _, c := range corporations {
 		if !selectableIDs.Contains(c.ID) {
 			continue
