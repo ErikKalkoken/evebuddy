@@ -773,6 +773,9 @@ func (u *MobileUI) updateCharacterCount(ctx context.Context) {
 func (u *MobileUI) updateUpdateStatus(_ context.Context) {
 	set := func(full, short string, i widget.Importance, icon fyne.Resource) {
 		fyne.Do(func() {
+			if u.Signals().IsShuttingDown() {
+				return
+			}
 			u.refreshMoreBadge()
 			u.moreUpdateStatusItem.Supporting = full
 			u.moreUpdateStatusItem.SupportingImportance = i

@@ -300,12 +300,18 @@ func (a *statusBar) updateCharacterCount(ctx context.Context) {
 func (a *statusBar) updateUpdateStatus(_ context.Context) {
 	if a.u.isUpdateDisabled.Load() || a.u.ess.IsDailyDowntime() {
 		fyne.Do(func() {
+			if a.u.Signals().IsShuttingDown() {
+				return
+			}
 			a.updateStatus.SetTextAndImportance("OFF", widget.MediumImportance)
 		})
 		return
 	}
 	x := a.u.StatusCache().Summary()
 	fyne.Do(func() {
+		if a.u.Signals().IsShuttingDown() {
+			return
+		}
 		a.updateStatus.SetTextAndImportance(x.DisplayShort(), x.Status().ToImportance())
 	})
 }
