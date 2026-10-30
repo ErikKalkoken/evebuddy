@@ -708,8 +708,8 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		return nil, err
 	}
 	now := time.Now()
-	var rows []colonyRow
-	for _, p := range planets {
+	rows := make([]colonyRow, len(planets))
+	for i, p := range planets {
 		extracting := set.Collect(xiter.MapSlice(p.ExtractedTypes(), func(x *app.EveType) string {
 			return x.Name
 		}))
@@ -755,7 +755,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			return nil, err
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

@@ -55,13 +55,13 @@ func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID
 	if err != nil {
 		return nil, fmt.Errorf("list dogma attributes for type %d: %w", typeID, err)
 	}
-	var oo []*app.EveTypeDogmaAttribute
-	for _, r := range rows {
-		oo = append(oo, &app.EveTypeDogmaAttribute{
+	oo := make([]*app.EveTypeDogmaAttribute, len(rows))
+	for i, r := range rows {
+		oo[i] = &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
 			Type:           eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          r.Value,
-		})
+		}
 	}
 	return oo, nil
 }
@@ -71,13 +71,13 @@ func (st *Storage) ListEveTypeDogmaAttributesForSkills(ctx context.Context) ([]*
 	if err != nil {
 		return nil, fmt.Errorf("ListEveTypeDogmaAttributesForSkills: %w", err)
 	}
-	var oo []*app.EveTypeDogmaAttribute
-	for _, r := range rows {
-		oo = append(oo, &app.EveTypeDogmaAttribute{
+	oo := make([]*app.EveTypeDogmaAttribute, len(rows))
+	for i, r := range rows {
+		oo[i] = &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
 			Type:           eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          r.Value,
-		})
+		}
 	}
 	return oo, nil
 }

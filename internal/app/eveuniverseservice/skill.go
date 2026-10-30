@@ -44,8 +44,8 @@ func (s *EVEUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 		attributes[o.Type.ID][o.DogmaAttribute.ID] = o.Value
 	}
 
-	var skills []*app.EveSkill
-	for _, et := range types {
+	skills := make([]*app.EveSkill, len(es))
+	for i, et := range es {
 		var sp, rank optional.Optional[int]
 		if x, ok := attributes[et.ID][app.EveDogmaAttributeTrainingTimeMultiplier]; ok {
 			rank.Set(int(x))
@@ -75,7 +75,7 @@ func (s *EVEUniverseService) ListSkills(ctx context.Context) ([]*app.EveSkill, e
 				Level: int(level),
 			}
 		}
-		skills = append(skills, skill)
+		skills[i] = skill
 	}
 	return skills, nil
 }

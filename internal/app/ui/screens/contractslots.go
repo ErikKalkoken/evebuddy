@@ -447,8 +447,8 @@ func (a *ContractSlots) fetchData(ctx context.Context) ([]contractSlotRow, error
 	if err != nil {
 		return nil, err
 	}
-	var rows []contractSlotRow
-	for _, o := range oo {
+	rows := make([]contractSlotRow, len(oo))
+	for i, o := range oo {
 		r := contractSlotRow{
 			characterID:     o.CharacterID,
 			characterName:   o.CharacterName,
@@ -462,7 +462,7 @@ func (a *ContractSlots) fetchData(ctx context.Context) ([]contractSlotRow, error
 			return nil, err
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

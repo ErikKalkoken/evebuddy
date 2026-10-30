@@ -57,9 +57,9 @@ func (st *Storage) ListCharacterSkills(ctx context.Context, characterID int64) (
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.CharacterSkill
-	for _, r := range rows {
-		oo = append(oo, characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory))
+	oo := make([]*app.CharacterSkill, len(rows))
+	for i, r := range rows {
+		oo[i] = characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }
@@ -69,9 +69,9 @@ func (st *Storage) ListAllCharacterSkills(ctx context.Context) ([]*app.Character
 	if err != nil {
 		return nil, fmt.Errorf("ListAllCharacterSkills: %w", err)
 	}
-	var oo []*app.CharacterSkill
-	for _, r := range rows {
-		oo = append(oo, characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory))
+	oo := make([]*app.CharacterSkill, len(rows))
+	for i, r := range rows {
+		oo[i] = characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }
@@ -87,13 +87,13 @@ func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeI
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []app.CharacterActiveSkillLevel
-	for _, r := range rows {
-		oo = append(oo, app.CharacterActiveSkillLevel{
+	oo := make([]app.CharacterActiveSkillLevel, len(rows))
+	for i, r := range rows {
+		oo[i] = app.CharacterActiveSkillLevel{
 			CharacterID: r.CharacterID,
 			Level:       int(r.Level),
 			TypeID:      typeID,
-		})
+		}
 	}
 	return oo, nil
 

@@ -339,13 +339,13 @@ func characterMailFromDBModel(
 	if mail.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	var ll []*app.CharacterMailLabel
-	for _, l := range labels {
-		ll = append(ll, characterMailLabelFromDBModel(l))
+	ll := make([]*app.CharacterMailLabel, len(labels))
+	for i, l := range labels {
+		ll[i] = characterMailLabelFromDBModel(l)
 	}
-	var rr []*app.EveEntity
-	for _, r := range recipients {
-		rr = append(rr, eveEntityFromDBModel(r))
+	rr := make([]*app.EveEntity, len(recipients))
+	for i, r := range recipients {
+		rr[i] = eveEntityFromDBModel(r)
 	}
 	m := app.CharacterMail{
 		Body:        optional.FromNullString(mail.Body2),

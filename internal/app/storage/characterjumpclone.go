@@ -59,15 +59,15 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	if err != nil {
 		return nil, fmt.Errorf("get character jump clone implants for clone ID %d: %w", cloneID, err)
 	}
-	var oo []*app.CharacterJumpCloneImplant
-	for _, r := range rows {
-		oo = append(oo, characterJumpCloneImplantFromDBModel(
+	oo := make([]*app.CharacterJumpCloneImplant, len(rows))
+	for i, r := range rows {
+		oo[i] = characterJumpCloneImplantFromDBModel(
 			r.CharacterJumpCloneImplant,
 			r.EveType,
 			r.EveGroup,
 			r.EveCategory,
 			r.SlotNum,
-		))
+		)
 	}
 	return oo, nil
 }
@@ -111,15 +111,15 @@ func (st *Storage) ListAllCharacterJumpClones(ctx context.Context) ([]*app.Chara
 	if err != nil {
 		return nil, err
 	}
-	var oo []*app.CharacterJumpClone2
+	oo := make([]*app.CharacterJumpClone2, len(rows))
 	for i, r := range rows {
-		oo = append(oo, &app.CharacterJumpClone2{
+		oo[i] = &app.CharacterJumpClone2{
 			ID:            r.ID,
 			ImplantsCount: int(r.ImplantsCount),
 			CloneID:       r.JumpCloneID,
 			Character:     &app.EntityShort{ID: r.CharacterID, Name: r.CharacterName},
 			Location:      locations[i],
-		})
+		}
 	}
 	return oo, nil
 }
@@ -135,8 +135,8 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int6
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	var oo []*app.CharacterJumpClone
-	for _, r := range rows {
+	oo := make([]*app.CharacterJumpClone, len(rows))
+	for i, r := range rows {
 		o := characterJumpCloneFromDBModel(
 			r.CharacterJumpClone,
 			r.LocationName,
@@ -149,7 +149,7 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int6
 			return nil, err
 		}
 		o.Implants = x
-		oo = append(oo, o)
+		oo[i] = o
 	}
 	return oo, nil
 }

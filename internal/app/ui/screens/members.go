@@ -236,15 +236,15 @@ func (a *Members) fetchRows(ctx context.Context, corporationID, ceoID int64) ([]
 	if err != nil {
 		return nil, err
 	}
-	var rows []memberRow
-	for _, o := range oo {
-		rows = append(rows, memberRow{
+	rows := make([]memberRow, len(oo))
+	for i, o := range oo {
+		rows[i] = memberRow{
 			id:           o.Character.ID,
 			name:         o.Character.Name,
 			isCEO:        o.Character.ID == ceoID,
 			isOwned:      owned.Contains(o.Character.ID),
 			searchTarget: strings.ToLower(o.Character.Name),
-		})
+		}
 	}
 	return rows, nil
 }

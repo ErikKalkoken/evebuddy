@@ -524,7 +524,7 @@ func (a *CharacterOverview) fetchRows(ctx context.Context) ([]characterOverviewR
 	if err != nil {
 		return nil, err
 	}
-	var rows []characterOverviewRow
+	rows := make([]characterOverviewRow, 0, len(characters))
 	for _, c := range characters {
 		r, err := a.fetchRow(ctx, c)
 		if errors.Is(err, app.ErrInvalid) {

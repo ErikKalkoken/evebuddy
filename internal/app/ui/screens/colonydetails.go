@@ -573,13 +573,13 @@ func (a *colonyDetails) makeRows(cp *app.CharacterPlanet, now time.Time) (bool, 
 	}
 	typeNames := cp.TypeNames()
 	typeVolumes := cp.TypeVolumes()
-	var rows []colonyDetailsRow
-	for _, p := range cp.Pins {
+	rows := make([]colonyDetailsRow, len(cp.Pins))
+	for i, p := range cp.Pins {
 		pf := f.Pins[p.ID]
 		if pf == nil {
 			pf = &app.PinForecast{} // pin not simulated
 		}
-		rows = append(rows, makeColonyDetailsRow(cp, p, pf, typeNames, typeVolumes, now))
+		rows[i] = makeColonyDetailsRow(cp, p, pf, typeNames, typeVolumes, now)
 	}
 	return f.Stopped, status, rows
 }

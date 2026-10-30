@@ -869,15 +869,15 @@ func (a *AssetSearch) fetchRowsForCharacters(ctx context.Context) ([]assetRow, e
 		return nil, err
 	}
 	ac := asset.NewFromCharacterAssets(assets, locations)
-	var rows []assetRow
-	for _, ca := range assets {
+	rows := make([]assetRow, len(assets))
+	for i, ca := range assets {
 		r := newCharacterAssetRow(ca, ac, func(id int64) string {
 			return characters[id]
 		})
 		r.searchTarget = strings.ToLower(r.displayName)
 		r.tags = tagsPerCharacter[ca.CharacterID]
 		r.tagsDisplay = strings.Join(slices.Sorted(r.tags.All()), ", ")
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }
@@ -919,7 +919,7 @@ func (a *AssetSearch) fetchRowsForCorporations2(ctx context.Context, assets []*a
 		return nil, err
 	}
 	ac := asset.NewFromCorporationAssets(assets, locations)
-	var rows []assetRow
+	rows := make([]assetRow, 0, len(assets))
 	for _, ca := range assets {
 		if ca.Type != nil && ca.Type.ID == app.EveTypeOffice {
 			continue // filter out office item

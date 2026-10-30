@@ -562,8 +562,8 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 	if err != nil {
 		return nil, err
 	}
-	var rows []marketOrderRow
-	for _, o := range orders {
+	rows := make([]marketOrderRow, len(orders))
+	for i, o := range orders {
 		r := marketOrderRow{
 			characterID:   o.CharacterID,
 			characterName: characters[o.CharacterID],
@@ -596,7 +596,7 @@ func (a *MarketOrders) fetchRows(ctx context.Context, isBuyOrders bool) ([]marke
 			return nil, err
 		}
 		r.tags = tags
-		rows = append(rows, r)
+		rows[i] = r
 	}
 	return rows, nil
 }

@@ -46,9 +46,9 @@ func (st *Storage) ListCharacterContactLabels(ctx context.Context, characterID i
 	if err != nil {
 		return nil, fmt.Errorf("ListCharacterContactLabels for character %d: %w", characterID, err)
 	}
-	var oo []*app.CharacterContactLabel
-	for _, r := range rows {
-		oo = append(oo, characterContactLabelFromDBModel(r))
+	oo := make([]*app.CharacterContactLabel, len(rows))
+	for i, r := range rows {
+		oo[i] = characterContactLabelFromDBModel(r)
 	}
 	return oo, nil
 }

@@ -553,7 +553,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		if err != nil {
 			return nil, err
 		}
-		headers = slices.Concat(headers, oo)
+		headers = append(headers, oo...)
 		isLimitExceeded := (maxMails != 0 && len(headers)+maxMailHeadersPerPage > maxMails)
 		if len(oo) < maxMailHeadersPerPage || isLimitExceeded {
 			break
@@ -565,7 +565,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 			return *x.MailId
 		}))
 	}
-	var mail []storage.CreateCharacterMailParams
+	mail := make([]storage.CreateCharacterMailParams, 0, len(headers))
 	for _, h := range headers {
 		if h.MailId == nil || h.From == nil || h.Timestamp == nil {
 			continue // ignore mails which are missing important fields

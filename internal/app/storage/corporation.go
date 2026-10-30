@@ -222,9 +222,9 @@ func (st *Storage) ListCorporationsShort(ctx context.Context) ([]*app.EntityShor
 		return nil, fmt.Errorf("list corporations short: %w", err)
 
 	}
-	var cc []*app.EntityShort
-	for _, r := range rows {
-		cc = append(cc, &app.EntityShort{ID: r.ID, Name: r.Name})
+	cc := make([]*app.EntityShort, len(rows))
+	for i, r := range rows {
+		cc[i] = &app.EntityShort{ID: r.ID, Name: r.Name}
 	}
 	return cc, nil
 }
@@ -237,9 +237,9 @@ func (st *Storage) ListPrivilegedCorporationsShort(ctx context.Context, required
 		return nil, fmt.Errorf("ListPrivilegedCorporationsShort: %w", err)
 
 	}
-	var cc []*app.EntityShort
-	for _, r := range rows {
-		cc = append(cc, &app.EntityShort{ID: r.ID, Name: r.Name})
+	cc := make([]*app.EntityShort, len(rows))
+	for i, r := range rows {
+		cc[i] = &app.EntityShort{ID: r.ID, Name: r.Name}
 	}
 	return cc, nil
 }

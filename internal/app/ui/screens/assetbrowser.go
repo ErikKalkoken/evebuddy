@@ -899,8 +899,8 @@ func (a *browserContainer) set(cn *containerNode) {
 		nodes = cn.node.Children()
 	}
 	runAsync(func() {
-		var items []containerItem
-		for _, n := range nodes {
+		items := make([]containerItem, len(nodes))
+		for i, n := range nodes {
 			var s string
 			if an, ok := n.Asset(); ok {
 				s = an.DisplayName2()
@@ -909,10 +909,10 @@ func (a *browserContainer) set(cn *containerNode) {
 			} else {
 				s = n.String()
 			}
-			items = append(items, containerItem{
+			items[i] = containerItem{
 				node:       n,
 				searchText: strings.ToLower(s),
-			})
+			}
 		}
 		fyne.Do(func() {
 			if !isLatest() {

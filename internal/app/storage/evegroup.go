@@ -88,9 +88,9 @@ func (st *Storage) ListEveGroupsForCategory(ctx context.Context, categoryID int6
 	if err != nil {
 		return nil, fmt.Errorf("ListEveGroupsForCategory: %d: %w", categoryID, err)
 	}
-	var oo []*app.EveGroup
-	for _, r := range rows {
-		oo = append(oo, eveGroupFromDBModel(r.EveGroup, r.EveCategory))
+	oo := make([]*app.EveGroup, len(rows))
+	for i, r := range rows {
+		oo[i] = eveGroupFromDBModel(r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
 }
@@ -100,13 +100,13 @@ func (st *Storage) ListEveSkillGroups(ctx context.Context) ([]*app.EveSkillGroup
 	if err != nil {
 		return nil, fmt.Errorf("ListEveSkillGroups: %w", err)
 	}
-	var oo []*app.EveSkillGroup
-	for _, r := range rows {
-		oo = append(oo, &app.EveSkillGroup{
+	oo := make([]*app.EveSkillGroup, len(rows))
+	for i, r := range rows {
+		oo[i] = &app.EveSkillGroup{
 			ID:         r.EveGroupID,
 			Name:       r.EveGroupName,
 			SkillCount: int(r.SkillCount),
-		})
+		}
 	}
 	return oo, nil
 }

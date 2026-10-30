@@ -146,7 +146,7 @@ func (st *Storage) ListCharacterTokenForCorporation(ctx context.Context, corpora
 		s.Add(r.Name)
 		tokenScopes[r.CharacterID] = s
 	}
-	var tokens []*app.CharacterToken
+	tokens := make([]*app.CharacterToken, 0, len(rows))
 	for _, r := range rows {
 		scopes2, ok := tokenScopes[r.CharacterID]
 		if !ok {

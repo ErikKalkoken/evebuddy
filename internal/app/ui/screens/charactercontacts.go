@@ -515,8 +515,8 @@ func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([
 	if err != nil {
 		return nil, err
 	}
-	var rows []characterContactRow
-	for _, o := range oo {
+	rows := make([]characterContactRow, len(oo))
+	for i, o := range oo {
 		isNPC := o.Contact.IsNPC()
 		labelsDisplay := strings.Join(slices.Sorted(o.Labels.All()), ", ")
 		blockedSelect := o.IsBlocked.StringFunc("no", func(v bool) string {
@@ -537,7 +537,7 @@ func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([
 			}
 			return "no"
 		})
-		rows = append(rows, characterContactRow{
+		rows[i] = characterContactRow{
 			category:         o.Contact.CategoryDisplay(),
 			contact:          o.Contact,
 			isBlocked:        o.IsBlocked,
@@ -551,7 +551,7 @@ func (a *CharacterContacts) fetchRows(ctx context.Context, characterID int64) ([
 			blockedSelect:    blockedSelect,
 			npcSelect:        npcSelect,
 			watchedSelect:    watchedSelect,
-		})
+		}
 	}
 	return rows, nil
 }
