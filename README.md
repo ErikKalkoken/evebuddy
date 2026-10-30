@@ -99,14 +99,14 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Communications: Browse through all communications
   - Mails: Browse through all mails
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown, and export trained skills to clipboard ([PyFA](https://github.com/pyfa-org/Pyfa)-compatible format) or CSV
-  - Wallet: Wallet and market Transactions
+  - Wallet: Wallet and market transactions, loyalty points, and export wallet transactions to CSV
 
 - **Corporation monitor**: Check current information about each of your corporations: (depending on their roles)
   - Assets: Browse and search corporation assets, and export items to clipboard or CSV
   - Industry: See running and historic indy jobs
   - Members: List of current corporation members
   - Structures: List of all corporation structures with current fuel status, state and potential timers
-  - Wallets: Wallet, market transactions and balances for corporation wallets
+  - Wallets: Wallet and market transactions and balances for corporation wallets, and export wallet transactions to CSV
   - Wealth: Charts showing wealth distribution for the corporation
 
 - **Notifications**: Get notified on your desktop or mobile about new EVE communications and other important updates:
