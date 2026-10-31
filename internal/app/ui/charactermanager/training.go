@@ -30,13 +30,14 @@ type training struct {
 	cw            *manageCharacters
 	list          *widget.List
 	signalKey     string
-	updates       xsync.SequenceGroup
+	updates       map[int64]*xsync.SequenceGroup // per character; main thread only
 }
 
 func newTraining(cw *manageCharacters) *training {
 	a := &training{
 		cw:        cw,
 		signalKey: cw.u.Signals().UniqueKey(),
+		updates:   make(map[int64]*xsync.SequenceGroup),
 	}
 	a.ExtendBaseWidget(a)
 	a.list = a.makeList()
@@ -163,8 +164,13 @@ func (a *training) updateCharacterWatchedAsync(id int, on bool) {
 	}
 	c.IsTrainingWatched = on // show it now, so the next tap toggles from here
 	a.list.RefreshItem(id)
+	g, ok := a.updates[c.ID]
+	if !ok {
+		g = new(xsync.SequenceGroup)
+		a.updates[c.ID] = g
+	}
 	ctx := context.Background()
-	runSequenced(&a.updates, func() {
+	runSequenced(g, func() {
 		err := a.cw.u.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
@@ -185,6 +191,7 @@ func (a *training) updateCharacterWatchedAsync(id int, on bool) {
 			})
 			return
 		}
+		// inside the per-character queue, so its listener reloads land in order too
 		a.cw.u.Signals().CharacterChanged.Emit(ctx, c.ID)
 	})
 }
