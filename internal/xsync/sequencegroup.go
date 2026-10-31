@@ -26,6 +26,7 @@ func (g *SequenceGroup) Go(f func()) {
 
 // Wait blocks until no functions are queued or running.
 // It is safe to call concurrently with Go.
+// It must not be called from a queued function, which would deadlock.
 func (g *SequenceGroup) Wait() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
