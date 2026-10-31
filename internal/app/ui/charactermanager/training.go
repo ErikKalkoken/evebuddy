@@ -30,6 +30,7 @@ type training struct {
 	cw            *manageCharacters
 	list          *widget.List
 	signalKey     string
+	updates       xsync.SequenceGroup
 }
 
 func newTraining(cw *manageCharacters) *training {
@@ -66,10 +67,10 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 			})
 		}),
 		fyne.NewMenuItem("Enable all", func() {
-			a.setAllWatched(context.Background(), true)
+			a.setAllWatched(true)
 		}),
 		fyne.NewMenuItem("Disable all", func() {
-			a.setAllWatched(context.Background(), false)
+			a.setAllWatched(false)
 		}),
 	))
 	ab := xwidget.NewAppBar("Watched Training", a.list, actions)
@@ -93,7 +94,7 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 			if id == -1 {
 				return // removed meanwhile
 			}
-			a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
+			a.updateCharacterWatchedAsync(id, d.ValueOrZero() > 0)
 		})
 	}
 	if failed > 0 {
@@ -101,9 +102,9 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 	}
 }
 
-func (a *training) setAllWatched(ctx context.Context, on bool) {
+func (a *training) setAllWatched(on bool) {
 	for id := range a.characters {
-		a.updateCharacterWatched(ctx, id, on)
+		a.updateCharacterWatchedAsync(id, on)
 	}
 }
 
@@ -136,7 +137,7 @@ func (a *training) makeList() *widget.List {
 			sw.On = r.IsTrainingWatched
 			sw.Refresh()
 			sw.OnChanged = func(on bool) {
-				a.updateCharacterWatched(context.Background(), id, on)
+				a.updateCharacterWatchedAsync(id, on)
 			}
 		},
 	)
@@ -147,34 +148,41 @@ func (a *training) makeList() *widget.List {
 		}
 		c := a.characters[id]
 		v := !c.IsTrainingWatched
-		a.updateCharacterWatched(context.Background(), id, v)
+		a.updateCharacterWatchedAsync(id, v)
 	}
 	return l
 }
 
-func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) {
+func (a *training) updateCharacterWatchedAsync(id int, on bool) {
 	if id >= len(a.characters) {
 		return
 	}
 	c := a.characters[id]
-	runAsync(func() {
+	if c.IsTrainingWatched == on {
+		return // so the previous value is always !on
+	}
+	c.IsTrainingWatched = on // show it now, so the next tap toggles from here
+	a.list.RefreshItem(id)
+	ctx := context.Background()
+	runSequenced(&a.updates, func() {
 		err := a.cw.u.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {
 			slog.Error("Failed to update training watcher", "characterID", c.ID, "error", err)
+			if a.cw.u.Signals().IsShuttingDown() {
+				return // fyne.Do itself can panic once Fyne has stopped
+			}
 			a.cw.displaySnackbar("Failed to update training watcher: " + a.cw.u.ErrorDisplay(err))
-		}
-		fyne.Do(func() {
-			// The list may have been reloaded while storing.
-			id := a.indexOf(c.ID)
-			if id == -1 {
-				return
-			}
-			if err == nil {
-				a.characters[id].IsTrainingWatched = on
-			}
-			a.list.RefreshItem(id) // on error reverts the switch the user already toggled
-		})
-		if err != nil {
+			fyne.Do(func() {
+				if a.cw.u.Signals().IsShuttingDown() {
+					return // may run after shutdown began
+				}
+				id := a.indexOf(c.ID) // the list may have been reloaded meanwhile
+				if id == -1 {
+					return
+				}
+				a.characters[id].IsTrainingWatched = !on // revert
+				a.list.RefreshItem(id)
+			})
 			return
 		}
 		a.cw.u.Signals().CharacterChanged.Emit(ctx, c.ID)

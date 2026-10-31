@@ -12,12 +12,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 func TestMain(m *testing.M) {
 	// Leftover goroutines from one test can render text concurrently with the next,
 	// which is not safe in Fyne's shared text shaper.
 	runAsync = func(f func()) { f() }
+	runSequenced = func(_ *xsync.SequenceGroup, f func()) { f() }
 	os.Exit(m.Run())
 }
 

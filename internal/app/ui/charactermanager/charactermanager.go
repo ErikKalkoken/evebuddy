@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/corporationservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 type baseUI interface {
@@ -44,6 +45,11 @@ type baseUI interface {
 //
 // Tests replace it to run f synchronously.
 var runAsync = func(f func()) { go f() }
+
+// runSequenced runs f after all jobs previously queued on g.
+//
+// Tests replace it to run f synchronously.
+var runSequenced = func(g *xsync.SequenceGroup, f func()) { g.Go(f) }
 
 func Show(u baseUI) {
 	w, created, onClosed := u.GetOrCreateWindowWithOnClosed("characterWindow", "Manage Characters")
