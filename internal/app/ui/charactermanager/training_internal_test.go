@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xsync"
 )
 
 func TestTraining_Update(t *testing.T) {
@@ -165,25 +166,47 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 			assert.Contains(t, messages[0], "Failed to update training watcher")
 		}
 	})
-	t.Run("updates the right row when the list was reloaded while storing", func(t *testing.T) {
+	t.Run("does not revert row or show snackbar when storing fails during shutdown", func(t *testing.T) {
 		// given
-		testutil.MustTruncateTables(db)
-		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		db2, st2, factory2 := testutil.NewDBInMemory()
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
 		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
 		defer cw.stop()
-		ec1 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bravo"})
-		c1 := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID})
+		var messages []string
+		cw.displaySnackbar = func(s string) {
+			messages = append(messages, s)
+		}
+		factory2.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: false})
+		a := cw.characterTraining
+		a.update(context.Background())
+		db2.Close()
+		u.Signals().BeginShutdown()
+		// when
+		a.updateCharacterWatchedAsync(0, true)
+		// then
+		assert.True(t, a.characters[0].IsTrainingWatched)
+		assert.Empty(t, messages)
+	})
+	t.Run("reverts the right row when storing fails after the list was reloaded", func(t *testing.T) {
+		// given
+		db2, st2, factory2 := testutil.NewDBInMemory()
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		ec1 := factory2.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bravo"})
+		c1 := factory2.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID, IsTrainingWatched: true})
 		a := cw.characterTraining
 		a.update(context.Background())
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
-		a.updateCharacterWatchedAsync(0, true)
-		runAsync = orig
-		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Alpha"})
-		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
+		orig := runSequenced
+		runSequenced = func(_ *xsync.SequenceGroup, f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runSequenced = orig })
+		a.updateCharacterWatchedAsync(0, false)
+		runSequenced = orig
+		ec2 := factory2.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Alpha"})
+		factory2.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID, IsTrainingWatched: false})
 		a.update(context.Background()) // Bravo moves to row 1
+		db2.Close()
 		// when
 		pending[0]()
 		// then
@@ -204,11 +227,11 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		a := cw.characterTraining
 		a.update(context.Background())
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := runSequenced
+		runSequenced = func(_ *xsync.SequenceGroup, f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runSequenced = orig })
 		a.updateCharacterWatchedAsync(1, true)
-		runAsync = orig
+		runSequenced = orig
 		err := st.DeleteCharacter(context.Background(), c2.ID)
 		require.NoError(t, err)
 		a.update(context.Background()) // only Alpha left
@@ -248,6 +271,31 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		a.update(context.Background())
 		// when
 		a.list.OnSelected(0)
+		// then
+		c2, err := st.GetCharacter(context.Background(), c.ID)
+		require.NoError(t, err)
+		assert.False(t, c2.IsTrainingWatched)
+		assert.False(t, a.characters[0].IsTrainingWatched)
+	})
+	t.Run("selecting a character twice before storing toggles it back", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})}
+		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
+		defer cw.stop()
+		c := factory.CreateCharacter(storage.CreateCharacterParams{IsTrainingWatched: false})
+		a := cw.characterTraining
+		a.update(context.Background())
+		var pending []func()
+		orig := runSequenced
+		runSequenced = func(_ *xsync.SequenceGroup, f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { runSequenced = orig })
+		// when
+		a.list.OnSelected(0)
+		a.list.OnSelected(0)
+		for _, f := range pending {
+			f()
+		}
 		// then
 		c2, err := st.GetCharacter(context.Background(), c.ID)
 		require.NoError(t, err)
