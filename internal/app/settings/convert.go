@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"strconv"
@@ -15,17 +16,9 @@ func (s *Settings) get(key string) (string, bool) {
 	return v, ok
 }
 
-// settingWrite is a queued write for persistLoop to apply to storage.
-// A write with done set is a flush barrier: persistLoop closes it without
-// persisting anything, once every write queued ahead of it has been applied.
-type settingWrite struct {
-	key, value string
-	done       chan struct{}
-}
-
 // set stores value for key in the in-memory cache immediately and queues it to
-// be persisted to storage asynchronously by persistLoop; any persistence error
-// is logged (but not returned) there. After Close set is a no-op.
+// be persisted to storage asynchronously; any persistence error is logged
+// (but not returned). After Close set is a no-op.
 func (s *Settings) set(key, value string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -34,7 +27,11 @@ func (s *Settings) set(key, value string) {
 		return
 	}
 	s.values[key] = value
-	s.writeQueue.Put(settingWrite{key: key, value: value})
+	s.writes.Go(func() { // queued under s.mu, so writes keep the cache's order
+		if err := s.st.SetSetting(context.Background(), key, value); err != nil {
+			slog.Error("settings: failed to persist value", "key", key, "error", err)
+		}
+	})
 }
 
 func (s *Settings) getString(key string, fallback string) string {
