@@ -66,10 +66,10 @@ func (a *training) CreateRenderer() fyne.WidgetRenderer {
 			})
 		}),
 		fyne.NewMenuItem("Enable all", func() {
-			a.setAllWatched(context.Background(), true)
+			a.setAllWatched(true)
 		}),
 		fyne.NewMenuItem("Disable all", func() {
-			a.setAllWatched(context.Background(), false)
+			a.setAllWatched(false)
 		}),
 	))
 	ab := xwidget.NewAppBar("Watched Training", a.list, actions)
@@ -93,7 +93,7 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 			if id == -1 {
 				return // removed meanwhile
 			}
-			a.updateCharacterWatched(ctx, id, d.ValueOrZero() > 0)
+			a.updateCharacterWatchedAsync(id, d.ValueOrZero() > 0)
 		})
 	}
 	if failed > 0 {
@@ -101,9 +101,9 @@ func (a *training) setWatchedToCurrentlyTrained(ctx context.Context, characterID
 	}
 }
 
-func (a *training) setAllWatched(ctx context.Context, on bool) {
+func (a *training) setAllWatched(on bool) {
 	for id := range a.characters {
-		a.updateCharacterWatched(ctx, id, on)
+		a.updateCharacterWatchedAsync(id, on)
 	}
 }
 
@@ -136,7 +136,7 @@ func (a *training) makeList() *widget.List {
 			sw.On = r.IsTrainingWatched
 			sw.Refresh()
 			sw.OnChanged = func(on bool) {
-				a.updateCharacterWatched(context.Background(), id, on)
+				a.updateCharacterWatchedAsync(id, on)
 			}
 		},
 	)
@@ -147,16 +147,17 @@ func (a *training) makeList() *widget.List {
 		}
 		c := a.characters[id]
 		v := !c.IsTrainingWatched
-		a.updateCharacterWatched(context.Background(), id, v)
+		a.updateCharacterWatchedAsync(id, v)
 	}
 	return l
 }
 
-func (a *training) updateCharacterWatched(ctx context.Context, id int, on bool) {
-	if id >= len(a.characters) {
+func (a *training) updateCharacterWatchedAsync(characterID int, on bool) {
+	if characterID >= len(a.characters) {
 		return
 	}
-	c := a.characters[id]
+	c := a.characters[characterID]
+	ctx := context.Background()
 	runAsync(func() {
 		err := a.cw.u.Character().UpdateIsTrainingWatched(ctx, c.ID, on)
 		if err != nil {

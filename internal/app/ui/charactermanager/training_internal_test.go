@@ -130,7 +130,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 			changed = append(changed, id)
 		})
 		// when
-		a.updateCharacterWatched(context.Background(), 0, true)
+		a.updateCharacterWatchedAsync(0, true)
 		// then
 		c2, err := st.GetCharacter(context.Background(), c.ID)
 		require.NoError(t, err)
@@ -157,7 +157,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		})
 		db2.Close()
 		// when
-		a.updateCharacterWatched(context.Background(), 0, true)
+		a.updateCharacterWatchedAsync(0, true)
 		// then
 		assert.False(t, a.characters[0].IsTrainingWatched)
 		assert.Empty(t, changed)
@@ -179,7 +179,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		orig := runAsync
 		runAsync = func(f func()) { pending = append(pending, f) }
 		t.Cleanup(func() { runAsync = orig })
-		a.updateCharacterWatched(context.Background(), 0, true)
+		a.updateCharacterWatchedAsync(0, true)
 		runAsync = orig
 		ec2 := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Alpha"})
 		factory.CreateCharacter(storage.CreateCharacterParams{ID: ec2.ID})
@@ -207,7 +207,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		orig := runAsync
 		runAsync = func(f func()) { pending = append(pending, f) }
 		t.Cleanup(func() { runAsync = orig })
-		a.updateCharacterWatched(context.Background(), 1, true)
+		a.updateCharacterWatchedAsync(1, true)
 		runAsync = orig
 		err := st.DeleteCharacter(context.Background(), c2.ID)
 		require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 			changed = append(changed, id)
 		})
 		// when
-		a.updateCharacterWatched(context.Background(), 1, true)
+		a.updateCharacterWatchedAsync(1, true)
 		// then
 		assert.False(t, a.characters[0].IsTrainingWatched)
 		assert.Empty(t, changed)
@@ -271,7 +271,7 @@ func TestTraining_SetAllWatched(t *testing.T) {
 		a := cw.characterTraining
 		a.update(context.Background())
 		// when
-		a.setAllWatched(context.Background(), true)
+		a.setAllWatched(true)
 		// then
 		for _, id := range []int64{c1.ID, c2.ID} {
 			c, err := st.GetCharacter(context.Background(), id)
@@ -290,7 +290,7 @@ func TestTraining_SetAllWatched(t *testing.T) {
 		a := cw.characterTraining
 		a.update(context.Background())
 		// when
-		a.setAllWatched(context.Background(), false)
+		a.setAllWatched(false)
 		// then
 		for _, id := range []int64{c1.ID, c2.ID} {
 			c, err := st.GetCharacter(context.Background(), id)
