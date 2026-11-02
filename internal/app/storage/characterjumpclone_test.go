@@ -96,6 +96,36 @@ func TestCharacterJumpClone(t *testing.T) {
 		}
 	})
 
+	t.Run("should keep existing clones unchanged when replacing fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
+			CharacterID: c.ID,
+		})
+		location := factory.CreateEveLocationStructure()
+		// when
+		err := st.ReplaceCharacterJumpClones(t.Context(), c.ID, []storage.CreateCharacterJumpCloneParams{
+			{
+				CharacterID: c.ID,
+				JumpCloneID: 5,
+				LocationID:  location.ID,
+			},
+			{
+				CharacterID: c.ID,
+				JumpCloneID: 6,
+			}, // invalid
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		oo, err := st.ListCharacterJumpClones(t.Context(), c.ID)
+		require.NoError(t, err)
+		got := xslices.Map(oo, func(x *app.CharacterJumpClone) int64 {
+			return x.CloneID
+		})
+		xassert.Equal(t, []int64{x1.CloneID}, got)
+	})
+
 	t.Run("can list clones for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

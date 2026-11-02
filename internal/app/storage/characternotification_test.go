@@ -215,6 +215,15 @@ func TestCharacterNotification(t *testing.T) {
 		want := set.Of(e3.NotificationID)
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterNotification(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestStorage_UpdateCharacterNotificationsSetIsRead(t *testing.T) {

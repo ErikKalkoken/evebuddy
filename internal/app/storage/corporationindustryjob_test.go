@@ -343,4 +343,13 @@ func TestCorporationIndustryJob(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCorporationIndustryJob(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

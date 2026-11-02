@@ -108,4 +108,13 @@ func TestGeneralSectionStatus(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, x.StartedAt.IsZero())
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetGeneralSectionStatus(t.Context(), app.SectionEveCharacters)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

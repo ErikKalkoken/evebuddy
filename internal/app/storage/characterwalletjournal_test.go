@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -140,5 +141,17 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Len(t, ee, 3)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterWalletJournalEntry(t.Context(), storage.GetCharacterWalletJournalEntryParams{
+			CharacterID: 1,
+			RefID:       2,
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

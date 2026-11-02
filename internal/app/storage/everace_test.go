@@ -3,8 +3,10 @@ package storage_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -92,5 +94,14 @@ func TestEveRace(t *testing.T) {
 		xassert.Equal(t, description, x.Description)
 		xassert.Equal(t, name, x.Name)
 		xassert.EqualOptional(t, faction, x.Faction)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetEveRace(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

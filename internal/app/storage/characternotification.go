@@ -360,7 +360,7 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 		NotificationID: notificationID,
 	})
 	if err != nil {
-		return nil, wrapErr(err)
+		return nil, wrapErr(convertGetError(err))
 	}
 	nt, found := EveNotificationTypeFromESIString(r.NotificationType.Name)
 	if !found {

@@ -137,6 +137,24 @@ func TestCharacterMail(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, "Label 256", l.Name)
 	})
+	t.Run("should keep existing labels unchanged when updating labels fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+		})
+		// when
+		err := st.UpdateCharacterMailSetLabels(ctx, c.ID, m.ID, []int64{l2.LabelID, 0}) // invalid label ID
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.GetCharacterMail(ctx, c.ID, m.MailID)
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.CharacterMailLabel{l1}, got.Labels)
+	})
 	t.Run("can update body", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

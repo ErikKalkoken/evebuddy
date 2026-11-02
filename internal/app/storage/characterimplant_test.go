@@ -49,6 +49,23 @@ func TestCharacterImplant(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, et, x.EveType)
 	})
+	t.Run("should keep existing implants unchanged when replacing fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		et := factory.CreateEveType()
+		// when
+		err := st.ReplaceCharacterImplants(ctx, c.ID, set.Of(et.ID, 0)) // 0 is invalid
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		oo, err := st.ListCharacterImplants(ctx, c.ID)
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(oo, func(x *app.CharacterImplant) int64 {
+			return x.EveType.ID
+		}))
+		xassert.Equal(t, set.Of(x1.EveType.ID), got)
+	})
 	t.Run("can list implants for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

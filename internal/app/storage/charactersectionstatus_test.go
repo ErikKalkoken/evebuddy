@@ -176,4 +176,13 @@ func TestCharacterSectionStatus(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, x.StartedAt.IsZero())
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterSectionStatus(t.Context(), 1, app.SectionCharacterAssets)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

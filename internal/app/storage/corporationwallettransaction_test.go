@@ -186,4 +186,17 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		require.NoError(t, err)
 		assert.Greater(t, x2.Size(), 0)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCorporationWalletTransaction(t.Context(), storage.GetCorporationWalletTransactionParams{
+			CorporationID: 1,
+			Division:      app.Division1,
+			TransactionID: 2,
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

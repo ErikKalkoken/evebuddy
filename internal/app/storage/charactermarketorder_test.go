@@ -264,6 +264,15 @@ func TestCharacterMarketOrder(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, app.OrderUnknown, o2.State)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterMarketOrder(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCalculateCharacterOrderItemsValue(t *testing.T) {

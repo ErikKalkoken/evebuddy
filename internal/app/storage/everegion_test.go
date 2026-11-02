@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -53,5 +55,14 @@ func TestEveRegion(t *testing.T) {
 		require.NoError(t, err)
 		want := set.Of[int64](99)
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetEveRegion(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

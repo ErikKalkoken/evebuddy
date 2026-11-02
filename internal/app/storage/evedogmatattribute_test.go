@@ -52,4 +52,13 @@ func TestEveDogmaAttribute(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := r.GetEveDogmaAttribute(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

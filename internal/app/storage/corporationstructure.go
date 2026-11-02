@@ -101,14 +101,16 @@ func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID in
 	if corporationID == 0 || structureID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	r, err := st.qRO.GetCorporationStructure(ctx, queries.GetCorporationStructureParams{
-		CorporationID: corporationID,
-		StructureID:   structureID,
+	oo, err := st.readCorporationStructures(ctx, func(q *queries.Queries) ([]queries.GetCorporationStructureRow, error) {
+		r, err := q.GetCorporationStructure(ctx, queries.GetCorporationStructureParams{
+			CorporationID: corporationID,
+			StructureID:   structureID,
+		})
+		if err != nil {
+			return nil, convertGetError(err)
+		}
+		return []queries.GetCorporationStructureRow{r}, nil
 	})
-	if err != nil {
-		return nil, wrapErr(convertGetError(err))
-	}
-	oo, err := st.corporationStructuresFromDBModels(ctx, []queries.GetCorporationStructureRow{r})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -119,15 +121,17 @@ func (st *Storage) ListAllCorporationStructures(ctx context.Context) ([]*app.Cor
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListAllCorporationStructures: %w", err)
 	}
-	rows, err := st.qRO.ListAllCorporationStructures(ctx)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	rows2 := make([]queries.GetCorporationStructureRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCorporationStructureRow(r)
-	}
-	oo, err := st.corporationStructuresFromDBModels(ctx, rows2)
+	oo, err := st.readCorporationStructures(ctx, func(q *queries.Queries) ([]queries.GetCorporationStructureRow, error) {
+		rows, err := q.ListAllCorporationStructures(ctx)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCorporationStructureRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCorporationStructureRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -141,29 +145,45 @@ func (st *Storage) ListCorporationStructures(ctx context.Context, corporationID 
 	if corporationID == 0 {
 		return nil, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCorporationStructures(ctx, corporationID)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	rows2 := make([]queries.GetCorporationStructureRow, len(rows))
-	for i, r := range rows {
-		rows2[i] = queries.GetCorporationStructureRow(r)
-	}
-	oo, err := st.corporationStructuresFromDBModels(ctx, rows2)
+	oo, err := st.readCorporationStructures(ctx, func(q *queries.Queries) ([]queries.GetCorporationStructureRow, error) {
+		rows, err := q.ListCorporationStructures(ctx, corporationID)
+		if err != nil {
+			return nil, err
+		}
+		rows2 := make([]queries.GetCorporationStructureRow, len(rows))
+		for i, r := range rows {
+			rows2[i] = queries.GetCorporationStructureRow(r)
+		}
+		return rows2, nil
+	})
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	return oo, nil
 }
 
-// corporationStructuresFromDBModels converts rows to structures, batch loading their services.
-func (st *Storage) corporationStructuresFromDBModels(ctx context.Context, rows []queries.GetCorporationStructureRow) ([]*app.CorporationStructure, error) {
+// readCorporationStructures reads structures with their services in one transaction,
+// so concurrent writes can not mix old and new data.
+func (st *Storage) readCorporationStructures(ctx context.Context, listRows func(q *queries.Queries) ([]queries.GetCorporationStructureRow, error)) ([]*app.CorporationStructure, error) {
+	tx, err := st.dbRO.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := listRows(qtx)
+	if err != nil {
+		return nil, err
+	}
 	ids := make([]int64, len(rows))
 	for i, r := range rows {
 		ids[i] = r.CorporationStructure.ID
 	}
-	services, err := st.listStructureServicesByStructure(ctx, ids)
+	services, err := st.listStructureServicesByStructure(ctx, qtx, ids)
 	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	oo := make([]*app.CorporationStructure, len(rows))
@@ -262,6 +282,7 @@ func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
 		x.State != app.StructureStateUndefined
 }
 
+// UpdateOrCreateCorporationStructure creates or updates a structure and replaces its services in one transaction.
 func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateCorporationStructure %+v: %w", arg, err)
@@ -269,7 +290,13 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 	if !arg.isValid() {
 		return wrapErr(app.ErrInvalid)
 	}
-	id, err := st.qRW.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	id, err := qtx.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
 		CorporationID:      arg.CorporationID,
 		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
 		Name:               arg.Name.ValueOrZero(),
@@ -288,18 +315,21 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 	if err != nil {
 		return wrapErr(err)
 	}
-	if err := st.DeleteStructureServices(ctx, id); err != nil {
+	if err := qtx.DeleteStructureServices(ctx, id); err != nil {
 		return wrapErr(err)
 	}
 	for _, s := range arg.Services {
-		err := st.CreateStructureService(ctx, CreateStructureServiceParams{
+		err := createStructureService(ctx, qtx, CreateStructureServiceParams{
 			CorporationStructureID: id,
 			Name:                   s.Name,
 			State:                  s.State,
 		})
 		if err != nil {
-			return wrapErr(err)
+			return wrapErr(fmt.Errorf("service %+v: %w", s, err))
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
 	}
 	return nil
 }
@@ -311,21 +341,21 @@ type CreateStructureServiceParams struct {
 }
 
 func (st *Storage) CreateStructureService(ctx context.Context, arg CreateStructureServiceParams) error {
-	wrapErr := func(err error) error {
+	if err := createStructureService(ctx, st.qRW, arg); err != nil {
 		return fmt.Errorf("CreateStructureService: %+v: %w", arg, err)
 	}
+	return nil
+}
+
+func createStructureService(ctx context.Context, q *queries.Queries, arg CreateStructureServiceParams) error {
 	if arg.CorporationStructureID == 0 || arg.Name == "" || arg.State == app.StructureServiceStateUndefined {
-		return wrapErr(app.ErrInvalid)
+		return app.ErrInvalid
 	}
-	err := st.qRW.CreateStructureService(ctx, queries.CreateStructureServiceParams{
+	return q.CreateStructureService(ctx, queries.CreateStructureServiceParams{
 		CorporationStructureID: arg.CorporationStructureID,
 		Name:                   arg.Name,
 		State:                  structureServiceStateToDBValue[arg.State],
 	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	return nil
 }
 
 func (st *Storage) DeleteStructureServices(ctx context.Context, corporationStructureID int64) error {
@@ -353,7 +383,7 @@ func (st *Storage) GetStructureService(ctx context.Context, corporationStructure
 		Name:                   name,
 	})
 	if err != nil {
-		return nil, wrapErr(err)
+		return nil, wrapErr(convertGetError(err))
 	}
 	return structureServiceFromDBModel(r), nil
 }
@@ -373,10 +403,10 @@ func (st *Storage) ListStructureServices(ctx context.Context, corporationStructu
 }
 
 // listStructureServicesByStructure returns the services for the given structures, keyed by corporation structure ID.
-func (st *Storage) listStructureServicesByStructure(ctx context.Context, corporationStructureIDs []int64) (map[int64][]*app.StructureService, error) {
+func (st *Storage) listStructureServicesByStructure(ctx context.Context, q *queries.Queries, corporationStructureIDs []int64) (map[int64][]*app.StructureService, error) {
 	m := make(map[int64][]*app.StructureService)
 	for idsChunk := range slices.Chunk(corporationStructureIDs, st.MaxIDsPerQuery) {
-		rows, err := st.qRO.ListStructureServicesForStructureIDs(ctx, idsChunk)
+		rows, err := q.ListStructureServicesForStructureIDs(ctx, idsChunk)
 		if err != nil {
 			return nil, fmt.Errorf("list structure services for %d structures: %w", len(idsChunk), err)
 		}

@@ -3,8 +3,10 @@ package storage_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -96,5 +98,14 @@ func TestEveBloodline(t *testing.T) {
 		xassert.EqualOptional(t, memory, eb.Memory)
 		xassert.EqualOptional(t, perception, eb.Perception)
 		xassert.EqualOptional(t, willpower, eb.Willpower)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetEveBloodline(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

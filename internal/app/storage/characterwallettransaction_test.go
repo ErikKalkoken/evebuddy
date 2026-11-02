@@ -111,4 +111,16 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		want := set.Of(t1.TransactionID, t2.TransactionID)
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterWalletTransaction(t.Context(), storage.GetCharacterWalletTransactionParams{
+			CharacterID:   1,
+			TransactionID: 2,
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }

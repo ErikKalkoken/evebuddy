@@ -8,10 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func TestSkillqueueItems(t *testing.T) {
@@ -109,6 +111,35 @@ func TestSkillqueueItems(t *testing.T) {
 		ii, err := st.ListCharacterSkillqueueItems(ctx, c.ID)
 		require.NoError(t, err)
 		assert.Len(t, ii, 1)
+	})
+	t.Run("should keep existing items unchanged when replacing fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		x1 := factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		eveType := factory.CreateEveType()
+		// when
+		err := st.ReplaceCharacterSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{
+			{
+				EveTypeID:     eveType.ID,
+				FinishedLevel: 5,
+				CharacterID:   c.ID,
+				QueuePosition: 0,
+			},
+			{
+				EveTypeID:     eveType.ID,
+				CharacterID:   c.ID,
+				QueuePosition: 1,
+			}, // invalid
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		ii, err := st.ListCharacterSkillqueueItems(ctx, c.ID)
+		require.NoError(t, err)
+		got := xslices.Map(ii, func(x *app.CharacterSkillqueueItem) int64 {
+			return x.ID
+		})
+		xassert.Equal(t, []int64{x1.ID}, got)
 	})
 }
 
