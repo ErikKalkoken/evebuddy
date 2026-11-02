@@ -126,6 +126,36 @@ func TestCharacterJumpClone(t *testing.T) {
 		xassert.Equal(t, []int64{x1.CloneID}, got)
 	})
 
+	t.Run("should return invalid error when replacing with clone of other character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacterFull()
+		c2 := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterJumpClone(storage.CreateCharacterJumpCloneParams{
+			CharacterID: c1.ID,
+		})
+		location := factory.CreateEveLocationStructure()
+		// when
+		err := st.ReplaceCharacterJumpClones(t.Context(), c1.ID, []storage.CreateCharacterJumpCloneParams{
+			{
+				CharacterID: c2.ID,
+				JumpCloneID: 5,
+				LocationID:  location.ID,
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		oo1, err := st.ListCharacterJumpClones(t.Context(), c1.ID)
+		require.NoError(t, err)
+		got := xslices.Map(oo1, func(x *app.CharacterJumpClone) int64 {
+			return x.CloneID
+		})
+		xassert.Equal(t, []int64{x1.CloneID}, got)
+		oo2, err := st.ListCharacterJumpClones(t.Context(), c2.ID)
+		require.NoError(t, err)
+		assert.Empty(t, oo2)
+	})
+
 	t.Run("can list clones for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

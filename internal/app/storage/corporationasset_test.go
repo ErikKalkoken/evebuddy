@@ -113,6 +113,25 @@ func TestCorporationAsset(t *testing.T) {
 		want := set.Of(x1.ItemID)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("can delete more assets than SQLite allows variables in one query", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		x1 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		x2 := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+		ids := set.Of(x2.ItemID)
+		for i := range int64(40_000) {
+			ids.Add(1_000_000_000_000 + i) // IDs of assets that don't exist
+		}
+		// when
+		err := st.DeleteCorporationAssets(ctx, c.ID, ids)
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCorporationAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(x1.ItemID)
+		xassert.Equal(t, want, got)
+	})
 	t.Run("can list assets for corporation", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

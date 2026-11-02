@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 
@@ -140,9 +139,6 @@ func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, charac
 		EveCategoryID: app.EveCategoryBlueprint,
 		CharacterID:   characterID,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
@@ -188,10 +184,29 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 }
 
 func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int64, itemIDs set.Set[int64]) error {
-	return st.qRW.DeleteCharacterAssets(ctx, queries.DeleteCharacterAssetsParams{
-		CharacterID: characterID,
-		ItemIds:     slices.Collect(itemIDs.All()),
-	})
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCharacterAssets: %d: %w", characterID, err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	// chunks keep queries below SQLite's limit for variables
+	for idsChunk := range slices.Chunk(slices.Collect(itemIDs.All()), st.MaxIDsPerQuery) {
+		err := qtx.DeleteCharacterAssets(ctx, queries.DeleteCharacterAssetsParams{
+			CharacterID: characterID,
+			ItemIds:     idsChunk,
+		})
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int64, itemID int64) (*app.CharacterAsset, error) {

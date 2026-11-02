@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/mattn/go-sqlite3"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -86,7 +87,7 @@ func (st *Storage) ReplaceTags(ctx context.Context, data map[string][]int64) err
 		if err != nil {
 			return err
 		}
-		for _, id := range ids {
+		for id := range set.Of(ids...).All() { // ignore duplicate characters
 			if !characters.Contains(id) {
 				continue // ignore non existing character
 			}

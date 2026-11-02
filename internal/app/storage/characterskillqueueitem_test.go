@@ -141,6 +141,42 @@ func TestSkillqueueItems(t *testing.T) {
 		})
 		xassert.Equal(t, []int64{x1.ID}, got)
 	})
+	t.Run("should return invalid error when replacing with item of other character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		x1 := factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c1.ID})
+		eveType := factory.CreateEveType()
+		// when
+		err := st.ReplaceCharacterSkillqueueItems(ctx, c1.ID, []storage.SkillqueueItemParams{
+			{
+				EveTypeID:     eveType.ID,
+				FinishedLevel: 5,
+				CharacterID:   c2.ID,
+				QueuePosition: 0,
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		ii1, err := st.ListCharacterSkillqueueItems(ctx, c1.ID)
+		require.NoError(t, err)
+		got := xslices.Map(ii1, func(x *app.CharacterSkillqueueItem) int64 {
+			return x.ID
+		})
+		xassert.Equal(t, []int64{x1.ID}, got)
+		ii2, err := st.ListCharacterSkillqueueItems(ctx, c2.ID)
+		require.NoError(t, err)
+		assert.Empty(t, ii2)
+	})
+	t.Run("should return invalid error when replacing items for character ID 0", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := st.ReplaceCharacterSkillqueueItems(ctx, 0, nil)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 }
 
 func TestSkillqueueItems_GetCharacterTotalTrainingTime(t *testing.T) {

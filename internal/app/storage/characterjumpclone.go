@@ -161,6 +161,11 @@ func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID i
 	if characterID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
+	for _, arg := range args {
+		if arg.CharacterID != characterID {
+			return wrapErr(app.ErrInvalid)
+		}
+	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return wrapErr(err)
