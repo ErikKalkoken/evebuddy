@@ -55,6 +55,48 @@ func TestCharacterMail(t *testing.T) {
 		xassert.Equal(t, label.Name, m.Labels[0].Name)
 		xassert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 	})
+	t.Run("can create mail with label that is not stored yet", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		f := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		// when
+		_, err := st.CreateCharacterMail(ctx, storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			FromID:       f.ID,
+			LabelIDs:     []int64{256},
+			MailID:       42,
+			RecipientIDs: []int64{recipient.ID},
+			Timestamp:    time.Now(),
+		})
+		// then
+		require.NoError(t, err)
+		m, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{256}, m.LabelIDs())
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 256)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Label 256", l.Name)
+	})
+	t.Run("should not create mail when creating fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		f := factory.CreateEveEntity()
+		// when
+		_, err := st.CreateCharacterMail(ctx, storage.CreateCharacterMailParams{
+			CharacterID:  c.ID,
+			FromID:       f.ID,
+			MailID:       42,
+			RecipientIDs: []int64{999_999}, // unknown recipient
+			Timestamp:    time.Now(),
+		})
+		// then
+		require.Error(t, err)
+		_, err = st.GetCharacterMail(ctx, c.ID, 42)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 	t.Run("can update is-read", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -79,6 +121,21 @@ func TestCharacterMail(t *testing.T) {
 		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
 		assert.NoError(t, err)
 		assert.Contains(t, got.Labels, label)
+	})
+	t.Run("can update labels with label that is not stored yet", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		m := factory.CreateCharacterMailWithBody()
+		// when
+		err := st.UpdateCharacterMailSetLabels(ctx, m.CharacterID, m.ID, []int64{256})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{256}, got.LabelIDs())
+		l, err := st.GetCharacterMailLabel(ctx, m.CharacterID, 256)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Label 256", l.Name)
 	})
 	t.Run("can update body", func(t *testing.T) {
 		// given

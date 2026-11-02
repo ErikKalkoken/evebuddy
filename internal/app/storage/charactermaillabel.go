@@ -49,41 +49,47 @@ type MailLabelParams struct {
 }
 
 func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLabelParams) (*app.CharacterMailLabel, error) {
-	label, err := func() (*app.CharacterMailLabel, error) {
-		var l queries.CharacterMailLabel
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return nil, err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		l, err = qtx.GetCharacterMailLabel(ctx, queries.GetCharacterMailLabelParams{
-			CharacterID: arg.CharacterID,
-			LabelID:     arg.LabelID,
-		})
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		} else if err != nil {
-			l, err = qtx.CreateCharacterMailLabel(ctx, queries.CreateCharacterMailLabelParams{
-				CharacterID: arg.CharacterID,
-				LabelID:     arg.LabelID,
-				Color:       arg.Color.ValueOrZero(),
-				Name:        arg.Name.ValueOrZero(),
-				UnreadCount: arg.UnreadCount.ValueOrZero(),
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return characterMailLabelFromDBModel(l), nil
-	}()
-	if err != nil {
-		return label, fmt.Errorf("get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
-	return label, nil
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	defer tx.Rollback()
+	l, err := getOrCreateCharacterMailLabel(ctx, st.qRW.WithTx(tx), arg)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, wrapErr(err)
+	}
+	return characterMailLabelFromDBModel(l), nil
+}
+
+// getOrCreateCharacterMailLabel returns a mail label and creates it when it does not exist.
+// Must be called within a transaction.
+func getOrCreateCharacterMailLabel(ctx context.Context, q *queries.Queries, arg MailLabelParams) (queries.CharacterMailLabel, error) {
+	if arg.CharacterID == 0 || arg.LabelID == 0 {
+		return queries.CharacterMailLabel{}, app.ErrInvalid
+	}
+	l, err := q.GetCharacterMailLabel(ctx, queries.GetCharacterMailLabelParams{
+		CharacterID: arg.CharacterID,
+		LabelID:     arg.LabelID,
+	})
+	if err == nil {
+		return l, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return queries.CharacterMailLabel{}, err
+	}
+	return q.CreateCharacterMailLabel(ctx, queries.CreateCharacterMailLabelParams{
+		CharacterID: arg.CharacterID,
+		LabelID:     arg.LabelID,
+		Color:       arg.Color.ValueOrZero(),
+		Name:        arg.Name.ValueOrZero(),
+		UnreadCount: arg.UnreadCount.ValueOrZero(),
+	})
 }
 
 func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int64) ([]*app.CharacterMailLabel, error) {

@@ -65,7 +65,7 @@ func TestMailLabel(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
-		factory.CreateCharacterMailLabel(app.CharacterMailLabel{
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
 			LabelID:     42,
 			Name:        optional.New("Dummy"),
@@ -78,9 +78,11 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: optional.New[int64](99),
 		}
 		// when
-		_, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
+		x, err := st.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		require.NoError(t, err)
+		require.NotNil(t, x)
+		xassert.Equal(t, l1.ID, x.ID)
 		l, err := st.GetCharacterMailLabel(ctx, c.ID, 42)
 		require.NoError(t, err)
 		xassert.EqualOptional(t, "Dummy", l.Name)

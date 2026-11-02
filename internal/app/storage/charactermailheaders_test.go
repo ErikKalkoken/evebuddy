@@ -80,6 +80,26 @@ func TestListMailHeaders(t *testing.T) {
 		got := mailIDsFromHeaders(xx)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should order mails by time when created in different time zones", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			Timestamp:   time.Date(2026, 11, 2, 10, 30, 0, 0, time.UTC),
+		})
+		m2 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			Timestamp:   time.Date(2026, 11, 2, 11, 0, 0, 0, time.FixedZone("UTC+2", 2*3600)), // 09:00 UTC
+		})
+		// when
+		xx, err := st.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelAll)
+		// then
+		require.NoError(t, err)
+		want := []int64{m1.MailID, m2.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
+	})
 	t.Run("should return mail without label only", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -186,6 +206,42 @@ func TestListMailHeaders(t *testing.T) {
 		want := []int64{m1.MailID}
 		got := mailIDsFromHeaders(xx)
 		xassert.Equal(t, want, got)
+	})
+	t.Run("should return unprocessed mail with multiple labels only once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		now := time.Now().UTC()
+		c := factory.CreateCharacterFull()
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 256})
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID, l2.LabelID},
+		})
+		// when
+		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
+		// then
+		require.NoError(t, err)
+		want := []int64{m1.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should not return unprocessed sent mail which has other labels too", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		now := time.Now().UTC()
+		c := factory.CreateCharacterFull()
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelSent})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 256})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID, l2.LabelID},
+		})
+		// when
+		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, xx)
 	})
 	t.Run("should compare with earliest correctly when earliest is not in UTC", func(t *testing.T) {
 		// given
