@@ -51,7 +51,7 @@ ORDER BY
 -- name: GetTotalTrainingTime :one
 SELECT
     SUM(
-        julianday(finish_date) - julianday(max(start_date, datetime()))
+        julianday(finish_date) - max(julianday(start_date), julianday('now'))
     )
 FROM
     character_skillqueue_items

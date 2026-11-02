@@ -316,7 +316,7 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 		RecipientID:    optional.ToNullInt64(arg.RecipientID),
 		SenderID:       arg.SenderID,
 		Text:           arg.Text.ValueOrZero(),
-		Timestamp:      arg.Timestamp,
+		Timestamp:      arg.Timestamp.UTC(), // stored times must be UTC, because SQLite compares them as text
 		Title:          optional.ToNullString(arg.Title),
 		TypeID:         typeID,
 	})
@@ -496,7 +496,8 @@ func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, ch
 	}
 	rows, err := st.qRO.ListCharacterNotificationsUnprocessed(ctx, queries.ListCharacterNotificationsUnprocessedParams{
 		CharacterID: characterID,
-		Timestamp:   earliest,
+		Timestamp:   earliest.UTC(), // make sure we are comparing UTC with UTC
+		Timestamp_2: earliest.UTC(),
 	})
 	if err != nil {
 		return nil, wrapErr(err)

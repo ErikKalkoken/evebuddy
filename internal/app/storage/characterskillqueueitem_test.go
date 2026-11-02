@@ -137,6 +137,48 @@ func TestSkillqueueItems_GetCharacterTotalTrainingTime(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualDuration(t, 3*time.Hour, v, time.Second)
 	})
+	t.Run("can calculate total training time when times are not in UTC", func(t *testing.T) {
+		// given
+		now := time.Now().In(time.FixedZone("UTC-8", -8*3600))
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   optional.New(now.Add(1 * time.Hour)),
+			FinishDate:  optional.New(now.Add(3 * time.Hour)),
+		})
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   optional.New(now.Add(3 * time.Hour)),
+			FinishDate:  optional.New(now.Add(4 * time.Hour)),
+		})
+		// when
+		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.EqualDuration(t, 3*time.Hour, v, time.Second)
+	})
+	t.Run("should count only remaining time of skill in training", func(t *testing.T) {
+		// given
+		now := time.Now().UTC()
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   optional.New(now.Add(-1 * time.Hour)),
+			FinishDate:  optional.New(now.Add(2 * time.Hour)),
+		})
+		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{
+			CharacterID: c.ID,
+			StartDate:   optional.New(now.Add(2 * time.Hour)),
+			FinishDate:  optional.New(now.Add(3 * time.Hour)),
+		})
+		// when
+		v, err := st.GetCharacterTotalTrainingTime(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.EqualDuration(t, 3*time.Hour, v, time.Second)
+	})
 	t.Run("should report when training is not active", func(t *testing.T) {
 		// given
 		now := time.Now()

@@ -187,6 +187,27 @@ func TestListMailHeaders(t *testing.T) {
 		got := mailIDsFromHeaders(xx)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should compare with earliest correctly when earliest is not in UTC", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		m1 := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			Timestamp:   time.Date(2026, 11, 2, 10, 0, 0, 0, time.UTC),
+		})
+		factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			Timestamp:   time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC),
+		})
+		earliest := time.Date(2026, 11, 2, 10, 30, 0, 0, time.FixedZone("UTC+1", 3600)) // 09:30 UTC
+		// when
+		xx, err := st.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, earliest)
+		// then
+		require.NoError(t, err)
+		want := []int64{m1.MailID}
+		got := mailIDsFromHeaders(xx)
+		xassert.Equal(t, want, got)
+	})
 }
 
 func mailIDsFromHeaders(hh []*app.CharacterMailHeader) []int64 {

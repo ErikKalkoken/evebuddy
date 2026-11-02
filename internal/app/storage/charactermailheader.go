@@ -110,7 +110,7 @@ func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, c
 	arg := queries.ListMailsUnprocessedParams{
 		CharacterID: characterID,
 		LabelID:     app.MailLabelSent,
-		Timestamp:   earliest,
+		Timestamp:   earliest.UTC(), // make sure we are comparing UTC with UTC
 	}
 	rows, err := st.qRO.ListMailsUnprocessed(ctx, arg)
 	if err != nil {

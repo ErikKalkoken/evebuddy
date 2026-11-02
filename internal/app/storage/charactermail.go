@@ -34,14 +34,13 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 	if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	characterID2 := arg.CharacterID
 	from, err := st.GetEveEntity(ctx, arg.FromID)
 	if err != nil {
 		return 0, wrapErr(err)
 	}
 	mail, err := st.qRW.CreateMail(ctx, queries.CreateMailParams{
 		Body2:       optional.ToNullString(arg.Body),
-		CharacterID: characterID2,
+		CharacterID: arg.CharacterID,
 		FromID:      from.ID,
 		MailID:      arg.MailID,
 		Subject:     arg.Subject.ValueOrZero(),

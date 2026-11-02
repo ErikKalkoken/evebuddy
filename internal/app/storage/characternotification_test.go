@@ -450,6 +450,64 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 		want := set.Of(n1.ID)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should compare with earliest correctly when notification was created in other time zone", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			Type:        "bravo",
+			Timestamp:   time.Date(2026, 11, 2, 10, 0, 0, 0, time.FixedZone("UTC+2", 2*3600)), // 08:00 UTC
+			Title:       optional.New("title"),
+		})
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			Type:        "bravo",
+			Timestamp:   time.Date(2026, 11, 2, 9, 30, 0, 0, time.UTC),
+			Title:       optional.New("title"),
+		})
+		earliest := time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC)
+		// when
+		ee, err := st.ListCharacterNotificationsUnprocessed(t.Context(), c.ID, earliest)
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+			return x.ID
+		}))
+		want := set.Of(n2.ID)
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should compare with earliest correctly when earliest is not in UTC", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			Type:        "bravo",
+			Timestamp:   time.Date(2026, 11, 2, 10, 0, 0, 0, time.UTC),
+			Title:       optional.New("title"),
+		})
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			Type:        "bravo",
+			Timestamp:   time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC),
+			Title:       optional.New("title"),
+		})
+		earliest := time.Date(2026, 11, 2, 10, 30, 0, 0, time.FixedZone("UTC+1", 3600)) // 09:30 UTC
+		// when
+		ee, err := st.ListCharacterNotificationsUnprocessed(t.Context(), c.ID, earliest)
+		// then
+		require.NoError(t, err)
+		got := set.Collect(xiter.MapSlice(ee, func(x *app.CharacterNotification) int64 {
+			return x.ID
+		}))
+		want := set.Of(n1.ID)
+		xassert.Equal(t, want, got)
+	})
 }
 
 func TestNotificationType(t *testing.T) {
