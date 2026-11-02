@@ -42,10 +42,7 @@ func (st *Storage) CalculateCharacterOrderItemsValue(ctx context.Context, charac
 	v, err := st.qRO.CalculateCharacterOrderItemsValue(ctx, queries.CalculateCharacterOrderItemsValueParams{
 		CharacterID:   characterID,
 		EveCategoryID: app.EveCategoryBlueprint,
-		States: []string{
-			orderStatusToDBValue[app.OrderOpen],
-			orderStatusToDBValue[app.OrderExpired],
-		},
+		States:        []string{orderStatusToDBValue[app.OrderOpen]},
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
@@ -64,10 +61,7 @@ func (st *Storage) CalculateCharacterOrdersEscrow(ctx context.Context, character
 		return 0, wrapErr(app.ErrInvalid)
 	}
 	v, err := st.qRO.CalculateCharacterOrdersEscrow(ctx, queries.CalculateCharacterOrdersEscrowParams{
-		States: []string{
-			orderStatusToDBValue[app.OrderOpen],
-			orderStatusToDBValue[app.OrderExpired],
-		},
+		States:      []string{orderStatusToDBValue[app.OrderOpen]},
 		CharacterID: characterID,
 	})
 	if errors.Is(err, sql.ErrNoRows) {

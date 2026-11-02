@@ -221,9 +221,18 @@ func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int64,
 }
 
 func (st *Storage) CalculateCorporationAssetTotalValue(ctx context.Context, corporationID int64) (float64, error) {
-	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, corporationID)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationAssetTotalValue: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, queries.CalculateCorporationAssetTotalValueParams{
+		CorporationID: corporationID,
+		EveCategoryID: app.EveCategoryBlueprint,
+	})
 	if err != nil {
-		return 0, fmt.Errorf("calculate corporation asset for corporation %d: %w", corporationID, err)
+		return 0, wrapErr(err)
 	}
 	return v.Float64, nil
 }

@@ -12,17 +12,28 @@ import (
 )
 
 const calculateCorporationAssetTotalValue = `-- name: CalculateCorporationAssetTotalValue :one
-SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
-FROM corporation_assets ca
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
-WHERE corporation_id = ?
+SELECT
+    SUM(IFNULL(mp.average_price, 0) * quantity)
+FROM
+    corporation_assets ca
+    JOIN eve_types et ON et.id = ca.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    LEFT JOIN eve_market_prices mp ON mp.type_id = ca.eve_type_id
+WHERE
+    corporation_id = ?
+    AND eg.eve_category_id <> ?
 `
 
-func (q *Queries) CalculateCorporationAssetTotalValue(ctx context.Context, corporationID int64) (sql.NullFloat64, error) {
-	row := q.db.QueryRowContext(ctx, calculateCorporationAssetTotalValue, corporationID)
-	var total sql.NullFloat64
-	err := row.Scan(&total)
-	return total, err
+type CalculateCorporationAssetTotalValueParams struct {
+	CorporationID int64
+	EveCategoryID int64
+}
+
+func (q *Queries) CalculateCorporationAssetTotalValue(ctx context.Context, arg CalculateCorporationAssetTotalValueParams) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, calculateCorporationAssetTotalValue, arg.CorporationID, arg.EveCategoryID)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
 }
 
 const createCorporationAsset = `-- name: CreateCorporationAsset :exec

@@ -158,6 +158,31 @@ func TestCorporationAsset(t *testing.T) {
 			TypeID:       ca2.Type.ID,
 			AveragePrice: optional.New(200.2),
 		})
+		blueprintCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{
+			ID:   app.EveCategoryBlueprint,
+			Name: "Blueprint",
+		})
+		blueprintGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{
+			CategoryID: blueprintCategory.ID,
+		})
+		blueprintType := factory.CreateEveType(storage.CreateEveTypeParams{
+			GroupID: blueprintGroup.ID,
+		})
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     blueprintType.ID,
+			Quantity:      1,
+		}) // blueprint originals must be excluded
+		factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID:   c.ID,
+			EveTypeID:       blueprintType.ID,
+			IsBlueprintCopy: optional.New(true),
+			Quantity:        1,
+		}) // blueprint copies must be excluded
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       blueprintType.ID,
+			AveragePrice: optional.New(66.6),
+		})
 		// when
 		got, err := st.CalculateCorporationAssetTotalValue(ctx, c.ID)
 		// then
