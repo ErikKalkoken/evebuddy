@@ -1,7 +1,10 @@
 package storage_test
 
 import (
+	"errors"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
@@ -156,6 +159,47 @@ func TestCorporationStructure(t *testing.T) {
 		xassert.EqualOptional(t, arg.UnanchorsAt.ValueOrZero(), got.UnanchorsAt)
 		xassert.Equal(t, "Jupiter", got.Services[0].Name)
 		assert.EqualExportedValues(t, app.StructureServiceStateOnline, got.Services[0].State)
+	})
+
+	t.Run("should keep existing structure unchanged when update fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		x1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			State:         app.StructureStateAnchorVulnerable,
+			Services: []storage.StructureServiceParams{
+				{
+					Name:  "Venus",
+					State: app.StructureServiceStateOffline,
+				},
+			},
+		})
+		// when
+		err := st.UpdateOrCreateCorporationStructure(t.Context(), storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			ProfileID:     x1.ProfileID,
+			State:         app.StructureStateShieldVulnerable,
+			StructureID:   x1.StructureID,
+			SystemID:      x1.System.ID,
+			TypeID:        x1.Type.ID,
+			Services: []storage.StructureServiceParams{
+				{
+					Name:  "Jupiter",
+					State: app.StructureServiceStateOnline,
+				},
+				{
+					State: app.StructureServiceStateOnline,
+				}, // invalid
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.GetCorporationStructure(t.Context(), x1.CorporationID, x1.StructureID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.StructureStateAnchorVulnerable, got.State)
+		services := serviceNamesByStructure([]*app.CorporationStructure{got})
+		xassert.Equal(t, set.Of("Venus"), services[got.ID])
 	})
 
 	t.Run("can list structure IDs for corporation", func(t *testing.T) {
@@ -387,6 +431,15 @@ func TestStructureService(t *testing.T) {
 		_, err2 := st.GetStructureService(t.Context(), x.CorporationStructureID, x.Name)
 		assert.NoError(t, err2)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetStructureService(t.Context(), 1, "Alpha")
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func serviceNamesByStructure(structures []*app.CorporationStructure) map[int64]set.Set[string] {
@@ -399,4 +452,136 @@ func serviceNamesByStructure(structures []*app.CorporationStructure) map[int64]s
 		m[s.ID] = names
 	}
 	return m
+}
+
+func TestCorporationStructure_ConsistentReads(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	t.Run("should never mix old and new data of a structure while it is written", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1 // one statement per structure, so a mixed read has more chances
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		type version struct {
+			state    app.StructureState
+			services set.Set[string]
+		}
+		versionA := version{state: app.StructureStateAnchorVulnerable, services: set.Of("Alpha", "Bravo")}
+		versionB := version{state: app.StructureStateShieldVulnerable, services: set.Of("Charlie", "Delta")}
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		s1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID}) // changes
+		s2 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID}) // never changes
+		s3 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c2.ID}) // changes, other corporation
+		replace := func(s *app.CorporationStructure, v version) error {
+			arg := storage.UpdateOrCreateCorporationStructureParams{
+				CorporationID: s.CorporationID,
+				ProfileID:     s.ProfileID,
+				State:         v.state,
+				StructureID:   s.StructureID,
+				SystemID:      s.System.ID,
+				TypeID:        s.Type.ID,
+			}
+			for name := range v.services.All() {
+				arg.Services = append(arg.Services, storage.StructureServiceParams{
+					Name:  name,
+					State: app.StructureServiceStateOnline,
+				})
+			}
+			return st.UpdateOrCreateCorporationStructure(t.Context(), arg)
+		}
+		require.NoError(t, replace(s1, versionA))
+		require.NoError(t, replace(s2, versionA))
+		require.NoError(t, replace(s3, versionA))
+
+		// cycle the changing structures through update, delete and re-create
+		done := make(chan struct{})
+		writerErr := make(chan error, 1)
+		go func() {
+			defer close(writerErr)
+			for {
+				for _, step := range []func(s *app.CorporationStructure) error{
+					func(s *app.CorporationStructure) error { return replace(s, versionB) },
+					func(s *app.CorporationStructure) error { return replace(s, versionA) },
+					func(s *app.CorporationStructure) error {
+						return st.DeleteCorporationStructures(t.Context(), s.CorporationID, set.Of(s.StructureID))
+					},
+					func(s *app.CorporationStructure) error { return replace(s, versionA) },
+				} {
+					select {
+					case <-done:
+						return
+					default:
+					}
+					for _, s := range []*app.CorporationStructure{s1, s3} {
+						if err := step(s); err != nil {
+							writerErr <- err
+							return
+						}
+					}
+				}
+			}
+		}()
+
+		// assertConsistent reports whether all data of a structure belongs to one version.
+		assertConsistent := func(t *testing.T, s *app.CorporationStructure) bool {
+			t.Helper()
+			var v version
+			switch s.State {
+			case versionA.state:
+				v = versionA
+			case versionB.state:
+				v = versionB
+			default:
+				return assert.Fail(t, "unknown state", "%v", s.State)
+			}
+			got := set.Collect(xiter.MapSlice(s.Services, func(x *app.StructureService) string {
+				return x.Name
+			}))
+			return assert.True(t, v.services.Equal(got), "services %v for state %v", got, s.State)
+		}
+		// check checks structures of a list: the stable one must be present, the changing ones may be absent.
+		check := func(t *testing.T, oo []*app.CorporationStructure, stable int64, changing ...int64) bool {
+			t.Helper()
+			var hasStable bool
+			for _, s := range oo {
+				if s.StructureID == stable {
+					hasStable = true
+				} else if !slices.Contains(changing, s.StructureID) {
+					continue
+				}
+				if !assertConsistent(t, s) {
+					return false
+				}
+			}
+			return assert.True(t, hasStable, "stable structure missing")
+		}
+		var seenA, seenB, seenDeleted bool
+		ok := true
+		// Read until all versions were seen, so the test does not depend on scheduling.
+		deadline := time.Now().Add(10 * time.Second)
+		for i := 0; ok && (i < 300 || !(seenA && seenB && seenDeleted)) && time.Now().Before(deadline); i++ {
+			s, err := st.GetCorporationStructure(t.Context(), c1.ID, s1.StructureID)
+			if errors.Is(err, app.ErrNotFound) {
+				seenDeleted = true
+			} else if ok = assert.NoError(t, err) && assertConsistent(t, s); !ok {
+				break
+			} else if s.State == versionA.state {
+				seenA = true
+			} else {
+				seenB = true
+			}
+			oo, err := st.ListCorporationStructures(t.Context(), c1.ID)
+			if ok = assert.NoError(t, err) && check(t, oo, s2.StructureID, s1.StructureID); !ok {
+				break
+			}
+			oo, err = st.ListAllCorporationStructures(t.Context())
+			ok = assert.NoError(t, err) && check(t, oo, s2.StructureID, s1.StructureID, s3.StructureID)
+		}
+		close(done)
+		assert.NoError(t, <-writerErr)
+		assert.True(t, seenA && seenB && seenDeleted, "reads overlapped all writes: A %v, B %v, deleted %v", seenA, seenB, seenDeleted)
+	})
 }

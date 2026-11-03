@@ -22,8 +22,7 @@ type SkillqueueItemParams struct {
 	TrainingStartSP optional.Optional[int64]
 }
 
-// GetCharacterTotalTrainingTime returns the total training time for a character
-// and reports whether the training is active.
+// GetCharacterTotalTrainingTime returns the remaining training time of a character's skill queue.
 func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int64) (time.Duration, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCharacterTotalTrainingTime: %d: %w", characterID, err)
@@ -121,6 +120,14 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characterID int64, items []SkillqueueItemParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ReplaceCharacterSkillqueueItems for %d: %+v: %w", characterID, items, err)
+	}
+	if characterID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	for _, it := range items {
+		if it.CharacterID != characterID {
+			return wrapErr(app.ErrInvalid)
+		}
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {

@@ -288,13 +288,17 @@ SELECT
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
-    LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
-    LEFT JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
 WHERE
     cm.character_id = ?
-    AND (
-        label_id <> ?
-        OR label_id IS NULL
+    AND cm.id NOT IN (
+        SELECT
+            cml.character_mail_id
+        FROM
+            character_mail_mail_labels cml
+            JOIN character_mail_labels cl ON cl.id = cml.character_mail_label_id
+        WHERE
+            cl.character_id = ?
+            AND cl.label_id = ?
     )
     AND is_processed = FALSE
     AND timestamp > ?

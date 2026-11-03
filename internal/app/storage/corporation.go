@@ -6,29 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/mattn/go-sqlite3"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
-
-type CreateCorporationParams struct {
-	AssetValue        optional.Optional[float64]
-	ID                int64
-	IsTrainingWatched bool
-	HomeID            optional.Optional[int64]
-	LastCloneJumpAt   optional.Optional[time.Time]
-	LastLoginAt       optional.Optional[time.Time]
-	LocationID        optional.Optional[int64]
-	ShipID            optional.Optional[int64]
-	TotalSP           optional.Optional[int]
-	UnallocatedSP     optional.Optional[int]
-	WalletBalance     optional.Optional[float64]
-}
 
 func (st *Storage) CreateCorporation(ctx context.Context, corporationID int64) error {
 	if err := st.qRW.CreateCorporation(ctx, corporationID); err != nil {

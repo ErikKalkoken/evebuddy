@@ -264,6 +264,15 @@ func TestCharacterMarketOrder(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, app.OrderUnknown, o2.State)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCharacterMarketOrder(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCalculateCharacterOrderItemsValue(t *testing.T) {
@@ -273,16 +282,18 @@ func TestCalculateCharacterOrderItemsValue(t *testing.T) {
 	const characterID = 42
 
 	cases := []struct {
-		name       string
-		isBuyOrder bool
-		state      app.MarketOrderState
-		price      float64
-		want       float64
+		name          string
+		isBuyOrder    bool
+		isCorporation bool
+		state         app.MarketOrderState
+		price         float64
+		want          float64
 	}{
-		{"should include open sell order", false, app.OrderOpen, 10.0, 10.0},
-		{"should include expired sell order", false, app.OrderExpired, 10.0, 10.0},
-		{"should ignore buy orders", true, app.OrderOpen, 0, 0},
-		{"should ignore cancelled orders", false, app.OrderCancelled, 0, 0},
+		{"should include open sell order", false, false, app.OrderOpen, 10.0, 10.0},
+		{"should ignore expired sell order", false, false, app.OrderExpired, 10.0, 0},
+		{"should ignore buy orders", true, false, app.OrderOpen, 0, 0},
+		{"should ignore cancelled orders", false, false, app.OrderCancelled, 0, 0},
+		{"should ignore sell order placed for corporation", false, true, app.OrderOpen, 10.0, 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -297,6 +308,7 @@ func TestCalculateCharacterOrderItemsValue(t *testing.T) {
 			o := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
 				CharacterID:   c.ID,
 				IsBuyOrder:    optional.New(tc.isBuyOrder),
+				IsCorporation: tc.isCorporation,
 				State:         tc.state,
 				VolumeRemains: 1,
 			})
@@ -387,14 +399,18 @@ func TestCalcOrdersEscrow(t *testing.T) {
 	defer db.Close()
 
 	cases := []struct {
-		name       string
-		isBuyOrder optional.Optional[bool]
-		escrow     optional.Optional[float64]
-		want       float64
+		name          string
+		isBuyOrder    optional.Optional[bool]
+		isCorporation bool
+		state         app.MarketOrderState
+		escrow        optional.Optional[float64]
+		want          float64
 	}{
-		{"should include open buy order with escrow", optional.New(true), optional.New(12.3), 12.3},
-		{"should not include buy order without escrow", optional.New(true), optional.Optional[float64]{}, 0.0},
-		{"should not include sell order", optional.New(false), optional.New(12.3), 0.0},
+		{"should include open buy order with escrow", optional.New(true), false, app.OrderOpen, optional.New(12.3), 12.3},
+		{"should not include buy order without escrow", optional.New(true), false, app.OrderOpen, optional.Optional[float64]{}, 0.0},
+		{"should not include sell order", optional.New(false), false, app.OrderOpen, optional.New(12.3), 0.0},
+		{"should not include expired buy order", optional.New(true), false, app.OrderExpired, optional.New(12.3), 0.0},
+		{"should not include buy order placed for corporation", optional.New(true), true, app.OrderOpen, optional.New(12.3), 0.0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -402,9 +418,11 @@ func TestCalcOrdersEscrow(t *testing.T) {
 			testutil.MustTruncateTables(db)
 			c := factory.CreateCharacter()
 			factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-				CharacterID: c.ID,
-				IsBuyOrder:  tc.isBuyOrder,
-				Escrow:      tc.escrow,
+				CharacterID:   c.ID,
+				IsBuyOrder:    tc.isBuyOrder,
+				IsCorporation: tc.isCorporation,
+				State:         tc.state,
+				Escrow:        tc.escrow,
 			})
 
 			// when

@@ -3,8 +3,10 @@ package storage_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -101,5 +103,14 @@ func TestEveFaction(t *testing.T) {
 		xassert.EqualOptional(t, corporation, ef.Corporation)
 		xassert.EqualOptional(t, militaryCorporation, ef.MilitiaCorporation)
 		xassert.EqualOptional(t, solarSystem.ToEveEntity(), ef.SolarSystem)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetEveFaction(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

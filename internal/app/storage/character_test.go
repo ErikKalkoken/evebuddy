@@ -80,7 +80,7 @@ func TestCharacter(t *testing.T) {
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		c1 := factory.CreateCharacterFull()
+		c1 := factory.CreateCharacter()
 		// when
 		c2, err := st.GetCharacter(t.Context(), c1.ID)
 		// then

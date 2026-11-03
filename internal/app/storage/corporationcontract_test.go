@@ -311,6 +311,15 @@ func TestCorporationContract(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCorporationContract(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCorporationContractBid(t *testing.T) {
@@ -373,6 +382,15 @@ func TestCorporationContractBid(t *testing.T) {
 		want := set.Of(b1.BidID, b2.BidID)
 		xassert.Equal(t, want, got)
 	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCorporationContractBid(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 }
 
 func TestCorporationContractItem(t *testing.T) {
@@ -424,6 +442,15 @@ func TestCorporationContractItem(t *testing.T) {
 		}))
 		want := set.Of(i1.RecordID, i2.RecordID)
 		xassert.Equal(t, want, got)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetCorporationContractItem(t.Context(), 1, 2)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }
 

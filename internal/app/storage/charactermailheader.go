@@ -108,9 +108,10 @@ func (st *Storage) ListAllCharacterMailHeadersForListOrdered(ctx context.Context
 
 func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int64, earliest time.Time) ([]*app.CharacterMailHeader, error) {
 	arg := queries.ListMailsUnprocessedParams{
-		CharacterID: characterID,
-		LabelID:     app.MailLabelSent,
-		Timestamp:   earliest,
+		CharacterID:   characterID,
+		CharacterID_2: characterID,
+		LabelID:       app.MailLabelSent,
+		Timestamp:     earliest.UTC(), // make sure we are comparing UTC with UTC
 	}
 	rows, err := st.qRO.ListMailsUnprocessed(ctx, arg)
 	if err != nil {

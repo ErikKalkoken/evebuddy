@@ -956,13 +956,17 @@ SELECT
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
-    LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
-    LEFT JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
 WHERE
     cm.character_id = ?
-    AND (
-        label_id <> ?
-        OR label_id IS NULL
+    AND cm.id NOT IN (
+        SELECT
+            cml.character_mail_id
+        FROM
+            character_mail_mail_labels cml
+            JOIN character_mail_labels cl ON cl.id = cml.character_mail_label_id
+        WHERE
+            cl.character_id = ?
+            AND cl.label_id = ?
     )
     AND is_processed = FALSE
     AND timestamp > ?
@@ -971,9 +975,10 @@ ORDER BY
 `
 
 type ListMailsUnprocessedParams struct {
-	CharacterID int64
-	LabelID     int64
-	Timestamp   time.Time
+	CharacterID   int64
+	CharacterID_2 int64
+	LabelID       int64
+	Timestamp     time.Time
 }
 
 type ListMailsUnprocessedRow struct {
@@ -982,7 +987,12 @@ type ListMailsUnprocessedRow struct {
 }
 
 func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnprocessedParams) ([]ListMailsUnprocessedRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsUnprocessed, arg.CharacterID, arg.LabelID, arg.Timestamp)
+	rows, err := q.db.QueryContext(ctx, listMailsUnprocessed,
+		arg.CharacterID,
+		arg.CharacterID_2,
+		arg.LabelID,
+		arg.Timestamp,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
@@ -33,5 +35,14 @@ func TestEveConstellation(t *testing.T) {
 		xassert.Equal(t, 42, o.ID)
 		xassert.Equal(t, "name", o.Name)
 		xassert.Equal(t, region, o.Region)
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.GetEveConstellation(t.Context(), 1)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 }

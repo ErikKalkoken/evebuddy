@@ -202,10 +202,29 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 }
 
 func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID int64, itemIDs set.Set[int64]) error {
-	return st.qRW.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
-		CorporationID: corporationID,
-		ItemIds:       slices.Collect(itemIDs.All()),
-	})
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationAssets: %d: %w", corporationID, err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	// chunks keep queries below SQLite's limit for variables
+	for idsChunk := range slices.Chunk(slices.Collect(itemIDs.All()), st.MaxIDsPerQuery) {
+		err := qtx.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
+			CorporationID: corporationID,
+			ItemIds:       idsChunk,
+		})
+		if err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int64, itemID int64) (*app.CorporationAsset, error) {
@@ -221,9 +240,18 @@ func (st *Storage) GetCorporationAsset(ctx context.Context, corporationID int64,
 }
 
 func (st *Storage) CalculateCorporationAssetTotalValue(ctx context.Context, corporationID int64) (float64, error) {
-	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, corporationID)
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CalculateCorporationAssetTotalValue: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	v, err := st.qRO.CalculateCorporationAssetTotalValue(ctx, queries.CalculateCorporationAssetTotalValueParams{
+		CorporationID: corporationID,
+		EveCategoryID: app.EveCategoryBlueprint,
+	})
 	if err != nil {
-		return 0, fmt.Errorf("calculate corporation asset for corporation %d: %w", corporationID, err)
+		return 0, wrapErr(err)
 	}
 	return v.Float64, nil
 }

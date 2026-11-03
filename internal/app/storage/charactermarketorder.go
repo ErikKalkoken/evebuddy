@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -42,14 +41,8 @@ func (st *Storage) CalculateCharacterOrderItemsValue(ctx context.Context, charac
 	v, err := st.qRO.CalculateCharacterOrderItemsValue(ctx, queries.CalculateCharacterOrderItemsValueParams{
 		CharacterID:   characterID,
 		EveCategoryID: app.EveCategoryBlueprint,
-		States: []string{
-			orderStatusToDBValue[app.OrderOpen],
-			orderStatusToDBValue[app.OrderExpired],
-		},
+		States:        []string{orderStatusToDBValue[app.OrderOpen]},
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}
@@ -64,15 +57,9 @@ func (st *Storage) CalculateCharacterOrdersEscrow(ctx context.Context, character
 		return 0, wrapErr(app.ErrInvalid)
 	}
 	v, err := st.qRO.CalculateCharacterOrdersEscrow(ctx, queries.CalculateCharacterOrdersEscrowParams{
-		States: []string{
-			orderStatusToDBValue[app.OrderOpen],
-			orderStatusToDBValue[app.OrderExpired],
-		},
+		States:      []string{orderStatusToDBValue[app.OrderOpen]},
 		CharacterID: characterID,
 	})
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
 	if err != nil {
 		return 0, wrapErr(err)
 	}

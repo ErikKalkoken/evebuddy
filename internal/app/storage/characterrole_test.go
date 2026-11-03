@@ -60,3 +60,22 @@ func TestCharacterRole(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 }
+
+func TestCharacterRoleRoundTrip(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	for r := range app.RolesAll() {
+		t.Run(r.String(), func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			c := factory.CreateCharacter()
+			// when
+			err := st.UpdateCharacterRoles(t.Context(), c.ID, set.Of(r))
+			// then
+			require.NoError(t, err)
+			got, err := st.ListCharacterRoles(t.Context(), c.ID)
+			require.NoError(t, err)
+			xassert.Equal(t, set.Of(r), got)
+		})
+	}
+}

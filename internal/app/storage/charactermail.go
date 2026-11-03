@@ -34,26 +34,31 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 	if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	characterID2 := arg.CharacterID
 	from, err := st.GetEveEntity(ctx, arg.FromID)
 	if err != nil {
 		return 0, wrapErr(err)
 	}
-	mail, err := st.qRW.CreateMail(ctx, queries.CreateMailParams{
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	mail, err := qtx.CreateMail(ctx, queries.CreateMailParams{
 		Body2:       optional.ToNullString(arg.Body),
-		CharacterID: characterID2,
+		CharacterID: arg.CharacterID,
 		FromID:      from.ID,
 		MailID:      arg.MailID,
 		Subject:     arg.Subject.ValueOrZero(),
 		IsProcessed: arg.IsProcessed,
 		IsRead:      arg.IsRead.ValueOrZero(),
-		Timestamp:   arg.Timestamp,
+		Timestamp:   arg.Timestamp.UTC(), // stored times must be UTC, because SQLite compares them as text
 	})
 	if err != nil {
 		return 0, wrapErr(err)
 	}
 	for _, id := range arg.RecipientIDs {
-		err := st.qRW.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
+		err := qtx.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
 			MailID:      mail.ID,
 			EveEntityID: id,
 		})
@@ -61,7 +66,10 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 			return 0, wrapErr(fmt.Errorf("create mail recipient: %w", err))
 		}
 	}
-	if err := st.UpdateCharacterMailSetLabels(ctx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
+	if err := updateCharacterMailSetLabels(ctx, qtx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := tx.Commit(); err != nil {
 		return 0, wrapErr(err)
 	}
 	slog.Info("Created mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
@@ -305,27 +313,36 @@ func (st *Storage) UpdateCharacterMailSetLabels(ctx context.Context, characterID
 		return wrapErr(err)
 	}
 	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	if err := qtx.DeleteMailCharacterMailLabels(ctx, mailPK); err != nil {
-		return wrapErr(fmt.Errorf("delete mail labels: %w", err))
-	}
-	for _, l := range labelIDs {
-		label, err := qtx.GetCharacterMailLabel(ctx, queries.GetCharacterMailLabelParams{
-			CharacterID: characterID,
-			LabelID:     l,
-		})
-		if err != nil {
-			return wrapErr(fmt.Errorf("get mail label: %w", err))
-		}
-		if err := qtx.CreateMailCharacterMailLabel(ctx, queries.CreateMailCharacterMailLabelParams{
-			CharacterMailID:      mailPK,
-			CharacterMailLabelID: label.ID,
-		}); err != nil {
-			return wrapErr(fmt.Errorf("create mail label: %w", err))
-		}
+	if err := updateCharacterMailSetLabels(ctx, st.qRW.WithTx(tx), characterID, mailPK, labelIDs); err != nil {
+		return wrapErr(err)
 	}
 	if err := tx.Commit(); err != nil {
 		return wrapErr(err)
+	}
+	return nil
+}
+
+// updateCharacterMailSetLabels replaces the labels of a mail. Must be called within a transaction.
+func updateCharacterMailSetLabels(ctx context.Context, q *queries.Queries, characterID int64, mailPK int64, labelIDs []int64) error {
+	if err := q.DeleteMailCharacterMailLabels(ctx, mailPK); err != nil {
+		return fmt.Errorf("delete mail labels: %w", err)
+	}
+	for _, l := range labelIDs {
+		// labels not stored yet are created with a generic name, which the next labels update replaces
+		label, err := getOrCreateCharacterMailLabel(ctx, q, MailLabelParams{
+			CharacterID: characterID,
+			LabelID:     l,
+			Name:        optional.New(fmt.Sprintf("Label %d", l)),
+		})
+		if err != nil {
+			return fmt.Errorf("get or create mail label %d: %w", l, err)
+		}
+		if err := q.CreateMailCharacterMailLabel(ctx, queries.CreateMailCharacterMailLabelParams{
+			CharacterMailID:      mailPK,
+			CharacterMailLabelID: label.ID,
+		}); err != nil {
+			return fmt.Errorf("create mail label: %w", err)
+		}
 	}
 	return nil
 }

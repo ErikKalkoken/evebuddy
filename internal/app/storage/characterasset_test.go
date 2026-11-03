@@ -112,6 +112,25 @@ func TestCharacterAsset(t *testing.T) {
 		want := set.Of(x1.ItemID)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("can delete more assets than SQLite allows variables in one query", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		ids := set.Of(x2.ItemID)
+		for i := range int64(40_000) {
+			ids.Add(1_000_000_000_000 + i) // IDs of assets that don't exist
+		}
+		// when
+		err := st.DeleteCharacterAssets(ctx, c.ID, ids)
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterAssetIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(x1.ItemID)
+		xassert.Equal(t, want, got)
+	})
 	t.Run("can list assets for character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -184,6 +203,78 @@ func TestCharacterAsset(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.InDelta(t, 500.5, got, 0.1)
+	})
+
+	t.Run("should calculate total asset value from own assets only", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    1,
+		})
+		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			Quantity: 1,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca1.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca2.Type.ID,
+			AveragePrice: optional.New(200.2),
+		})
+		// when
+		got, err := st.CalculateCharacterAssetTotalValue(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		assert.InDelta(t, 100.1, got, 0.1)
+	})
+
+	t.Run("should return zero total asset value when character has no assets", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		got, err := st.CalculateCharacterAssetTotalValue(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0.0, got)
+	})
+
+	t.Run("should return blueprint copy without price", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID:     c.ID,
+			IsBlueprintCopy: optional.New(true),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		// when
+		x, err := st.GetCharacterAsset(ctx, c.ID, ca.ItemID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, x.Price.IsEmpty())
+	})
+
+	t.Run("should map unknown location flag to FlagUnknown", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+		})
+		_, err := db.Exec("UPDATE character_assets SET location_flag = 'NotAFlag' WHERE item_id = ?", ca.ItemID)
+		require.NoError(t, err)
+		// when
+		x, err := st.GetCharacterAsset(ctx, c.ID, ca.ItemID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, app.FlagUnknown, x.LocationFlag)
 	})
 
 	t.Run("returns not found error", func(t *testing.T) {

@@ -170,6 +170,31 @@ func TestReplaceTags(t *testing.T) {
 		})
 		assert.ElementsMatch(t, []int64{c1.ID}, gotIDs)
 	})
+
+	t.Run("should ignore duplicate characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+
+		// when
+		exported := map[string][]int64{
+			"Alpha": {c1.ID, c1.ID},
+		}
+		err := st.ReplaceTags(ctx, exported)
+
+		// then
+		require.NoError(t, err)
+
+		tags, err := st.ListTagsByName(ctx)
+		require.NoError(t, err)
+		require.Len(t, tags, 1)
+		cc, err := st.ListCharactersForCharacterTag(ctx, tags[0].ID)
+		require.NoError(t, err)
+		gotIDs := xslices.Map(cc, func(x *app.EntityShort) int64 {
+			return x.ID
+		})
+		xassert.Equal(t, []int64{c1.ID}, gotIDs)
+	})
 }
 
 func TestCharacterTag(t *testing.T) {

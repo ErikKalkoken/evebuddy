@@ -9,6 +9,7 @@ FROM
 WHERE
     character_id = ?
     AND is_buy_order IS FALSE
+    AND is_corporation IS FALSE
     AND state IN (sqlc.slice('states'))
     AND eg.eve_category_id <> ?;
 
@@ -20,6 +21,7 @@ FROM
 WHERE
     character_id = ?
     AND is_buy_order IS TRUE
+    AND is_corporation IS FALSE
     AND state IN (sqlc.slice('states'));
 
 -- name: DeleteCharacterMarketOrders :exec
