@@ -3,10 +3,8 @@ package corporationservice
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 	"regexp"
 	"slices"
@@ -17,9 +15,10 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/asset"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetsync"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func (s *CorporationService) ListAssets(ctx context.Context, corporationID int64) ([]*app.CorporationAsset, error) {
@@ -206,13 +205,6 @@ var (
 		"Wallet":                              app.FlagWallet,
 		"Wardrobe":                            app.FlagWardrobe,
 	}
-	locationTypeFromESIValue = map[string]app.LocationType{
-		"":             app.TypeUndefined,
-		"station":      app.TypeStation,
-		"solar_system": app.TypeSolarSystem,
-		"item":         app.TypeItem,
-		"other":        app.TypeOther,
-	}
 	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
 )
 
@@ -238,19 +230,10 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 			return assets, nil
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
-			assets := data.([]esi.CorporationsCorporationIdAssetsGetInner)
-			incomingIDs := set.Of[int64]()
-			for _, ca := range assets {
-				incomingIDs.Add(ca.ItemId)
-			}
-			typeIDs := set.Of[int64]()
-			locationIDs := set.Of[int64]()
-			for _, ca := range assets {
-				typeIDs.Add(ca.TypeId)
-				if !incomingIDs.Contains(ca.LocationId) {
-					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
-				}
-			}
+			assets := xslices.Map(data.([]esi.CorporationsCorporationIdAssetsGetInner), func(x esi.CorporationsCorporationIdAssetsGetInner) assetsync.ESIAsset {
+				return assetsync.ESIAsset(x)
+			})
+			typeIDs, locationIDs := assetsync.ExtractIDs(assets)
 			g := new(errgroup.Group)
 			g.Go(func() error {
 				return s.eus.AddMissingLocations(ctx, locationIDs)
@@ -265,164 +248,93 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 			if err != nil {
 				return false, err
 			}
-			var updated, created int
-			for _, a := range assets {
-				locationFlag, found := locationFlagFromESIValue[a.LocationFlag]
-				if !found {
-					locationFlag = app.FlagUnknown
-					slog.Warn("Unknown location flag encountered", "corporationID", arg.corporationID, "item", a)
-				}
-				locationType, found := locationTypeFromESIValue[a.LocationType]
-				if !found {
-					locationType = app.TypeUnknown
-					slog.Warn("Unknown location type encountered", "corporationID", arg.corporationID, "item", a)
-				}
-				quantity := a.Quantity
-				if a.IsSingleton && quantity != 1 {
-					slog.Warn("Singleton with invalid quantity encountered", "corporationID", arg.corporationID, "item", a)
-					quantity = 1
-				}
-				if currentIDs.Contains(a.ItemId) {
-					err := s.st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
-						CorporationID: arg.corporationID,
-						IsSingleton:   a.IsSingleton,
-						ItemID:        a.ItemId,
-						LocationFlag:  locationFlag,
-						LocationID:    a.LocationId,
-						LocationType:  locationType,
-						Quantity:      quantity,
-					})
-					if err != nil {
-						return false, err
-					}
-					updated++
-				} else {
-					err := s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
+			logAttr := slog.Int64("corporationID", arg.corporationID)
+			err = assetsync.Sync(
+				ctx,
+				assets,
+				currentIDs,
+				locationFlagFromESIValue,
+				func(ctx context.Context, item assetsync.Item) error {
+					return s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
 						CorporationID:   arg.corporationID,
-						EveTypeID:       a.TypeId,
-						IsBlueprintCopy: optional.FromPtr(a.IsBlueprintCopy),
-						IsSingleton:     a.IsSingleton,
-						ItemID:          a.ItemId,
-						LocationFlag:    locationFlag,
-						LocationID:      a.LocationId,
-						LocationType:    locationType,
-						Quantity:        quantity,
+						EveTypeID:       item.TypeID,
+						IsBlueprintCopy: item.IsBlueprintCopy,
+						IsSingleton:     item.IsSingleton,
+						ItemID:          item.ItemID,
+						LocationFlag:    item.LocationFlag,
+						LocationID:      item.LocationID,
+						LocationType:    item.LocationType,
+						Quantity:        item.Quantity,
 					})
-					if err != nil {
-						return false, err
-					}
-					created++
-				}
-			}
-			slog.Info("Stored corporation assets", "corporationID", arg.corporationID, "created", created, "updated", updated)
-
-			// remove obsolete assets
-			if ids := set.Difference(currentIDs, incomingIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCorporationAssets(ctx, arg.corporationID, ids); err != nil {
-					return false, err
-				}
-				slog.Info("Deleted obsolete corporation assets", "corporationID", arg.corporationID, "count", ids.Size())
-			}
-
-			// update names
-			assets2, err := s.st.ListCorporationAssets(ctx, arg.corporationID)
+				},
+				func(ctx context.Context, item assetsync.Item) error {
+					return s.st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
+						CorporationID: arg.corporationID,
+						IsSingleton:   item.IsSingleton,
+						ItemID:        item.ItemID,
+						LocationFlag:  item.LocationFlag,
+						LocationID:    item.LocationID,
+						LocationType:  item.LocationType,
+						Quantity:      item.Quantity,
+					})
+				},
+				func(ctx context.Context, ids set.Set[int64]) error {
+					return s.st.DeleteCorporationAssets(ctx, arg.corporationID, ids)
+				},
+				logAttr,
+			)
 			if err != nil {
 				return false, err
 			}
-			names := make(map[int64]string)
-			for _, a := range assets2 {
-				if a.CanHaveName() {
-					names[a.ItemID] = a.Name
-				} else if a.Name != "" {
-					// An asset that can't have a name must not keep a stored one.
-					err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
-						CorporationID: arg.corporationID,
-						ItemID:        a.ItemID,
-						Name:          "",
-					})
-					if err != nil {
-						return false, err
-					}
-				}
-			}
-			names2, err := s.fetchAssetNamesESI(ctx, arg.corporationID, slices.Collect(maps.Keys(names)))
+			stored, err := s.st.ListCorporationAssets(ctx, arg.corporationID)
 			if err != nil {
-				if ctx.Err() != nil {
-					return false, ctx.Err()
-				}
-				// We can live without these names for now.
-				// They are fetched again the next time the assets are processed.
-				slog.Warn("Failed to fetch asset names", "corporationID", arg.corporationID, "err", err)
+				return false, err
 			}
-			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.corporationID)
-
-			modifyAssetNames(assets2, names2)
-
-			for id, name := range names2 {
-				if names[id] == name {
-					continue
-				}
-				err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
-					CorporationID: arg.corporationID,
-					ItemID:        id,
-					Name:          name,
-				})
-				if err != nil {
-					return false, err
-				}
+			err = assetsync.SyncNames(
+				ctx,
+				xslices.Map(stored, func(x *app.CorporationAsset) *app.Asset {
+					return &x.Asset
+				}),
+				func(ctx context.Context, ids []int64) ([]assetsync.ESIAssetName, error) {
+					ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
+					names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, arg.corporationID).RequestBody(ids).Execute()
+					if err != nil {
+						return nil, err
+					}
+					return xslices.Map(names, func(x esi.CharactersCharacterIdAssetsNamesPostInner) assetsync.ESIAssetName {
+						return assetsync.ESIAssetName(x)
+					}), nil
+				},
+				func(ctx context.Context, itemID int64, name string) error {
+					return s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
+						CorporationID: arg.corporationID,
+						ItemID:        itemID,
+						Name:          name,
+					})
+				},
+				modifyAssetName,
+				logAttr,
+			)
+			if err != nil {
+				return false, err
 			}
-
 			return true, nil
 		},
 	)
 }
 
-// modifyAssetNames modifies the names of specific asset types.
-func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) {
-	for _, a := range assets2 {
-		name, ok := names2[a.ItemID]
-		if !ok {
-			continue
-		}
-		if a.Type == nil {
-			continue
-		}
-		switch a.Type.ID {
-		case app.EveTypeCustomsOffice:
-			match := reCustomsOffice.FindStringSubmatch(name)
-			if len(match) < 2 {
-				continue
-			}
-			names2[a.ItemID] = match[1]
-		}
+// modifyAssetName returns the name to store for specific asset types.
+func modifyAssetName(a *app.Asset, name string) string {
+	if a.Type == nil {
+		return name
 	}
-}
-
-// fetchAssetNamesESI returns the names of assets from ESI.
-// The result contains all IDs that ESI has answered for, with an empty name for assets without a name.
-// IDs from failed requests are left out and reported in the error.
-func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, error) {
-	const assetNamesMaxIDs = 999
-	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
-	m := make(map[int64]string)
-	var errs []error
-	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-		names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, corporationID).RequestBody(chunk).Execute()
-		if err != nil {
-			errs = append(errs, err)
-			if ctx.Err() != nil {
-				break
-			}
-			continue
+	switch a.Type.ID {
+	case app.EveTypeCustomsOffice:
+		match := reCustomsOffice.FindStringSubmatch(name)
+		if len(match) < 2 {
+			return name
 		}
-		for _, id := range chunk {
-			m[id] = ""
-		}
-		for _, n := range names {
-			if n.Name != "None" {
-				m[n.ItemId] = n.Name
-			}
-		}
+		return match[1]
 	}
-	return m, errors.Join(errs...)
+	return name
 }
