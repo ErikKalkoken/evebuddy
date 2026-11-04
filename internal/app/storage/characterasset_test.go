@@ -261,6 +261,30 @@ func TestCharacterAsset(t *testing.T) {
 		assert.True(t, x.Price.IsEmpty())
 	})
 
+	t.Run("should list blueprint copy without price", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		ca := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID:     c.ID,
+			IsBlueprintCopy: optional.New(true),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		// when
+		oo1, err := st.ListCharacterAssets(ctx, c.ID)
+		require.NoError(t, err)
+		oo2, err := st.ListAllCharacterAssets(ctx)
+		require.NoError(t, err)
+		// then
+		require.Len(t, oo1, 1)
+		assert.True(t, oo1[0].Price.IsEmpty())
+		require.Len(t, oo2, 1)
+		assert.True(t, oo2[0].Price.IsEmpty())
+	})
+
 	t.Run("should map unknown location flag to FlagUnknown", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

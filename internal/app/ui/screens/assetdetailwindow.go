@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -45,6 +46,9 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 	path := widget.NewLabel(assetLocationPathDisplay(r))
 	path.Wrapping = fyne.TextWrapWord
 
+	formatVolume := func(v float64) string {
+		return humanize.CommafWithDigits(v, 4) + " m3"
+	}
 	items := []*widget.FormItem{
 		widget.NewFormItem("Owner", ui.MakeEveEntityActionLabel(r.owner, u.InfoViewer().Show)),
 		widget.NewFormItem("Item", item),
@@ -66,6 +70,8 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 				return ui.FormatISKAmount(v)
 			})),
 		),
+		widget.NewFormItem("Unit Volume", widget.NewLabel(r.volume.StringFunc("?", formatVolume))),
+		widget.NewFormItem("Total Volume", widget.NewLabel(r.totalVolume.StringFunc("?", formatVolume))),
 	}
 	if u.IsDeveloperMode() {
 		items = slices.Concat(items, []*widget.FormItem{

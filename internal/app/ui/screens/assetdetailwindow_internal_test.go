@@ -53,6 +53,7 @@ func TestShowAssetDetails(t *testing.T) {
 			totalPrice:   optional.New(5000.0),
 			typeName:     "Tritanium",
 		}
+		r.setVolume(app.Asset{Quantity: 5, Type: &app.EveType{Volume: optional.New(0.01)}})
 		// when
 		ShowAssetDetails(u, r)
 		// then

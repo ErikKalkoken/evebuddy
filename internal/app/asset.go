@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -395,6 +396,37 @@ func (ca Asset) TypeName() string {
 		return ""
 	}
 	return ca.Type.Name
+}
+
+// Volume returns the volume of a single unit in m3.
+// This is the packaged volume for non-singletons when known, otherwise the type's volume.
+func (ca Asset) Volume() optional.Optional[float64] {
+	if ca.Type == nil {
+		return optional.Optional[float64]{}
+	}
+	if !ca.IsSingleton && !ca.Type.PackagedVolume.IsEmpty() {
+		return ca.Type.PackagedVolume
+	}
+	return ca.Type.Volume
+}
+
+// TotalPrice returns the price of all units.
+func (ca Asset) TotalPrice() optional.Optional[float64] {
+	v, ok := ca.Price.Value()
+	if !ok {
+		return optional.Optional[float64]{}
+	}
+	return optional.New(v * float64(ca.Quantity))
+}
+
+// TotalVolume returns the volume of all units in m3,
+// rounded to 4 decimals to remove floating point noise from the multiplication.
+func (ca Asset) TotalVolume() optional.Optional[float64] {
+	v, ok := ca.Volume().Value()
+	if !ok {
+		return optional.Optional[float64]{}
+	}
+	return optional.New(math.Round(v*float64(ca.Quantity)*10_000) / 10_000)
 }
 
 func (ca Asset) Variant() InventoryTypeVariant {

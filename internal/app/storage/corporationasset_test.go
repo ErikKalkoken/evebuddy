@@ -216,4 +216,30 @@ func TestCorporationAsset(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+	t.Run("returns blueprint copy without price", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		ca := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{
+			CorporationID:   c.ID,
+			IsBlueprintCopy: optional.New(true),
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca.Type.ID,
+			AveragePrice: optional.New(100.1),
+		})
+		// when
+		o, err := st.GetCorporationAsset(ctx, c.ID, ca.ItemID)
+		require.NoError(t, err)
+		oo1, err := st.ListCorporationAssets(ctx, c.ID)
+		require.NoError(t, err)
+		oo2, err := st.ListAllCorporationAssets(ctx)
+		require.NoError(t, err)
+		// then
+		assert.True(t, o.Price.IsEmpty())
+		require.Len(t, oo1, 1)
+		assert.True(t, oo1[0].Price.IsEmpty())
+		require.Len(t, oo2, 1)
+		assert.True(t, oo2[0].Price.IsEmpty())
+	})
 }

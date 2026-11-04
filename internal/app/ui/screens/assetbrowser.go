@@ -976,9 +976,7 @@ func (a *browserContainer) filterItemsAsync() {
 		for _, it := range items {
 			itemCount++
 			if as, ok := it.node.Asset(); ok {
-				if price, ok := as.Price.Value(); ok {
-					value = optional.SumNonEmpty(value, optional.New(price*float64(as.Quantity)))
-				}
+				value = optional.SumNonEmpty(value, as.TotalPrice())
 			}
 		}
 		footer := fmt.Sprintf("%s / %s items", ihumanize.Comma(itemCount), ihumanize.Comma(totalItems))
