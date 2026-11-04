@@ -153,6 +153,7 @@ func addChildNodes(parents []*Node, items2 map[int64]Item, nodeLookup map[int64]
 var locationFlag2CategoryShared = map[app.LocationFlag]NodeCategory{
 	app.FlagCargo:                               NodeCargoBay,
 	app.FlagDroneBay:                            NodeDroneBay,
+	app.FlagExpeditionHold:                      NodeCargoBay,
 	app.FlagFighterBay:                          NodeFighterBay,
 	app.FlagFighterTube0:                        NodeFighterBay,
 	app.FlagFighterTube1:                        NodeFighterBay,

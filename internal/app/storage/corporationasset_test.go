@@ -15,6 +15,69 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
+func TestCorporationAsset_LocationValidation(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	for _, tc := range []struct {
+		name    string
+		flag    app.LocationFlag
+		wantErr bool
+	}{
+		{name: "accepts flag of owner", flag: app.FlagCorpSAG1},
+		{name: "accepts unknown flag", flag: app.FlagUnknown},
+		{name: "rejects flag of other owner", flag: app.FlagCorpseBay, wantErr: true},
+		{name: "rejects undefined flag", flag: app.FlagUndefined, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.MustTruncateTables(db)
+			c := factory.CreateCorporation()
+			eveType := factory.CreateEveType()
+			errCreate := st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
+				CorporationID: c.ID,
+				EveTypeID:     eveType.ID,
+				ItemID:        42,
+				LocationFlag:  tc.flag,
+			})
+			existing := factory.CreateCorporationAsset(storage.CreateCorporationAssetParams{CorporationID: c.ID})
+			errUpdate := st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
+				CorporationID: c.ID,
+				ItemID:        existing.ItemID,
+				LocationFlag:  tc.flag,
+			})
+			if tc.wantErr {
+				require.ErrorIs(t, errCreate, app.ErrInvalid)
+				require.ErrorIs(t, errUpdate, app.ErrInvalid)
+				return
+			}
+			require.NoError(t, errCreate)
+			require.NoError(t, errUpdate)
+			created, err := st.GetCorporationAsset(ctx, c.ID, 42)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.flag, created.LocationFlag)
+			updated, err := st.GetCorporationAsset(ctx, c.ID, existing.ItemID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.flag, updated.LocationFlag)
+		})
+	}
+	t.Run("stores unknown location type", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		eveType := factory.CreateEveType()
+		err := st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
+			CorporationID: c.ID,
+			EveTypeID:     eveType.ID,
+			ItemID:        42,
+			LocationFlag:  app.FlagHangar,
+			LocationType:  app.TypeUnknown,
+		})
+		require.NoError(t, err)
+		x, err := st.GetCorporationAsset(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, app.TypeUnknown, x.LocationType)
+	})
+}
+
 func TestCorporationAsset(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

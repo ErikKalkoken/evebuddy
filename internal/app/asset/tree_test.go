@@ -189,6 +189,23 @@ func TestTree_CustomNodes(t *testing.T) {
 	// t.Fail()
 }
 
+func TestTree_ExpeditionHold(t *testing.T) {
+	const locationID = 100001
+	ship := createCharacterAsset(assetParams{
+		LocationID: locationID,
+		Type:       shipType(),
+	})
+	item := createCharacterAsset(assetParams{
+		LocationID:   ship.ItemID,
+		LocationFlag: app.FlagExpeditionHold,
+		Type:         mineralType(),
+	})
+	locations := []*app.EveLocation{{ID: locationID, Name: "Alpha"}}
+	ac := asset.NewFromCharacterAssets([]*app.CharacterAsset{ship, item}, locations)
+
+	xassert.Equal(t, []string{"Alpha", "Ship Hangar", "Merlin", "Cargo Bay", "Tritanium"}, makeNamesPath(ac, item))
+}
+
 func TestTree_Impounded(t *testing.T) {
 	const locationID = 60007927
 	office := createCorporationAsset(assetParams{
