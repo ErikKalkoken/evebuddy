@@ -54,15 +54,15 @@ func ShowAssetDetails(u baseUI, r assetRow) {
 		widget.NewFormItem("Path", path),
 		widget.NewFormItem("Region", region),
 		widget.NewFormItem(
-			"Price",
+			"Unit Price",
 			widget.NewLabel(r.price.StringFunc("?", func(v float64) string {
 				return ui.FormatISKAmount(v)
 			})),
 		),
 		widget.NewFormItem("Quantity", widget.NewLabel(r.quantityDisplay)),
 		widget.NewFormItem(
-			"Total",
-			widget.NewLabel(r.total.StringFunc("?", func(v float64) string {
+			"Total Price",
+			widget.NewLabel(r.totalPrice.StringFunc("?", func(v float64) string {
 				return ui.FormatISKAmount(v)
 			})),
 		),

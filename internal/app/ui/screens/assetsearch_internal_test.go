@@ -83,7 +83,7 @@ func TestMakeCSVFromRows(t *testing.T) {
 			regionID:        10000002,
 			regionName:      "The Forge",
 			price:           optional.New(5.5),
-			total:           optional.New(5500.0),
+			totalPrice:      optional.New(5500.0),
 			owner:           &app.EveEntity{ID: 1001, Name: "Bruce Wayne"},
 			tagsDisplay:     "PVE",
 		},
@@ -104,7 +104,7 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, rows, false)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n" +
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Owner ID,Owner Name,Tags\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne,PVE\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne,\n"
 		xassert.Equal(t, want, got)
@@ -114,7 +114,7 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, rows, true)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name\n" +
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Owner ID,Owner Name\n" +
 			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne\n" +
 			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne\n"
 		xassert.Equal(t, want, got)
@@ -124,7 +124,7 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, nil, false)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n"
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Owner ID,Owner Name,Tags\n"
 		xassert.Equal(t, want, got)
 	})
 }
@@ -138,10 +138,10 @@ func TestAssetSearchFilter_Match(t *testing.T) {
 		regionName:   "The Forge",
 		state:        "In space",
 		tags:         set.Of("alpha"),
-		total:        optional.New(1.5),
+		totalPrice:   optional.New(1.5),
 	}
 	noTotal := r
-	noTotal.total = optional.Optional[float64]{}
+	noTotal.totalPrice = optional.Optional[float64]{}
 	for _, tc := range []struct {
 		name   string
 		filter assetSearchFilter
@@ -158,11 +158,11 @@ func TestAssetSearchFilter_Match(t *testing.T) {
 		{"state differs", assetSearchFilter{state: "In hangar"}, r, false},
 		{"tag matches", assetSearchFilter{tag: "alpha"}, r, true},
 		{"tag missing", assetSearchFilter{tag: "bravo"}, r, false},
-		{"has total", assetSearchFilter{total: assetSearchTotalYes}, r, true},
-		{"has total but none", assetSearchFilter{total: assetSearchTotalYes}, noTotal, false},
-		{"has no total", assetSearchFilter{total: assetSearchTotalNo}, noTotal, true},
-		{"has no total but has", assetSearchFilter{total: assetSearchTotalNo}, r, false},
-		{"all match", assetSearchFilter{category: "Ship", group: "Frigate", region: "The Forge", tag: "alpha", total: assetSearchTotalYes}, r, true},
+		{"has total", assetSearchFilter{price: assetSearchPriceYes}, r, true},
+		{"has total but none", assetSearchFilter{price: assetSearchPriceYes}, noTotal, false},
+		{"has no total", assetSearchFilter{price: assetSearchPriceNo}, noTotal, true},
+		{"has no total but has", assetSearchFilter{price: assetSearchPriceNo}, r, false},
+		{"all match", assetSearchFilter{category: "Ship", group: "Frigate", region: "The Forge", tag: "alpha", price: assetSearchPriceYes}, r, true},
 		{"one of many differs", assetSearchFilter{category: "Ship", group: "Cruiser"}, r, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -222,7 +222,7 @@ func TestAssetSearch_Filter(t *testing.T) {
 			assetSearchFilterRegion:   "",
 			assetSearchFilterState:    "",
 			assetSearchFilterTag:      "",
-			assetSearchFilterTotal:    "",
+			assetSearchFilterPrice:    "",
 		}, a.filterChip.Selected())
 	})
 	t.Run("hides tag and owner filters for corporation on mobile", func(t *testing.T) {
@@ -233,7 +233,7 @@ func TestAssetSearch_Filter(t *testing.T) {
 			assetSearchFilterLocation: "",
 			assetSearchFilterRegion:   "",
 			assetSearchFilterState:    "",
-			assetSearchFilterTotal:    "",
+			assetSearchFilterPrice:    "",
 		}, a.filterChip.Selected())
 	})
 	t.Run("resets filters when corporation changes on mobile", func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestAssetRow_SetPrice(t *testing.T) {
 		r.setPrice(optional.New(2.5), 4, optional.New(false))
 		// then
 		xassert.EqualOptional(t, 2.5, r.price)
-		xassert.EqualOptional(t, 10.0, r.total)
+		xassert.EqualOptional(t, 10.0, r.totalPrice)
 	})
 	t.Run("has no price for blueprint copies", func(t *testing.T) {
 		// given
@@ -293,9 +293,9 @@ func TestAssetRow_SetPrice(t *testing.T) {
 		r.setPrice(optional.New(2.5), 4, optional.New(true))
 		// then
 		xassert.Empty(t, r.price)
-		xassert.Empty(t, r.total)
+		xassert.Empty(t, r.totalPrice)
 		xassert.Equal(t, "?", r.priceDisplay)
-		xassert.Equal(t, "?", r.totalDisplay)
+		xassert.Equal(t, "?", r.totalPriceDisplay)
 	})
 }
 
