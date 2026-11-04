@@ -43,6 +43,7 @@ var (
 		"CorpseBay":                           app.FlagCorpseBay,
 		"Deliveries":                          app.FlagDeliveries,
 		"DroneBay":                            app.FlagDroneBay,
+		"ExpeditionHold":                      app.FlagExpeditionHold,
 		"FighterBay":                          app.FlagFighterBay,
 		"FighterTube0":                        app.FlagFighterTube0,
 		"FighterTube1":                        app.FlagFighterTube1,
