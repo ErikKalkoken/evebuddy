@@ -227,7 +227,7 @@ func (n *Node) TotalValue() float64 {
 		if !ok {
 			continue
 		}
-		total += as.Price.ValueOrZero() * float64(as.Quantity)
+		total += as.TotalPrice().ValueOrZero()
 	}
 	return total
 }

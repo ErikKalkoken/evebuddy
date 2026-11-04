@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
@@ -16,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xassert"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestCompileRowsForClipboard(t *testing.T) {
@@ -76,14 +78,16 @@ func TestMakeCSVFromRows(t *testing.T) {
 			locationFlag:    app.FlagHangar,
 			state:           "Personal",
 			quantity:        1000,
-			isSingleton:     true,
+			isSingleton:     false,
 			variant:         app.VariantBPO,
 			solarSystemID:   30000142,
 			solarSystemName: "Jita",
 			regionID:        10000002,
 			regionName:      "The Forge",
 			price:           optional.New(5.5),
-			total:           optional.New(5500.0),
+			totalPrice:      optional.New(5500.0),
+			volume:          optional.New(0.01),
+			totalVolume:     optional.New(10.0),
 			owner:           &app.EveEntity{ID: 1001, Name: "Bruce Wayne"},
 			tagsDisplay:     "PVE",
 		},
@@ -104,9 +108,9 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, rows, false)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n" +
-			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne,PVE\n" +
-			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne,\n"
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Unit Volume,Total Volume,Owner ID,Owner Name,Tags\n" +
+			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,false,BPO,30000142,Jita,10000002,The Forge,5.5,5500,0.01,10,1001,Bruce Wayne,PVE\n" +
+			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,,,1001,Bruce Wayne,\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("for corporation includes owner but omits tags", func(t *testing.T) {
@@ -114,9 +118,9 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, rows, true)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name\n" +
-			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,true,BPO,30000142,Jita,10000002,The Forge,5.5,5500,1001,Bruce Wayne\n" +
-			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,1001,Bruce Wayne\n"
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Unit Volume,Total Volume,Owner ID,Owner Name\n" +
+			"1000000000001,34,Tritanium,Tritanium Stack,18,Mineral,4,Material,Jita IV - Moon 4,FlagHangar,Personal,1000,false,BPO,30000142,Jita,10000002,The Forge,5.5,5500,0.01,10,1001,Bruce Wayne\n" +
+			"1000000000002,35,Pyerite,,18,Mineral,0,,Jita IV - Moon 4,FlagUndefined,Personal,50,false,,0,,0,,,,,,1001,Bruce Wayne\n"
 		xassert.Equal(t, want, got)
 	})
 	t.Run("no rows returns only header", func(t *testing.T) {
@@ -124,7 +128,7 @@ func TestMakeCSVFromRows(t *testing.T) {
 		err := writeAssetRowsToCSV(&b, nil, false)
 		require.NoError(t, err)
 		got := b.String()
-		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Price,Total,Owner ID,Owner Name,Tags\n"
+		want := "Item ID,Type ID,Type Name,Item Name,Group ID,Group Name,Category ID,Category Name,Location Name,Location Flag,State,Quantity,Is Singleton,Variant,Solar System ID,Solar System Name,Region ID,Region Name,Unit Price,Total Price,Unit Volume,Total Volume,Owner ID,Owner Name,Tags\n"
 		xassert.Equal(t, want, got)
 	})
 }
@@ -138,10 +142,10 @@ func TestAssetSearchFilter_Match(t *testing.T) {
 		regionName:   "The Forge",
 		state:        "In space",
 		tags:         set.Of("alpha"),
-		total:        optional.New(1.5),
+		totalPrice:   optional.New(1.5),
 	}
-	noTotal := r
-	noTotal.total = optional.Optional[float64]{}
+	noPrice := r
+	noPrice.totalPrice = optional.Optional[float64]{}
 	for _, tc := range []struct {
 		name   string
 		filter assetSearchFilter
@@ -158,11 +162,11 @@ func TestAssetSearchFilter_Match(t *testing.T) {
 		{"state differs", assetSearchFilter{state: "In hangar"}, r, false},
 		{"tag matches", assetSearchFilter{tag: "alpha"}, r, true},
 		{"tag missing", assetSearchFilter{tag: "bravo"}, r, false},
-		{"has total", assetSearchFilter{total: assetSearchTotalYes}, r, true},
-		{"has total but none", assetSearchFilter{total: assetSearchTotalYes}, noTotal, false},
-		{"has no total", assetSearchFilter{total: assetSearchTotalNo}, noTotal, true},
-		{"has no total but has", assetSearchFilter{total: assetSearchTotalNo}, r, false},
-		{"all match", assetSearchFilter{category: "Ship", group: "Frigate", region: "The Forge", tag: "alpha", total: assetSearchTotalYes}, r, true},
+		{"has price", assetSearchFilter{price: assetSearchPriceYes}, r, true},
+		{"has price but none", assetSearchFilter{price: assetSearchPriceYes}, noPrice, false},
+		{"has no price", assetSearchFilter{price: assetSearchPriceNo}, noPrice, true},
+		{"has no price but has", assetSearchFilter{price: assetSearchPriceNo}, r, false},
+		{"all match", assetSearchFilter{category: "Ship", group: "Frigate", region: "The Forge", tag: "alpha", price: assetSearchPriceYes}, r, true},
 		{"one of many differs", assetSearchFilter{category: "Ship", group: "Cruiser"}, r, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -222,7 +226,7 @@ func TestAssetSearch_Filter(t *testing.T) {
 			assetSearchFilterRegion:   "",
 			assetSearchFilterState:    "",
 			assetSearchFilterTag:      "",
-			assetSearchFilterTotal:    "",
+			assetSearchFilterPrice:    "",
 		}, a.filterChip.Selected())
 	})
 	t.Run("hides tag and owner filters for corporation on mobile", func(t *testing.T) {
@@ -233,7 +237,7 @@ func TestAssetSearch_Filter(t *testing.T) {
 			assetSearchFilterLocation: "",
 			assetSearchFilterRegion:   "",
 			assetSearchFilterState:    "",
-			assetSearchFilterTotal:    "",
+			assetSearchFilterPrice:    "",
 		}, a.filterChip.Selected())
 	})
 	t.Run("resets filters when corporation changes on mobile", func(t *testing.T) {
@@ -260,7 +264,7 @@ func TestAssetRow_SetQuantity(t *testing.T) {
 		// given
 		var r assetRow
 		// when
-		r.setQuantity(true, 5)
+		r.setQuantity(true, 1)
 		// then
 		xassert.Equal(t, 1, r.quantity)
 		xassert.Equal(t, "1*", r.quantityDisplay)
@@ -277,25 +281,199 @@ func TestAssetRow_SetQuantity(t *testing.T) {
 }
 
 func TestAssetRow_SetPrice(t *testing.T) {
-	t.Run("calculates total from price and quantity", func(t *testing.T) {
+	t.Run("sets price and total from asset", func(t *testing.T) {
 		// given
 		var r assetRow
 		// when
-		r.setPrice(optional.New(2.5), 4, optional.New(false))
+		r.setPrice(app.Asset{Price: optional.New(2.5), Quantity: 4})
 		// then
 		xassert.EqualOptional(t, 2.5, r.price)
-		xassert.EqualOptional(t, 10.0, r.total)
+		xassert.EqualOptional(t, 10.0, r.totalPrice)
 	})
-	t.Run("has no price for blueprint copies", func(t *testing.T) {
+	t.Run("shows unknown when price is missing", func(t *testing.T) {
 		// given
 		var r assetRow
 		// when
-		r.setPrice(optional.New(2.5), 4, optional.New(true))
+		r.setPrice(app.Asset{Quantity: 4})
 		// then
 		xassert.Empty(t, r.price)
-		xassert.Empty(t, r.total)
-		xassert.Equal(t, "?", r.priceDisplay)
-		xassert.Equal(t, "?", r.totalDisplay)
+		xassert.Empty(t, r.totalPrice)
+		xassert.Equal(t, "?", r.totalPriceDisplay)
+	})
+}
+
+func TestAssetRow_SetVolume(t *testing.T) {
+	t.Run("sets volume and total from asset", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setVolume(app.Asset{Quantity: 1000, Type: &app.EveType{Volume: optional.New(2.5)}})
+		// then
+		xassert.EqualOptional(t, 2.5, r.volume)
+		xassert.EqualOptional(t, 2500.0, r.totalVolume)
+		xassert.Equal(t, "2,500", r.totalVolumeDisplay)
+	})
+	t.Run("displays small volumes", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setVolume(app.Asset{Quantity: 1, Type: &app.EveType{Volume: optional.New(0.0025)}})
+		// then
+		xassert.Equal(t, "0.0025", r.totalVolumeDisplay)
+	})
+	t.Run("shows unknown when volume is missing", func(t *testing.T) {
+		// given
+		var r assetRow
+		// when
+		r.setVolume(app.Asset{Quantity: 4, Type: &app.EveType{}})
+		// then
+		xassert.Empty(t, r.volume)
+		xassert.Empty(t, r.totalVolume)
+		xassert.Equal(t, "?", r.totalVolumeDisplay)
+	})
+}
+
+func TestAssetListItem(t *testing.T) {
+	test.NewTempApp(t)
+	t.Run("shows price and volume with units", func(t *testing.T) {
+		// given
+		w := newAssetListItem(true)
+		r := assetRow{owner: &app.EveEntity{Name: "Bruce"}}
+		a := app.Asset{Price: optional.New(5.5), Quantity: 1000, Type: &app.EveType{Volume: optional.New(0.01)}}
+		r.setPrice(a)
+		r.setVolume(a)
+		// when
+		w.set(r)
+		// then
+		xassert.Equal(t, "5,500.00 ISK", w.priceLabel.Text)
+		xassert.Equal(t, "10 m3", w.volumeLabel.Text)
+		xassert.Equal(t, "Bruce", w.ownerLabel.Text)
+	})
+	t.Run("shows units for unknown values", func(t *testing.T) {
+		// given
+		w := newAssetListItem(true)
+		r := assetRow{owner: &app.EveEntity{Name: "Bruce"}}
+		a := app.Asset{Quantity: 1, Type: &app.EveType{}}
+		r.setPrice(a)
+		r.setVolume(a)
+		// when
+		w.set(r)
+		// then
+		xassert.Equal(t, "? ISK", w.priceLabel.Text)
+		xassert.Equal(t, "? m3", w.volumeLabel.Text)
+	})
+	t.Run("shows quantity in title for stacks", func(t *testing.T) {
+		// given
+		w := newAssetListItem(true)
+		r := assetRow{displayName: "Tritanium", owner: &app.EveEntity{Name: "Bruce"}}
+		r.setQuantity(false, 1234)
+		// when
+		w.set(r)
+		// then
+		xassert.Equal(t, "Tritanium x1,234", w.titleLabel.Text)
+	})
+	t.Run("shows no quantity in title for singletons", func(t *testing.T) {
+		// given
+		w := newAssetListItem(true)
+		r := assetRow{displayName: "Merlin", isSingleton: true, owner: &app.EveEntity{Name: "Bruce"}}
+		r.setQuantity(true, 1)
+		// when
+		w.set(r)
+		// then
+		xassert.Equal(t, "Merlin", w.titleLabel.Text)
+	})
+	t.Run("can show owner", func(t *testing.T) {
+		w := newAssetListItem(true)
+		assert.False(t, w.ownerLabel.Hidden)
+	})
+	t.Run("can hide owner", func(t *testing.T) {
+		w := newAssetListItem(false)
+		assert.True(t, w.ownerLabel.Hidden)
+	})
+}
+
+func TestAssetSearch_MobileList(t *testing.T) {
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	t.Run("renders rows with list items", func(t *testing.T) {
+		// given
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:      test.NewTempApp(t),
+			IsMobile: true,
+			Storage:  st,
+		}))
+		a.rowsFiltered = []assetRow{{displayName: "Merlin", isSingleton: true, owner: &app.EveEntity{Name: "Bruce"}}}
+		l := a.body.(*xwidget.StripedList)
+		// when
+		co := l.CreateItem()
+		l.UpdateItem(0, co)
+		// then
+		item := co.(*fyne.Container).Objects[1].(*assetListItem) // the striped list wraps each item
+		xassert.Equal(t, "Merlin", item.titleLabel.Text)
+	})
+}
+
+func TestAssetSearch_SortByState(t *testing.T) {
+	// given
+	db, st, _ := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+		App:     test.NewTempApp(t),
+		Storage: st,
+	}))
+	rows := []assetRow{
+		{itemID: 1, locationName: "Alpha", state: "Personal"},
+		{itemID: 2, locationName: "Bravo", state: "Office"},
+	}
+	// when
+	a.columnSorter.SortRows(rows, "State", xwidget.SortAsc, true)
+	// then
+	xassert.Equal(t, 2, rows[0].itemID)
+	xassert.Equal(t, 1, rows[1].itemID)
+}
+
+func TestAssetSearch_Help(t *testing.T) {
+	t.Run("help button shows popup", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		w.Resize(fyne.NewSize(800, 600))
+		// when
+		test.Tap(a.helpButton)
+		// then
+		assert.NotNil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("explains owner and tags for characters", func(t *testing.T) {
+		got := assetSearchHelpText(false, false)
+		assert.Contains(t, got, "Volume:")
+		assert.Contains(t, got, "Owner:")
+		assert.Contains(t, got, "Tags:")
+	})
+	t.Run("does not explain owner and tags for corporations", func(t *testing.T) {
+		got := assetSearchHelpText(false, true)
+		assert.Contains(t, got, "Volume:")
+		assert.NotContains(t, got, "Owner:")
+		assert.NotContains(t, got, "Tags:")
+	})
+	t.Run("explains only what the mobile list shows", func(t *testing.T) {
+		got := assetSearchHelpText(true, false)
+		for _, want := range []string{"Title:", "Location:", "Owner:", "Price (bottom left):", "Volume (bottom right):", "? means"} {
+			assert.Contains(t, got, want)
+		}
+		for _, notWant := range []string{"Item:", "Group:", "State:", "Qty.:", "1*", "Tags:"} {
+			assert.NotContains(t, got, notWant)
+		}
+	})
+	t.Run("does not explain owner on mobile for corporations", func(t *testing.T) {
+		got := assetSearchHelpText(true, true)
+		assert.Contains(t, got, "Volume (bottom right):")
+		assert.NotContains(t, got, "Owner:")
 	})
 }
 

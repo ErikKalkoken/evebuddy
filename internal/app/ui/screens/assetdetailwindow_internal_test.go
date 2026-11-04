@@ -50,9 +50,10 @@ func TestShowAssetDetails(t *testing.T) {
 			locationPath: []string{"Item Hangar"},
 			owner:        owner,
 			price:        optional.New(1000.0),
-			total:        optional.New(5000.0),
+			totalPrice:   optional.New(5000.0),
 			typeName:     "Tritanium",
 		}
+		r.setVolume(app.Asset{Quantity: 5, Type: &app.EveType{Volume: optional.New(0.01)}})
 		// when
 		ShowAssetDetails(u, r)
 		// then

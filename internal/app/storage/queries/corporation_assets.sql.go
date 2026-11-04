@@ -371,6 +371,7 @@ func (q *Queries) ListCorporationAssets(ctx context.Context, corporationID int64
 const updateCorporationAsset = `-- name: UpdateCorporationAsset :exec
 UPDATE corporation_assets
 SET
+    is_singleton = ?,
     location_flag = ?,
     location_id = ?,
     location_type = ?,
@@ -380,6 +381,7 @@ AND item_id = ?
 `
 
 type UpdateCorporationAssetParams struct {
+	IsSingleton   bool
 	LocationFlag  string
 	LocationID    int64
 	LocationType  string
@@ -390,6 +392,7 @@ type UpdateCorporationAssetParams struct {
 
 func (q *Queries) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporationAssetParams) error {
 	_, err := q.db.ExecContext(ctx, updateCorporationAsset,
+		arg.IsSingleton,
 		arg.LocationFlag,
 		arg.LocationID,
 		arg.LocationType,

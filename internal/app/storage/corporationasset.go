@@ -266,6 +266,7 @@ func (st *Storage) ListCorporationAssetIDs(ctx context.Context, corporationID in
 
 type UpdateCorporationAssetParams struct {
 	CorporationID int64
+	IsSingleton   bool
 	ItemID        int64
 	LocationFlag  app.LocationFlag
 	LocationID    int64
@@ -282,6 +283,7 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 	}
 	if err := st.qRW.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
 		CorporationID: arg.CorporationID,
+		IsSingleton:   arg.IsSingleton,
 		ItemID:        arg.ItemID,
 		LocationFlag:  locationFlagToDBValue2[arg.LocationFlag],
 		LocationID:    arg.LocationID,

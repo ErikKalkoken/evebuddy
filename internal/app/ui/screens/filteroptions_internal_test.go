@@ -13,7 +13,7 @@ func TestFixedFilterOptionsOrder(t *testing.T) {
 		got  []string
 		want []string
 	}{
-		{"asset search total", assetSearchTotalOptions(), []string{"Has total", "Has no total"}},
+		{"asset search price", assetSearchPriceOptions(), []string{"Has price", "Has no price"}},
 		{"augmentations implants", augmentationsImplantsOptions(), []string{"Has implants", "No implants"}},
 		{"industry jobs activity", industryJobsActivityOptions(), []string{
 			"Manufacturing",

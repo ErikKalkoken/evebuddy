@@ -39,12 +39,12 @@ import (
 )
 
 const (
-	assetSearchTotalYes = "Has total"
-	assetSearchTotalNo  = "Has no total"
+	assetSearchPriceYes = "Has price"
+	assetSearchPriceNo  = "Has no price"
 )
 
-func assetSearchTotalOptions() []string {
-	return []string{assetSearchTotalYes, assetSearchTotalNo}
+func assetSearchPriceOptions() []string {
+	return []string{assetSearchPriceYes, assetSearchPriceNo}
 }
 
 // Names of the asset search filters, used as labels on desktop and as option names on mobile.
@@ -53,10 +53,10 @@ const (
 	assetSearchFilterGroup    = "Group"
 	assetSearchFilterLocation = "Location"
 	assetSearchFilterOwner    = "Owner"
+	assetSearchFilterPrice    = "Price"
 	assetSearchFilterRegion   = "Region"
 	assetSearchFilterState    = "State"
 	assetSearchFilterTag      = "Tag"
-	assetSearchFilterTotal    = "Total"
 )
 
 // assetSearchFilter is the selected value of each asset search filter. Empty means not filtered.
@@ -65,10 +65,10 @@ type assetSearchFilter struct {
 	group    string
 	location string
 	owner    string
+	price    string
 	region   string
 	state    string
 	tag      string
-	total    string
 }
 
 // match reports whether row r passes all filters.
@@ -83,47 +83,49 @@ func (f assetSearchFilter) match(r assetRow) bool {
 		f.tag != "" && !r.tags.Contains(f.tag):
 		return false
 	}
-	switch f.total {
-	case assetSearchTotalYes:
-		return !r.total.IsEmpty()
-	case assetSearchTotalNo:
-		return r.total.IsEmpty()
+	switch f.price {
+	case assetSearchPriceYes:
+		return !r.totalPrice.IsEmpty()
+	case assetSearchPriceNo:
+		return r.totalPrice.IsEmpty()
 	}
 	return true
 }
 
 type assetRow struct {
-	categoryID      int64
-	categoryName    string
-	displayName     string
-	groupID         int64
-	groupName       string
-	isSingleton     bool
-	itemID          int64
-	location        *app.EveLocationShort
-	locationDisplay []widget.RichTextSegment
-	locationFlag    app.LocationFlag
-	locationName    string
-	locationPath    []string
-	name            string
-	owner           *app.EveEntity
-	price           optional.Optional[float64]
-	priceDisplay    string
-	quantity        int
-	quantityDisplay string
-	regionID        int64
-	regionName      string
-	searchTarget    string
-	solarSystemID   int64
-	solarSystemName string
-	state           string
-	tags            set.Set[string]
-	tagsDisplay     string
-	total           optional.Optional[float64]
-	totalDisplay    string
-	typeID          int64
-	typeName        string
-	variant         app.InventoryTypeVariant
+	categoryID         int64
+	categoryName       string
+	displayName        string
+	groupID            int64
+	groupName          string
+	isSingleton        bool
+	itemID             int64
+	location           *app.EveLocationShort
+	locationDisplay    []widget.RichTextSegment
+	locationFlag       app.LocationFlag
+	locationName       string
+	locationPath       []string
+	name               string
+	owner              *app.EveEntity
+	price              optional.Optional[float64]
+	quantity           int
+	quantityDisplay    string
+	regionID           int64
+	regionName         string
+	searchTarget       string
+	solarSystemID      int64
+	solarSystemName    string
+	state              string
+	tags               set.Set[string]
+	tagsDisplay        string
+	totalPrice         optional.Optional[float64]
+	totalPriceDisplay  string
+	totalVolume        optional.Optional[float64]
+	totalVolumeDisplay string
+	typeID             int64
+	typeName           string
+	variant            app.InventoryTypeVariant
+	volume             optional.Optional[float64]
 }
 
 func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName func(int64) string) assetRow {
@@ -149,7 +151,8 @@ func newCharacterAssetRow(ca *app.CharacterAsset, ac asset.Tree, characterName f
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
 	r.setLocationFlag(ac, ca.ItemID)
-	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
+	r.setPrice(ca.Asset)
+	r.setVolume(ca.Asset)
 	return r
 }
 
@@ -176,7 +179,8 @@ func newCorporationAssetRow(ca *app.CorporationAsset, ac asset.Tree, corporation
 	r.setQuantity(ca.IsSingleton, ca.Quantity)
 	r.setLocation(ac, ca.ItemID)
 	r.setLocationFlag(ac, ca.ItemID)
-	r.setPrice(ca.Price, ca.Quantity, ca.IsBlueprintCopy)
+	r.setPrice(ca.Asset)
+	r.setVolume(ca.Asset)
 	return r
 }
 
@@ -241,27 +245,27 @@ func (r *assetRow) setLocation(ac asset.Tree, itemID int64) {
 }
 
 func (r *assetRow) setQuantity(isSingleton bool, quantity int) {
+	r.quantity = quantity
 	if isSingleton {
 		r.quantityDisplay = "1*"
-		r.quantity = 1
 	} else {
 		r.quantityDisplay = humanize.Comma(int64(quantity))
-		r.quantity = quantity
 	}
 }
 
-func (r *assetRow) setPrice(price optional.Optional[float64], quantity int, isBPC optional.Optional[bool]) {
-	if !isBPC.ValueOrZero() {
-		r.price = price
-	}
-	r.priceDisplay = r.price.StringFunc("?", func(v float64) string {
-		return ihumanize.NumberF(v, 1)
-	})
-	if v, ok := r.price.Value(); ok {
-		r.total.Set(v * float64(quantity))
-	}
-	r.totalDisplay = r.total.StringFunc("?", func(v float64) string {
+func (r *assetRow) setPrice(a app.Asset) {
+	r.price = a.Price
+	r.totalPrice = a.TotalPrice()
+	r.totalPriceDisplay = r.totalPrice.StringFunc("?", func(v float64) string {
 		return humanize.FormatFloat(ui.FloatFormatISK, v)
+	})
+}
+
+func (r *assetRow) setVolume(a app.Asset) {
+	r.volume = a.Volume()
+	r.totalVolume = a.TotalVolume()
+	r.totalVolumeDisplay = r.totalVolume.StringFunc("?", func(v float64) string {
+		return humanize.CommafWithDigits(v, 4)
 	})
 }
 
@@ -275,6 +279,7 @@ type AssetSearch struct {
 	filterRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
+	helpButton     *xwidget.Button
 	moreButton     *xwidget.ContextMenuButton
 	rows           []assetRow
 	rowsFiltered   []assetRow
@@ -283,10 +288,10 @@ type AssetSearch struct {
 	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
+	selectPrice    *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
-	selectTotal    *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
 	topLabel       *widget.Label
 	u              baseUI
@@ -349,7 +354,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 		Label: "State",
 		Width: 90,
 		Sort: func(a, b assetRow) int {
-			return strings.Compare(a.locationName, b.locationName)
+			return strings.Compare(a.state, b.state)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.state)
@@ -366,13 +371,24 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 			})
 		},
 	}, {
-		Label: "Total",
+		Label: "Price",
 		Width: 150,
 		Sort: func(a, b assetRow) int {
-			return optional.Compare(a.total, b.total)
+			return optional.Compare(a.totalPrice, b.totalPrice)
 		},
 		Update: func(r assetRow, co fyne.CanvasObject) {
-			co.(*xwidget.RichText).SetWithText(r.totalDisplay, widget.RichTextStyle{
+			co.(*xwidget.RichText).SetWithText(r.totalPriceDisplay, widget.RichTextStyle{
+				Alignment: fyne.TextAlignTrailing,
+			})
+		},
+	}, {
+		Label: "Volume",
+		Width: 150,
+		Sort: func(a, b assetRow) int {
+			return optional.Compare(a.totalVolume, b.totalVolume)
+		},
+		Update: func(r assetRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).SetWithText(r.totalVolumeDisplay, widget.RichTextStyle{
 				Alignment: fyne.TextAlignTrailing,
 			})
 		},
@@ -428,6 +444,11 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	)
 	a.moreButton.Importance = widget.LowImportance
 
+	a.helpButton = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(assetSearchHelpText(a.u.IsMobile(), a.forCorporation), a.u.IsMobile(), a.helpButton)
+	})
+	a.helpButton.SetToolTip("Show explanation for columns")
+
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
@@ -474,9 +495,9 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 		a.selectRegion = makeSelectWithSearch(assetSearchFilterRegion)
 		a.selectLocation = makeSelectWithSearch(assetSearchFilterLocation)
 		a.selectState = makeSelect(assetSearchFilterState)
-		a.selectTotal = makeSelect(assetSearchFilterTotal)
-		a.selectTotal.SetOptions(assetSearchTotalOptions())
-		a.selectTotal.SortDisabled = true
+		a.selectPrice = makeSelect(assetSearchFilterPrice)
+		a.selectPrice.SetOptions(assetSearchPriceOptions())
+		a.selectPrice.SortDisabled = true
 		a.selectTag = makeSelect(assetSearchFilterTag)
 	}
 	a.sortChip = a.columnSorter.NewSortChip(func() {
@@ -501,7 +522,7 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 					a.selectRegion,
 					a.selectState,
 					a.selectTag,
-					a.selectTotal,
+					a.selectPrice,
 				)
 			})
 			a.update(ctx)
@@ -564,7 +585,7 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 			a.selectRegion,
 			a.selectLocation,
 			a.selectState,
-			a.selectTotal,
+			a.selectPrice,
 		)
 		if !a.forCorporation {
 			filters.Add(a.selectTag)
@@ -572,7 +593,13 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 		}
 		topBox.Add(container.NewBorder(nil, nil, filters, a.moreButton, a.searchEntry))
 	}
-	c := container.NewBorder(topBox, a.footerLabel, nil, nil, a.body)
+	c := container.NewBorder(
+		topBox,
+		container.NewBorder(nil, nil, nil, a.helpButton, a.footerLabel),
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -586,10 +613,10 @@ func (a *AssetSearch) currentFilter() assetSearchFilter {
 			group:    s[assetSearchFilterGroup],
 			location: s[assetSearchFilterLocation],
 			owner:    s[assetSearchFilterOwner],
+			price:    s[assetSearchFilterPrice],
 			region:   s[assetSearchFilterRegion],
 			state:    s[assetSearchFilterState],
 			tag:      s[assetSearchFilterTag],
-			total:    s[assetSearchFilterTotal],
 		}
 	}
 	return assetSearchFilter{
@@ -597,50 +624,26 @@ func (a *AssetSearch) currentFilter() assetSearchFilter {
 		group:    a.selectGroup.Selected,
 		location: a.selectLocation.Selected,
 		owner:    a.selectOwner.Selected,
+		price:    a.selectPrice.Selected,
 		region:   a.selectRegion.Selected,
 		state:    a.selectState.Selected,
 		tag:      a.selectTag.Selected,
-		total:    a.selectTotal.Selected,
 	}
 }
 
 func (a *AssetSearch) makeDataList() *xwidget.StripedList {
-	p := theme.Padding()
 	l := xwidget.NewStripedList(
 		func() int {
 			return len(a.rowsFiltered)
 		},
 		func() fyne.CanvasObject {
-			title := widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			owner := widget.NewLabel("Template")
-			if a.forCorporation {
-				owner.Hide()
-			}
-			location := xwidget.NewRichTextWithText("Template")
-			price := widget.NewLabel("Template")
-			return container.New(layout.NewCustomPaddedVBoxLayout(-p),
-				title,
-				location,
-				owner,
-				price,
-			)
+			return newAssetListItem(!a.forCorporation)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id < 0 || id >= len(a.rowsFiltered) {
 				return
 			}
-			r := a.rowsFiltered[id]
-			box := co.(*fyne.Container).Objects
-			var title string
-			if r.isSingleton {
-				title = r.displayName
-			} else {
-				title = fmt.Sprintf("%s x%s", r.displayName, r.quantityDisplay)
-			}
-			box[0].(*widget.Label).SetText(title)
-			box[1].(*xwidget.RichText).Set(r.locationDisplay)
-			box[2].(*widget.Label).SetText(r.owner.Name)
-			box[3].(*widget.Label).SetText(r.totalDisplay)
+			co.(*assetListItem).set(a.rowsFiltered[id])
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
@@ -719,7 +722,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 		footer := fmt.Sprintf("Showing %s / %s items", ihumanize.Comma(len(rows)), ihumanize.Comma(totalRows))
 		var value optional.Optional[float64]
 		for _, r := range rows {
-			value = optional.SumNonEmpty(value, r.total)
+			value = optional.SumNonEmpty(value, r.totalPrice)
 		}
 		if v, ok := value.Value(); ok {
 			footer += fmt.Sprintf(" • %s ISK est. price", ihumanize.Comma(int(v)))
@@ -739,7 +742,7 @@ func (a *AssetSearch) filterRowsAsync(sortCol string) {
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterRegion, regionOptions),
 					xwidget.NewFilterOptionMultiChoiceWithSearch(assetSearchFilterLocation, locationOptions),
 					xwidget.NewFilterOptionMultiChoice(assetSearchFilterState, stateOptions),
-					xwidget.NewFilterOptionMultiChoiceOrdered(assetSearchFilterTotal, assetSearchTotalOptions()),
+					xwidget.NewFilterOptionMultiChoiceOrdered(assetSearchFilterPrice, assetSearchPriceOptions()),
 				}
 				if !a.forCorporation {
 					options = append(options,
@@ -949,6 +952,95 @@ func (a *AssetSearch) characterCount(ctx context.Context) (int, error) {
 	return validCount, nil
 }
 
+// assetListItem is an item in the mobile list of assets.
+type assetListItem struct {
+	widget.BaseWidget
+
+	locationText *xwidget.RichText
+	ownerLabel   *widget.Label
+	priceLabel   *widget.Label
+	titleLabel   *widget.Label
+	volumeLabel  *widget.Label
+}
+
+func newAssetListItem(showOwner bool) *assetListItem {
+	w := &assetListItem{
+		locationText: xwidget.NewRichTextWithText("Template"),
+		ownerLabel:   widget.NewLabel("Template"),
+		priceLabel:   ui.NewLabelWithTruncation("Template"),
+		titleLabel:   widget.NewLabelWithStyle("Template", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		volumeLabel:  widget.NewLabel("Template"),
+	}
+	if !showOwner {
+		w.ownerLabel.Hide()
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *assetListItem) CreateRenderer() fyne.WidgetRenderer {
+	c := container.New(layout.NewCustomPaddedVBoxLayout(-theme.Padding()),
+		w.titleLabel,
+		w.locationText,
+		w.ownerLabel,
+		container.NewBorder(nil, nil, nil, w.volumeLabel, w.priceLabel),
+	)
+	return widget.NewSimpleRenderer(c)
+}
+
+// set updates the item to show row r.
+func (w *assetListItem) set(r assetRow) {
+	var title string
+	if r.isSingleton {
+		title = r.displayName
+	} else {
+		title = fmt.Sprintf("%s x%s", r.displayName, r.quantityDisplay)
+	}
+	w.titleLabel.SetText(title)
+	w.locationText.Set(r.locationDisplay)
+	w.ownerLabel.SetText(r.owner.Name)
+	w.priceLabel.SetText(r.totalPriceDisplay + " ISK")
+	w.volumeLabel.SetText(r.totalVolumeDisplay + " m3")
+}
+
+// assetSearchHelpText returns the explanation of the columns on desktop
+// and of the list items on mobile.
+func assetSearchHelpText(isMobile, forCorporation bool) string {
+	const (
+		location = `Where the item is located, e.g. "Jita IV - Moon 4 - Caldari Navy Assembly Plant".`
+		owner    = `The character or corporation owning the item.`
+		price    = `The estimated value of all units, based on the average market price. Blueprint copies have no price.`
+		volume   = `The total volume of all units in m3. Takes into account whether an item is packaged. Does not include the contents of containers or ships.`
+		note     = `NOTE: ? means the value is unknown.`
+	)
+	if isMobile {
+		s := `Each item shows:
+• Title: The inventory type of the item, e.g. "Merlin", and the number of units. A single item that is not stacked, e.g. an assembled ship, shows no number.
+• Location: ` + location
+		if !forCorporation {
+			s += "\n• Owner: " + owner
+		}
+		return s + "\n• Price (bottom left): " + price + "\n• Volume (bottom right): " + volume + "\n\n" + note
+	}
+	s := `Item: The inventory type of the item, e.g. "Merlin".
+
+Group: The inventory group the item's type belongs to, e.g. "Frigate".
+
+Location: ` + location + `
+
+State: Where the item is kept at its location: Personal, Office, Deliveries, In Space, Impounded, Asset Safety or Other.
+
+Qty.: The number of units. 1* marks a single item that is not stacked, e.g. an assembled ship.
+
+Price: ` + price + `
+
+Volume: ` + volume
+	if !forCorporation {
+		s += "\n\nOwner: " + owner + "\n\nTags: The tags of the owning character."
+	}
+	return s + "\n\n" + note
+}
+
 func consolidateAssetRows(rows []assetRow) (string, error) {
 	type assetItem struct {
 		name     string
@@ -986,8 +1078,8 @@ func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) erro
 	header := []string{
 		"Item ID", "Type ID", "Type Name", "Item Name", "Group ID", "Group Name", "Category ID", "Category Name",
 		"Location Name", "Location Flag", "State", "Quantity", "Is Singleton", "Variant",
-		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Price", "Total",
-		"Owner ID", "Owner Name",
+		"Solar System ID", "Solar System Name", "Region ID", "Region Name", "Unit Price", "Total Price",
+		"Unit Volume", "Total Volume", "Owner ID", "Owner Name",
 	}
 	if !forCorporation {
 		header = append(header, "Tags")
@@ -1000,9 +1092,17 @@ func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) erro
 		if v, ok := r.price.Value(); ok {
 			price = strconv.FormatFloat(v, 'f', -1, 64)
 		}
-		var total string
-		if v, ok := r.total.Value(); ok {
-			total = strconv.FormatFloat(v, 'f', -1, 64)
+		var totalPrice string
+		if v, ok := r.totalPrice.Value(); ok {
+			totalPrice = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var volume string
+		if v, ok := r.volume.Value(); ok {
+			volume = strconv.FormatFloat(v, 'f', -1, 64)
+		}
+		var totalVolume string
+		if v, ok := r.totalVolume.Value(); ok {
+			totalVolume = strconv.FormatFloat(v, 'f', -1, 64)
 		}
 		var variant string
 		if r.variant != app.VariantRegular {
@@ -1028,7 +1128,9 @@ func writeAssetRowsToCSV(w io.Writer, rows []assetRow, forCorporation bool) erro
 			strconv.FormatInt(r.regionID, 10),
 			r.regionName,
 			price,
-			total,
+			totalPrice,
+			volume,
+			totalVolume,
 			strconv.FormatInt(r.owner.ID, 10),
 			r.owner.Name,
 		}
