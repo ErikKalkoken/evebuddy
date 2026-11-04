@@ -53,10 +53,10 @@ const (
 	assetSearchFilterGroup    = "Group"
 	assetSearchFilterLocation = "Location"
 	assetSearchFilterOwner    = "Owner"
+	assetSearchFilterPrice    = "Price"
 	assetSearchFilterRegion   = "Region"
 	assetSearchFilterState    = "State"
 	assetSearchFilterTag      = "Tag"
-	assetSearchFilterPrice    = "Price"
 )
 
 // assetSearchFilter is the selected value of each asset search filter. Empty means not filtered.
@@ -279,6 +279,7 @@ type AssetSearch struct {
 	filterRun      xsync.LatestRun
 	footerLabel    *widget.Label
 	forCorporation bool // reports whether it runs in corporation mode
+	helpButton     *xwidget.Button
 	moreButton     *xwidget.ContextMenuButton
 	rows           []assetRow
 	rowsFiltered   []assetRow
@@ -287,10 +288,10 @@ type AssetSearch struct {
 	selectGroup    *kxwidget.FilterChipSelect
 	selectLocation *kxwidget.FilterChipSelect
 	selectOwner    *kxwidget.FilterChipSelect
+	selectPrice    *kxwidget.FilterChipSelect
 	selectRegion   *kxwidget.FilterChipSelect
 	selectState    *kxwidget.FilterChipSelect
 	selectTag      *kxwidget.FilterChipSelect
-	selectPrice    *kxwidget.FilterChipSelect
 	sortChip       *kxwidget.SortChip
 	topLabel       *widget.Label
 	u              baseUI
@@ -443,6 +444,11 @@ func newAssetSearch(u baseUI, forCorporation bool) *AssetSearch {
 	)
 	a.moreButton.Importance = widget.LowImportance
 
+	a.helpButton = xwidget.NewIconButton(theme.QuestionIcon(), func() {
+		showHelpPopUp(assetSearchHelpText(a.u.IsMobile(), a.forCorporation), a.u.IsMobile(), a.helpButton)
+	})
+	a.helpButton.SetToolTip("Show explanation for columns")
+
 	if a.u.IsMobile() {
 		a.body = a.makeDataList()
 	} else {
@@ -587,7 +593,13 @@ func (a *AssetSearch) CreateRenderer() fyne.WidgetRenderer {
 		}
 		topBox.Add(container.NewBorder(nil, nil, filters, a.moreButton, a.searchEntry))
 	}
-	c := container.NewBorder(topBox, a.footerLabel, nil, nil, a.body)
+	c := container.NewBorder(
+		topBox,
+		container.NewBorder(nil, nil, nil, a.helpButton, a.footerLabel),
+		nil,
+		nil,
+		a.body,
+	)
 	return widget.NewSimpleRenderer(c)
 }
 
@@ -601,10 +613,10 @@ func (a *AssetSearch) currentFilter() assetSearchFilter {
 			group:    s[assetSearchFilterGroup],
 			location: s[assetSearchFilterLocation],
 			owner:    s[assetSearchFilterOwner],
+			price:    s[assetSearchFilterPrice],
 			region:   s[assetSearchFilterRegion],
 			state:    s[assetSearchFilterState],
 			tag:      s[assetSearchFilterTag],
-			price:    s[assetSearchFilterPrice],
 		}
 	}
 	return assetSearchFilter{
@@ -612,10 +624,10 @@ func (a *AssetSearch) currentFilter() assetSearchFilter {
 		group:    a.selectGroup.Selected,
 		location: a.selectLocation.Selected,
 		owner:    a.selectOwner.Selected,
+		price:    a.selectPrice.Selected,
 		region:   a.selectRegion.Selected,
 		state:    a.selectState.Selected,
 		tag:      a.selectTag.Selected,
-		price:    a.selectPrice.Selected,
 	}
 }
 
@@ -989,6 +1001,44 @@ func (w *assetListItem) set(r assetRow) {
 	w.ownerLabel.SetText(r.owner.Name)
 	w.priceLabel.SetText(r.totalPriceDisplay + " ISK")
 	w.volumeLabel.SetText(r.totalVolumeDisplay + " m3")
+}
+
+// assetSearchHelpText returns the explanation of the columns on desktop
+// and of the list items on mobile.
+func assetSearchHelpText(isMobile, forCorporation bool) string {
+	const (
+		location = `Where the item is located, e.g. "Jita IV - Moon 4 - Caldari Navy Assembly Plant".`
+		owner    = `The character or corporation owning the item.`
+		price    = `The estimated value of all units, based on the average market price. Blueprint copies have no price.`
+		volume   = `The total volume of all units in m3. Takes into account whether an item is packaged. Does not include the contents of containers or ships.`
+		note     = `NOTE: ? means the value is unknown.`
+	)
+	if isMobile {
+		s := `Each item shows:
+• Title: The inventory type of the item, e.g. "Merlin", and the number of units. A single item that is not stacked, e.g. an assembled ship, shows no number.
+• Location: ` + location
+		if !forCorporation {
+			s += "\n• Owner: " + owner
+		}
+		return s + "\n• Price (bottom left): " + price + "\n• Volume (bottom right): " + volume + "\n\n" + note
+	}
+	s := `Item: The inventory type of the item, e.g. "Merlin".
+
+Group: The inventory group the item's type belongs to, e.g. "Frigate".
+
+Location: ` + location + `
+
+State: Where the item is kept at its location: Personal, Office, Deliveries, In Space, Impounded, Asset Safety or Other.
+
+Qty.: The number of units. 1* marks a single item that is not stacked, e.g. an assembled ship.
+
+Price: ` + price + `
+
+Volume: ` + volume
+	if !forCorporation {
+		s += "\n\nOwner: " + owner + "\n\nTags: The tags of the owning character."
+	}
+	return s + "\n\n" + note
 }
 
 func consolidateAssetRows(rows []assetRow) (string, error) {

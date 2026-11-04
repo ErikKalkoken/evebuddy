@@ -432,6 +432,51 @@ func TestAssetSearch_SortByState(t *testing.T) {
 	xassert.Equal(t, 1, rows[1].itemID)
 }
 
+func TestAssetSearch_Help(t *testing.T) {
+	t.Run("help button shows popup", func(t *testing.T) {
+		// given
+		db, st, _ := testutil.NewDBOnDisk(t)
+		defer db.Close()
+		a := NewAssetSearchForAll(testdouble.NewUIFake(testdouble.UIParams{
+			App:     test.NewTempApp(t),
+			Storage: st,
+		}))
+		w := test.NewWindow(a)
+		defer w.Close()
+		w.Resize(fyne.NewSize(800, 600))
+		// when
+		test.Tap(a.helpButton)
+		// then
+		assert.NotNil(t, w.Canvas().Overlays().Top())
+	})
+	t.Run("explains owner and tags for characters", func(t *testing.T) {
+		got := assetSearchHelpText(false, false)
+		assert.Contains(t, got, "Volume:")
+		assert.Contains(t, got, "Owner:")
+		assert.Contains(t, got, "Tags:")
+	})
+	t.Run("does not explain owner and tags for corporations", func(t *testing.T) {
+		got := assetSearchHelpText(false, true)
+		assert.Contains(t, got, "Volume:")
+		assert.NotContains(t, got, "Owner:")
+		assert.NotContains(t, got, "Tags:")
+	})
+	t.Run("explains only what the mobile list shows", func(t *testing.T) {
+		got := assetSearchHelpText(true, false)
+		for _, want := range []string{"Title:", "Location:", "Owner:", "Price (bottom left):", "Volume (bottom right):", "? means"} {
+			assert.Contains(t, got, want)
+		}
+		for _, notWant := range []string{"Item:", "Group:", "State:", "Qty.:", "1*", "Tags:"} {
+			assert.NotContains(t, got, notWant)
+		}
+	})
+	t.Run("does not explain owner on mobile for corporations", func(t *testing.T) {
+		got := assetSearchHelpText(true, true)
+		assert.Contains(t, got, "Volume (bottom right):")
+		assert.NotContains(t, got, "Owner:")
+	})
+}
+
 func TestAssetSearchForAll_Update(t *testing.T) {
 	t.Run("shows no characters without characters", func(t *testing.T) {
 		// given
