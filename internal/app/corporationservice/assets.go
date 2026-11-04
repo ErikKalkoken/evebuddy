@@ -205,6 +205,13 @@ var (
 		"Wallet":                              app.FlagWallet,
 		"Wardrobe":                            app.FlagWardrobe,
 	}
+	locationTypeFromESIValue = map[string]app.LocationType{
+		"":             app.TypeUndefined,
+		"station":      app.TypeStation,
+		"solar_system": app.TypeSolarSystem,
+		"item":         app.TypeItem,
+		"other":        app.TypeOther,
+	}
 	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
 )
 
@@ -254,6 +261,7 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 				assets,
 				currentIDs,
 				locationFlagFromESIValue,
+				locationTypeFromESIValue,
 				func(ctx context.Context, item assetsync.Item) error {
 					return s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
 						CorporationID:   arg.corporationID,

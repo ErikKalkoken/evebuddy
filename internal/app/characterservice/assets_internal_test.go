@@ -366,6 +366,56 @@ func TestUpdateCharacterAssetsESI_Name(t *testing.T) {
 	}
 }
 
+func TestUpdateCharacterAssetsESI_NewLocationValues(t *testing.T) {
+	// given
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	c := factory.CreateCharacterFull()
+	factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+	et := factory.CreateEveType()
+	factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+	httpmock.RegisterResponder(
+		"GET",
+		fmt.Sprintf("https://esi.evetech.net/characters/%d/assets?page=1", c.ID),
+		httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+			"is_singleton":  false,
+			"item_id":       1000000016835,
+			"location_flag": "BrandNewFlag",
+			"location_id":   60002959,
+			"location_type": "brand_new_type",
+			"quantity":      1,
+			"type_id":       et.ID,
+		}, {
+			"is_singleton":  false,
+			"item_id":       1000000016836,
+			"location_flag": "Hangar",
+			"location_id":   60002959,
+			"location_type": "station",
+			"quantity":      1,
+			"type_id":       et.ID,
+		}}).HeaderSet(http.Header{"X-Pages": []string{"1"}}),
+	)
+	// when
+	_, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+		characterID: c.ID,
+		section:     app.SectionCharacterAssets,
+	})
+	// then
+	require.NoError(t, err)
+	x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
+	require.NoError(t, err)
+	xassert.Equal(t, app.FlagUnknown, x.LocationFlag)
+	xassert.Equal(t, app.TypeUnknown, x.LocationType)
+	x, err = st.GetCharacterAsset(ctx, c.ID, 1000000016836)
+	require.NoError(t, err)
+	xassert.Equal(t, app.FlagHangar, x.LocationFlag)
+	xassert.Equal(t, app.TypeStation, x.LocationType)
+}
+
 func TestUpdateAssetValue(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

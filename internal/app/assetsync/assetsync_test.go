@@ -20,7 +20,14 @@ import (
 var (
 	logAttr = slog.Int64("ownerID", 42)
 	flags   = map[string]app.LocationFlag{"Hangar": app.FlagHangar}
-	ship    = &app.EveType{
+	types   = map[string]app.LocationType{
+		"":             app.TypeUndefined,
+		"station":      app.TypeStation,
+		"solar_system": app.TypeSolarSystem,
+		"item":         app.TypeItem,
+		"other":        app.TypeOther,
+	}
+	ship = &app.EveType{
 		ID: 3516,
 		Group: &app.EveGroup{
 			Category: &app.EveCategory{ID: app.EveCategoryShip},
@@ -69,6 +76,7 @@ func TestSync(t *testing.T) {
 			}},
 			set.Set[int64]{},
 			flags,
+			types,
 			func(_ context.Context, item assetsync.Item) error {
 				got = append(got, item)
 				return nil
@@ -97,6 +105,7 @@ func TestSync(t *testing.T) {
 			[]assetsync.ESIAsset{{ItemId: 1, LocationFlag: "Hangar"}},
 			set.Of[int64](1, 2),
 			flags,
+			types,
 			noCreate,
 			func(_ context.Context, item assetsync.Item) error {
 				updated = append(updated, item.ItemID)
@@ -136,6 +145,7 @@ func TestSync(t *testing.T) {
 					[]assetsync.ESIAsset{{ItemId: 1, LocationFlag: tc.flag, LocationType: tc.locationType}},
 					set.Set[int64]{},
 					flags,
+					types,
 					func(_ context.Context, item assetsync.Item) error {
 						got = item
 						return nil
@@ -178,6 +188,7 @@ func TestSync(t *testing.T) {
 					[]assetsync.ESIAsset{{IsSingleton: tc.singleton, ItemId: 1, Quantity: tc.quantity}},
 					currentIDs,
 					flags,
+					types,
 					store,
 					store,
 					noDelete,
@@ -195,11 +206,11 @@ func TestSync(t *testing.T) {
 		ignore := func(context.Context, assetsync.Item) error { return nil }
 		failDelete := func(context.Context, set.Set[int64]) error { return wantErr }
 		assets := []assetsync.ESIAsset{{ItemId: 1}}
-		err := assetsync.Sync(ctx, assets, set.Set[int64]{}, flags, fail, noUpdate, noDelete, logAttr)
+		err := assetsync.Sync(ctx, assets, set.Set[int64]{}, flags, types, fail, noUpdate, noDelete, logAttr)
 		require.ErrorIs(t, err, wantErr)
-		err = assetsync.Sync(ctx, assets, set.Of[int64](1), flags, noCreate, fail, noDelete, logAttr)
+		err = assetsync.Sync(ctx, assets, set.Of[int64](1), flags, types, noCreate, fail, noDelete, logAttr)
 		require.ErrorIs(t, err, wantErr)
-		err = assetsync.Sync(ctx, assets, set.Of[int64](1, 2), flags, noCreate, ignore, failDelete, logAttr)
+		err = assetsync.Sync(ctx, assets, set.Of[int64](1, 2), flags, types, noCreate, ignore, failDelete, logAttr)
 		require.ErrorIs(t, err, wantErr)
 	})
 }

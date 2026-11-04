@@ -124,6 +124,14 @@ var locationFlagFromESIValue = map[string]app.LocationFlag{
 	"Wardrobe":                            app.FlagWardrobe,
 }
 
+var locationTypeFromESIValue = map[string]app.LocationType{
+	"":             app.TypeUndefined,
+	"station":      app.TypeStation,
+	"solar_system": app.TypeSolarSystem,
+	"item":         app.TypeItem,
+	"other":        app.TypeOther,
+}
+
 func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {
 	if arg.section != app.SectionCharacterAssets {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
@@ -170,6 +178,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 				assets,
 				currentIDs,
 				locationFlagFromESIValue,
+				locationTypeFromESIValue,
 				func(ctx context.Context, item assetsync.Item) error {
 					return s.st.CreateCharacterAsset(ctx, storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,

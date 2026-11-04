@@ -22,14 +22,6 @@ import (
 // namesMaxIDs is the maximum number of IDs ESI accepts in a request for asset names.
 const namesMaxIDs = 999
 
-var locationTypeFromESIValue = map[string]app.LocationType{
-	"":             app.TypeUndefined,
-	"station":      app.TypeStation,
-	"solar_system": app.TypeSolarSystem,
-	"item":         app.TypeItem,
-	"other":        app.TypeOther,
-}
-
 // The ESI types below have the same fields as the ESI responses for characters and corporations,
 // so services can convert them directly. Field names therefore follow ESI.
 
@@ -83,14 +75,15 @@ func itemIDs(assets []ESIAsset) set.Set[int64] {
 }
 
 // parse returns the item for an ESI asset.
-// flags holds the location flags which ESI defines for the owner of the asset.
-func parse(a ESIAsset, flags map[string]app.LocationFlag, logAttr slog.Attr) Item {
+// flags and types hold the location values which ESI defines for the owner of the asset.
+// Unexpected values do not fail, because ESI can add new ones at any time.
+func parse(a ESIAsset, flags map[string]app.LocationFlag, types map[string]app.LocationType, logAttr slog.Attr) Item {
 	locationFlag, found := flags[a.LocationFlag]
 	if !found {
 		locationFlag = app.FlagUnknown
 		slog.Warn("Unknown location flag encountered", logAttr, "item", a)
 	}
-	locationType, found := locationTypeFromESIValue[a.LocationType]
+	locationType, found := types[a.LocationType]
 	if !found {
 		locationType = app.TypeUnknown
 		slog.Warn("Unknown location type encountered", logAttr, "item", a)
@@ -114,7 +107,7 @@ func parse(a ESIAsset, flags map[string]app.LocationFlag, logAttr slog.Attr) Ite
 
 // Sync creates and updates assets from ESI and deletes stored assets which are missing in ESI.
 // currentIDs are the IDs of the stored assets.
-// flags holds the location flags which ESI defines for the owner of the assets.
+// flags and types hold the location values which ESI defines for the owner of the assets.
 // The related types and locations of assets must already have been added.
 //
 // The callbacks do the owner specific work.
@@ -123,6 +116,7 @@ func Sync(
 	assets []ESIAsset,
 	currentIDs set.Set[int64],
 	flags map[string]app.LocationFlag,
+	types map[string]app.LocationType,
 	create func(ctx context.Context, item Item) error,
 	update func(ctx context.Context, item Item) error,
 	deleteAssets func(ctx context.Context, ids set.Set[int64]) error,
@@ -130,7 +124,7 @@ func Sync(
 ) error {
 	var updated, created int
 	for _, a := range assets {
-		item := parse(a, flags, logAttr)
+		item := parse(a, flags, types, logAttr)
 		if currentIDs.Contains(a.ItemId) {
 			if err := update(ctx, item); err != nil {
 				return err

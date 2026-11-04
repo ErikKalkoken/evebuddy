@@ -13,121 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-var locationFlagFromDBValue = map[string]app.LocationFlag{
-	"":                                    app.FlagUndefined,
-	"AssetSafety":                         app.FlagAssetSafety,
-	"AutoFit":                             app.FlagAutoFit,
-	"BoosterBay":                          app.FlagBoosterBay,
-	"CapsuleerDeliveries":                 app.FlagCapsuleerDeliveries,
-	"Cargo":                               app.FlagCargo,
-	"CorporationGoalDeliveries":           app.FlagCorporationGoalDeliveries,
-	"CorpseBay":                           app.FlagCorpseBay,
-	"Deliveries":                          app.FlagDeliveries,
-	"DroneBay":                            app.FlagDroneBay,
-	"ExpeditionHold":                      app.FlagExpeditionHold,
-	"FighterBay":                          app.FlagFighterBay,
-	"FighterTube0":                        app.FlagFighterTube0,
-	"FighterTube1":                        app.FlagFighterTube1,
-	"FighterTube2":                        app.FlagFighterTube2,
-	"FighterTube3":                        app.FlagFighterTube3,
-	"FighterTube4":                        app.FlagFighterTube4,
-	"FleetHangar":                         app.FlagFleetHangar,
-	"FrigateEscapeBay":                    app.FlagFrigateEscapeBay,
-	"Hangar":                              app.FlagHangar,
-	"HangarAll":                           app.FlagHangarAll,
-	"HiSlot0":                             app.FlagHiSlot0,
-	"HiSlot1":                             app.FlagHiSlot1,
-	"HiSlot2":                             app.FlagHiSlot2,
-	"HiSlot3":                             app.FlagHiSlot3,
-	"HiSlot4":                             app.FlagHiSlot4,
-	"HiSlot5":                             app.FlagHiSlot5,
-	"HiSlot6":                             app.FlagHiSlot6,
-	"HiSlot7":                             app.FlagHiSlot7,
-	"HiddenModifiers":                     app.FlagHiddenModifiers,
-	"Implant":                             app.FlagImplant,
-	"InfrastructureHangar":                app.FlagInfrastructureHangar,
-	"LoSlot0":                             app.FlagLoSlot0,
-	"LoSlot1":                             app.FlagLoSlot1,
-	"LoSlot2":                             app.FlagLoSlot2,
-	"LoSlot3":                             app.FlagLoSlot3,
-	"LoSlot4":                             app.FlagLoSlot4,
-	"LoSlot5":                             app.FlagLoSlot5,
-	"LoSlot6":                             app.FlagLoSlot6,
-	"LoSlot7":                             app.FlagLoSlot7,
-	"Locked":                              app.FlagLocked,
-	"MedSlot0":                            app.FlagMedSlot0,
-	"MedSlot1":                            app.FlagMedSlot1,
-	"MedSlot2":                            app.FlagMedSlot2,
-	"MedSlot3":                            app.FlagMedSlot3,
-	"MedSlot4":                            app.FlagMedSlot4,
-	"MedSlot5":                            app.FlagMedSlot5,
-	"MedSlot6":                            app.FlagMedSlot6,
-	"MedSlot7":                            app.FlagMedSlot7,
-	"MobileDepotHold":                     app.FlagMobileDepotHold,
-	"MoonMaterialBay":                     app.FlagMoonMaterialBay,
-	"QuafeBay":                            app.FlagQuafeBay,
-	"RigSlot0":                            app.FlagRigSlot0,
-	"RigSlot1":                            app.FlagRigSlot1,
-	"RigSlot2":                            app.FlagRigSlot2,
-	"RigSlot3":                            app.FlagRigSlot3,
-	"RigSlot4":                            app.FlagRigSlot4,
-	"RigSlot5":                            app.FlagRigSlot5,
-	"RigSlot6":                            app.FlagRigSlot6,
-	"RigSlot7":                            app.FlagRigSlot7,
-	"ShipHangar":                          app.FlagShipHangar,
-	"Skill":                               app.FlagSkill,
-	"SpecializedAmmoHold":                 app.FlagSpecializedAmmoHold,
-	"SpecializedAsteroidHold":             app.FlagSpecializedAsteroidHold,
-	"SpecializedCommandCenterHold":        app.FlagSpecializedCommandCenterHold,
-	"SpecializedFuelBay":                  app.FlagSpecializedFuelBay,
-	"SpecializedGasHold":                  app.FlagSpecializedGasHold,
-	"SpecializedIceHold":                  app.FlagSpecializedIceHold,
-	"SpecializedIndustrialShipHold":       app.FlagSpecializedIndustrialShipHold,
-	"SpecializedLargeShipHold":            app.FlagSpecializedLargeShipHold,
-	"SpecializedMaterialBay":              app.FlagSpecializedMaterialBay,
-	"SpecializedMediumShipHold":           app.FlagSpecializedMediumShipHold,
-	"SpecializedMineralHold":              app.FlagSpecializedMineralHold,
-	"SpecializedOreHold":                  app.FlagSpecializedOreHold,
-	"SpecializedPlanetaryCommoditiesHold": app.FlagSpecializedPlanetaryCommoditiesHold,
-	"SpecializedSalvageHold":              app.FlagSpecializedSalvageHold,
-	"SpecializedShipHold":                 app.FlagSpecializedShipHold,
-	"SpecializedSmallShipHold":            app.FlagSpecializedSmallShipHold,
-	"StructureDeedBay":                    app.FlagStructureDeedBay,
-	"SubSystemBay":                        app.FlagSubSystemBay,
-	"SubSystemSlot0":                      app.FlagSubSystemSlot0,
-	"SubSystemSlot1":                      app.FlagSubSystemSlot1,
-	"SubSystemSlot2":                      app.FlagSubSystemSlot2,
-	"SubSystemSlot3":                      app.FlagSubSystemSlot3,
-	"SubSystemSlot4":                      app.FlagSubSystemSlot4,
-	"SubSystemSlot5":                      app.FlagSubSystemSlot5,
-	"SubSystemSlot6":                      app.FlagSubSystemSlot6,
-	"SubSystemSlot7":                      app.FlagSubSystemSlot7,
-	"Unlocked":                            app.FlagUnlocked,
-	"Wardrobe":                            app.FlagWardrobe,
-	"Unknown":                             app.FlagUnknown,
-}
-
-var locationFlagToDBValue = map[app.LocationFlag]string{}
-
-var locationTypeFromDBValue = map[string]app.LocationType{
-	"":             app.TypeUndefined,
-	"station":      app.TypeStation,
-	"solar_system": app.TypeSolarSystem,
-	"item":         app.TypeItem,
-	"other":        app.TypeOther,
-}
-
-var locationTypeToDBValue = map[app.LocationType]string{}
-
-func init() {
-	for k, v := range locationFlagFromDBValue {
-		locationFlagToDBValue[v] = k
-	}
-	for k, v := range locationTypeFromDBValue {
-		locationTypeToDBValue[v] = k
-	}
-}
-
 func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int64) (float64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CalculateCharacterAssetTotalValue: %d: %w", characterID, err)
@@ -164,6 +49,9 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 
 	}
 	if arg.CharacterID == 0 || arg.TypeID == 0 || arg.ItemID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if !isValidLocationFlag(app.CharacterLocationFlags, arg.LocationFlag) {
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.CreateCharacterAsset(ctx, queries.CreateCharacterAssetParams{
@@ -299,6 +187,9 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 
 	}
 	if arg.CharacterID == 0 || arg.ItemID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	if !isValidLocationFlag(app.CharacterLocationFlags, arg.LocationFlag) {
 		return wrapErr(app.ErrInvalid)
 	}
 	if err := st.qRW.UpdateCharacterAsset(ctx, queries.UpdateCharacterAssetParams{
