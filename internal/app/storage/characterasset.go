@@ -285,6 +285,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 
 type UpdateCharacterAssetParams struct {
 	CharacterID  int64
+	IsSingleton  bool
 	ItemID       int64
 	LocationFlag app.LocationFlag
 	LocationID   int64
@@ -302,6 +303,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 	}
 	if err := st.qRW.UpdateCharacterAsset(ctx, queries.UpdateCharacterAssetParams{
 		CharacterID:  arg.CharacterID,
+		IsSingleton:  arg.IsSingleton,
 		ItemID:       arg.ItemID,
 		LocationFlag: locationFlagToDBValue[arg.LocationFlag],
 		LocationID:   arg.LocationID,

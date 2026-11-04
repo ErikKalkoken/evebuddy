@@ -94,6 +94,7 @@ WHERE
 -- name: UpdateCharacterAsset :exec
 UPDATE character_assets
 SET
+    is_singleton = ?,
     location_flag = ?,
     location_id = ?,
     location_type = ?,

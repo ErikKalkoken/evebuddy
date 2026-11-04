@@ -254,6 +254,149 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	})
 }
 
+func TestUpdateCharacterAssetsESI_Singleton(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	const itemID = 1000000016835
+	for _, tc := range []struct {
+		name              string
+		existing          bool
+		existingSingleton bool
+		existingQuantity  int64
+		singleton         bool
+		quantity          int64
+		wantQuantity      int
+	}{
+		{name: "corrects quantity of new singleton", singleton: true, quantity: 5, wantQuantity: 1},
+		{name: "corrects quantity of existing singleton", existing: true, existingSingleton: true, existingQuantity: 1, singleton: true, quantity: 5, wantQuantity: 1},
+		{name: "keeps quantity of new stack", quantity: 5, wantQuantity: 5},
+		{name: "updates stack to singleton", existing: true, existingQuantity: 5, singleton: true, quantity: 1, wantQuantity: 1},
+		{name: "updates singleton to stack", existing: true, existingSingleton: true, existingQuantity: 1, quantity: 5, wantQuantity: 5},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			httpmock.Reset()
+			c := factory.CreateCharacterFull()
+			factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+			et := factory.CreateEveType()
+			factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+			if tc.existing {
+				factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+					CharacterID: c.ID,
+					IsSingleton: tc.existingSingleton,
+					ItemID:      itemID,
+					Quantity:    tc.existingQuantity,
+					TypeID:      et.ID,
+				})
+			}
+			httpmock.RegisterResponder(
+				"GET",
+				fmt.Sprintf("https://esi.evetech.net/characters/%d/assets?page=1", c.ID),
+				httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+					"is_singleton":  tc.singleton,
+					"item_id":       itemID,
+					"location_flag": "Hangar",
+					"location_id":   60002959,
+					"location_type": "station",
+					"quantity":      tc.quantity,
+					"type_id":       et.ID,
+				}}).HeaderSet(http.Header{"X-Pages": []string{"1"}}),
+			)
+			httpmock.RegisterResponder(
+				"POST",
+				fmt.Sprintf("https://esi.evetech.net/characters/%d/assets/names", c.ID),
+				httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+			)
+			// when
+			_, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+				characterID: c.ID,
+				section:     app.SectionCharacterAssets,
+			})
+			// then
+			require.NoError(t, err)
+			x, err := st.GetCharacterAsset(ctx, c.ID, itemID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.singleton, x.IsSingleton)
+			xassert.Equal(t, tc.wantQuantity, x.Quantity)
+		})
+	}
+}
+
+func TestUpdateCharacterAssetsESI_Name(t *testing.T) {
+	db, st, factory := testutil.NewDBOnDisk(t)
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := NewFake(Params{Storage: st})
+	ctx := context.Background()
+	const itemID = 1000000016835
+	for _, tc := range []struct {
+		name      string
+		singleton bool
+		want      string
+	}{
+		{name: "keeps name of singleton", singleton: true, want: "My Ship"},
+		{name: "clears name when no longer singleton", singleton: false, want: ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.MustTruncateTables(db)
+			httpmock.Reset()
+			c := factory.CreateCharacterFull()
+			factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+			category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
+			group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID})
+			et := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID})
+			factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+			factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+				CharacterID: c.ID,
+				IsSingleton: true,
+				ItemID:      itemID,
+				Name:        "My Ship",
+				Quantity:    1,
+				TypeID:      et.ID,
+			})
+			httpmock.RegisterResponder(
+				"GET",
+				fmt.Sprintf("https://esi.evetech.net/characters/%d/assets?page=1", c.ID),
+				httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+					"is_singleton":  tc.singleton,
+					"item_id":       itemID,
+					"location_flag": "Hangar",
+					"location_id":   60002959,
+					"location_type": "station",
+					"quantity":      1,
+					"type_id":       et.ID,
+				}}).HeaderSet(http.Header{"X-Pages": []string{"1"}}),
+			)
+			httpmock.RegisterResponder(
+				"POST",
+				fmt.Sprintf("https://esi.evetech.net/characters/%d/assets/names", c.ID),
+				httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+					"item_id": itemID,
+					"name":    "My Ship",
+				}}),
+			)
+			// when
+			_, err := s.updateAssetsESI(ctx, characterSectionUpdateParams{
+				characterID: c.ID,
+				section:     app.SectionCharacterAssets,
+			})
+			// then
+			require.NoError(t, err)
+			x, err := st.GetCharacterAsset(ctx, c.ID, itemID)
+			require.NoError(t, err)
+			xassert.Equal(t, tc.singleton, x.IsSingleton)
+			xassert.Equal(t, tc.want, x.Name)
+		})
+	}
+}
+
 func TestUpdateAssetValue(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

@@ -192,14 +192,20 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 					locationType = app.TypeUnknown
 					slog.Warn("Unknown location type encountered", "characterID", characterID, "item", a)
 				}
+				quantity := a.Quantity
+				if a.IsSingleton && quantity != 1 {
+					slog.Warn("Singleton with invalid quantity encountered", "characterID", characterID, "item", a)
+					quantity = 1
+				}
 				if currentIDs.Contains(a.ItemId) {
 					err := s.st.UpdateCharacterAsset(ctx, storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
+						IsSingleton:  a.IsSingleton,
 						ItemID:       a.ItemId,
 						LocationFlag: locationFlag,
 						LocationID:   a.LocationId,
 						LocationType: locationType,
-						Quantity:     a.Quantity,
+						Quantity:     quantity,
 					})
 					if err != nil {
 						return false, err
@@ -215,7 +221,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 						LocationFlag:    locationFlag,
 						LocationID:      a.LocationId,
 						LocationType:    locationType,
-						Quantity:        a.Quantity,
+						Quantity:        quantity,
 					})
 					if err != nil {
 						return false, err
@@ -242,6 +248,16 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 			for _, a := range assets2 {
 				if a.CanHaveName() {
 					names[a.ItemID] = a.Name
+				} else if a.Name != "" {
+					// An asset that can't have a name must not keep a stored one.
+					err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
+						CharacterID: characterID,
+						ItemID:      a.ItemID,
+						Name:        "",
+					})
+					if err != nil {
+						return false, err
+					}
 				}
 			}
 			names2, ok := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))

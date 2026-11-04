@@ -62,8 +62,10 @@ func TestCharacterAsset(t *testing.T) {
 		c := factory.CreateCharacterFull()
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
+		assert.False(t, x1.IsSingleton)
 		err := st.UpdateCharacterAsset(ctx, storage.UpdateCharacterAssetParams{
 			CharacterID:  c.ID,
+			IsSingleton:  true,
 			ItemID:       x1.ItemID,
 			LocationFlag: app.FlagHangar,
 			LocationID:   99,
@@ -74,6 +76,7 @@ func TestCharacterAsset(t *testing.T) {
 		require.NoError(t, err)
 		x2, err := st.GetCharacterAsset(ctx, c.ID, x1.ItemID)
 		require.NoError(t, err)
+		assert.True(t, x2.IsSingleton)
 		xassert.Equal(t, app.FlagHangar, x2.LocationFlag)
 		xassert.Equal(t, 99, x2.LocationID)
 		xassert.Equal(t, app.TypeOther, x2.LocationType)
