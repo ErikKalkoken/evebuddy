@@ -21,8 +21,16 @@ test.db
 ratelimits.md
 **/temp.*/
 .gitconfig
-internal/app/ui/characters/communications.go
+
+# claude artifacts
 .claude/
 .mcp.json
 .env
 MEMORY.md
+.bash_profile
+.bashrc
+.profile
+.zshrc
+.zprofile
+.ripgreprc
+.idea
