@@ -3,6 +3,7 @@ package characterservice
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -260,25 +261,28 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 					}
 				}
 			}
-			names2, ok := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
+			names2, err := s.fetchAssetNamesESI(ctx, characterID, slices.Collect(maps.Keys(names)))
+			if err != nil {
+				if ctx.Err() != nil {
+					return false, ctx.Err()
+				}
+				// We can live without these names for now.
+				// They are fetched again the next time the assets are processed.
+				slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
+			}
 			slog.Debug("Received character asset names from ESI", "count", len(names2), "characterID", characterID)
 
-			if ok {
-				var changed set.Set[int64]
-				for id, name := range names {
-					if names2[id] != name {
-						changed.Add(id)
-					}
+			for id, name := range names2 {
+				if names[id] == name {
+					continue
 				}
-				for id := range changed.All() {
-					err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
-						CharacterID: characterID,
-						ItemID:      id,
-						Name:        names2[id],
-					})
-					if err != nil {
-						return false, err
-					}
+				err := s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
+					CharacterID: characterID,
+					ItemID:      id,
+					Name:        name,
+				})
+				if err != nil {
+					return false, err
 				}
 			}
 
@@ -302,36 +306,33 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 	return changed, nil
 }
 
-func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, bool) {
+// fetchAssetNamesESI returns the names of assets from ESI.
+// The result contains all IDs that ESI has answered for, with an empty name for assets without a name.
+// IDs from failed requests are left out and reported in the error.
+func (s *CharacterService) fetchAssetNamesESI(ctx context.Context, characterID int64, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
-	var hasError bool
-	var results [][]esi.CharactersCharacterIdAssetsNamesPostInner
-	if len(ids) > 0 {
-		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
-		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-			names, _, err := s.esiClient.AssetsAPI.PostCharactersCharacterIdAssetsNames(ctx, characterID).RequestBody(chunk).Execute()
-			if err != nil {
-				if ctx.Err() != nil {
-					hasError = true
-					break
-				}
-				// We can live temporarily without asset names and will try again to fetch them next time
-				// If some of the requests have succeeded we will use those names
-				slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
-				hasError = true
-			}
-			results = append(results, names)
-		}
-	}
+	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
 	m := make(map[int64]string)
-	for _, names := range results {
+	var errs []error
+	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
+		names, _, err := s.esiClient.AssetsAPI.PostCharactersCharacterIdAssetsNames(ctx, characterID).RequestBody(chunk).Execute()
+		if err != nil {
+			errs = append(errs, err)
+			if ctx.Err() != nil {
+				break
+			}
+			continue
+		}
+		for _, id := range chunk {
+			m[id] = ""
+		}
 		for _, n := range names {
 			if n.Name != "None" {
 				m[n.ItemId] = n.Name
 			}
 		}
 	}
-	return m, !hasError
+	return m, errors.Join(errs...)
 }
 
 func (s *CharacterService) updateAssetValue(ctx context.Context, characterID int64) error {

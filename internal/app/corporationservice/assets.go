@@ -3,6 +3,7 @@ package corporationservice
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -344,22 +345,27 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 					}
 				}
 			}
-			names2, _ := s.fetchAssetNamesESI(ctx, arg.corporationID, slices.Collect(maps.Keys(names)))
+			names2, err := s.fetchAssetNamesESI(ctx, arg.corporationID, slices.Collect(maps.Keys(names)))
+			if err != nil {
+				if ctx.Err() != nil {
+					return false, ctx.Err()
+				}
+				// We can live without these names for now.
+				// They are fetched again the next time the assets are processed.
+				slog.Warn("Failed to fetch asset names", "corporationID", arg.corporationID, "err", err)
+			}
 			slog.Debug("Received corporation asset names from ESI", "count", len(names2), "corporationID", arg.corporationID)
 
 			modifyAssetNames(assets2, names2)
 
-			var changed set.Set[int64]
-			for id, name := range names {
-				if names2[id] != name {
-					changed.Add(id)
+			for id, name := range names2 {
+				if names[id] == name {
+					continue
 				}
-			}
-			for id := range changed.All() {
 				err := s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
 					CorporationID: arg.corporationID,
 					ItemID:        id,
-					Name:          names2[id],
+					Name:          name,
 				})
 				if err != nil {
 					return false, err
@@ -392,34 +398,31 @@ func modifyAssetNames(assets2 []*app.CorporationAsset, names2 map[int64]string) 
 	}
 }
 
-func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, bool) {
+// fetchAssetNamesESI returns the names of assets from ESI.
+// The result contains all IDs that ESI has answered for, with an empty name for assets without a name.
+// IDs from failed requests are left out and reported in the error.
+func (s *CorporationService) fetchAssetNamesESI(ctx context.Context, corporationID int64, ids []int64) (map[int64]string, error) {
 	const assetNamesMaxIDs = 999
-	var hasError bool
-	var results [][]esi.CharactersCharacterIdAssetsNamesPostInner
-	if len(ids) > 0 {
-		ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
-		for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
-			names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, corporationID).RequestBody(chunk).Execute()
-			if err != nil {
-				if ctx.Err() != nil {
-					hasError = true
-					break
-				}
-				// We can live temporarily without asset names and will try again to fetch them next time
-				// If some of the requests have succeeded we will use those names
-				slog.Warn("Failed to fetch asset names", "corporationID", corporationID, "err", err)
-				hasError = true
-			}
-			results = append(results, names)
-		}
-	}
+	ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 	m := make(map[int64]string)
-	for _, names := range results {
+	var errs []error
+	for chunk := range slices.Chunk(ids, assetNamesMaxIDs) {
+		names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, corporationID).RequestBody(chunk).Execute()
+		if err != nil {
+			errs = append(errs, err)
+			if ctx.Err() != nil {
+				break
+			}
+			continue
+		}
+		for _, id := range chunk {
+			m[id] = ""
+		}
 		for _, n := range names {
 			if n.Name != "None" {
 				m[n.ItemId] = n.Name
 			}
 		}
 	}
-	return m, !hasError
+	return m, errors.Join(errs...)
 }
