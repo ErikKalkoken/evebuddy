@@ -129,6 +129,7 @@ const (
 	StructureServiceStateOnline
 	StructureServiceStateOffline
 	StructureServiceStateCleanup
+	StructureServiceStateUnknown
 )
 
 type StructureService struct {

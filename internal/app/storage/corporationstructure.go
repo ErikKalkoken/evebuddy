@@ -39,6 +39,7 @@ var structureServiceStateFromDBValue = map[string]app.StructureServiceState{
 	"online":  app.StructureServiceStateOnline,
 	"offline": app.StructureServiceStateOffline,
 	"cleanup": app.StructureServiceStateCleanup,
+	"unknown": app.StructureServiceStateUnknown,
 }
 
 var structureServiceStateToDBValue = map[app.StructureServiceState]string{}

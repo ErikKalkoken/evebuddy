@@ -115,11 +115,28 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				state, ok := structureStateFromESIValue[o.State]
 				if !ok {
 					state = app.StructureStateUnknown
+					slog.Warn(
+						"Unknown structure state encountered",
+						"corporationID", arg.corporationID,
+						"structureID", o.StructureId,
+						"state", o.State,
+					)
 				}
 				services := xslices.Map(o.Services, func(x esi.CorporationsCorporationIdStructuresGetInnerServicesInner) storage.StructureServiceParams {
+					serviceState, ok := structureServiceStateFromESIValue[x.State]
+					if !ok {
+						serviceState = app.StructureServiceStateUnknown
+						slog.Warn(
+							"Unknown structure service state encountered",
+							"corporationID", arg.corporationID,
+							"structureID", o.StructureId,
+							"service", x.Name,
+							"state", x.State,
+						)
+					}
 					return storage.StructureServiceParams{
 						Name:  x.Name,
-						State: structureServiceStateFromESIValue[x.State],
+						State: serviceState,
 					}
 				})
 				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
