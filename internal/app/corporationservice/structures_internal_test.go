@@ -185,4 +185,127 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		want := set.Of[int64](1, 2)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should keep stored structures when adding related objects fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		es := factory.CreateEveSolarSystem()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"corporation_id": c.ID,
+				"profile_id":     1,
+				"state":          "shield_vulnerable",
+				"structure_id":   o.StructureID + 1,
+				"system_id":      es.ID,
+				"type_id":        99999, // not stored and no responder, so fetching it fails
+			}}),
+		)
+		// when
+		_, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
+		})
+		// then
+		require.Error(t, err)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o.StructureID), got)
+	})
+	t.Run("should store unknown service state without failing the sync", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		es := factory.CreateEveSolarSystem()
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"corporation_id": c.ID,
+				"profile_id":     1,
+				"services": []map[string]any{{
+					"name":  "service1",
+					"state": "new_esi_value",
+				}},
+				"state":        "shield_vulnerable",
+				"structure_id": 42,
+				"system_id":    es.ID,
+				"type_id":      et.ID,
+			}}),
+		)
+		// when
+		_, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
+		})
+		// then
+		require.NoError(t, err)
+		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
+		require.NoError(t, err)
+		require.Len(t, x.Services, 1)
+		xassert.Equal(t, app.StructureServiceStateUnknown, x.Services[0].State)
+	})
+	t.Run("should store the state matching the ESI value", func(t *testing.T) {
+		cases := []struct {
+			esiValue string
+			want     app.StructureState
+		}{
+			{"anchor_vulnerable", app.StructureStateAnchorVulnerable},
+			{"anchoring", app.StructureStateAnchoring},
+			{"armor_reinforce", app.StructureStateArmorReinforce},
+			{"armor_vulnerable", app.StructureStateArmorVulnerable},
+			{"deploy_vulnerable", app.StructureStateDeployVulnerable},
+			{"fitting_invulnerable", app.StructureStateFittingInvulnerable},
+			{"hull_reinforce", app.StructureStateHullReinforce},
+			{"hull_vulnerable", app.StructureStateHullVulnerable},
+			{"online_deprecated", app.StructureStateOnlineDeprecated},
+			{"onlining_vulnerable", app.StructureStateOnliningVulnerable},
+			{"shield_vulnerable", app.StructureStateShieldVulnerable},
+			{"unanchored", app.StructureStateUnanchored},
+			{"unknown", app.StructureStateUnknown},
+			{"new_esi_value", app.StructureStateUnknown},
+		}
+		for _, tc := range cases {
+			t.Run(tc.esiValue, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				httpmock.Reset()
+				s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+				c := factory.CreateCorporation()
+				es := factory.CreateEveSolarSystem()
+				et := factory.CreateEveType()
+				httpmock.RegisterResponder(
+					"GET",
+					fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+					httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+						"corporation_id": c.ID,
+						"profile_id":     1,
+						"state":          tc.esiValue,
+						"structure_id":   42,
+						"system_id":      es.ID,
+						"type_id":        et.ID,
+					}}),
+				)
+				// when
+				_, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+					corporationID: c.ID,
+					section:       app.SectionCorporationStructures,
+				})
+				// then
+				require.NoError(t, err)
+				x, err := st.GetCorporationStructure(ctx, c.ID, 42)
+				require.NoError(t, err)
+				xassert.Equal(t, tc.want, x.State)
+			})
+		}
+	})
 }

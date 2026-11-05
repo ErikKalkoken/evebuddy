@@ -38,7 +38,10 @@ func TestStructureStateColor(t *testing.T) {
 	}{
 		{app.StructureStateAnchoring, theme.ColorNameWarning},
 		{app.StructureStateAnchorVulnerable, theme.ColorNameWarning},
+		{app.StructureStateArmorVulnerable, theme.ColorNameWarning},
 		{app.StructureStateDeployVulnerable, theme.ColorNameWarning},
+		{app.StructureStateHullVulnerable, theme.ColorNameWarning},
+		{app.StructureStateOnliningVulnerable, theme.ColorNameWarning},
 		{app.StructureStateArmorReinforce, theme.ColorNameError},
 		{app.StructureStateHullReinforce, theme.ColorNameError},
 		{app.StructureStateShieldVulnerable, theme.ColorNameSuccess},

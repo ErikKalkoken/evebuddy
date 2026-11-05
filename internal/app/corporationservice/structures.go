@@ -59,7 +59,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				"anchor_vulnerable":    app.StructureStateAnchorVulnerable,
 				"anchoring":            app.StructureStateAnchoring,
 				"armor_reinforce":      app.StructureStateArmorReinforce,
-				"armor_vulnerable":     app.StructureStateAnchorVulnerable,
+				"armor_vulnerable":     app.StructureStateArmorVulnerable,
 				"deploy_vulnerable":    app.StructureStateDeployVulnerable,
 				"fitting_invulnerable": app.StructureStateFittingInvulnerable,
 				"hull_reinforce":       app.StructureStateHullReinforce,
@@ -75,6 +75,23 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				"online":  app.StructureServiceStateOnline,
 				"offline": app.StructureServiceStateOffline,
 				"cleanup": app.StructureServiceStateCleanup,
+			}
+
+			// Add related objects first, so a failure here leaves stored structures untouched
+			var typeIDs, systemIDs set.Set[int64]
+			for _, o := range structures {
+				typeIDs.Add(o.TypeId)
+				systemIDs.Add(o.SystemId)
+			}
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingSolarSystems(ctx, systemIDs)
+			})
+			if err := g.Wait(); err != nil {
+				return false, err
 			}
 
 			// Remove vanished structures
@@ -94,30 +111,32 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 			}
 
 			// Update structures
-			var typeIDs, systemIDs set.Set[int64]
-			for _, o := range structures {
-				typeIDs.Add(o.TypeId)
-				systemIDs.Add(o.SystemId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingSolarSystems(ctx, systemIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
 			for _, o := range structures {
 				state, ok := structureStateFromESIValue[o.State]
 				if !ok {
 					state = app.StructureStateUnknown
+					slog.Warn(
+						"Unknown structure state encountered",
+						"corporationID", arg.corporationID,
+						"structureID", o.StructureId,
+						"state", o.State,
+					)
 				}
 				services := xslices.Map(o.Services, func(x esi.CorporationsCorporationIdStructuresGetInnerServicesInner) storage.StructureServiceParams {
+					serviceState, ok := structureServiceStateFromESIValue[x.State]
+					if !ok {
+						serviceState = app.StructureServiceStateUnknown
+						slog.Warn(
+							"Unknown structure service state encountered",
+							"corporationID", arg.corporationID,
+							"structureID", o.StructureId,
+							"service", x.Name,
+							"state", x.State,
+						)
+					}
 					return storage.StructureServiceParams{
 						Name:  x.Name,
-						State: structureServiceStateFromESIValue[x.State],
+						State: serviceState,
 					}
 				})
 				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
