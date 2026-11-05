@@ -59,7 +59,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				"anchor_vulnerable":    app.StructureStateAnchorVulnerable,
 				"anchoring":            app.StructureStateAnchoring,
 				"armor_reinforce":      app.StructureStateArmorReinforce,
-				"armor_vulnerable":     app.StructureStateAnchorVulnerable,
+				"armor_vulnerable":     app.StructureStateArmorVulnerable,
 				"deploy_vulnerable":    app.StructureStateDeployVulnerable,
 				"fitting_invulnerable": app.StructureStateFittingInvulnerable,
 				"hull_reinforce":       app.StructureStateHullReinforce,
