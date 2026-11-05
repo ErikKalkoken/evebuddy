@@ -59,7 +59,7 @@ func ExtractIDs(jobs []ESIJob) (entityIDs, typeIDs set.Set[int64]) {
 func parseStatus(j ESIJob, statuses map[string]app.IndustryJobStatus, now time.Time, logAttr slog.Attr) app.IndustryJobStatus {
 	status, found := statuses[j.Status]
 	if !found {
-		slog.Warn("Unknown industry job status encountered", logAttr, "job", j)
+		slog.Warn("Unknown industry job status encountered", logAttr, "jobID", j.JobId, "status", j.Status)
 		return app.JobUndefined
 	}
 	// Fix incorrect status for known bug: https://github.com/esi/esi-issues/issues/752
@@ -95,7 +95,7 @@ func Sync(
 	jobs []ESIJob,
 	current map[int64]app.IndustryJobStatus,
 	statuses map[string]app.IndustryJobStatus,
-	addRelated func(ctx context.Context, jobs []ESIJob) error,
+	addRelated func(ctx context.Context) error,
 	store func(ctx context.Context, job ESIJob, status app.IndustryJobStatus) error,
 	markUnknown func(ctx context.Context, ids set.Set[int64]) error,
 	logAttr slog.Attr,
@@ -110,7 +110,7 @@ func Sync(
 		}
 	}
 	if hasChanges {
-		if err := addRelated(ctx, jobs); err != nil {
+		if err := addRelated(ctx); err != nil {
 			return false, err
 		}
 		for i, j := range jobs {

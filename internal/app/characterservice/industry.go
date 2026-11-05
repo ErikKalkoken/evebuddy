@@ -167,7 +167,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 				jobs,
 				current,
 				jobStatusFromESIValue,
-				func(ctx context.Context, jobs []industrysync.ESIJob) error {
+				func(ctx context.Context) error {
 					entityIDs, typeIDs := industrysync.ExtractIDs(jobs)
 					var locationIDs set.Set[int64]
 					for _, j := range jobs {

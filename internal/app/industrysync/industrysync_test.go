@@ -26,6 +26,27 @@ var (
 	}
 )
 
+func noAddRelated(t *testing.T) func(context.Context) error {
+	return func(context.Context) error {
+		t.Fatal("addRelated should not be called")
+		return nil
+	}
+}
+
+func noStore(t *testing.T) func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
+	return func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
+		t.Fatal("store should not be called")
+		return nil
+	}
+}
+
+func noMarkUnknown(t *testing.T) func(context.Context, set.Set[int64]) error {
+	return func(context.Context, set.Set[int64]) error {
+		t.Fatal("markUnknown should not be called")
+		return nil
+	}
+}
+
 func TestExtractIDs(t *testing.T) {
 	completer := int64(3)
 	product := int64(20)
@@ -41,27 +62,15 @@ func TestSync(t *testing.T) {
 	ctx := context.Background()
 	future := time.Now().Add(time.Hour)
 	past := time.Now().Add(-time.Hour)
-	noAddRelated := func(context.Context, []industrysync.ESIJob) error {
-		t.Fatal("addRelated should not be called")
-		return nil
-	}
-	noStore := func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
-		t.Fatal("store should not be called")
-		return nil
-	}
-	noMarkUnknown := func(context.Context, set.Set[int64]) error {
-		t.Fatal("markUnknown should not be called")
-		return nil
-	}
 	t.Run("reports no change when nothing changed and there are no orphans", func(t *testing.T) {
 		changed, err := industrysync.Sync(
 			ctx,
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			map[int64]app.IndustryJobStatus{1: app.JobActive},
 			statuses,
-			noAddRelated,
-			noStore,
-			noMarkUnknown,
+			noAddRelated(t),
+			noStore(t),
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -75,9 +84,8 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			nil,
 			statuses,
-			func(_ context.Context, jobs []industrysync.ESIJob) error {
+			func(context.Context) error {
 				calls = append(calls, "addRelated")
-				assert.Len(t, jobs, 1)
 				return nil
 			},
 			func(_ context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
@@ -85,7 +93,7 @@ func TestSync(t *testing.T) {
 				got[j.JobId] = status
 				return nil
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -106,14 +114,14 @@ func TestSync(t *testing.T) {
 				2: app.JobActive,
 			},
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return nil
 			},
 			func(_ context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
 				got[j.JobId] = status
 				return nil
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -130,9 +138,9 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: past}},
 			map[int64]app.IndustryJobStatus{1: app.JobReady},
 			statuses,
-			noAddRelated,
-			noStore,
-			noMarkUnknown,
+			noAddRelated(t),
+			noStore(t),
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -145,14 +153,14 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: past}},
 			map[int64]app.IndustryJobStatus{1: app.JobActive},
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return nil
 			},
 			func(_ context.Context, _ industrysync.ESIJob, status app.IndustryJobStatus) error {
 				got = status
 				return nil
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -175,8 +183,8 @@ func TestSync(t *testing.T) {
 				8: app.JobUnknown,
 			},
 			statuses,
-			noAddRelated,
-			noStore,
+			noAddRelated(t),
+			noStore(t),
 			func(_ context.Context, ids set.Set[int64]) error {
 				got = ids
 				return nil
@@ -193,13 +201,13 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			map[int64]app.IndustryJobStatus{},
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return nil
 			},
 			func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
 				return nil
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -216,19 +224,21 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "new_status"}},
 			nil,
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return nil
 			},
 			func(_ context.Context, _ industrysync.ESIJob, status app.IndustryJobStatus) error {
 				got = status
 				return nil
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		require.NoError(t, err)
 		xassert.Equal(t, app.JobUndefined, got)
 		assert.Contains(t, buf.String(), "Unknown industry job status encountered")
+		assert.Contains(t, buf.String(), "jobID=1")
+		assert.Contains(t, buf.String(), "status=new_status")
 	})
 	t.Run("returns error and stores nothing when adding related data fails", func(t *testing.T) {
 		wantErr := errors.New("failed")
@@ -237,11 +247,11 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			nil,
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return wantErr
 			},
-			noStore,
-			noMarkUnknown,
+			noStore(t),
+			noMarkUnknown(t),
 			logAttr,
 		)
 		assert.ErrorIs(t, err, wantErr)
@@ -253,13 +263,13 @@ func TestSync(t *testing.T) {
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			nil,
 			statuses,
-			func(context.Context, []industrysync.ESIJob) error {
+			func(context.Context) error {
 				return nil
 			},
 			func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
 				return wantErr
 			},
-			noMarkUnknown,
+			noMarkUnknown(t),
 			logAttr,
 		)
 		assert.ErrorIs(t, err, wantErr)
@@ -271,8 +281,8 @@ func TestSync(t *testing.T) {
 			nil,
 			map[int64]app.IndustryJobStatus{1: app.JobActive},
 			statuses,
-			noAddRelated,
-			noStore,
+			noAddRelated(t),
+			noStore(t),
 			func(context.Context, set.Set[int64]) error {
 				return wantErr
 			},

@@ -283,7 +283,7 @@ func (st *Storage) UpdateOrCreateCharacterIndustryJob(ctx context.Context, arg U
 	wrapErr := func(err error) error {
 		return fmt.Errorf("UpdateOrCreateCharacterIndustryJob: %+v: %w", arg, err)
 	}
-	if arg.CharacterID == 0 || arg.BlueprintTypeID == 0 || arg.BlueprintLocationID == 0 || arg.InstallerID == 0 || arg.OutputLocationID == 0 || arg.StationID == 0 {
+	if arg.CharacterID == 0 || arg.BlueprintTypeID == 0 || arg.BlueprintLocationID == 0 || arg.FacilityID == 0 || arg.InstallerID == 0 || arg.OutputLocationID == 0 || arg.StationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
 	err := st.qRW.UpdateOrCreateCharacterIndustryJobs(ctx, queries.UpdateOrCreateCharacterIndustryJobsParams{
