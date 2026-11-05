@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/http"
 	"testing"
 	"time"
 
@@ -142,6 +143,62 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		assert.WithinDuration(t, completionDate, j2.EndDate, time.Second)
 		assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
 		xassert.EqualOptional(t, completer, j2.CompletedCharacter)
+	})
+	t.Run("should add missing facility location", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006381})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006383})
+		const facilityID = 1000000000001
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          1015116533326,
+					"blueprint_location_id": 60006381,
+					"blueprint_type_id":     2047,
+					"duration":              548,
+					"end_date":              "2014-07-19T15:56:14Z",
+					"facility_id":           facilityID,
+					"installer_id":          498338451,
+					"job_id":                229136101,
+					"output_location_id":    60006382,
+					"runs":                  1,
+					"start_date":            "2014-07-19T15:47:06Z",
+					"station_id":            60006383,
+					"status":                "delivered",
+				},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/universe/structures/%d", facilityID),
+			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]string{
+				"error": "forbidden",
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
+		require.NoError(t, err)
+		xassert.Equal(t, 60006381, x.BlueprintLocation.ID)
+		xassert.Equal(t, facilityID, x.Facility.ID)
+		xassert.Equal(t, 60006382, x.OutputLocation.ID)
+		xassert.Equal(t, 60006383, x.Station.ID)
 	})
 	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
 		// given

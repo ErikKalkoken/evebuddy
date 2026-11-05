@@ -201,7 +201,7 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 					if x := j.CompletedCharacterId; x != nil {
 						entityIDs.Add(*x)
 					}
-					locationIDs.Add(j.BlueprintLocationId, j.OutputLocationId, j.StationId)
+					locationIDs.Add(j.BlueprintLocationId, j.FacilityId, j.OutputLocationId, j.StationId)
 					typeIDs.Add(j.BlueprintTypeId)
 					if x := j.ProductTypeId; x != nil {
 						typeIDs.Add(*x)
