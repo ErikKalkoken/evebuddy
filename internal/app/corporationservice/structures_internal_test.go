@@ -185,6 +185,39 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		want := set.Of[int64](1, 2)
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should keep stored structures when adding related objects fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		o := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		es := factory.CreateEveSolarSystem()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"corporation_id": c.ID,
+				"profile_id":     1,
+				"state":          "shield_vulnerable",
+				"structure_id":   o.StructureID + 1,
+				"system_id":      es.ID,
+				"type_id":        99999, // not stored and no responder, so fetching it fails
+			}}),
+		)
+		// when
+		_, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
+		})
+		// then
+		require.Error(t, err)
+		got, err := st.ListCorporationStructureIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o.StructureID), got)
+	})
 	t.Run("should store the state matching the ESI value", func(t *testing.T) {
 		cases := []struct {
 			esiValue string

@@ -77,6 +77,23 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				"cleanup": app.StructureServiceStateCleanup,
 			}
 
+			// Add related objects first, so a failure here leaves stored structures untouched
+			var typeIDs, systemIDs set.Set[int64]
+			for _, o := range structures {
+				typeIDs.Add(o.TypeId)
+				systemIDs.Add(o.SystemId)
+			}
+			g := new(errgroup.Group)
+			g.Go(func() error {
+				return s.eus.AddMissingTypes(ctx, typeIDs)
+			})
+			g.Go(func() error {
+				return s.eus.AddMissingSolarSystems(ctx, systemIDs)
+			})
+			if err := g.Wait(); err != nil {
+				return false, err
+			}
+
 			// Remove vanished structures
 			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.CorporationsCorporationIdStructuresGetInner) int64 {
 				return x.StructureId
@@ -94,21 +111,6 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 			}
 
 			// Update structures
-			var typeIDs, systemIDs set.Set[int64]
-			for _, o := range structures {
-				typeIDs.Add(o.TypeId)
-				systemIDs.Add(o.SystemId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingSolarSystems(ctx, systemIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
 			for _, o := range structures {
 				state, ok := structureStateFromESIValue[o.State]
 				if !ok {
