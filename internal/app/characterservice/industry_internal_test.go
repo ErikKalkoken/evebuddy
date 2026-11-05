@@ -388,6 +388,50 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		}
 		xassert.Equal(t, want, got)
 	})
+	t.Run("should report no change when nothing changed and no orphans", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobDelivered,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           1,
+					"blueprint_id":          j1.BlueprintID,
+					"blueprint_location_id": j1.BlueprintLocation.ID,
+					"blueprint_type_id":     j1.BlueprintType.ID,
+					"duration":              j1.Duration,
+					"end_date":              j1.EndDate.Format(time.RFC3339),
+					"facility_id":           j1.Facility.ID,
+					"installer_id":          j1.Installer.ID,
+					"job_id":                j1.JobID,
+					"output_location_id":    j1.OutputLocation.ID,
+					"runs":                  j1.Runs,
+					"start_date":            j1.StartDate.Format(time.RFC3339),
+					"station_id":            j1.Station.ID,
+					"status":                "delivered",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.GetCharacterIndustryJob(ctx, c.ID, j1.JobID)
+		require.NoError(t, err)
+		assert.Equal(t, app.JobDelivered, got.Status)
+	})
 }
 
 func TestJobStatusFromESIValue_MatchesDomain(t *testing.T) {
