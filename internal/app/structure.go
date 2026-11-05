@@ -77,7 +77,12 @@ func (ss StructureState) DisplayShort() string {
 
 func (ss StructureState) Color() fyne.ThemeColorName {
 	switch ss {
-	case StructureStateAnchoring, StructureStateAnchorVulnerable, StructureStateDeployVulnerable:
+	case StructureStateAnchoring,
+		StructureStateAnchorVulnerable,
+		StructureStateArmorVulnerable,
+		StructureStateDeployVulnerable,
+		StructureStateHullVulnerable,
+		StructureStateOnliningVulnerable:
 		return theme.ColorNameWarning
 	case StructureStateArmorReinforce, StructureStateHullReinforce:
 		return theme.ColorNameError
