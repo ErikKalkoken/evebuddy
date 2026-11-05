@@ -1,24 +1,23 @@
 package corporationservice
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
-	"slices"
-	"time"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/industrysync"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 // GetCorporationIndustryJob returns an industry job.
@@ -66,83 +65,44 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 			if err != nil {
 				return false, err
 			}
-			// Fix incorrect status for known bug: https://github.com/esi/esi-issues/issues/752
-			for i, j := range jobs {
-				if j.Status == "active" && !j.EndDate.IsZero() && j.EndDate.Before(time.Now()) {
-					jobs[i].Status = "ready"
-				}
-			}
-			slices.SortFunc(jobs, func(a, b esi.CorporationsCorporationIdIndustryJobsGetInner) int {
-				return cmp.Compare(a.JobId, b.JobId)
-			})
 			slog.Debug("Received industry jobs from ESI", "corporationID", arg.corporationID, "count", len(jobs))
 			return jobs, nil
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
-			jobs := data.([]esi.CorporationsCorporationIdIndustryJobsGetInner)
-
-			statusFromESIJob := func(j esi.CorporationsCorporationIdIndustryJobsGetInner) app.IndustryJobStatus {
-				status, ok := jobStatusFromESIValue[j.Status]
-				if !ok {
-					return app.JobUndefined
-				}
-				return status
-			}
-
-			// Identify changed jobs
-			jj, err := s.st.ListCorporationIndustryJobs(ctx, arg.corporationID)
+			jobs := xslices.Map(data.([]esi.CorporationsCorporationIdIndustryJobsGetInner), industryJobFromESI)
+			stored, err := s.st.ListCorporationIndustryJobs(ctx, arg.corporationID)
 			if err != nil {
 				return false, err
 			}
-			currentJobs := maps.Collect(xiter.MapSlice2(jj, func(j *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
+			current := maps.Collect(xiter.MapSlice2(stored, func(j *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
 				return j.JobID, j.Status
 			}))
-			var changedJobs []esi.CorporationsCorporationIdIndustryJobsGetInner
-			for _, j := range jobs {
-				status, found := currentJobs[j.JobId]
-				if !found {
-					changedJobs = append(changedJobs, j)
-					continue
-				}
-				if statusFromESIJob(j) == status {
-					continue
-				}
-				changedJobs = append(changedJobs, j)
-			}
-
-			// Process changed jobs
-			hasChanges := len(changedJobs) > 0
-			if hasChanges {
-				var entityIDs set.Set[int64]
-				var typeIDs set.Set[int64]
-				var locationIDs set.Set[int64]
-				for _, j := range jobs {
-					entityIDs.Add(j.InstallerId)
-					if x := j.CompletedCharacterId; x != nil {
-						entityIDs.Add(*x)
+			return industrysync.Sync(
+				ctx,
+				jobs,
+				current,
+				jobStatusFromESIValue,
+				func(ctx context.Context, jobs []industrysync.ESIJob) error {
+					entityIDs, typeIDs := industrysync.ExtractIDs(jobs)
+					var locationIDs set.Set[int64]
+					for _, j := range jobs {
+						locationIDs.Add(j.LocationId)
 					}
-					locationIDs.Add(j.LocationId)
-					typeIDs.Add(j.BlueprintTypeId)
-					if x := j.ProductTypeId; x != nil {
-						typeIDs.Add(*x)
-					}
-				}
-				g := new(errgroup.Group)
-				g.Go(func() error {
-					_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-					return err
-				})
-				g.Go(func() error {
-					return s.eus.AddMissingLocations(ctx, locationIDs)
-				})
-				g.Go(func() error {
-					return s.eus.AddMissingTypes(ctx, typeIDs)
-				})
-				if err := g.Wait(); err != nil {
-					return false, err
-				}
-				for _, j := range jobs {
-					if err := s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
+					g := new(errgroup.Group)
+					g.Go(func() error {
+						_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+						return err
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingLocations(ctx, locationIDs)
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingTypes(ctx, typeIDs)
+					})
+					return g.Wait()
+				},
+				func(ctx context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
+					return s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
 						ActivityID:           j.ActivityId,
 						BlueprintID:          j.BlueprintId,
 						BlueprintLocationID:  j.BlueprintLocationId,
@@ -164,50 +124,47 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
 						Runs:                 j.Runs,
 						StartDate:            j.StartDate,
-						Status:               statusFromESIJob(j),
+						Status:               status,
 						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
-					}); err != nil {
-						return false, err
-					}
-				}
-				slog.Info("Updated industry jobs", "corporationID", arg.corporationID, "count", len(jobs))
-			}
-
-			// Mark orphans
-			// The ESI response only returns jobs from the last 90 days, so a long
-			// running job can vanish from it even when nothing else changed this cycle.
-			incoming := set.Collect(xiter.MapSlice(jobs, func(x esi.CorporationsCorporationIdIndustryJobsGetInner) int64 {
-				return x.JobId
-			}))
-			current, err := s.st.ListCorporationIndustryJobs(ctx, arg.corporationID)
-			if err != nil {
-				return false, err
-			}
-			running := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CorporationIndustryJob) bool {
-				return x.Status.IsActive()
-			}), func(x *app.CorporationIndustryJob) int64 {
-				return x.JobID
-			}))
-			orphans := set.Difference(running, incoming)
-			if orphans.Size() == 0 {
-				return hasChanges, nil
-			}
-
-			err = s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
-				CorporationID: arg.corporationID,
-				JobIDs:        orphans,
-				Status:        app.JobUnknown,
-			})
-			if err != nil {
-				return false, err
-			}
-			slog.Info(
-				"Marked orphaned industry jobs as unknown",
-				"corporationID", arg.corporationID,
-				"count", orphans.Size(),
+					})
+				},
+				func(ctx context.Context, ids set.Set[int64]) error {
+					return s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
+						CorporationID: arg.corporationID,
+						JobIDs:        ids,
+						Status:        app.JobUnknown,
+					})
+				},
+				slog.Int64("corporationID", arg.corporationID),
 			)
-
-			return true, nil
 		},
 	)
+}
+
+// industryJobFromESI returns the job for an ESI response.
+func industryJobFromESI(j esi.CorporationsCorporationIdIndustryJobsGetInner) industrysync.ESIJob {
+	return industrysync.ESIJob{
+		ActivityId:           j.ActivityId,
+		BlueprintId:          j.BlueprintId,
+		BlueprintLocationId:  j.BlueprintLocationId,
+		BlueprintTypeId:      j.BlueprintTypeId,
+		CompletedCharacterId: j.CompletedCharacterId,
+		CompletedDate:        j.CompletedDate,
+		Cost:                 j.Cost,
+		Duration:             j.Duration,
+		EndDate:              j.EndDate,
+		FacilityId:           j.FacilityId,
+		InstallerId:          j.InstallerId,
+		JobId:                j.JobId,
+		LicensedRuns:         j.LicensedRuns,
+		LocationId:           j.LocationId,
+		OutputLocationId:     j.OutputLocationId,
+		PauseDate:            j.PauseDate,
+		Probability:          j.Probability,
+		ProductTypeId:        j.ProductTypeId,
+		Runs:                 j.Runs,
+		StartDate:            j.StartDate,
+		Status:               j.Status,
+		SuccessfulRuns:       j.SuccessfulRuns,
+	}
 }

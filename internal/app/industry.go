@@ -160,6 +160,26 @@ func (s IndustryJobStatus) Color() fyne.ThemeColorName {
 // IndustryJobStatusActive defines which status is considered active.
 var IndustryJobStatusActive = set.Of(JobActive, JobReady, JobPaused)
 
+// CharacterIndustryJobStatuses are the job statuses ESI defines for characters.
+var CharacterIndustryJobStatuses = set.Of(
+	JobActive,
+	JobCancelled,
+	JobDelivered,
+	JobPaused,
+	JobReady,
+	JobReverted,
+)
+
+// CorporationIndustryJobStatuses are the job statuses ESI defines for corporations.
+var CorporationIndustryJobStatuses = set.Of(
+	JobActive,
+	JobCancelled,
+	JobDelivered,
+	JobPaused,
+	JobReady,
+	JobReverted,
+)
+
 type CharacterIndustryJob struct {
 	Activity           IndustryActivity
 	BlueprintID        int64
