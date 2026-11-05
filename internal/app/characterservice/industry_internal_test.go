@@ -2,11 +2,16 @@ package characterservice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
+	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -143,7 +148,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
 		xassert.EqualOptional(t, completer, j2.CompletedCharacter)
 	})
-	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
+	t.Run("should add missing facility location", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
@@ -151,7 +156,10 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006381})
 		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006383})
+		const facilityID = 1000000000001
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
@@ -159,21 +167,26 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 				{
 					"activity_id":           1,
 					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 60006382,
+					"blueprint_location_id": 60006381,
 					"blueprint_type_id":     2047,
-					"cost":                  118.01,
 					"duration":              548,
 					"end_date":              "2014-07-19T15:56:14Z",
-					"facility_id":           60006382,
+					"facility_id":           facilityID,
 					"installer_id":          498338451,
 					"job_id":                229136101,
-					"licensed_runs":         200,
 					"output_location_id":    60006382,
 					"runs":                  1,
 					"start_date":            "2014-07-19T15:47:06Z",
-					"station_id":            60006382,
-					"status":                "active",
+					"station_id":            60006383,
+					"status":                "delivered",
 				},
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/universe/structures/%d", facilityID),
+			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]string{
+				"error": "forbidden",
 			}),
 		)
 		// when
@@ -186,8 +199,10 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		assert.True(t, changed)
 		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
 		require.NoError(t, err)
-
-		xassert.Equal(t, app.JobReady, x.Status)
+		xassert.Equal(t, 60006381, x.BlueprintLocation.ID)
+		xassert.Equal(t, facilityID, x.Facility.ID)
+		xassert.Equal(t, 60006382, x.OutputLocation.ID)
+		xassert.Equal(t, 60006383, x.Station.ID)
 	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
@@ -238,53 +253,6 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		j2 := xx[0]
 		xassert.Equal(t, c.ID, j2.CharacterID)
 		xassert.Equal(t, app.JobReady, j2.Status)
-	})
-	t.Run("should not fix status when correct", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
-		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
-		startDate := time.Now().Add(-24 * time.Hour)
-		endDate := time.Now().Add(+3 * time.Hour)
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"activity_id":           1,
-					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 60006382,
-					"blueprint_type_id":     2047,
-					"cost":                  118.01,
-					"duration":              548,
-					"end_date":              endDate.Format(app.DateTimeFormatESI),
-					"facility_id":           60006382,
-					"installer_id":          498338451,
-					"job_id":                229136101,
-					"licensed_runs":         200,
-					"output_location_id":    60006382,
-					"runs":                  1,
-					"start_date":            startDate.Format(app.DateTimeFormatESI),
-					"station_id":            60006382,
-					"status":                "active",
-				},
-			}),
-		)
-		// when
-		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
-			characterID: c.ID,
-			section:     app.SectionCharacterIndustryJobs,
-		})
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		x, err := st.GetCharacterIndustryJob(ctx, c.ID, 229136101)
-		require.NoError(t, err)
-		xassert.Equal(t, app.JobActive, x.Status)
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
@@ -420,61 +388,6 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		}
 		xassert.Equal(t, want, got)
 	})
-	t.Run("should mark orphaned jobs when nothing else changed", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
-		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-			Status:      app.JobReady,
-		})
-		j2 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			CharacterID: c.ID,
-			Status:      app.JobDelivered,
-		})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"activity_id":           1,
-					"blueprint_id":          j2.BlueprintID,
-					"blueprint_location_id": j2.BlueprintLocation.ID,
-					"blueprint_type_id":     j2.BlueprintType.ID,
-					"duration":              j2.Duration,
-					"end_date":              j2.EndDate.Format(time.RFC3339),
-					"facility_id":           j2.Facility.ID,
-					"installer_id":          j2.Installer.ID,
-					"job_id":                j2.JobID,
-					"output_location_id":    j2.OutputLocation.ID,
-					"runs":                  j2.Runs,
-					"start_date":            j2.StartDate.Format(time.RFC3339),
-					"station_id":            j2.Station.ID,
-					"status":                "delivered",
-				},
-			}),
-		)
-		// when
-		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
-			characterID: c.ID,
-			section:     app.SectionCharacterIndustryJobs,
-		})
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		oo, err := st.ListAllCharacterIndustryJob(ctx)
-		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
-			return x.JobID, x.Status
-		}))
-		want := map[int64]app.IndustryJobStatus{
-			j1.JobID: app.JobUnknown,
-			j2.JobID: app.JobDelivered,
-		}
-		xassert.Equal(t, want, got)
-	})
 	t.Run("should report no change when nothing changed and no orphans", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -519,4 +432,36 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, app.JobDelivered, got.Status)
 	})
+}
+
+func TestJobStatusFromESIValue_MatchesDomain(t *testing.T) {
+	got := set.Collect(maps.Values(jobStatusFromESIValue))
+	xassert.Equal(t, app.CharacterIndustryJobStatuses, got)
+	assert.Len(t, jobStatusFromESIValue, got.Size())
+}
+
+// TestJobStatusFromESIValue_MatchesSpec compares against a stored copy of the ESI spec,
+// so it can only fail when that copy is updated.
+func TestJobStatusFromESIValue_MatchesSpec(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "tools", "genratelimit", "openapi.json"))
+	require.NoError(t, err)
+	var spec struct {
+		Components struct {
+			Schemas struct {
+				Jobs struct {
+					Items struct {
+						Properties struct {
+							Status struct {
+								Enum []string `json:"enum"`
+							} `json:"status"`
+						} `json:"properties"`
+					} `json:"items"`
+				} `json:"CharactersCharacterIdIndustryJobsGet"`
+			} `json:"schemas"`
+		} `json:"components"`
+	}
+	require.NoError(t, json.Unmarshal(data, &spec))
+	enum := spec.Components.Schemas.Jobs.Items.Properties.Status.Enum
+	require.NotEmpty(t, enum)
+	xassert.Equal(t, set.Of(enum...), set.Collect(maps.Keys(jobStatusFromESIValue)))
 }

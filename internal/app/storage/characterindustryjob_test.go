@@ -211,6 +211,17 @@ func TestCharacterIndustryJob(t *testing.T) {
 		xassert.Equal(t, app.JobDelivered, j2.Status)
 		xassert.EqualOptional(t, 5, j2.SuccessfulRuns)
 	})
+	t.Run("should return error when facility is missing", func(t *testing.T) {
+		err := st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
+			BlueprintLocationID: 1,
+			BlueprintTypeID:     2,
+			CharacterID:         3,
+			InstallerID:         4,
+			OutputLocationID:    5,
+			StationID:           6,
+		})
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
 	t.Run("can list jobs for a character", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

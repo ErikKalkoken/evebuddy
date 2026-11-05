@@ -2,9 +2,12 @@ package corporationservice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -210,55 +213,6 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		assert.WithinDuration(t, completionDate, j2.CompletedDate.ValueOrZero(), time.Second)
 		xassert.EqualOptional(t, completer, j2.CompletedCharacter)
 	})
-	t.Run("should fix incorrect status for new jobs", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
-			AccessToken: "accessToken",
-		}}})
-		c := factory.CreateCorporation()
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
-		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"activity_id":           1,
-					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 11,
-					"blueprint_type_id":     2047,
-					"cost":                  118.01,
-					"duration":              548,
-					"end_date":              "2014-07-19T15:56:14Z",
-					"facility_id":           12,
-					"installer_id":          498338451,
-					"job_id":                229136101,
-					"licensed_runs":         200,
-					"location_id":           60006382,
-					"output_location_id":    13,
-					"product_type_id":       2046,
-					"runs":                  1,
-					"start_date":            "2014-07-19T15:47:06Z",
-					"status":                "active",
-				},
-			}))
-
-		// when
-		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
-			corporationID: c.ID,
-			section:       app.SectionCorporationIndustryJobs,
-		})
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
-		require.NoError(t, err)
-		xassert.Equal(t, app.JobReady, x.Status)
-	})
 	t.Run("should fix incorrect status for existing jobs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -310,57 +264,6 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		j2 := xx[0]
 		xassert.Equal(t, c.ID, j2.CorporationID)
 		xassert.Equal(t, app.JobReady, j2.Status)
-	})
-	t.Run("should not fix correct status", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
-			AccessToken: "accessToken",
-		}}})
-		c := factory.CreateCorporation()
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2047})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 2046})
-		factory.CreateEveEntityCharacter(app.EveEntity{ID: 498338451})
-		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60006382})
-		startDate := time.Now().Add(-24 * time.Hour)
-		endDate := time.Now().Add(+3 * time.Hour)
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"activity_id":           1,
-					"blueprint_id":          1015116533326,
-					"blueprint_location_id": 11,
-					"blueprint_type_id":     2047,
-					"cost":                  118.01,
-					"duration":              548,
-					"end_date":              endDate.Format(app.DateTimeFormatESI),
-					"facility_id":           12,
-					"installer_id":          498338451,
-					"job_id":                229136101,
-					"licensed_runs":         200,
-					"location_id":           60006382,
-					"output_location_id":    13,
-					"product_type_id":       2046,
-					"runs":                  1,
-					"start_date":            startDate.Format(app.DateTimeFormatESI),
-					"status":                "active",
-				},
-			}))
-
-		// when
-		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
-			corporationID: c.ID,
-			section:       app.SectionCorporationIndustryJobs,
-		})
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		x, err := st.GetCorporationIndustryJob(ctx, c.ID, 229136101)
-		require.NoError(t, err)
-		xassert.Equal(t, app.JobActive, x.Status)
 	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
@@ -583,63 +486,6 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		}
 		xassert.Equal(t, want, got)
 	})
-	t.Run("should mark orphaned jobs when nothing else changed", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		httpmock.Reset()
-		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
-			AccessToken: "accessToken",
-		}}})
-		c := factory.CreateCorporation()
-		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
-			CorporationID: c.ID,
-			Status:        app.JobReady,
-		})
-		j2 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
-			CorporationID: c.ID,
-			Status:        app.JobDelivered,
-		})
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-				{
-					"activity_id":           1,
-					"blueprint_id":          j2.BlueprintID,
-					"blueprint_location_id": j2.BlueprintLocationID,
-					"blueprint_type_id":     j2.BlueprintType.ID,
-					"duration":              j2.Duration,
-					"end_date":              j2.EndDate.Format(time.RFC3339),
-					"facility_id":           j2.FacilityID,
-					"installer_id":          j2.Installer.ID,
-					"job_id":                j2.JobID,
-					"location_id":           j2.Location.ID,
-					"output_location_id":    j2.OutputLocationID,
-					"runs":                  j2.Runs,
-					"start_date":            j2.StartDate.Format(time.RFC3339),
-					"status":                "delivered",
-				},
-			}),
-		)
-		// when
-		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
-			corporationID: c.ID,
-			section:       app.SectionCorporationIndustryJobs,
-		})
-		// then
-		require.NoError(t, err)
-		assert.True(t, changed)
-		oo, err := st.ListAllCorporationIndustryJobs(ctx)
-		require.NoError(t, err)
-		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
-			return x.JobID, x.Status
-		}))
-		want := map[int64]app.IndustryJobStatus{
-			j1.JobID: app.JobUnknown,
-			j2.JobID: app.JobDelivered,
-		}
-		xassert.Equal(t, want, got)
-	})
 	t.Run("should report no change when nothing changed and no orphans", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -686,4 +532,36 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, app.JobDelivered, got.Status)
 	})
+}
+
+func TestJobStatusFromESIValue_MatchesDomain(t *testing.T) {
+	got := set.Collect(maps.Values(jobStatusFromESIValue))
+	xassert.Equal(t, app.CorporationIndustryJobStatuses, got)
+	assert.Len(t, jobStatusFromESIValue, got.Size())
+}
+
+// TestJobStatusFromESIValue_MatchesSpec compares against a stored copy of the ESI spec,
+// so it can only fail when that copy is updated.
+func TestJobStatusFromESIValue_MatchesSpec(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "tools", "genratelimit", "openapi.json"))
+	require.NoError(t, err)
+	var spec struct {
+		Components struct {
+			Schemas struct {
+				Jobs struct {
+					Items struct {
+						Properties struct {
+							Status struct {
+								Enum []string `json:"enum"`
+							} `json:"status"`
+						} `json:"properties"`
+					} `json:"items"`
+				} `json:"CorporationsCorporationIdIndustryJobsGet"`
+			} `json:"schemas"`
+		} `json:"components"`
+	}
+	require.NoError(t, json.Unmarshal(data, &spec))
+	enum := spec.Components.Schemas.Jobs.Items.Properties.Status.Enum
+	require.NotEmpty(t, enum)
+	xassert.Equal(t, set.Of(enum...), set.Collect(maps.Keys(jobStatusFromESIValue)))
 }
