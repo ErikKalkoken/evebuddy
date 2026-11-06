@@ -136,7 +136,6 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 						return walletsync.ESITransaction(x)
 					}), nil
 				},
-				s.settings.MaxWalletTransactions(),
 				lastID,
 				checkLastID,
 			)

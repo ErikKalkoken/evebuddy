@@ -372,7 +372,6 @@ func main() {
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		HTTPClient:         rhc1.StandardClient(),
-		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,

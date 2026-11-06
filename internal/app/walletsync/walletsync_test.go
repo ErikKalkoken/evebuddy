@@ -157,42 +157,35 @@ func TestFetchTransactions(t *testing.T) {
 	short := []walletsync.ESITransaction{{TransactionId: 5}}
 	t.Run("stops after a page which is not full", func(t *testing.T) {
 		fetch, fromIDs := fetcher(short)
-		got, err := walletsync.FetchTransactions(fetch, 0, 0, false)
+		got, err := walletsync.FetchTransactions(fetch, 0, false)
 		require.NoError(t, err)
 		xassert.Equal(t, 1, len(got))
 		xassert.Equal(t, []int64{0}, *fromIDs)
 	})
 	t.Run("continues from the lowest ID of the previous page", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(10_000), short)
-		got, err := walletsync.FetchTransactions(fetch, 0, 0, false)
+		got, err := walletsync.FetchTransactions(fetch, 0, false)
 		require.NoError(t, err)
 		xassert.Equal(t, pageSize+1, len(got))
 		xassert.Equal(t, []int64{0, 10_000 - pageSize + 1}, *fromIDs)
 	})
-	t.Run("stops when another page would exceed the limit", func(t *testing.T) {
-		fetch, fromIDs := fetcher(page(10_000), page(5_000))
-		got, err := walletsync.FetchTransactions(fetch, 2*pageSize, 0, false)
-		require.NoError(t, err)
-		xassert.Equal(t, 2*pageSize, len(got))
-		xassert.Equal(t, 2, len(*fromIDs))
-	})
 	t.Run("stops at a page containing the last ID", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(10_000))
-		got, err := walletsync.FetchTransactions(fetch, 0, 9_000, true)
+		got, err := walletsync.FetchTransactions(fetch, 9_000, true)
 		require.NoError(t, err)
 		xassert.Equal(t, pageSize, len(got))
 		xassert.Equal(t, 1, len(*fromIDs))
 	})
 	t.Run("stops at a page with older IDs when the last ID no longer exists", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(20_000), page(10_000), short)
-		got, err := walletsync.FetchTransactions(fetch, 0, 15_000, true)
+		got, err := walletsync.FetchTransactions(fetch, 15_000, true)
 		require.NoError(t, err)
 		xassert.Equal(t, 2*pageSize, len(got))
 		xassert.Equal(t, 2, len(*fromIDs))
 	})
 	t.Run("ignores the last ID when it should not be checked", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(10_000), short)
-		got, err := walletsync.FetchTransactions(fetch, 0, 9_000, false)
+		got, err := walletsync.FetchTransactions(fetch, 9_000, false)
 		require.NoError(t, err)
 		xassert.Equal(t, pageSize+1, len(got))
 		xassert.Equal(t, 2, len(*fromIDs))
@@ -201,7 +194,7 @@ func TestFetchTransactions(t *testing.T) {
 		wantErr := errors.New("fetch failed")
 		_, err := walletsync.FetchTransactions(func(int64) ([]walletsync.ESITransaction, error) {
 			return nil, wantErr
-		}, 0, 0, false)
+		}, 0, false)
 		assert.ErrorIs(t, err, wantErr)
 	})
 }

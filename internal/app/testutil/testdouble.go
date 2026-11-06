@@ -309,7 +309,6 @@ func (s *EveImageServiceStub) InventoryTypeSKINAsync(id int64, size int, setter 
 }
 
 type SettingsStub struct {
-	MaxWalletTransactionsDefault    int
 	MaxMailsDefault                 int
 	MarketOrderRetentionDaysDefault int
 }
@@ -320,10 +319,6 @@ func (s *SettingsStub) ApprovedContactCost() int {
 
 func (s *SettingsStub) MaxMails() int {
 	return s.MaxMailsDefault
-}
-
-func (s *SettingsStub) MaxWalletTransactions() int {
-	return s.MaxWalletTransactionsDefault
 }
 
 func (s *SettingsStub) MarketOrderRetentionDays() int {

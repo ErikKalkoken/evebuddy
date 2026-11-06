@@ -41,7 +41,6 @@ type Settings interface {
 	ApprovedContactCost() int
 	MarketOrderRetentionDays() int
 	MaxMails() int
-	MaxWalletTransactions() int
 	NotificationTypesEnabled() set.Set[string]
 	NotifyCommunicationsEarliest() time.Time
 	NotifyCommunicationsEnabled() bool

@@ -80,11 +80,9 @@ func SyncJournal(
 }
 
 // FetchTransactions fetches transactions page by page, starting with the newest (fromID 0).
-// It stops at the last page, when another page would exceed maxTransactions (0 means no limit),
-// or when checkLastID is set and a page contains lastID or an older ID.
+// It stops at the last page or when checkLastID is set and a page contains lastID or an older ID.
 func FetchTransactions(
 	fetch func(fromID int64) ([]ESITransaction, error),
-	maxTransactions int,
 	lastID int64,
 	checkLastID bool,
 ) ([]ESITransaction, error) {
@@ -96,8 +94,7 @@ func FetchTransactions(
 			return nil, err
 		}
 		transactions = append(transactions, page...)
-		isLimitExceeded := maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions
-		if len(page) < maxTransactionsPerPage || isLimitExceeded {
+		if len(page) < maxTransactionsPerPage {
 			return transactions, nil
 		}
 		ids := xslices.Map(page, func(t ESITransaction) int64 {

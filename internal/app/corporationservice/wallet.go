@@ -324,7 +324,6 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					}
 					return xslices.Map(oo, walletTransactionFromESI), nil
 				},
-				s.settings.MaxWalletTransactions(),
 				lastID,
 				checkLastID,
 			)
