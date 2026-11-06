@@ -155,6 +155,30 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: other.ID})
+		// when
+		got, err := st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+		// when
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 7})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 5})
+		got, err = st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when character is missing", func(t *testing.T) {
+		_, err := st.GetCharacterWalletJournalLastRefID(ctx, 0)
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
 	t.Run("can create multiple entries at once", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -181,8 +205,8 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		got, err := st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got)
 	})
 }

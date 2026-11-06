@@ -234,6 +234,32 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
+	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: other.ID, Division: app.Division1})
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division2})
+		arg := storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1}
+		// when
+		got, err := st.GetCorporationWalletJournalLastRefID(ctx, arg)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+		// when
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division1, RefID: 7})
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division1, RefID: 5})
+		got, err = st.GetCorporationWalletJournalLastRefID(ctx, arg)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when division is missing", func(t *testing.T) {
+		_, err := st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{CorporationID: 1})
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
 	t.Run("can create multiple entries at once", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -263,11 +289,11 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+		got, err := st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			Division:      app.Division1,
 		})
 		require.NoError(t, err)
-		xassert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got)
 	})
 }

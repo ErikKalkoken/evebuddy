@@ -124,6 +124,30 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: other.ID})
+		// when
+		got, err := st.GetCharacterWalletLastTransactionID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+		// when
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 7})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 5})
+		got, err = st.GetCharacterWalletLastTransactionID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when character is missing", func(t *testing.T) {
+		_, err := st.GetCharacterWalletLastTransactionID(ctx, 0)
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
 	t.Run("can create multiple transactions at once", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -166,8 +190,8 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		err := st.CreateCharacterWalletTransactions(ctx, []storage.CreateCharacterWalletTransactionParams{arg, invalid})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
+		got, err := st.GetCharacterWalletLastTransactionID(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got)
 	})
 }

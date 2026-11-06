@@ -200,6 +200,32 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
+	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: other.ID, Division: app.Division1})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division2})
+		arg := storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1}
+		// when
+		got, err := st.GetCorporationWalletLastTransactionID(ctx, arg)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+		// when
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 7})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 5})
+		got, err = st.GetCorporationWalletLastTransactionID(ctx, arg)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when division is missing", func(t *testing.T) {
+		_, err := st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{CorporationID: 1})
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
 	t.Run("can create multiple transactions at once", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -247,11 +273,11 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg, invalid})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+		got, err := st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			Division:      app.Division1,
 		})
 		require.NoError(t, err)
-		xassert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, got)
 	})
 }

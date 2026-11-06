@@ -130,6 +130,19 @@ func (q *Queries) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCha
 	return i, err
 }
 
+const getCharacterWalletJournalLastRefID = `-- name: GetCharacterWalletJournalLastRefID :one
+SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
+FROM character_wallet_journal_entries
+WHERE character_id = ?
+`
+
+func (q *Queries) GetCharacterWalletJournalLastRefID(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterWalletJournalLastRefID, characterID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listCharacterWalletJournalEntries = `-- name: ListCharacterWalletJournalEntries :many
 SELECT
     wje.id, wje.amount, wje.balance, wje.character_id, wje.context_id, wje.context_id_type, wje.date, wje.description, wje.first_party_id, wje.ref_id, wje.reason, wje.ref_type, wje.second_party_id, wje.tax, wje.tax_receiver_id,

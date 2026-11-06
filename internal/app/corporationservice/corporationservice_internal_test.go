@@ -52,9 +52,6 @@ func NewFake(args ...Params) *CorporationService {
 	if arg.Storage == nil {
 		panic("must define storage")
 	}
-	if arg.Cache == nil {
-		arg.Cache = testutil.NewCacheFake2()
-	}
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
 	}

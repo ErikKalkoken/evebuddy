@@ -155,9 +155,6 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 	if arg.Storage == nil {
 		panic("must define storage")
 	}
-	if arg.Cache == nil {
-		arg.Cache = testutil.NewCacheFake2()
-	}
 	if arg.Signals == nil {
 		arg.Signals = NewSignalsSync()
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
@@ -191,9 +190,14 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
-			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d-%d", arg.corporationID, arg.section.Division())
-			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.forceUpdate
+			lastID, err := s.st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{
+				CorporationID: arg.corporationID,
+				Division:      arg.section.Division(),
+			})
+			if err != nil {
+				return false, err
+			}
+			checkLastID := lastID > 0 && !arg.forceUpdate
 			entries, err := xgoesi.FetchPagesWithStop(
 				func(page int32) ([]esi.CorporationsCorporationIdWalletsDivisionJournalGetInner, *http.Response, error) {
 					return s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionJournal(ctx, arg.corporationID, int64(arg.section.Division())).Page(page).Execute()
@@ -202,12 +206,6 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 				})
 			if err != nil {
 				return false, err
-			}
-			ids := xslices.Map(entries, func(x esi.CorporationsCorporationIdWalletsDivisionJournalGetInner) int64 {
-				return x.Id
-			})
-			if len(ids) > 0 {
-				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
 			}
 			slog.Debug(
 				"Received wallet journal from ESI",
@@ -305,9 +303,14 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
-			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division())
-			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.forceUpdate
+			lastID, err := s.st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{
+				CorporationID: arg.corporationID,
+				Division:      arg.section.Division(),
+			})
+			if err != nil {
+				return false, err
+			}
+			checkLastID := lastID > 0 && !arg.forceUpdate
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
 			transactions, err := walletsync.FetchTransactions(
 				func(fromID int64) ([]walletsync.ESITransaction, error) {
@@ -333,12 +336,6 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 				slog.Any("divisionID", arg.section.Division()),
 				slog.Any("count", len(transactions)),
 			)
-			ids := xslices.Map(transactions, func(x walletsync.ESITransaction) int64 {
-				return x.TransactionId
-			})
-			if len(ids) > 0 {
-				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
-			}
 			return transactions, nil
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {

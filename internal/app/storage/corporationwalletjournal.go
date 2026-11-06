@@ -145,6 +145,24 @@ func (cd CorporationDivision) IsInvalid() bool {
 	return cd.CorporationID <= 0 || cd.Division == app.DivisionZero
 }
 
+// GetCorporationWalletJournalLastRefID returns the highest journal reference ID stored for a corporation division or 0 if there is none.
+func (st *Storage) GetCorporationWalletJournalLastRefID(ctx context.Context, arg CorporationDivision) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCorporationWalletJournalLastRefID: %+v: %w", arg, err)
+	}
+	if arg.IsInvalid() {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	id, err := st.qRO.GetCorporationWalletJournalLastRefID(ctx, queries.GetCorporationWalletJournalLastRefIDParams{
+		CorporationID: arg.CorporationID,
+		DivisionID:    int64(arg.Division),
+	})
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
+}
+
 func (st *Storage) ListCorporationWalletJournalEntryIDs(ctx context.Context, arg CorporationDivision) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCorporationWalletJournalEntryIDs: %+v: %w", arg, err)

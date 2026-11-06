@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
@@ -39,9 +38,11 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			cacheKey := fmt.Sprintf("wallet-journal-last-id-%d", characterID)
-			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.forceUpdate
+			lastID, err := s.st.GetCharacterWalletJournalLastRefID(ctx, characterID)
+			if err != nil {
+				return false, err
+			}
+			checkLastID := lastID > 0 && !arg.forceUpdate
 			entries, err := xgoesi.FetchPagesWithStop(
 				func(page int32) ([]esi.CharactersCharacterIdWalletJournalGetInner, *http.Response, error) {
 					return s.esiClient.WalletAPI.GetCharactersCharacterIdWalletJournal(ctx, characterID).Page(page).Execute()
@@ -50,12 +51,6 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 				})
 			if err != nil {
 				return false, err
-			}
-			ids := xslices.Map(entries, func(x esi.CharactersCharacterIdWalletJournalGetInner) int64 {
-				return x.Id
-			})
-			if len(ids) > 0 {
-				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
 			}
 			slog.Debug("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
 			return entries, nil
@@ -121,9 +116,11 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
-			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
-			lastID, found := s.cache.GetInt64(cacheKey)
-			checkLastID := found && !arg.forceUpdate
+			lastID, err := s.st.GetCharacterWalletLastTransactionID(ctx, characterID)
+			if err != nil {
+				return false, err
+			}
+			checkLastID := lastID > 0 && !arg.forceUpdate
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
 			transactions, err := walletsync.FetchTransactions(
 				func(fromID int64) ([]walletsync.ESITransaction, error) {
@@ -147,12 +144,6 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 				return false, err
 			}
 			slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
-			ids := xslices.Map(transactions, func(x walletsync.ESITransaction) int64 {
-				return x.TransactionId
-			})
-			if len(ids) > 0 {
-				s.cache.SetInt64(cacheKey, slices.Max(ids), 0)
-			}
 			return transactions, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {

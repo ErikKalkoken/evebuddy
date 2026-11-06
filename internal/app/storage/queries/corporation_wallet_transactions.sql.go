@@ -81,6 +81,25 @@ func (q *Queries) DeleteCorporationWalletTransactions(ctx context.Context, arg D
 	return result.RowsAffected()
 }
 
+const getCorporationWalletLastTransactionID = `-- name: GetCorporationWalletLastTransactionID :one
+SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
+FROM corporation_wallet_transactions
+WHERE corporation_id = ?
+AND division_id = ?
+`
+
+type GetCorporationWalletLastTransactionIDParams struct {
+	CorporationID int64
+	DivisionID    int64
+}
+
+func (q *Queries) GetCorporationWalletLastTransactionID(ctx context.Context, arg GetCorporationWalletLastTransactionIDParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCorporationWalletLastTransactionID, arg.CorporationID, arg.DivisionID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getCorporationWalletTransaction = `-- name: GetCorporationWalletTransaction :one
 SELECT
     cwt.id, cwt.corporation_id, cwt.client_id, cwt.date, cwt.division_id, cwt.eve_type_id, cwt.is_buy, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,

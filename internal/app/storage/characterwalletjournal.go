@@ -113,6 +113,21 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
+// GetCharacterWalletJournalLastRefID returns the highest journal reference ID stored for a character or 0 if there is none.
+func (st *Storage) GetCharacterWalletJournalLastRefID(ctx context.Context, characterID int64) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterWalletJournalLastRefID: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	id, err := st.qRO.GetCharacterWalletJournalLastRefID(ctx, characterID)
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
+}
+
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
