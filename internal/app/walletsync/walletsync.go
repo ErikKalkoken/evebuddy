@@ -150,8 +150,15 @@ func syncNew[T any](
 	name string,
 	logAttrs []slog.Attr,
 ) (bool, error) {
+	// Items can repeat, because pages can shift while they are being fetched.
+	var seen set.Set[int64]
 	newItems := xslices.Filter(items, func(x T) bool {
-		return !existingIDs.Contains(id(x))
+		i := id(x)
+		if existingIDs.Contains(i) || seen.Contains(i) {
+			return false
+		}
+		seen.Add(i)
+		return true
 	})
 	if len(newItems) == 0 {
 		slog.LogAttrs(ctx, slog.LevelInfo, "No new "+name, logAttrs...)

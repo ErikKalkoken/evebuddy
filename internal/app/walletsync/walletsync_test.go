@@ -49,6 +49,23 @@ func TestSyncJournal(t *testing.T) {
 		xassert.Equal(t, true, changed)
 		xassert.Equal(t, []int64{1, 3}, stored)
 	})
+	t.Run("stores an entry repeated in the response only once", func(t *testing.T) {
+		var stored []int64
+		changed, err := walletsync.SyncJournal(
+			ctx,
+			[]walletsync.ESIJournalEntry{{Id: 2}, {Id: 1}, {Id: 1}},
+			set.Of[int64](),
+			func(context.Context, set.Set[int64]) error { return nil },
+			func(_ context.Context, e walletsync.ESIJournalEntry) error {
+				stored = append(stored, e.Id)
+				return nil
+			},
+			logAttr,
+		)
+		require.NoError(t, err)
+		xassert.Equal(t, true, changed)
+		xassert.Equal(t, []int64{2, 1}, stored)
+	})
 	t.Run("reports no change when all entries exist", func(t *testing.T) {
 		changed, err := walletsync.SyncJournal(
 			ctx,
