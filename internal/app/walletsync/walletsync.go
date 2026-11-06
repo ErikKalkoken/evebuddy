@@ -54,7 +54,7 @@ func SyncJournal(
 	entries []ESIJournalEntry,
 	existingIDs set.Set[int64],
 	addEntities func(ctx context.Context, ids set.Set[int64]) error,
-	store func(ctx context.Context, entry ESIJournalEntry) error,
+	store func(ctx context.Context, entries []ESIJournalEntry) error,
 	logAttrs ...slog.Attr,
 ) (bool, error) {
 	return syncNew(
@@ -116,7 +116,7 @@ func SyncTransactions(
 	transactions []ESITransaction,
 	existingIDs set.Set[int64],
 	addRelated func(ctx context.Context, entityIDs, locationIDs, typeIDs set.Set[int64]) error,
-	store func(ctx context.Context, transaction ESITransaction) error,
+	store func(ctx context.Context, transactions []ESITransaction) error,
 	logAttrs ...slog.Attr,
 ) (bool, error) {
 	return syncNew(
@@ -146,7 +146,7 @@ func syncNew[T any](
 	id func(T) int64,
 	existingIDs set.Set[int64],
 	addRelated func(ctx context.Context, newItems []T) error,
-	store func(ctx context.Context, item T) error,
+	store func(ctx context.Context, items []T) error,
 	name string,
 	logAttrs []slog.Attr,
 ) (bool, error) {
@@ -167,10 +167,8 @@ func syncNew[T any](
 	if err := addRelated(ctx, newItems); err != nil {
 		return false, err
 	}
-	for _, x := range newItems {
-		if err := store(ctx, x); err != nil {
-			return false, err
-		}
+	if err := store(ctx, newItems); err != nil {
+		return false, err
 	}
 	attrs := slices.Concat(logAttrs, []slog.Attr{slog.Int("entries", len(newItems))})
 	slog.LogAttrs(ctx, slog.LevelInfo, "Stored new "+name, attrs...)

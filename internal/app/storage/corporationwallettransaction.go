@@ -30,13 +30,39 @@ type CreateCorporationWalletTransactionParams struct {
 }
 
 func (st *Storage) CreateCorporationWalletTransaction(ctx context.Context, arg CreateCorporationWalletTransactionParams) error {
+	return createCorporationWalletTransaction(ctx, st.qRW, arg)
+}
+
+// CreateCorporationWalletTransactions stores all items or none of them.
+func (st *Storage) CreateCorporationWalletTransactions(ctx context.Context, args []CreateCorporationWalletTransactionParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCorporationWalletTransactions: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for _, arg := range args {
+		if err := createCorporationWalletTransaction(ctx, qtx, arg); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func createCorporationWalletTransaction(ctx context.Context, q *queries.Queries, arg CreateCorporationWalletTransactionParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletTransaction: %+v: %w", arg, err)
 	}
 	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.EveTypeID == 0 || arg.ClientID == 0 || arg.JournalRefID == 0 || arg.LocationID == 0 || arg.TransactionID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
+	err := q.CreateCorporationWalletTransaction(ctx, queries.CreateCorporationWalletTransactionParams{
 		ClientID:      arg.ClientID,
 		Date:          arg.Date,
 		DivisionID:    int64(arg.Division),

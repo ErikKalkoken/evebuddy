@@ -237,24 +237,26 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 					_, err := s.eus.AddMissingEntities(ctx, ids)
 					return err
 				},
-				func(ctx context.Context, o walletsync.ESIJournalEntry) error {
-					return s.st.CreateCorporationWalletJournalEntry(ctx, storage.CreateCorporationWalletJournalEntryParams{
-						Amount:        optional.FromPtr(o.Amount),
-						Balance:       optional.FromPtr(o.Balance),
-						ContextID:     optional.FromPtr(o.ContextId),
-						ContextIDType: optional.FromPtr(o.ContextIdType),
-						Date:          o.Date,
-						Description:   o.Description,
-						Division:      arg.section.Division(),
-						FirstPartyID:  optional.FromPtr(o.FirstPartyId),
-						RefID:         o.Id,
-						CorporationID: arg.corporationID,
-						RefType:       o.RefType,
-						Reason:        optional.FromPtr(o.Reason),
-						SecondPartyID: optional.FromPtr(o.SecondPartyId),
-						Tax:           optional.FromPtr(o.Tax),
-						TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
-					})
+				func(ctx context.Context, items []walletsync.ESIJournalEntry) error {
+					return s.st.CreateCorporationWalletJournalEntries(ctx, xslices.Map(items, func(o walletsync.ESIJournalEntry) storage.CreateCorporationWalletJournalEntryParams {
+						return storage.CreateCorporationWalletJournalEntryParams{
+							Amount:        optional.FromPtr(o.Amount),
+							Balance:       optional.FromPtr(o.Balance),
+							ContextID:     optional.FromPtr(o.ContextId),
+							ContextIDType: optional.FromPtr(o.ContextIdType),
+							Date:          o.Date,
+							Description:   o.Description,
+							Division:      arg.section.Division(),
+							FirstPartyID:  optional.FromPtr(o.FirstPartyId),
+							RefID:         o.Id,
+							CorporationID: arg.corporationID,
+							RefType:       o.RefType,
+							Reason:        optional.FromPtr(o.Reason),
+							SecondPartyID: optional.FromPtr(o.SecondPartyId),
+							Tax:           optional.FromPtr(o.Tax),
+							TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
+						}
+					}))
 				},
 				slog.Int64("corporationID", arg.corporationID),
 				slog.Any("divisionID", arg.section.Division()),
@@ -367,20 +369,22 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 					})
 					return g.Wait()
 				},
-				func(ctx context.Context, o walletsync.ESITransaction) error {
-					return s.st.CreateCorporationWalletTransaction(ctx, storage.CreateCorporationWalletTransactionParams{
-						ClientID:      o.ClientId,
-						CorporationID: arg.corporationID,
-						Date:          o.Date,
-						Division:      arg.section.Division(),
-						EveTypeID:     o.TypeId,
-						IsBuy:         o.IsBuy,
-						JournalRefID:  o.JournalRefId,
-						LocationID:    o.LocationId,
-						Quantity:      o.Quantity,
-						TransactionID: o.TransactionId,
-						UnitPrice:     o.UnitPrice,
-					})
+				func(ctx context.Context, items []walletsync.ESITransaction) error {
+					return s.st.CreateCorporationWalletTransactions(ctx, xslices.Map(items, func(o walletsync.ESITransaction) storage.CreateCorporationWalletTransactionParams {
+						return storage.CreateCorporationWalletTransactionParams{
+							ClientID:      o.ClientId,
+							CorporationID: arg.corporationID,
+							Date:          o.Date,
+							Division:      arg.section.Division(),
+							EveTypeID:     o.TypeId,
+							IsBuy:         o.IsBuy,
+							JournalRefID:  o.JournalRefId,
+							LocationID:    o.LocationId,
+							Quantity:      o.Quantity,
+							TransactionID: o.TransactionId,
+							UnitPrice:     o.UnitPrice,
+						}
+					}))
 				},
 				slog.Int64("corporationID", arg.corporationID),
 				slog.Any("divisionID", arg.section.Division()),

@@ -33,13 +33,39 @@ type CreateCorporationWalletJournalEntryParams struct {
 }
 
 func (st *Storage) CreateCorporationWalletJournalEntry(ctx context.Context, arg CreateCorporationWalletJournalEntryParams) error {
+	return createCorporationWalletJournalEntry(ctx, st.qRW, arg)
+}
+
+// CreateCorporationWalletJournalEntries stores all items or none of them.
+func (st *Storage) CreateCorporationWalletJournalEntries(ctx context.Context, args []CreateCorporationWalletJournalEntryParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCorporationWalletJournalEntries: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for _, arg := range args {
+		if err := createCorporationWalletJournalEntry(ctx, qtx, arg); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func createCorporationWalletJournalEntry(ctx context.Context, q *queries.Queries, arg CreateCorporationWalletJournalEntryParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationWalletJournalEntry: %+v: %w", arg, err)
 	}
 	if arg.CorporationID == 0 || arg.Division == app.DivisionZero || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateCorporationWalletJournalEntry(ctx, queries.CreateCorporationWalletJournalEntryParams{
+	err := q.CreateCorporationWalletJournalEntry(ctx, queries.CreateCorporationWalletJournalEntryParams{
 		Amount:        arg.Amount.ValueOrZero(),
 		Balance:       arg.Balance.ValueOrZero(),
 		ContextID:     arg.ContextID.ValueOrZero(),

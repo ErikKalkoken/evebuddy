@@ -77,23 +77,25 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 					_, err := s.eus.AddMissingEntities(ctx, ids)
 					return err
 				},
-				func(ctx context.Context, o walletsync.ESIJournalEntry) error {
-					return s.st.CreateCharacterWalletJournalEntry(ctx, storage.CreateCharacterWalletJournalEntryParams{
-						Amount:        optional.FromPtr(o.Amount),
-						Balance:       optional.FromPtr(o.Balance),
-						ContextID:     optional.FromPtr(o.ContextId),
-						ContextIDType: optional.FromPtr(o.ContextIdType),
-						Date:          o.Date,
-						Description:   o.Description,
-						FirstPartyID:  optional.FromPtr(o.FirstPartyId),
-						RefID:         o.Id,
-						CharacterID:   characterID,
-						RefType:       o.RefType,
-						Reason:        optional.FromPtr(o.Reason),
-						SecondPartyID: optional.FromPtr(o.SecondPartyId),
-						Tax:           optional.FromPtr(o.Tax),
-						TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
-					})
+				func(ctx context.Context, items []walletsync.ESIJournalEntry) error {
+					return s.st.CreateCharacterWalletJournalEntries(ctx, xslices.Map(items, func(o walletsync.ESIJournalEntry) storage.CreateCharacterWalletJournalEntryParams {
+						return storage.CreateCharacterWalletJournalEntryParams{
+							Amount:        optional.FromPtr(o.Amount),
+							Balance:       optional.FromPtr(o.Balance),
+							ContextID:     optional.FromPtr(o.ContextId),
+							ContextIDType: optional.FromPtr(o.ContextIdType),
+							Date:          o.Date,
+							Description:   o.Description,
+							FirstPartyID:  optional.FromPtr(o.FirstPartyId),
+							RefID:         o.Id,
+							CharacterID:   characterID,
+							RefType:       o.RefType,
+							Reason:        optional.FromPtr(o.Reason),
+							SecondPartyID: optional.FromPtr(o.SecondPartyId),
+							Tax:           optional.FromPtr(o.Tax),
+							TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
+						}
+					}))
 				},
 				slog.Int64("characterID", characterID),
 			)
@@ -178,20 +180,22 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 					})
 					return g.Wait()
 				},
-				func(ctx context.Context, o walletsync.ESITransaction) error {
-					return s.st.CreateCharacterWalletTransaction(ctx, storage.CreateCharacterWalletTransactionParams{
-						ClientID:      o.ClientId,
-						Date:          o.Date,
-						EveTypeID:     o.TypeId,
-						IsBuy:         o.IsBuy,
-						IsPersonal:    o.IsPersonal,
-						JournalRefID:  o.JournalRefId,
-						LocationID:    o.LocationId,
-						CharacterID:   characterID,
-						Quantity:      o.Quantity,
-						TransactionID: o.TransactionId,
-						UnitPrice:     o.UnitPrice,
-					})
+				func(ctx context.Context, items []walletsync.ESITransaction) error {
+					return s.st.CreateCharacterWalletTransactions(ctx, xslices.Map(items, func(o walletsync.ESITransaction) storage.CreateCharacterWalletTransactionParams {
+						return storage.CreateCharacterWalletTransactionParams{
+							ClientID:      o.ClientId,
+							Date:          o.Date,
+							EveTypeID:     o.TypeId,
+							IsBuy:         o.IsBuy,
+							IsPersonal:    o.IsPersonal,
+							JournalRefID:  o.JournalRefId,
+							LocationID:    o.LocationId,
+							CharacterID:   characterID,
+							Quantity:      o.Quantity,
+							TransactionID: o.TransactionId,
+							UnitPrice:     o.UnitPrice,
+						}
+					}))
 				},
 				slog.Int64("characterID", characterID),
 			)

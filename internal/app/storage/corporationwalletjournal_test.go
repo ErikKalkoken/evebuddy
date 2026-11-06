@@ -233,4 +233,41 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("can create multiple entries at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		err := st.CreateCorporationWalletJournalEntries(ctx, []storage.CreateCorporationWalletJournalEntryParams{
+			{CorporationID: c.ID, Date: time.Now(), Division: app.Division1, RefID: 1},
+			{CorporationID: c.ID, Date: time.Now(), Division: app.Division1, RefID: 2},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple entries is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		err := st.CreateCorporationWalletJournalEntries(ctx, []storage.CreateCorporationWalletJournalEntryParams{
+			{CorporationID: c.ID, Date: time.Now(), Division: app.Division1, RefID: 1},
+			{CorporationID: c.ID, Date: time.Now(), Division: app.Division1},
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
+	})
 }

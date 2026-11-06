@@ -154,4 +154,35 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("can create multiple entries at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		err := st.CreateCharacterWalletJournalEntries(ctx, []storage.CreateCharacterWalletJournalEntryParams{
+			{CharacterID: c.ID, Date: time.Now(), RefID: 1},
+			{CharacterID: c.ID, Date: time.Now(), RefID: 2},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple entries is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		err := st.CreateCharacterWalletJournalEntries(ctx, []storage.CreateCharacterWalletJournalEntryParams{
+			{CharacterID: c.ID, Date: time.Now(), RefID: 1},
+			{CharacterID: c.ID, Date: time.Now()},
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
+	})
 }

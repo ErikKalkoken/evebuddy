@@ -26,8 +26,8 @@ func TestSyncJournal(t *testing.T) {
 			return nil
 		}
 	}
-	noStore := func(t *testing.T) func(context.Context, walletsync.ESIJournalEntry) error {
-		return func(context.Context, walletsync.ESIJournalEntry) error {
+	noStore := func(t *testing.T) func(context.Context, []walletsync.ESIJournalEntry) error {
+		return func(context.Context, []walletsync.ESIJournalEntry) error {
 			t.Fatal("store should not be called")
 			return nil
 		}
@@ -39,8 +39,10 @@ func TestSyncJournal(t *testing.T) {
 			[]walletsync.ESIJournalEntry{{Id: 1}, {Id: 2}, {Id: 3}},
 			set.Of[int64](2),
 			func(context.Context, set.Set[int64]) error { return nil },
-			func(_ context.Context, e walletsync.ESIJournalEntry) error {
-				stored = append(stored, e.Id)
+			func(_ context.Context, entries []walletsync.ESIJournalEntry) error {
+				for _, e := range entries {
+					stored = append(stored, e.Id)
+				}
 				return nil
 			},
 			logAttr,
@@ -56,8 +58,10 @@ func TestSyncJournal(t *testing.T) {
 			[]walletsync.ESIJournalEntry{{Id: 2}, {Id: 1}, {Id: 1}},
 			set.Of[int64](),
 			func(context.Context, set.Set[int64]) error { return nil },
-			func(_ context.Context, e walletsync.ESIJournalEntry) error {
-				stored = append(stored, e.Id)
+			func(_ context.Context, entries []walletsync.ESIJournalEntry) error {
+				for _, e := range entries {
+					stored = append(stored, e.Id)
+				}
 				return nil
 			},
 			logAttr,
@@ -99,7 +103,7 @@ func TestSyncJournal(t *testing.T) {
 				got = ids
 				return nil
 			},
-			func(context.Context, walletsync.ESIJournalEntry) error { return nil },
+			func(context.Context, []walletsync.ESIJournalEntry) error { return nil },
 			logAttr,
 		)
 		require.NoError(t, err)
@@ -125,7 +129,7 @@ func TestSyncJournal(t *testing.T) {
 			[]walletsync.ESIJournalEntry{{Id: 1}},
 			set.Of[int64](),
 			func(context.Context, set.Set[int64]) error { return nil },
-			func(context.Context, walletsync.ESIJournalEntry) error { return wantErr },
+			func(context.Context, []walletsync.ESIJournalEntry) error { return wantErr },
 			logAttr,
 		)
 		assert.ErrorIs(t, err, wantErr)
@@ -210,8 +214,8 @@ func TestSyncTransactions(t *testing.T) {
 			return nil
 		}
 	}
-	noStore := func(t *testing.T) func(context.Context, walletsync.ESITransaction) error {
-		return func(context.Context, walletsync.ESITransaction) error {
+	noStore := func(t *testing.T) func(context.Context, []walletsync.ESITransaction) error {
+		return func(context.Context, []walletsync.ESITransaction) error {
 			t.Fatal("store should not be called")
 			return nil
 		}
@@ -230,8 +234,10 @@ func TestSyncTransactions(t *testing.T) {
 				entityIDs, locationIDs, typeIDs = entities, locations, types
 				return nil
 			},
-			func(_ context.Context, x walletsync.ESITransaction) error {
-				stored = append(stored, x.TransactionId)
+			func(_ context.Context, transactions []walletsync.ESITransaction) error {
+				for _, x := range transactions {
+					stored = append(stored, x.TransactionId)
+				}
 				return nil
 			},
 			logAttr,
@@ -250,7 +256,7 @@ func TestSyncTransactions(t *testing.T) {
 			[]walletsync.ESITransaction{{TransactionId: 1}},
 			set.Of[int64](),
 			func(context.Context, set.Set[int64], set.Set[int64], set.Set[int64]) error { return nil },
-			func(context.Context, walletsync.ESITransaction) error { return wantErr },
+			func(context.Context, []walletsync.ESITransaction) error { return wantErr },
 			logAttr,
 		)
 		assert.ErrorIs(t, err, wantErr)

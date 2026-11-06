@@ -199,4 +199,59 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("can create multiple transactions at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.CreateCorporationWalletTransactionParams{
+			ClientID:      factory.CreateEveEntityCorporation().ID,
+			CorporationID: c.ID,
+			Date:          time.Now(),
+			Division:      app.Division1,
+			EveTypeID:     factory.CreateEveType().ID,
+			JournalRefID:  99,
+			LocationID:    factory.CreateEveLocationStructure().ID,
+		}
+		arg1, arg2 := arg, arg
+		arg1.TransactionID = 1
+		arg2.TransactionID = 2
+		// when
+		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg1, arg2})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple transactions is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.CreateCorporationWalletTransactionParams{
+			ClientID:      factory.CreateEveEntityCorporation().ID,
+			CorporationID: c.ID,
+			Date:          time.Now(),
+			Division:      app.Division1,
+			EveTypeID:     factory.CreateEveType().ID,
+			JournalRefID:  99,
+			LocationID:    factory.CreateEveLocationStructure().ID,
+			TransactionID: 1,
+		}
+		invalid := arg
+		invalid.TransactionID = 0
+		// when
+		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg, invalid})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
+	})
 }
