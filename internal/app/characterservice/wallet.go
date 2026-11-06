@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/walletsync"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -65,61 +66,39 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 			if err != nil {
 				return false, err
 			}
-			var newEntries []esi.CharactersCharacterIdWalletJournalGetInner
-			for _, o := range entries {
-				if existingIDs.Contains(o.Id) {
-					continue
-				}
-				newEntries = append(newEntries, o)
-			}
 			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
-			if len(newEntries) == 0 {
-				slog.Info("No new wallet journal entries", "characterID", characterID)
-				return false, nil
-			}
-
-			var ids set.Set[int64]
-			for _, o := range newEntries {
-				for _, x := range []*int64{o.FirstPartyId, o.SecondPartyId, o.TaxReceiverId} {
-					if x != nil {
-						ids.Add(*x)
-					}
-				}
-			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
-				return false, err
-			}
-			for _, o := range newEntries {
-				arg := storage.CreateCharacterWalletJournalEntryParams{
-					Amount:        optional.FromPtr(o.Amount),
-					Balance:       optional.FromPtr(o.Balance),
-					ContextID:     optional.FromPtr(o.ContextId),
-					ContextIDType: optional.FromPtr(o.ContextIdType),
-					Date:          o.Date,
-					Description:   o.Description,
-					FirstPartyID:  optional.FromPtr(o.FirstPartyId),
-					RefID:         o.Id,
-					CharacterID:   characterID,
-					RefType:       o.RefType,
-					Reason:        optional.FromPtr(o.Reason),
-					SecondPartyID: optional.FromPtr(o.SecondPartyId),
-					Tax:           optional.FromPtr(o.Tax),
-					TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
-				}
-				if err := s.st.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
-					return false, err
-				}
-			}
-
-			slog.Info("Stored new wallet journal entries", "characterID", characterID, "entries", len(newEntries))
-			return true, nil
+			return walletsync.SyncJournal(
+				ctx,
+				xslices.Map(entries, func(x esi.CharactersCharacterIdWalletJournalGetInner) walletsync.ESIJournalEntry {
+					return walletsync.ESIJournalEntry(x)
+				}),
+				existingIDs,
+				func(ctx context.Context, ids set.Set[int64]) error {
+					_, err := s.eus.AddMissingEntities(ctx, ids)
+					return err
+				},
+				func(ctx context.Context, o walletsync.ESIJournalEntry) error {
+					return s.st.CreateCharacterWalletJournalEntry(ctx, storage.CreateCharacterWalletJournalEntryParams{
+						Amount:        optional.FromPtr(o.Amount),
+						Balance:       optional.FromPtr(o.Balance),
+						ContextID:     optional.FromPtr(o.ContextId),
+						ContextIDType: optional.FromPtr(o.ContextIdType),
+						Date:          o.Date,
+						Description:   o.Description,
+						FirstPartyID:  optional.FromPtr(o.FirstPartyId),
+						RefID:         o.Id,
+						CharacterID:   characterID,
+						RefType:       o.RefType,
+						Reason:        optional.FromPtr(o.Reason),
+						SecondPartyID: optional.FromPtr(o.SecondPartyId),
+						Tax:           optional.FromPtr(o.Tax),
+						TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
+					})
+				},
+				slog.Int64("characterID", characterID),
+			)
 		})
 }
-
-const (
-	maxTransactionsPerPage = 2_500 // maximum objects returned per page
-)
 
 func (s *CharacterService) GetWalletTransactions(ctx context.Context, characterID int64, transactionID int64) (*app.CharacterWalletTransaction, error) {
 	return s.st.GetCharacterWalletTransaction(ctx, storage.GetCharacterWalletTransactionParams{
@@ -143,12 +122,30 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d", characterID)
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
-			maxTransactions := s.settings.MaxWalletTransactions()
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, maxTransactions, lastID, checkLastID)
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
+			transactions, err := walletsync.FetchTransactions(
+				func(fromID int64) ([]walletsync.ESITransaction, error) {
+					req := s.esiClient.WalletAPI.GetCharactersCharacterIdWalletTransactions(ctx, characterID)
+					if fromID > 0 {
+						req = req.FromId(fromID)
+					}
+					oo, _, err := req.Execute()
+					if err != nil {
+						return nil, err
+					}
+					return xslices.Map(oo, func(x esi.CharactersCharacterIdWalletTransactionsGetInner) walletsync.ESITransaction {
+						return walletsync.ESITransaction(x)
+					}), nil
+				},
+				s.settings.MaxWalletTransactions(),
+				lastID,
+				checkLastID,
+			)
 			if err != nil {
 				return false, err
 			}
-			ids := xslices.Map(transactions, func(x esi.CharactersCharacterIdWalletTransactionsGetInner) int64 {
+			slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
+			ids := xslices.Map(transactions, func(x walletsync.ESITransaction) int64 {
 				return x.TransactionId
 			})
 			if len(ids) > 0 {
@@ -157,100 +154,48 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 			return transactions, nil
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			transactions := data.([]esi.CharactersCharacterIdWalletTransactionsGetInner)
+			transactions := data.([]walletsync.ESITransaction)
 			existingIDs, err := s.st.ListCharacterWalletTransactionIDs(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
-			var newEntries []esi.CharactersCharacterIdWalletTransactionsGetInner
-			for _, e := range transactions {
-				if existingIDs.Contains(e.TransactionId) {
-					continue
-				}
-				newEntries = append(newEntries, e)
-			}
 			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
-			if len(newEntries) == 0 {
-				slog.Info("No new wallet transactions", "characterID", characterID)
-				return false, nil
-			}
-
-			var entityIDs, typeIDs set.Set[int64]
-			var locationIDs set.Set[int64]
-			for _, en := range newEntries {
-				entityIDs.Add(en.ClientId)
-				locationIDs.Add(en.LocationId)
-				typeIDs.Add(en.TypeId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
-			for _, o := range newEntries {
-				arg := storage.CreateCharacterWalletTransactionParams{
-					ClientID:      o.ClientId,
-					Date:          o.Date,
-					EveTypeID:     o.TypeId,
-					IsBuy:         o.IsBuy,
-					IsPersonal:    o.IsPersonal,
-					JournalRefID:  o.JournalRefId,
-					LocationID:    o.LocationId,
-					CharacterID:   characterID,
-					Quantity:      o.Quantity,
-					TransactionID: o.TransactionId,
-					UnitPrice:     o.UnitPrice,
-				}
-				if err := s.st.CreateCharacterWalletTransaction(ctx, arg); err != nil {
-					return false, err
-				}
-			}
-
-			slog.Info("Stored new wallet transactions", "characterID", characterID, "entries", len(newEntries))
-			return true, nil
+			return walletsync.SyncTransactions(
+				ctx,
+				transactions,
+				existingIDs,
+				func(ctx context.Context, entityIDs, locationIDs, typeIDs set.Set[int64]) error {
+					g := new(errgroup.Group)
+					g.Go(func() error {
+						_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+						return err
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingLocations(ctx, locationIDs)
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingTypes(ctx, typeIDs)
+					})
+					return g.Wait()
+				},
+				func(ctx context.Context, o walletsync.ESITransaction) error {
+					return s.st.CreateCharacterWalletTransaction(ctx, storage.CreateCharacterWalletTransactionParams{
+						ClientID:      o.ClientId,
+						Date:          o.Date,
+						EveTypeID:     o.TypeId,
+						IsBuy:         o.IsBuy,
+						IsPersonal:    o.IsPersonal,
+						JournalRefID:  o.JournalRefId,
+						LocationID:    o.LocationId,
+						CharacterID:   characterID,
+						Quantity:      o.Quantity,
+						TransactionID: o.TransactionId,
+						UnitPrice:     o.UnitPrice,
+					})
+				},
+				slog.Int64("characterID", characterID),
+			)
 		})
-}
-
-// fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int64, maxTransactions int, lastID int64, checkLastID bool) ([]esi.CharactersCharacterIdWalletTransactionsGetInner, error) {
-	var transactions []esi.CharactersCharacterIdWalletTransactionsGetInner
-	var fromID int64
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletTransactions")
-	for {
-		var oo []esi.CharactersCharacterIdWalletTransactionsGetInner
-		var err error
-		if fromID > 0 {
-			oo, _, err = s.esiClient.WalletAPI.GetCharactersCharacterIdWalletTransactions(ctx, characterID).FromId(fromID).Execute()
-		} else {
-			oo, _, err = s.esiClient.WalletAPI.GetCharactersCharacterIdWalletTransactions(ctx, characterID).Execute()
-		}
-		if err != nil {
-			return nil, err
-		}
-		transactions = slices.Concat(transactions, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions)
-		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
-			break
-		}
-		ids := xslices.Map(oo, func(x esi.CharactersCharacterIdWalletTransactionsGetInner) int64 {
-			return x.TransactionId
-		})
-		if checkLastID && slices.Contains(ids, lastID) {
-			break // stop reading once a known ID is found
-		}
-		fromID = slices.Min(ids)
-	}
-	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(transactions))
-	return transactions, nil
 }
 
 func (s *CharacterService) updateWalletBalanceESI(ctx context.Context, arg characterSectionUpdateParams) (bool, error) {

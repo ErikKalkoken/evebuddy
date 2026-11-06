@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/walletsync"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
@@ -182,8 +183,6 @@ func (s *CorporationService) ListWalletJournalEntries(ctx context.Context, corpo
 	})
 }
 
-// TODO: Only read pages with unknown journal IDs
-
 func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
 	if arg.corporationID <= 0 || !app.CorporationSectionsWalletJournal.Contains(arg.section) {
 		return false, fmt.Errorf("updateWalletJournalESI %+v: %w", arg, app.ErrInvalid)
@@ -227,71 +226,41 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 			if err != nil {
 				return false, err
 			}
-			var newEntries []esi.CorporationsCorporationIdWalletsDivisionJournalGetInner
-			for _, e := range entries {
-				if existingIDs.Contains(e.Id) {
-					continue
-				}
-				newEntries = append(newEntries, e)
-			}
 			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
-
-			if len(newEntries) == 0 {
-				slog.Info(
-					"No new wallet journal entries",
-					"corporationID", arg.corporationID,
-					"divisionID", arg.section.Division(),
-				)
-				return false, nil
-			}
-
-			var ids set.Set[int64]
-			for _, o := range newEntries {
-				for _, x := range []*int64{o.FirstPartyId, o.SecondPartyId, o.TaxReceiverId} {
-					if x != nil {
-						ids.Add(*x)
-					}
-				}
-			}
-			_, err = s.eus.AddMissingEntities(ctx, ids)
-			if err != nil {
-				return false, err
-			}
-			for _, o := range newEntries {
-				err := s.st.CreateCorporationWalletJournalEntry(ctx, storage.CreateCorporationWalletJournalEntryParams{
-					Amount:        optional.FromPtr(o.Amount),
-					Balance:       optional.FromPtr(o.Balance),
-					ContextID:     optional.FromPtr(o.ContextId),
-					ContextIDType: optional.FromPtr(o.ContextIdType),
-					Date:          o.Date,
-					Description:   o.Description,
-					Division:      arg.section.Division(),
-					FirstPartyID:  optional.FromPtr(o.FirstPartyId),
-					RefID:         o.Id,
-					CorporationID: arg.corporationID,
-					RefType:       o.RefType,
-					Reason:        optional.FromPtr(o.Reason),
-					SecondPartyID: optional.FromPtr(o.SecondPartyId),
-					Tax:           optional.FromPtr(o.Tax),
-					TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
-				})
-				if err != nil {
-					return false, err
-				}
-			}
-			slog.Info(
-				"Stored new wallet journal entries",
-				"corporationID", arg.corporationID,
-				"divisionID", arg.section.Division(),
-				"entries", len(newEntries),
+			return walletsync.SyncJournal(
+				ctx,
+				xslices.Map(entries, func(x esi.CorporationsCorporationIdWalletsDivisionJournalGetInner) walletsync.ESIJournalEntry {
+					return walletsync.ESIJournalEntry(x)
+				}),
+				existingIDs,
+				func(ctx context.Context, ids set.Set[int64]) error {
+					_, err := s.eus.AddMissingEntities(ctx, ids)
+					return err
+				},
+				func(ctx context.Context, o walletsync.ESIJournalEntry) error {
+					return s.st.CreateCorporationWalletJournalEntry(ctx, storage.CreateCorporationWalletJournalEntryParams{
+						Amount:        optional.FromPtr(o.Amount),
+						Balance:       optional.FromPtr(o.Balance),
+						ContextID:     optional.FromPtr(o.ContextId),
+						ContextIDType: optional.FromPtr(o.ContextIdType),
+						Date:          o.Date,
+						Description:   o.Description,
+						Division:      arg.section.Division(),
+						FirstPartyID:  optional.FromPtr(o.FirstPartyId),
+						RefID:         o.Id,
+						CorporationID: arg.corporationID,
+						RefType:       o.RefType,
+						Reason:        optional.FromPtr(o.Reason),
+						SecondPartyID: optional.FromPtr(o.SecondPartyId),
+						Tax:           optional.FromPtr(o.Tax),
+						TaxReceiverID: optional.FromPtr(o.TaxReceiverId),
+					})
+				},
+				slog.Int64("corporationID", arg.corporationID),
+				slog.Any("divisionID", arg.section.Division()),
 			)
-			return true, nil
 		})
 }
-
-const (
-	maxTransactionsPerPage = 2_500 // maximum objects returned per page
-)
 
 func (s *CorporationService) GetWalletTransaction(ctx context.Context, corporationID int64, d app.Division, transactionID int64) (*app.CorporationWalletTransaction, error) {
 	enabled, err := s.PermittedSection(ctx, corporationID, app.CorporationSectionWalletTransactions(d))
@@ -337,11 +306,32 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			cacheKey := fmt.Sprintf("wallet-transactions-last-id-%d-%d", arg.corporationID, arg.section.Division())
 			lastID, found := s.cache.GetInt64(cacheKey)
 			checkLastID := found && !arg.forceUpdate
-			transactions, err := s.fetchWalletTransactionsESI(ctx, arg, lastID, checkLastID)
+			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
+			transactions, err := walletsync.FetchTransactions(
+				func(fromID int64) ([]walletsync.ESITransaction, error) {
+					req := s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division()))
+					if fromID > 0 {
+						req = req.FromId(fromID)
+					}
+					oo, _, err := req.Execute()
+					if err != nil {
+						return nil, err
+					}
+					return xslices.Map(oo, walletTransactionFromESI), nil
+				},
+				s.settings.MaxWalletTransactions(),
+				lastID,
+				checkLastID,
+			)
 			if err != nil {
 				return false, err
 			}
-			ids := xslices.Map(transactions, func(x esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner) int64 {
+			slog.Debug("Received wallet transactions",
+				slog.Int64("corporationID", arg.corporationID),
+				slog.Any("divisionID", arg.section.Division()),
+				slog.Any("count", len(transactions)),
+			)
+			ids := xslices.Map(transactions, func(x walletsync.ESITransaction) int64 {
 				return x.TransactionId
 			})
 			if len(ids) > 0 {
@@ -350,7 +340,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			return transactions, nil
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
-			transactions := data.([]esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner)
+			transactions := data.([]walletsync.ESITransaction)
 			existingIDs, err := s.st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
 				CorporationID: arg.corporationID,
 				Division:      arg.section.Division(),
@@ -358,107 +348,58 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			if err != nil {
 				return false, err
 			}
-			var newEntries []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
-			for _, e := range transactions {
-				if existingIDs.Contains(e.TransactionId) {
-					continue
-				}
-				newEntries = append(newEntries, e)
-			}
 			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
-
-			if len(newEntries) == 0 {
-				slog.Info(
-					"No new wallet transactions",
-					"corporationID", arg.corporationID,
-					"divisionID", arg.section.Division(),
-				)
-				return false, nil
-			}
-
-			var entityIDs, typeIDs set.Set[int64]
-			var locationIDs set.Set[int64]
-			for _, en := range newEntries {
-				entityIDs.Add(en.ClientId)
-				locationIDs.Add(en.LocationId)
-				typeIDs.Add(en.TypeId)
-			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-				return err
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
-				return false, err
-			}
-			for _, o := range newEntries {
-				err := s.st.CreateCorporationWalletTransaction(ctx, storage.CreateCorporationWalletTransactionParams{
-					ClientID:      o.ClientId,
-					CorporationID: arg.corporationID,
-					Date:          o.Date,
-					Division:      arg.section.Division(),
-					EveTypeID:     o.TypeId,
-					IsBuy:         o.IsBuy,
-					JournalRefID:  o.JournalRefId,
-					LocationID:    o.LocationId,
-					Quantity:      o.Quantity,
-					TransactionID: o.TransactionId,
-					UnitPrice:     o.UnitPrice,
-				})
-				if err != nil {
-					return false, err
-				}
-			}
-			slog.Info(
-				"Stored new wallet transactions",
-				"corporationID", arg.corporationID,
-				"divisionID", arg.section.Division(),
-				"entries", len(newEntries),
+			return walletsync.SyncTransactions(
+				ctx,
+				transactions,
+				existingIDs,
+				func(ctx context.Context, entityIDs, locationIDs, typeIDs set.Set[int64]) error {
+					g := new(errgroup.Group)
+					g.Go(func() error {
+						_, err := s.eus.AddMissingEntities(ctx, entityIDs)
+						return err
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingLocations(ctx, locationIDs)
+					})
+					g.Go(func() error {
+						return s.eus.AddMissingTypes(ctx, typeIDs)
+					})
+					return g.Wait()
+				},
+				func(ctx context.Context, o walletsync.ESITransaction) error {
+					return s.st.CreateCorporationWalletTransaction(ctx, storage.CreateCorporationWalletTransactionParams{
+						ClientID:      o.ClientId,
+						CorporationID: arg.corporationID,
+						Date:          o.Date,
+						Division:      arg.section.Division(),
+						EveTypeID:     o.TypeId,
+						IsBuy:         o.IsBuy,
+						JournalRefID:  o.JournalRefId,
+						LocationID:    o.LocationId,
+						Quantity:      o.Quantity,
+						TransactionID: o.TransactionId,
+						UnitPrice:     o.UnitPrice,
+					})
+				},
+				slog.Int64("corporationID", arg.corporationID),
+				slog.Any("divisionID", arg.section.Division()),
 			)
-			return true, nil
 		})
 }
 
-// fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CorporationService) fetchWalletTransactionsESI(ctx context.Context, arg corporationSectionUpdateParams, lastID int64, checkLastID bool) ([]esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner, error) {
-	var transactions []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
-	var fromID int64
-	maxTransactions := s.settings.MaxWalletTransactions()
-	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionTransactions")
-	for {
-		var oo []esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner
-		var err error
-		if fromID > 0 {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).FromId(fromID).Execute()
-		} else {
-			oo, _, err = s.esiClient.WalletAPI.GetCorporationsCorporationIdWalletsDivisionTransactions(ctx, arg.corporationID, int64(arg.section.Division())).Execute()
-		}
-		if err != nil {
-			return nil, err
-		}
-		transactions = slices.Concat(transactions, oo)
-		isLimitExceeded := (maxTransactions != 0 && len(transactions)+maxTransactionsPerPage > maxTransactions)
-		if len(oo) < maxTransactionsPerPage || isLimitExceeded {
-			break
-		}
-		ids := xslices.Map(oo, func(x esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner) int64 {
-			return x.TransactionId
-		})
-		if checkLastID && slices.Contains(ids, lastID) {
-			break // stop reading once a known ID is found
-		}
-		fromID = slices.Min(ids)
+// walletTransactionFromESI maps a transaction field by field,
+// because the ESI response for corporations has no IsPersonal.
+func walletTransactionFromESI(x esi.CorporationsCorporationIdWalletsDivisionTransactionsGetInner) walletsync.ESITransaction {
+	return walletsync.ESITransaction{
+		ClientId:      x.ClientId,
+		Date:          x.Date,
+		IsBuy:         x.IsBuy,
+		JournalRefId:  x.JournalRefId,
+		LocationId:    x.LocationId,
+		Quantity:      x.Quantity,
+		TransactionId: x.TransactionId,
+		TypeId:        x.TypeId,
+		UnitPrice:     x.UnitPrice,
 	}
-	slog.Debug("Received wallet transactions",
-		slog.Int64("corporationID", arg.corporationID),
-		slog.Any("divisionID", arg.section.Division()),
-		slog.Any("count", len(transactions)),
-	)
-	return transactions, nil
 }
