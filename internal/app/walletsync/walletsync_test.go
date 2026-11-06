@@ -179,6 +179,13 @@ func TestFetchTransactions(t *testing.T) {
 		xassert.Equal(t, pageSize, len(got))
 		xassert.Equal(t, 1, len(*fromIDs))
 	})
+	t.Run("stops at a page with older IDs when the last ID no longer exists", func(t *testing.T) {
+		fetch, fromIDs := fetcher(page(20_000), page(10_000), short)
+		got, err := walletsync.FetchTransactions(fetch, 0, 15_000, true)
+		require.NoError(t, err)
+		xassert.Equal(t, 2*pageSize, len(got))
+		xassert.Equal(t, 2, len(*fromIDs))
+	})
 	t.Run("ignores the last ID when it should not be checked", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(10_000), short)
 		got, err := walletsync.FetchTransactions(fetch, 0, 9_000, false)
