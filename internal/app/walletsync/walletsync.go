@@ -3,6 +3,7 @@ package walletsync
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"time"
@@ -80,8 +81,8 @@ func SyncJournal(
 }
 
 // FetchTransactions fetches transactions page by page, starting with the newest (fromID 0).
-// It stops at the last page, at a page which does not go back in time,
-// or when checkLastID is set and a page contains lastID or an older ID.
+// It stops at the last page or when checkLastID is set and a page contains lastID or an older ID.
+// It returns an error when a page does not go back in time, since storing a partial result would leave a gap.
 func FetchTransactions(
 	fetch func(fromID int64) ([]ESITransaction, error),
 	lastID int64,
@@ -102,8 +103,7 @@ func FetchTransactions(
 		})
 		minID := slices.Min(ids)
 		if fromID != 0 && minID >= fromID {
-			slog.Warn("Wallet transactions paging made no progress", "fromID", fromID)
-			return transactions, nil // drop the repeated page
+			return nil, fmt.Errorf("wallet transactions paging made no progress at fromID %d", fromID)
 		}
 		transactions = append(transactions, page...)
 		if len(page) < maxTransactionsPerPage {
