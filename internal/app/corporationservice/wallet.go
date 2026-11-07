@@ -190,7 +190,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCorporationsCorporationIdWalletsDivisionJournal")
-			lastID, err := s.st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{
+			lastID, err := s.st.GetCorporationWalletJournalEntryLastID(ctx, storage.CorporationDivision{
 				CorporationID: arg.corporationID,
 				Division:      arg.section.Division(),
 			})
@@ -224,7 +224,7 @@ func (s *CorporationService) updateWalletJournalESI(ctx context.Context, arg cor
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
+			slog.Debug("wallet journal", "existing", existingIDs.Size(), "entries", len(entries), "corporationID", arg.corporationID, "divisionID", arg.section.Division())
 			return walletsync.SyncJournal(
 				ctx,
 				xslices.Map(entries, func(x esi.CorporationsCorporationIdWalletsDivisionJournalGetInner) walletsync.ESIJournalEntry {
@@ -303,7 +303,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, arg corporationSectionUpdateParams) (any, error) {
-			lastID, err := s.st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{
+			lastID, err := s.st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{
 				CorporationID: arg.corporationID,
 				Division:      arg.section.Division(),
 			})
@@ -346,7 +346,7 @@ func (s *CorporationService) updateWalletTransactionESI(ctx context.Context, arg
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
+			slog.Debug("wallet transaction", "existing", existingIDs.Size(), "entries", len(transactions), "corporationID", arg.corporationID, "divisionID", arg.section.Division())
 			return walletsync.SyncTransactions(
 				ctx,
 				transactions,

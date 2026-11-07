@@ -200,29 +200,38 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
-	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+	t.Run("returns 0 as highest ID when a corporation division has no transactions", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		other := factory.CreateCorporation()
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: other.ID, Division: app.Division1})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division2})
-		arg := storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1}
 		// when
-		got, err := st.GetCorporationWalletLastTransactionID(ctx, arg)
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
-		// when
+	})
+	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: other.ID, Division: app.Division1, TransactionID: 9})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division2, TransactionID: 8})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 7})
 		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 5})
-		got, err = st.GetCorporationWalletLastTransactionID(ctx, arg)
+		// when
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 7, got)
 	})
 	t.Run("returns invalid error when division is missing", func(t *testing.T) {
-		_, err := st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{CorporationID: 1})
+		// when
+		_, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: 1})
+		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 
@@ -273,7 +282,7 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg, invalid})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.GetCorporationWalletLastTransactionID(ctx, storage.CorporationDivision{
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			Division:      app.Division1,
 		})

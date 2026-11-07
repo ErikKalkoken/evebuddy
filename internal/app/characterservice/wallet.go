@@ -38,7 +38,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdWalletJournal")
-			lastID, err := s.st.GetCharacterWalletJournalLastRefID(ctx, characterID)
+			lastID, err := s.st.GetCharacterWalletJournalEntryLastID(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
@@ -61,7 +61,7 @@ func (s *CharacterService) updateWalletJournalEntryESI(ctx context.Context, arg 
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
+			slog.Debug("wallet journal", "existing", existingIDs.Size(), "entries", len(entries), "characterID", characterID)
 			return walletsync.SyncJournal(
 				ctx,
 				xslices.Map(entries, func(x esi.CharactersCharacterIdWalletJournalGetInner) walletsync.ESIJournalEntry {
@@ -116,7 +116,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 	return s.updateSectionIfChanged(
 		ctx, arg, true,
 		func(ctx context.Context, characterID int64) (any, error) {
-			lastID, err := s.st.GetCharacterWalletLastTransactionID(ctx, characterID)
+			lastID, err := s.st.GetCharacterWalletTransactionLastID(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
@@ -151,7 +151,7 @@ func (s *CharacterService) updateWalletTransactionESI(ctx context.Context, arg c
 			if err != nil {
 				return false, err
 			}
-			slog.Debug("wallet transaction", "existing", existingIDs, "entries", transactions)
+			slog.Debug("wallet transaction", "existing", existingIDs.Size(), "entries", len(transactions), "characterID", characterID)
 			return walletsync.SyncTransactions(
 				ctx,
 				transactions,

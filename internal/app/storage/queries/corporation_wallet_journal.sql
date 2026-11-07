@@ -74,7 +74,7 @@ WHERE
 ORDER BY
     date DESC;
 
--- name: GetCorporationWalletJournalLastRefID :one
+-- name: GetCorporationWalletJournalEntryLastID :one
 SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
 FROM corporation_wallet_journal_entries
 WHERE corporation_id = ?

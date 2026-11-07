@@ -155,27 +155,36 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
-	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+	t.Run("returns 0 as highest ID when a character has no entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		other := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: other.ID})
 		// when
-		got, err := st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
-		// when
+	})
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: other.ID, RefID: 9})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 7})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 5})
-		got, err = st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
+		// when
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 7, got)
 	})
 	t.Run("returns invalid error when character is missing", func(t *testing.T) {
-		_, err := st.GetCharacterWalletJournalLastRefID(ctx, 0)
+		// when
+		_, err := st.GetCharacterWalletJournalEntryLastID(ctx, 0)
+		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 
@@ -205,7 +214,7 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.GetCharacterWalletJournalLastRefID(ctx, c.ID)
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
 	})

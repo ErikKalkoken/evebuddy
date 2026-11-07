@@ -113,15 +113,15 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, arg GetCha
 	return o, err
 }
 
-// GetCharacterWalletLastTransactionID returns the highest transaction ID stored for a character or 0 if there is none.
-func (st *Storage) GetCharacterWalletLastTransactionID(ctx context.Context, characterID int64) (int64, error) {
+// GetCharacterWalletTransactionLastID returns the highest transaction ID stored for a character or 0 if there is none.
+func (st *Storage) GetCharacterWalletTransactionLastID(ctx context.Context, characterID int64) (int64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("GetCharacterWalletLastTransactionID: %d: %w", characterID, err)
+		return fmt.Errorf("GetCharacterWalletTransactionLastID: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	id, err := st.qRO.GetCharacterWalletLastTransactionID(ctx, characterID)
+	id, err := st.qRO.GetCharacterWalletTransactionLastID(ctx, characterID)
 	if err != nil {
 		return 0, wrapErr(err)
 	}

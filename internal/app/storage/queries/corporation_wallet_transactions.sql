@@ -108,7 +108,7 @@ WHERE
     corporation_id = ?
     AND division_id = ?;
 
--- name: GetCorporationWalletLastTransactionID :one
+-- name: GetCorporationWalletTransactionLastID :one
 SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
 FROM corporation_wallet_transactions
 WHERE corporation_id = ?

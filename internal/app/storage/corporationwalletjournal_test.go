@@ -234,29 +234,38 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
-	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+	t.Run("returns 0 as highest ID when a corporation division has no entries", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
 		other := factory.CreateCorporation()
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: other.ID, Division: app.Division1})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division2})
-		arg := storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1}
 		// when
-		got, err := st.GetCorporationWalletJournalLastRefID(ctx, arg)
+		got, err := st.GetCorporationWalletJournalEntryLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
-		// when
+	})
+	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: other.ID, Division: app.Division1, RefID: 9})
+		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division2, RefID: 8})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division1, RefID: 7})
 		factory.CreateCorporationWalletJournalEntry(storage.CreateCorporationWalletJournalEntryParams{CorporationID: c.ID, Division: app.Division1, RefID: 5})
-		got, err = st.GetCorporationWalletJournalLastRefID(ctx, arg)
+		// when
+		got, err := st.GetCorporationWalletJournalEntryLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 7, got)
 	})
 	t.Run("returns invalid error when division is missing", func(t *testing.T) {
-		_, err := st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{CorporationID: 1})
+		// when
+		_, err := st.GetCorporationWalletJournalEntryLastID(ctx, storage.CorporationDivision{CorporationID: 1})
+		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 
@@ -289,7 +298,7 @@ func TestCorporationWalletJournalEntry(t *testing.T) {
 		})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.GetCorporationWalletJournalLastRefID(ctx, storage.CorporationDivision{
+		got, err := st.GetCorporationWalletJournalEntryLastID(ctx, storage.CorporationDivision{
 			CorporationID: c.ID,
 			Division:      app.Division1,
 		})

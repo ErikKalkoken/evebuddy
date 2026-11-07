@@ -75,7 +75,7 @@ FROM
 WHERE
     character_id = ?;
 
--- name: GetCharacterWalletLastTransactionID :one
+-- name: GetCharacterWalletTransactionLastID :one
 SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
 FROM character_wallet_transactions
 WHERE character_id = ?;

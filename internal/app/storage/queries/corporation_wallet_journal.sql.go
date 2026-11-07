@@ -159,20 +159,20 @@ func (q *Queries) GetCorporationWalletJournalEntry(ctx context.Context, arg GetC
 	return i, err
 }
 
-const getCorporationWalletJournalLastRefID = `-- name: GetCorporationWalletJournalLastRefID :one
+const getCorporationWalletJournalEntryLastID = `-- name: GetCorporationWalletJournalEntryLastID :one
 SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
 FROM corporation_wallet_journal_entries
 WHERE corporation_id = ?
 AND division_id = ?
 `
 
-type GetCorporationWalletJournalLastRefIDParams struct {
+type GetCorporationWalletJournalEntryLastIDParams struct {
 	CorporationID int64
 	DivisionID    int64
 }
 
-func (q *Queries) GetCorporationWalletJournalLastRefID(ctx context.Context, arg GetCorporationWalletJournalLastRefIDParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getCorporationWalletJournalLastRefID, arg.CorporationID, arg.DivisionID)
+func (q *Queries) GetCorporationWalletJournalEntryLastID(ctx context.Context, arg GetCorporationWalletJournalEntryLastIDParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCorporationWalletJournalEntryLastID, arg.CorporationID, arg.DivisionID)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err

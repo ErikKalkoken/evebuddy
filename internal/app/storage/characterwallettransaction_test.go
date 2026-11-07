@@ -124,27 +124,36 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
 
-	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+	t.Run("returns 0 as highest ID when a character has no transactions", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull()
 		other := factory.CreateCharacterFull()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: other.ID})
 		// when
-		got, err := st.GetCharacterWalletLastTransactionID(ctx, c.ID)
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
-		// when
+	})
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: other.ID, TransactionID: 9})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 7})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 5})
-		got, err = st.GetCharacterWalletLastTransactionID(ctx, c.ID)
+		// when
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 7, got)
 	})
 	t.Run("returns invalid error when character is missing", func(t *testing.T) {
-		_, err := st.GetCharacterWalletLastTransactionID(ctx, 0)
+		// when
+		_, err := st.GetCharacterWalletTransactionLastID(ctx, 0)
+		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 
@@ -190,7 +199,7 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		err := st.CreateCharacterWalletTransactions(ctx, []storage.CreateCharacterWalletTransactionParams{arg, invalid})
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.GetCharacterWalletLastTransactionID(ctx, c.ID)
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
 		require.NoError(t, err)
 		xassert.Equal(t, 0, got)
 	})

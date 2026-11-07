@@ -136,15 +136,15 @@ func (st *Storage) GetCorporationWalletTransaction(ctx context.Context, arg GetC
 	return o, err
 }
 
-// GetCorporationWalletLastTransactionID returns the highest transaction ID stored for a corporation division or 0 if there is none.
-func (st *Storage) GetCorporationWalletLastTransactionID(ctx context.Context, arg CorporationDivision) (int64, error) {
+// GetCorporationWalletTransactionLastID returns the highest transaction ID stored for a corporation division or 0 if there is none.
+func (st *Storage) GetCorporationWalletTransactionLastID(ctx context.Context, arg CorporationDivision) (int64, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("GetCorporationWalletLastTransactionID: %+v: %w", arg, err)
+		return fmt.Errorf("GetCorporationWalletTransactionLastID: %+v: %w", arg, err)
 	}
 	if arg.IsInvalid() {
 		return 0, wrapErr(app.ErrInvalid)
 	}
-	id, err := st.qRO.GetCorporationWalletLastTransactionID(ctx, queries.GetCorporationWalletLastTransactionIDParams{
+	id, err := st.qRO.GetCorporationWalletTransactionLastID(ctx, queries.GetCorporationWalletTransactionLastIDParams{
 		CorporationID: arg.CorporationID,
 		DivisionID:    int64(arg.Division),
 	})

@@ -61,19 +61,6 @@ func (q *Queries) CreateCharacterWalletTransaction(ctx context.Context, arg Crea
 	return err
 }
 
-const getCharacterWalletLastTransactionID = `-- name: GetCharacterWalletLastTransactionID :one
-SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
-FROM character_wallet_transactions
-WHERE character_id = ?
-`
-
-func (q *Queries) GetCharacterWalletLastTransactionID(ctx context.Context, characterID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getCharacterWalletLastTransactionID, characterID)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
 const getCharacterWalletTransaction = `-- name: GetCharacterWalletTransaction :one
 SELECT
     cwt.id, cwt.character_id, cwt.client_id, cwt.date, cwt.eve_type_id, cwt.is_buy, cwt.is_personal, cwt.journal_ref_id, cwt.location_id, cwt.quantity, cwt.transaction_id, cwt.unit_price,
@@ -163,6 +150,19 @@ func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetChar
 		&i.RegionName,
 	)
 	return i, err
+}
+
+const getCharacterWalletTransactionLastID = `-- name: GetCharacterWalletTransactionLastID :one
+SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
+FROM character_wallet_transactions
+WHERE character_id = ?
+`
+
+func (q *Queries) GetCharacterWalletTransactionLastID(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterWalletTransactionLastID, characterID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const listCharacterWalletTransactionIDs = `-- name: ListCharacterWalletTransactionIDs :many

@@ -55,7 +55,7 @@ LEFT JOIN eve_entities AS tr ON tr.id = wje.tax_receiver_id
 WHERE character_id = ?
 ORDER BY date DESC;
 
--- name: GetCharacterWalletJournalLastRefID :one
+-- name: GetCharacterWalletJournalEntryLastID :one
 SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
 FROM character_wallet_journal_entries
 WHERE character_id = ?;
