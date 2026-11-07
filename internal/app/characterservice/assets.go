@@ -10,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetsync"
@@ -158,14 +157,7 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 				return assetsync.ESIAsset(x)
 			})
 			typeIDs, locationIDs := assetsync.ExtractIDs(assets)
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
+			if err := s.eus.AddMissing(ctx, set.Set[int64]{}, locationIDs, typeIDs); err != nil {
 				return false, err
 			}
 			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)

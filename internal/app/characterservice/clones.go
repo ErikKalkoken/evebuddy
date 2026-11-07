@@ -10,7 +10,6 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -80,14 +79,7 @@ func (s *CharacterService) updateJumpClonesESI(ctx context.Context, arg characte
 			if clones.HomeLocation.LocationId != nil {
 				locationIDs.Add(*clones.HomeLocation.LocationId)
 			}
-			g := new(errgroup.Group)
-			g.Go(func() error {
-				return s.eus.AddMissingLocations(ctx, locationIDs)
-			})
-			g.Go(func() error {
-				return s.eus.AddMissingTypes(ctx, typeIDs)
-			})
-			if err := g.Wait(); err != nil {
+			if err := s.eus.AddMissing(ctx, set.Set[int64]{}, locationIDs, typeIDs); err != nil {
 				return false, err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))

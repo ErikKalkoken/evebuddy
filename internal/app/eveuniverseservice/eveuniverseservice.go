@@ -102,7 +102,8 @@ func (s *EVEUniverseService) GetOrCreateSchematicESI(ctx context.Context, id int
 	return o, nil
 }
 
-func (s *EVEUniverseService) AddMissingEntitiesAndLocations(ctx context.Context, entityIDs set.Set[int64], locationIDs set.Set[int64]) error {
+// AddMissing adds missing entities, locations and types in parallel. Empty sets are ignored.
+func (s *EVEUniverseService) AddMissing(ctx context.Context, entityIDs, locationIDs, typeIDs set.Set[int64]) error {
 	g := new(errgroup.Group)
 	if entityIDs.Size() > 0 {
 		g.Go(func() error {
@@ -115,8 +116,10 @@ func (s *EVEUniverseService) AddMissingEntitiesAndLocations(ctx context.Context,
 			return s.AddMissingLocations(ctx, locationIDs)
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return err
+	if typeIDs.Size() > 0 {
+		g.Go(func() error {
+			return s.AddMissingTypes(ctx, typeIDs)
+		})
 	}
-	return nil
+	return g.Wait()
 }
