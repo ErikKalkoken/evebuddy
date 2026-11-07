@@ -9,7 +9,6 @@ import (
 
 	"github.com/ErikKalkoken/go-set"
 	"github.com/fnt-eve/goesi-openapi/esi"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/industrysync"
@@ -88,18 +87,7 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 					for _, j := range jobs {
 						locationIDs.Add(j.LocationId)
 					}
-					g := new(errgroup.Group)
-					g.Go(func() error {
-						_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-						return err
-					})
-					g.Go(func() error {
-						return s.eus.AddMissingLocations(ctx, locationIDs)
-					})
-					g.Go(func() error {
-						return s.eus.AddMissingTypes(ctx, typeIDs)
-					})
-					return g.Wait()
+					return s.eus.AddMissing(ctx, entityIDs, locationIDs, typeIDs)
 				},
 				func(ctx context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
 					return s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{

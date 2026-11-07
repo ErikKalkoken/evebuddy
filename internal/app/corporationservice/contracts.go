@@ -89,7 +89,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 			})
 			contracts = contractsync.RemoveDeleted(contracts)
 			entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs(contracts)
-			err := s.eus.AddMissingEntitiesAndLocations(ctx, entityIDs, locationIDs)
+			err := s.eus.AddMissing(ctx, entityIDs, locationIDs, set.Set[int64]{})
 			if err != nil {
 				return false, err
 			}
@@ -130,7 +130,7 @@ func (s *CorporationService) updateContractsESI(ctx context.Context, arg corpora
 func (s *CorporationService) createNewContract(ctx context.Context, corporationID int64, c contractsync.ESIContract) (int64, error) {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs([]contractsync.ESIContract{c})
-	err := s.eus.AddMissingEntitiesAndLocations(ctx, entityIDs, locationIDs)
+	err := s.eus.AddMissing(ctx, entityIDs, locationIDs, set.Set[int64]{})
 	if err != nil {
 		return 0, err
 	}
