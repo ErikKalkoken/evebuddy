@@ -630,6 +630,53 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		assert.False(t, changed)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
 	})
+	t.Run("should fetch all pages again when stored entries were deleted", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		pages := "2"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=1", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"date":        "2018-02-23T14:31:32Z",
+				"description": "First",
+				"id":          90,
+				"ref_type":    "contract_deposit",
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/journal?page=2", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"date":        "2018-02-23T13:31:32Z",
+				"description": "Second",
+				"id":          89,
+				"ref_type":    "contract_deposit",
+			}}).HeaderSet(http.Header{"X-Pages": []string{pages}}),
+		)
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: app.SectionCorporationWalletJournal1}
+		_, err := s.updateWalletJournalESI(ctx, arg)
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteCorporationWalletJournal(ctx, c.ID, app.Division1))
+		httpmock.ZeroCallCounters()
+		// when
+		changed, err := s.updateWalletJournalESI(ctx, arg)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
+		ids, err := st.ListCorporationWalletJournalEntryIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 2, ids.Size())
+	})
 	t.Run("should fetch all pages when forced", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -1025,6 +1072,67 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		xassert.Equal(t, 1, httpmock.GetTotalCallCount())
+	})
+	t.Run("should fetch all pages again when stored transactions were deleted", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 54321})
+		factory.CreateEveLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		data := make([]map[string]any, 0)
+		for i := range 2500 {
+			data = append(data, map[string]any{
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1000002500 - i,
+				"type_id":        587,
+				"unit_price":     1.23,
+			})
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, data),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/wallets/%d/transactions?from_id=1000000001", c.ID, 1),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"client_id":      54321,
+				"date":           "2016-10-24T08:00:00Z",
+				"is_buy":         true,
+				"journal_ref_id": 67891,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1000000000,
+				"type_id":        587,
+				"unit_price":     9.23,
+			}}),
+		)
+		arg := corporationSectionUpdateParams{corporationID: c.ID, section: app.SectionCorporationWalletTransactions1}
+		_, err := s.updateWalletTransactionESI(ctx, arg)
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteCorporationWalletTransactions(ctx, c.ID, app.Division1))
+		httpmock.ZeroCallCounters()
+		// when
+		changed, err := s.updateWalletTransactionESI(ctx, arg)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		xassert.Equal(t, 2, httpmock.GetTotalCallCount())
+		ids, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 2501, ids.Size())
 	})
 	t.Run("should fetch all pages when forced", func(t *testing.T) {
 		// given

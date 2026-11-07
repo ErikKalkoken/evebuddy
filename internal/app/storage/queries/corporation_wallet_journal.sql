@@ -73,3 +73,9 @@ WHERE
     AND division_id = ?
 ORDER BY
     date DESC;
+
+-- name: GetCorporationWalletJournalEntryLastID :one
+SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
+FROM corporation_wallet_journal_entries
+WHERE corporation_id = ?
+AND division_id = ?;

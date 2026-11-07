@@ -125,14 +125,6 @@ func NewCharacterServiceFake(args ...characterservice.Params) *characterservice.
 	return s
 }
 
-type SettingsFake struct {
-	MaxTransactions int
-}
-
-func (s *SettingsFake) MaxWalletTransactions() int {
-	return s.MaxTransactions
-}
-
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
 	CorporationIDs set.Set[int64]
@@ -154,9 +146,6 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 	}
 	if arg.Storage == nil {
 		panic("must define storage")
-	}
-	if arg.Cache == nil {
-		arg.Cache = testutil.NewCacheFake2()
 	}
 	if arg.Signals == nil {
 		arg.Signals = NewSignalsSync()
@@ -182,9 +171,6 @@ func NewCorporationServiceFake(args ...corporationservice.Params) *corporationse
 			StatusCacheService: new(StatusCacheStub),
 			Storage:            arg.Storage,
 		})
-	}
-	if arg.Settings == nil {
-		arg.Settings = new(SettingsFake)
 	}
 	if arg.CharacterService == nil {
 		arg.CharacterService = new(CharacterServiceFake)
@@ -301,7 +287,6 @@ func NewUIFake(args ...UIParams) *UIFake {
 		Signals:            arg.Signals,
 		StatusCacheService: scs,
 		Storage:            arg.Storage,
-		Settings:           arg.Settings,
 	})
 	u := &UIFake{
 		app:                 arg.App,

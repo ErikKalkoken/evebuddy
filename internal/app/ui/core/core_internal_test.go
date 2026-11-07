@@ -226,7 +226,6 @@ func MakeFakeUIParams(t testing.TB, st *storage.Storage, fyneApp fyne.App) UIPar
 		CharacterService:   cs,
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
-		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,

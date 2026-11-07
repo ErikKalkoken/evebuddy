@@ -199,4 +199,94 @@ func TestCorporationWalletTransaction(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("returns 0 as highest ID when a corporation division has no transactions", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: other.ID, Division: app.Division1})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division2})
+		// when
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
+	t.Run("can return the highest stored ID of a corporation division", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		other := factory.CreateCorporation()
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: other.ID, Division: app.Division1, TransactionID: 9})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division2, TransactionID: 8})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 7})
+		factory.CreateCorporationWalletTransaction(storage.CreateCorporationWalletTransactionParams{CorporationID: c.ID, Division: app.Division1, TransactionID: 5})
+		// when
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: c.ID, Division: app.Division1})
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when division is missing", func(t *testing.T) {
+		// when
+		_, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{CorporationID: 1})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
+	t.Run("can create multiple transactions at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.CreateCorporationWalletTransactionParams{
+			ClientID:      factory.CreateEveEntityCorporation().ID,
+			CorporationID: c.ID,
+			Date:          time.Now(),
+			Division:      app.Division1,
+			EveTypeID:     factory.CreateEveType().ID,
+			JournalRefID:  99,
+			LocationID:    factory.CreateEveLocationStructure().ID,
+		}
+		arg1, arg2 := arg, arg
+		arg1.TransactionID = 1
+		arg2.TransactionID = 2
+		// when
+		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg1, arg2})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCorporationWalletTransactionIDs(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple transactions is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		arg := storage.CreateCorporationWalletTransactionParams{
+			ClientID:      factory.CreateEveEntityCorporation().ID,
+			CorporationID: c.ID,
+			Date:          time.Now(),
+			Division:      app.Division1,
+			EveTypeID:     factory.CreateEveType().ID,
+			JournalRefID:  99,
+			LocationID:    factory.CreateEveLocationStructure().ID,
+			TransactionID: 1,
+		}
+		invalid := arg
+		invalid.TransactionID = 0
+		// when
+		err := st.CreateCorporationWalletTransactions(ctx, []storage.CreateCorporationWalletTransactionParams{arg, invalid})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.GetCorporationWalletTransactionLastID(ctx, storage.CorporationDivision{
+			CorporationID: c.ID,
+			Division:      app.Division1,
+		})
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
 }

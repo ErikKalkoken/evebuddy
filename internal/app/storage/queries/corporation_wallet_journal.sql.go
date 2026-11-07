@@ -159,6 +159,25 @@ func (q *Queries) GetCorporationWalletJournalEntry(ctx context.Context, arg GetC
 	return i, err
 }
 
+const getCorporationWalletJournalEntryLastID = `-- name: GetCorporationWalletJournalEntryLastID :one
+SELECT CAST(COALESCE(MAX(ref_id), 0) AS INTEGER)
+FROM corporation_wallet_journal_entries
+WHERE corporation_id = ?
+AND division_id = ?
+`
+
+type GetCorporationWalletJournalEntryLastIDParams struct {
+	CorporationID int64
+	DivisionID    int64
+}
+
+func (q *Queries) GetCorporationWalletJournalEntryLastID(ctx context.Context, arg GetCorporationWalletJournalEntryLastIDParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCorporationWalletJournalEntryLastID, arg.CorporationID, arg.DivisionID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listCorporationWalletJournalEntries = `-- name: ListCorporationWalletJournalEntries :many
 SELECT
     wje.id, wje.amount, wje.balance, wje.corporation_id, wje.context_id, wje.context_id_type, wje.date, wje.description, wje.division_id, wje.first_party_id, wje.ref_id, wje.reason, wje.ref_type, wje.second_party_id, wje.tax, wje.tax_receiver_id,

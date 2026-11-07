@@ -43,13 +43,10 @@ const (
 	settingMaxMails                           = "settingMaxMails"
 	settingMaxMailsDefault                    = 250
 	settingMaxMailsMax                        = 10_000
-	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
 	settingMarketOrdersRetentionDays          = "settingMarketOrderRetentionDays"
 	settingMarketOrderRetentionDaysMin        = 30
 	settingMarketOrderRetentionDaysDefault    = 90
 	settingMarketOrderRetentionDaysMax        = 360
-	settingMaxWalletTransactionsDefault       = 1_000
-	settingMaxWalletTransactionsMax           = 10_000
 	settingNotificationTypesEnabled           = "settingNotificationsTypesEnabled"
 	settingNotifyCommunicationsEarliest       = "settingNotifyCommunicationsEarliest"
 	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
@@ -375,34 +372,6 @@ func (s *Settings) SetLastCorporationID(id int64) {
 		return
 	}
 	s.setInt64(settingLastCorporationID, id)
-}
-
-func (s *Settings) MaxWalletTransactions() int {
-	if s == nil {
-		return 0
-	}
-	return s.getInt(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
-}
-
-func (s *Settings) MaxWalletTransactionsPresets() (minimum int, maximum int, def int) {
-	minimum = 0
-	maximum = settingMaxWalletTransactionsMax
-	def = settingMaxWalletTransactionsDefault
-	return
-}
-
-func (s *Settings) ResetMaxWalletTransactions() {
-	if s == nil {
-		return
-	}
-	s.SetMaxWalletTransactions(settingMaxWalletTransactionsDefault)
-}
-
-func (s *Settings) SetMaxWalletTransactions(v int) {
-	if s == nil {
-		return
-	}
-	s.setInt(settingMaxWalletTransactions, v)
 }
 
 func (s *Settings) NotifyTimeoutHours() int {

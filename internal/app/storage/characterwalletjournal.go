@@ -33,13 +33,39 @@ type CreateCharacterWalletJournalEntryParams struct {
 }
 
 func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
+	return createCharacterWalletJournalEntry(ctx, st.qRW, arg)
+}
+
+// CreateCharacterWalletJournalEntries stores all items or none of them.
+func (st *Storage) CreateCharacterWalletJournalEntries(ctx context.Context, args []CreateCharacterWalletJournalEntryParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCharacterWalletJournalEntries: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for _, arg := range args {
+		if err := createCharacterWalletJournalEntry(ctx, qtx, arg); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+func createCharacterWalletJournalEntry(ctx context.Context, q *queries.Queries, arg CreateCharacterWalletJournalEntryParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterWalletJournalEntry: %+v: %w", arg, err)
 	}
 	if arg.CharacterID == 0 || arg.RefID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateCharacterWalletJournalEntry(ctx, queries.CreateCharacterWalletJournalEntryParams{
+	err := q.CreateCharacterWalletJournalEntry(ctx, queries.CreateCharacterWalletJournalEntryParams{
 		Amount:        arg.Amount.ValueOrZero(),
 		Balance:       arg.Balance.ValueOrZero(),
 		CharacterID:   arg.CharacterID,
@@ -85,6 +111,21 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCh
 	secondParty := nullEveEntity{id: o.SecondPartyID, name: r.SecondName, category: r.SecondCategory}
 	taxReceiver := nullEveEntity{id: o.TaxReceiverID, name: r.TaxName, category: r.TaxCategory}
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
+}
+
+// GetCharacterWalletJournalEntryLastID returns the highest journal reference ID stored for a character or 0 if there is none.
+func (st *Storage) GetCharacterWalletJournalEntryLastID(ctx context.Context, characterID int64) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("GetCharacterWalletJournalEntryLastID: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return 0, wrapErr(app.ErrInvalid)
+	}
+	id, err := st.qRO.GetCharacterWalletJournalEntryLastID(ctx, characterID)
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
 }
 
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {

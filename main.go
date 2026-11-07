@@ -367,13 +367,11 @@ func main() {
 
 	// Init Corporation service
 	rs := corporationservice.New(corporationservice.Params{
-		Cache:              pcache.NewServiceCacheAdapter(pc, "corporationservice-"),
 		CharacterService:   cs,
 		ConcurrencyLimit:   concurrentLimit,
 		ESIClient:          esiClient,
 		EveUniverseService: eus,
 		HTTPClient:         rhc1.StandardClient(),
-		Settings:           settings,
 		Signals:            signals,
 		StatusCacheService: scs,
 		Storage:            st,

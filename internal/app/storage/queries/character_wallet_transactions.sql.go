@@ -152,6 +152,19 @@ func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetChar
 	return i, err
 }
 
+const getCharacterWalletTransactionLastID = `-- name: GetCharacterWalletTransactionLastID :one
+SELECT CAST(COALESCE(MAX(transaction_id), 0) AS INTEGER)
+FROM character_wallet_transactions
+WHERE character_id = ?
+`
+
+func (q *Queries) GetCharacterWalletTransactionLastID(ctx context.Context, characterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterWalletTransactionLastID, characterID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listCharacterWalletTransactionIDs = `-- name: ListCharacterWalletTransactionIDs :many
 SELECT
     transaction_id

@@ -23,14 +23,6 @@ func (c *StatusCacheStub) SetCorporation(_ int64, _ string) {}
 func (c *StatusCacheStub) SetCorporationSection(o *app.CorporationSectionStatus) {
 }
 
-type SettingsFake struct {
-	MaxTransactions int
-}
-
-func (s *SettingsFake) MaxWalletTransactions() int {
-	return s.MaxTransactions
-}
-
 type CharacterServiceFake struct {
 	Token          *app.CharacterToken
 	CorporationIDs set.Set[int64]
@@ -51,9 +43,6 @@ func NewFake(args ...Params) *CorporationService {
 	}
 	if arg.Storage == nil {
 		panic("must define storage")
-	}
-	if arg.Cache == nil {
-		arg.Cache = testutil.NewCacheFake2()
 	}
 	if arg.Signals == nil {
 		arg.Signals = app.NewSignals()
@@ -79,9 +68,6 @@ func NewFake(args ...Params) *CorporationService {
 			StatusCacheService: new(statuscache.StatusCache),
 			Storage:            arg.Storage,
 		})
-	}
-	if arg.Settings == nil {
-		arg.Settings = new(SettingsFake)
 	}
 	if arg.CharacterService == nil {
 		arg.CharacterService = new(CharacterServiceFake)

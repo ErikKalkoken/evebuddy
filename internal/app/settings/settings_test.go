@@ -185,19 +185,6 @@ func TestLastCharacterIDReset(t *testing.T) {
 	assert.Equal(t, int64(0), s.LastCharacterID())
 }
 
-func TestMaxWalletTransactions(t *testing.T) {
-	s := newTestSettings(t)
-	minimum, maximum, def := s.MaxWalletTransactionsPresets()
-	assert.Equal(t, 0, minimum)
-	assert.Equal(t, 10_000, maximum)
-	assert.Equal(t, 1_000, def)
-	assert.Equal(t, def, s.MaxWalletTransactions())
-	s.SetMaxWalletTransactions(500)
-	assert.Equal(t, 500, s.MaxWalletTransactions())
-	s.ResetMaxWalletTransactions()
-	assert.Equal(t, def, s.MaxWalletTransactions())
-}
-
 func TestNotifyTimeoutHours(t *testing.T) {
 	s := newTestSettings(t)
 	minimum, maximum, def := s.NotifyTimeoutHoursPresets()
@@ -360,10 +347,6 @@ func TestSettingsNilReceiverIsSafe(t *testing.T) {
 
 		assert.Equal(t, int64(0), s.LastCorporationID())
 		s.SetLastCorporationID(1)
-
-		assert.Equal(t, 0, s.MaxWalletTransactions())
-		s.ResetMaxWalletTransactions()
-		s.SetMaxWalletTransactions(1)
 
 		assert.Equal(t, 0, s.NotifyTimeoutHours())
 		s.ResetNotifyTimeoutHours()

@@ -76,24 +76,12 @@ func (c CacheFake2) Delete(k string) {
 	delete(c, k)
 }
 
-func (c CacheFake2) GetInt64(k string) (int64, bool) {
-	v, ok := c[k]
-	if !ok {
-		return 0, false
-	}
-	return v.(int64), true
-}
-
 func (c CacheFake2) GetString(k string) (string, bool) {
 	v, ok := c[k]
 	if !ok {
 		return "", false
 	}
 	return v.(string), true
-}
-
-func (c CacheFake2) SetInt64(k string, v int64, d time.Duration) {
-	c[k] = v
 }
 
 func (c CacheFake2) SetString(k string, v string, d time.Duration) {
@@ -321,7 +309,6 @@ func (s *EveImageServiceStub) InventoryTypeSKINAsync(id int64, size int, setter 
 }
 
 type SettingsStub struct {
-	MaxWalletTransactionsDefault    int
 	MaxMailsDefault                 int
 	MarketOrderRetentionDaysDefault int
 }
@@ -332,10 +319,6 @@ func (s *SettingsStub) ApprovedContactCost() int {
 
 func (s *SettingsStub) MaxMails() int {
 	return s.MaxMailsDefault
-}
-
-func (s *SettingsStub) MaxWalletTransactions() int {
-	return s.MaxWalletTransactionsDefault
 }
 
 func (s *SettingsStub) MarketOrderRetentionDays() int {

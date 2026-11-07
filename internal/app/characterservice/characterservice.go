@@ -28,9 +28,7 @@ type AuthClient interface {
 // Cache defines a cache.
 type Cache interface {
 	Delete(string)
-	GetInt64(string) (int64, bool)
 	GetString(string) (string, bool)
-	SetInt64(string, int64, time.Duration)
 	SetString(string, string, time.Duration)
 }
 
@@ -43,7 +41,6 @@ type Settings interface {
 	ApprovedContactCost() int
 	MarketOrderRetentionDays() int
 	MaxMails() int
-	MaxWalletTransactions() int
 	NotificationTypesEnabled() set.Set[string]
 	NotifyCommunicationsEarliest() time.Time
 	NotifyCommunicationsEnabled() bool

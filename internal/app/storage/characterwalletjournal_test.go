@@ -154,4 +154,68 @@ func TestCharacterWalletJournalEntry(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("returns 0 as highest ID when a character has no entries", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: other.ID})
+		// when
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: other.ID, RefID: 9})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 7})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID, RefID: 5})
+		// when
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when character is missing", func(t *testing.T) {
+		// when
+		_, err := st.GetCharacterWalletJournalEntryLastID(ctx, 0)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
+	t.Run("can create multiple entries at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		err := st.CreateCharacterWalletJournalEntries(ctx, []storage.CreateCharacterWalletJournalEntryParams{
+			{CharacterID: c.ID, Date: time.Now(), RefID: 1},
+			{CharacterID: c.ID, Date: time.Now(), RefID: 2},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple entries is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		// when
+		err := st.CreateCharacterWalletJournalEntries(ctx, []storage.CreateCharacterWalletJournalEntryParams{
+			{CharacterID: c.ID, Date: time.Now(), RefID: 1},
+			{CharacterID: c.ID, Date: time.Now()},
+		})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.GetCharacterWalletJournalEntryLastID(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
 }

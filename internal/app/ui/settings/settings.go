@@ -252,24 +252,6 @@ func (a *settings) makeGeneralPage() (*settingList, []settingAction) {
 		window:   a.w,
 	})
 
-	vMin, vMax, vDef = a.u.Settings().MaxWalletTransactionsPresets()
-	maxWallet := NewSettingItemSlider(SettingItemSliderParams{
-		label:        "Maximum wallet transaction",
-		hint:         "Max wallet transactions downloaded. 0 = unlimited.",
-		minValue:     float64(vMin),
-		maxValue:     float64(vMax),
-		defaultValue: float64(vDef),
-		step:         1,
-		getter: func() float64 {
-			return float64(a.u.Settings().MaxWalletTransactions())
-		},
-		setter: func(v float64) {
-			a.u.Settings().SetMaxWalletTransactions(int(v))
-		},
-		isMobile: a.u.IsMobile(),
-		window:   a.w,
-	})
-
 	vMin, vMax, vDef = a.u.Settings().MarketOrderRetentionDaysPresets()
 	marketOrdersRetention := NewSettingItemSlider(SettingItemSliderParams{
 		label:        "Market order retention",
@@ -310,7 +292,6 @@ func (a *settings) makeGeneralPage() (*settingList, []settingAction) {
 		NewSettingItemHeading("EVE Online API"),
 		approvedContactCost,
 		maxMail,
-		maxWallet,
 		marketOrdersRetention,
 	})
 
@@ -359,7 +340,6 @@ func (a *settings) makeGeneralPage() (*settingList, []settingAction) {
 			preferMarketTab.Reset()
 			hideLimitedCorporations.Reset()
 			maxMail.Reset()
-			maxWallet.Reset()
 			marketOrdersRetention.Reset()
 			approvedContactCost.Reset()
 		},

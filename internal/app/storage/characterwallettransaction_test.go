@@ -123,4 +123,84 @@ func TestCharacterWalletTransaction(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, app.ErrNotFound)
 	})
+
+	t.Run("returns 0 as highest ID when a character has no transactions", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: other.ID})
+		// when
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
+	t.Run("can return the highest stored ID of a character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		other := factory.CreateCharacterFull()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: other.ID, TransactionID: 9})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 7})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID, TransactionID: 5})
+		// when
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 7, got)
+	})
+	t.Run("returns invalid error when character is missing", func(t *testing.T) {
+		// when
+		_, err := st.GetCharacterWalletTransactionLastID(ctx, 0)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+
+	t.Run("can create multiple transactions at once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		arg := storage.CreateCharacterWalletTransactionParams{
+			CharacterID:  c.ID,
+			ClientID:     factory.CreateEveEntityCharacter().ID,
+			Date:         time.Now(),
+			EveTypeID:    factory.CreateEveType().ID,
+			JournalRefID: 99,
+			LocationID:   factory.CreateEveLocationStructure().ID,
+		}
+		arg1, arg2 := arg, arg
+		arg1.TransactionID = 1
+		arg2.TransactionID = 2
+		// when
+		err := st.CreateCharacterWalletTransactions(ctx, []storage.CreateCharacterWalletTransactionParams{arg1, arg2})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterWalletTransactionIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](1, 2), got)
+	})
+	t.Run("stores nothing when one of multiple transactions is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		arg := storage.CreateCharacterWalletTransactionParams{
+			CharacterID:   c.ID,
+			ClientID:      factory.CreateEveEntityCharacter().ID,
+			Date:          time.Now(),
+			EveTypeID:     factory.CreateEveType().ID,
+			JournalRefID:  99,
+			LocationID:    factory.CreateEveLocationStructure().ID,
+			TransactionID: 1,
+		}
+		invalid := arg
+		invalid.TransactionID = 0
+		// when
+		err := st.CreateCharacterWalletTransactions(ctx, []storage.CreateCharacterWalletTransactionParams{arg, invalid})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		got, err := st.GetCharacterWalletTransactionLastID(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got)
+	})
 }
