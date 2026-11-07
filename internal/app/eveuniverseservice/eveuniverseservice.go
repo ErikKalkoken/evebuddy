@@ -121,8 +121,5 @@ func (s *EVEUniverseService) AddMissing(ctx context.Context, entityIDs, location
 			return s.AddMissingTypes(ctx, typeIDs)
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	return nil
+	return g.Wait()
 }
