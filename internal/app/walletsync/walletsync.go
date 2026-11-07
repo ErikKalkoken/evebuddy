@@ -80,7 +80,8 @@ func SyncJournal(
 }
 
 // FetchTransactions fetches transactions page by page, starting with the newest (fromID 0).
-// It stops at the last page or when checkLastID is set and a page contains lastID or an older ID.
+// It stops at the last page, at a page which does not go back in time,
+// or when checkLastID is set and a page contains lastID or an older ID.
 func FetchTransactions(
 	fetch func(fromID int64) ([]ESITransaction, error),
 	lastID int64,
@@ -93,17 +94,25 @@ func FetchTransactions(
 		if err != nil {
 			return nil, err
 		}
-		transactions = append(transactions, page...)
-		if len(page) < maxTransactionsPerPage {
+		if len(page) == 0 {
 			return transactions, nil
 		}
 		ids := xslices.Map(page, func(t ESITransaction) int64 {
 			return t.TransactionId
 		})
+		minID := slices.Min(ids)
+		if fromID != 0 && minID >= fromID {
+			slog.Warn("Wallet transactions paging made no progress", "fromID", fromID)
+			return transactions, nil // drop the repeated page
+		}
+		transactions = append(transactions, page...)
+		if len(page) < maxTransactionsPerPage {
+			return transactions, nil
+		}
 		if checkLastID && slices.ContainsFunc(ids, func(id int64) bool { return id <= lastID }) {
 			return transactions, nil // stop reading once a known ID is found
 		}
-		fromID = slices.Min(ids)
+		fromID = minID
 	}
 }
 

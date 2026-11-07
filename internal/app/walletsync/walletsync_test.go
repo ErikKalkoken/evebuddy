@@ -169,6 +169,13 @@ func TestFetchTransactions(t *testing.T) {
 		xassert.Equal(t, pageSize+1, len(got))
 		xassert.Equal(t, []int64{0, 10_000 - pageSize + 1}, *fromIDs)
 	})
+	t.Run("stops without adding a page which does not go back in time", func(t *testing.T) {
+		fetch, fromIDs := fetcher(page(10_000), page(10_000))
+		got, err := walletsync.FetchTransactions(fetch, 0, false)
+		require.NoError(t, err)
+		xassert.Equal(t, pageSize, len(got))
+		xassert.Equal(t, []int64{0, 10_000 - pageSize + 1}, *fromIDs)
+	})
 	t.Run("stops at a page containing the last ID", func(t *testing.T) {
 		fetch, fromIDs := fetcher(page(10_000))
 		got, err := walletsync.FetchTransactions(fetch, 9_000, true)
