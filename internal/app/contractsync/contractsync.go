@@ -213,8 +213,6 @@ func staleIDs(current []*app.Contract, contracts []ESIContract) set.Set[int64] {
 // Failures for single contracts are logged and skipped, unless ctx is canceled.
 //
 // The callbacks do the owner specific work and report whether they stored anything.
-// create must return the stored ID also when only storing related data failed,
-// so bids can still be added.
 // Bids are only fetched for auctions which can still have new bids.
 func Sync(
 	ctx context.Context,
@@ -237,10 +235,6 @@ func Sync(
 		var count int
 		for _, c := range newContracts {
 			id, err := create(ctx, c)
-			if id != 0 {
-				contractPKs[c.ContractId] = id
-				changedIDs.Add(c.ContractId)
-			}
 			if err != nil {
 				if ctx.Err() != nil {
 					return set.Set[int64]{}, false, err
@@ -248,6 +242,8 @@ func Sync(
 				slog.Error("create contract", "contract", c, "error", err)
 				continue
 			}
+			contractPKs[c.ContractId] = id
+			changedIDs.Add(c.ContractId)
 			count++
 		}
 		slog.Info("Stored new contracts", logAttr, "count", count)
