@@ -394,6 +394,51 @@ func TestUpdateContractsESI(t *testing.T) {
 		xassert.Equal(t, set.Of[int64](7), ids)
 	})
 
+	t.Run("should not store a new contract when storing its items fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"acceptor_id":           0,
+				"assignee_id":           0,
+				"availability":          "public",
+				"contract_id":           42,
+				"date_expired":          "2017-06-13T13:12:32Z",
+				"date_issued":           "2017-06-05T13:12:32Z",
+				"for_corporation":       false,
+				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
+				"issuer_id":             c.ID,
+				"status":                "outstanding",
+				"type":                  "auction",
+			}}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contracts/42/items", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{"is_included": true, "is_singleton": false, "quantity": 1, "record_id": 7, "type_id": et.ID},
+				{"is_included": true, "is_singleton": false, "quantity": 1, "record_id": 7, "type_id": et.ID}, // duplicate
+			}),
+		)
+		// when
+		_, err := s.updateContractsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			forceUpdate: true,
+			section:     app.SectionCharacterContracts,
+		})
+		// then
+		require.NoError(t, err)
+		_, err = st.GetCharacterContract(ctx, c.ID, 42)
+		require.ErrorIs(t, err, app.ErrNotFound)
+	})
+
 	t.Run("should store a new courier without fetching items", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

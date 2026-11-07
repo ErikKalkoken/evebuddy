@@ -139,6 +139,74 @@ func TestCharacterContract(t *testing.T) {
 		xassert.Equal(t, []string{item.Name + " x 1"}, got.Items)
 	})
 
+	t.Run("can create new contract with items", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		issuer := f.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCharacter.Corporation
+		et1 := f.CreateEveType()
+		et2 := f.CreateEveType()
+
+		// when
+		id, err := st.CreateCharacterContractWithItems(t.Context(), storage.CreateCharacterContractParams{
+			Availability:        app.ContractAvailabilityPrivate,
+			CharacterID:         c.ID,
+			ContractID:          42,
+			DateExpired:         time.Now().Add(12 * time.Hour).UTC(),
+			DateIssued:          time.Now().UTC(),
+			IssuerCorporationID: issuerCorporation.ID,
+			IssuerID:            issuer.ID,
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		}, []storage.CreateContractItemParams{
+			{IsIncluded: true, Quantity: 1, RecordID: 1, TypeID: et1.ID},
+			{IsIncluded: true, Quantity: 2, RecordID: 2, TypeID: et2.ID},
+		})
+
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterContract(t.Context(), c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, id, got.ID)
+		items, err := st.ListCharacterContractItems(t.Context(), id)
+		require.NoError(t, err)
+		recordIDs := set.Of(xslices.Map(items, func(x *app.ContractItem) int64 {
+			return x.RecordID
+		})...)
+		xassert.Equal(t, set.Of[int64](1, 2), recordIDs)
+	})
+
+	t.Run("should store neither contract nor items when storing an item fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		issuer := f.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCharacter.Corporation
+		et := f.CreateEveType()
+
+		// when
+		_, err := st.CreateCharacterContractWithItems(t.Context(), storage.CreateCharacterContractParams{
+			Availability:        app.ContractAvailabilityPrivate,
+			CharacterID:         c.ID,
+			ContractID:          42,
+			DateExpired:         time.Now().Add(12 * time.Hour).UTC(),
+			DateIssued:          time.Now().UTC(),
+			IssuerCorporationID: issuerCorporation.ID,
+			IssuerID:            issuer.ID,
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeItemExchange,
+		}, []storage.CreateContractItemParams{
+			{IsIncluded: true, Quantity: 1, RecordID: 1, TypeID: et.ID},
+			{IsIncluded: true, Quantity: 1, RecordID: 1, TypeID: et.ID}, // duplicate
+		})
+
+		// then
+		require.Error(t, err)
+		_, err = st.GetCharacterContract(t.Context(), c.ID, 42)
+		require.ErrorIs(t, err, app.ErrNotFound)
+	})
+
 	t.Run("can create new minimal item exchange without items", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

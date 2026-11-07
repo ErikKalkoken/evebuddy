@@ -310,25 +310,6 @@ func TestSync(t *testing.T) {
 			})
 		}
 	})
-	t.Run("should add bids for new auction when only storing related data failed", func(t *testing.T) {
-		bids := make(map[int64]int64) // contract ID -> stored ID
-		contracts := []contractsync.ESIContract{{ContractId: 1, Type: "auction", Status: "outstanding"}}
-		_, _, err := contractsync.Sync(t.Context(), contracts, nil,
-			func(ctx context.Context, c contractsync.ESIContract) (int64, error) {
-				return 101, errors.New("items failed") // contract row is stored
-			},
-			func(ctx context.Context, o *app.Contract, c contractsync.ESIContract) (bool, error) {
-				return false, nil
-			},
-			func(ctx context.Context, contractPK, contractID int64) (bool, error) {
-				bids[contractID] = contractPK
-				return false, nil
-			},
-			logAttr,
-		)
-		require.NoError(t, err)
-		xassert.Equal(t, map[int64]int64{1: 101}, bids)
-	})
 	t.Run("should skip bids for auction which could not be stored", func(t *testing.T) {
 		var bidContractIDs []int64
 		contracts := []contractsync.ESIContract{{ContractId: 1, Type: "auction", Status: "outstanding"}}

@@ -305,7 +305,6 @@ func (s *CharacterService) updateContractsESI(ctx context.Context, arg character
 }
 
 // createNewContract stores a new contract with its items and returns its ID.
-// The ID is also returned when only storing the items failed.
 func (s *CharacterService) createNewContract(ctx context.Context, characterID int64, c contractsync.ESIContract) (int64, error) {
 	// Ensuring again all related objects are created to prevent occasional FK constraint error
 	entityIDs, locationIDs := contractsync.ExtractEntityAndLocationIDs([]contractsync.ESIContract{c})
@@ -334,7 +333,7 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 			return 0, err
 		}
 	}
-	id, err := s.st.CreateCharacterContract(ctx, storage.CreateCharacterContractParams{
+	contractArg := storage.CreateCharacterContractParams{
 		AcceptorID:          c.AcceptorId,
 		AssigneeID:          c.AssigneeId,
 		Availability:        availability,
@@ -358,25 +357,18 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		Title:               optional.FromPtr(c.Title),
 		Type:                typ,
 		Volume:              optional.FromPtr(c.Volume),
-	})
-	if err != nil {
-		return 0, err
 	}
-	for _, it := range items {
-		err := s.st.CreateCharacterContractItem(ctx, storage.CreateContractItemParams{
-			ContractID:  id,
+	itemArgs := xslices.Map(items, func(it contractsync.ESIContractItem) storage.CreateContractItemParams {
+		return storage.CreateContractItemParams{
 			IsIncluded:  it.IsIncluded,
 			IsSingleton: it.IsSingleton,
 			Quantity:    it.Quantity,
 			RawQuantity: optional.FromPtr(it.RawQuantity),
 			RecordID:    it.RecordId,
 			TypeID:      it.TypeId,
-		})
-		if err != nil {
-			return id, err
 		}
-	}
-	return id, nil
+	})
+	return s.st.CreateCharacterContractWithItems(ctx, contractArg, itemArgs)
 }
 
 // updateContract updates a stored contract from ESI and reports whether it has changed.

@@ -121,6 +121,38 @@ func (st *Storage) CountCorporationContractsWithStatus(ctx context.Context, corp
 }
 
 func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorporationContractParams) (int64, error) {
+	return createCorporationContract(ctx, st.qRW, arg)
+}
+
+// CreateCorporationContractWithItems stores a new contract with all its items or nothing and returns its ID.
+// The ContractID of itemArgs is set by this method.
+func (st *Storage) CreateCorporationContractWithItems(ctx context.Context, contractArg CreateCorporationContractParams, itemArgs []CreateContractItemParams) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCorporationContractWithItems: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	id, err := createCorporationContract(ctx, qtx, contractArg)
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	for _, it := range itemArgs {
+		it.ContractID = id
+		if err := createCorporationContractItem(ctx, qtx, it); err != nil {
+			return 0, wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
+}
+
+func createCorporationContract(ctx context.Context, q *queries.Queries, arg CreateCorporationContractParams) (int64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationContract: %+v: %w", arg, err)
 	}
@@ -130,7 +162,7 @@ func (st *Storage) CreateCorporationContract(ctx context.Context, arg CreateCorp
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now().UTC()
 	}
-	id, err := st.qRW.CreateCorporationContract(ctx, queries.CreateCorporationContractParams{
+	id, err := q.CreateCorporationContract(ctx, queries.CreateCorporationContractParams{
 		AcceptorID:          NewNullInt64(arg.AcceptorID),
 		AssigneeID:          NewNullInt64(arg.AssigneeID),
 		Availability:        contractAvailabilityToDBValue[arg.Availability],
@@ -364,13 +396,17 @@ func (st *Storage) ListCorporationContractBidIDs(ctx context.Context, contractID
 }
 
 func (st *Storage) CreateCorporationContractItem(ctx context.Context, arg CreateContractItemParams) error {
+	return createCorporationContractItem(ctx, st.qRW, arg)
+}
+
+func createCorporationContractItem(ctx context.Context, q *queries.Queries, arg CreateContractItemParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationContractItem %+v: %w", arg, err)
 	}
 	if arg.ContractID == 0 || arg.TypeID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	if err := st.qRW.CreateCorporationContractItem(ctx, queries.CreateCorporationContractItemParams{
+	if err := q.CreateCorporationContractItem(ctx, queries.CreateCorporationContractItemParams{
 		ContractID:  arg.ContractID,
 		IsIncluded:  arg.IsIncluded,
 		IsSingleton: arg.IsSingleton,

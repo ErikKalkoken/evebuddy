@@ -128,6 +128,38 @@ type CreateCharacterContractParams struct {
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
+	return createCharacterContract(ctx, st.qRW, arg)
+}
+
+// CreateCharacterContractWithItems stores a new contract with all its items or nothing and returns its ID.
+// The ContractID of itemArgs is set by this method.
+func (st *Storage) CreateCharacterContractWithItems(ctx context.Context, contractArg CreateCharacterContractParams, itemArgs []CreateContractItemParams) (int64, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateCharacterContractWithItems: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	id, err := createCharacterContract(ctx, qtx, contractArg)
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	for _, it := range itemArgs {
+		it.ContractID = id
+		if err := createCharacterContractItem(ctx, qtx, it); err != nil {
+			return 0, wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, wrapErr(err)
+	}
+	return id, nil
+}
+
+func createCharacterContract(ctx context.Context, q *queries.Queries, arg CreateCharacterContractParams) (int64, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterContract: %+v: %w", arg, err)
 	}
@@ -137,7 +169,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now().UTC()
 	}
-	id, err := st.qRW.CreateCharacterContract(ctx, queries.CreateCharacterContractParams{
+	id, err := q.CreateCharacterContract(ctx, queries.CreateCharacterContractParams{
 		AcceptorID:          NewNullInt64(arg.AcceptorID),
 		AssigneeID:          NewNullInt64(arg.AssigneeID),
 		Availability:        contractAvailabilityToDBValue[arg.Availability],
@@ -395,13 +427,17 @@ func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID i
 }
 
 func (st *Storage) CreateCharacterContractItem(ctx context.Context, arg CreateContractItemParams) error {
+	return createCharacterContractItem(ctx, st.qRW, arg)
+}
+
+func createCharacterContractItem(ctx context.Context, q *queries.Queries, arg CreateContractItemParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterContractItem %+v: %w", arg, err)
 	}
 	if arg.ContractID == 0 || arg.TypeID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	if err := st.qRW.CreateCharacterContractItem(ctx, queries.CreateCharacterContractItemParams{
+	if err := q.CreateCharacterContractItem(ctx, queries.CreateCharacterContractItemParams{
 		ContractID:  arg.ContractID,
 		IsIncluded:  arg.IsIncluded,
 		IsSingleton: arg.IsSingleton,
