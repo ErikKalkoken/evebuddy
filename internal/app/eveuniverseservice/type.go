@@ -58,12 +58,11 @@ func (s *EVEUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int6
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveCategoryParams{
+		o2, err := s.st.CreateEveCategory(ctx, storage.CreateEveCategoryParams{
 			ID:          id,
 			Name:        r.Name,
 			IsPublished: r.Published,
-		}
-		o2, err := s.st.CreateEveCategory(ctx, arg)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +70,7 @@ func (s *EVEUniverseService) GetOrCreateCategoryESI(ctx context.Context, id int6
 		return o2, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetOrCreateCategoryESI: %d: %w", id, err)
 	}
 	return o, nil
 }
@@ -92,20 +91,19 @@ func (s *EVEUniverseService) GetOrCreateGroupESI(ctx context.Context, id int64) 
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveGroupParams{
+		if err := s.st.CreateEveGroup(ctx, storage.CreateEveGroupParams{
 			ID:          id,
 			Name:        group.Name,
 			CategoryID:  c.ID,
 			IsPublished: group.Published,
-		}
-		if err := s.st.CreateEveGroup(ctx, arg); err != nil {
+		}); err != nil {
 			return nil, err
 		}
 		slog.Info("Created eve group", "ID", id)
 		return s.st.GetEveGroup(ctx, id)
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetOrCreateGroupESI: %d: %w", id, err)
 	}
 	return o, nil
 }
@@ -130,7 +128,7 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveTypeParams{
+		err = s.st.CreateEveType(ctx, storage.CreateEveTypeParams{
 			ID:             id,
 			GroupID:        g.ID,
 			Capacity:       optional.FromPtr(t.Capacity),
@@ -145,8 +143,8 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 			PortionSize:    optional.FromPtr(t.PortionSize),
 			Radius:         optional.FromPtr(t.Radius),
 			Volume:         optional.FromPtr(t.Volume),
-		}
-		if err := s.st.CreateEveType(ctx, arg); err != nil {
+		})
+		if err != nil {
 			return nil, err
 		}
 		for _, o := range t.DogmaAttributes {
@@ -172,22 +170,22 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 					}
 				})
 			}
-			arg := storage.CreateEveTypeDogmaAttributeParams{
+			err = s.st.CreateEveTypeDogmaAttribute(ctx, storage.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,
 				EveTypeID:        id,
 				Value:            o.Value,
-			}
-			if err := s.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+			})
+			if err != nil {
 				return nil, err
 			}
 		}
 		for _, o := range t.DogmaEffects {
-			arg := storage.CreateEveTypeDogmaEffectParams{
+			err := s.st.CreateEveTypeDogmaEffect(ctx, storage.CreateEveTypeDogmaEffectParams{
 				DogmaEffectID: o.EffectId,
 				EveTypeID:     id,
 				IsDefault:     o.IsDefault,
-			}
-			if err := s.st.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
+			})
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -195,7 +193,7 @@ func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (
 		return s.st.GetEveType(ctx, id)
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetOrCreateTypeESI: %d: %w", typeID, err)
 	}
 	return o, nil
 }
@@ -279,7 +277,7 @@ func (s *EVEUniverseService) UpdateCategoryWithChildrenESI(ctx context.Context, 
 		return nil, nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("UpdateCategoryWithChildrenESI: %d: %w", categoryID, err)
 	}
 	return nil
 }
@@ -324,7 +322,7 @@ func (s *EVEUniverseService) GetOrCreateDogmaAttributeESI(ctx context.Context, i
 		return o2, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetOrCreateDogmaAttributeESI: %d: %w", id, err)
 	}
 	return o, nil
 }
@@ -497,7 +495,10 @@ func (s *EVEUniverseService) UpdateMarketPricesESI(ctx context.Context) (set.Set
 		}
 		return changed, nil
 	})
-	return v, err
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("UpdateMarketPricesESI: %w", err)
+	}
+	return v, nil
 }
 
 // updateTypes updates all existing type from ESI
