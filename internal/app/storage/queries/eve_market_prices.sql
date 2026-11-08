@@ -23,7 +23,7 @@ SELECT
 FROM
     eve_market_prices;
 
--- name: UpdateOrCreateEveMarketPrice :one
+-- name: UpdateOrCreateEveMarketPrice :exec
 INSERT INTO
     eve_market_prices (type_id, adjusted_price, average_price)
 VALUES
@@ -31,6 +31,4 @@ VALUES
 ON CONFLICT (type_id) DO UPDATE
 SET
     adjusted_price = ?2,
-    average_price = ?3
-RETURNING
-    *;
+    average_price = ?3;

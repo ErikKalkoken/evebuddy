@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
@@ -447,56 +446,42 @@ func (s *EVEUniverseService) MarketPrice(ctx context.Context, typeID int64) (opt
 	return o.AveragePrice, nil
 }
 
-// TODO: Change to bulk create
-
-// UpdateMarketPricesESI updates all market prices from ESI and reports which have changed.
-// Will only reports changes on prices for known types.
+// UpdateMarketPricesESI updates all market prices from ESI
+// and reports changed and deleted prices for known types.
 func (s *EVEUniverseService) UpdateMarketPricesESI(ctx context.Context) (set.Set[int64], error) {
 	v, err, _ := xsingleflight.Do(&s.sfg, "updateMarketPricesESI", func() (set.Set[int64], error) {
 		prices, _, err := s.esiClient.MarketAPI.GetMarketsPrices(ctx).Execute()
 		if err != nil {
 			return set.Set[int64]{}, err
 		}
-		knownTypes, err := s.ListTypeIDs(ctx)
-		if err != nil {
-			return set.Set[int64]{}, err
-		}
-		var changed set.Set[int64]
+		args := make([]storage.UpdateOrCreateEveMarketPriceParams, 0, len(prices))
 		for _, p := range prices {
-			o1, err := s.st.GetEveMarketPrice(ctx, p.TypeId)
-			if err != nil && !errors.Is(err, app.ErrNotFound) {
-				return set.Set[int64]{}, err
+			if p.TypeId == 0 {
+				continue
 			}
-			o2, err := s.st.UpdateOrCreateEveMarketPrice(ctx, storage.UpdateOrCreateEveMarketPriceParams{
+			args = append(args, storage.UpdateOrCreateEveMarketPriceParams{
 				TypeID:        p.TypeId,
 				AdjustedPrice: optional.FromPtr(p.AdjustedPrice),
 				AveragePrice:  optional.FromPtr(p.AveragePrice),
 			})
-			if err != nil {
-				return set.Set[int64]{}, err
-			}
-			if knownTypes.Contains(p.TypeId) && (o1 == nil || !o2.Equal(*o1)) {
-				changed.Add(o2.TypeID)
-			}
 		}
-		slog.Info("Updated market prices", "count", len(prices), "changed", changed.Size())
-		// remove obsolete prices
-		incoming := set.Collect(xiter.MapSlice(prices, func(x esi.MarketsPricesGetInner) int64 {
-			return x.TypeId
-		}))
-		current, err := s.st.ListEveMarketPriceIDs(ctx)
+		if n := len(prices) - len(args); n > 0 {
+			slog.Warn("Skipped market prices with invalid type ID", "count", n)
+		}
+		if len(args) == 0 {
+			return set.Set[int64]{}, errors.New("no market prices received from ESI")
+		}
+		knownTypes, err := s.ListTypeIDs(ctx)
 		if err != nil {
 			return set.Set[int64]{}, err
 		}
-		obsolete := set.Difference(current, incoming)
-		if obsolete.Size() > 0 {
-			err := s.st.DeleteEveMarketPrices(ctx, obsolete)
-			if err != nil {
-				return set.Set[int64]{}, err
-			}
-			slog.Info("Removed obsolete market prices", "count", obsolete.Size())
+		changed, err := s.st.ReplaceEveMarketPrices(ctx, args)
+		if err != nil {
+			return set.Set[int64]{}, err
 		}
-		return changed, nil
+		changedKnown := set.Intersection(changed, knownTypes)
+		slog.Info("Updated market prices", "count", len(args), "changed", changed.Size(), "changedKnown", changedKnown.Size())
+		return changedKnown, nil
 	})
 	if err != nil {
 		return set.Set[int64]{}, fmt.Errorf("UpdateMarketPricesESI: %w", err)

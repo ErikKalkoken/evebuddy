@@ -46,3 +46,12 @@ func Merge[M ~map[K]V, K comparable, V any](ms ...M) M {
 	}
 	return out
 }
+
+// Pop removes k from m and returns its value and whether it was present.
+func Pop[M ~map[K]V, K comparable, V any](m M, k K) (V, bool) {
+	v, ok := m[k]
+	if ok {
+		delete(m, k)
+	}
+	return v, ok
+}

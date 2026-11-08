@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
 
@@ -141,4 +142,36 @@ func TestMerge_DoesNotModifyInputs(t *testing.T) {
 
 	assert.Equal(t, map[string]int{"a": 1, "b": 2}, a)
 	assert.Equal(t, map[string]int{"b": 20}, b)
+}
+
+func TestPop(t *testing.T) {
+	t.Run("returns value and removes present key", func(t *testing.T) {
+		// given
+		m := map[string]int{"a": 1, "b": 2}
+		// when
+		v, ok := xmaps.Pop(m, "a")
+		// then
+		assert.True(t, ok)
+		xassert.Equal(t, 1, v)
+		xassert.Equal(t, map[string]int{"b": 2}, m)
+	})
+	t.Run("returns zero value for missing key", func(t *testing.T) {
+		// given
+		m := map[string]int{"a": 1}
+		// when
+		v, ok := xmaps.Pop(m, "x")
+		// then
+		assert.False(t, ok)
+		xassert.Equal(t, 0, v)
+		xassert.Equal(t, map[string]int{"a": 1}, m)
+	})
+	t.Run("works on nil map", func(t *testing.T) {
+		// given
+		var m map[string]int
+		// when
+		v, ok := xmaps.Pop(m, "a")
+		// then
+		assert.False(t, ok)
+		xassert.Equal(t, 0, v)
+	})
 }
