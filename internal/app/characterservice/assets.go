@@ -160,58 +160,15 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 			if err := s.eus.AddMissing(ctx, set.Set[int64]{}, locationIDs, typeIDs); err != nil {
 				return false, err
 			}
-			currentIDs, err := s.st.ListCharacterAssetIDs(ctx, characterID)
+			eveTypes, err := s.st.ListEveTypesForIDs(ctx, slices.Collect(typeIDs.All()))
 			if err != nil {
 				return false, err
 			}
 			logAttr := slog.Int64("characterID", characterID)
-			err = assetsync.Sync(
+			names, err := assetsync.ResolveNames(
 				ctx,
 				assets,
-				currentIDs,
-				locationFlagFromESIValue,
-				locationTypeFromESIValue,
-				func(ctx context.Context, item assetsync.Item) error {
-					return s.st.CreateCharacterAsset(ctx, storage.CreateCharacterAssetParams{
-						CharacterID:     characterID,
-						TypeID:          item.TypeID,
-						IsBlueprintCopy: item.IsBlueprintCopy,
-						IsSingleton:     item.IsSingleton,
-						ItemID:          item.ItemID,
-						LocationFlag:    item.LocationFlag,
-						LocationID:      item.LocationID,
-						LocationType:    item.LocationType,
-						Quantity:        item.Quantity,
-					})
-				},
-				func(ctx context.Context, item assetsync.Item) error {
-					return s.st.UpdateCharacterAsset(ctx, storage.UpdateCharacterAssetParams{
-						CharacterID:  characterID,
-						IsSingleton:  item.IsSingleton,
-						ItemID:       item.ItemID,
-						LocationFlag: item.LocationFlag,
-						LocationID:   item.LocationID,
-						LocationType: item.LocationType,
-						Quantity:     item.Quantity,
-					})
-				},
-				func(ctx context.Context, ids set.Set[int64]) error {
-					return s.st.DeleteCharacterAssets(ctx, characterID, ids)
-				},
-				logAttr,
-			)
-			if err != nil {
-				return false, err
-			}
-			stored, err := s.st.ListCharacterAssets(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			err = assetsync.SyncNames(
-				ctx,
-				xslices.Map(stored, func(x *app.CharacterAsset) *app.Asset {
-					return &x.Asset
-				}),
+				eveTypes,
 				func(ctx context.Context, ids []int64) ([]assetsync.ESIAssetName, error) {
 					ctx = xgoesi.NewContextWithOperationID(ctx, "PostCharactersCharacterIdAssetsNames")
 					names, _, err := s.esiClient.AssetsAPI.PostCharactersCharacterIdAssetsNames(ctx, characterID).RequestBody(ids).Execute()
@@ -222,14 +179,23 @@ func (s *CharacterService) updateAssetsESI(ctx context.Context, arg characterSec
 						return assetsync.ESIAssetName(x)
 					}), nil
 				},
-				func(ctx context.Context, itemID int64, name string) error {
-					return s.st.UpdateCharacterAssetName(ctx, storage.UpdateCharacterAssetNameParams{
-						CharacterID: characterID,
-						ItemID:      itemID,
-						Name:        name,
-					})
-				},
 				nil,
+				logAttr,
+			)
+			if err != nil {
+				return false, err
+			}
+			err = assetsync.Sync(
+				ctx,
+				assets,
+				names,
+				locationFlagFromESIValue,
+				locationTypeFromESIValue,
+				func(ctx context.Context, items []assetsync.Item) error {
+					return s.st.ReplaceCharacterAssets(ctx, characterID, xslices.Map(items, func(x assetsync.Item) storage.ReplaceCharacterAssetParams {
+						return storage.ReplaceCharacterAssetParams(x)
+					}))
+				},
 				logAttr,
 			)
 			if err != nil {

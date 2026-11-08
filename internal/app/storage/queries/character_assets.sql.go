@@ -383,14 +383,15 @@ func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([
 const updateCharacterAsset = `-- name: UpdateCharacterAsset :exec
 UPDATE character_assets
 SET
-    is_singleton = ?,
-    location_flag = ?,
-    location_id = ?,
-    location_type = ?,
-    quantity = ?
+    is_singleton = ?1,
+    location_flag = ?2,
+    location_id = ?3,
+    location_type = ?4,
+    name = COALESCE(?5, name),
+    quantity = ?6
 WHERE
-    character_id = ?
-    AND item_id = ?
+    character_id = ?7
+    AND item_id = ?8
 `
 
 type UpdateCharacterAssetParams struct {
@@ -398,6 +399,7 @@ type UpdateCharacterAssetParams struct {
 	LocationFlag string
 	LocationID   int64
 	LocationType string
+	Name         sql.NullString
 	Quantity     int64
 	CharacterID  int64
 	ItemID       int64
@@ -409,29 +411,10 @@ func (q *Queries) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterA
 		arg.LocationFlag,
 		arg.LocationID,
 		arg.LocationType,
+		arg.Name,
 		arg.Quantity,
 		arg.CharacterID,
 		arg.ItemID,
 	)
-	return err
-}
-
-const updateCharacterAssetName = `-- name: UpdateCharacterAssetName :exec
-UPDATE character_assets
-SET
-    name = ?
-WHERE
-    character_id = ?
-    AND item_id = ?
-`
-
-type UpdateCharacterAssetNameParams struct {
-	Name        string
-	CharacterID int64
-	ItemID      int64
-}
-
-func (q *Queries) UpdateCharacterAssetName(ctx context.Context, arg UpdateCharacterAssetNameParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterAssetName, arg.Name, arg.CharacterID, arg.ItemID)
 	return err
 }

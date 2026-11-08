@@ -211,7 +211,7 @@ var (
 		"item":         app.TypeItem,
 		"other":        app.TypeOther,
 	}
-	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`)
+	reCustomsOffice = regexp.MustCompile(`Customs Office \((.+)\)`) // TODO: remove
 )
 
 func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporationSectionUpdateParams) (bool, error) {
@@ -243,58 +243,15 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 			if err := s.eus.AddMissing(ctx, set.Set[int64]{}, locationIDs, typeIDs); err != nil {
 				return false, err
 			}
-			currentIDs, err := s.st.ListCorporationAssetIDs(ctx, arg.corporationID)
+			eveTypes, err := s.st.ListEveTypesForIDs(ctx, slices.Collect(typeIDs.All()))
 			if err != nil {
 				return false, err
 			}
 			logAttr := slog.Int64("corporationID", arg.corporationID)
-			err = assetsync.Sync(
+			names, err := assetsync.ResolveNames(
 				ctx,
 				assets,
-				currentIDs,
-				locationFlagFromESIValue,
-				locationTypeFromESIValue,
-				func(ctx context.Context, item assetsync.Item) error {
-					return s.st.CreateCorporationAsset(ctx, storage.CreateCorporationAssetParams{
-						CorporationID:   arg.corporationID,
-						EveTypeID:       item.TypeID,
-						IsBlueprintCopy: item.IsBlueprintCopy,
-						IsSingleton:     item.IsSingleton,
-						ItemID:          item.ItemID,
-						LocationFlag:    item.LocationFlag,
-						LocationID:      item.LocationID,
-						LocationType:    item.LocationType,
-						Quantity:        item.Quantity,
-					})
-				},
-				func(ctx context.Context, item assetsync.Item) error {
-					return s.st.UpdateCorporationAsset(ctx, storage.UpdateCorporationAssetParams{
-						CorporationID: arg.corporationID,
-						IsSingleton:   item.IsSingleton,
-						ItemID:        item.ItemID,
-						LocationFlag:  item.LocationFlag,
-						LocationID:    item.LocationID,
-						LocationType:  item.LocationType,
-						Quantity:      item.Quantity,
-					})
-				},
-				func(ctx context.Context, ids set.Set[int64]) error {
-					return s.st.DeleteCorporationAssets(ctx, arg.corporationID, ids)
-				},
-				logAttr,
-			)
-			if err != nil {
-				return false, err
-			}
-			stored, err := s.st.ListCorporationAssets(ctx, arg.corporationID)
-			if err != nil {
-				return false, err
-			}
-			err = assetsync.SyncNames(
-				ctx,
-				xslices.Map(stored, func(x *app.CorporationAsset) *app.Asset {
-					return &x.Asset
-				}),
+				eveTypes,
 				func(ctx context.Context, ids []int64) ([]assetsync.ESIAssetName, error) {
 					ctx = xgoesi.NewContextWithOperationID(ctx, "PostCorporationsCorporationIdAssetsNames")
 					names, _, err := s.esiClient.AssetsAPI.PostCorporationsCorporationIdAssetsNames(ctx, arg.corporationID).RequestBody(ids).Execute()
@@ -305,14 +262,23 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 						return assetsync.ESIAssetName(x)
 					}), nil
 				},
-				func(ctx context.Context, itemID int64, name string) error {
-					return s.st.UpdateCorporationAssetName(ctx, storage.UpdateCorporationAssetNameParams{
-						CorporationID: arg.corporationID,
-						ItemID:        itemID,
-						Name:          name,
-					})
-				},
 				modifyAssetName,
+				logAttr,
+			)
+			if err != nil {
+				return false, err
+			}
+			err = assetsync.Sync(
+				ctx,
+				assets,
+				names,
+				locationFlagFromESIValue,
+				locationTypeFromESIValue,
+				func(ctx context.Context, items []assetsync.Item) error {
+					return s.st.ReplaceCorporationAssets(ctx, arg.corporationID, xslices.Map(items, func(x assetsync.Item) storage.ReplaceCorporationAssetParams {
+						return storage.ReplaceCorporationAssetParams(x)
+					}))
+				},
 				logAttr,
 			)
 			if err != nil {
@@ -324,11 +290,8 @@ func (s *CorporationService) updateAssetsESI(ctx context.Context, arg corporatio
 }
 
 // modifyAssetName returns the name to store for specific asset types.
-func modifyAssetName(a *app.Asset, name string) string {
-	if a.Type == nil {
-		return name
-	}
-	switch a.Type.ID {
+func modifyAssetName(typeID int64, name string) string {
+	switch typeID {
 	case app.EveTypeCustomsOffice:
 		match := reCustomsOffice.FindStringSubmatch(name)
 		if len(match) < 2 {

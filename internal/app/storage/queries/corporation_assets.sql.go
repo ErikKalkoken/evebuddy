@@ -371,13 +371,14 @@ func (q *Queries) ListCorporationAssets(ctx context.Context, corporationID int64
 const updateCorporationAsset = `-- name: UpdateCorporationAsset :exec
 UPDATE corporation_assets
 SET
-    is_singleton = ?,
-    location_flag = ?,
-    location_id = ?,
-    location_type = ?,
-    quantity = ?
-WHERE corporation_id = ?
-AND item_id = ?
+    is_singleton = ?1,
+    location_flag = ?2,
+    location_id = ?3,
+    location_type = ?4,
+    name = COALESCE(?5, name),
+    quantity = ?6
+WHERE corporation_id = ?7
+AND item_id = ?8
 `
 
 type UpdateCorporationAssetParams struct {
@@ -385,6 +386,7 @@ type UpdateCorporationAssetParams struct {
 	LocationFlag  string
 	LocationID    int64
 	LocationType  string
+	Name          sql.NullString
 	Quantity      int64
 	CorporationID int64
 	ItemID        int64
@@ -396,28 +398,10 @@ func (q *Queries) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporat
 		arg.LocationFlag,
 		arg.LocationID,
 		arg.LocationType,
+		arg.Name,
 		arg.Quantity,
 		arg.CorporationID,
 		arg.ItemID,
 	)
-	return err
-}
-
-const updateCorporationAssetName = `-- name: UpdateCorporationAssetName :exec
-UPDATE corporation_assets
-SET
-    name = ?
-WHERE corporation_id = ?
-AND item_id = ?
-`
-
-type UpdateCorporationAssetNameParams struct {
-	Name          string
-	CorporationID int64
-	ItemID        int64
-}
-
-func (q *Queries) UpdateCorporationAssetName(ctx context.Context, arg UpdateCorporationAssetNameParams) error {
-	_, err := q.db.ExecContext(ctx, updateCorporationAssetName, arg.Name, arg.CorporationID, arg.ItemID)
 	return err
 }
