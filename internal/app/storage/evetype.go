@@ -34,6 +34,39 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 	return createEveType(ctx, st.qRW, arg)
 }
 
+// CreateEveTypeWithDogma stores a new type with all its dogma attributes and effects or nothing.
+// The EveTypeID of attributeArgs and effectArgs is set by this method.
+func (st *Storage) CreateEveTypeWithDogma(ctx context.Context, typeArg CreateEveTypeParams, attributeArgs []CreateEveTypeDogmaAttributeParams, effectArgs []CreateEveTypeDogmaEffectParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateEveTypeWithDogma: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := createEveType(ctx, qtx, typeArg); err != nil {
+		return wrapErr(err)
+	}
+	for _, a := range attributeArgs {
+		a.EveTypeID = typeArg.ID
+		if err := createEveTypeDogmaAttribute(ctx, qtx, a); err != nil {
+			return wrapErr(err)
+		}
+	}
+	for _, e := range effectArgs {
+		e.EveTypeID = typeArg.ID
+		if err := createEveTypeDogmaEffect(ctx, qtx, e); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypeParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("createEveType: %+v: %w", arg, err)
@@ -41,7 +74,7 @@ func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypePar
 	if arg.ID == 0 || arg.GroupID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	arg2 := queries.CreateEveTypeParams{
+	err := q.CreateEveType(ctx, queries.CreateEveTypeParams{
 		ID:             arg.ID,
 		EveGroupID:     arg.GroupID,
 		Capacity:       arg.Capacity.ValueOrZero(),
@@ -56,8 +89,7 @@ func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypePar
 		PortionSize:    arg.PortionSize.ValueOrZero(),
 		Radius:         arg.Radius.ValueOrZero(),
 		Volume:         arg.Volume.ValueOrZero(),
-	}
-	err := q.CreateEveType(ctx, arg2)
+	})
 	if err != nil {
 		return wrapErr(err)
 	}
@@ -74,7 +106,7 @@ func (st *Storage) GetEveType(ctx context.Context, id int64) (*app.EveType, erro
 func (st *Storage) ListEveTypesForIDs(ctx context.Context, ids []int64) ([]*app.EveType, error) {
 	m, err := st.listEveTypesForIDs(ctx, st.qRO, set.Of(ids...))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ListEveTypesForIDs: %d ids: %w", len(ids), err)
 	}
 	oo := make([]*app.EveType, 0, len(ids))
 	for _, id := range ids {
@@ -200,7 +232,7 @@ func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
 func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
 	if err != nil {
-		return set.Set[int64]{}, err
+		return set.Set[int64]{}, fmt.Errorf("MissingEveTypes: %d ids: %w", ids.Size(), err)
 	}
 	current := set.Collect(slices.Values(currentIDs))
 	missing := set.Difference(ids, current)

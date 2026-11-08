@@ -15,17 +15,23 @@ type CreateEveTypeDogmaEffectParams struct {
 }
 
 func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTypeDogmaEffectParams) error {
-	if arg.DogmaEffectID == 0 || arg.EveTypeID == 0 {
-		return fmt.Errorf("CreateEveTypeDogmaEffect: %+v: %w", arg, app.ErrInvalid)
+	return createEveTypeDogmaEffect(ctx, st.qRW, arg)
+}
+
+func createEveTypeDogmaEffect(ctx context.Context, q *queries.Queries, arg CreateEveTypeDogmaEffectParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("createEveTypeDogmaEffect: %+v: %w", arg, err)
 	}
-	arg2 := queries.CreateEveTypeDogmaEffectParams{
+	if arg.DogmaEffectID == 0 || arg.EveTypeID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	err := q.CreateEveTypeDogmaEffect(ctx, queries.CreateEveTypeDogmaEffectParams{
 		DogmaEffectID: arg.DogmaEffectID,
 		EveTypeID:     arg.EveTypeID,
 		IsDefault:     arg.IsDefault,
-	}
-	err := st.qRW.CreateEveTypeDogmaEffect(ctx, arg2)
+	})
 	if err != nil {
-		return fmt.Errorf("CreateEveTypeDogmaEffect: %+v: %w", arg, err)
+		return wrapErr(err)
 	}
 	return nil
 }
