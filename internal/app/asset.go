@@ -428,14 +428,15 @@ func (ca Asset) Unwrap() Asset {
 	return ca
 }
 
-func (ca Asset) CanHaveName() bool {
-	if !ca.IsSingleton {
+// AssetCanHaveName reports whether an asset can be given a name in game.
+func AssetCanHaveName(isSingleton bool, t *EveType) bool {
+	if !isSingleton {
 		return false
 	}
-	if ca.Type == nil {
+	if t == nil {
 		return false
 	}
-	switch ca.Type.Group.Category.ID {
+	switch t.Group.Category.ID {
 	case
 		EveCategoryDeployable,
 		EveCategoryOrbitals,
@@ -444,7 +445,7 @@ func (ca Asset) CanHaveName() bool {
 		EveCategoryStructure:
 		return true
 	}
-	switch ca.Type.Group.ID {
+	switch t.Group.ID {
 	case
 		EveGroupAuditLogSecureContainer,
 		EveGroupBiomass,

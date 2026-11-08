@@ -162,8 +162,7 @@ func ResolveNames(
 		if !found {
 			continue
 		}
-		a := app.Asset{IsSingleton: x.IsSingleton, Type: et}
-		if a.CanHaveName() {
+		if app.AssetCanHaveName(x.IsSingleton, et) {
 			candidates[x.ItemId] = x.TypeId
 		} else {
 			result[x.ItemId] = ""
