@@ -592,20 +592,18 @@ func TestCalculateAssetValueByDivision(t *testing.T) {
 }
 
 func TestModifyAssetName(t *testing.T) {
-	customsOffice := &app.EveType{ID: app.EveTypeCustomsOffice}
 	for _, tc := range []struct {
-		name  string
-		typ   *app.EveType
-		input string
-		want  string
+		name   string
+		typeID int64
+		input  string
+		want   string
 	}{
-		{"extracts planet from customs office", customsOffice, "Customs Office (Sirikur VII)", "Sirikur VII"},
-		{"keeps customs office name with other format", customsOffice, "Bravo", "Bravo"},
-		{"keeps name of other types", &app.EveType{ID: 42}, "Customs Office (Sirikur VII)", "Customs Office (Sirikur VII)"},
-		{"keeps name without type", nil, "Alpha", "Alpha"},
+		{"extracts planet from customs office", app.EveTypeCustomsOffice, "Customs Office (Sirikur VII)", "Sirikur VII"},
+		{"keeps customs office name with other format", app.EveTypeCustomsOffice, "Bravo", "Bravo"},
+		{"keeps name of other types", 42, "Customs Office (Sirikur VII)", "Customs Office (Sirikur VII)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := modifyAssetName(&app.Asset{Type: tc.typ}, tc.input)
+			got := modifyAssetName(tc.typeID, tc.input)
 			xassert.Equal(t, tc.want, got)
 		})
 	}

@@ -159,8 +159,7 @@ func TestAssetCanHaveName(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ca := app.Asset{IsSingleton: tc.IsSingleton, Type: tc.Type}
-			xassert.Equal(t, tc.want, ca.CanHaveName())
+			xassert.Equal(t, tc.want, app.AssetCanHaveName(tc.IsSingleton, tc.Type))
 		})
 	}
 }

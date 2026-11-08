@@ -94,19 +94,12 @@ WHERE
 -- name: UpdateCharacterAsset :exec
 UPDATE character_assets
 SET
-    is_singleton = ?,
-    location_flag = ?,
-    location_id = ?,
-    location_type = ?,
-    quantity = ?
+    is_singleton = sqlc.arg(is_singleton),
+    location_flag = sqlc.arg(location_flag),
+    location_id = sqlc.arg(location_id),
+    location_type = sqlc.arg(location_type),
+    name = COALESCE(sqlc.narg(name), name),
+    quantity = sqlc.arg(quantity)
 WHERE
-    character_id = ?
-    AND item_id = ?;
-
--- name: UpdateCharacterAssetName :exec
-UPDATE character_assets
-SET
-    name = ?
-WHERE
-    character_id = ?
-    AND item_id = ?;
+    character_id = sqlc.arg(character_id)
+    AND item_id = sqlc.arg(item_id);

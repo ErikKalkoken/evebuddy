@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
@@ -27,6 +28,10 @@ type CreateCorporationAssetParams struct {
 }
 
 func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorporationAssetParams) error {
+	return createCorporationAsset(ctx, st.qRW, arg)
+}
+
+func createCorporationAsset(ctx context.Context, q *queries.Queries, arg CreateCorporationAssetParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCorporationAsset: %+v, %w", arg, err)
 	}
@@ -36,7 +41,7 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 	if !isValidLocationFlag(app.CorporationLocationFlags, arg.LocationFlag) {
 		return wrapErr(app.ErrInvalid)
 	}
-	if err := st.qRW.CreateCorporationAsset(ctx, queries.CreateCorporationAssetParams{
+	if err := q.CreateCorporationAsset(ctx, queries.CreateCorporationAssetParams{
 		CorporationID:   arg.CorporationID,
 		EveTypeID:       arg.EveTypeID,
 		IsBlueprintCopy: arg.IsBlueprintCopy.ValueOrZero(),
@@ -53,9 +58,40 @@ func (st *Storage) CreateCorporationAsset(ctx context.Context, arg CreateCorpora
 	return nil
 }
 
-func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID int64, itemIDs set.Set[int64]) error {
+func (st *Storage) deleteCorporationAssets(ctx context.Context, q *queries.Queries, corporationID int64, itemIDs set.Set[int64]) error {
+	// chunks keep queries below SQLite's limit for variables
+	for idsChunk := range slices.Chunk(slices.Collect(itemIDs.All()), st.MaxIDsPerQuery) {
+		err := q.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
+			CorporationID: corporationID,
+			ItemIds:       idsChunk,
+		})
+		if err != nil {
+			return fmt.Errorf("delete %d corporation assets: %w", len(idsChunk), err)
+		}
+	}
+	return nil
+}
+
+type ReplaceCorporationAssetParams struct {
+	IsBlueprintCopy optional.Optional[bool]
+	IsSingleton     bool
+	ItemID          int64
+	LocationFlag    app.LocationFlag
+	LocationID      int64
+	LocationType    app.LocationType
+	Name            optional.Optional[string] // empty keeps the stored name
+	Quantity        int64
+	TypeID          int64
+}
+
+// ReplaceCorporationAssets replaces all stored assets of a corporation with args.
+// Existing assets keep their stored name when an arg has no name.
+func (st *Storage) ReplaceCorporationAssets(ctx context.Context, corporationID int64, args []ReplaceCorporationAssetParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationAssets: %d: %w", corporationID, err)
+		return fmt.Errorf("ReplaceCorporationAssets: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
@@ -63,19 +99,57 @@ func (st *Storage) DeleteCorporationAssets(ctx context.Context, corporationID in
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	// chunks keep queries below SQLite's limit for variables
-	for idsChunk := range slices.Chunk(slices.Collect(itemIDs.All()), st.MaxIDsPerQuery) {
-		err := qtx.DeleteCorporationAssets(ctx, queries.DeleteCorporationAssetsParams{
-			CorporationID: corporationID,
-			ItemIds:       idsChunk,
-		})
-		if err != nil {
-			return wrapErr(err)
+	ids, err := qtx.ListCorporationAssetIDs(ctx, corporationID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	stored := set.Collect(slices.Values(ids))
+	obsolete := stored.Clone()
+	var created, updated int
+	for _, arg := range args {
+		obsolete.Delete(arg.ItemID)
+		if stored.Contains(arg.ItemID) {
+			err := updateCorporationAsset(ctx, qtx, UpdateCorporationAssetParams{
+				CorporationID: corporationID,
+				IsSingleton:   arg.IsSingleton,
+				ItemID:        arg.ItemID,
+				LocationFlag:  arg.LocationFlag,
+				LocationID:    arg.LocationID,
+				LocationType:  arg.LocationType,
+				Name:          arg.Name,
+				Quantity:      arg.Quantity,
+			})
+			if err != nil {
+				return wrapErr(err)
+			}
+			updated++
+		} else {
+			err := createCorporationAsset(ctx, qtx, CreateCorporationAssetParams{
+				CorporationID:   corporationID,
+				EveTypeID:       arg.TypeID,
+				IsBlueprintCopy: arg.IsBlueprintCopy,
+				IsSingleton:     arg.IsSingleton,
+				ItemID:          arg.ItemID,
+				LocationFlag:    arg.LocationFlag,
+				LocationID:      arg.LocationID,
+				LocationType:    arg.LocationType,
+				Name:            arg.Name.ValueOrZero(),
+				Quantity:        arg.Quantity,
+			})
+			if err != nil {
+				return wrapErr(err)
+			}
+			stored.Add(arg.ItemID)
+			created++
 		}
+	}
+	if err := st.deleteCorporationAssets(ctx, qtx, corporationID, obsolete); err != nil {
+		return wrapErr(err)
 	}
 	if err := tx.Commit(); err != nil {
 		return wrapErr(err)
 	}
+	slog.Info("Stored corporation assets", "corporationID", corporationID, "created", created, "updated", updated, "deleted", obsolete.Size())
 	return nil
 }
 
@@ -123,10 +197,11 @@ type UpdateCorporationAssetParams struct {
 	LocationFlag  app.LocationFlag
 	LocationID    int64
 	LocationType  app.LocationType
+	Name          optional.Optional[string] // empty keeps the stored name
 	Quantity      int64
 }
 
-func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorporationAssetParams) error {
+func updateCorporationAsset(ctx context.Context, q *queries.Queries, arg UpdateCorporationAssetParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
 	}
@@ -136,37 +211,15 @@ func (st *Storage) UpdateCorporationAsset(ctx context.Context, arg UpdateCorpora
 	if !isValidLocationFlag(app.CorporationLocationFlags, arg.LocationFlag) {
 		return wrapErr(app.ErrInvalid)
 	}
-	if err := st.qRW.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
+	if err := q.UpdateCorporationAsset(ctx, queries.UpdateCorporationAssetParams{
 		CorporationID: arg.CorporationID,
 		IsSingleton:   arg.IsSingleton,
 		ItemID:        arg.ItemID,
 		LocationFlag:  locationFlagToDBValue[arg.LocationFlag],
 		LocationID:    arg.LocationID,
 		LocationType:  locationTypeToDBValue[arg.LocationType],
+		Name:          optional.ToNullString(arg.Name),
 		Quantity:      arg.Quantity,
-	}); err != nil {
-		return wrapErr(err)
-	}
-	return nil
-}
-
-type UpdateCorporationAssetNameParams struct {
-	CorporationID int64
-	ItemID        int64
-	Name          string
-}
-
-func (st *Storage) UpdateCorporationAssetName(ctx context.Context, arg UpdateCorporationAssetNameParams) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("update corporation asset %+v, %w", arg, err)
-	}
-	if arg.CorporationID == 0 || arg.ItemID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if err := st.qRW.UpdateCorporationAssetName(ctx, queries.UpdateCorporationAssetNameParams{
-		CorporationID: arg.CorporationID,
-		ItemID:        arg.ItemID,
-		Name:          arg.Name,
 	}); err != nil {
 		return wrapErr(err)
 	}

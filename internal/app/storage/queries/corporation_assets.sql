@@ -82,17 +82,11 @@ WHERE
 -- name: UpdateCorporationAsset :exec
 UPDATE corporation_assets
 SET
-    is_singleton = ?,
-    location_flag = ?,
-    location_id = ?,
-    location_type = ?,
-    quantity = ?
-WHERE corporation_id = ?
-AND item_id = ?;
-
--- name: UpdateCorporationAssetName :exec
-UPDATE corporation_assets
-SET
-    name = ?
-WHERE corporation_id = ?
-AND item_id = ?;
+    is_singleton = sqlc.arg(is_singleton),
+    location_flag = sqlc.arg(location_flag),
+    location_id = sqlc.arg(location_id),
+    location_type = sqlc.arg(location_type),
+    name = COALESCE(sqlc.narg(name), name),
+    quantity = sqlc.arg(quantity)
+WHERE corporation_id = sqlc.arg(corporation_id)
+AND item_id = sqlc.arg(item_id);

@@ -7,7 +7,6 @@ package assetsync
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"maps"
 	"slices"
@@ -51,6 +50,7 @@ type Item struct {
 	LocationFlag    app.LocationFlag
 	LocationID      int64
 	LocationType    app.LocationType
+	Name            optional.Optional[string] // empty keeps the stored name
 	Quantity        int64
 	TypeID          int64
 }
@@ -105,132 +105,92 @@ func parse(a ESIAsset, flags map[string]app.LocationFlag, types map[string]app.L
 	}
 }
 
-// Sync creates and updates assets from ESI and deletes stored assets which are missing in ESI.
-// currentIDs are the IDs of the stored assets.
-// flags and types hold the location values which ESI defines for the owner of the assets.
-// The related types and locations of assets must already have been added.
-//
-// The callbacks do the owner specific work.
+// Sync replaces the stored assets with assets from ESI.
+// Assets missing in names keep their stored names.
+// Of duplicate assets only the last one is kept.
+// Related types and locations must exist.
 func Sync(
 	ctx context.Context,
 	assets []ESIAsset,
-	currentIDs set.Set[int64],
+	names map[int64]string,
 	flags map[string]app.LocationFlag,
 	types map[string]app.LocationType,
-	create func(ctx context.Context, item Item) error,
-	update func(ctx context.Context, item Item) error,
-	deleteAssets func(ctx context.Context, ids set.Set[int64]) error,
+	replace func(ctx context.Context, items []Item) error,
 	logAttr slog.Attr,
 ) error {
-	var updated, created int
+	items := make([]Item, 0, len(assets))
+	index := make(map[int64]int, len(assets))
+	var duplicates int
 	for _, a := range assets {
 		item := parse(a, flags, types, logAttr)
-		if currentIDs.Contains(a.ItemId) {
-			if err := update(ctx, item); err != nil {
-				return err
-			}
-			updated++
-		} else {
-			if err := create(ctx, item); err != nil {
-				return err
-			}
-			created++
+		if name, ok := names[a.ItemId]; ok {
+			item.Name = optional.New(name)
 		}
-	}
-	slog.Info("Stored assets", logAttr, "created", created, "updated", updated)
-
-	if ids := set.Difference(currentIDs, itemIDs(assets)); ids.Size() > 0 {
-		if err := deleteAssets(ctx, ids); err != nil {
-			return err
+		if i, found := index[a.ItemId]; found {
+			items[i] = item // pages can shift while being fetched
+			duplicates++
+			continue
 		}
-		slog.Info("Deleted obsolete assets", logAttr, "count", ids.Size())
+		index[a.ItemId] = len(items)
+		items = append(items, item)
 	}
-	return nil
+	if duplicates > 0 {
+		slog.Warn("Duplicate assets received from ESI", logAttr, "count", duplicates)
+	}
+	return replace(ctx, items)
 }
 
-// SyncNames updates the names of stored assets from ESI.
-// Assets which can't have a name lose their stored name.
-// When fetching names fails, the affected assets keep their stored names,
-// and are fetched again the next time assets are processed.
-// That can take a while, because assets are only processed
-// when their ESI data has changed or an update is forced.
-//
-// The callbacks do the owner specific work.
-// fetch returns the names for up to [namesMaxIDs] assets.
-// adjustName is optional and returns the name to store for an asset.
-func SyncNames(
+// ResolveNames returns the names to store for assets by item ID.
+// Assets which can't have a name get "". Assets not fetched are left out and keep their stored names.
+// Fetching stops at the first failed request. adjustName is optional.
+func ResolveNames(
 	ctx context.Context,
-	assets []*app.Asset,
+	assets []ESIAsset,
+	eveTypes []*app.EveType,
 	fetch func(ctx context.Context, ids []int64) ([]ESIAssetName, error),
-	updateName func(ctx context.Context, itemID int64, name string) error,
-	adjustName func(a *app.Asset, name string) string,
+	adjustName func(typeID int64, name string) string,
 	logAttr slog.Attr,
-) error {
-	current := make(map[int64]string)
-	for _, a := range assets {
-		if a.CanHaveName() {
-			current[a.ItemID] = a.Name
-		} else if a.Name != "" {
-			if err := updateName(ctx, a.ItemID, ""); err != nil {
-				return err
-			}
-		}
-	}
-	names, err := fetchNames(ctx, slices.Collect(maps.Keys(current)), fetch)
-	if err != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		// We can live without these names for now.
-		slog.Warn("Failed to fetch asset names", logAttr, "err", err)
-	}
-	slog.Debug("Received asset names from ESI", logAttr, "count", len(names))
-
-	if adjustName != nil {
-		for _, a := range assets {
-			if name, ok := names[a.ItemID]; ok {
-				names[a.ItemID] = adjustName(a, name)
-			}
-		}
-	}
-	for id, name := range names {
-		if current[id] == name {
-			continue
-		}
-		if err := updateName(ctx, id, name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// fetchNames returns the names of assets from ESI.
-// The result contains all IDs that ESI has answered for, with an empty name for assets without a name.
-// IDs from failed requests are left out and reported in the error.
-func fetchNames(
-	ctx context.Context,
-	ids []int64,
-	fetch func(ctx context.Context, ids []int64) ([]ESIAssetName, error),
 ) (map[int64]string, error) {
-	m := make(map[int64]string)
-	var errs []error
-	for chunk := range slices.Chunk(ids, namesMaxIDs) {
-		names, err := fetch(ctx, chunk)
-		if err != nil {
-			errs = append(errs, err)
-			if ctx.Err() != nil {
-				break
-			}
+	typeByID := make(map[int64]*app.EveType, len(eveTypes))
+	for _, et := range eveTypes {
+		typeByID[et.ID] = et
+	}
+	result := make(map[int64]string)
+	candidates := make(map[int64]int64) // item ID -> type ID
+	for _, x := range assets {
+		et, found := typeByID[x.TypeId]
+		if !found {
 			continue
 		}
-		for _, id := range chunk {
-			m[id] = ""
+		if app.AssetCanHaveName(x.IsSingleton, et) {
+			candidates[x.ItemId] = x.TypeId
+		} else {
+			result[x.ItemId] = ""
 		}
+	}
+	for ids := range slices.Chunk(slices.Sorted(maps.Keys(candidates)), namesMaxIDs) {
+		names, err := fetch(ctx, ids)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			// Further requests would likely fail too. We can live without these names for now.
+			slog.Warn("Failed to fetch asset names", logAttr, "err", err)
+			break
+		}
+		received := make(map[int64]string)
 		for _, n := range names {
 			if n.Name != "None" {
-				m[n.ItemId] = n.Name
+				received[n.ItemId] = n.Name
 			}
 		}
+		for _, id := range ids {
+			name := received[id] // assets without a name are missing or "None"
+			if adjustName != nil {
+				name = adjustName(candidates[id], name)
+			}
+			result[id] = name
+		}
 	}
-	return m, errors.Join(errs...)
+	return result, nil
 }

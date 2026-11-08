@@ -47,79 +47,145 @@ func TestExtractIDs(t *testing.T) {
 
 func TestSync(t *testing.T) {
 	ctx := context.Background()
-	noCreate := func(context.Context, assetsync.Item) error {
-		t.Fatal("create should not be called")
-		return nil
-	}
-	noUpdate := func(context.Context, assetsync.Item) error {
-		t.Fatal("update should not be called")
-		return nil
-	}
-	noDelete := func(context.Context, set.Set[int64]) error {
-		t.Fatal("delete should not be called")
-		return nil
-	}
-	t.Run("creates new assets with parsed values", func(t *testing.T) {
+	t.Run("replaces assets with parsed values", func(t *testing.T) {
+		// given
 		isCopy := true
 		var got []assetsync.Item
+		// when
 		err := assetsync.Sync(
 			ctx,
-			[]assetsync.ESIAsset{{
-				IsBlueprintCopy: &isCopy,
+			[]assetsync.ESIAsset{
+				{
+					IsBlueprintCopy: &isCopy,
+					IsSingleton:     true,
+					ItemId:          1,
+					LocationFlag:    "Hangar",
+					LocationId:      100,
+					LocationType:    "station",
+					Quantity:        1,
+					TypeId:          10,
+				},
+				{
+					ItemId:       2,
+					LocationFlag: "Hangar",
+					LocationId:   1,
+					LocationType: "item",
+					Quantity:     5,
+					TypeId:       20,
+				},
+			},
+			map[int64]string{1: "Alpha"},
+			flags,
+			types,
+			func(_ context.Context, items []assetsync.Item) error {
+				got = items
+				return nil
+			},
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, []assetsync.Item{
+			{
+				IsBlueprintCopy: optional.New(true),
 				IsSingleton:     true,
-				ItemId:          1,
-				LocationFlag:    "Hangar",
-				LocationId:      100,
-				LocationType:    "station",
+				ItemID:          1,
+				LocationFlag:    app.FlagHangar,
+				LocationID:      100,
+				LocationType:    app.TypeStation,
+				Name:            optional.New("Alpha"),
 				Quantity:        1,
-				TypeId:          10,
-			}},
-			set.Set[int64]{},
-			flags,
-			types,
-			func(_ context.Context, item assetsync.Item) error {
-				got = append(got, item)
-				return nil
+				TypeID:          10,
 			},
-			noUpdate,
-			noDelete,
-			logAttr,
-		)
-		require.NoError(t, err)
-		xassert.Equal(t, []assetsync.Item{{
-			IsBlueprintCopy: optional.New(true),
-			IsSingleton:     true,
-			ItemID:          1,
-			LocationFlag:    app.FlagHangar,
-			LocationID:      100,
-			LocationType:    app.TypeStation,
-			Quantity:        1,
-			TypeID:          10,
-		}}, got)
+			{
+				ItemID:       2,
+				LocationFlag: app.FlagHangar,
+				LocationID:   1,
+				LocationType: app.TypeItem,
+				Quantity:     5,
+				TypeID:       20,
+			},
+		}, got)
 	})
-	t.Run("updates existing assets and deletes obsolete ones", func(t *testing.T) {
-		var updated []int64
-		var deleted set.Set[int64]
+	t.Run("sets or keeps names", func(t *testing.T) {
+		for _, tc := range []struct {
+			name  string
+			names map[int64]string
+			want  optional.Optional[string]
+		}{
+			{name: "set", names: map[int64]string{1: "Alpha"}, want: optional.New("Alpha")},
+			{name: "clear", names: map[int64]string{1: ""}, want: optional.New("")},
+			{name: "keep", names: map[int64]string{}, want: optional.Optional[string]{}},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				var got assetsync.Item
+				// when
+				err := assetsync.Sync(
+					ctx,
+					[]assetsync.ESIAsset{{ItemId: 1, LocationFlag: "Hangar"}},
+					tc.names,
+					flags,
+					types,
+					func(_ context.Context, items []assetsync.Item) error {
+						got = items[0]
+						return nil
+					},
+					logAttr,
+				)
+				// then
+				require.NoError(t, err)
+				xassert.Equal(t, tc.want, got.Name)
+			})
+		}
+	})
+	t.Run("keeps the last copy of duplicate assets", func(t *testing.T) {
+		// given
+		var got []assetsync.Item
+		// when
 		err := assetsync.Sync(
 			ctx,
-			[]assetsync.ESIAsset{{ItemId: 1, LocationFlag: "Hangar"}},
-			set.Of[int64](1, 2),
+			[]assetsync.ESIAsset{
+				{ItemId: 1, LocationFlag: "Hangar", Quantity: 3},
+				{ItemId: 2, LocationFlag: "Hangar", Quantity: 4},
+				{ItemId: 1, LocationFlag: "Hangar", Quantity: 5},
+			},
+			nil,
 			flags,
 			types,
-			noCreate,
-			func(_ context.Context, item assetsync.Item) error {
-				updated = append(updated, item.ItemID)
-				return nil
-			},
-			func(_ context.Context, ids set.Set[int64]) error {
-				deleted = ids
+			func(_ context.Context, items []assetsync.Item) error {
+				got = items
 				return nil
 			},
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
-		xassert.Equal(t, []int64{1}, updated)
-		xassert.Equal(t, set.Of[int64](2), deleted)
+		xassert.Equal(t, []assetsync.Item{
+			{ItemID: 1, LocationFlag: app.FlagHangar, Quantity: 5},
+			{ItemID: 2, LocationFlag: app.FlagHangar, Quantity: 4},
+		}, got)
+	})
+	t.Run("replaces with no items when ESI has no assets", func(t *testing.T) {
+		// given
+		var called bool
+		// when
+		err := assetsync.Sync(
+			ctx,
+			nil,
+			nil,
+			flags,
+			types,
+			func(_ context.Context, items []assetsync.Item) error {
+				called = true
+				xassert.Equal(t, 0, len(items))
+				return nil
+			},
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		assert.True(t, called)
 	})
 	t.Run("maps location values", func(t *testing.T) {
 		for _, tc := range []struct {
@@ -139,21 +205,22 @@ func TestSync(t *testing.T) {
 			{"flag of other owner", "CorpSAG1", "station", app.FlagUnknown, app.TypeStation},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
+				// given
 				var got assetsync.Item
+				// when
 				err := assetsync.Sync(
 					ctx,
 					[]assetsync.ESIAsset{{ItemId: 1, LocationFlag: tc.flag, LocationType: tc.locationType}},
-					set.Set[int64]{},
+					nil,
 					flags,
 					types,
-					func(_ context.Context, item assetsync.Item) error {
-						got = item
+					func(_ context.Context, items []assetsync.Item) error {
+						got = items[0]
 						return nil
 					},
-					noUpdate,
-					noDelete,
 					logAttr,
 				)
+				// then
 				require.NoError(t, err)
 				xassert.Equal(t, tc.wantFlag, got.LocationFlag)
 				xassert.Equal(t, tc.wantType, got.LocationType)
@@ -163,60 +230,57 @@ func TestSync(t *testing.T) {
 	t.Run("corrects quantity of singletons", func(t *testing.T) {
 		for _, tc := range []struct {
 			name         string
-			existing     bool
 			singleton    bool
 			quantity     int64
 			wantQuantity int64
 		}{
-			{name: "new singleton", singleton: true, quantity: 5, wantQuantity: 1},
-			{name: "existing singleton", existing: true, singleton: true, quantity: 5, wantQuantity: 1},
-			{name: "new stack", quantity: 5, wantQuantity: 5},
-			{name: "existing stack", existing: true, quantity: 5, wantQuantity: 5},
+			{name: "singleton", singleton: true, quantity: 5, wantQuantity: 1},
+			{name: "stack", quantity: 5, wantQuantity: 5},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				var currentIDs set.Set[int64]
-				if tc.existing {
-					currentIDs.Add(1)
-				}
+				// given
 				var got assetsync.Item
-				store := func(_ context.Context, item assetsync.Item) error {
-					got = item
-					return nil
-				}
+				// when
 				err := assetsync.Sync(
 					ctx,
 					[]assetsync.ESIAsset{{IsSingleton: tc.singleton, ItemId: 1, Quantity: tc.quantity}},
-					currentIDs,
+					nil,
 					flags,
 					types,
-					store,
-					store,
-					noDelete,
+					func(_ context.Context, items []assetsync.Item) error {
+						got = items[0]
+						return nil
+					},
 					logAttr,
 				)
+				// then
 				require.NoError(t, err)
 				xassert.Equal(t, tc.singleton, got.IsSingleton)
 				xassert.Equal(t, tc.wantQuantity, got.Quantity)
 			})
 		}
 	})
-	t.Run("returns errors from callbacks", func(t *testing.T) {
+	t.Run("returns error from replace", func(t *testing.T) {
+		// given
 		wantErr := errors.New("failed")
-		fail := func(context.Context, assetsync.Item) error { return wantErr }
-		ignore := func(context.Context, assetsync.Item) error { return nil }
-		failDelete := func(context.Context, set.Set[int64]) error { return wantErr }
-		assets := []assetsync.ESIAsset{{ItemId: 1}}
-		err := assetsync.Sync(ctx, assets, set.Set[int64]{}, flags, types, fail, noUpdate, noDelete, logAttr)
-		require.ErrorIs(t, err, wantErr)
-		err = assetsync.Sync(ctx, assets, set.Of[int64](1), flags, types, noCreate, fail, noDelete, logAttr)
-		require.ErrorIs(t, err, wantErr)
-		err = assetsync.Sync(ctx, assets, set.Of[int64](1, 2), flags, types, noCreate, ignore, failDelete, logAttr)
+		// when
+		err := assetsync.Sync(
+			ctx,
+			[]assetsync.ESIAsset{{ItemId: 1}},
+			nil,
+			flags,
+			types,
+			func(context.Context, []assetsync.Item) error { return wantErr },
+			logAttr,
+		)
+		// then
 		require.ErrorIs(t, err, wantErr)
 	})
 }
 
-func TestSyncNames(t *testing.T) {
+func TestResolveNames(t *testing.T) {
 	ctx := context.Background()
+	eveTypes := []*app.EveType{ship}
 	named := func(context.Context, []int64) ([]assetsync.ESIAssetName, error) {
 		return []assetsync.ESIAssetName{{ItemId: 1, Name: "New Name"}}, nil
 	}
@@ -226,105 +290,201 @@ func TestSyncNames(t *testing.T) {
 	failed := func(context.Context, []int64) ([]assetsync.ESIAssetName, error) {
 		return nil, errors.New("failed")
 	}
+	unrequested := func(context.Context, []int64) ([]assetsync.ESIAssetName, error) {
+		return []assetsync.ESIAssetName{{ItemId: 2, Name: "Other Name"}}, nil
+	}
 	for _, tc := range []struct {
 		name      string
 		singleton bool
-		stored    string
+		typeID    int64
 		fetch     func(context.Context, []int64) ([]assetsync.ESIAssetName, error)
 		want      map[int64]string
 	}{
-		{name: "stores new name", singleton: true, stored: "Old Name", fetch: named, want: map[int64]string{1: "New Name"}},
-		{name: "skips unchanged name", singleton: true, stored: "New Name", fetch: named, want: map[int64]string{}},
-		{name: "clears name when asset can not have one", stored: "Old Name", fetch: named, want: map[int64]string{1: ""}},
-		{name: "clears name when removed in game", singleton: true, stored: "Old Name", fetch: unnamed, want: map[int64]string{1: ""}},
-		{name: "keeps name when request fails", singleton: true, stored: "Old Name", fetch: failed, want: map[int64]string{}},
+		{name: "returns fetched name", singleton: true, typeID: ship.ID, fetch: named, want: map[int64]string{1: "New Name"}},
+		{name: "clears name when asset can not have one", typeID: ship.ID, fetch: named, want: map[int64]string{1: ""}},
+		{name: "clears name when removed in game", singleton: true, typeID: ship.ID, fetch: unnamed, want: map[int64]string{1: ""}},
+		{name: "keeps name when request fails", singleton: true, typeID: ship.ID, fetch: failed, want: map[int64]string{}},
+		{name: "keeps name when type is unknown", singleton: true, typeID: 99, fetch: named, want: map[int64]string{}},
+		{name: "ignores names of assets not requested", singleton: true, typeID: ship.ID, fetch: unrequested, want: map[int64]string{1: ""}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := make(map[int64]string)
-			err := assetsync.SyncNames(
+			// when
+			got, err := assetsync.ResolveNames(
 				ctx,
-				[]*app.Asset{{IsSingleton: tc.singleton, ItemID: 1, Name: tc.stored, Type: ship}},
+				[]assetsync.ESIAsset{{IsSingleton: tc.singleton, ItemId: 1, TypeId: tc.typeID}},
+				eveTypes,
 				tc.fetch,
-				func(_ context.Context, itemID int64, name string) error {
-					got[itemID] = name
-					return nil
-				},
 				nil,
 				logAttr,
 			)
+			// then
 			require.NoError(t, err)
 			xassert.Equal(t, tc.want, got)
 		})
 	}
 	t.Run("only fetches names for assets which can have one", func(t *testing.T) {
+		// given
 		var fetched []int64
-		err := assetsync.SyncNames(
+		// when
+		_, err := assetsync.ResolveNames(
 			ctx,
-			[]*app.Asset{
-				{IsSingleton: true, ItemID: 1, Type: ship},
-				{ItemID: 2, Type: ship},
+			[]assetsync.ESIAsset{
+				{IsSingleton: true, ItemId: 1, TypeId: ship.ID},
+				{ItemId: 2, TypeId: ship.ID},
 			},
+			eveTypes,
 			func(_ context.Context, ids []int64) ([]assetsync.ESIAssetName, error) {
 				fetched = append(fetched, ids...)
 				return nil, nil
 			},
-			func(context.Context, int64, string) error { return nil },
 			nil,
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
 		xassert.Equal(t, []int64{1}, fetched)
 	})
-	t.Run("stores adjusted name", func(t *testing.T) {
-		got := make(map[int64]string)
-		err := assetsync.SyncNames(
+	t.Run("returns adjusted name", func(t *testing.T) {
+		// when
+		got, err := assetsync.ResolveNames(
 			ctx,
-			[]*app.Asset{{IsSingleton: true, ItemID: 1, Name: "Old Name", Type: ship}},
+			[]assetsync.ESIAsset{{IsSingleton: true, ItemId: 1, TypeId: ship.ID}},
+			eveTypes,
 			named,
-			func(_ context.Context, itemID int64, name string) error {
-				got[itemID] = name
-				return nil
-			},
-			func(a *app.Asset, name string) string {
-				xassert.Equal(t, 1, a.ItemID)
+			func(typeID int64, name string) string {
+				xassert.Equal(t, ship.ID, typeID)
 				return "Adjusted " + name
 			},
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
 		xassert.Equal(t, map[int64]string{1: "Adjusted New Name"}, got)
 	})
+	t.Run("fetches names in batches", func(t *testing.T) {
+		// given
+		assets := make([]assetsync.ESIAsset, 1000) // needs two requests
+		for i := range assets {
+			assets[i] = assetsync.ESIAsset{IsSingleton: true, ItemId: int64(i + 1), TypeId: ship.ID}
+		}
+		var requests int
+		// when
+		got, err := assetsync.ResolveNames(
+			ctx,
+			assets,
+			eveTypes,
+			func(_ context.Context, ids []int64) ([]assetsync.ESIAssetName, error) {
+				requests++
+				assert.LessOrEqual(t, len(ids), 999)
+				return []assetsync.ESIAssetName{{ItemId: 1, Name: "Alpha"}}, nil
+			},
+			nil,
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 2, requests)
+		assert.Len(t, got, 1000)
+		xassert.Equal(t, "Alpha", got[1])
+		xassert.Equal(t, "", got[1000])
+	})
+	t.Run("stops at the first failed request", func(t *testing.T) {
+		// given
+		assets := make([]assetsync.ESIAsset, 1000) // needs two requests
+		for i := range assets {
+			assets[i] = assetsync.ESIAsset{IsSingleton: true, ItemId: int64(i + 1), TypeId: ship.ID}
+		}
+		var requests int
+		// when
+		got, err := assetsync.ResolveNames(
+			ctx,
+			assets,
+			eveTypes,
+			func(_ context.Context, _ []int64) ([]assetsync.ESIAssetName, error) {
+				requests++
+				return nil, errors.New("failed")
+			},
+			nil,
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 1, requests)
+		assert.Empty(t, got)
+	})
+	t.Run("keeps names fetched before a failed request", func(t *testing.T) {
+		// given
+		assets := make([]assetsync.ESIAsset, 1000) // needs two requests
+		for i := range assets {
+			assets[i] = assetsync.ESIAsset{IsSingleton: true, ItemId: int64(i + 1), TypeId: ship.ID}
+		}
+		var requests int
+		// when
+		got, err := assetsync.ResolveNames(
+			ctx,
+			assets,
+			eveTypes,
+			func(_ context.Context, _ []int64) ([]assetsync.ESIAssetName, error) {
+				requests++
+				if requests == 2 {
+					return nil, errors.New("failed")
+				}
+				return []assetsync.ESIAssetName{{ItemId: 1, Name: "Alpha"}}, nil
+			},
+			nil,
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		assert.Len(t, got, 999)
+		xassert.Equal(t, "Alpha", got[1])
+		assert.NotContains(t, got, int64(1000))
+	})
+	t.Run("makes no requests when no asset can have a name", func(t *testing.T) {
+		// when
+		got, err := assetsync.ResolveNames(
+			ctx,
+			[]assetsync.ESIAsset{{ItemId: 1, TypeId: ship.ID}},
+			eveTypes,
+			func(context.Context, []int64) ([]assetsync.ESIAssetName, error) {
+				t.Fatal("fetch should not be called")
+				return nil, nil
+			},
+			nil,
+			logAttr,
+		)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]string{1: ""}, got)
+	})
 	t.Run("returns error when context is canceled while fetching", func(t *testing.T) {
+		// given
 		var logs bytes.Buffer
 		defer slog.SetDefault(slog.Default())
 		slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		err := assetsync.SyncNames(
+		assets := make([]assetsync.ESIAsset, 1000) // needs two requests
+		for i := range assets {
+			assets[i] = assetsync.ESIAsset{IsSingleton: true, ItemId: int64(i + 1), TypeId: ship.ID}
+		}
+		var requests int
+		// when
+		_, err := assetsync.ResolveNames(
 			ctx,
-			[]*app.Asset{{IsSingleton: true, ItemID: 1, Name: "Old Name", Type: ship}},
+			assets,
+			eveTypes,
 			func(context.Context, []int64) ([]assetsync.ESIAssetName, error) {
+				requests++
 				cancel()
 				return nil, context.Canceled
-			},
-			func(context.Context, int64, string) error {
-				t.Fatal("updateName should not be called")
-				return nil
 			},
 			nil,
 			logAttr,
 		)
+		// then
 		require.ErrorIs(t, err, context.Canceled)
+		xassert.Equal(t, 1, requests)
 		assert.NotContains(t, logs.String(), "Failed to fetch asset names")
-	})
-	t.Run("returns errors from updateName", func(t *testing.T) {
-		wantErr := errors.New("failed")
-		fail := func(context.Context, int64, string) error { return wantErr }
-		// when storing a fetched name
-		err := assetsync.SyncNames(ctx, []*app.Asset{{IsSingleton: true, ItemID: 1, Type: ship}}, named, fail, nil, logAttr)
-		require.ErrorIs(t, err, wantErr)
-		// when clearing a stored name
-		err = assetsync.SyncNames(ctx, []*app.Asset{{ItemID: 1, Name: "Old Name", Type: ship}}, named, fail, nil, logAttr)
-		require.ErrorIs(t, err, wantErr)
 	})
 }
