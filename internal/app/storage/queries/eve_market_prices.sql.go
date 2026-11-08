@@ -107,7 +107,7 @@ func (q *Queries) ListEveMarketPrices(ctx context.Context) ([]EveMarketPrice, er
 	return items, nil
 }
 
-const updateOrCreateEveMarketPrice = `-- name: UpdateOrCreateEveMarketPrice :one
+const updateOrCreateEveMarketPrice = `-- name: UpdateOrCreateEveMarketPrice :exec
 INSERT INTO
     eve_market_prices (type_id, adjusted_price, average_price)
 VALUES
@@ -116,8 +116,6 @@ ON CONFLICT (type_id) DO UPDATE
 SET
     adjusted_price = ?2,
     average_price = ?3
-RETURNING
-    type_id, adjusted_price, average_price
 `
 
 type UpdateOrCreateEveMarketPriceParams struct {
@@ -126,9 +124,7 @@ type UpdateOrCreateEveMarketPriceParams struct {
 	AveragePrice  float64
 }
 
-func (q *Queries) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateOrCreateEveMarketPriceParams) (EveMarketPrice, error) {
-	row := q.db.QueryRowContext(ctx, updateOrCreateEveMarketPrice, arg.TypeID, arg.AdjustedPrice, arg.AveragePrice)
-	var i EveMarketPrice
-	err := row.Scan(&i.TypeID, &i.AdjustedPrice, &i.AveragePrice)
-	return i, err
+func (q *Queries) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateOrCreateEveMarketPriceParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveMarketPrice, arg.TypeID, arg.AdjustedPrice, arg.AveragePrice)
+	return err
 }
