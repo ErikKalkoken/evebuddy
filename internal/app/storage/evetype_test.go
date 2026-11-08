@@ -60,6 +60,62 @@ func TestEveType(t *testing.T) {
 		xassert.EqualOptional(t, 10.0, x.Volume)
 		xassert.Equal(t, g, x.Group)
 	})
+	t.Run("can create new with dogma", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		g := factory.CreateEveGroup()
+		da := factory.CreateEveDogmaAttribute()
+		typeArg := storage.CreateEveTypeParams{
+			ID:      42,
+			GroupID: g.ID,
+			Name:    "name",
+		}
+		attributeArgs := []storage.CreateEveTypeDogmaAttributeParams{
+			{DogmaAttributeID: da.ID, Value: 1.5},
+		}
+		effectArgs := []storage.CreateEveTypeDogmaEffectParams{
+			{DogmaEffectID: 7, IsDefault: true},
+		}
+		// when
+		err := st.CreateEveTypeWithDogma(ctx, typeArg, attributeArgs, effectArgs)
+		// then
+		require.NoError(t, err)
+		x, err := st.GetEveType(ctx, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "name", x.Name)
+		v, err := st.GetEveTypeDogmaAttribute(ctx, 42, da.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 1.5, v)
+		isDefault, err := st.GetEveTypeDogmaEffect(ctx, 42, 7)
+		require.NoError(t, err)
+		xassert.Equal(t, true, isDefault)
+	})
+	t.Run("should store neither type nor dogma when storing an effect fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		g := factory.CreateEveGroup()
+		da := factory.CreateEveDogmaAttribute()
+		typeArg := storage.CreateEveTypeParams{
+			ID:      42,
+			GroupID: g.ID,
+			Name:    "name",
+		}
+		attributeArgs := []storage.CreateEveTypeDogmaAttributeParams{
+			{DogmaAttributeID: da.ID, Value: 1.5},
+		}
+		effectArgs := []storage.CreateEveTypeDogmaEffectParams{
+			{DogmaEffectID: 7, IsDefault: true},
+			{DogmaEffectID: 7, IsDefault: false},
+		}
+		// when
+		err := st.CreateEveTypeWithDogma(ctx, typeArg, attributeArgs, effectArgs)
+		// then
+		require.Error(t, err)
+		_, err = st.GetEveType(ctx, 42)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+		_, err = st.GetEveTypeDogmaAttribute(ctx, 42, da.ID)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 	t.Run("can get existing", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

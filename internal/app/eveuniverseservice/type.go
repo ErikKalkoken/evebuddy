@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xsingleflight"
+	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
@@ -112,85 +113,87 @@ func (s *EVEUniverseService) ListGroupsForCategory(ctx context.Context, category
 	return s.st.ListEveGroupsForCategory(ctx, categoryID)
 }
 
-func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, id int64) (*app.EveType, error) {
-	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateTypeESI-%d", id), func() (*app.EveType, error) {
-		o, err := s.st.GetEveType(ctx, id)
+func (s *EVEUniverseService) GetOrCreateTypeESI(ctx context.Context, typeID int64) (*app.EveType, error) {
+	o, err, _ := xsingleflight.Do(&s.sfg, fmt.Sprintf("GetOrCreateTypeESI-%d", typeID), func() (*app.EveType, error) {
+		o, err := s.st.GetEveType(ctx, typeID)
 		if err == nil {
 			return o, err
-		} else if !errors.Is(err, app.ErrNotFound) {
+		}
+		if !errors.Is(err, app.ErrNotFound) {
 			return nil, err
 		}
-		t, _, err := s.esiClient.UniverseAPI.GetUniverseTypesTypeId(ctx, id).Execute()
+		et, _, err := s.esiClient.UniverseAPI.GetUniverseTypesTypeId(ctx, typeID).Execute()
 		if err != nil {
 			return nil, err
 		}
-		g, err := s.GetOrCreateGroupESI(ctx, t.GroupId)
+		eg, err := s.GetOrCreateGroupESI(ctx, et.GroupId)
 		if err != nil {
 			return nil, err
 		}
-		err = s.st.CreateEveType(ctx, storage.CreateEveTypeParams{
-			ID:             id,
-			GroupID:        g.ID,
-			Capacity:       optional.FromPtr(t.Capacity),
-			Description:    t.Description,
-			GraphicID:      optional.FromPtr(t.GraphicId),
-			IconID:         optional.FromPtr(t.IconId),
-			IsPublished:    t.Published,
-			MarketGroupID:  optional.FromPtr(t.MarketGroupId),
-			Mass:           optional.FromPtr(t.Mass),
-			Name:           t.Name,
-			PackagedVolume: optional.FromPtr(t.PackagedVolume),
-			PortionSize:    optional.FromPtr(t.PortionSize),
-			Radius:         optional.FromPtr(t.Radius),
-			Volume:         optional.FromPtr(t.Volume),
-		})
-		if err != nil {
-			return nil, err
-		}
-		for _, o := range t.DogmaAttributes {
+		var groupIDs, typeIDs set.Set[int64]
+		attributeArgs := make([]storage.CreateEveTypeDogmaAttributeParams, 0, len(et.DogmaAttributes))
+		for _, o := range et.DogmaAttributes {
 			x, err := s.GetOrCreateDogmaAttributeESI(ctx, o.AttributeId)
 			if err != nil {
 				return nil, err
 			}
 			switch x.Unit {
 			case app.EveUnitGroupID:
-				groupID := int64(o.Value)
-				s.tasks.Go(func(ctx context.Context) {
-					_, err := s.GetOrCreateGroupESI(ctx, groupID)
-					if err != nil && !app.IsContextCanceled(ctx, err) {
-						slog.Error("Failed to fetch eve group", "ID", groupID, "err", err)
-					}
-				})
+				groupIDs.Add(int64(o.Value))
 			case app.EveUnitTypeID:
-				typeID := int64(o.Value)
-				s.tasks.Go(func(ctx context.Context) {
-					_, err := s.GetOrCreateTypeESI(ctx, typeID)
-					if err != nil && !app.IsContextCanceled(ctx, err) {
-						slog.Error("Failed to fetch eve type", "ID", typeID, "err", err)
-					}
-				})
+				typeIDs.Add(int64(o.Value))
 			}
-			err = s.st.CreateEveTypeDogmaAttribute(ctx, storage.CreateEveTypeDogmaAttributeParams{
+			attributeArgs = append(attributeArgs, storage.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,
-				EveTypeID:        id,
 				Value:            o.Value,
 			})
-			if err != nil {
-				return nil, err
-			}
 		}
-		for _, o := range t.DogmaEffects {
-			err := s.st.CreateEveTypeDogmaEffect(ctx, storage.CreateEveTypeDogmaEffectParams{
+		effectArgs := xslices.Map(et.DogmaEffects, func(o esi.DogmaDynamicItemsTypeIdItemIdGetDogmaEffectsInner) storage.CreateEveTypeDogmaEffectParams {
+			return storage.CreateEveTypeDogmaEffectParams{
 				DogmaEffectID: o.EffectId,
-				EveTypeID:     id,
 				IsDefault:     o.IsDefault,
-			})
-			if err != nil {
-				return nil, err
 			}
+		})
+		typeArg := storage.CreateEveTypeParams{
+			ID:             typeID,
+			GroupID:        eg.ID,
+			Capacity:       optional.FromPtr(et.Capacity),
+			Description:    et.Description,
+			GraphicID:      optional.FromPtr(et.GraphicId),
+			IconID:         optional.FromPtr(et.IconId),
+			IsPublished:    et.Published,
+			MarketGroupID:  optional.FromPtr(et.MarketGroupId),
+			Mass:           optional.FromPtr(et.Mass),
+			Name:           et.Name,
+			PackagedVolume: optional.FromPtr(et.PackagedVolume),
+			PortionSize:    optional.FromPtr(et.PortionSize),
+			Radius:         optional.FromPtr(et.Radius),
+			Volume:         optional.FromPtr(et.Volume),
 		}
-		slog.Info("Created eve type", "ID", id)
-		return s.st.GetEveType(ctx, id)
+		if err := s.st.CreateEveTypeWithDogma(ctx, typeArg, attributeArgs, effectArgs); err != nil {
+			return nil, err
+		}
+		// Fetch referenced groups and types only for stored types.
+		groupIDs.Delete(0, et.GroupId) // ignore invalid IDs and already fetched objects
+		typeIDs.Delete(0, typeID)
+		for id := range groupIDs.All() {
+			s.tasks.Go(func(ctx context.Context) {
+				_, err := s.GetOrCreateGroupESI(ctx, id)
+				if err != nil && !app.IsContextCanceled(ctx, err) {
+					slog.Error("Failed to fetch eve group", "ID", id, "err", err)
+				}
+			})
+		}
+		for id := range typeIDs.All() {
+			s.tasks.Go(func(ctx context.Context) {
+				_, err := s.GetOrCreateTypeESI(ctx, id)
+				if err != nil && !app.IsContextCanceled(ctx, err) {
+					slog.Error("Failed to fetch eve type", "ID", id, "err", err)
+				}
+			})
+		}
+		slog.Info("Created eve type", "ID", typeID)
+		return s.st.GetEveType(ctx, typeID)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("GetOrCreateTypeESI: %d: %w", typeID, err)

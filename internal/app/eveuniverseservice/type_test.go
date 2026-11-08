@@ -346,6 +346,80 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		assert.True(t, z)
 
 	})
+	t.Run("should not store type when fetching a dogma attribute fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
+		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 161})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/types/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "The Rifter is a...",
+				"dogma_attributes": []map[string]any{
+					{
+						"attribute_id": 161,
+						"value":        11,
+					},
+					{
+						"attribute_id": 162,
+						"value":        12,
+					},
+				},
+				"group_id":  25,
+				"name":      "Rifter",
+				"published": true,
+				"type_id":   587,
+			}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/dogma/attributes/162",
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{
+				"error": "not found",
+			}),
+		)
+		// when
+		_, err := s.GetOrCreateTypeESI(ctx, 587)
+		// then
+		require.Error(t, err)
+		_, err = st.GetEveType(ctx, 587)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("should not store type when storing a dogma effect fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
+		httpmock.RegisterResponder(
+			"GET",
+			`=~^https://esi.evetech.net/universe/types/\d+`,
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"description": "The Rifter is a...",
+				"dogma_effects": []map[string]any{
+					{
+						"effect_id":  111,
+						"is_default": true,
+					},
+					{
+						"effect_id":  111,
+						"is_default": false,
+					},
+				},
+				"group_id":  25,
+				"name":      "Rifter",
+				"published": true,
+				"type_id":   587,
+			}),
+		)
+		// when
+		_, err := s.GetOrCreateTypeESI(ctx, 587)
+		// then
+		require.Error(t, err)
+		_, err = st.GetEveType(ctx, 587)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 	t.Run("should fetch group from ESI and create it (integration)", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

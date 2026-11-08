@@ -15,13 +15,17 @@ type CreateEveTypeDogmaAttributeParams struct {
 }
 
 func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
+	return createEveTypeDogmaAttribute(ctx, st.qRW, arg)
+}
+
+func createEveTypeDogmaAttribute(ctx context.Context, q *queries.Queries, arg CreateEveTypeDogmaAttributeParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateEveTypeDogmaAttribute: %+v: %w", arg, err)
+		return fmt.Errorf("createEveTypeDogmaAttribute: %+v: %w", arg, err)
 	}
 	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	err := st.qRW.CreateEveTypeDogmaAttribute(ctx, queries.CreateEveTypeDogmaAttributeParams{
+	err := q.CreateEveTypeDogmaAttribute(ctx, queries.CreateEveTypeDogmaAttributeParams{
 		DogmaAttributeID: arg.DogmaAttributeID,
 		EveTypeID:        arg.EveTypeID,
 		Value:            arg.Value,

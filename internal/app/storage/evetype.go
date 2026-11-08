@@ -34,6 +34,39 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 	return createEveType(ctx, st.qRW, arg)
 }
 
+// CreateEveTypeWithDogma stores a new type with all its dogma attributes and effects or nothing.
+// The EveTypeID of attributeArgs and effectArgs is set by this method.
+func (st *Storage) CreateEveTypeWithDogma(ctx context.Context, typeArg CreateEveTypeParams, attributeArgs []CreateEveTypeDogmaAttributeParams, effectArgs []CreateEveTypeDogmaEffectParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("CreateEveTypeWithDogma: %w", err)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	if err := createEveType(ctx, qtx, typeArg); err != nil {
+		return wrapErr(err)
+	}
+	for _, a := range attributeArgs {
+		a.EveTypeID = typeArg.ID
+		if err := createEveTypeDogmaAttribute(ctx, qtx, a); err != nil {
+			return wrapErr(err)
+		}
+	}
+	for _, e := range effectArgs {
+		e.EveTypeID = typeArg.ID
+		if err := createEveTypeDogmaEffect(ctx, qtx, e); err != nil {
+			return wrapErr(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
 func createEveType(ctx context.Context, q *queries.Queries, arg CreateEveTypeParams) error {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("createEveType: %+v: %w", arg, err)
