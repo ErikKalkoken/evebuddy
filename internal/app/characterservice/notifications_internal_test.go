@@ -2,6 +2,7 @@ package characterservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -423,6 +424,233 @@ func TestUpdateNotificationESI_Other(t *testing.T) {
 		xassert.Empty(t, o.Text)
 		xassert.Equal(t, timestamp, o.Timestamp)
 		xassert.EqualOptional(t, c.EveCharacter.Corporation, o.Recipient) // this is a corp notification
+	})
+
+	t.Run("should report changed when only deleting notifications", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
+		ens := &EVENotificationServiceStub{
+			title: "title",
+			body:  "body",
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         n1.IsRead,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(n1.NotificationID), ids)
+	})
+
+	t.Run("should store duplicate new notifications once", func(t *testing.T) {
+		// given
+		const notificationID = 9942
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		sender := f.CreateEveEntityCorporation()
+		timestamp := time.Now().Round(time.Second)
+		notification := map[string]any{
+			"notification_id": notificationID,
+			"sender_id":       sender.ID,
+			"sender_type":     "corporation",
+			"text":            "",
+			"timestamp":       timestamp.Format(time.RFC3339),
+			"type":            "CorpNoLongerWarEligible",
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{notification, notification}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](notificationID), ids)
+	})
+
+	t.Run("should keep local read made during update", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		ens := &EVENotificationServiceStub{
+			title: "title2",
+			body:  "body",
+			onRender: func() {
+				// user marks the notification as read while the update is running
+				err := st.UpdateCharacterNotificationsSetIsRead(t.Context(), set.Of(n1.ID), true)
+				assert.NoError(t, err) // runs in a worker goroutine, so no require
+			},
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         false,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, n1.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, o.IsRead)
+		xassert.EqualOptional(t, "title2", o.Title)
+	})
+
+	t.Run("should keep stored text when render fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		ens := &EVENotificationServiceStub{
+			err: errors.New("render failed"),
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         n1.IsRead,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, n1.NotificationID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "title", o.Title)
+		xassert.EqualOptional(t, "body", o.Body)
+	})
+
+	t.Run("should store read from ESI when render fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			IsRead:      false,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		ens := &EVENotificationServiceStub{
+			err: errors.New("render failed"),
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         true,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, n1.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, o.IsRead)
+		xassert.EqualOptional(t, "title", o.Title)
+		xassert.EqualOptional(t, "body", o.Body)
 	})
 
 	t.Run("should abort when sender can not be resolved", func(t *testing.T) {

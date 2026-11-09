@@ -42,12 +42,16 @@ type EVENotificationServiceStub struct {
 	title     string
 	body      string
 	err       error
+	onRender  func() // called on every RenderESI call
 }
 
 func (s *EVENotificationServiceStub) EntityIDs(nt app.EveNotificationType, text optional.Optional[string]) (set.Set[int64], error) {
 	return s.entityIDs, s.err
 }
 func (s *EVENotificationServiceStub) RenderESI(ctx context.Context, nt app.EveNotificationType, text optional.Optional[string], timestamp time.Time) (title string, body string, err error) {
+	if s.onRender != nil {
+		s.onRender()
+	}
 	return s.title, s.body, s.err
 }
 
