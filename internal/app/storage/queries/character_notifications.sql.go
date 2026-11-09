@@ -520,13 +520,15 @@ SET
     title = ?3
 WHERE
     id = ?4
+    AND character_id = ?5
 `
 
 type UpdateCharacterNotificationParams struct {
-	Body   sql.NullString
-	IsRead sql.NullBool
-	Title  sql.NullString
-	ID     int64
+	Body        sql.NullString
+	IsRead      sql.NullBool
+	Title       sql.NullString
+	ID          int64
+	CharacterID int64
 }
 
 func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
@@ -535,6 +537,7 @@ func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCha
 		arg.IsRead,
 		arg.Title,
 		arg.ID,
+		arg.CharacterID,
 	)
 	return err
 }

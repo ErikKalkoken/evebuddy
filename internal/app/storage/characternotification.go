@@ -294,6 +294,25 @@ type CreateCharacterNotificationParams struct {
 	Type           string
 }
 
+func (p CreateCharacterNotificationParams) isValid() bool {
+	return p.CharacterID != 0 && p.NotificationID != 0 && p.SenderID != 0 && p.Type != ""
+}
+
+// wrapErr adds the identifying fields of p to err.
+func (p CreateCharacterNotificationParams) wrapErr(err error) error {
+	return fmt.Errorf("%+v: %w", struct {
+		CharacterID    int64
+		NotificationID int64
+		SenderID       int64
+		Type           string
+	}{
+		p.CharacterID,
+		p.NotificationID,
+		p.SenderID,
+		p.Type,
+	}, err)
+}
+
 // CreateCharacterNotification stores a notification and creates its type if missing.
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
 	return st.CreateCharacterNotifications(ctx, []CreateCharacterNotificationParams{arg})
@@ -305,39 +324,41 @@ func (st *Storage) CreateCharacterNotifications(ctx context.Context, args []Crea
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterNotifications: %w", err)
 	}
-	wrapArgErr := func(arg CreateCharacterNotificationParams, err error) error {
-		return fmt.Errorf("CreateCharacterNotifications: %+v: %w", struct {
-			CharacterID    int64
-			NotificationID int64
-			SenderID       int64
-			Type           string
-		}{
-			arg.CharacterID,
-			arg.NotificationID,
-			arg.SenderID,
-			arg.Type,
-		}, err)
-	}
 	if len(args) == 0 {
 		return nil
 	}
 	// validate before the transaction to avoid blocking other writers for an invalid batch
-	var names set.Set[string]
 	for _, arg := range args {
-		if arg.CharacterID == 0 || arg.NotificationID == 0 || arg.SenderID == 0 || arg.Type == "" {
-			return wrapArgErr(arg, app.ErrInvalid)
+		if !arg.isValid() {
+			return wrapErr(arg.wrapErr(app.ErrInvalid))
 		}
-		names.Add(arg.Type)
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return wrapErr(err)
 	}
 	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	rows, err := qtx.ListNotificationTypeIDsByName(ctx, slices.Collect(names.All()))
-	if err != nil {
+	if err := createCharacterNotifications(ctx, st.qRW.WithTx(tx), args); err != nil {
 		return wrapErr(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+// createCharacterNotifications stores notifications with q and creates missing notification types.
+func createCharacterNotifications(ctx context.Context, q *queries.Queries, args []CreateCharacterNotificationParams) error {
+	if len(args) == 0 {
+		return nil
+	}
+	var names set.Set[string]
+	for _, arg := range args {
+		names.Add(arg.Type)
+	}
+	rows, err := q.ListNotificationTypeIDsByName(ctx, slices.Collect(names.All()))
+	if err != nil {
+		return err
 	}
 	typeIDs := make(map[string]int64, len(rows))
 	for _, r := range rows {
@@ -347,14 +368,14 @@ func (st *Storage) CreateCharacterNotifications(ctx context.Context, args []Crea
 		if _, found := typeIDs[name]; found {
 			continue
 		}
-		id, err := qtx.CreateNotificationType(ctx, name)
+		id, err := q.CreateNotificationType(ctx, name)
 		if err != nil {
-			return wrapErr(err)
+			return err
 		}
 		typeIDs[name] = id
 	}
 	for _, arg := range args {
-		err := qtx.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
+		err := q.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
 			Body:           optional.ToNullString(arg.Body),
 			CharacterID:    arg.CharacterID,
 			IsRead:         arg.IsRead,
@@ -368,31 +389,8 @@ func (st *Storage) CreateCharacterNotifications(ctx context.Context, args []Crea
 			TypeID:         typeIDs[arg.Type],
 		})
 		if err != nil {
-			return wrapArgErr(arg, err)
+			return arg.wrapErr(err)
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return wrapErr(err)
-	}
-	return nil
-}
-
-func (st *Storage) DeleteCharacterNotifications(ctx context.Context, characterID int64, notificationIDs set.Set[int64]) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterNotifications: %d %s: %w", characterID, notificationIDs, err)
-	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if notificationIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCharacterNotifications(ctx, queries.DeleteCharacterNotificationsParams{
-		CharacterID:     characterID,
-		NotificationIds: slices.Collect(notificationIDs.All()),
-	})
-	if err != nil {
-		return wrapErr(err)
 	}
 	return nil
 }
@@ -609,21 +607,39 @@ type UpdateCharacterNotificationParams struct {
 	Title  optional.Optional[string] // empty clears the stored value
 }
 
-// UpdateCharacterNotifications updates all notifications or none of them.
-func (st *Storage) UpdateCharacterNotifications(ctx context.Context, args []UpdateCharacterNotificationParams) error {
+// wrapErr adds the identifying fields of p to err.
+func (p UpdateCharacterNotificationParams) wrapErr(err error) error {
+	return fmt.Errorf("ID: %d: %w", p.ID, err)
+}
+
+type SyncCharacterNotificationsParams struct {
+	CharacterID int64
+	Create      []CreateCharacterNotificationParams
+	Delete      set.Set[int64] // notification IDs
+	Update      []UpdateCharacterNotificationParams
+}
+
+// SyncCharacterNotifications applies all changes for a character or none of them.
+// Missing notification types are created.
+func (st *Storage) SyncCharacterNotifications(ctx context.Context, arg SyncCharacterNotificationsParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateCharacterNotifications: %w", err)
+		return fmt.Errorf("SyncCharacterNotifications: %d: %w", arg.CharacterID, err)
 	}
-	wrapArgErr := func(arg UpdateCharacterNotificationParams, err error) error {
-		return fmt.Errorf("UpdateCharacterNotifications: ID: %d: %w", arg.ID, err)
+	if arg.CharacterID == 0 {
+		return wrapErr(app.ErrInvalid)
 	}
-	if len(args) == 0 {
+	if len(arg.Create) == 0 && arg.Delete.Size() == 0 && len(arg.Update) == 0 {
 		return nil
 	}
 	// validate before the transaction to avoid blocking other writers for an invalid batch
-	for _, arg := range args {
-		if arg.ID == 0 {
-			return wrapArgErr(arg, app.ErrInvalid)
+	for _, c := range arg.Create {
+		if !c.isValid() || c.CharacterID != arg.CharacterID {
+			return wrapErr(fmt.Errorf("create: %w", c.wrapErr(app.ErrInvalid)))
+		}
+	}
+	for _, u := range arg.Update {
+		if u.ID == 0 {
+			return wrapErr(fmt.Errorf("update: %w", u.wrapErr(app.ErrInvalid)))
 		}
 	}
 	tx, err := st.dbRW.Begin()
@@ -632,16 +648,29 @@ func (st *Storage) UpdateCharacterNotifications(ctx context.Context, args []Upda
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
-	for _, arg := range args {
-		err := qtx.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
-			ID:     arg.ID,
-			Body:   optional.ToNullString(arg.Body),
-			IsRead: optional.ToNullBool(arg.IsRead),
-			Title:  optional.ToNullString(arg.Title),
+	if arg.Delete.Size() > 0 {
+		err := qtx.DeleteCharacterNotifications(ctx, queries.DeleteCharacterNotificationsParams{
+			CharacterID:     arg.CharacterID,
+			NotificationIds: slices.Collect(arg.Delete.All()),
 		})
 		if err != nil {
-			return wrapArgErr(arg, err)
+			return wrapErr(fmt.Errorf("delete: %w", err))
 		}
+	}
+	for _, u := range arg.Update {
+		err := qtx.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
+			Body:        optional.ToNullString(u.Body),
+			CharacterID: arg.CharacterID,
+			ID:          u.ID,
+			IsRead:      optional.ToNullBool(u.IsRead),
+			Title:       optional.ToNullString(u.Title),
+		})
+		if err != nil {
+			return wrapErr(fmt.Errorf("update: %w", u.wrapErr(err)))
+		}
+	}
+	if err := createCharacterNotifications(ctx, qtx, arg.Create); err != nil {
+		return wrapErr(fmt.Errorf("create: %w", err))
 	}
 	if err := tx.Commit(); err != nil {
 		return wrapErr(err)

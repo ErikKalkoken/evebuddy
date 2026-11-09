@@ -138,23 +138,6 @@ func TestCharacterNotification(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 
-	t.Run("can delete notifications", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := f.CreateCharacter()
-		e1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		e2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		e3 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		// when
-		err := st.DeleteCharacterNotifications(t.Context(), c.ID, set.Of(e1.NotificationID, e2.NotificationID))
-		// then
-		require.NoError(t, err)
-		got, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
-		require.NoError(t, err)
-		want := set.Of(e3.NotificationID)
-		xassert.Equal(t, want, got)
-	})
-
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -633,10 +616,93 @@ func TestStorage_CreateCharacterNotifications(t *testing.T) {
 	})
 }
 
-func TestStorage_UpdateCharacterNotifications(t *testing.T) {
+func TestStorage_SyncCharacterNotifications(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
 
+	t.Run("should apply deletes, updates and creates", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 1,
+		})
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 2,
+		})
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+			Create: []storage.CreateCharacterNotificationParams{{
+				CharacterID:    c.ID,
+				NotificationID: 3,
+				SenderID:       sender.ID,
+				Type:           "BountyClaimMsg",
+			}},
+			Delete: set.Of(n1.NotificationID),
+			Update: []storage.UpdateCharacterNotificationParams{{
+				ID:    n2.ID,
+				Title: optional.New("title"),
+			}},
+		}
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), arg)
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](2, 3), ids)
+		o2, err := st.GetCharacterNotification(t.Context(), c.ID, 2)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "title", o2.Title)
+		o3, err := st.GetCharacterNotification(t.Context(), c.ID, 3)
+		require.NoError(t, err)
+		xassert.Equal(t, app.BountyClaimMsg, o3.Type)
+	})
+	t.Run("should delete only notifications of the character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		other := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			NotificationID: n1.NotificationID,
+		})
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+			Delete:      set.Of(n1.NotificationID),
+		})
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(n2.NotificationID), ids)
+		otherIDs, err := st.ListCharacterNotificationIDs(t.Context(), other.CharacterID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(other.NotificationID), otherIDs)
+	})
+	t.Run("should update only notifications of the character", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		other := f.CreateCharacterNotification()
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+			Update: []storage.UpdateCharacterNotificationParams{{
+				ID:    other.ID,
+				Title: optional.New("title"),
+			}},
+		})
+		// then
+		require.NoError(t, err)
+		o, err := st.GetCharacterNotification(t.Context(), other.CharacterID, other.NotificationID)
+		require.NoError(t, err)
+		xassert.Equal(t, other.Title, o.Title)
+	})
 	t.Run("should update all notifications", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -645,20 +711,23 @@ func TestStorage_UpdateCharacterNotifications(t *testing.T) {
 			CharacterID: n1.CharacterID,
 			IsRead:      true,
 		})
-		args := []storage.UpdateCharacterNotificationParams{
-			{
-				Body:   optional.New("body"),
-				ID:     n1.ID,
-				IsRead: optional.New(true),
-				Title:  optional.New("title"),
-			},
-			{
-				ID:     n2.ID,
-				IsRead: optional.New(false),
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: n1.CharacterID,
+			Update: []storage.UpdateCharacterNotificationParams{
+				{
+					Body:   optional.New("body"),
+					ID:     n1.ID,
+					IsRead: optional.New(true),
+					Title:  optional.New("title"),
+				},
+				{
+					ID:     n2.ID,
+					IsRead: optional.New(false),
+				},
 			},
 		}
 		// when
-		err := st.UpdateCharacterNotifications(t.Context(), args)
+		err := st.SyncCharacterNotifications(t.Context(), arg)
 		// then
 		require.NoError(t, err)
 		o1, err := st.GetCharacterNotification(t.Context(), n1.CharacterID, n1.NotificationID)
@@ -678,12 +747,15 @@ func TestStorage_UpdateCharacterNotifications(t *testing.T) {
 		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			IsRead: true,
 		})
-		args := []storage.UpdateCharacterNotificationParams{{
-			ID:    n.ID,
-			Title: optional.New("title"),
-		}}
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: n.CharacterID,
+			Update: []storage.UpdateCharacterNotificationParams{{
+				ID:    n.ID,
+				Title: optional.New("title"),
+			}},
+		}
 		// when
-		err := st.UpdateCharacterNotifications(t.Context(), args)
+		err := st.SyncCharacterNotifications(t.Context(), arg)
 		// then
 		require.NoError(t, err)
 		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.NotificationID)
@@ -691,32 +763,103 @@ func TestStorage_UpdateCharacterNotifications(t *testing.T) {
 		assert.True(t, o.IsRead)
 		xassert.EqualOptional(t, "title", o.Title)
 	})
-	t.Run("should do nothing when called without args", func(t *testing.T) {
+	t.Run("should do nothing when called without changes", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
 		// when
-		err := st.UpdateCharacterNotifications(t.Context(), nil)
+		err := st.SyncCharacterNotifications(t.Context(), storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+		})
 		// then
 		require.NoError(t, err)
 	})
-	t.Run("should update none when an arg is invalid", func(t *testing.T) {
+	t.Run("should return error when character ID is missing", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), storage.SyncCharacterNotificationsParams{})
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+	t.Run("should apply none when an arg is invalid", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		n := f.CreateCharacterNotification()
-		args := []storage.UpdateCharacterNotificationParams{
-			{
-				ID:    n.ID,
-				Title: optional.New("title"),
-			},
-			{},
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: n.CharacterID,
+			Delete:      set.Of(n.NotificationID),
+			Update:      []storage.UpdateCharacterNotificationParams{{}},
 		}
 		// when
-		err := st.UpdateCharacterNotifications(t.Context(), args)
+		err := st.SyncCharacterNotifications(t.Context(), arg)
 		// then
 		assert.ErrorIs(t, err, app.ErrInvalid)
-		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.NotificationID)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), n.CharacterID)
 		require.NoError(t, err)
-		xassert.Equal(t, n.Title, o.Title)
+		xassert.Equal(t, set.Of(n.NotificationID), ids)
+	})
+	t.Run("should apply none when a create has another character ID", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		other := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+			Create: []storage.CreateCharacterNotificationParams{{
+				CharacterID:    other.ID,
+				NotificationID: 1,
+				SenderID:       sender.ID,
+				Type:           "BountyClaimMsg",
+			}},
+		}
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), arg)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), other.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, ids.Size())
+	})
+	t.Run("should apply none when storing fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 1,
+		})
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 2,
+			Title:          optional.New("title"),
+		})
+		arg := storage.SyncCharacterNotificationsParams{
+			CharacterID: c.ID,
+			Create: []storage.CreateCharacterNotificationParams{{
+				CharacterID:    c.ID,
+				NotificationID: n2.NotificationID, // already stored
+				SenderID:       sender.ID,
+				Type:           "BountyClaimMsg",
+			}},
+			Delete: set.Of(n1.NotificationID),
+			Update: []storage.UpdateCharacterNotificationParams{{
+				ID:    n2.ID,
+				Title: optional.New("title2"),
+			}},
+		}
+		// when
+		err := st.SyncCharacterNotifications(t.Context(), arg)
+		// then
+		assert.Error(t, err)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(n1.NotificationID, n2.NotificationID), ids)
+		o2, err := st.GetCharacterNotification(t.Context(), c.ID, n2.NotificationID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "title", o2.Title)
 	})
 }
 

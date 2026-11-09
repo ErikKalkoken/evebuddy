@@ -125,7 +125,8 @@ SET
     is_read = COALESCE(sqlc.narg('is_read'), is_read),
     title = sqlc.narg('title')
 WHERE
-    id = sqlc.arg('id');
+    id = sqlc.arg('id')
+    AND character_id = sqlc.arg('character_id');
 
 -- name: UpdateCharacterNotificationsSetProcessed :exec
 UPDATE character_notifications

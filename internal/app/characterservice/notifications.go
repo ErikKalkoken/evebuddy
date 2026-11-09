@@ -123,19 +123,22 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 					newNotifs = append(newNotifs, n)
 				}
 			}
-			if err := s.loadEntitiesForNotifications(ctx, characterID, existingNotifs); err != nil {
+			// read and render everything before the single write transaction
+			if err := s.loadEntitiesForNotifications(ctx, characterID, notifications); err != nil {
 				return false, err
 			}
-
-			var changed bool
-			// Remove deleted notifications
-			if ids := set.Difference(set.Collect(maps.Keys(storedByID)), incomingIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterNotifications(ctx, characterID, ids); err != nil {
+			var character *app.Character
+			if len(newNotifs) > 0 {
+				character, err = s.st.GetCharacter(ctx, characterID)
+				if err != nil {
 					return false, err
 				}
-				slog.Info("Removed deleted notifications", "characterID", characterID, "count", ids.Size())
-				changed = true
+				if _, err := s.eus.AddMissingEntities(ctx, character.EveCharacter.EntityIDs()); err != nil {
+					return false, err
+				}
 			}
+
+			deleteIDs := set.Difference(set.Collect(maps.Keys(storedByID)), incomingIDs)
 
 			type renderResult struct {
 				title, body optional.Optional[string]
@@ -170,14 +173,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 				if arg.forceUpdate || (isReadESI && !current.IsRead) {
 					isRead2.Set(isReadESI)
 				}
-				var needsUpdate bool
-				if arg.forceUpdate ||
-					r.body != current.Body ||
-					r.title != current.Title ||
-					!isRead2.IsEmpty() {
-					needsUpdate = true
-				}
-				if needsUpdate {
+				if arg.forceUpdate || r.body != current.Body || r.title != current.Title || !isRead2.IsEmpty() {
 					updateArgs = append(updateArgs, storage.UpdateCharacterNotificationParams{
 						Body:   r.body,
 						ID:     current.ID,
@@ -186,32 +182,8 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 					})
 				}
 			}
-			if err := s.st.UpdateCharacterNotifications(ctx, updateArgs); err != nil {
-				return false, err
-			}
-			if len(updateArgs) > 0 {
-				slog.Info("Updated notifications",
-					slog.Any("characterID", characterID),
-					slog.Any("count", len(updateArgs)),
-				)
-				changed = true
-			}
-			if len(newNotifs) == 0 {
-				slog.Info("No new notifications", "characterID", characterID)
-				return changed, nil
-			}
 
-			if err := s.loadEntitiesForNotifications(ctx, characterID, newNotifs); err != nil {
-				return false, err
-			}
-			character, err := s.st.GetCharacter(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			if _, err := s.eus.AddMissingEntities(ctx, character.EveCharacter.EntityIDs()); err != nil {
-				return false, err
-			}
-			args := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
+			createArgs := make([]storage.CreateCharacterNotificationParams, len(newNotifs))
 			g = new(errgroup.Group)
 			g.SetLimit(s.concurrencyLimit)
 			for i, n := range newNotifs {
@@ -254,19 +226,36 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 					arg.Title = title
 					arg.Body = body
 
-					args[i] = arg
+					createArgs[i] = arg
 					return nil
 				})
 			}
 			if err := g.Wait(); err != nil {
 				return false, err
 			}
-			if err := s.st.CreateCharacterNotifications(ctx, args); err != nil {
+
+			err = s.st.SyncCharacterNotifications(ctx, storage.SyncCharacterNotificationsParams{
+				CharacterID: characterID,
+				Create:      createArgs,
+				Delete:      deleteIDs,
+				Update:      updateArgs,
+			})
+			if err != nil {
 				return false, err
 			}
-			slog.Info("Stored new notifications", "characterID", characterID, "entries", len(newNotifs))
-
-			return true, nil
+			if deleteIDs.Size() > 0 {
+				slog.Info("Removed deleted notifications", "characterID", characterID, "count", deleteIDs.Size())
+			}
+			if len(updateArgs) > 0 {
+				slog.Info("Updated notifications", "characterID", characterID, "count", len(updateArgs))
+			}
+			if len(createArgs) > 0 {
+				slog.Info("Stored new notifications", "characterID", characterID, "count", len(createArgs))
+			} else {
+				slog.Info("No new notifications", "characterID", characterID)
+			}
+			changed := deleteIDs.Size() > 0 || len(updateArgs) > 0 || len(createArgs) > 0
+			return changed, nil
 		})
 }
 
