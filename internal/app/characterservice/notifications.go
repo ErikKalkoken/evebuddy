@@ -159,11 +159,11 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 			}
 			var updateArgs []storage.UpdateCharacterNotificationParams
 			for i, n := range existingNotifs {
+				current := storedByID[n.NotificationId]
 				r := results[i]
 				if !r.ok {
-					continue
+					r.title, r.body = current.Title, current.Body // keep stored text when rendering failed
 				}
-				current := storedByID[n.NotificationId]
 				// only set when changed or forced, so a local read made during a normal update is kept
 				var isRead2 optional.Optional[bool]
 				isReadESI := optional.FromPtr(n.IsRead).ValueOrZero()

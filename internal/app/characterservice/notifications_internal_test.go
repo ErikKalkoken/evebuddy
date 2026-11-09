@@ -528,7 +528,7 @@ func TestUpdateNotificationESI_Other(t *testing.T) {
 			onRender: func() {
 				// user marks the notification as read while the update is running
 				err := st.UpdateCharacterNotificationsSetIsRead(t.Context(), set.Of(n1.ID), true)
-				require.NoError(t, err)
+				assert.NoError(t, err) // runs in a worker goroutine, so no require
 			},
 		}
 		s := NewFake(Params{Storage: st, EveNotificationService: ens})
@@ -602,6 +602,53 @@ func TestUpdateNotificationESI_Other(t *testing.T) {
 		assert.False(t, changed)
 		o, err := st.GetCharacterNotification(t.Context(), c.ID, n1.NotificationID)
 		require.NoError(t, err)
+		xassert.EqualOptional(t, "title", o.Title)
+		xassert.EqualOptional(t, "body", o.Body)
+	})
+
+	t.Run("should store read from ESI when render fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			IsRead:      false,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		ens := &EVENotificationServiceStub{
+			err: errors.New("render failed"),
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         true,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterNotification(t.Context(), c.ID, n1.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, o.IsRead)
 		xassert.EqualOptional(t, "title", o.Title)
 		xassert.EqualOptional(t, "body", o.Body)
 	})
