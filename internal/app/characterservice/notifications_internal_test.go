@@ -426,6 +426,52 @@ func TestUpdateNotificationESI_Other(t *testing.T) {
 		xassert.EqualOptional(t, c.EveCharacter.Corporation, o.Recipient) // this is a corp notification
 	})
 
+	t.Run("should report changed when only deleting notifications", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := f.CreateCharacter()
+		f.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		f.CreateEveEntityCharacter(*c.EveCharacter.ToEveEntity())
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Title:       optional.New("title"),
+			Body:        optional.New("body"),
+		})
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID}) // this should be removed
+		ens := &EVENotificationServiceStub{
+			title: "title",
+			body:  "body",
+		}
+		s := NewFake(Params{Storage: st, EveNotificationService: ens})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/notifications", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"is_read":         n1.IsRead,
+				"notification_id": n1.NotificationID,
+				"sender_id":       n1.Sender.ID,
+				"sender_type":     n1.Sender.Category.String(),
+				"text":            n1.Text.ValueOrZero(),
+				"timestamp":       n1.Timestamp.Format(time.RFC3339),
+				"type":            n1.Type.String(),
+			}}),
+		)
+
+		// when
+		changed, err := s.updateNotificationsESI(t.Context(), characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterNotifications,
+		})
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(n1.NotificationID), ids)
+	})
+
 	t.Run("should store duplicate new notifications once", func(t *testing.T) {
 		// given
 		const notificationID = 9942

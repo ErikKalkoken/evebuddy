@@ -127,12 +127,14 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 				return false, err
 			}
 
+			var changed bool
 			// Remove deleted notifications
 			if ids := set.Difference(set.Collect(maps.Keys(storedByID)), incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterNotifications(ctx, characterID, ids); err != nil {
 					return false, err
 				}
 				slog.Info("Removed deleted notifications", "characterID", characterID, "count", ids.Size())
+				changed = true
 			}
 
 			type renderResult struct {
@@ -162,7 +164,7 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 					continue
 				}
 				current := storedByID[n.NotificationId]
-				// only set when changed, so a local read made during this update is kept
+				// only set when changed or forced, so a local read made during a normal update is kept
 				var isRead2 optional.Optional[bool]
 				isReadESI := optional.FromPtr(n.IsRead).ValueOrZero()
 				if arg.forceUpdate || (isReadESI && !current.IsRead) {
@@ -187,7 +189,6 @@ func (s *CharacterService) updateNotificationsESI(ctx context.Context, arg chara
 			if err := s.st.UpdateCharacterNotifications(ctx, updateArgs); err != nil {
 				return false, err
 			}
-			var changed bool
 			if len(updateArgs) > 0 {
 				slog.Info("Updated notifications",
 					slog.Any("characterID", characterID),
