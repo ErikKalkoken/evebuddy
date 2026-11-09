@@ -491,37 +491,30 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg charact
 	return s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
-			mail, err := s.fetchMailHeadersESI(ctx, characterID, s.settings.MaxMails())
-			if err != nil {
-				return false, err
-			}
-			slog.Debug("Received mail headers from ESI", "characterID", characterID, "count", len(mail))
-			return mail, nil
+			return s.fetchMailHeadersESI(ctx, characterID, s.settings.MaxMails())
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
-			mail := data.([]storage.CreateCharacterMailParams)
-			existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
+			messages := data.([]storage.UpdateOrCreateCharacterMailParams)
+			storedIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
-			var newMail []storage.CreateCharacterMailParams
-			var existingMail []storage.CreateCharacterMailParams
-			for _, m := range mail {
-				if existingIDs.Contains(m.MailID) {
-					existingMail = append(existingMail, m)
-				} else {
-					newMail = append(newMail, m)
+			var entityIDs set.Set[int64]
+			for _, m := range messages {
+				if storedIDs.Contains(m.MailID) {
+					continue // entities of stored mails exist already
 				}
+				entityIDs.Add(m.FromID)
+				entityIDs.Add(m.RecipientIDs...)
 			}
-			if len(newMail) > 0 {
-				if err := s.addNewMailsESI(ctx, newMail); err != nil {
+			if entityIDs.Size() > 0 {
+				if _, err := s.eus.AddMissingEntities(ctx, entityIDs); err != nil {
 					return false, err
 				}
 			}
-			if len(existingMail) > 0 {
-				if err := s.updateExistingMail(ctx, characterID, existingMail); err != nil {
-					return false, err
-				}
+			changed, err := s.st.UpdateOrCreateCharacterMails(ctx, characterID, messages)
+			if err != nil {
+				return false, err
 			}
 			// TODO: Delete obsolete mail labels and list
 			// if err := s.st.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
@@ -530,16 +523,16 @@ func (s *CharacterService) updateMailHeadersESI(ctx context.Context, arg charact
 			// if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 			// 	return err
 			// }
-			return true, nil
+			return changed, nil
 		})
 }
 
 // fetchMailHeadersESI fetches and returns a slice of mail headers for a character from ESI.
 // The headers are guaranteed to be in descending order by mailID.
 // It will at most return (maxMail + page size) headers.
-func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int64, maxMails int) ([]storage.CreateCharacterMailParams, error) {
+func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int64, maxMails int) ([]storage.UpdateOrCreateCharacterMailParams, error) {
 	const maxMailHeadersPerPage = 50 // maximum header objects returned per page
-	var headers []esi.CharactersCharacterIdMailGetInner
+	var objs []esi.CharactersCharacterIdMailGetInner
 	var lastMailID int64
 	ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdMail")
 	for {
@@ -553,8 +546,8 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		if err != nil {
 			return nil, err
 		}
-		headers = append(headers, oo...)
-		isLimitExceeded := (maxMails != 0 && len(headers)+maxMailHeadersPerPage > maxMails)
+		objs = append(objs, oo...)
+		isLimitExceeded := (maxMails != 0 && len(objs)+maxMailHeadersPerPage > maxMails)
 		if len(oo) < maxMailHeadersPerPage || isLimitExceeded {
 			break
 		}
@@ -565,75 +558,28 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 			return *x.MailId
 		}))
 	}
-	mail := make([]storage.CreateCharacterMailParams, 0, len(headers))
-	for _, h := range headers {
-		if h.MailId == nil || h.From == nil || h.Timestamp == nil {
-			continue // ignore mails which are missing important fields
+	messages := make([]storage.UpdateOrCreateCharacterMailParams, 0, len(objs))
+	for _, o := range objs {
+		if o.MailId == nil || o.From == nil || o.Timestamp == nil || len(o.Recipients) == 0 {
+			slog.Debug("Ignoring mail header with missing fields", "characterID", characterID, "mailID", optional.FromPtr(o.MailId))
+			continue
 		}
-		recipientIDs := xslices.Map(h.Recipients, func(x esi.PostCharactersCharacterIdMailRequestRecipientsInner) int64 {
+		recipientIDs := xslices.Map(o.Recipients, func(x esi.PostCharactersCharacterIdMailRequestRecipientsInner) int64 {
 			return x.RecipientId
 		})
-		mail = append(mail, storage.CreateCharacterMailParams{
-			CharacterID:  characterID,
-			FromID:       *h.From,
-			IsRead:       optional.FromPtr(h.IsRead),
-			LabelIDs:     h.Labels,
-			MailID:       *h.MailId,
+		messages = append(messages, storage.UpdateOrCreateCharacterMailParams{
+			FromID:       *o.From,
+			IsRead:       optional.FromPtr(o.IsRead),
+			LabelIDs:     o.Labels,
+			MailID:       *o.MailId,
 			RecipientIDs: recipientIDs,
-			Subject:      optional.FromPtr(h.Subject),
-			Timestamp:    *h.Timestamp,
+			Subject:      optional.FromPtr(o.Subject),
+			Timestamp:    *o.Timestamp,
 		})
 	}
-	slices.SortFunc(mail, func(a, b storage.CreateCharacterMailParams) int {
+	slices.SortFunc(messages, func(a, b storage.UpdateOrCreateCharacterMailParams) int {
 		return cmp.Compare(b.MailID, a.MailID) // descending order
 	})
-	slog.Debug("Received mail headers", "characterID", characterID, "count", len(mail))
-	return mail, nil
-}
-
-func (s *CharacterService) addNewMailsESI(ctx context.Context, mail []storage.CreateCharacterMailParams) error {
-	var entityIDs set.Set[int64]
-	for _, m := range mail {
-		entityIDs.Add(m.FromID)
-		entityIDs.Add(m.RecipientIDs...)
-	}
-	_, err := s.eus.AddMissingEntities(ctx, entityIDs)
-	if err != nil {
-		return err
-	}
-	for _, m := range mail {
-		_, err := s.st.CreateCharacterMail(ctx, m)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *CharacterService) updateExistingMail(ctx context.Context, characterID int64, mail []storage.CreateCharacterMailParams) error {
-	var updated int
-	for _, m1 := range mail {
-		m2, err := s.st.GetCharacterMail(ctx, m1.CharacterID, m1.MailID)
-		if err != nil {
-			return err
-		}
-		if m2.IsRead != m1.IsRead {
-			err := s.st.UpdateCharacterMailSetIsRead(ctx, m2.CharacterID, m2.ID, m1.IsRead.ValueOrZero())
-			if err != nil {
-				return err
-			}
-			updated++
-		}
-		if !set.Of(m1.LabelIDs...).Equal(set.Of(m2.LabelIDs()...)) {
-			err := s.st.UpdateCharacterMailSetLabels(ctx, m2.CharacterID, m2.ID, m1.LabelIDs)
-			if err != nil {
-				return err
-			}
-			updated++
-		}
-	}
-	if updated > 0 {
-		slog.Info("Updated mail", "characterID", characterID, "count", updated)
-	}
-	return nil
+	slog.Debug("Received mail headers", "characterID", characterID, "count", len(messages))
+	return messages, nil
 }

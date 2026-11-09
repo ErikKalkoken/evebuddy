@@ -150,6 +150,129 @@ func TestUpdateMail(t *testing.T) {
 		want2 := set.Of(m2.ID)
 		xassert.Equal(t, want2, got2)
 	})
+	t.Run("should report no change when stored mails match the headers", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(true),
+			LabelIDs:    []int64{app.MailLabelInbox},
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"from":    m.From.ID,
+					"is_read": true,
+					"labels":  []int64{app.MailLabelInbox},
+					"mail_id": m.MailID,
+					"recipients": []map[string]any{
+						{
+							"recipient_id":   m.Recipients[0].ID,
+							"recipient_type": "character",
+						},
+					},
+					"subject":   m.Subject.ValueOrZero(),
+					"timestamp": m.Timestamp.Format(time.RFC3339),
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMailHeaders,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should not resolve entities of stored mails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"from":    m.From.ID,
+					"is_read": true,
+					"mail_id": m.MailID,
+					"recipients": []map[string]any{
+						{
+							"recipient_id":   99_999_999, // unknown, would need resolving
+							"recipient_type": "character",
+						},
+					},
+					"subject":   m.Subject.ValueOrZero(),
+					"timestamp": m.Timestamp.Format(time.RFC3339),
+				},
+			}),
+		)
+		// when
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMailHeaders,
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, m.MailID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, got.IsRead)
+	})
+	t.Run("should skip mail headers without recipients", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		from := factory.CreateEveEntityCharacter()
+		recipient := factory.CreateEveEntityCharacter()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/mail", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"from":    from.ID,
+					"mail_id": 8,
+					"recipients": []map[string]any{
+						{
+							"recipient_id":   recipient.ID,
+							"recipient_type": "character",
+						},
+					},
+					"subject":   "with recipients",
+					"timestamp": "2015-09-30T16:07:00Z",
+				},
+				{
+					"from":      from.ID,
+					"mail_id":   7,
+					"subject":   "without recipients",
+					"timestamp": "2015-09-30T16:06:00Z",
+				},
+			}),
+		)
+		// when
+		_, err := s.updateSectionIfNeeded(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMailHeaders,
+		})
+		// then
+		require.NoError(t, err)
+		ids, err := st.ListCharacterMailIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](8), ids)
+	})
 	t.Run("Can update existing mail", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

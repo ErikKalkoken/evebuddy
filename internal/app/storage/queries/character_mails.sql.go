@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -667,6 +668,120 @@ func (q *Queries) ListAllMailsOrdered(ctx context.Context) ([]ListAllMailsOrdere
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterMailLabelIDs = `-- name: ListCharacterMailLabelIDs :many
+SELECT
+    cmml.character_mail_id,
+    cml.label_id
+FROM
+    character_mail_mail_labels cmml
+    JOIN character_mail_labels cml ON cml.id = cmml.character_mail_label_id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    cm.character_id = ?
+    AND cm.mail_id IN (/*SLICE:mail_ids*/?)
+`
+
+type ListCharacterMailLabelIDsParams struct {
+	CharacterID int64
+	MailIds     []int64
+}
+
+type ListCharacterMailLabelIDsRow struct {
+	CharacterMailID int64
+	LabelID         int64
+}
+
+func (q *Queries) ListCharacterMailLabelIDs(ctx context.Context, arg ListCharacterMailLabelIDsParams) ([]ListCharacterMailLabelIDsRow, error) {
+	query := listCharacterMailLabelIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.MailIds) > 0 {
+		for _, v := range arg.MailIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:mail_ids*/?", strings.Repeat(",?", len(arg.MailIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:mail_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterMailLabelIDsRow
+	for rows.Next() {
+		var i ListCharacterMailLabelIDsRow
+		if err := rows.Scan(&i.CharacterMailID, &i.LabelID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterMailStates = `-- name: ListCharacterMailStates :many
+SELECT
+    id,
+    mail_id,
+    is_read
+FROM
+    character_mails
+WHERE
+    character_id = ?
+    AND mail_id IN (/*SLICE:mail_ids*/?)
+`
+
+type ListCharacterMailStatesParams struct {
+	CharacterID int64
+	MailIds     []int64
+}
+
+type ListCharacterMailStatesRow struct {
+	ID     int64
+	MailID int64
+	IsRead bool
+}
+
+func (q *Queries) ListCharacterMailStates(ctx context.Context, arg ListCharacterMailStatesParams) ([]ListCharacterMailStatesRow, error) {
+	query := listCharacterMailStates
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.MailIds) > 0 {
+		for _, v := range arg.MailIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:mail_ids*/?", strings.Repeat(",?", len(arg.MailIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:mail_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterMailStatesRow
+	for rows.Next() {
+		var i ListCharacterMailStatesRow
+		if err := rows.Scan(&i.ID, &i.MailID, &i.IsRead); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

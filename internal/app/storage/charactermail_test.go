@@ -109,52 +109,6 @@ func TestCharacterMail(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, got.IsRead.ValueOrZero())
 	})
-	t.Run("can update labels", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		m := factory.CreateCharacterMailWithBody()
-		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: m.CharacterID})
-		// when
-		err := st.UpdateCharacterMailSetLabels(ctx, m.CharacterID, m.ID, []int64{label.LabelID})
-		// then
-		require.NoError(t, err)
-		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-		assert.NoError(t, err)
-		assert.Contains(t, got.Labels, label)
-	})
-	t.Run("can update labels with label that is not stored yet", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		m := factory.CreateCharacterMailWithBody()
-		// when
-		err := st.UpdateCharacterMailSetLabels(ctx, m.CharacterID, m.ID, []int64{256})
-		// then
-		require.NoError(t, err)
-		got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
-		require.NoError(t, err)
-		xassert.Equal(t, []int64{256}, got.LabelIDs())
-		l, err := st.GetCharacterMailLabel(ctx, m.CharacterID, 256)
-		require.NoError(t, err)
-		xassert.EqualOptional(t, "Label 256", l.Name)
-	})
-	t.Run("should keep existing labels unchanged when updating labels fails", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacterFull()
-		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
-		m := factory.CreateCharacterMailWithBody(storage.CreateCharacterMailParams{
-			CharacterID: c.ID,
-			LabelIDs:    []int64{l1.LabelID},
-		})
-		// when
-		err := st.UpdateCharacterMailSetLabels(ctx, c.ID, m.ID, []int64{l2.LabelID, 0}) // invalid label ID
-		// then
-		require.ErrorIs(t, err, app.ErrInvalid)
-		got, err := st.GetCharacterMail(ctx, c.ID, m.MailID)
-		require.NoError(t, err)
-		xassert.Equal(t, []*app.CharacterMailLabel{l1}, got.Labels)
-	})
 	t.Run("can update body", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -667,5 +621,438 @@ func TestAllCharactersMails(t *testing.T) {
 		require.NoError(t, err2)
 		xassert.Equal(t, 3, total)
 		xassert.Equal(t, 1, missing)
+	})
+}
+
+func TestStorage_UpdateOrCreateCharacterMails(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should create new mails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		from := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		timestamp := time.Now().UTC()
+		// when
+		changed, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       from.ID,
+				IsRead:       optional.New(true),
+				LabelIDs:     []int64{label.LabelID, 256},
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID},
+				Subject:      optional.New("subject"),
+				Timestamp:    timestamp,
+			},
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		m, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, from, m.From)
+		xassert.EqualOptional(t, true, m.IsRead)
+		assert.ElementsMatch(t, []int64{label.LabelID, 256}, m.LabelIDs())
+		xassert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
+		xassert.EqualOptional(t, "subject", m.Subject)
+		xassert.Equal(t, timestamp, m.Timestamp)
+		assert.True(t, m.Body.IsEmpty())
+		l, err := st.GetCharacterMailLabel(ctx, c.ID, 256)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "Label 256", l.Name)
+	})
+	t.Run("should update read state of stored mails", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			stored  bool
+			isRead  optional.Optional[bool]
+			want    bool
+			changed bool
+		}{
+			{"mark as read", false, optional.New(true), true, true},
+			{"mark as unread", true, optional.New(false), false, true},
+			{"keep read", true, optional.New(true), true, false},
+			{"mark as unread when missing", true, optional.Optional[bool]{}, false, true},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+					IsRead: optional.New(tc.stored),
+				})
+				// when
+				changed, err := st.UpdateOrCreateCharacterMails(ctx, m.CharacterID, []storage.UpdateOrCreateCharacterMailParams{
+					{
+						FromID:       m.From.ID,
+						IsRead:       tc.isRead,
+						MailID:       m.MailID,
+						RecipientIDs: []int64{m.Recipients[0].ID},
+						Timestamp:    m.Timestamp,
+					},
+				})
+				// then
+				require.NoError(t, err)
+				got, err := st.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+				require.NoError(t, err)
+				xassert.Equal(t, tc.want, got.IsRead.ValueOrZero())
+				xassert.Equal(t, tc.changed, changed)
+			})
+		}
+	})
+	t.Run("should update labels of stored mails", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			stored  []int64
+			labels  []int64
+			changed bool
+		}{
+			{"add label", []int64{1}, []int64{1, 2}, true},
+			{"replace label", []int64{1}, []int64{2}, true},
+			{"remove all labels", []int64{1, 2}, nil, true},
+			{"add labels to mail without labels", nil, []int64{1, 2}, true},
+			{"keep labels", []int64{1, 2}, []int64{2, 1}, false},
+			{"add label not stored yet", []int64{1}, []int64{1, 256}, true},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCharacter()
+				factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 1})
+				factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 2})
+				m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+					CharacterID: c.ID,
+					LabelIDs:    tc.stored,
+				})
+				// when
+				changed, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+					{
+						FromID:       m.From.ID,
+						LabelIDs:     tc.labels,
+						MailID:       m.MailID,
+						RecipientIDs: []int64{m.Recipients[0].ID},
+						Timestamp:    m.Timestamp,
+					},
+				})
+				// then
+				require.NoError(t, err)
+				got, err := st.GetCharacterMail(ctx, c.ID, m.MailID)
+				require.NoError(t, err)
+				assert.ElementsMatch(t, tc.labels, got.LabelIDs())
+				xassert.Equal(t, tc.changed, changed)
+			})
+		}
+	})
+	t.Run("should store duplicate label IDs of a new mail once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		from := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       from.ID,
+				LabelIDs:     []int64{1, 1},
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID},
+				Timestamp:    time.Now(),
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{1}, got.LabelIDs())
+	})
+	t.Run("should store duplicate recipient IDs of a new mail once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		from := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       from.ID,
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID, recipient.ID},
+				Timestamp:    time.Now(),
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveEntity{recipient}, got.Recipients)
+	})
+	t.Run("should store duplicate label IDs of a stored mail once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{1},
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m.From.ID,
+				LabelIDs:     []int64{2, 2},
+				MailID:       m.MailID,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    m.Timestamp,
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, m.MailID)
+		require.NoError(t, err)
+		xassert.Equal(t, []int64{2}, got.LabelIDs())
+	})
+	t.Run("should keep stored mails missing from args", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, nil)
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterMailIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(m.MailID), got)
+	})
+	t.Run("should store duplicate args once with the last read state and labels", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		from := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       from.ID,
+				IsRead:       optional.New(false),
+				LabelIDs:     []int64{1},
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID},
+				Timestamp:    time.Now(),
+			},
+			{
+				FromID:       from.ID,
+				IsRead:       optional.New(true),
+				LabelIDs:     []int64{2},
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID},
+				Timestamp:    time.Now(),
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, got.IsRead)
+		xassert.Equal(t, []int64{2}, got.LabelIDs())
+	})
+	t.Run("should leave mails of other characters untouched", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c2.ID,
+			IsRead:      optional.New(false),
+			MailID:      42,
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c1.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m2.From.ID,
+				IsRead:       optional.New(true),
+				MailID:       42,
+				RecipientIDs: []int64{m2.Recipients[0].ID},
+				Timestamp:    m2.Timestamp,
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got1, err := st.GetCharacterMail(ctx, c1.ID, 42)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, got1.IsRead)
+		got2, err := st.GetCharacterMail(ctx, c2.ID, 42)
+		require.NoError(t, err)
+		assert.False(t, got2.IsRead.ValueOrZero())
+	})
+	t.Run("should store nothing when a new mail has no mail ID", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 1})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{1},
+			MailID:      42,
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m.From.ID,
+				MailID:       44,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    time.Now(),
+			},
+			{
+				FromID:       m.From.ID,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    time.Now(),
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		ids, err := st.ListCharacterMailIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](42), ids)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.False(t, got.IsRead.ValueOrZero())
+		xassert.Equal(t, []int64{1}, got.LabelIDs())
+	})
+	t.Run("should store nothing when a new mail has no recipients", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 1})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{1},
+			MailID:      42,
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m.From.ID,
+				MailID:       44,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    time.Now(),
+			},
+			{
+				FromID:    m.From.ID,
+				MailID:    43,
+				Timestamp: time.Now(),
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		ids, err := st.ListCharacterMailIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](42), ids)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.False(t, got.IsRead.ValueOrZero())
+		xassert.Equal(t, []int64{1}, got.LabelIDs())
+	})
+	t.Run("should store nothing when a stored mail gets an invalid label ID", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 1})
+		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{1},
+			MailID:      42,
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m.From.ID,
+				MailID:       44,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    time.Now(),
+			},
+			{
+				FromID:       m.From.ID,
+				IsRead:       optional.New(true),
+				LabelIDs:     []int64{0},
+				MailID:       42,
+				RecipientIDs: []int64{m.Recipients[0].ID},
+				Timestamp:    m.Timestamp,
+			},
+		})
+		// then
+		require.ErrorIs(t, err, app.ErrInvalid)
+		ids, err := st.ListCharacterMailIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](42), ids)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		assert.False(t, got.IsRead.ValueOrZero())
+		xassert.Equal(t, []int64{1}, got.LabelIDs())
+	})
+	t.Run("should update read state and labels of stored mails with chunking", func(t *testing.T) {
+		// given
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 1})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 2})
+		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(false),
+			LabelIDs:    []int64{1},
+		})
+		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsRead:      optional.New(true),
+			LabelIDs:    []int64{1, 2},
+		})
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       m1.From.ID,
+				IsRead:       optional.New(true),
+				LabelIDs:     []int64{2},
+				MailID:       m1.MailID,
+				RecipientIDs: []int64{m1.Recipients[0].ID},
+				Timestamp:    m1.Timestamp,
+			},
+			{
+				FromID:       m2.From.ID,
+				IsRead:       optional.New(false),
+				LabelIDs:     []int64{1},
+				MailID:       m2.MailID,
+				RecipientIDs: []int64{m2.Recipients[0].ID},
+				Timestamp:    m2.Timestamp,
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got1, err := st.GetCharacterMail(ctx, c.ID, m1.MailID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, true, got1.IsRead)
+		xassert.Equal(t, []int64{2}, got1.LabelIDs())
+		got2, err := st.GetCharacterMail(ctx, c.ID, m2.MailID)
+		require.NoError(t, err)
+		assert.False(t, got2.IsRead.ValueOrZero())
+		xassert.Equal(t, []int64{1}, got2.LabelIDs())
+	})
+	t.Run("should reject character ID 0", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, 0, nil)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
 	})
 }

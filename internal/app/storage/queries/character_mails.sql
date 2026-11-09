@@ -326,3 +326,25 @@ SET
 WHERE
     character_id = ?
     AND mail_id = ?;
+-- name: ListCharacterMailStates :many
+SELECT
+    id,
+    mail_id,
+    is_read
+FROM
+    character_mails
+WHERE
+    character_id = ?
+    AND mail_id IN (sqlc.slice('mail_ids'));
+
+-- name: ListCharacterMailLabelIDs :many
+SELECT
+    cmml.character_mail_id,
+    cml.label_id
+FROM
+    character_mail_mail_labels cmml
+    JOIN character_mail_labels cml ON cml.id = cmml.character_mail_label_id
+    JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE
+    cm.character_id = ?
+    AND cm.mail_id IN (sqlc.slice('mail_ids'));
