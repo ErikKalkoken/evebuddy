@@ -31,23 +31,31 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateCharacterMail: %+v: %w", arg, err)
 	}
-	if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	from, err := st.GetEveEntity(ctx, arg.FromID)
-	if err != nil {
-		return 0, wrapErr(err)
-	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
 		return 0, wrapErr(err)
 	}
 	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	mail, err := qtx.CreateMail(ctx, queries.CreateMailParams{
+	id, err := createCharacterMail(ctx, st.qRW.WithTx(tx), arg)
+	if err != nil {
+		return 0, wrapErr(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, wrapErr(err)
+	}
+	slog.Info("Created mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
+	return id, nil
+}
+
+// createCharacterMail creates a mail with its recipients and labels. Must be called within a transaction.
+func createCharacterMail(ctx context.Context, q *queries.Queries, arg CreateCharacterMailParams) (int64, error) {
+	if arg.CharacterID == 0 || arg.MailID == 0 || len(arg.RecipientIDs) == 0 {
+		return 0, app.ErrInvalid
+	}
+	mail, err := q.CreateMail(ctx, queries.CreateMailParams{
 		Body2:       optional.ToNullString(arg.Body),
 		CharacterID: arg.CharacterID,
-		FromID:      from.ID,
+		FromID:      arg.FromID,
 		MailID:      arg.MailID,
 		Subject:     arg.Subject.ValueOrZero(),
 		IsProcessed: arg.IsProcessed,
@@ -55,26 +63,139 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		Timestamp:   arg.Timestamp.UTC(), // stored times must be UTC, because SQLite compares them as text
 	})
 	if err != nil {
-		return 0, wrapErr(err)
+		return 0, err
 	}
 	for _, id := range arg.RecipientIDs {
-		err := qtx.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
+		err := q.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
 			MailID:      mail.ID,
 			EveEntityID: id,
 		})
 		if err != nil {
-			return 0, wrapErr(fmt.Errorf("create mail recipient: %w", err))
+			return 0, fmt.Errorf("create mail recipient: %w", err)
 		}
 	}
-	if err := updateCharacterMailSetLabels(ctx, qtx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
-		return 0, wrapErr(err)
+	if err := addCharacterMailLabels(ctx, q, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
+		return 0, err
+	}
+	return mail.ID, nil
+}
+
+// UpdateOrCreateCharacterMailParams is a mail header from ESI.
+type UpdateOrCreateCharacterMailParams struct {
+	FromID       int64
+	IsRead       optional.Optional[bool]
+	LabelIDs     []int64
+	MailID       int64
+	RecipientIDs []int64
+	Subject      optional.Optional[string]
+	Timestamp    time.Time
+}
+
+// UpdateOrCreateCharacterMails creates new mail messages of a character
+// and updates read state and labels of stored messages.
+// Existing mail messages missing in args are kept.
+// Reports whether any mail message was created or updated.
+func (st *Storage) UpdateOrCreateCharacterMails(ctx context.Context, characterID int64, args []UpdateOrCreateCharacterMailParams) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCharacterMails: character %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return false, wrapErr(app.ErrInvalid)
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	var mailIDs set.Set[int64]
+	for _, arg := range args {
+		mailIDs.Add(arg.MailID)
+	}
+	storedMessages := make(map[int64]queries.ListCharacterMailStatesRow) // by mail ID
+	storedLabelIDs := make(map[int64]set.Set[int64])                     // by mail PK
+	for ids := range slices.Chunk(slices.Collect(mailIDs.All()), st.MaxIDsPerQuery) {
+		stateRows, err := qtx.ListCharacterMailStates(ctx, queries.ListCharacterMailStatesParams{
+			CharacterID: characterID,
+			MailIds:     ids,
+		})
+		if err != nil {
+			return false, wrapErr(err)
+		}
+		for _, r := range stateRows {
+			storedMessages[r.MailID] = r
+		}
+		labelRows, err := qtx.ListCharacterMailLabelIDs(ctx, queries.ListCharacterMailLabelIDsParams{
+			CharacterID: characterID,
+			MailIds:     ids,
+		})
+		if err != nil {
+			return false, wrapErr(err)
+		}
+		for _, r := range labelRows {
+			labelIDs := storedLabelIDs[r.CharacterMailID]
+			labelIDs.Add(r.LabelID)
+			storedLabelIDs[r.CharacterMailID] = labelIDs
+		}
+	}
+	var created, updated int
+	for _, arg := range args {
+		isRead := arg.IsRead.ValueOrZero()
+		labelIDs := set.Of(arg.LabelIDs...)
+		message, found := storedMessages[arg.MailID]
+		if !found {
+			id, err := createCharacterMail(ctx, qtx, CreateCharacterMailParams{
+				CharacterID:  characterID,
+				FromID:       arg.FromID,
+				IsRead:       arg.IsRead,
+				LabelIDs:     slices.Collect(labelIDs.All()),
+				MailID:       arg.MailID,
+				RecipientIDs: arg.RecipientIDs,
+				Subject:      arg.Subject,
+				Timestamp:    arg.Timestamp,
+			})
+			if err != nil {
+				return false, wrapErr(fmt.Errorf("create mail %d: %w", arg.MailID, err))
+			}
+			storedMessages[arg.MailID] = queries.ListCharacterMailStatesRow{ID: id, MailID: arg.MailID, IsRead: isRead}
+			storedLabelIDs[id] = labelIDs
+			created++
+			continue
+		}
+		var changed bool
+		if isRead != message.IsRead {
+			err := qtx.UpdateCharacterMailIsRead(ctx, queries.UpdateCharacterMailIsReadParams{
+				ID:     message.ID,
+				IsRead: isRead,
+			})
+			if err != nil {
+				return false, wrapErr(fmt.Errorf("update read state of mail %d: %w", arg.MailID, err))
+			}
+			message.IsRead = isRead
+			storedMessages[arg.MailID] = message
+			changed = true
+		}
+		if !labelIDs.Equal(storedLabelIDs[message.ID]) {
+			if err := qtx.DeleteMailCharacterMailLabels(ctx, message.ID); err != nil {
+				return false, wrapErr(fmt.Errorf("delete labels of mail %d: %w", arg.MailID, err))
+			}
+			if err := addCharacterMailLabels(ctx, qtx, characterID, message.ID, slices.Collect(labelIDs.All())); err != nil {
+				return false, wrapErr(fmt.Errorf("add labels to mail %d: %w", arg.MailID, err))
+			}
+			storedLabelIDs[message.ID] = labelIDs
+			changed = true
+		}
+		if changed {
+			updated++
+		}
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, wrapErr(err)
+		return false, wrapErr(err)
 	}
-	slog.Info("Created mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
-	return mail.ID, nil
-
+	if created > 0 || updated > 0 {
+		slog.Info("Stored mail", "characterID", characterID, "created", created, "updated", updated)
+	}
+	return created > 0 || updated > 0, nil
 }
 
 func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int64) (*app.CharacterMail, error) {
@@ -125,7 +246,7 @@ func (st *Storage) CountAllCharactersMailsUnread(ctx context.Context) (int, erro
 	return int(count), err
 }
 
-// CountAllCharactersMails returns the number of mails of all characters.
+// CountAllCharactersMails returns the number of mail messages of all characters.
 func (st *Storage) CountAllCharactersMails(ctx context.Context) (int, error) {
 	count, err := st.qRO.CountAllCharactersMails(ctx)
 	if err != nil {
@@ -134,7 +255,7 @@ func (st *Storage) CountAllCharactersMails(ctx context.Context) (int, error) {
 	return int(count), nil
 }
 
-// CountAllCharactersMailsWithoutBody returns the number of mails of all characters without a body.
+// CountAllCharactersMailsWithoutBody returns the number of mail messages of all characters without a body.
 func (st *Storage) CountAllCharactersMailsWithoutBody(ctx context.Context) (int, error) {
 	count, err := st.qRO.CountAllCharactersMailsWithoutBody(ctx)
 	if err != nil {
@@ -151,11 +272,11 @@ func (st *Storage) CountCharacterMails(ctx context.Context, characterID int64) (
 	return int(count), err
 }
 
-// CountCharacterMailsWithoutBody returns the number of mails of a character without a body.
+// CountCharacterMailsWithoutBody returns the number of mail messages of a character without a body.
 func (st *Storage) CountCharacterMailsWithoutBody(ctx context.Context, characterID int64) (int, error) {
 	count, err := st.qRO.CountCharacterMailsWithoutBody(ctx, characterID)
 	if err != nil {
-		return 0, fmt.Errorf("count mails without body for character %d: %w", characterID, err)
+		return 0, fmt.Errorf("CountCharacterMailsWithoutBody for character %d: %w", characterID, err)
 	}
 	return int(count), nil
 }
@@ -301,32 +422,8 @@ func (st *Storage) UpdateCharacterMailSetIsRead(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterMailSetLabels(ctx context.Context, characterID int64, mailPK int64, labelIDs []int64) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateCharacterMailLabels: %d %d: %w", characterID, mailPK, err)
-	}
-	if characterID == 0 || mailPK == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	tx, err := st.dbRW.Begin()
-	if err != nil {
-		return wrapErr(err)
-	}
-	defer tx.Rollback()
-	if err := updateCharacterMailSetLabels(ctx, st.qRW.WithTx(tx), characterID, mailPK, labelIDs); err != nil {
-		return wrapErr(err)
-	}
-	if err := tx.Commit(); err != nil {
-		return wrapErr(err)
-	}
-	return nil
-}
-
-// updateCharacterMailSetLabels replaces the labels of a mail. Must be called within a transaction.
-func updateCharacterMailSetLabels(ctx context.Context, q *queries.Queries, characterID int64, mailPK int64, labelIDs []int64) error {
-	if err := q.DeleteMailCharacterMailLabels(ctx, mailPK); err != nil {
-		return fmt.Errorf("delete mail labels: %w", err)
-	}
+// addCharacterMailLabels adds labels to a mail. Must be called within a transaction.
+func addCharacterMailLabels(ctx context.Context, q *queries.Queries, characterID int64, mailPK int64, labelIDs []int64) error {
 	for _, l := range labelIDs {
 		// labels not stored yet are created with a generic name, which the next labels update replaces
 		label, err := getOrCreateCharacterMailLabel(ctx, q, MailLabelParams{
