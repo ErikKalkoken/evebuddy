@@ -769,6 +769,27 @@ func TestStorage_UpdateOrCreateCharacterMails(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, []int64{1}, got.LabelIDs())
 	})
+	t.Run("should store duplicate recipient IDs of a new mail once", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		from := factory.CreateEveEntity()
+		recipient := factory.CreateEveEntity()
+		// when
+		_, err := st.UpdateOrCreateCharacterMails(ctx, c.ID, []storage.UpdateOrCreateCharacterMailParams{
+			{
+				FromID:       from.ID,
+				MailID:       42,
+				RecipientIDs: []int64{recipient.ID, recipient.ID},
+				Timestamp:    time.Now(),
+			},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.GetCharacterMail(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, []*app.EveEntity{recipient}, got.Recipients)
+	})
 	t.Run("should store duplicate label IDs of a stored mail once", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

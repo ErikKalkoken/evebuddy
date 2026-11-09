@@ -65,7 +65,7 @@ func createCharacterMail(ctx context.Context, q *queries.Queries, arg CreateChar
 	if err != nil {
 		return 0, err
 	}
-	for _, id := range arg.RecipientIDs {
+	for id := range set.Of(arg.RecipientIDs...).All() {
 		err := q.CreateMailRecipient(ctx, queries.CreateMailRecipientParams{
 			MailID:      mail.ID,
 			EveEntityID: id,
