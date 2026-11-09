@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -296,33 +294,84 @@ type CreateCharacterNotificationParams struct {
 	Type           string
 }
 
+// CreateCharacterNotification stores a notification and creates its type if missing.
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
+	return st.CreateCharacterNotifications(ctx, []CreateCharacterNotificationParams{arg})
+}
+
+// CreateCharacterNotifications stores all notifications or none of them.
+// Missing notification types are created.
+func (st *Storage) CreateCharacterNotifications(ctx context.Context, args []CreateCharacterNotificationParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("CreateCharacterNotification: %+v: %w", arg, err)
+		return fmt.Errorf("CreateCharacterNotifications: %w", err)
 	}
-	if arg.CharacterID == 0 || arg.NotificationID == 0 || arg.SenderID == 0 {
-		return wrapErr(app.ErrInvalid)
+	wrapArgErr := func(arg CreateCharacterNotificationParams, err error) error {
+		return fmt.Errorf("CreateCharacterNotifications: %+v: %w", struct {
+			CharacterID    int64
+			NotificationID int64
+			SenderID       int64
+			Type           string
+		}{
+			arg.CharacterID,
+			arg.NotificationID,
+			arg.SenderID,
+			arg.Type,
+		}, err)
 	}
-	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
+	if len(args) == 0 {
+		return nil
+	}
+	// validate before the transaction to avoid blocking other writers for an invalid batch
+	var names set.Set[string]
+	for _, arg := range args {
+		if arg.CharacterID == 0 || arg.NotificationID == 0 || arg.SenderID == 0 || arg.Type == "" {
+			return wrapArgErr(arg, app.ErrInvalid)
+		}
+		names.Add(arg.Type)
+	}
+	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return err
+		return wrapErr(err)
 	}
-	err = st.qRW.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
-		Body:           optional.ToNullString(arg.Body),
-		CharacterID:    arg.CharacterID,
-		IsRead:         arg.IsRead,
-		IsProcessed:    arg.IsProcessed,
-		NotificationID: arg.NotificationID,
-		RecipientID:    optional.ToNullInt64(arg.RecipientID),
-		SenderID:       arg.SenderID,
-		Text:           arg.Text.ValueOrZero(),
-		Timestamp:      arg.Timestamp.UTC(), // stored times must be UTC, because SQLite compares them as text
-		Title:          optional.ToNullString(arg.Title),
-		TypeID:         typeID,
-	})
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	rows, err := qtx.ListNotificationTypeIDsByName(ctx, slices.Collect(names.All()))
 	if err != nil {
-		arg.Body.Clear()
-		arg.Text.Clear()
+		return wrapErr(err)
+	}
+	typeIDs := make(map[string]int64, len(rows))
+	for _, r := range rows {
+		typeIDs[r.Name] = r.ID
+	}
+	for name := range names.All() {
+		if _, found := typeIDs[name]; found {
+			continue
+		}
+		id, err := qtx.CreateNotificationType(ctx, name)
+		if err != nil {
+			return wrapErr(err)
+		}
+		typeIDs[name] = id
+	}
+	for _, arg := range args {
+		err := qtx.CreateCharacterNotification(ctx, queries.CreateCharacterNotificationParams{
+			Body:           optional.ToNullString(arg.Body),
+			CharacterID:    arg.CharacterID,
+			IsRead:         arg.IsRead,
+			IsProcessed:    arg.IsProcessed,
+			NotificationID: arg.NotificationID,
+			RecipientID:    optional.ToNullInt64(arg.RecipientID),
+			SenderID:       arg.SenderID,
+			Text:           arg.Text.ValueOrZero(),
+			Timestamp:      arg.Timestamp.UTC(), // stored times must be UTC, because SQLite compares them as text
+			Title:          optional.ToNullString(arg.Title),
+			TypeID:         typeIDs[arg.Type],
+		})
+		if err != nil {
+			return wrapArgErr(arg, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return wrapErr(err)
 	}
 	return nil
@@ -379,38 +428,6 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	return o, err
 }
 
-func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("GetOrCreateNotificationType: %s: %w", name, err)
-	}
-	if name == "" {
-		return 0, wrapErr(app.ErrInvalid)
-	}
-	id, err := func() (int64, error) {
-		tx, err := st.dbRW.Begin()
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
-		qtx := st.qRW.WithTx(tx)
-		id, err := qtx.GetNotificationTypeID(ctx, name)
-		if errors.Is(err, sql.ErrNoRows) {
-			id, err = qtx.CreateNotificationType(ctx, name)
-		}
-		if err != nil {
-			return 0, err
-		}
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
-		return id, nil
-	}()
-	if err != nil {
-		return 0, wrapErr(err)
-	}
-	return id, nil
-}
-
 func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int64) (set.Set[int64], error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterNotificationIDs: %d: %w", characterID, err)
@@ -451,6 +468,46 @@ func (st *Storage) ListAllCharacterNotifications(ctx context.Context) ([]*app.Ch
 		)
 	}
 	return ee, nil
+}
+
+// CharacterNotificationState is the part of a stored notification which updates compare with ESI.
+type CharacterNotificationState struct {
+	Body           optional.Optional[string]
+	ID             int64
+	IsRead         bool
+	NotificationID int64
+	Title          optional.Optional[string]
+	Type           app.EveNotificationType
+}
+
+// ListCharacterNotificationStates returns the states of all notifications of a character.
+func (st *Storage) ListCharacterNotificationStates(ctx context.Context, characterID int64) ([]CharacterNotificationState, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ListCharacterNotificationStates: %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return nil, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterNotificationStates(ctx, characterID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	oo := make([]CharacterNotificationState, len(rows))
+	for i, r := range rows {
+		nt, found := EveNotificationTypeFromESIString(r.TypeName)
+		if !found {
+			nt = app.UnknownNotification
+		}
+		oo[i] = CharacterNotificationState{
+			Body:           optional.FromNullString(r.Body),
+			ID:             r.ID,
+			IsRead:         r.IsRead,
+			NotificationID: r.NotificationID,
+			Title:          optional.FromNullString(r.Title),
+			Type:           nt,
+		}
+	}
+	return oo, nil
 }
 
 func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int64) ([]*app.CharacterNotification, error) {
@@ -548,24 +605,45 @@ func characterNotificationFromDBModel(
 type UpdateCharacterNotificationParams struct {
 	Body   optional.Optional[string]
 	ID     int64
-	IsRead bool
+	IsRead optional.Optional[bool] // empty keeps the stored value
 	Title  optional.Optional[string]
 }
 
-func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
+// UpdateCharacterNotifications updates all notifications or none of them.
+func (st *Storage) UpdateCharacterNotifications(ctx context.Context, args []UpdateCharacterNotificationParams) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateCharacterNotification: %+v: %w", arg, err)
+		return fmt.Errorf("UpdateCharacterNotifications: %w", err)
 	}
-	if arg.ID == 0 {
-		return wrapErr(app.ErrInvalid)
+	wrapArgErr := func(arg UpdateCharacterNotificationParams, err error) error {
+		return fmt.Errorf("UpdateCharacterNotifications: ID: %d: %w", arg.ID, err)
 	}
-	err := st.qRW.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
-		ID:     arg.ID,
-		Body:   optional.ToNullString(arg.Body),
-		IsRead: arg.IsRead,
-		Title:  optional.ToNullString(arg.Title),
-	})
+	if len(args) == 0 {
+		return nil
+	}
+	// validate before the transaction to avoid blocking other writers for an invalid batch
+	for _, arg := range args {
+		if arg.ID == 0 {
+			return wrapArgErr(arg, app.ErrInvalid)
+		}
+	}
+	tx, err := st.dbRW.Begin()
 	if err != nil {
+		return wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for _, arg := range args {
+		err := qtx.UpdateCharacterNotification(ctx, queries.UpdateCharacterNotificationParams{
+			ID:     arg.ID,
+			Body:   optional.ToNullString(arg.Body),
+			IsRead: optional.ToNullBool(arg.IsRead),
+			Title:  optional.ToNullString(arg.Title),
+		})
+		if err != nil {
+			return wrapArgErr(arg, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return wrapErr(err)
 	}
 	return nil

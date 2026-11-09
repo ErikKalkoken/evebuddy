@@ -61,6 +61,20 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterNotificationStates :many
+SELECT
+    cn.id,
+    cn.notification_id,
+    cn.is_read,
+    cn.title,
+    cn.body,
+    nt.name AS type_name
+FROM
+    character_notifications cn
+    JOIN notification_types nt ON nt.id = cn.type_id
+WHERE
+    cn.character_id = ?;
+
 -- name: ListAllCharacterNotifications :many
 SELECT
     sqlc.embed(cn),
@@ -107,11 +121,11 @@ ORDER BY
 -- name: UpdateCharacterNotification :exec
 UPDATE character_notifications
 SET
-    body = ?2,
-    is_read = ?3,
-    title = ?4
+    body = sqlc.narg('body'),
+    is_read = COALESCE(sqlc.narg('is_read'), is_read),
+    title = sqlc.narg('title')
 WHERE
-    id = ?1;
+    id = sqlc.arg('id');
 
 -- name: UpdateCharacterNotificationsSetProcessed :exec
 UPDATE character_notifications
@@ -136,10 +150,11 @@ VALUES
 RETURNING
     id;
 
--- name: GetNotificationTypeID :one
+-- name: ListNotificationTypeIDsByName :many
 SELECT
-    id
+    id,
+    name
 FROM
     notification_types
 WHERE
-    name = ?;
+    name IN (sqlc.slice('names'));

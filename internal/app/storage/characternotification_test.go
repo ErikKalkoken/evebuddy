@@ -109,67 +109,6 @@ func TestCharacterNotification(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, app.UnknownNotification, o.Type)
 	})
-	t.Run("can updates IsRead 1", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		n := f.CreateCharacterNotification()
-		// when
-		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
-			ID:     n.ID,
-			IsRead: true,
-		})
-		// then
-		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
-		require.NoError(t, err)
-		assert.True(t, o.IsRead)
-	})
-	t.Run("can updates IsRead 2", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
-			IsRead: true,
-		})
-		// when
-		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
-			ID: n.ID,
-		})
-		// then
-		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
-		require.NoError(t, err)
-		assert.False(t, o.IsRead)
-	})
-	t.Run("can update title", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
-		// when
-		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
-			ID:    n.ID,
-			Title: optional.New("title"),
-		})
-		// then
-		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
-		require.NoError(t, err)
-		xassert.EqualOptional(t, "title", o.Title)
-	})
-	t.Run("can update body", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
-		// when
-		err := st.UpdateCharacterNotification(t.Context(), storage.UpdateCharacterNotificationParams{
-			ID:   n.ID,
-			Body: optional.New("body"),
-		})
-		// then
-		require.NoError(t, err)
-		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.ID)
-		require.NoError(t, err)
-		xassert.EqualOptional(t, "body", o.Body)
-	})
 	t.Run("can mark notifs as processed", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -519,30 +458,307 @@ func TestCharacterNotification_ListUnprocessed(t *testing.T) {
 	})
 }
 
-func TestNotificationType(t *testing.T) {
-	db, st, _ := testutil.NewDBInMemory()
+func TestStorage_CreateCharacterNotifications(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
 
-	t.Run("can create new", func(t *testing.T) {
+	t.Run("should create all notifications", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		// when
-		x, err := st.GetOrCreateNotificationType(t.Context(), "alpha")
-		// then
-		require.NoError(t, err)
-		assert.NotEqual(t, 0, x)
-	})
-	t.Run("can get existing", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		x1, err := st.GetOrCreateNotificationType(t.Context(), "alpha")
-		if err != nil {
-			t.Fatal(err)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		recipient := f.CreateEveEntityCorporation()
+		timestamp := time.Now().UTC()
+		args := []storage.CreateCharacterNotificationParams{
+			{
+				Body:           optional.New("body"),
+				CharacterID:    c.ID,
+				IsProcessed:    true,
+				IsRead:         true,
+				NotificationID: 1,
+				RecipientID:    optional.New(recipient.ID),
+				SenderID:       sender.ID,
+				Text:           optional.New("text"),
+				Timestamp:      timestamp,
+				Title:          optional.New("title"),
+				Type:           "StructureDestroyed",
+			},
+			{
+				CharacterID:    c.ID,
+				NotificationID: 2,
+				SenderID:       sender.ID,
+				Timestamp:      timestamp,
+				Type:           "BountyClaimMsg",
+			},
 		}
 		// when
-		x2, err := st.GetOrCreateNotificationType(t.Context(), "alpha")
+		err := st.CreateCharacterNotifications(t.Context(), args)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, x1, x2)
+		o1, err := st.GetCharacterNotification(t.Context(), c.ID, 1)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "body", o1.Body)
+		xassert.Equal(t, c.ID, o1.CharacterID)
+		assert.True(t, o1.IsProcessed)
+		assert.True(t, o1.IsRead)
+		xassert.Equal(t, recipient, o1.Recipient.MustValue())
+		xassert.Equal(t, sender, o1.Sender)
+		xassert.EqualOptional(t, "text", o1.Text)
+		xassert.Equal(t, timestamp, o1.Timestamp.UTC())
+		xassert.EqualOptional(t, "title", o1.Title)
+		xassert.Equal(t, app.StructureDestroyed, o1.Type)
+		o2, err := st.GetCharacterNotification(t.Context(), c.ID, 2)
+		require.NoError(t, err)
+		assert.False(t, o2.IsRead)
+		assert.True(t, o2.Title.IsEmpty())
+		xassert.Equal(t, app.BountyClaimMsg, o2.Type)
+	})
+	t.Run("should do nothing when called without args", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := st.CreateCharacterNotifications(t.Context(), nil)
+		// then
+		require.NoError(t, err)
+	})
+	t.Run("should create none when an arg is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		args := []storage.CreateCharacterNotificationParams{
+			{
+				CharacterID:    c.ID,
+				NotificationID: 1,
+				SenderID:       sender.ID,
+				Type:           "StructureDestroyed",
+			},
+			{
+				CharacterID:    c.ID,
+				NotificationID: 2,
+				Type:           "StructureDestroyed",
+			},
+		}
+		// when
+		err := st.CreateCharacterNotifications(t.Context(), args)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, ids.Size())
+	})
+	t.Run("should create none when storing an arg fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 2,
+		})
+		args := []storage.CreateCharacterNotificationParams{
+			{
+				CharacterID:    c.ID,
+				NotificationID: 1,
+				SenderID:       sender.ID,
+				Type:           "StructureDestroyed",
+			},
+			{
+				CharacterID:    c.ID,
+				NotificationID: 2,
+				SenderID:       sender.ID,
+				Type:           "StructureDestroyed",
+			},
+		}
+		// when
+		err := st.CreateCharacterNotifications(t.Context(), args)
+		// then
+		assert.Error(t, err)
+		ids, err := st.ListCharacterNotificationIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](2), ids)
+	})
+	t.Run("should return error when type is empty", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		args := []storage.CreateCharacterNotificationParams{{
+			CharacterID:    c.ID,
+			NotificationID: 1,
+			SenderID:       sender.ID,
+		}}
+		// when
+		err := st.CreateCharacterNotifications(t.Context(), args)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+	t.Run("should create missing types and keep existing ones", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		sender := f.CreateEveEntityCharacter()
+		f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID:    c.ID,
+			NotificationID: 3,
+			Type:           "StructureDestroyed",
+		})
+		args := []storage.CreateCharacterNotificationParams{
+			{
+				CharacterID:    c.ID,
+				NotificationID: 1,
+				SenderID:       sender.ID,
+				Type:           "StructureDestroyed",
+			},
+			{
+				CharacterID:    c.ID,
+				NotificationID: 2,
+				SenderID:       sender.ID,
+				Type:           "BountyClaimMsg",
+			},
+		}
+		// when
+		err := st.CreateCharacterNotifications(t.Context(), args)
+		// then
+		require.NoError(t, err)
+		o0, err := st.GetCharacterNotification(t.Context(), c.ID, 3)
+		require.NoError(t, err)
+		xassert.Equal(t, app.StructureDestroyed, o0.Type)
+		o1, err := st.GetCharacterNotification(t.Context(), c.ID, 1)
+		require.NoError(t, err)
+		xassert.Equal(t, app.StructureDestroyed, o1.Type)
+		o2, err := st.GetCharacterNotification(t.Context(), c.ID, 2)
+		require.NoError(t, err)
+		xassert.Equal(t, app.BountyClaimMsg, o2.Type)
+	})
+}
+
+func TestStorage_UpdateCharacterNotifications(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should update all notifications", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n1 := f.CreateCharacterNotification()
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: n1.CharacterID,
+			IsRead:      true,
+		})
+		args := []storage.UpdateCharacterNotificationParams{
+			{
+				Body:   optional.New("body"),
+				ID:     n1.ID,
+				IsRead: optional.New(true),
+				Title:  optional.New("title"),
+			},
+			{
+				ID:     n2.ID,
+				IsRead: optional.New(false),
+			},
+		}
+		// when
+		err := st.UpdateCharacterNotifications(t.Context(), args)
+		// then
+		require.NoError(t, err)
+		o1, err := st.GetCharacterNotification(t.Context(), n1.CharacterID, n1.NotificationID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, "body", o1.Body)
+		assert.True(t, o1.IsRead)
+		xassert.EqualOptional(t, "title", o1.Title)
+		o2, err := st.GetCharacterNotification(t.Context(), n2.CharacterID, n2.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, o2.Body.IsEmpty())
+		assert.False(t, o2.IsRead)
+		assert.True(t, o2.Title.IsEmpty())
+	})
+	t.Run("should keep is read when not set", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			IsRead: true,
+		})
+		args := []storage.UpdateCharacterNotificationParams{{
+			ID:    n.ID,
+			Title: optional.New("title"),
+		}}
+		// when
+		err := st.UpdateCharacterNotifications(t.Context(), args)
+		// then
+		require.NoError(t, err)
+		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.NotificationID)
+		require.NoError(t, err)
+		assert.True(t, o.IsRead)
+		xassert.EqualOptional(t, "title", o.Title)
+	})
+	t.Run("should do nothing when called without args", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		err := st.UpdateCharacterNotifications(t.Context(), nil)
+		// then
+		require.NoError(t, err)
+	})
+	t.Run("should update none when an arg is invalid", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		n := f.CreateCharacterNotification()
+		args := []storage.UpdateCharacterNotificationParams{
+			{
+				ID:    n.ID,
+				Title: optional.New("title"),
+			},
+			{},
+		}
+		// when
+		err := st.UpdateCharacterNotifications(t.Context(), args)
+		// then
+		assert.ErrorIs(t, err, app.ErrInvalid)
+		o, err := st.GetCharacterNotification(t.Context(), n.CharacterID, n.NotificationID)
+		require.NoError(t, err)
+		xassert.Equal(t, n.Title, o.Title)
+	})
+}
+
+func TestStorage_ListCharacterNotificationStates(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should return states of the character's notifications", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		n1 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("body"),
+			CharacterID: c.ID,
+			IsRead:      true,
+			Title:       optional.New("title"),
+			Type:        "StructureDestroyed",
+		})
+		n2 := f.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "alpha",
+		})
+		f.CreateCharacterNotification() // other character
+		// when
+		got, err := st.ListCharacterNotificationStates(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		want := []storage.CharacterNotificationState{
+			{
+				Body:           optional.New("body"),
+				ID:             n1.ID,
+				IsRead:         true,
+				NotificationID: n1.NotificationID,
+				Title:          optional.New("title"),
+				Type:           app.StructureDestroyed,
+			},
+			{
+				ID:             n2.ID,
+				NotificationID: n2.NotificationID,
+				Type:           app.UnknownNotification,
+			},
+		}
+		assert.ElementsMatch(t, want, got)
 	})
 }

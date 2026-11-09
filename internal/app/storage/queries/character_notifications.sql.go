@@ -163,22 +163,6 @@ func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacter
 	return i, err
 }
 
-const getNotificationTypeID = `-- name: GetNotificationTypeID :one
-SELECT
-    id
-FROM
-    notification_types
-WHERE
-    name = ?
-`
-
-func (q *Queries) GetNotificationTypeID(ctx context.Context, name string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getNotificationTypeID, name)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
 const listAllCharacterNotifications = `-- name: ListAllCharacterNotifications :many
 SELECT
     cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.recipient_id,
@@ -266,6 +250,60 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 			return nil, err
 		}
 		items = append(items, notification_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterNotificationStates = `-- name: ListCharacterNotificationStates :many
+SELECT
+    cn.id,
+    cn.notification_id,
+    cn.is_read,
+    cn.title,
+    cn.body,
+    nt.name AS type_name
+FROM
+    character_notifications cn
+    JOIN notification_types nt ON nt.id = cn.type_id
+WHERE
+    cn.character_id = ?
+`
+
+type ListCharacterNotificationStatesRow struct {
+	ID             int64
+	NotificationID int64
+	IsRead         bool
+	Title          sql.NullString
+	Body           sql.NullString
+	TypeName       string
+}
+
+func (q *Queries) ListCharacterNotificationStates(ctx context.Context, characterID int64) ([]ListCharacterNotificationStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterNotificationStates, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterNotificationStatesRow
+	for rows.Next() {
+		var i ListCharacterNotificationStatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotificationID,
+			&i.IsRead,
+			&i.Title,
+			&i.Body,
+			&i.TypeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -431,29 +469,72 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg
 	return items, nil
 }
 
+const listNotificationTypeIDsByName = `-- name: ListNotificationTypeIDsByName :many
+SELECT
+    id,
+    name
+FROM
+    notification_types
+WHERE
+    name IN (/*SLICE:names*/?)
+`
+
+func (q *Queries) ListNotificationTypeIDsByName(ctx context.Context, names []string) ([]NotificationType, error) {
+	query := listNotificationTypeIDsByName
+	var queryParams []interface{}
+	if len(names) > 0 {
+		for _, v := range names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotificationType
+	for rows.Next() {
+		var i NotificationType
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCharacterNotification = `-- name: UpdateCharacterNotification :exec
 UPDATE character_notifications
 SET
-    body = ?2,
-    is_read = ?3,
-    title = ?4
+    body = ?1,
+    is_read = COALESCE(?2, is_read),
+    title = ?3
 WHERE
-    id = ?1
+    id = ?4
 `
 
 type UpdateCharacterNotificationParams struct {
-	ID     int64
 	Body   sql.NullString
-	IsRead bool
+	IsRead sql.NullBool
 	Title  sql.NullString
+	ID     int64
 }
 
 func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
 	_, err := q.db.ExecContext(ctx, updateCharacterNotification,
-		arg.ID,
 		arg.Body,
 		arg.IsRead,
 		arg.Title,
+		arg.ID,
 	)
 	return err
 }
