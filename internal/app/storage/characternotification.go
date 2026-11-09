@@ -603,10 +603,10 @@ func characterNotificationFromDBModel(
 }
 
 type UpdateCharacterNotificationParams struct {
-	Body   optional.Optional[string]
+	Body   optional.Optional[string] // empty clears the stored value
 	ID     int64
-	IsRead optional.Optional[bool] // empty keeps the stored value
-	Title  optional.Optional[string]
+	IsRead optional.Optional[bool]   // empty keeps the stored value
+	Title  optional.Optional[string] // empty clears the stored value
 }
 
 // UpdateCharacterNotifications updates all notifications or none of them.
