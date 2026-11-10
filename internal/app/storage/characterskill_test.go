@@ -69,19 +69,187 @@ func TestCharacterSkill(t *testing.T) {
 		xassert.Equal(t, 4, o2.TrainedSkillLevel)
 		xassert.Equal(t, 99, o2.SkillPointsInSkill)
 	})
-	t.Run("can delete excluded skills", func(t *testing.T) {
+}
+
+func TestStorage_ReplaceCharacterSkills(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should create new skills", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := f.CreateCharacter()
-		x1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
-		x2 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		eveType := f.CreateEveType()
 		// when
-		err := st.DeleteCharacterSkills(t.Context(), c.ID, set.Of(x2.Type.ID))
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c.ID, []storage.ReplaceCharacterSkillParams{{
+			ActiveSkillLevel:   3,
+			SkillPointsInSkill: 99,
+			TrainedSkillLevel:  5,
+			TypeID:             eveType.ID,
+		}})
 		// then
 		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterSkill(t.Context(), c.ID, eveType.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 3, x.ActiveSkillLevel)
+		xassert.Equal(t, 99, x.SkillPointsInSkill)
+		xassert.Equal(t, 5, x.TrainedSkillLevel)
+	})
+	t.Run("should update changed skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+		})
+		// when
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c.ID, []storage.ReplaceCharacterSkillParams{{
+			ActiveSkillLevel:   4,
+			SkillPointsInSkill: 99,
+			TrainedSkillLevel:  4,
+			TypeID:             o.Type.ID,
+		}})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		x, err := st.GetCharacterSkill(t.Context(), c.ID, o.Type.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 4, x.ActiveSkillLevel)
+		xassert.Equal(t, 99, x.SkillPointsInSkill)
+		xassert.Equal(t, 4, x.TrainedSkillLevel)
+	})
+	t.Run("should delete obsolete skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+		})
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		// when
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c.ID, []storage.ReplaceCharacterSkillParams{{
+			ActiveSkillLevel:   3,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+			TypeID:             o1.Type.ID,
+		}})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
 		ids, err := st.ListCharacterSkillIDs(t.Context(), c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, set.Of(x1.Type.ID), ids)
+		xassert.Equal(t, set.Of(o1.Type.ID), ids)
+	})
+	t.Run("should delete all skills when skills is empty", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		// when
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterSkillIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 0, ids.Size())
+	})
+	t.Run("should not touch skills of other characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := f.CreateCharacter()
+		c2 := f.CreateCharacter()
+		eveType := f.CreateEveType()
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c1.ID, TypeID: eveType.ID})
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c2.ID, TypeID: eveType.ID})
+		// when
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c1.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		ids, err := st.ListCharacterSkillIDs(t.Context(), c2.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(eveType.ID), ids)
+	})
+	t.Run("should report not changed when skills are identical", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+		})
+		// when
+		changed, err := st.ReplaceCharacterSkills(t.Context(), c.ID, []storage.ReplaceCharacterSkillParams{{
+			ActiveSkillLevel:   3,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+			TypeID:             o.Type.ID,
+		}})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should keep stored skills when a write fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		o1 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 42,
+			TrainedSkillLevel:  5,
+		})
+		o2 := f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		// when
+		_, err := st.ReplaceCharacterSkills(t.Context(), c.ID, []storage.ReplaceCharacterSkillParams{{
+			ActiveSkillLevel:   4,
+			SkillPointsInSkill: 99,
+			TrainedSkillLevel:  4,
+			TypeID:             o1.Type.ID,
+		}, {
+			TypeID: 99999, // unknown type violates foreign key
+		}})
+		// then
+		require.Error(t, err)
+		x, err := st.GetCharacterSkill(t.Context(), c.ID, o1.Type.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, 3, x.ActiveSkillLevel)
+		xassert.Equal(t, 42, x.SkillPointsInSkill)
+		xassert.Equal(t, 5, x.TrainedSkillLevel)
+		ids, err := st.ListCharacterSkillIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o1.Type.ID, o2.Type.ID), ids)
+	})
+	t.Run("should return error when input is invalid", func(t *testing.T) {
+		testutil.MustTruncateTables(db)
+		c := f.CreateCharacter()
+		eveType := f.CreateEveType()
+		cases := []struct {
+			name        string
+			characterID int64
+			skill       storage.ReplaceCharacterSkillParams
+		}{
+			{"character ID is zero", 0, storage.ReplaceCharacterSkillParams{TypeID: eveType.ID}},
+			{"type ID is zero", c.ID, storage.ReplaceCharacterSkillParams{}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCharacterSkills(t.Context(), tc.characterID, []storage.ReplaceCharacterSkillParams{tc.skill})
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }
 

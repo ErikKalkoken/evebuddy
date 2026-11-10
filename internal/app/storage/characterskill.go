@@ -3,30 +3,16 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"maps"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
-
-func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int64, typeIDs set.Set[int64]) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterSkills: %d %v: %w", characterID, typeIDs, err)
-	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	err := st.qRW.DeleteCharacterSkills(ctx, queries.DeleteCharacterSkillsParams{
-		CharacterID: characterID,
-		EveTypeIds:  slices.Collect(typeIDs.All()),
-	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	return nil
-}
 
 func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int64, typeID int64) (*app.CharacterSkill, error) {
 	wrapErr := func(err error) error {
@@ -111,6 +97,85 @@ func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int64)
 		return set.Set[int64]{}, wrapErr(err)
 	}
 	return set.Collect(slices.Values(ids)), nil
+}
+
+// ReplaceCharacterSkillParams is a skill of a character from ESI.
+type ReplaceCharacterSkillParams struct {
+	ActiveSkillLevel   int64
+	SkillPointsInSkill int64
+	TrainedSkillLevel  int64
+	TypeID             int64
+}
+
+// ReplaceCharacterSkills replaces all stored skills of a character with skills
+// and reports whether any skill was created, updated or deleted.
+func (st *Storage) ReplaceCharacterSkills(ctx context.Context, characterID int64, skills []ReplaceCharacterSkillParams) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ReplaceCharacterSkills: character %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return false, wrapErr(app.ErrInvalid)
+	}
+	for _, arg := range skills {
+		if arg.TypeID == 0 {
+			return false, wrapErr(fmt.Errorf("skill with type ID 0: %w", app.ErrInvalid))
+		}
+	}
+	rows, err := st.qRO.ListCharacterSkillStates(ctx, characterID)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	current := make(map[int64]queries.CharacterSkill, len(rows)) // by type ID
+	for _, r := range rows {
+		current[r.EveTypeID] = r
+	}
+	var changed []ReplaceCharacterSkillParams
+	for _, arg := range skills {
+		r, found := xmaps.Pop(current, arg.TypeID) // what remains in current is obsolete
+		if found &&
+			r.ActiveSkillLevel == arg.ActiveSkillLevel &&
+			r.SkillPointsInSkill == arg.SkillPointsInSkill &&
+			r.TrainedSkillLevel == arg.TrainedSkillLevel {
+			continue
+		}
+		changed = append(changed, arg)
+	}
+	obsolete := slices.Collect(maps.Keys(current))
+	if len(changed) == 0 && len(obsolete) == 0 {
+		return false, nil
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for _, arg := range changed {
+		err := qtx.UpdateOrCreateCharacterSkill(ctx, queries.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   arg.ActiveSkillLevel,
+			EveTypeID:          arg.TypeID,
+			SkillPointsInSkill: arg.SkillPointsInSkill,
+			CharacterID:        characterID,
+			TrainedSkillLevel:  arg.TrainedSkillLevel,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("update or create skill %d: %w", arg.TypeID, err))
+		}
+	}
+	for ids := range slices.Chunk(obsolete, st.MaxIDsPerQuery) {
+		err := qtx.DeleteCharacterSkills(ctx, queries.DeleteCharacterSkillsParams{
+			CharacterID: characterID,
+			EveTypeIds:  ids,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("delete %d skills: %w", len(ids), err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Character skills replaced", "characterID", characterID, "changed", len(changed), "deleted", len(obsolete))
+	return true, nil
 }
 
 type UpdateOrCreateCharacterSkillParams struct {

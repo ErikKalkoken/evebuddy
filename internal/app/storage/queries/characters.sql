@@ -67,6 +67,15 @@ FROM
 WHERE
     id = ?;
 
+-- name: GetCharacterSkillPoints :one
+SELECT
+    total_sp,
+    unallocated_sp
+FROM
+    characters
+WHERE
+    id = ?;
+
 -- name: ListCharacters :many
 SELECT DISTINCT
     sqlc.embed(cc),

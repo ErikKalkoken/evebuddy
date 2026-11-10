@@ -138,42 +138,38 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg characterSec
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			skills := data.(*esi.CharactersSkills)
-			total := optional.New(skills.TotalSp)
-			unallocated := optional.FromPtr(skills.UnallocatedSp)
-			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
-				return false, err
-			}
-			currentSkillIDs, err := s.st.ListCharacterSkillIDs(ctx, characterID)
+			storedTotal, storedUnallocated, err := s.st.GetCharacterSkillPoints(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
-			incomingSkillIDs := set.Of[int64]()
-			for _, o := range skills.Skills {
-				incomingSkillIDs.Add(o.SkillId)
-				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
-				if err != nil {
+			total := optional.New(skills.TotalSp)
+			unallocated := optional.FromPtr(skills.UnallocatedSp)
+			spChanged := storedTotal != total || storedUnallocated != unallocated
+			if spChanged {
+				if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 					return false, err
 				}
-				arg := storage.UpdateOrCreateCharacterSkillParams{
-					CharacterID:        characterID,
+			}
+
+			var typeIDs set.Set[int64]
+			args := make([]storage.ReplaceCharacterSkillParams, 0, len(skills.Skills))
+			for _, o := range skills.Skills {
+				typeIDs.Add(o.SkillId)
+				args = append(args, storage.ReplaceCharacterSkillParams{
 					TypeID:             o.SkillId,
 					ActiveSkillLevel:   o.ActiveSkillLevel,
 					TrainedSkillLevel:  o.TrainedSkillLevel,
 					SkillPointsInSkill: o.SkillpointsInSkill,
-				}
-				err = s.st.UpdateOrCreateCharacterSkill(ctx, arg)
-				if err != nil {
-					return false, err
-				}
+				})
 			}
-			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
-			if ids := set.Difference(currentSkillIDs, incomingSkillIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids); err != nil {
-					return false, err
-				}
-				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+				return false, err
 			}
-			return true, nil
+			skillsChanged, err := s.st.ReplaceCharacterSkills(ctx, characterID, args)
+			if err != nil {
+				return false, err
+			}
+			return spChanged || skillsChanged, nil
 		})
 }
 

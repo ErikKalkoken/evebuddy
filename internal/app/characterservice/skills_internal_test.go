@@ -189,7 +189,139 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of[int64](41), ids)
 	})
+	t.Run("should report not changed when skills and skill points are identical", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 10000,
+			TrainedSkillLevel:  4,
+			TypeID:             41,
+		})
+		err := st.UpdateCharacterSkillPoints(ctx, c.ID, optional.New[int64](90000), optional.New[int64](500))
+		require.NoError(t, err)
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       90000,
+			"unallocated_sp": 500,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
 
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should report changed when only skill points changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 10000,
+			TrainedSkillLevel:  4,
+			TypeID:             41,
+		})
+		err := st.UpdateCharacterSkillPoints(ctx, c.ID, optional.New[int64](90000), optional.New[int64](500))
+		require.NoError(t, err)
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       90000,
+			"unallocated_sp": 700,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 90000, c2.TrainedSP)
+		xassert.EqualOptional(t, 700, c2.UnallocatedSP)
+	})
+	t.Run("should report changed when only skills changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 10000,
+			TrainedSkillLevel:  4,
+			TypeID:             41,
+		})
+		err := st.UpdateCharacterSkillPoints(ctx, c.ID, optional.New[int64](90000), optional.New[int64](500))
+		require.NoError(t, err)
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   4,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       90000,
+			"unallocated_sp": 500,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterSkill(ctx, c.ID, 41)
+		require.NoError(t, err)
+		xassert.Equal(t, 4, o.ActiveSkillLevel)
+	})
 }
 
 // func TestListWalletJournalEntries(t *testing.T) {

@@ -658,6 +658,47 @@ func TestCharacterAssetValue(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, v, got)
 	})
+}
+
+func TestStorage_GetCharacterSkillPoints(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should return skill points", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			TotalSP:       optional.New(90000),
+			UnallocatedSP: optional.New(500),
+		})
+		// when
+		totalSP, unallocatedSP, err := st.GetCharacterSkillPoints(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 90000, totalSP)
+		xassert.EqualOptional(t, 500, unallocatedSP)
+	})
+	t.Run("should return empty when skill points are not set", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		err := st.UpdateCharacterSkillPoints(t.Context(), c.ID, optional.Optional[int64]{}, optional.Optional[int64]{})
+		require.NoError(t, err)
+		// when
+		totalSP, unallocatedSP, err := st.GetCharacterSkillPoints(t.Context(), c.ID)
+		// then
+		require.NoError(t, err)
+		assert.True(t, totalSP.IsEmpty())
+		assert.True(t, unallocatedSP.IsEmpty())
+	})
+	t.Run("should return not found error when character does not exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		// when
+		_, _, err := st.GetCharacterSkillPoints(t.Context(), 42)
+		// then
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
 
 	t.Run("can get empty value", func(t *testing.T) {
 		// given

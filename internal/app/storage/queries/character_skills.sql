@@ -48,6 +48,14 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterSkillStates :many
+SELECT
+    *
+FROM
+    character_skills
+WHERE
+    character_id = ?;
+
 -- name: ListCharacterSkills :many
 SELECT
     sqlc.embed(cs),

@@ -212,6 +212,28 @@ func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.Nul
 	return asset_value, err
 }
 
+const getCharacterSkillPoints = `-- name: GetCharacterSkillPoints :one
+SELECT
+    total_sp,
+    unallocated_sp
+FROM
+    characters
+WHERE
+    id = ?
+`
+
+type GetCharacterSkillPointsRow struct {
+	TotalSp       sql.NullInt64
+	UnallocatedSp sql.NullInt64
+}
+
+func (q *Queries) GetCharacterSkillPoints(ctx context.Context, id int64) (GetCharacterSkillPointsRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterSkillPoints, id)
+	var i GetCharacterSkillPointsRow
+	err := row.Scan(&i.TotalSp, &i.UnallocatedSp)
+	return i, err
+}
+
 const listCharacterCorporationIDs = `-- name: ListCharacterCorporationIDs :many
 SELECT DISTINCT
     ec.corporation_id
