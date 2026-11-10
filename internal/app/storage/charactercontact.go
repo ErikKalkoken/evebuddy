@@ -115,7 +115,7 @@ type ReplaceCharacterContactParams struct {
 // ReplaceCharacterContacts replaces all stored contacts of a character with args
 // and reports whether any contact was created, updated or deleted.
 // Contact IDs in args must be unique.
-// Labels not stored for the character are ignored.
+// Labels not yet stored for the character are created with a placeholder name.
 func (st *Storage) ReplaceCharacterContacts(ctx context.Context, characterID int64, args []ReplaceCharacterContactParams) (bool, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ReplaceCharacterContacts: character %d: %w", characterID, err)
@@ -128,21 +128,12 @@ func (st *Storage) ReplaceCharacterContacts(ctx context.Context, characterID int
 			return false, wrapErr(fmt.Errorf("contact with ID 0: %w", app.ErrInvalid))
 		}
 	}
-	current, currentLabels, storedLabels, err := st.listCharacterContactStates(ctx, characterID)
+	current, currentLabels, err := st.listCharacterContactStates(ctx, characterID)
 	if err != nil {
 		return false, wrapErr(err)
 	}
 	var changed []ReplaceCharacterContactParams
 	for _, arg := range args {
-		var labelIDs []int64
-		for _, id := range arg.LabelIDs {
-			if !storedLabels.Contains(id) {
-				slog.Warn("Ignoring missing contact label", "characterID", characterID, "contactID", arg.ContactID, "labelID", id)
-				continue
-			}
-			labelIDs = append(labelIDs, id)
-		}
-		arg.LabelIDs = labelIDs
 		r, found := xmaps.Pop(current, arg.ContactID) // what remains in current is obsolete
 		if found &&
 			r.IsBlocked == optional.ToNullBool(arg.IsBlocked) &&
@@ -198,18 +189,20 @@ func (st *Storage) ReplaceCharacterContacts(ctx context.Context, characterID int
 }
 
 // addCharacterContactLabels adds labels to a contact. Must be called within a transaction.
+// Labels not yet stored for the character are created with a placeholder name.
 func addCharacterContactLabels(ctx context.Context, q *queries.Queries, characterID, contactPK int64, labelIDs []int64) error {
 	for id := range set.Of(labelIDs...).All() {
-		label, err := q.GetCharacterContactLabel(ctx, queries.GetCharacterContactLabelParams{
+		labelPK, err := q.GetOrCreateCharacterContactLabel(ctx, queries.GetOrCreateCharacterContactLabelParams{
 			CharacterID: characterID,
 			LabelID:     id,
+			Name:        fmt.Sprintf("Label %d", id), // replaced by the next contact labels update
 		})
 		if err != nil {
-			return fmt.Errorf("get label %d: %w", id, err)
+			return fmt.Errorf("get or create label %d: %w", id, err)
 		}
 		err = q.CreateCharacterContactContactLabel(ctx, queries.CreateCharacterContactContactLabelParams{
 			ContactID: contactPK,
-			LabelID:   label.ID,
+			LabelID:   labelPK,
 		})
 		if err != nil {
 			return fmt.Errorf("add label %d: %w", id, err)
@@ -219,28 +212,24 @@ func addCharacterContactLabels(ctx context.Context, q *queries.Queries, characte
 }
 
 // listCharacterContactStates returns the stored contacts of a character
-// and their label IDs, both by contact ID, and the IDs of the character's labels.
-func (st *Storage) listCharacterContactStates(ctx context.Context, characterID int64) (map[int64]queries.CharacterContact, map[int64]set.Set[int64], set.Set[int64], error) {
+// and their label IDs, both by contact ID.
+func (st *Storage) listCharacterContactStates(ctx context.Context, characterID int64) (map[int64]queries.CharacterContact, map[int64]set.Set[int64], error) {
 	tx, err := st.dbRO.Begin()
 	if err != nil {
-		return nil, nil, set.Set[int64]{}, err
+		return nil, nil, err
 	}
 	defer tx.Rollback()
 	qtx := st.qRO.WithTx(tx)
 	rows, err := qtx.ListCharacterContactStates(ctx, characterID)
 	if err != nil {
-		return nil, nil, set.Set[int64]{}, err
-	}
-	labelIDs, err := qtx.ListCharacterContactLabelIDs(ctx, characterID)
-	if err != nil {
-		return nil, nil, set.Set[int64]{}, err
+		return nil, nil, err
 	}
 	mapRows, err := qtx.ListCharacterContactContactLabelIdsForCharacter(ctx, characterID)
 	if err != nil {
-		return nil, nil, set.Set[int64]{}, err
+		return nil, nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, nil, set.Set[int64]{}, err
+		return nil, nil, err
 	}
 	contacts := make(map[int64]queries.CharacterContact, len(rows))
 	for _, r := range rows {
@@ -252,7 +241,7 @@ func (st *Storage) listCharacterContactStates(ctx context.Context, characterID i
 		x.Add(r.LabelID)
 		contactLabels[r.ContactID] = x
 	}
-	return contacts, contactLabels, set.Of(labelIDs...), nil
+	return contacts, contactLabels, nil
 }
 
 type UpdateOrCreateCharacterContactParams struct {

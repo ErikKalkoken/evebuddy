@@ -63,7 +63,8 @@ func (st *Storage) ListCharacterContactLabelIDs(ctx context.Context, characterID
 }
 
 // ReplaceCharacterContactLabels replaces the contact labels of a character with labels.
-// labels maps label IDs to names. Reports whether anything changed.
+// labels maps label IDs to names. Labels still used by contacts are not deleted.
+// Reports whether anything changed.
 func (st *Storage) ReplaceCharacterContactLabels(ctx context.Context, characterID int64, labels map[int64]string) (bool, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ReplaceCharacterContactLabels: character %d: %w", characterID, err)
@@ -71,17 +72,14 @@ func (st *Storage) ReplaceCharacterContactLabels(ctx context.Context, characterI
 	if _, ok := labels[0]; characterID == 0 || ok {
 		return false, wrapErr(app.ErrInvalid)
 	}
-	rows, err := st.qRO.ListCharacterContactLabels(ctx, characterID)
+	current, used, err := st.listCharacterContactLabelStates(ctx, characterID)
 	if err != nil {
 		return false, wrapErr(err)
 	}
-	current := make(map[int64]string, len(rows))
-	for _, r := range rows {
-		current[r.LabelID] = r.Name
-	}
 	var removed []int64
 	for id := range current {
-		if _, ok := labels[id]; !ok {
+		// labels still used by contacts are kept, since contacts and labels can be out of sync
+		if _, ok := labels[id]; !ok && !used.Contains(id) {
 			removed = append(removed, id)
 		}
 	}
@@ -124,6 +122,37 @@ func (st *Storage) ReplaceCharacterContactLabels(ctx context.Context, characterI
 	}
 	slog.Info("Contact labels replaced", "characterID", characterID, "changed", len(changed), "removed", len(removed))
 	return true, nil
+}
+
+// listCharacterContactLabelStates returns the names of a character's contact labels by label ID
+// and the IDs of labels used by the character's contacts.
+func (st *Storage) listCharacterContactLabelStates(ctx context.Context, characterID int64) (map[int64]string, set.Set[int64], error) {
+	tx, err := st.dbRO.Begin()
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := qtx.ListCharacterContactLabels(ctx, characterID)
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	mapRows, err := qtx.ListCharacterContactContactLabelIdsForCharacter(ctx, characterID)
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	names := make(map[int64]string, len(rows))
+	for _, r := range rows {
+		names[r.LabelID] = r.Name
+	}
+	var used set.Set[int64]
+	for _, r := range mapRows {
+		used.Add(r.LabelID)
+	}
+	return names, used, nil
 }
 
 func characterContactLabelFromDBModel(r queries.CharacterContactLabel) *app.CharacterContactLabel {

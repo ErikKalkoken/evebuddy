@@ -381,7 +381,7 @@ func TestCharacterContact(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, changed)
 	})
-	t.Run("should ignore missing labels", func(t *testing.T) {
+	t.Run("should create placeholder for missing label", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
@@ -397,10 +397,35 @@ func TestCharacterContact(t *testing.T) {
 		}})
 		// then
 		require.NoError(t, err)
-		assert.False(t, changed)
+		assert.True(t, changed)
 		got, err := st.GetCharacterContact(ctx, c.ID, o.Contact.ID)
 		require.NoError(t, err)
-		assert.Empty(t, got.Labels)
+		xassert.Equal(t, set.Of("Label 42"), got.Labels)
+		got2, err := st.GetCharacterContactLabel(ctx, c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "Label 42", got2.Name)
+	})
+	t.Run("should create placeholder only once for label missing on several contacts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		e1 := factory.CreateEveEntityCharacter()
+		e2 := factory.CreateEveEntityCharacter()
+		// when
+		_, err := st.ReplaceCharacterContacts(ctx, c.ID, []storage.ReplaceCharacterContactParams{
+			{ContactID: e1.ID, LabelIDs: []int64{42}},
+			{ContactID: e2.ID, LabelIDs: []int64{42}},
+		})
+		// then
+		require.NoError(t, err)
+		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](42), got)
+		for _, id := range []int64{e1.ID, e2.ID} {
+			got2, err := st.GetCharacterContact(ctx, c.ID, id)
+			require.NoError(t, err)
+			xassert.Equal(t, set.Of("Label 42"), got2.Labels)
+		}
 	})
 	t.Run("should keep contacts unchanged when replace fails", func(t *testing.T) {
 		// given

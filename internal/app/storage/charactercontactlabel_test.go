@@ -197,7 +197,7 @@ func TestCharacterContactLabel(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(l3.LabelID), got)
 	})
-	t.Run("should remove removed labels from contacts", func(t *testing.T) {
+	t.Run("should keep obsolete labels still used by contacts", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
@@ -209,19 +209,46 @@ func TestCharacterContactLabel(t *testing.T) {
 			CharacterID: c.ID,
 			Name:        "Bravo",
 		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
 		contact := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
 			CharacterID: c.ID,
 			LabelIDs:    []int64{l1.LabelID, l2.LabelID},
 		})
 		// when
-		_, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
 			l2.LabelID: "Bravo",
 		})
 		// then
 		require.NoError(t, err)
-		got, err := st.GetCharacterContact(ctx, c.ID, contact.Contact.ID)
+		assert.True(t, changed)
+		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
 		require.NoError(t, err)
-		xassert.Equal(t, set.Of("Bravo"), got.Labels)
+		xassert.Equal(t, set.Of(l1.LabelID, l2.LabelID), got)
+		got2, err := st.GetCharacterContact(ctx, c.ID, contact.Contact.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of("Alpha", "Bravo"), got2.Labels)
+	})
+	t.Run("should report no change when obsolete labels are all still used by contacts", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID},
+		})
+		// when
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(l1.LabelID), got)
 	})
 	t.Run("should return error when replacing with invalid IDs", func(t *testing.T) {
 		// given
