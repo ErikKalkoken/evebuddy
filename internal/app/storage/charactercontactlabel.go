@@ -62,25 +62,97 @@ func (st *Storage) ListCharacterContactLabelIDs(ctx context.Context, characterID
 	return x, nil
 }
 
-func (st *Storage) DeleteCharacterContactLabels(ctx context.Context, characterID int64, labelIDs set.Set[int64]) error {
+// ReplaceCharacterContactLabels replaces the contact labels of a character with labels.
+// labels maps label IDs to names. Labels still used by contacts are not deleted.
+// Reports whether anything changed.
+func (st *Storage) ReplaceCharacterContactLabels(ctx context.Context, characterID int64, labels map[int64]string) (bool, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterContactLabels for character %d and contact IDs: %v: %w", characterID, labelIDs, err)
+		return fmt.Errorf("ReplaceCharacterContactLabels: character %d: %w", characterID, err)
 	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
+	if _, ok := labels[0]; characterID == 0 || ok {
+		return false, wrapErr(app.ErrInvalid)
 	}
-	if labelIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCharacterContactLabels(ctx, queries.DeleteCharacterContactLabelsParams{
-		CharacterID: characterID,
-		LabelIds:    slices.Collect(labelIDs.All()),
-	})
+	current, used, err := st.listCharacterContactLabelStates(ctx, characterID)
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
-	slog.Info("Character labels deleted", "characterID", characterID, "labels", labelIDs)
-	return nil
+	var removed []int64
+	for id := range current {
+		// labels still used by contacts are kept, since contacts and labels can be out of sync
+		if _, ok := labels[id]; !ok && !used.Contains(id) {
+			removed = append(removed, id)
+		}
+	}
+	changed := make(map[int64]string)
+	for id, name := range labels {
+		if n, ok := current[id]; !ok || n != name {
+			changed[id] = name
+		}
+	}
+	if len(removed) == 0 && len(changed) == 0 {
+		return false, nil
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for ids := range slices.Chunk(removed, st.MaxIDsPerQuery) {
+		err := qtx.DeleteCharacterContactLabels(ctx, queries.DeleteCharacterContactLabelsParams{
+			CharacterID: characterID,
+			LabelIds:    ids,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("delete %d labels: %w", len(ids), err))
+		}
+	}
+	for id, name := range changed {
+		err := qtx.UpdateOrCreateCharacterContactLabel(ctx, queries.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: characterID,
+			LabelID:     id,
+			Name:        name,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("update or create label %d: %w", id, err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Contact labels replaced", "characterID", characterID, "changed", len(changed), "removed", len(removed))
+	return true, nil
+}
+
+// listCharacterContactLabelStates returns the names of a character's contact labels by label ID
+// and the IDs of labels used by the character's contacts.
+func (st *Storage) listCharacterContactLabelStates(ctx context.Context, characterID int64) (map[int64]string, set.Set[int64], error) {
+	tx, err := st.dbRO.Begin()
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	defer tx.Rollback()
+	qtx := st.qRO.WithTx(tx)
+	rows, err := qtx.ListCharacterContactLabels(ctx, characterID)
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	mapRows, err := qtx.ListCharacterContactContactLabelIdsForCharacter(ctx, characterID)
+	if err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, set.Set[int64]{}, err
+	}
+	names := make(map[int64]string, len(rows))
+	for _, r := range rows {
+		names[r.LabelID] = r.Name
+	}
+	var used set.Set[int64]
+	for _, r := range mapRows {
+		used.Add(r.LabelID)
+	}
+	return names, used, nil
 }
 
 func characterContactLabelFromDBModel(r queries.CharacterContactLabel) *app.CharacterContactLabel {

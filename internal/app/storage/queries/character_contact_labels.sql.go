@@ -13,8 +13,15 @@ import (
 const deleteCharacterContactLabels = `-- name: DeleteCharacterContactLabels :exec
 DELETE FROM character_contact_labels
 WHERE
-    character_id = ?
-    AND label_id IN (/*SLICE:label_ids*/?)
+    character_contact_labels.character_id = ?
+    AND character_contact_labels.label_id IN (/*SLICE:label_ids*/?)
+    -- re-check inside the write tx: a concurrent contacts update may have linked it since the caller's read
+    AND character_contact_labels.id NOT IN (
+        SELECT
+            map.label_id
+        FROM
+            character_contacts_labels map
+    )
 `
 
 type DeleteCharacterContactLabelsParams struct {
@@ -63,6 +70,30 @@ func (q *Queries) GetCharacterContactLabel(ctx context.Context, arg GetCharacter
 		&i.Name,
 	)
 	return i, err
+}
+
+const getOrCreateCharacterContactLabel = `-- name: GetOrCreateCharacterContactLabel :one
+INSERT INTO
+    character_contact_labels (character_id, label_id, name)
+VALUES
+    (?1, ?2, ?3)
+ON CONFLICT (character_id, label_id) DO UPDATE
+SET
+    name = name
+RETURNING id
+`
+
+type GetOrCreateCharacterContactLabelParams struct {
+	CharacterID int64
+	LabelID     int64
+	Name        string
+}
+
+func (q *Queries) GetOrCreateCharacterContactLabel(ctx context.Context, arg GetOrCreateCharacterContactLabelParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getOrCreateCharacterContactLabel, arg.CharacterID, arg.LabelID, arg.Name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const listCharacterContactLabelIDs = `-- name: ListCharacterContactLabelIDs :many
