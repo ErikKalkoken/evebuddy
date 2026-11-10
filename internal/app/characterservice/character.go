@@ -223,8 +223,10 @@ func (s *CharacterService) UpdateAllCalculatedValues(ctx context.Context) error 
 		if err := s.updateOrderItemValue(ctx, id); err != nil {
 			return wrapErr(err)
 		}
-		if err := s.updateSkillPointValue(ctx, id); err != nil {
-			return wrapErr(err)
+		if trained, ok := c1.TrainedSP.Value(); ok {
+			if _, err := s.updateSkillPointValue(ctx, id, trained, c1.UnallocatedSP.ValueOrZero(), c1.SkillPointsValue); err != nil {
+				return wrapErr(err)
+			}
 		}
 		c2, err := s.GetCharacter(ctx, id)
 		if err != nil {

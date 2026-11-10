@@ -70,7 +70,8 @@ WHERE
 -- name: GetCharacterSkillPoints :one
 SELECT
     total_sp,
-    unallocated_sp
+    unallocated_sp,
+    skill_points_value
 FROM
     characters
 WHERE

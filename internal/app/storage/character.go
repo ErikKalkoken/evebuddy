@@ -153,13 +153,21 @@ func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int64) (option
 	return optional.FromNullFloat64(v), nil
 }
 
-// GetCharacterSkillPoints returns the total and unallocated skill points of a character.
-func (st *Storage) GetCharacterSkillPoints(ctx context.Context, id int64) (totalSP, unallocatedSP optional.Optional[int64], err error) {
+// GetCharacterSkillPoints returns the trained and unallocated skill points of a character
+// and the ISK value of its skill points.
+func (st *Storage) GetCharacterSkillPoints(ctx context.Context, id int64) (
+	trainedSP, unallocatedSP optional.Optional[int64],
+	value optional.Optional[float64],
+	err error,
+) {
 	r, err := st.qRO.GetCharacterSkillPoints(ctx, id)
 	if err != nil {
-		return totalSP, unallocatedSP, fmt.Errorf("get skill points for character %d: %w", id, convertGetError(err))
+		return trainedSP, unallocatedSP, value, fmt.Errorf("get skill points for character %d: %w", id, convertGetError(err))
 	}
-	return optional.FromNullInt64(r.TotalSp), optional.FromNullInt64(r.UnallocatedSp), nil
+	trainedSP = optional.FromNullInt64(r.TotalSp)
+	unallocatedSP = optional.FromNullInt64(r.UnallocatedSp)
+	value = optional.FromNullFloat64(r.SkillPointsValue)
+	return trainedSP, unallocatedSP, value, nil
 }
 
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {

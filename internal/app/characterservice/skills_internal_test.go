@@ -322,6 +322,217 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, 4, o.ActiveSkillLevel)
 	})
+	t.Run("should update skill point value when skill points changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			TotalSP:          optional.New(8_000_000),
+			UnallocatedSP:    optional.New(1_500_000),
+			SkillPointsValue: optional.New(1.0),
+		})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLargeSkillInjector})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeLargeSkillInjector,
+			AveragePrice: optional.New(110_000.0),
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSkillExtractor})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeSkillExtractor,
+			AveragePrice: optional.New(10_000.0),
+		})
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       9_000_000,
+			"unallocated_sp": 1_500_000,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
+	})
+	t.Run("should update skill point value when unallocated SP is missing", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			SkillPointsValue: optional.New(1.0),
+		})
+		err := st.UpdateCharacterSkillPoints(ctx, c.ID, optional.New[int64](8_000_000), optional.Optional[int64]{})
+		require.NoError(t, err)
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLargeSkillInjector})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeLargeSkillInjector,
+			AveragePrice: optional.New(110_000.0),
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSkillExtractor})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeSkillExtractor,
+			AveragePrice: optional.New(10_000.0),
+		})
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp": 10_500_000,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
+		assert.True(t, c2.UnallocatedSP.IsEmpty())
+	})
+	t.Run("should update skill point value when retrying a failed update", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			TotalSP:          optional.New(8_000_000),
+			UnallocatedSP:    optional.New(1_500_000),
+			SkillPointsValue: optional.New(1.0),
+		})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLargeSkillInjector})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeLargeSkillInjector,
+			AveragePrice: optional.New(110_000.0),
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSkillExtractor})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeSkillExtractor,
+			AveragePrice: optional.New(10_000.0),
+		})
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             42,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       9_000_000,
+			"unallocated_sp": 1_500_000,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+		arg := characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterSkills,
+		}
+		_, err := s.updateSkillsESI(ctx, arg) // fails, because skill type 42 can not be fetched
+		require.Error(t, err)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, arg)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
+	})
+	t.Run("should recalculate skill point value on forced update", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
+			TotalSP:          optional.New(9_000_000),
+			UnallocatedSP:    optional.New(1_500_000),
+			SkillPointsValue: optional.New(1.0),
+		})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			CharacterID:        c.ID,
+			SkillPointsInSkill: 10000,
+			TrainedSkillLevel:  4,
+			TypeID:             41,
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLargeSkillInjector})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeLargeSkillInjector,
+			AveragePrice: optional.New(110_000.0),
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSkillExtractor})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeSkillExtractor,
+			AveragePrice: optional.New(10_000.0),
+		})
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp":       9_000_000,
+			"unallocated_sp": 1_500_000,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/skills", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+
+		// when
+		changed, err := s.updateSkillsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			forceUpdate: true,
+			section:     app.SectionCharacterSkills,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		c2, err := st.GetCharacter(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
+	})
 }
 
 // func TestListWalletJournalEntries(t *testing.T) {
@@ -408,8 +619,7 @@ func TestUpdateSkllPointsValue(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacterFull(storage.CreateCharacterParams{
-			TotalSP:       optional.New(9_000_000),
-			UnallocatedSP: optional.New(1_500_000),
+			SkillPointsValue: optional.New(1.0),
 		})
 		injectorType := factory.CreateEveType(storage.CreateEveTypeParams{
 			ID: app.EveTypeLargeSkillInjector,
@@ -427,13 +637,40 @@ func TestUpdateSkllPointsValue(t *testing.T) {
 		})
 
 		// when
-		err := s.updateSkillPointValue(t.Context(), c.ID)
+		changed, err := s.updateSkillPointValue(
+			t.Context(), c.ID, 9_000_000, 1_500_000, optional.New(1.0),
+		)
 
 		// then
 		require.NoError(t, err)
+		assert.True(t, changed)
 		c2, err := st.GetCharacter(t.Context(), c.ID)
 		require.NoError(t, err)
 		xassert.EqualOptional(t, 1_000_000, c2.SkillPointsValue)
+	})
+	t.Run("should report not changed when value is unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeLargeSkillInjector})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeLargeSkillInjector,
+			AveragePrice: optional.New(110_000.0),
+		})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSkillExtractor})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       app.EveTypeSkillExtractor,
+			AveragePrice: optional.New(10_000.0),
+		})
+
+		// when
+		changed, err := s.updateSkillPointValue(
+			t.Context(), c.ID, 9_000_000, 1_500_000, optional.New(1_000_000.0),
+		)
+
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
 	})
 }
 
