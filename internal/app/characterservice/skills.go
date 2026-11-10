@@ -20,6 +20,12 @@ import (
 
 const cacheKeyTrainingNotified = "expired-training-notified"
 
+// Estimating the value of skillpoints
+const (
+	spValueLowerThreshold    = 5_500_000
+	spPerLargeSkillExtractor = 500_000
+)
+
 func (s *CharacterService) GetAttributes(ctx context.Context, characterID int64) (*app.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
@@ -138,42 +144,46 @@ func (s *CharacterService) updateSkillsESI(ctx context.Context, arg characterSec
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			skills := data.(*esi.CharactersSkills)
-			total := optional.New(skills.TotalSp)
-			unallocated := optional.FromPtr(skills.UnallocatedSp)
-			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
-				return false, err
-			}
-			currentSkillIDs, err := s.st.ListCharacterSkillIDs(ctx, characterID)
+			storedTrained, storedUnallocated, storedValue, err := s.st.GetCharacterSkillPoints(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
-			incomingSkillIDs := set.Of[int64]()
+			trained := skills.TotalSp
+			unallocated := optional.FromPtr(skills.UnallocatedSp) // ESI may omit it
+			spChanged := storedTrained != optional.New(trained) || storedUnallocated != unallocated
+
+			var typeIDs set.Set[int64]
+			args := make([]storage.ReplaceCharacterSkillParams, 0, len(skills.Skills))
 			for _, o := range skills.Skills {
-				incomingSkillIDs.Add(o.SkillId)
-				_, err := s.eus.GetOrCreateTypeESI(ctx, o.SkillId)
-				if err != nil {
-					return false, err
-				}
-				arg := storage.UpdateOrCreateCharacterSkillParams{
-					CharacterID:        characterID,
+				typeIDs.Add(o.SkillId)
+				args = append(args, storage.ReplaceCharacterSkillParams{
 					TypeID:             o.SkillId,
 					ActiveSkillLevel:   o.ActiveSkillLevel,
 					TrainedSkillLevel:  o.TrainedSkillLevel,
 					SkillPointsInSkill: o.SkillpointsInSkill,
-				}
-				err = s.st.UpdateOrCreateCharacterSkill(ctx, arg)
+				})
+			}
+			if err := s.eus.AddMissingTypes(ctx, typeIDs); err != nil {
+				return false, err
+			}
+			skillsChanged, err := s.st.ReplaceCharacterSkills(ctx, characterID, args)
+			if err != nil {
+				return false, err
+			}
+			var valueChanged bool
+			if spChanged || arg.forceUpdate {
+				valueChanged, err = s.updateSkillPointValue(ctx, characterID, trained, unallocated.ValueOrZero(), storedValue)
 				if err != nil {
 					return false, err
 				}
 			}
-			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
-			if ids := set.Difference(currentSkillIDs, incomingSkillIDs); ids.Size() > 0 {
-				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids); err != nil {
+			// stored last, so a retry after a failure still detects the change
+			if spChanged {
+				if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, optional.New(trained), unallocated); err != nil {
 					return false, err
 				}
-				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())
 			}
-			return true, nil
+			return spChanged || skillsChanged || valueChanged, nil
 		})
 }
 
@@ -272,7 +282,7 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 	if arg.section != app.SectionCharacterSkillqueue {
 		return false, fmt.Errorf("wrong section for update %s: %w", arg.section, app.ErrInvalid)
 	}
-	changed, err := s.updateSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg, false,
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdSkillqueue")
@@ -318,62 +328,44 @@ func (s *CharacterService) updateSkillqueueESI(ctx context.Context, arg characte
 			return true, nil
 		},
 	)
-	if err != nil {
-		return false, err
-	}
-
-	// update calculated values
-	c, err := s.st.GetCharacter(ctx, arg.characterID)
-	if err != nil {
-		return false, err
-	}
-	if arg.forceUpdate || changed || c.SkillPointsValue.IsEmpty() {
-		if err := s.updateSkillPointValue(ctx, arg.characterID); err != nil {
-			return false, err
-		}
-	}
-
-	return changed, nil
 }
 
-func (s *CharacterService) updateSkillPointValue(ctx context.Context, characterID int64) error {
-	const (
-		spLowerThreshold         = 5_500_000
-		spPerLargeSkillExtractor = 500_000
-	)
+// updateSkillPointValue updates the skill point value of a character from its skill points
+// and reports whether it has changed.
+func (s *CharacterService) updateSkillPointValue(
+	ctx context.Context,
+	characterID int64,
+	trainedSP, unallocatedSP int64,
+	storedValue optional.Optional[float64],
+) (bool, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("updateSkillPointValue: %d: %w", characterID, err)
 	}
 	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	o, err := s.st.GetCharacter(ctx, characterID)
-	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(app.ErrInvalid)
 	}
 	extractorPrice, err := s.eus.MarketPrice(ctx, app.EveTypeSkillExtractor)
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
 	injectorPrice, err := s.eus.MarketPrice(ctx, app.EveTypeLargeSkillInjector)
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
 	var value optional.Optional[float64]
 	if extractor, ok := extractorPrice.Value(); ok {
 		if injector, ok := injectorPrice.Value(); ok {
-			if trainedSP, ok := o.TrainedSP.Value(); ok {
-				if unallocatedSP, ok := o.UnallocatedSP.Value(); ok {
-					totalSP := float64(trainedSP + unallocatedSP)
-					v := (injector - extractor) * (max(0, totalSP-spLowerThreshold) / spPerLargeSkillExtractor)
-					value.Set(v)
-				}
-			}
+			sp := float64(trainedSP + unallocatedSP)
+			v := (injector - extractor) * (max(0, sp-spValueLowerThreshold) / spPerLargeSkillExtractor)
+			value.Set(v)
 		}
+	}
+	if value == storedValue {
+		return false, nil
 	}
 	err = s.st.UpdateCharacterSkillPointsValue(ctx, characterID, value)
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
-	return nil
+	return true, nil
 }
