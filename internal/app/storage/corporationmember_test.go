@@ -78,44 +78,33 @@ func TestCorporationMember(t *testing.T) {
 		want := set.Of(e1.Character.ID, e2.Character.ID)
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can delete members", func(t *testing.T) {
+	t.Run("can replace members", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
-		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+		kept := factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,
 		})
-		e2 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+		factory.CreateCorporationMember(storage.CorporationMemberParams{
 			CorporationID: c.ID,
 		})
+		other := factory.CreateCorporationMember()
+		added := factory.CreateEveEntityCharacter()
 		// when
-		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID, e2.Character.ID))
+		changed, err := st.ReplaceCorporationMembers(ctx, c.ID, set.Of(kept.Character.ID, added.ID))
 		// then
 		require.NoError(t, err)
+		assert.True(t, changed)
 		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 		require.NoError(t, err)
-		assert.Empty(t, got)
-	})
-	t.Run("can delete specific members", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
-			CorporationID: c.ID,
-		})
-		e2 := factory.CreateCorporationMember(storage.CorporationMemberParams{
-			CorporationID: c.ID,
-		})
-		// when
-		err := st.DeleteCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID))
-		// then
-		require.NoError(t, err)
-		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
-		require.NoError(t, err)
-		want := set.Of(e2.Character.ID)
+		want := set.Of(kept.Character.ID, added.ID)
 		xassert.Equal(t, want, got)
+		got2, err := st.ListCorporationMemberIDs(ctx, other.CorporationID)
+		require.NoError(t, err)
+		want2 := set.Of(other.Character.ID)
+		xassert.Equal(t, want2, got2)
 	})
-	t.Run("does nothing when no member IDs given", func(t *testing.T) {
+	t.Run("should report no change when members are the same", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCorporation()
@@ -123,12 +112,99 @@ func TestCorporationMember(t *testing.T) {
 			CorporationID: c.ID,
 		})
 		// when
-		err := st.DeleteCorporationMembers(ctx, c.ID, set.Set[int64]{})
+		changed, err := st.ReplaceCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID))
 		// then
 		require.NoError(t, err)
+		assert.False(t, changed)
 		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
 		require.NoError(t, err)
 		want := set.Of(e1.Character.ID)
 		xassert.Equal(t, want, got)
+	})
+	t.Run("should remove all members when replaced with empty set", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		// when
+		changed, err := st.ReplaceCorporationMembers(ctx, c.ID, set.Set[int64]{})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+	t.Run("should remove members in chunks", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		c := factory.CreateCorporation()
+		factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		e3 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		// when
+		changed, err := st.ReplaceCorporationMembers(ctx, c.ID, set.Of(e3.Character.ID))
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e3.Character.ID)
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should keep members unchanged when replace fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		e1 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		e2 := factory.CreateCorporationMember(storage.CorporationMemberParams{
+			CorporationID: c.ID,
+		})
+		const unknownID = 42 // has no eve entity
+		// when
+		_, err := st.ReplaceCorporationMembers(ctx, c.ID, set.Of(e1.Character.ID, unknownID))
+		// then
+		require.Error(t, err)
+		got, err := st.ListCorporationMemberIDs(ctx, c.ID)
+		require.NoError(t, err)
+		want := set.Of(e1.Character.ID, e2.Character.ID)
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should return error when replacing with invalid IDs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		e := factory.CreateEveEntityCharacter()
+		cases := []struct {
+			name          string
+			corporationID int64
+			characterIDs  set.Set[int64]
+		}{
+			{"zero corporation ID", 0, set.Of(e.ID)},
+			{"zero character ID", c.ID, set.Of(e.ID, 0)},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCorporationMembers(ctx, tc.corporationID, tc.characterIDs)
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }
