@@ -3,12 +3,10 @@ package corporationservice
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/ErikKalkoken/go-set"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 )
 
@@ -32,37 +30,9 @@ func (s *CorporationService) updateMembersESI(ctx context.Context, arg corporati
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			incoming := set.Of(data.([]int64)...)
-			current, err := s.st.ListCorporationMemberIDs(ctx, arg.corporationID)
-			if err != nil {
-				return false, err
-			}
-			if current.Equal(incoming) {
-				return false, nil
-			}
-
 			if _, err := s.eus.AddMissingEntities(ctx, incoming); err != nil {
 				return false, err
 			}
-			added := set.Difference(incoming, current)
-			for characterID := range added.All() {
-				err := s.st.CreateCorporationMember(ctx, storage.CorporationMemberParams{
-					CorporationID: arg.corporationID,
-					CharacterID:   characterID,
-				})
-				if err != nil {
-					return false, err
-				}
-			}
-			removed := set.Difference(current, incoming)
-			if err := s.st.DeleteCorporationMembers(ctx, arg.corporationID, removed); err != nil {
-				return false, err
-			}
-			slog.Info(
-				"Updated corporation members",
-				"corporationID", arg.corporationID,
-				"added", added.Size(),
-				"removed", removed.Size(),
-			)
-			return true, nil
+			return s.st.ReplaceCorporationMembers(ctx, arg.corporationID, incoming)
 		})
 }

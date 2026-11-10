@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/ErikKalkoken/go-set"
@@ -54,24 +55,53 @@ func (st *Storage) GetCorporationMember(ctx context.Context, arg CorporationMemb
 	return corporationMemberFromDBModel(r.CorporationMember, r.EveEntity), nil
 }
 
-func (st *Storage) DeleteCorporationMembers(ctx context.Context, corporationID int64, characterIDs set.Set[int64]) error {
+// ReplaceCorporationMembers replaces the members of a corporation with characterIDs.
+// It reports whether anything was changed.
+func (st *Storage) ReplaceCorporationMembers(ctx context.Context, corporationID int64, characterIDs set.Set[int64]) (bool, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationMembers %d: %w", corporationID, err)
+		return fmt.Errorf("ReplaceCorporationMembers: corporation %d: %w", corporationID, err)
 	}
-	if corporationID == 0 {
-		return wrapErr(app.ErrInvalid)
+	if corporationID == 0 || characterIDs.Contains(0) {
+		return false, wrapErr(app.ErrInvalid)
 	}
-	if characterIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
-		CorporationID: corporationID,
-		CharacterIds:  slices.Collect(characterIDs.All()),
-	})
+	current, err := st.ListCorporationMemberIDs(ctx, corporationID)
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
-	return nil
+	added := set.Difference(characterIDs, current)
+	removed := set.Difference(current, characterIDs)
+	if added.Size() == 0 && removed.Size() == 0 {
+		return false, nil
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for ids := range slices.Chunk(slices.Collect(removed.All()), st.MaxIDsPerQuery) {
+		err := qtx.DeleteCorporationMembers(ctx, queries.DeleteCorporationMembersParams{
+			CorporationID: corporationID,
+			CharacterIds:  ids,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("delete %d members: %w", len(ids), err))
+		}
+	}
+	for characterID := range added.All() {
+		err := qtx.CreateCorporationMember(ctx, queries.CreateCorporationMemberParams{
+			CharacterID:   characterID,
+			CorporationID: corporationID,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("create member %d: %w", characterID, err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Corporation members replaced", "corporationID", corporationID, "added", added.Size(), "removed", removed.Size())
+	return true, nil
 }
 
 func (st *Storage) ListCorporationMembers(ctx context.Context, corporationID int64) ([]*app.CorporationMember, error) {
