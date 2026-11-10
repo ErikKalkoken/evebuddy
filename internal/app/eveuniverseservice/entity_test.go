@@ -203,6 +203,19 @@ func TestAddMissingEveEntities(t *testing.T) {
 		xassert.Equal(t, "?", o.Name)
 		xassert.Equal(t, app.EveEntityUnknown, o.Category)
 	})
+	t.Run("should ignore known invalid IDs which already exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder("POST", "https://esi.evetech.net/universe/names", responder)
+		factory.CreateEveEntity(app.EveEntity{ID: 1, Name: "?", Category: app.EveEntityUnknown})
+		// when
+		ids, err := s.AddMissingEntities(ctx, set.Of[int64](1))
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+		xassert.Equal(t, 0, ids.Size())
+	})
 	t.Run("should return error when trying to resolve large IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -314,6 +327,47 @@ func TestAddMissingEveEntities(t *testing.T) {
 		_, err := s.AddMissingEntities(ctx, set.Of[int64](47, 12))
 		// then
 		require.Error(t, err)
+	})
+	t.Run("should mark unresolvable IDs when ESI response is incomplete", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/universe/names",
+			httpmock.NewJsonResponderOrPanic(http.StatusOK, []map[string]any{{
+				"id":       47,
+				"name":     "Erik",
+				"category": "character",
+			}}),
+		)
+		// when
+		_, err := s.AddMissingEntities(ctx, set.Of[int64](1, 47, 12))
+		// then
+		require.Error(t, err)
+		o1, err := st.GetEveEntity(ctx, 1)
+		require.NoError(t, err)
+		xassert.Equal(t, app.EveEntityUnknown, o1.Category)
+		o2, err := st.GetEveEntity(ctx, 47)
+		require.NoError(t, err)
+		xassert.Equal(t, "Erik", o2.Name)
+		_, err = st.GetEveEntity(ctx, 12)
+		assert.ErrorIs(t, err, app.ErrNotFound)
+	})
+	t.Run("should report error when marking unresolvable IDs fails", func(t *testing.T) {
+		// given
+		db2, st2, _ := testutil.NewDBInMemory()
+		defer db2.Close()
+		s2 := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st2})
+		_, err := db2.Exec(`
+			CREATE TRIGGER block_inserts BEFORE INSERT ON eve_entities
+			BEGIN SELECT RAISE(FAIL, 'insert blocked'); END;
+		`)
+		require.NoError(t, err)
+		// when
+		_, err = s2.AddMissingEntities(ctx, set.Of[int64](1))
+		// then
+		assert.ErrorContains(t, err, "insert blocked")
 	})
 }
 

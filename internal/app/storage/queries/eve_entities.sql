@@ -20,6 +20,14 @@ FROM
 WHERE
     id IN (sqlc.slice ('ids'));
 
+-- name: ListEveEntityIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_entities
+WHERE
+    id IN (sqlc.slice ('ids'));
+
 -- name: ListEveEntityByNameAndCategory :many
 SELECT
     *

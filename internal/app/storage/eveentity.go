@@ -70,14 +70,14 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 	}
 	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return nil, err
+		return nil, wrapErr(err)
 	}
 	defer tx.Rollback()
 	qtx := st.qRW.WithTx(tx)
 	r, err := qtx.GetEveEntity(ctx, arg.ID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return nil, wrapErr(err)
 		}
 		r2, err := qtx.CreateEveEntity(ctx, queries.CreateEveEntityParams{
 			ID:       arg.ID,
@@ -85,13 +85,13 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, arg CreateEveEntity
 			Category: eveEntityDBModelCategoryFromCategory(arg.Category),
 		})
 		if err != nil {
-			return nil, err
+			return nil, wrapErr(err)
 		}
 		r = r2
 		slog.Info("Created Eve Entity", "ID", arg.ID)
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, wrapErr(err)
 	}
 	return eveEntityFromDBModel(r), nil
 }
@@ -236,11 +236,15 @@ func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int64]) 
 	if incoming.Size() == 0 {
 		return set.Set[int64]{}, nil
 	}
-	current, err := st.ListEveEntityIDs(ctx)
-	if err != nil {
-		return set.Set[int64]{}, err
+	var found set.Set[int64]
+	for idsChunk := range slices.Chunk(slices.Collect(incoming.All()), st.MaxIDsPerQuery) {
+		ids2, err := st.qRO.ListEveEntityIDsForIDs(ctx, idsChunk)
+		if err != nil {
+			return set.Set[int64]{}, fmt.Errorf("MissingEveEntityIDs: %d ids: %w", len(idsChunk), err)
+		}
+		found.AddSeq(slices.Values(ids2))
 	}
-	missing := set.Difference(incoming, current)
+	missing := set.Difference(incoming, found)
 	return missing, nil
 }
 

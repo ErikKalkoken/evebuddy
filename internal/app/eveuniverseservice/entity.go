@@ -85,29 +85,22 @@ func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 		}
 	}
 
-	var bad set.Set[int64]
-	ids2 := ids.Clone()
-	ids2.Delete(0) // ignore zero ID
-	if ids2.Size() == 0 {
+	missing, err := s.st.MissingEveEntityIDs(ctx, ids) // ignores ID 0
+	if err != nil {
+		return set.Set[int64]{}, wrapErr(err)
+	}
+	if missing.Size() == 0 {
 		return set.Set[int64]{}, nil
 	}
-	// Filter out known invalid IDs before continuing
+	// Known invalid IDs are marked without asking ESI
+	var bad set.Set[int64]
 	for _, id := range invalidEveEntityIDs {
-		if ids2.Contains(id) {
+		if missing.Contains(id) {
 			bad.Add(id)
-			ids2.Delete(id)
+			missing.Delete(id)
 		}
 	}
-
-	var missing set.Set[int64]
-	if ids2.Size() > 0 {
-		// Identify missing IDs
-		x, err := s.st.MissingEveEntityIDs(ctx, ids2)
-		if err != nil {
-			return set.Set[int64]{}, wrapErr(err)
-		}
-		missing.AddSeq(x.All())
-	}
+	var unresolved set.Set[int64]
 	if missing.Size() > 0 {
 		slog.Debug("Trying to resolve missing EveEntity IDs from ESI", "ids", missing)
 		var ee []esi.UniverseNamesPostInner
@@ -138,32 +131,27 @@ func (s *EVEUniverseService) AddMissingEntities(ctx context.Context, ids set.Set
 			return x.Id
 		}))
 		requested := set.Difference(missing, bad)
-		unresolved := set.Difference(requested, resolved)
-		if unresolved.Size() > 0 {
-			return set.Set[int64]{}, wrapErr(
-				fmt.Errorf("AddMissingEntities: incomplete: missing %v, bad %v, unresolved %v", missing, bad, unresolved),
-			)
-		}
+		unresolved = set.Difference(requested, resolved)
 	}
 	if bad.Size() > 0 {
 		// Mark unresolvable IDs
-		var marked set.Set[int64]
 		for id := range bad.All() {
-			arg := storage.CreateEveEntityParams{
+			_, err := s.st.GetOrCreateEveEntity(ctx, storage.CreateEveEntityParams{
 				ID:       id,
 				Name:     "?",
 				Category: app.EveEntityUnknown,
+			})
+			if err != nil {
+				return set.Set[int64]{}, wrapErr(err)
 			}
-			if _, err := s.st.GetOrCreateEveEntity(ctx, arg); err != nil {
-				if ctx.Err() != nil {
-					return set.Set[int64]{}, wrapErr(err)
-				}
-				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
-				continue
-			}
-			marked.Add(id)
 		}
-		slog.Warn("Marked unresolvable EveEntity IDs as unknown", "ids", marked)
+		slog.Warn("Marked unresolvable EveEntity IDs as unknown", "ids", bad)
+	}
+	// Reported after marking, so unresolvable IDs are not requested again next time
+	if unresolved.Size() > 0 {
+		return set.Set[int64]{}, wrapErr(
+			fmt.Errorf("incomplete: missing %v, bad %v, unresolved %v", missing, bad, unresolved),
+		)
 	}
 	return set.Union(missing, bad), nil
 }
