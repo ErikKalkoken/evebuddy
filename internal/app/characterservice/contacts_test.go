@@ -133,6 +133,165 @@ func TestUpdateCharacterContactsESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, set.Of(contact.ID), ids)
 	})
+	t.Run("should report when not changed", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		contact := factory.CreateEveEntityCharacter()
+		factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			ContactID:   contact.ID,
+			Standing:    -1.5,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"contact_id":   contact.ID,
+				"contact_type": "character",
+				"standing":     -1.5,
+			}}),
+		)
+
+		// when
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should store last entry when ESI returns a contact twice", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		contact := factory.CreateEveEntityCharacter()
+		label := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"contact_id":   contact.ID,
+					"contact_type": "character",
+					"standing":     5,
+					"label_ids":    []int64{label.LabelID},
+				},
+				{
+					"contact_id":   contact.ID,
+					"contact_type": "character",
+					"standing":     -5,
+					"label_ids":    []int64{label.LabelID},
+				},
+			}),
+		)
+
+		// when
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterContact(ctx, c.ID, contact.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, -5.0, o.Standing)
+		xassert.Equal(t, set.Of(label.Name), o.Labels)
+	})
+	t.Run("should store later entry when ESI returns many contacts twice", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		var contactIDs []int64
+		for range 50 {
+			contactIDs = append(contactIDs, factory.CreateEveEntityCharacter().ID)
+		}
+		var data []map[string]any
+		for _, standing := range []float64{5, -5} { // second "page" has the newer data
+			for _, id := range contactIDs {
+				data = append(data, map[string]any{
+					"contact_id":   id,
+					"contact_type": "character",
+					"standing":     standing,
+				})
+			}
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data),
+		)
+
+		// when
+		_, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
+		})
+		// then
+		require.NoError(t, err)
+		oo, err := st.ListCharacterContacts(ctx, c.ID)
+		require.NoError(t, err)
+		require.Len(t, oo, len(contactIDs))
+		for _, o := range oo {
+			xassert.Equal(t, -5.0, o.Standing)
+		}
+	})
+	t.Run("should report when not changed and ESI returns a contact twice", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{
+			CharacterID: c.ID,
+		})
+		contact := factory.CreateEveEntityCharacter()
+		factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			ContactID:   contact.ID,
+			Standing:    -1.5,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/contacts", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"contact_id":   contact.ID,
+					"contact_type": "character",
+					"standing":     -1.5,
+				},
+				{
+					"contact_id":   contact.ID,
+					"contact_type": "character",
+					"standing":     -1.5,
+				},
+			}),
+		)
+
+		// when
+		changed, err := s.updateContactsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterContacts,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
 }
 
 func TestUpdateCharacterContactLabelsESI(t *testing.T) {

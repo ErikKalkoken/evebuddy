@@ -2,9 +2,11 @@ package storage_test
 
 import (
 	"context"
+	"maps"
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -94,23 +96,152 @@ func TestCharacterContactLabel(t *testing.T) {
 		want := set.Of(l1.LabelID, l2.LabelID)
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can delete labels", func(t *testing.T) {
+	t.Run("can replace labels", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		kept := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			Name:        "Alpha",
+		})
+		renamed := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			Name:        "Bravo",
+		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		other := factory.CreateCharacterContactLabel()
+		// when
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
+			kept.LabelID:    "Alpha",
+			renamed.LabelID: "Charlie",
+			42:              "Delta",
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		oo, err := st.ListCharacterContactLabels(ctx, c.ID)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(oo, func(x *app.CharacterContactLabel) (int64, string) {
+			return x.LabelID, x.Name
+		}))
+		want := map[int64]string{
+			kept.LabelID:    "Alpha",
+			renamed.LabelID: "Charlie",
+			42:              "Delta",
+		}
+		xassert.Equal(t, want, got)
+		got2, err := st.ListCharacterContactLabelIDs(ctx, other.CharacterID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(other.LabelID), got2)
+	})
+	t.Run("should report no change when labels are the same", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		l := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+			Name:        "Alpha",
+		})
+		// when
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
+			l.LabelID: "Alpha",
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should remove all labels when replaced with empty map", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		// when
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+	t.Run("should remove labels in chunks", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		l3 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
+			CharacterID: c.ID,
+		})
+		// when
+		changed, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
+			l3.LabelID: l3.Name,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(l3.LabelID), got)
+	})
+	t.Run("should remove removed labels from contacts", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		l1 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
 			CharacterID: c.ID,
+			Name:        "Alpha",
 		})
 		l2 := factory.CreateCharacterContactLabel(storage.UpdateOrCreateCharacterContactLabelParams{
 			CharacterID: c.ID,
+			Name:        "Bravo",
+		})
+		contact := factory.CreateCharacterContact(storage.UpdateOrCreateCharacterContactParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int64{l1.LabelID, l2.LabelID},
 		})
 		// when
-		err := st.DeleteCharacterContactLabels(ctx, c.ID, set.Of(l1.LabelID))
+		_, err := st.ReplaceCharacterContactLabels(ctx, c.ID, map[int64]string{
+			l2.LabelID: "Bravo",
+		})
 		// then
 		require.NoError(t, err)
-		got, err := st.ListCharacterContactLabelIDs(ctx, c.ID)
+		got, err := st.GetCharacterContact(ctx, c.ID, contact.Contact.ID)
 		require.NoError(t, err)
-		want := set.Of(l2.LabelID)
-		xassert.Equal(t, want, got)
+		xassert.Equal(t, set.Of("Bravo"), got.Labels)
+	})
+	t.Run("should return error when replacing with invalid IDs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		cases := []struct {
+			name        string
+			characterID int64
+			labels      map[int64]string
+		}{
+			{"zero character ID", 0, map[int64]string{1: "Alpha"}},
+			{"zero label ID", c.ID, map[int64]string{1: "Alpha", 0: "Bravo"}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCharacterContactLabels(ctx, tc.characterID, tc.labels)
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }

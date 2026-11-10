@@ -63,6 +63,17 @@ func (q *Queries) DeleteCharacterContactContactLabels(ctx context.Context, arg D
 	return err
 }
 
+const deleteCharacterContactContactLabelsForContact = `-- name: DeleteCharacterContactContactLabelsForContact :exec
+DELETE FROM character_contacts_labels
+WHERE
+    contact_id = ?
+`
+
+func (q *Queries) DeleteCharacterContactContactLabelsForContact(ctx context.Context, contactID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteCharacterContactContactLabelsForContact, contactID)
+	return err
+}
+
 const deleteCharacterContacts = `-- name: DeleteCharacterContacts :exec
 DELETE FROM character_contacts
 WHERE
@@ -169,6 +180,46 @@ func (q *Queries) ListCharacterContactContactLabelIds(ctx context.Context, arg L
 	return items, nil
 }
 
+const listCharacterContactContactLabelIdsForCharacter = `-- name: ListCharacterContactContactLabelIdsForCharacter :many
+SELECT
+    cc.contact_id,
+    ccl.label_id
+FROM
+    character_contacts_labels map
+    JOIN character_contacts cc ON cc.id = map.contact_id
+    JOIN character_contact_labels ccl ON ccl.id = map.label_id
+WHERE
+    cc.character_id = ?
+`
+
+type ListCharacterContactContactLabelIdsForCharacterRow struct {
+	ContactID int64
+	LabelID   int64
+}
+
+func (q *Queries) ListCharacterContactContactLabelIdsForCharacter(ctx context.Context, characterID int64) ([]ListCharacterContactContactLabelIdsForCharacterRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContactContactLabelIdsForCharacter, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterContactContactLabelIdsForCharacterRow
+	for rows.Next() {
+		var i ListCharacterContactContactLabelIdsForCharacterRow
+		if err := rows.Scan(&i.ContactID, &i.LabelID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterContactContactLabels = `-- name: ListCharacterContactContactLabels :many
 SELECT
     ccl.name
@@ -262,6 +313,45 @@ func (q *Queries) ListCharacterContactLabelsForCharacter(ctx context.Context, ch
 	for rows.Next() {
 		var i ListCharacterContactLabelsForCharacterRow
 		if err := rows.Scan(&i.ContactID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterContactStates = `-- name: ListCharacterContactStates :many
+SELECT
+    id, character_id, contact_id, is_blocked, is_watched, standing
+FROM
+    character_contacts
+WHERE
+    character_id = ?
+`
+
+func (q *Queries) ListCharacterContactStates(ctx context.Context, characterID int64) ([]CharacterContact, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContactStates, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CharacterContact
+	for rows.Next() {
+		var i CharacterContact
+		if err := rows.Scan(
+			&i.ID,
+			&i.CharacterID,
+			&i.ContactID,
+			&i.IsBlocked,
+			&i.IsWatched,
+			&i.Standing,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

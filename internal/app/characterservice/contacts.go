@@ -39,7 +39,7 @@ func (s *CharacterService) updateContactsESI(ctx context.Context, arg characterS
 			if err != nil {
 				return nil, err
 			}
-			slices.SortFunc(contacts, func(a, b esi.CharactersCharacterIdContactsGetInner) int {
+			slices.SortStableFunc(contacts, func(a, b esi.CharactersCharacterIdContactsGetInner) int { // stable: keeps later duplicates last
 				return cmp.Compare(a.ContactId, b.ContactId)
 			})
 			slog.Debug("Received contacts from ESI", "count", len(contacts), "characterID", characterID)
@@ -55,35 +55,29 @@ func (s *CharacterService) updateContactsESI(ctx context.Context, arg characterS
 			if err != nil {
 				return false, err
 			}
+			args := make([]storage.ReplaceCharacterContactParams, 0, len(contacts))
+			index := make(map[int64]int, len(contacts))
+			var duplicates int
 			for _, r := range contacts {
-				err = s.st.UpdateOrCreateCharacterContact(ctx, storage.UpdateOrCreateCharacterContactParams{
-					CharacterID: characterID,
-					ContactID:   r.ContactId,
-					IsBlocked:   optional.FromPtr(r.IsBlocked),
-					IsWatched:   optional.FromPtr(r.IsWatched),
-					Standing:    r.Standing,
-					LabelIDs:    r.LabelIds,
-				})
-				if err != nil {
-					return false, err
+				arg := storage.ReplaceCharacterContactParams{
+					ContactID: r.ContactId,
+					IsBlocked: optional.FromPtr(r.IsBlocked),
+					IsWatched: optional.FromPtr(r.IsWatched),
+					LabelIDs:  r.LabelIds,
+					Standing:  r.Standing,
 				}
-			}
-			slog.Info("Updated contacts", "characterID", characterID, "count", incomingIDs.Size())
-
-			// Delete obsolete entries
-			currentIDs, err := s.st.ListCharacterContactIDs(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			obsoleteIDs := set.Difference(currentIDs, incomingIDs)
-			if obsoleteIDs.Size() > 0 {
-				err := s.st.DeleteCharacterContacts(ctx, characterID, obsoleteIDs)
-				if err != nil {
-					return false, err
+				if i, found := index[r.ContactId]; found {
+					args[i] = arg // pages can shift while being fetched
+					duplicates++
+					continue
 				}
-				slog.Info("Deleted obsolete contacts", "characterID", characterID, "count", obsoleteIDs.Size())
+				index[r.ContactId] = len(args)
+				args = append(args, arg)
 			}
-			return true, nil
+			if duplicates > 0 {
+				slog.Warn("Duplicate contacts received from ESI", "characterID", characterID, "count", duplicates)
+			}
+			return s.st.ReplaceCharacterContacts(ctx, characterID, args)
 		})
 }
 
@@ -104,47 +98,9 @@ func (s *CharacterService) updateContactLabelsESI(ctx context.Context, arg chara
 		},
 		func(ctx context.Context, characterID int64, x any) (bool, error) {
 			incoming := x.([]esi.AlliancesAllianceIdContactsLabelsGetInner)
-			incoming2 := maps.Collect(xiter.MapSlice2(incoming, func(x esi.AlliancesAllianceIdContactsLabelsGetInner) (int64, string) {
+			labels := maps.Collect(xiter.MapSlice2(incoming, func(x esi.AlliancesAllianceIdContactsLabelsGetInner) (int64, string) {
 				return x.LabelId, x.LabelName
 			}))
-
-			current, err := s.st.ListCharacterContactLabels(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			current2 := maps.Collect(xiter.MapSlice2(current, func(x *app.CharacterContactLabel) (int64, string) {
-				return x.LabelID, x.Name
-			}))
-
-			var changed int
-			for id2, name2 := range incoming2 {
-				if name1, ok := current2[id2]; ok && name1 == name2 {
-					continue
-				}
-				err := s.st.UpdateOrCreateCharacterContactLabel(ctx, storage.UpdateOrCreateCharacterContactLabelParams{
-					CharacterID: characterID,
-					LabelID:     id2,
-					Name:        name2,
-				})
-				if err != nil {
-					return false, err
-				}
-				changed++
-			}
-			slog.Info("Updated contact labels", "characterID", characterID, "count", changed)
-
-			// Delete obsolete labels
-			currentIDs := set.Collect(maps.Keys(current2))
-			incomingIDs := set.Collect(maps.Keys(incoming2))
-			obsoleteIDs := set.Difference(currentIDs, incomingIDs)
-			if obsoleteIDs.Size() > 0 {
-				err := s.st.DeleteCharacterContactLabels(ctx, characterID, obsoleteIDs)
-				if err != nil {
-					return false, err
-				}
-				slog.Info("Deleted obsolete contact labels", "characterID", characterID, "count", obsoleteIDs.Size())
-				changed += obsoleteIDs.Size()
-			}
-			return changed > 0, nil
+			return s.st.ReplaceCharacterContactLabels(ctx, characterID, labels)
 		})
 }

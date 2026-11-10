@@ -23,6 +23,14 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterContactStates :many
+SELECT
+    *
+FROM
+    character_contacts
+WHERE
+    character_id = ?;
+
 -- name: ListCharacterContacts :many
 SELECT
     sqlc.embed(cc),
@@ -82,6 +90,17 @@ FROM
 WHERE
     cc.character_id = ?;
 
+-- name: ListCharacterContactContactLabelIdsForCharacter :many
+SELECT
+    cc.contact_id,
+    ccl.label_id
+FROM
+    character_contacts_labels map
+    JOIN character_contacts cc ON cc.id = map.contact_id
+    JOIN character_contact_labels ccl ON ccl.id = map.label_id
+WHERE
+    cc.character_id = ?;
+
 -- name: CreateCharacterContactContactLabel :exec
 INSERT INTO
     character_contacts_labels (contact_id, label_id)
@@ -98,3 +117,8 @@ WHERE id IN (
     WHERE cc.character_id = ? AND cc.contact_id = ?
     AND ccl.label_id IN (sqlc.slice('label_ids'))
 );
+
+-- name: DeleteCharacterContactContactLabelsForContact :exec
+DELETE FROM character_contacts_labels
+WHERE
+    contact_id = ?;
