@@ -20,4 +20,4 @@ SELECT
 FROM
     eve_regions
 WHERE
-    id IN (sqlc.slice ('ids'));
+    id IN (sqlc.slice('ids'));

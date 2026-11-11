@@ -14,7 +14,9 @@ const createEveEntity = `-- name: CreateEveEntity :one
 INSERT INTO
     eve_entities (id, category, name)
 VALUES
-    (?, ?, ?) RETURNING id, category, name
+    (?, ?, ?)
+RETURNING
+    id, category, name
 `
 
 type CreateEveEntityParams struct {
@@ -317,7 +319,9 @@ VALUES
 ON CONFLICT (id) DO UPDATE
 SET
     category = ?2,
-    name = ?3 RETURNING id, category, name
+    name = ?3
+RETURNING
+    id, category, name
 `
 
 type UpdateOrCreateEveEntityParams struct {

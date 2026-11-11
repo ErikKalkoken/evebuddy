@@ -34,4 +34,4 @@ SELECT
 FROM
     eve_solar_systems
 WHERE
-    id IN (sqlc.slice ('ids'));
+    id IN (sqlc.slice('ids'));

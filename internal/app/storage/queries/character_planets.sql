@@ -16,7 +16,7 @@ RETURNING
 DELETE FROM character_planets
 WHERE
     character_id = ?
-    AND eve_planet_id IN (sqlc.slice ('eve_planet_ids'));
+    AND eve_planet_id IN (sqlc.slice('eve_planet_ids'));
 
 -- name: GetCharacterPlanet :one
 SELECT

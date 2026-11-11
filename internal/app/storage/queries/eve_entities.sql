@@ -2,7 +2,9 @@
 INSERT INTO
     eve_entities (id, category, name)
 VALUES
-    (?, ?, ?) RETURNING *;
+    (?, ?, ?)
+RETURNING
+    *;
 
 -- name: GetEveEntity :one
 SELECT
@@ -18,7 +20,7 @@ SELECT
 FROM
     eve_entities
 WHERE
-    id IN (sqlc.slice ('ids'));
+    id IN (sqlc.slice('ids'));
 
 -- name: ListEveEntityIDsForIDs :many
 SELECT
@@ -26,7 +28,7 @@ SELECT
 FROM
     eve_entities
 WHERE
-    id IN (sqlc.slice ('ids'));
+    id IN (sqlc.slice('ids'));
 
 -- name: ListEveEntityByNameAndCategory :many
 SELECT
@@ -78,7 +80,9 @@ VALUES
 ON CONFLICT (id) DO UPDATE
 SET
     category = ?2,
-    name = ?3 RETURNING *;
+    name = ?3
+RETURNING
+    *;
 
 -- name: UpdateEveEntity :exec
 UPDATE eve_entities

@@ -78,7 +78,7 @@ SELECT
 FROM
     eve_types
 WHERE
-    id IN (sqlc.slice ('ids'));
+    id IN (sqlc.slice('ids'));
 
 -- name: CreateEveTypeDogmaAttribute :exec
 INSERT INTO
