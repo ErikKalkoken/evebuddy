@@ -57,6 +57,19 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterMarketOrderStates :many
+SELECT
+    order_id,
+    escrow,
+    issued,
+    price,
+    state,
+    volume_remains
+FROM
+    character_market_orders
+WHERE
+    character_id = ?;
+
 -- name: ListCharacterMarketOrders :many
 SELECT
     sqlc.embed(cmo),
