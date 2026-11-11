@@ -282,11 +282,7 @@ func (s *CorporationService) RemoveSectionDataWhenPermissionLost(ctx context.Con
 					return wrapErr(err)
 				}
 			case app.SectionCorporationStructures:
-				ids, err := s.st.ListCorporationStructureIDs(ctx, corporationID)
-				if err != nil {
-					return wrapErr(err)
-				}
-				if err := s.st.DeleteCorporationStructures(ctx, corporationID, ids); err != nil {
+				if err := s.st.DeleteCorporationStructures(ctx, corporationID); err != nil {
 					return wrapErr(err)
 				}
 			default:

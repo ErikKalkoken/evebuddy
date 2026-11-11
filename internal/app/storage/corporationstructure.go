@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -74,24 +76,21 @@ func (st *Storage) CountCorporationStructuresWithState(ctx context.Context, corp
 	return v, nil
 }
 
-func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64, structureIDs set.Set[int64]) error {
+// DeleteCorporationStructures deletes all structures of a corporation and their services.
+func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64) error {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationStructuresByID for corporation %d and structures IDs: %v: %w", corporationID, structureIDs, err)
+		return fmt.Errorf("DeleteCorporationStructures: %d: %w", corporationID, err)
 	}
 	if corporationID == 0 {
 		return wrapErr(app.ErrInvalid)
 	}
-	if structureIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
-		CorporationID: corporationID,
-		StructureIds:  slices.Collect(structureIDs.All()),
-	})
+	n, err := st.qRW.DeleteCorporationStructures(ctx, corporationID)
 	if err != nil {
 		return wrapErr(err)
 	}
-	slog.Info("Corporation structures deleted", "corporationID", corporationID, "jobIDs", structureIDs)
+	if n > 0 {
+		slog.Info("Corporation structures deleted", "corporationID", corporationID, "count", n)
+	}
 	return nil
 }
 
@@ -257,6 +256,176 @@ type StructureServiceParams struct {
 	State app.StructureServiceState
 }
 
+func (x StructureServiceParams) isValid() bool {
+	return x.Name != "" && x.State != app.StructureServiceStateUndefined
+}
+
+// CorporationStructureParams describes a structure of a corporation and its services.
+type CorporationStructureParams struct {
+	FuelExpires        optional.Optional[time.Time]
+	Name               optional.Optional[string]
+	NextReinforceApply optional.Optional[time.Time]
+	NextReinforceHour  optional.Optional[int64]
+	ProfileID          int64
+	ReinforceHour      optional.Optional[int64]
+	Services           []StructureServiceParams
+	State              app.StructureState
+	StateTimerEnd      optional.Optional[time.Time]
+	StateTimerStart    optional.Optional[time.Time]
+	StructureID        int64
+	SystemID           int64
+	TypeID             int64
+	UnanchorsAt        optional.Optional[time.Time]
+}
+
+func (x CorporationStructureParams) isValid() bool {
+	if x.StructureID == 0 || x.SystemID == 0 || x.TypeID == 0 || x.State == app.StructureStateUndefined {
+		return false
+	}
+	for _, s := range x.Services {
+		if !s.isValid() {
+			return false
+		}
+	}
+	return true
+}
+
+// corporationStructureState holds the columns of a structure which can change after it was created and its services.
+type corporationStructureState struct {
+	fuelExpires        optional.Optional[time.Time]
+	name               string
+	nextReinforceApply optional.Optional[time.Time]
+	nextReinforceHour  optional.Optional[int64]
+	profileID          int64
+	reinforceHour      optional.Optional[int64]
+	services           map[string]app.StructureServiceState
+	state              app.StructureState
+	stateTimerEnd      optional.Optional[time.Time]
+	stateTimerStart    optional.Optional[time.Time]
+	unanchorsAt        optional.Optional[time.Time]
+}
+
+// equal reports whether s and other are equal.
+// Times are compared with Equal, because their location can differ after a round trip through the DB.
+func (s corporationStructureState) equal(other corporationStructureState) bool {
+	return optional.Equal2(s.fuelExpires, other.fuelExpires) &&
+		s.name == other.name &&
+		optional.Equal2(s.nextReinforceApply, other.nextReinforceApply) &&
+		optional.Equal(s.nextReinforceHour, other.nextReinforceHour) &&
+		s.profileID == other.profileID &&
+		optional.Equal(s.reinforceHour, other.reinforceHour) &&
+		maps.Equal(s.services, other.services) &&
+		s.state == other.state &&
+		optional.Equal2(s.stateTimerEnd, other.stateTimerEnd) &&
+		optional.Equal2(s.stateTimerStart, other.stateTimerStart) &&
+		optional.Equal2(s.unanchorsAt, other.unanchorsAt)
+}
+
+// ReplaceCorporationStructures replaces the structures of a corporation in one transaction.
+// It deletes structures missing in args and writes only new or changed structures.
+// It reports whether anything has changed.
+// Structure IDs in args and service names of each structure must be unique.
+func (st *Storage) ReplaceCorporationStructures(ctx context.Context, corporationID int64, args []CorporationStructureParams) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ReplaceCorporationStructures: corporation %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return false, wrapErr(app.ErrInvalid)
+	}
+	for _, arg := range args {
+		if !arg.isValid() {
+			return false, wrapErr(fmt.Errorf("structure %d: %w", arg.StructureID, app.ErrInvalid))
+		}
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	rows, err := qtx.ListCorporationStructureStates(ctx, corporationID)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	ids := make([]int64, len(rows))
+	for i, r := range rows {
+		ids[i] = r.ID
+	}
+	services, err := st.listStructureServicesByStructure(ctx, qtx, ids)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	current := make(map[int64]corporationStructureState, len(rows))
+	for _, r := range rows {
+		m := make(map[string]app.StructureServiceState)
+		for _, s := range services[r.ID] {
+			m[s.Name] = s.State
+		}
+		current[r.StructureID] = corporationStructureState{
+			fuelExpires:        optional.FromNullTime(r.FuelExpires),
+			name:               r.Name,
+			nextReinforceApply: optional.FromNullTime(r.NextReinforceApply),
+			nextReinforceHour:  optional.FromNullInt64(r.NextReinforceHour),
+			profileID:          r.ProfileID,
+			reinforceHour:      optional.FromNullInt64(r.ReinforceHour),
+			services:           m,
+			state:              structureStateFromDBValue[r.State],
+			stateTimerEnd:      optional.FromNullTime(r.StateTimerEnd),
+			stateTimerStart:    optional.FromNullTime(r.StateTimerStart),
+			unanchorsAt:        optional.FromNullTime(r.UnanchorsAt),
+		}
+	}
+	var changed []CorporationStructureParams
+	for _, arg := range args {
+		o, found := xmaps.Pop(current, arg.StructureID) // what remains in current is missing in args
+		if found {
+			m := make(map[string]app.StructureServiceState)
+			for _, s := range arg.Services {
+				m[s.Name] = s.State
+			}
+			if o.equal(corporationStructureState{
+				fuelExpires:        arg.FuelExpires,
+				name:               arg.Name.ValueOrZero(),
+				nextReinforceApply: arg.NextReinforceApply,
+				nextReinforceHour:  arg.NextReinforceHour,
+				profileID:          arg.ProfileID,
+				reinforceHour:      arg.ReinforceHour,
+				services:           m,
+				state:              arg.State,
+				stateTimerEnd:      arg.StateTimerEnd,
+				stateTimerStart:    arg.StateTimerStart,
+				unanchorsAt:        arg.UnanchorsAt,
+			}) {
+				continue
+			}
+		}
+		changed = append(changed, arg)
+	}
+	removed := slices.Collect(maps.Keys(current))
+	if len(changed) == 0 && len(removed) == 0 {
+		return false, nil
+	}
+	for ids := range slices.Chunk(removed, st.MaxIDsPerQuery) {
+		err := qtx.DeleteCorporationStructuresByID(ctx, queries.DeleteCorporationStructuresByIDParams{
+			CorporationID: corporationID,
+			StructureIds:  ids,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("delete %d structures: %w", len(ids), err))
+		}
+	}
+	for _, arg := range changed {
+		if err := updateOrCreateCorporationStructure(ctx, qtx, corporationID, arg); err != nil {
+			return false, fmt.Errorf("ReplaceCorporationStructures: %w", err) // err already names the corporation
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Corporation structures replaced", "corporationID", corporationID, "changed", len(changed), "removed", len(removed))
+	return true, nil
+}
+
 type UpdateOrCreateCorporationStructureParams struct {
 	CorporationID      int64
 	FuelExpires        optional.Optional[time.Time]
@@ -275,20 +444,31 @@ type UpdateOrCreateCorporationStructureParams struct {
 	UnanchorsAt        optional.Optional[time.Time]
 }
 
-func (x UpdateOrCreateCorporationStructureParams) isValid() bool {
-	return x.CorporationID != 0 &&
-		x.StructureID != 0 &&
-		x.SystemID != 0 &&
-		x.TypeID != 0 &&
-		x.State != app.StructureStateUndefined
-}
-
 // UpdateOrCreateCorporationStructure creates or updates a structure and replaces its services in one transaction.
 func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg UpdateOrCreateCorporationStructureParams) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreateCorporationStructure %+v: %w", arg, err)
+	p := CorporationStructureParams{
+		FuelExpires:        arg.FuelExpires,
+		Name:               arg.Name,
+		NextReinforceApply: arg.NextReinforceApply,
+		NextReinforceHour:  arg.NextReinforceHour,
+		ProfileID:          arg.ProfileID,
+		ReinforceHour:      arg.ReinforceHour,
+		Services:           arg.Services,
+		State:              arg.State,
+		StateTimerEnd:      arg.StateTimerEnd,
+		StateTimerStart:    arg.StateTimerStart,
+		StructureID:        arg.StructureID,
+		SystemID:           arg.SystemID,
+		TypeID:             arg.TypeID,
+		UnanchorsAt:        arg.UnanchorsAt,
 	}
-	if !arg.isValid() {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCorporationStructure: %+v: %w", struct {
+			CorporationID int64
+			StructureID   int64
+		}{arg.CorporationID, arg.StructureID}, err)
+	}
+	if arg.CorporationID == 0 || !p.isValid() {
 		return wrapErr(app.ErrInvalid)
 	}
 	tx, err := st.dbRW.Begin()
@@ -296,9 +476,26 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 		return wrapErr(err)
 	}
 	defer tx.Rollback()
-	qtx := st.qRW.WithTx(tx)
-	id, err := qtx.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
-		CorporationID:      arg.CorporationID,
+	if err := updateOrCreateCorporationStructure(ctx, st.qRW.WithTx(tx), arg.CorporationID, p); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return wrapErr(err)
+	}
+	return nil
+}
+
+// updateOrCreateCorporationStructure creates or updates a structure and replaces its services.
+// It expects valid params and should run inside a transaction.
+func updateOrCreateCorporationStructure(ctx context.Context, q *queries.Queries, corporationID int64, arg CorporationStructureParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCorporationStructure: %+v: %w", struct {
+			CorporationID int64
+			StructureID   int64
+		}{corporationID, arg.StructureID}, err)
+	}
+	id, err := q.UpdateOrCreateCorporationStructure(ctx, queries.UpdateOrCreateCorporationStructureParams{
+		CorporationID:      corporationID,
 		FuelExpires:        optional.ToNullTime(arg.FuelExpires),
 		Name:               arg.Name.ValueOrZero(),
 		NextReinforceApply: optional.ToNullTime(arg.NextReinforceApply),
@@ -316,21 +513,18 @@ func (st *Storage) UpdateOrCreateCorporationStructure(ctx context.Context, arg U
 	if err != nil {
 		return wrapErr(err)
 	}
-	if err := qtx.DeleteStructureServices(ctx, id); err != nil {
+	if err := q.DeleteStructureServices(ctx, id); err != nil {
 		return wrapErr(err)
 	}
 	for _, s := range arg.Services {
-		err := createStructureService(ctx, qtx, CreateStructureServiceParams{
+		err := q.CreateStructureService(ctx, queries.CreateStructureServiceParams{
 			CorporationStructureID: id,
 			Name:                   s.Name,
-			State:                  s.State,
+			State:                  structureServiceStateToDBValue[s.State],
 		})
 		if err != nil {
-			return wrapErr(fmt.Errorf("service %+v: %w", s, err))
+			return wrapErr(fmt.Errorf("service %s: %w", s.Name, err))
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return wrapErr(err)
 	}
 	return nil
 }
@@ -342,31 +536,18 @@ type CreateStructureServiceParams struct {
 }
 
 func (st *Storage) CreateStructureService(ctx context.Context, arg CreateStructureServiceParams) error {
-	if err := createStructureService(ctx, st.qRW, arg); err != nil {
+	wrapErr := func(err error) error {
 		return fmt.Errorf("CreateStructureService: %+v: %w", arg, err)
 	}
-	return nil
-}
-
-func createStructureService(ctx context.Context, q *queries.Queries, arg CreateStructureServiceParams) error {
 	if arg.CorporationStructureID == 0 || arg.Name == "" || arg.State == app.StructureServiceStateUndefined {
-		return app.ErrInvalid
+		return wrapErr(app.ErrInvalid)
 	}
-	return q.CreateStructureService(ctx, queries.CreateStructureServiceParams{
+	err := st.qRW.CreateStructureService(ctx, queries.CreateStructureServiceParams{
 		CorporationStructureID: arg.CorporationStructureID,
 		Name:                   arg.Name,
 		State:                  structureServiceStateToDBValue[arg.State],
 	})
-}
-
-func (st *Storage) DeleteStructureServices(ctx context.Context, corporationStructureID int64) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteStructureServices: %d: %w", corporationStructureID, err)
-	}
-	if corporationStructureID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if err := st.qRW.DeleteStructureServices(ctx, corporationStructureID); err != nil {
+	if err != nil {
 		return wrapErr(err)
 	}
 	return nil

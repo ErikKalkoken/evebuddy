@@ -14,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -94,24 +93,9 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 				return false, err
 			}
 
-			// Remove vanished structures
-			incoming := set.Collect(xiter.MapSlice(structures, func(x esi.CorporationsCorporationIdStructuresGetInner) int64 {
-				return x.StructureId
-			}))
-			current, err := s.st.ListCorporationStructureIDs(ctx, arg.corporationID)
-			if err != nil {
-				return false, err
-			}
-			removed := set.Difference(current, incoming)
-			if removed.Size() > 0 {
-				if err := s.st.DeleteCorporationStructures(ctx, arg.corporationID, removed); err != nil {
-					return false, err
-				}
-				slog.Info("Removed vanished corporation structures", "corporationID", arg.corporationID, "count", removed.Size())
-			}
-
-			// Update structures
-			for _, o := range structures {
+			structures = dedupeStructures(structures, arg.corporationID)
+			args := make([]storage.CorporationStructureParams, len(structures))
+			for i, o := range structures {
 				state, ok := structureStateFromESIValue[o.State]
 				if !ok {
 					state = app.StructureStateUnknown
@@ -139,8 +123,8 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 						State: serviceState,
 					}
 				})
-				err := s.st.UpdateOrCreateCorporationStructure(ctx, storage.UpdateOrCreateCorporationStructureParams{
-					CorporationID:      arg.corporationID,
+				services = dedupeStructureServices(services, arg.corporationID, o.StructureId)
+				args[i] = storage.CorporationStructureParams{
 					FuelExpires:        optional.FromPtr(o.FuelExpires),
 					Name:               optional.FromPtr(o.Name),
 					NextReinforceApply: optional.FromPtr(o.NextReinforceApply),
@@ -155,12 +139,46 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 					SystemID:           o.SystemId,
 					TypeID:             o.TypeId,
 					UnanchorsAt:        optional.FromPtr(o.UnanchorsAt),
-				})
-				if err != nil {
-					return false, err
 				}
 			}
-			slog.Info("Updated corporation structures", "corporationID", arg.corporationID, "count", len(structures))
-			return true, nil
+			return s.st.ReplaceCorporationStructures(ctx, arg.corporationID, args)
 		})
+}
+
+// dedupeStructures returns structures without duplicate IDs. The last structure wins.
+func dedupeStructures(structures []esi.CorporationsCorporationIdStructuresGetInner, corporationID int64) []esi.CorporationsCorporationIdStructuresGetInner {
+	last := make(map[int64]int, len(structures))
+	for i, o := range structures {
+		last[o.StructureId] = i
+	}
+	if len(last) == len(structures) {
+		return structures
+	}
+	slog.Warn("Duplicate corporation structures received from ESI", "corporationID", corporationID, "count", len(structures)-len(last))
+	unique := make([]esi.CorporationsCorporationIdStructuresGetInner, 0, len(last))
+	for i, o := range structures {
+		if last[o.StructureId] == i {
+			unique = append(unique, o)
+		}
+	}
+	return unique
+}
+
+// dedupeStructureServices returns services without duplicate names. The last service wins.
+func dedupeStructureServices(services []storage.StructureServiceParams, corporationID, structureID int64) []storage.StructureServiceParams {
+	last := make(map[string]int, len(services))
+	for i, x := range services {
+		last[x.Name] = i
+	}
+	if len(last) == len(services) {
+		return services
+	}
+	slog.Warn("Duplicate structure services received from ESI", "corporationID", corporationID, "structureID", structureID, "count", len(services)-len(last))
+	unique := make([]storage.StructureServiceParams, 0, len(last))
+	for i, x := range services {
+		if last[x.Name] == i {
+			unique = append(unique, x)
+		}
+	}
+	return unique
 }

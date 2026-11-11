@@ -44,20 +44,34 @@ func (q *Queries) CountCorporationStructuresWithState(ctx context.Context, arg C
 	return count, err
 }
 
-const deleteCorporationStructures = `-- name: DeleteCorporationStructures :exec
+const deleteCorporationStructures = `-- name: DeleteCorporationStructures :execrows
+DELETE FROM corporation_structures
+WHERE
+    corporation_id = ?
+`
+
+func (q *Queries) DeleteCorporationStructures(ctx context.Context, corporationID int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteCorporationStructures, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteCorporationStructuresByID = `-- name: DeleteCorporationStructuresByID :exec
 DELETE FROM corporation_structures
 WHERE
     corporation_id = ?
     AND structure_id IN (/*SLICE:structure_ids*/?)
 `
 
-type DeleteCorporationStructuresParams struct {
+type DeleteCorporationStructuresByIDParams struct {
 	CorporationID int64
 	StructureIds  []int64
 }
 
-func (q *Queries) DeleteCorporationStructures(ctx context.Context, arg DeleteCorporationStructuresParams) error {
-	query := deleteCorporationStructures
+func (q *Queries) DeleteCorporationStructuresByID(ctx context.Context, arg DeleteCorporationStructuresByIDParams) error {
+	query := deleteCorporationStructuresByID
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CorporationID)
 	if len(arg.StructureIds) > 0 {
@@ -294,6 +308,77 @@ func (q *Queries) ListCorporationStructureIDs(ctx context.Context, corporationID
 	return items, nil
 }
 
+const listCorporationStructureStates = `-- name: ListCorporationStructureStates :many
+SELECT
+    id,
+    structure_id,
+    fuel_expires,
+    name,
+    next_reinforce_apply,
+    next_reinforce_hour,
+    profile_id,
+    reinforce_hour,
+    state,
+    state_timer_end,
+    state_timer_start,
+    unanchors_at
+FROM
+    corporation_structures
+WHERE
+    corporation_id = ?
+`
+
+type ListCorporationStructureStatesRow struct {
+	ID                 int64
+	StructureID        int64
+	FuelExpires        sql.NullTime
+	Name               string
+	NextReinforceApply sql.NullTime
+	NextReinforceHour  sql.NullInt64
+	ProfileID          int64
+	ReinforceHour      sql.NullInt64
+	State              string
+	StateTimerEnd      sql.NullTime
+	StateTimerStart    sql.NullTime
+	UnanchorsAt        sql.NullTime
+}
+
+func (q *Queries) ListCorporationStructureStates(ctx context.Context, corporationID int64) ([]ListCorporationStructureStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCorporationStructureStates, corporationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCorporationStructureStatesRow
+	for rows.Next() {
+		var i ListCorporationStructureStatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.StructureID,
+			&i.FuelExpires,
+			&i.Name,
+			&i.NextReinforceApply,
+			&i.NextReinforceHour,
+			&i.ProfileID,
+			&i.ReinforceHour,
+			&i.State,
+			&i.StateTimerEnd,
+			&i.StateTimerStart,
+			&i.UnanchorsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCorporationStructures = `-- name: ListCorporationStructures :many
 SELECT
     cs.id, cs.corporation_id, cs.fuel_expires, cs.name, cs.next_reinforce_apply, cs.next_reinforce_hour, cs.profile_id, cs.reinforce_hour, cs.state, cs.state_timer_end, cs.state_timer_start, cs.structure_id, cs.system_id, cs.type_id, cs.unanchors_at,
@@ -436,6 +521,7 @@ SET
     name = ?3,
     next_reinforce_apply = ?4,
     next_reinforce_hour = ?5,
+    profile_id = ?6,
     reinforce_hour = ?7,
     state = ?8,
     state_timer_end = ?9,
