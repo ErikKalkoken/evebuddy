@@ -7,7 +7,12 @@ WHERE
     corporation_id = ?
     AND state IN (sqlc.slice('states'));
 
--- name: DeleteCorporationStructures :exec
+-- name: DeleteCorporationStructures :execrows
+DELETE FROM corporation_structures
+WHERE
+    corporation_id = ?;
+
+-- name: DeleteCorporationStructuresByID :exec
 DELETE FROM corporation_structures
 WHERE
     corporation_id = ?

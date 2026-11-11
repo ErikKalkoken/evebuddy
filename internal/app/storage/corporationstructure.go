@@ -76,6 +76,24 @@ func (st *Storage) CountCorporationStructuresWithState(ctx context.Context, corp
 	return v, nil
 }
 
+// DeleteCorporationStructures deletes all structures of a corporation and their services.
+func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("DeleteCorporationStructures: %d: %w", corporationID, err)
+	}
+	if corporationID == 0 {
+		return wrapErr(app.ErrInvalid)
+	}
+	n, err := st.qRW.DeleteCorporationStructures(ctx, corporationID)
+	if err != nil {
+		return wrapErr(err)
+	}
+	if n > 0 {
+		slog.Info("Corporation structures deleted", "corporationID", corporationID, "count", n)
+	}
+	return nil
+}
+
 func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID int64, structureID int64) (*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationStructure %d %d: %w", corporationID, structureID, err)
@@ -388,7 +406,7 @@ func (st *Storage) ReplaceCorporationStructures(ctx context.Context, corporation
 		return false, nil
 	}
 	for ids := range slices.Chunk(removed, st.MaxIDsPerQuery) {
-		err := qtx.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
+		err := qtx.DeleteCorporationStructuresByID(ctx, queries.DeleteCorporationStructuresByIDParams{
 			CorporationID: corporationID,
 			StructureIds:  ids,
 		})

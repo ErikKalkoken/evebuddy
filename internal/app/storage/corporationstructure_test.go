@@ -317,6 +317,38 @@ func TestCorporationStructure(t *testing.T) {
 		xassert.Equal(t, set.Of(s1.Name, s2.Name), services[o1.ID])
 	})
 
+	t.Run("can delete all structures of a corporation with their services", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c1.ID,
+			Services: []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOnline},
+			},
+		})
+		factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c1.ID,
+		})
+		o3 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c2.ID,
+		})
+		// when
+		err := st.DeleteCorporationStructures(t.Context(), c1.ID)
+		// then
+		require.NoError(t, err)
+		got1, err := st.ListCorporationStructureIDs(t.Context(), c1.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, got1.Size())
+		services, err := st.ListStructureServices(t.Context(), o1.ID)
+		require.NoError(t, err)
+		assert.Empty(t, services)
+		got2, err := st.ListCorporationStructureIDs(t.Context(), c2.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o3.StructureID), got2)
+	})
+
 	t.Run("can count structures with state", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

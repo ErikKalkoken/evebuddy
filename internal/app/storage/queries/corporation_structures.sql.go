@@ -44,20 +44,34 @@ func (q *Queries) CountCorporationStructuresWithState(ctx context.Context, arg C
 	return count, err
 }
 
-const deleteCorporationStructures = `-- name: DeleteCorporationStructures :exec
+const deleteCorporationStructures = `-- name: DeleteCorporationStructures :execrows
+DELETE FROM corporation_structures
+WHERE
+    corporation_id = ?
+`
+
+func (q *Queries) DeleteCorporationStructures(ctx context.Context, corporationID int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteCorporationStructures, corporationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteCorporationStructuresByID = `-- name: DeleteCorporationStructuresByID :exec
 DELETE FROM corporation_structures
 WHERE
     corporation_id = ?
     AND structure_id IN (/*SLICE:structure_ids*/?)
 `
 
-type DeleteCorporationStructuresParams struct {
+type DeleteCorporationStructuresByIDParams struct {
 	CorporationID int64
 	StructureIds  []int64
 }
 
-func (q *Queries) DeleteCorporationStructures(ctx context.Context, arg DeleteCorporationStructuresParams) error {
-	query := deleteCorporationStructures
+func (q *Queries) DeleteCorporationStructuresByID(ctx context.Context, arg DeleteCorporationStructuresByIDParams) error {
+	query := deleteCorporationStructuresByID
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CorporationID)
 	if len(arg.StructureIds) > 0 {
