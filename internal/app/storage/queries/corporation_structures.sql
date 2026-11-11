@@ -80,6 +80,25 @@ FROM
 WHERE
     corporation_id = ?;
 
+-- name: ListCorporationStructureStates :many
+SELECT
+    id,
+    structure_id,
+    fuel_expires,
+    name,
+    next_reinforce_apply,
+    next_reinforce_hour,
+    profile_id,
+    reinforce_hour,
+    state,
+    state_timer_end,
+    state_timer_start,
+    unanchors_at
+FROM
+    corporation_structures
+WHERE
+    corporation_id = ?;
+
 -- name: UpdateOrCreateCorporationStructure :one
 INSERT INTO
     corporation_structures (
@@ -121,6 +140,7 @@ SET
     name = ?3,
     next_reinforce_apply = ?4,
     next_reinforce_hour = ?5,
+    profile_id = ?6,
     reinforce_hour = ?7,
     state = ?8,
     state_timer_end = ?9,

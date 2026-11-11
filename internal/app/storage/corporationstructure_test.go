@@ -126,7 +126,7 @@ func TestCorporationStructure(t *testing.T) {
 			Name:               optional.New("Alpha"),
 			NextReinforceApply: optional.New(factory.RandomTime()),
 			NextReinforceHour:  optional.New(int64(8)),
-			ProfileID:          x1.ProfileID,
+			ProfileID:          x1.ProfileID + 1,
 			ReinforceHour:      optional.New(int64(12)),
 			State:              app.StructureStateShieldVulnerable,
 			StateTimerEnd:      optional.New(factory.RandomTime()),
@@ -152,6 +152,7 @@ func TestCorporationStructure(t *testing.T) {
 		xassert.Equal(t, arg.Name, got.Name)
 		xassert.EqualOptional(t, arg.NextReinforceApply.ValueOrZero(), got.NextReinforceApply)
 		xassert.EqualOptional(t, arg.NextReinforceHour.ValueOrZero(), got.NextReinforceHour)
+		xassert.Equal(t, arg.ProfileID, got.ProfileID)
 		xassert.EqualOptional(t, arg.ReinforceHour.ValueOrZero(), got.ReinforceHour)
 		xassert.Equal(t, arg.State, got.State)
 		xassert.EqualOptional(t, arg.StateTimerEnd.ValueOrZero(), got.StateTimerEnd)
@@ -414,24 +415,6 @@ func TestStructureService(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 
-	t.Run("can delete services", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		structure := factory.CreateCorporationStructure()
-		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: structure.ID})
-		factory.CreateStructureService(storage.CreateStructureServiceParams{CorporationStructureID: structure.ID})
-		x := factory.CreateStructureService()
-		// when
-		err := st.DeleteStructureServices(t.Context(), structure.ID)
-		// then
-		require.NoError(t, err)
-		oo1, err := st.ListStructureServices(t.Context(), structure.ID)
-		require.NoError(t, err)
-		assert.Empty(t, oo1)
-		_, err2 := st.GetStructureService(t.Context(), x.CorporationStructureID, x.Name)
-		assert.NoError(t, err2)
-	})
-
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -583,5 +566,361 @@ func TestCorporationStructure_ConsistentReads(t *testing.T) {
 		close(done)
 		assert.NoError(t, <-writerErr)
 		assert.True(t, seenA && seenB && seenDeleted, "reads overlapped all writes: A %v, B %v, deleted %v", seenA, seenB, seenDeleted)
+	})
+}
+
+func TestReplaceCorporationStructures(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should create new structures with services", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		system := factory.CreateEveSolarSystem()
+		typ := factory.CreateEveType()
+		arg := storage.CorporationStructureParams{
+			Name:        optional.New("Alpha"),
+			ProfileID:   42,
+			State:       app.StructureStateShieldVulnerable,
+			StructureID: 1234,
+			SystemID:    system.ID,
+			TypeID:      typ.ID,
+			Services: []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOnline},
+			},
+		}
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.GetCorporationStructure(t.Context(), c.ID, 1234)
+		require.NoError(t, err)
+		xassert.Equal(t, arg.Name, got.Name)
+		xassert.Equal(t, 42, got.ProfileID)
+		xassert.Equal(t, app.StructureStateShieldVulnerable, got.State)
+		xassert.Equal(t, system.ID, got.System.ID)
+		xassert.Equal(t, typ.ID, got.Type.ID)
+		require.Len(t, got.Services, 1)
+		xassert.Equal(t, "Jupiter", got.Services[0].Name)
+		xassert.Equal(t, app.StructureServiceStateOnline, got.Services[0].State)
+	})
+
+	t.Run("should report no change when structures are unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		system := factory.CreateEveSolarSystem()
+		typ := factory.CreateEveType()
+		now := time.Now().In(time.FixedZone("test", 3600)) // differs from UTC after the DB round trip
+		arg := storage.CorporationStructureParams{
+			FuelExpires:        optional.New(now.Add(48 * time.Hour)),
+			Name:               optional.New("Alpha"),
+			NextReinforceApply: optional.New(now.Add(24 * time.Hour)),
+			NextReinforceHour:  optional.New[int64](8),
+			ProfileID:          42,
+			ReinforceHour:      optional.New[int64](12),
+			State:              app.StructureStateArmorReinforce,
+			StateTimerEnd:      optional.New(now.Add(time.Hour)),
+			StateTimerStart:    optional.New(now.Add(-time.Hour)),
+			StructureID:        1234,
+			SystemID:           system.ID,
+			TypeID:             typ.ID,
+			UnanchorsAt:        optional.New(now.Add(72 * time.Hour)),
+			Services: []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOnline},
+				{Name: "Venus", State: app.StructureServiceStateOffline},
+			},
+		}
+		_, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		require.NoError(t, err)
+		slices.Reverse(arg.Services) // order of services does not matter
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+
+	t.Run("should store a structure when a changeable column has changed", func(t *testing.T) {
+		now := time.Now().UTC()
+		cases := []struct {
+			name   string
+			change func(arg *storage.CorporationStructureParams)
+		}{
+			{"fuel expires", func(arg *storage.CorporationStructureParams) {
+				arg.FuelExpires = optional.New(now.Add(time.Hour))
+			}},
+			{"name", func(arg *storage.CorporationStructureParams) {
+				arg.Name = optional.New("Bravo")
+			}},
+			{"next reinforce apply", func(arg *storage.CorporationStructureParams) {
+				arg.NextReinforceApply = optional.New(now.Add(time.Hour))
+			}},
+			{"next reinforce hour", func(arg *storage.CorporationStructureParams) {
+				arg.NextReinforceHour = optional.New[int64](3)
+			}},
+			{"profile ID", func(arg *storage.CorporationStructureParams) {
+				arg.ProfileID = 43
+			}},
+			{"reinforce hour", func(arg *storage.CorporationStructureParams) {
+				arg.ReinforceHour = optional.New[int64](3)
+			}},
+			{"state", func(arg *storage.CorporationStructureParams) {
+				arg.State = app.StructureStateHullReinforce
+			}},
+			{"state timer end", func(arg *storage.CorporationStructureParams) {
+				arg.StateTimerEnd = optional.New(now.Add(time.Hour))
+			}},
+			{"state timer start", func(arg *storage.CorporationStructureParams) {
+				arg.StateTimerStart = optional.New(now.Add(-time.Hour))
+			}},
+			{"unanchors at", func(arg *storage.CorporationStructureParams) {
+				arg.UnanchorsAt = optional.New(now.Add(time.Hour))
+			}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCorporation()
+				system := factory.CreateEveSolarSystem()
+				typ := factory.CreateEveType()
+				arg := storage.CorporationStructureParams{
+					Name:        optional.New("Alpha"),
+					ProfileID:   42,
+					State:       app.StructureStateShieldVulnerable,
+					StructureID: 1234,
+					SystemID:    system.ID,
+					TypeID:      typ.ID,
+				}
+				_, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+				require.NoError(t, err)
+				tc.change(&arg)
+				// when
+				changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+				// then
+				require.NoError(t, err)
+				assert.True(t, changed)
+				got, err := st.GetCorporationStructure(t.Context(), c.ID, 1234)
+				require.NoError(t, err)
+				xassert.Equal(t, arg.FuelExpires, got.FuelExpires)
+				xassert.Equal(t, arg.Name, got.Name)
+				xassert.Equal(t, arg.NextReinforceApply, got.NextReinforceApply)
+				xassert.Equal(t, arg.NextReinforceHour, got.NextReinforceHour)
+				xassert.Equal(t, arg.ProfileID, got.ProfileID)
+				xassert.Equal(t, arg.ReinforceHour, got.ReinforceHour)
+				xassert.Equal(t, arg.State, got.State)
+				xassert.Equal(t, arg.StateTimerEnd, got.StateTimerEnd)
+				xassert.Equal(t, arg.StateTimerStart, got.StateTimerStart)
+				xassert.Equal(t, arg.UnanchorsAt, got.UnanchorsAt)
+			})
+		}
+	})
+
+	t.Run("should store a structure when its services have changed", func(t *testing.T) {
+		cases := []struct {
+			name     string
+			services []storage.StructureServiceParams
+		}{
+			{"service added", []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOnline},
+				{Name: "Venus", State: app.StructureServiceStateOnline},
+			}},
+			{"service removed", nil},
+			{"service state changed", []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOffline},
+			}},
+			{"service renamed", []storage.StructureServiceParams{
+				{Name: "Venus", State: app.StructureServiceStateOnline},
+			}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCorporation()
+				system := factory.CreateEveSolarSystem()
+				typ := factory.CreateEveType()
+				arg := storage.CorporationStructureParams{
+					ProfileID:   42,
+					State:       app.StructureStateShieldVulnerable,
+					StructureID: 1234,
+					SystemID:    system.ID,
+					TypeID:      typ.ID,
+					Services: []storage.StructureServiceParams{
+						{Name: "Jupiter", State: app.StructureServiceStateOnline},
+					},
+				}
+				_, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+				require.NoError(t, err)
+				arg.Services = tc.services
+				// when
+				changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+				// then
+				require.NoError(t, err)
+				assert.True(t, changed)
+				got, err := st.GetCorporationStructure(t.Context(), c.ID, 1234)
+				require.NoError(t, err)
+				want := make(map[string]app.StructureServiceState)
+				for _, s := range tc.services {
+					want[s.Name] = s.State
+				}
+				services := make(map[string]app.StructureServiceState)
+				for _, s := range got.Services {
+					services[s.Name] = s.State
+				}
+				xassert.Equal(t, want, services)
+			})
+		}
+	})
+
+	t.Run("should ignore changes to columns which can not change", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		system := factory.CreateEveSolarSystem()
+		typ := factory.CreateEveType()
+		otherType := factory.CreateEveType()
+		arg := storage.CorporationStructureParams{
+			ProfileID:   42,
+			State:       app.StructureStateShieldVulnerable,
+			StructureID: 1234,
+			SystemID:    system.ID,
+			TypeID:      typ.ID,
+		}
+		_, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		require.NoError(t, err)
+		arg.TypeID = otherType.ID
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.GetCorporationStructure(t.Context(), c.ID, 1234)
+		require.NoError(t, err)
+		xassert.Equal(t, typ.ID, got.Type.ID)
+	})
+
+	t.Run("should delete structures missing in args with their services", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		kept := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		vanished := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+			Services: []storage.StructureServiceParams{
+				{Name: "Jupiter", State: app.StructureServiceStateOnline},
+			},
+		})
+		arg := storage.CorporationStructureParams{
+			FuelExpires:   kept.FuelExpires,
+			Name:          kept.Name,
+			ProfileID:     kept.ProfileID,
+			ReinforceHour: kept.ReinforceHour,
+			State:         kept.State,
+			StructureID:   kept.StructureID,
+			SystemID:      kept.System.ID,
+			TypeID:        kept.Type.ID,
+		}
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCorporationStructureIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(kept.StructureID), got)
+		services, err := st.ListStructureServices(t.Context(), vanished.ID)
+		require.NoError(t, err)
+		assert.Empty(t, services)
+	})
+
+	t.Run("should report no change when there are no structures", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+
+	t.Run("should not touch structures of other corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCorporation()
+		c2 := factory.CreateCorporation()
+		other := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c2.ID,
+		})
+		// when
+		changed, err := st.ReplaceCorporationStructures(t.Context(), c1.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.ListCorporationStructureIDs(t.Context(), c2.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(other.StructureID), got)
+	})
+
+	t.Run("should keep structures unchanged when replace fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCorporation()
+		existing := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
+			CorporationID: c.ID,
+		})
+		system := factory.CreateEveSolarSystem()
+		arg := storage.CorporationStructureParams{
+			ProfileID:   42,
+			State:       app.StructureStateShieldVulnerable,
+			StructureID: existing.StructureID + 1,
+			SystemID:    system.ID,
+			TypeID:      42, // has no eve type
+		}
+		// when
+		_, err := st.ReplaceCorporationStructures(t.Context(), c.ID, []storage.CorporationStructureParams{arg})
+		// then
+		require.Error(t, err)
+		got, err := st.ListCorporationStructureIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(existing.StructureID), got)
+	})
+
+	t.Run("should return error when args are invalid", func(t *testing.T) {
+		cases := []struct {
+			name          string
+			corporationID int64
+			args          []storage.CorporationStructureParams
+		}{
+			{"zero corporation ID", 0, nil},
+			{"zero structure ID", 1, []storage.CorporationStructureParams{{
+				State:    app.StructureStateShieldVulnerable,
+				SystemID: 2,
+				TypeID:   3,
+			}}},
+			{"service without name", 1, []storage.CorporationStructureParams{{
+				State:       app.StructureStateShieldVulnerable,
+				StructureID: 4,
+				SystemID:    2,
+				TypeID:      3,
+				Services: []storage.StructureServiceParams{
+					{State: app.StructureServiceStateOnline},
+				},
+			}}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCorporationStructures(t.Context(), tc.corporationID, tc.args)
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }
