@@ -123,6 +123,7 @@ func (s *CorporationService) updateStructuresESI(ctx context.Context, arg corpor
 						State: serviceState,
 					}
 				})
+				services = dedupeStructureServices(services, arg.corporationID, o.StructureId)
 				args[i] = storage.CorporationStructureParams{
 					FuelExpires:        optional.FromPtr(o.FuelExpires),
 					Name:               optional.FromPtr(o.Name),
@@ -158,6 +159,25 @@ func dedupeStructures(structures []esi.CorporationsCorporationIdStructuresGetInn
 	for i, o := range structures {
 		if last[o.StructureId] == i {
 			unique = append(unique, o)
+		}
+	}
+	return unique
+}
+
+// dedupeStructureServices returns services without duplicate names. The last service wins.
+func dedupeStructureServices(services []storage.StructureServiceParams, corporationID, structureID int64) []storage.StructureServiceParams {
+	last := make(map[string]int, len(services))
+	for i, x := range services {
+		last[x.Name] = i
+	}
+	if len(last) == len(services) {
+		return services
+	}
+	slog.Warn("Duplicate structure services received from ESI", "corporationID", corporationID, "structureID", structureID, "count", len(services)-len(last))
+	unique := make([]storage.StructureServiceParams, 0, len(last))
+	for i, x := range services {
+		if last[x.Name] == i {
+			unique = append(unique, x)
 		}
 	}
 	return unique

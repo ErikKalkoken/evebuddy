@@ -76,27 +76,6 @@ func (st *Storage) CountCorporationStructuresWithState(ctx context.Context, corp
 	return v, nil
 }
 
-func (st *Storage) DeleteCorporationStructures(ctx context.Context, corporationID int64, structureIDs set.Set[int64]) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCorporationStructuresByID for corporation %d and structures IDs: %v: %w", corporationID, structureIDs, err)
-	}
-	if corporationID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if structureIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCorporationStructures(ctx, queries.DeleteCorporationStructuresParams{
-		CorporationID: corporationID,
-		StructureIds:  slices.Collect(structureIDs.All()),
-	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	slog.Info("Corporation structures deleted", "corporationID", corporationID, "jobIDs", structureIDs)
-	return nil
-}
-
 func (st *Storage) GetCorporationStructure(ctx context.Context, corporationID int64, structureID int64) (*app.CorporationStructure, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("GetCorporationStructure %d %d: %w", corporationID, structureID, err)
@@ -327,7 +306,7 @@ func (s corporationStructureState) equal(other corporationStructureState) bool {
 // ReplaceCorporationStructures replaces the structures of a corporation in one transaction.
 // It deletes structures missing in args and writes only new or changed structures.
 // It reports whether anything has changed.
-// Structure IDs in args must be unique.
+// Structure IDs in args and service names of each structure must be unique.
 func (st *Storage) ReplaceCorporationStructures(ctx context.Context, corporationID int64, args []CorporationStructureParams) (bool, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ReplaceCorporationStructures: corporation %d: %w", corporationID, err)

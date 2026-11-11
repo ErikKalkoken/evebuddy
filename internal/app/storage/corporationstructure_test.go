@@ -317,26 +317,6 @@ func TestCorporationStructure(t *testing.T) {
 		xassert.Equal(t, set.Of(s1.Name, s2.Name), services[o1.ID])
 	})
 
-	t.Run("can delete structures for a corporation", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCorporation()
-		o1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
-			CorporationID: c.ID,
-		})
-		o2 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{
-			CorporationID: c.ID,
-		})
-		// when
-		err := st.DeleteCorporationStructures(t.Context(), c.ID, set.Of(o1.StructureID))
-		// then
-		require.NoError(t, err)
-		got, err := st.ListCorporationStructureIDs(t.Context(), c.ID)
-		require.NoError(t, err)
-		want := set.Of(o2.StructureID)
-		xassert.Equal(t, want, got)
-	})
-
 	t.Run("can count structures with state", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -458,14 +438,13 @@ func TestCorporationStructure_ConsistentReads(t *testing.T) {
 		s1 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID}) // changes
 		s2 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c1.ID}) // never changes
 		s3 := factory.CreateCorporationStructure(storage.UpdateOrCreateCorporationStructureParams{CorporationID: c2.ID}) // changes, other corporation
-		replace := func(s *app.CorporationStructure, v version) error {
-			arg := storage.UpdateOrCreateCorporationStructureParams{
-				CorporationID: s.CorporationID,
-				ProfileID:     s.ProfileID,
-				State:         v.state,
-				StructureID:   s.StructureID,
-				SystemID:      s.System.ID,
-				TypeID:        s.Type.ID,
+		params := func(s *app.CorporationStructure, v version) storage.CorporationStructureParams {
+			arg := storage.CorporationStructureParams{
+				ProfileID:   s.ProfileID,
+				State:       v.state,
+				StructureID: s.StructureID,
+				SystemID:    s.System.ID,
+				TypeID:      s.Type.ID,
 			}
 			for name := range v.services.All() {
 				arg.Services = append(arg.Services, storage.StructureServiceParams{
@@ -473,7 +452,19 @@ func TestCorporationStructure_ConsistentReads(t *testing.T) {
 					State: app.StructureServiceStateOnline,
 				})
 			}
-			return st.UpdateOrCreateCorporationStructure(t.Context(), arg)
+			return arg
+		}
+		replace := func(s *app.CorporationStructure, v version) error {
+			arg := params(s, v)
+			return st.UpdateOrCreateCorporationStructure(t.Context(), storage.UpdateOrCreateCorporationStructureParams{
+				CorporationID: s.CorporationID,
+				ProfileID:     arg.ProfileID,
+				Services:      arg.Services,
+				State:         arg.State,
+				StructureID:   arg.StructureID,
+				SystemID:      arg.SystemID,
+				TypeID:        arg.TypeID,
+			})
 		}
 		require.NoError(t, replace(s1, versionA))
 		require.NoError(t, replace(s2, versionA))
@@ -489,7 +480,13 @@ func TestCorporationStructure_ConsistentReads(t *testing.T) {
 					func(s *app.CorporationStructure) error { return replace(s, versionB) },
 					func(s *app.CorporationStructure) error { return replace(s, versionA) },
 					func(s *app.CorporationStructure) error {
-						return st.DeleteCorporationStructures(t.Context(), s.CorporationID, set.Of(s.StructureID))
+						// delete s, but keep the stable structure
+						var args []storage.CorporationStructureParams
+						if s.CorporationID == s2.CorporationID {
+							args = append(args, params(s2, versionA))
+						}
+						_, err := st.ReplaceCorporationStructures(t.Context(), s.CorporationID, args)
+						return err
 					},
 					func(s *app.CorporationStructure) error { return replace(s, versionA) },
 				} {

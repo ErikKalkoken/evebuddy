@@ -336,6 +336,42 @@ func TestUpdateCorporationStructuresESI(t *testing.T) {
 		require.NoError(t, err)
 		xassert.EqualOptional(t, "Bravo", x.Name)
 	})
+	t.Run("should store the last of duplicate services", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{AccessToken: "accessToken"}}})
+		c := factory.CreateCorporation()
+		es := factory.CreateEveSolarSystem()
+		et := factory.CreateEveType()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/structures", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"corporation_id": c.ID,
+				"profile_id":     1,
+				"services": []map[string]any{
+					{"name": "service1", "state": "online"},
+					{"name": "service1", "state": "offline"},
+				},
+				"state":        "shield_vulnerable",
+				"structure_id": 42,
+				"system_id":    es.ID,
+				"type_id":      et.ID,
+			}}),
+		)
+		// when
+		_, err := s.updateStructuresESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationStructures,
+		})
+		// then
+		require.NoError(t, err)
+		x, err := st.GetCorporationStructure(ctx, c.ID, 42)
+		require.NoError(t, err)
+		require.Len(t, x.Services, 1)
+		xassert.Equal(t, app.StructureServiceStateOffline, x.Services[0].State)
+	})
 	t.Run("should store unknown service state without failing the sync", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
