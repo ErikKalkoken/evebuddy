@@ -532,6 +532,9 @@ func TestReplaceCharacterMarketOrders(t *testing.T) {
 			{"escrow removed", func(arg *storage.CharacterMarketOrderParams) {
 				arg.Escrow = optional.Optional[float64]{}
 			}},
+			{"issued", func(arg *storage.CharacterMarketOrderParams) {
+				arg.Issued = arg.Issued.Add(time.Hour) // editing an order resets issued
+			}},
 			{"price", func(arg *storage.CharacterMarketOrderParams) {
 				arg.Price = 200.25
 			}},
@@ -577,6 +580,7 @@ func TestReplaceCharacterMarketOrders(t *testing.T) {
 				o, err := st.GetCharacterMarketOrder(t.Context(), c.ID, 42)
 				require.NoError(t, err)
 				xassert.Equal(t, arg.Escrow, o.Escrow)
+				assert.True(t, arg.Issued.Equal(o.Issued), "got %q, wanted %q", o.Issued, arg.Issued)
 				xassert.Equal(t, arg.Price, o.Price)
 				xassert.Equal(t, arg.State, o.State)
 				xassert.Equal(t, arg.VolumeRemains, o.VolumeRemains)

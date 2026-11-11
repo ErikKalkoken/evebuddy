@@ -205,14 +205,17 @@ func (x CharacterMarketOrderParams) isValid() bool {
 // characterMarketOrderState holds the columns of a market order which can change after it was created.
 type characterMarketOrderState struct {
 	escrow        optional.Optional[float64]
+	issued        time.Time
 	price         float64
 	state         app.MarketOrderState
 	volumeRemains int64
 }
 
 // equal reports whether s and other are equal.
+// Times are compared with Equal, because their location can differ after a round trip through the DB.
 func (s characterMarketOrderState) equal(other characterMarketOrderState) bool {
 	return optional.Equal(s.escrow, other.escrow) &&
+		s.issued.Equal(other.issued) &&
 		s.price == other.price &&
 		s.state == other.state &&
 		s.volumeRemains == other.volumeRemains
@@ -239,20 +242,14 @@ func (st *Storage) ReplaceCharacterMarketOrders(ctx context.Context, characterID
 	if err != nil {
 		return false, wrapErr(err)
 	}
-	type currentOrder struct {
-		characterMarketOrderState
-		issued time.Time
-	}
-	current := make(map[int64]currentOrder, len(rows))
+	current := make(map[int64]characterMarketOrderState, len(rows))
 	for _, r := range rows {
-		current[r.OrderID] = currentOrder{
-			characterMarketOrderState: characterMarketOrderState{
-				escrow:        optional.FromNullFloat64(r.Escrow),
-				price:         r.Price,
-				state:         orderStatusFromDBValue[r.State],
-				volumeRemains: r.VolumeRemains,
-			},
-			issued: r.Issued,
+		current[r.OrderID] = characterMarketOrderState{
+			escrow:        optional.FromNullFloat64(r.Escrow),
+			issued:        r.Issued,
+			price:         r.Price,
+			state:         orderStatusFromDBValue[r.State],
+			volumeRemains: r.VolumeRemains,
 		}
 	}
 	now := time.Now()
@@ -263,11 +260,7 @@ func (st *Storage) ReplaceCharacterMarketOrders(ctx context.Context, characterID
 	var stale, orphaned []int64
 	for _, arg := range args {
 		o, found := xmaps.Pop(current, arg.OrderID) // what remains in current is missing in args
-		issued := arg.Issued
-		if found {
-			issued = o.issued // issued is not updated for existing orders
-		}
-		if isStale(arg.State, issued) {
+		if isStale(arg.State, arg.Issued) {
 			if found {
 				stale = append(stale, arg.OrderID)
 			}
@@ -275,6 +268,7 @@ func (st *Storage) ReplaceCharacterMarketOrders(ctx context.Context, characterID
 		}
 		if found && o.equal(characterMarketOrderState{
 			escrow:        arg.Escrow,
+			issued:        arg.Issued,
 			price:         arg.Price,
 			state:         arg.State,
 			volumeRemains: arg.VolumeRemains,
