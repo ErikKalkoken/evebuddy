@@ -254,6 +254,51 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		xassert.Equal(t, c.ID, j2.CharacterID)
 		xassert.Equal(t, app.JobReady, j2.Status)
 	})
+	t.Run("should report no change for an ended job already stored as ready", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobReady,
+			EndDate:     time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second), // ESI dates have second precision
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/industry/jobs?include_completed=true", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           j1.Activity,
+					"blueprint_id":          j1.BlueprintID,
+					"blueprint_location_id": j1.BlueprintLocation.ID,
+					"blueprint_type_id":     j1.BlueprintType.ID,
+					"duration":              j1.Duration,
+					"end_date":              j1.EndDate.Format(app.DateTimeFormatESI),
+					"facility_id":           j1.Facility.ID,
+					"installer_id":          j1.Installer.ID,
+					"job_id":                j1.JobID,
+					"output_location_id":    j1.OutputLocation.ID,
+					"runs":                  j1.Runs,
+					"start_date":            j1.StartDate.Format(app.DateTimeFormatESI),
+					"station_id":            j1.Station.ID,
+					"status":                "active",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		j2, err := st.GetCharacterIndustryJob(ctx, c.ID, j1.JobID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.JobReady, j2.Status)
+	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -296,8 +341,8 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 			int64(app.Reactions1),
 			int64(app.Reactions2),
 		}
-		for jobID, activityID := range activities {
-			objs = append(objs, makeObj(int64(jobID), activityID))
+		for i, activityID := range activities {
+			objs = append(objs, makeObj(int64(i+1), activityID))
 		}
 
 		httpmock.RegisterResponder(
@@ -312,8 +357,8 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		for jobID, activityID := range activities {
-			j, err := st.GetCharacterIndustryJob(ctx, c.ID, int64(jobID))
+		for i, activityID := range activities {
+			j, err := st.GetCharacterIndustryJob(ctx, c.ID, int64(i+1))
 			require.NoError(t, err)
 			xassert.Equal(t, activityID, int64(j.Activity))
 		}
@@ -396,6 +441,7 @@ func TestUpdateCharacterIndustryJobsESI(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
 			CharacterID: c.ID,
+			EndDate:     time.Now().UTC().Truncate(time.Second), // ESI dates have second precision
 			Status:      app.JobDelivered,
 		})
 		httpmock.RegisterResponder(

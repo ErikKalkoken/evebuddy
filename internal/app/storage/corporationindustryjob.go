@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 )
 
 func (st *Storage) CountCorporationIndustryJobsWithStatus(ctx context.Context, corporationID int64, statuses set.Set[app.IndustryJobStatus]) (int64, error) {
@@ -196,31 +197,118 @@ func corporationIndustryJobFromDBModel(
 	return o2
 }
 
-type UpdateCorporationIndustryJobStatusParams struct {
-	CorporationID int64
-	JobIDs        set.Set[int64]
-	Status        app.IndustryJobStatus
+// CorporationIndustryJobParams are the params for an industry job of a corporation.
+type CorporationIndustryJobParams struct {
+	ActivityID           int64
+	BlueprintID          int64
+	BlueprintLocationID  int64
+	BlueprintTypeID      int64
+	CompletedCharacterID optional.Optional[int64]
+	CompletedDate        optional.Optional[time.Time]
+	Cost                 optional.Optional[float64]
+	Duration             int64
+	EndDate              time.Time
+	FacilityID           int64
+	InstallerID          int64
+	JobID                int64
+	LicensedRuns         optional.Optional[int64]
+	LocationID           int64
+	OutputLocationID     int64
+	PauseDate            optional.Optional[time.Time]
+	Probability          optional.Optional[float64]
+	ProductTypeID        optional.Optional[int64]
+	Runs                 int64
+	StartDate            time.Time
+	Status               app.IndustryJobStatus
+	SuccessfulRuns       optional.Optional[int64]
 }
 
-func (st *Storage) UpdateCorporationIndustryJobStatus(ctx context.Context, arg UpdateCorporationIndustryJobStatusParams) error {
+func (arg CorporationIndustryJobParams) isValid() bool {
+	return arg.BlueprintLocationID != 0 &&
+		arg.BlueprintTypeID != 0 &&
+		arg.FacilityID != 0 &&
+		arg.InstallerID != 0 &&
+		arg.JobID != 0 &&
+		arg.LocationID != 0 &&
+		arg.OutputLocationID != 0
+}
+
+// ReplaceCorporationIndustryJobs stores the jobs of a corporation which are new or have changed
+// and marks stored active jobs missing in args as unknown.
+// It reports whether anything was written.
+// Job IDs in args must be unique.
+func (st *Storage) ReplaceCorporationIndustryJobs(ctx context.Context, corporationID int64, args []CorporationIndustryJobParams) (bool, error) {
 	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateCorporationIndustryJobStatus %+v: %w", arg, err)
+		return fmt.Errorf("ReplaceCorporationIndustryJobs: corporation %d: %w", corporationID, err)
 	}
-	if arg.CorporationID == 0 || arg.JobIDs.Contains(0) {
-		return wrapErr(app.ErrInvalid)
+	if corporationID == 0 {
+		return false, wrapErr(app.ErrInvalid)
 	}
-	if arg.JobIDs.Size() == 0 {
-		return nil
+	for _, arg := range args {
+		if !arg.isValid() {
+			return false, wrapErr(fmt.Errorf("job %d: %w", arg.JobID, app.ErrInvalid))
+		}
 	}
-	err := st.qRW.UpdateCorporationIndustryJobStatus(ctx, queries.UpdateCorporationIndustryJobStatusParams{
-		CorporationID: arg.CorporationID,
-		JobIds:        slices.Collect(arg.JobIDs.All()),
-		Status:        jobStatusToDBValue[arg.Status],
-	})
+	tx, err := st.dbRW.Begin()
 	if err != nil {
-		return wrapErr(err)
+		return false, wrapErr(err)
 	}
-	return nil
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	rows, err := qtx.ListCorporationIndustryJobStates(ctx, corporationID)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	current := make(map[int64]industryJobState, len(rows))
+	for _, r := range rows {
+		current[r.JobID] = industryJobState{
+			completedCharacterID: optional.FromNullInt64(r.CompletedCharacterID),
+			completedDate:        optional.FromNullTime(r.CompletedDate),
+			endDate:              r.EndDate,
+			pauseDate:            optional.FromNullTime(r.PauseDate),
+			status:               jobStatusFromDBValue[r.Status],
+			successfulRuns:       optional.FromNullInt64(r.SuccessfulRuns),
+		}
+	}
+	var changed []CorporationIndustryJobParams
+	for _, arg := range args {
+		o, found := xmaps.Pop(current, arg.JobID) // what remains in current is missing in args
+		if found && o.equal(industryJobState{
+			completedCharacterID: arg.CompletedCharacterID,
+			completedDate:        arg.CompletedDate,
+			endDate:              arg.EndDate,
+			pauseDate:            arg.PauseDate,
+			status:               arg.Status,
+			successfulRuns:       arg.SuccessfulRuns,
+		}) {
+			continue
+		}
+		changed = append(changed, arg)
+	}
+	orphans := orphanedIndustryJobIDs(current)
+	if len(changed) == 0 && len(orphans) == 0 {
+		return false, nil
+	}
+	for ids := range slices.Chunk(orphans, st.MaxIDsPerQuery) {
+		err := qtx.UpdateCorporationIndustryJobStatus(ctx, queries.UpdateCorporationIndustryJobStatusParams{
+			CorporationID: corporationID,
+			JobIds:        ids,
+			Status:        jobStatusToDBValue[app.JobUnknown],
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("mark %d jobs as unknown: %w", len(ids), err))
+		}
+	}
+	for _, arg := range changed {
+		if err := updateOrCreateCorporationIndustryJob(ctx, qtx, corporationID, arg); err != nil {
+			return false, fmt.Errorf("ReplaceCorporationIndustryJobs: %w", err) // err already names the corporation
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Industry jobs replaced", "corporationID", corporationID, "changed", len(changed), "orphaned", len(orphans))
+	return true, nil
 }
 
 type UpdateOrCreateCorporationIndustryJobParams struct {
@@ -250,23 +338,53 @@ type UpdateOrCreateCorporationIndustryJobParams struct {
 }
 
 func (st *Storage) UpdateOrCreateCorporationIndustryJob(ctx context.Context, arg UpdateOrCreateCorporationIndustryJobParams) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("UpdateOrCreateCorporationIndustryJob: %+v: %w", arg, err)
-	}
-	if arg.CorporationID == 0 ||
-		arg.BlueprintTypeID == 0 ||
-		arg.BlueprintLocationID == 0 ||
-		arg.InstallerID == 0 ||
-		arg.OutputLocationID == 0 ||
-		arg.LocationID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	err := st.qRW.UpdateOrCreateCorporationIndustryJobs(ctx, queries.UpdateOrCreateCorporationIndustryJobsParams{
+	p := CorporationIndustryJobParams{
 		ActivityID:           arg.ActivityID,
 		BlueprintID:          arg.BlueprintID,
 		BlueprintLocationID:  arg.BlueprintLocationID,
 		BlueprintTypeID:      arg.BlueprintTypeID,
-		CorporationID:        arg.CorporationID,
+		CompletedCharacterID: arg.CompletedCharacterID,
+		CompletedDate:        arg.CompletedDate,
+		Cost:                 arg.Cost,
+		Duration:             arg.Duration,
+		EndDate:              arg.EndDate,
+		FacilityID:           arg.FacilityID,
+		InstallerID:          arg.InstallerID,
+		JobID:                arg.JobID,
+		LicensedRuns:         arg.LicensedRuns,
+		LocationID:           arg.LocationID,
+		OutputLocationID:     arg.OutputLocationID,
+		PauseDate:            arg.PauseDate,
+		Probability:          arg.Probability,
+		ProductTypeID:        arg.ProductTypeID,
+		Runs:                 arg.Runs,
+		StartDate:            arg.StartDate,
+		Status:               arg.Status,
+		SuccessfulRuns:       arg.SuccessfulRuns,
+	}
+	if arg.CorporationID == 0 || !p.isValid() {
+		return fmt.Errorf("UpdateOrCreateCorporationIndustryJob: %+v: %w", struct {
+			CorporationID int64
+			JobID         int64
+		}{arg.CorporationID, arg.JobID}, app.ErrInvalid)
+	}
+	return updateOrCreateCorporationIndustryJob(ctx, st.qRW, arg.CorporationID, p)
+}
+
+// updateOrCreateCorporationIndustryJob expects valid params.
+func updateOrCreateCorporationIndustryJob(ctx context.Context, q *queries.Queries, corporationID int64, arg CorporationIndustryJobParams) error {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("UpdateOrCreateCorporationIndustryJob: %+v: %w", struct {
+			CorporationID int64
+			JobID         int64
+		}{corporationID, arg.JobID}, err)
+	}
+	err := q.UpdateOrCreateCorporationIndustryJobs(ctx, queries.UpdateOrCreateCorporationIndustryJobsParams{
+		ActivityID:           arg.ActivityID,
+		BlueprintID:          arg.BlueprintID,
+		BlueprintLocationID:  arg.BlueprintLocationID,
+		BlueprintTypeID:      arg.BlueprintTypeID,
+		CorporationID:        corporationID,
 		CompletedCharacterID: optional.ToNullInt64(arg.CompletedCharacterID),
 		CompletedDate:        optional.ToNullTime(arg.CompletedDate),
 		Cost:                 optional.ToNullFloat64(arg.Cost),

@@ -1,5 +1,5 @@
-// Package industrysync provides the rules for updating stored industry jobs from ESI,
-// which are shared by characters and corporations.
+// Package industrysync provides the logic for updating stored industry jobs from ESI,
+// which is shared by characters and corporations.
 package industrysync
 
 import (
@@ -69,67 +69,49 @@ func parseStatus(j ESIJob, statuses map[string]app.IndustryJobStatus, now time.T
 	return status
 }
 
-// orphanIDs returns the IDs of stored jobs which are active, but missing in ESI.
-func orphanIDs(current map[int64]app.IndustryJobStatus, jobs []ESIJob) set.Set[int64] {
-	var running, incoming set.Set[int64]
-	for id, status := range current {
-		if status.IsActive() {
-			running.Add(id)
-		}
-	}
-	for _, j := range jobs {
-		incoming.Add(j.JobId)
-	}
-	return set.Difference(running, incoming)
-}
-
 // Sync updates stored jobs from ESI and reports whether anything has changed.
-// All jobs are stored when any job is new or has a changed status.
-// Active jobs missing in ESI are marked as unknown.
+// Of duplicate jobs only the last is stored.
 //
-// current maps job IDs to their stored status.
 // statuses maps the owner's ESI status values to their status.
-// The callbacks do the owner specific work.
+// The callbacks do the owner specific work:
+// addRelated adds missing related data and
+// save stores jobs, where jobStatuses[i] is the status of jobs[i].
 func Sync(
 	ctx context.Context,
 	jobs []ESIJob,
-	current map[int64]app.IndustryJobStatus,
 	statuses map[string]app.IndustryJobStatus,
 	addRelated func(ctx context.Context) error,
-	store func(ctx context.Context, job ESIJob, status app.IndustryJobStatus) error,
-	markUnknown func(ctx context.Context, ids set.Set[int64]) error,
+	save func(ctx context.Context, jobs []ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error),
 	logAttr slog.Attr,
 ) (bool, error) {
+	jobs = dedupeJobs(jobs, logAttr)
 	now := time.Now()
-	parsed := make([]app.IndustryJobStatus, len(jobs))
-	var hasChanges bool
+	jobStatuses := make([]app.IndustryJobStatus, len(jobs))
 	for i, j := range jobs {
-		parsed[i] = parseStatus(j, statuses, now, logAttr)
-		if stored, found := current[j.JobId]; !found || stored != parsed[i] {
-			hasChanges = true
-		}
+		jobStatuses[i] = parseStatus(j, statuses, now, logAttr)
 	}
-	if hasChanges {
-		if err := addRelated(ctx); err != nil {
-			return false, err
-		}
-		for i, j := range jobs {
-			if err := store(ctx, j, parsed[i]); err != nil {
-				return false, err
-			}
-		}
-		slog.Info("Updated industry jobs", logAttr, "count", len(jobs))
-	}
-
-	// The ESI response only returns jobs from the last 90 days, so a long
-	// running job can vanish from it even when nothing else changed this cycle.
-	orphans := orphanIDs(current, jobs)
-	if orphans.Size() == 0 {
-		return hasChanges, nil
-	}
-	if err := markUnknown(ctx, orphans); err != nil {
+	if err := addRelated(ctx); err != nil {
 		return false, err
 	}
-	slog.Info("Marked orphaned industry jobs as unknown", logAttr, "count", orphans.Size())
-	return true, nil
+	return save(ctx, jobs, jobStatuses)
+}
+
+// dedupeJobs returns jobs with only the last of each job ID.
+// Duplicates can occur when ESI pages shift between fetches.
+func dedupeJobs(jobs []ESIJob, logAttr slog.Attr) []ESIJob {
+	last := make(map[int64]int, len(jobs))
+	for i, j := range jobs {
+		last[j.JobId] = i
+	}
+	if len(last) == len(jobs) {
+		return jobs
+	}
+	slog.Warn("Duplicate industry jobs received from ESI", logAttr, "count", len(jobs)-len(last))
+	unique := make([]ESIJob, 0, len(last))
+	for i, j := range jobs {
+		if last[j.JobId] == i {
+			unique = append(unique, j)
+		}
+	}
+	return unique
 }

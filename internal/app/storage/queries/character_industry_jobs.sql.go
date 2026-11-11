@@ -319,6 +319,62 @@ func (q *Queries) ListAllCharacterIndustryJobs(ctx context.Context) ([]ListAllCh
 	return items, nil
 }
 
+const listCharacterIndustryJobStates = `-- name: ListCharacterIndustryJobStates :many
+SELECT
+    job_id,
+    completed_character_id,
+    completed_date,
+    end_date,
+    pause_date,
+    status,
+    successful_runs
+FROM
+    character_industry_jobs
+WHERE
+    character_id = ?
+`
+
+type ListCharacterIndustryJobStatesRow struct {
+	JobID                int64
+	CompletedCharacterID sql.NullInt64
+	CompletedDate        sql.NullTime
+	EndDate              time.Time
+	PauseDate            sql.NullTime
+	Status               string
+	SuccessfulRuns       sql.NullInt64
+}
+
+func (q *Queries) ListCharacterIndustryJobStates(ctx context.Context, characterID int64) ([]ListCharacterIndustryJobStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterIndustryJobStates, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterIndustryJobStatesRow
+	for rows.Next() {
+		var i ListCharacterIndustryJobStatesRow
+		if err := rows.Scan(
+			&i.JobID,
+			&i.CompletedCharacterID,
+			&i.CompletedDate,
+			&i.EndDate,
+			&i.PauseDate,
+			&i.Status,
+			&i.SuccessfulRuns,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterIndustryJobs = `-- name: ListCharacterIndustryJobs :many
 SELECT
     cij.id, cij.activity_id, cij.blueprint_id, cij.blueprint_location_id, cij.blueprint_type_id, cij.character_id, cij.completed_character_id, cij.completed_date, cij.cost, cij.duration, cij.end_date, cij.facility_id, cij.installer_id, cij.job_id, cij.licensed_runs, cij.output_location_id, cij.pause_date, cij.probability, cij.product_type_id, cij.runs, cij.start_date, cij.station_id, cij.status, cij.successful_runs,
