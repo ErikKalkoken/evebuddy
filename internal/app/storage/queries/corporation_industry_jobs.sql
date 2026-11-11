@@ -79,6 +79,20 @@ FROM
     LEFT JOIN eve_entities cc ON cc.id = cij.completed_character_id
     LEFT JOIN eve_types pt ON pt.id = cij.product_type_id;
 
+-- name: ListCorporationIndustryJobStates :many
+SELECT
+    job_id,
+    completed_character_id,
+    completed_date,
+    end_date,
+    pause_date,
+    status,
+    successful_runs
+FROM
+    corporation_industry_jobs
+WHERE
+    corporation_id = ?;
+
 -- name: UpdateCorporationIndustryJobStatus :exec
 UPDATE corporation_industry_jobs
 SET

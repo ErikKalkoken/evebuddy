@@ -265,6 +265,53 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		xassert.Equal(t, c.ID, j2.CorporationID)
 		xassert.Equal(t, app.JobReady, j2.Status)
 	})
+	t.Run("should report no change for an ended job already stored as ready", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		s := NewFake(Params{Storage: st, CharacterService: &CharacterServiceFake{Token: &app.CharacterToken{
+			AccessToken: "accessToken",
+		}}})
+		c := factory.CreateCorporation()
+		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
+			CorporationID: c.ID,
+			Status:        app.JobReady,
+			EndDate:       time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second), // ESI dates have second precision
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d/industry/jobs?include_completed=true&page=1", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"activity_id":           j1.Activity,
+					"blueprint_id":          j1.BlueprintID,
+					"blueprint_location_id": j1.BlueprintLocationID,
+					"blueprint_type_id":     j1.BlueprintType.ID,
+					"duration":              j1.Duration,
+					"end_date":              j1.EndDate.Format(app.DateTimeFormatESI),
+					"facility_id":           j1.FacilityID,
+					"installer_id":          j1.Installer.ID,
+					"job_id":                j1.JobID,
+					"location_id":           j1.Location.ID,
+					"output_location_id":    j1.OutputLocationID,
+					"runs":                  j1.Runs,
+					"start_date":            j1.StartDate.Format(app.DateTimeFormatESI),
+					"status":                "active",
+				},
+			}),
+		)
+		// when
+		changed, err := s.updateIndustryJobsESI(ctx, corporationSectionUpdateParams{
+			corporationID: c.ID,
+			section:       app.SectionCorporationIndustryJobs,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		j2, err := st.GetCorporationIndustryJob(ctx, c.ID, j1.JobID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.JobReady, j2.Status)
+	})
 	t.Run("should support all activity IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -312,8 +359,8 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 			int64(app.Reactions1),
 			int64(app.Reactions2),
 		}
-		for jobID, activityID := range activities {
-			objs = append(objs, makeObj(int64(jobID), activityID))
+		for i, activityID := range activities {
+			objs = append(objs, makeObj(int64(i+1), activityID))
 		}
 
 		httpmock.RegisterResponder(
@@ -328,8 +375,8 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		})
 		// then
 		require.NoError(t, err)
-		for jobID, activityID := range activities {
-			j, err := st.GetCorporationIndustryJob(ctx, c.ID, int64(jobID))
+		for i, activityID := range activities {
+			j, err := st.GetCorporationIndustryJob(ctx, c.ID, int64(i+1))
 			require.NoError(t, err)
 			xassert.Equal(t, activityID, int64(j.Activity))
 		}
@@ -496,6 +543,7 @@ func TestUpdateIndustryJobsESI(t *testing.T) {
 		c := factory.CreateCorporation()
 		j1 := factory.CreateCorporationIndustryJob(storage.UpdateOrCreateCorporationIndustryJobParams{
 			CorporationID: c.ID,
+			EndDate:       time.Now().UTC().Truncate(time.Second), // ESI dates have second precision
 			Status:        app.JobDelivered,
 		})
 		httpmock.RegisterResponder(

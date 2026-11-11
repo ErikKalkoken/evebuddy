@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -154,17 +153,9 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 		},
 		func(ctx context.Context, characterID int64, data any) (bool, error) {
 			jobs := xslices.Map(data.([]esi.CharactersCharacterIdIndustryJobsGetInner), industryJobFromESI)
-			stored, err := s.st.ListCharacterIndustryJobs(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			current := maps.Collect(xiter.MapSlice2(stored, func(j *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
-				return j.JobID, j.Status
-			}))
 			return industrysync.Sync(
 				ctx,
 				jobs,
-				current,
 				jobStatusFromESIValue,
 				func(ctx context.Context) error {
 					entityIDs, typeIDs := industrysync.ExtractIDs(jobs)
@@ -174,39 +165,35 @@ func (s *CharacterService) updateIndustryJobsESI(ctx context.Context, arg charac
 					}
 					return s.eus.AddMissing(ctx, entityIDs, locationIDs, typeIDs)
 				},
-				func(ctx context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
-					return s.st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
-						ActivityID:           j.ActivityId,
-						BlueprintID:          j.BlueprintId,
-						BlueprintLocationID:  j.BlueprintLocationId,
-						BlueprintTypeID:      j.BlueprintTypeId,
-						CharacterID:          characterID,
-						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
-						CompletedDate:        optional.FromPtr(j.CompletedDate),
-						Cost:                 optional.FromPtr(j.Cost),
-						Duration:             j.Duration,
-						EndDate:              j.EndDate,
-						FacilityID:           j.FacilityId,
-						InstallerID:          j.InstallerId,
-						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
-						JobID:                j.JobId,
-						OutputLocationID:     j.OutputLocationId,
-						Runs:                 j.Runs,
-						PauseDate:            optional.FromPtr(j.PauseDate),
-						Probability:          optional.FromPtr(j.Probability),
-						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
-						StartDate:            j.StartDate,
-						Status:               status,
-						StationID:            j.LocationId,
-						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
-					})
-				},
-				func(ctx context.Context, ids set.Set[int64]) error {
-					return s.st.UpdateCharacterIndustryJobStatus(ctx, storage.UpdateCharacterIndustryJobStatusParams{
-						CharacterID: characterID,
-						JobIDs:      ids,
-						Status:      app.JobUnknown,
-					})
+				func(ctx context.Context, jobs []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+					args := make([]storage.CharacterIndustryJobParams, len(jobs))
+					for i, j := range jobs {
+						args[i] = storage.CharacterIndustryJobParams{
+							ActivityID:           j.ActivityId,
+							BlueprintID:          j.BlueprintId,
+							BlueprintLocationID:  j.BlueprintLocationId,
+							BlueprintTypeID:      j.BlueprintTypeId,
+							CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+							CompletedDate:        optional.FromPtr(j.CompletedDate),
+							Cost:                 optional.FromPtr(j.Cost),
+							Duration:             j.Duration,
+							EndDate:              j.EndDate,
+							FacilityID:           j.FacilityId,
+							InstallerID:          j.InstallerId,
+							LicensedRuns:         optional.FromPtr(j.LicensedRuns),
+							JobID:                j.JobId,
+							OutputLocationID:     j.OutputLocationId,
+							Runs:                 j.Runs,
+							PauseDate:            optional.FromPtr(j.PauseDate),
+							Probability:          optional.FromPtr(j.Probability),
+							ProductTypeID:        optional.FromPtr(j.ProductTypeId),
+							StartDate:            j.StartDate,
+							Status:               jobStatuses[i],
+							StationID:            j.LocationId,
+							SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
+						}
+					}
+					return s.st.ReplaceCharacterIndustryJobs(ctx, characterID, args)
 				},
 				slog.Int64("characterID", characterID),
 			)

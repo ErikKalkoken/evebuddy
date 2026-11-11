@@ -26,24 +26,10 @@ var (
 	}
 )
 
-func noAddRelated(t *testing.T) func(context.Context) error {
-	return func(context.Context) error {
-		t.Fatal("addRelated should not be called")
-		return nil
-	}
-}
-
-func noStore(t *testing.T) func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
-	return func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
-		t.Fatal("store should not be called")
-		return nil
-	}
-}
-
-func noMarkUnknown(t *testing.T) func(context.Context, set.Set[int64]) error {
-	return func(context.Context, set.Set[int64]) error {
-		t.Fatal("markUnknown should not be called")
-		return nil
+func noSave(t *testing.T) func(context.Context, []industrysync.ESIJob, []app.IndustryJobStatus) (bool, error) {
+	return func(context.Context, []industrysync.ESIJob, []app.IndustryJobStatus) (bool, error) {
+		t.Fatal("save should not be called")
+		return false, nil
 	}
 }
 
@@ -62,232 +48,189 @@ func TestSync(t *testing.T) {
 	ctx := context.Background()
 	future := time.Now().Add(time.Hour)
 	past := time.Now().Add(-time.Hour)
-	t.Run("reports no change when nothing changed and there are no orphans", func(t *testing.T) {
-		changed, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
-			map[int64]app.IndustryJobStatus{1: app.JobActive},
-			statuses,
-			noAddRelated(t),
-			noStore(t),
-			noMarkUnknown(t),
-			logAttr,
-		)
-		require.NoError(t, err)
-		assert.False(t, changed)
-	})
-	t.Run("adds related data and stores new job", func(t *testing.T) {
+	t.Run("adds related data and then saves jobs with their status", func(t *testing.T) {
+		// given
 		var calls []string
 		got := make(map[int64]app.IndustryJobStatus)
+		// when
 		changed, err := industrysync.Sync(
 			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
-			nil,
+			[]industrysync.ESIJob{
+				{JobId: 1, Status: "active", EndDate: future},
+				{JobId: 2, Status: "delivered"},
+			},
 			statuses,
 			func(context.Context) error {
 				calls = append(calls, "addRelated")
 				return nil
 			},
-			func(_ context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
-				calls = append(calls, "store")
-				got[j.JobId] = status
-				return nil
+			func(_ context.Context, jobs []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+				calls = append(calls, "save")
+				for i, j := range jobs {
+					got[j.JobId] = jobStatuses[i]
+				}
+				return true, nil
 			},
-			noMarkUnknown(t),
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
 		assert.True(t, changed)
-		xassert.Equal(t, []string{"addRelated", "store"}, calls)
-		xassert.Equal(t, map[int64]app.IndustryJobStatus{1: app.JobActive}, got)
-	})
-	t.Run("stores all jobs when the status of one has changed", func(t *testing.T) {
-		got := make(map[int64]app.IndustryJobStatus)
-		changed, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{
-				{JobId: 1, Status: "delivered"},
-				{JobId: 2, Status: "active", EndDate: future},
-			},
-			map[int64]app.IndustryJobStatus{
-				1: app.JobActive,
-				2: app.JobActive,
-			},
-			statuses,
-			func(context.Context) error {
-				return nil
-			},
-			func(_ context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
-				got[j.JobId] = status
-				return nil
-			},
-			noMarkUnknown(t),
-			logAttr,
-		)
-		require.NoError(t, err)
-		assert.True(t, changed)
+		xassert.Equal(t, []string{"addRelated", "save"}, calls)
 		want := map[int64]app.IndustryJobStatus{
-			1: app.JobDelivered,
-			2: app.JobActive,
+			1: app.JobActive,
+			2: app.JobDelivered,
 		}
 		xassert.Equal(t, want, got)
 	})
-	t.Run("compares against the fixed status of jobs which have ended", func(t *testing.T) {
-		changed, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: past}},
-			map[int64]app.IndustryJobStatus{1: app.JobReady},
-			statuses,
-			noAddRelated(t),
-			noStore(t),
-			noMarkUnknown(t),
-			logAttr,
-		)
-		require.NoError(t, err)
-		assert.False(t, changed)
+	t.Run("reports whether save has changed anything", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			changed bool
+		}{
+			{"changed", true},
+			{"unchanged", false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				changed, err := industrysync.Sync(
+					ctx,
+					[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
+					statuses,
+					func(context.Context) error {
+						return nil
+					},
+					func(context.Context, []industrysync.ESIJob, []app.IndustryJobStatus) (bool, error) {
+						return tc.changed, nil
+					},
+					logAttr,
+				)
+				// then
+				require.NoError(t, err)
+				xassert.Equal(t, tc.changed, changed)
+			})
+		}
 	})
-	t.Run("stores the fixed status of jobs which have ended", func(t *testing.T) {
-		var got app.IndustryJobStatus
-		changed, err := industrysync.Sync(
+	t.Run("saves the fixed status of jobs which have ended", func(t *testing.T) {
+		// given
+		var got []app.IndustryJobStatus
+		// when
+		_, err := industrysync.Sync(
 			ctx,
 			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: past}},
-			map[int64]app.IndustryJobStatus{1: app.JobActive},
 			statuses,
 			func(context.Context) error {
 				return nil
 			},
-			func(_ context.Context, _ industrysync.ESIJob, status app.IndustryJobStatus) error {
-				got = status
-				return nil
-			},
-			noMarkUnknown(t),
-			logAttr,
-		)
-		require.NoError(t, err)
-		assert.True(t, changed)
-		xassert.Equal(t, app.JobReady, got)
-	})
-	t.Run("marks only active orphans as unknown", func(t *testing.T) {
-		var got set.Set[int64]
-		changed, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "delivered"}},
-			map[int64]app.IndustryJobStatus{
-				1: app.JobDelivered,
-				2: app.JobActive,
-				3: app.JobReady,
-				4: app.JobPaused,
-				5: app.JobDelivered,
-				6: app.JobCancelled,
-				7: app.JobReverted,
-				8: app.JobUnknown,
-			},
-			statuses,
-			noAddRelated(t),
-			noStore(t),
-			func(_ context.Context, ids set.Set[int64]) error {
-				got = ids
-				return nil
+			func(_ context.Context, _ []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+				got = jobStatuses
+				return true, nil
 			},
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
-		assert.True(t, changed, "should report change when only orphans were marked")
-		xassert.Equal(t, set.Of[int64](2, 3, 4), got)
+		xassert.Equal(t, []app.IndustryJobStatus{app.JobReady}, got)
 	})
-	t.Run("does not mark new jobs as orphans", func(t *testing.T) {
-		changed, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
-			map[int64]app.IndustryJobStatus{},
-			statuses,
-			func(context.Context) error {
-				return nil
-			},
-			func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
-				return nil
-			},
-			noMarkUnknown(t),
-			logAttr,
-		)
-		require.NoError(t, err)
-		assert.True(t, changed)
-	})
-	t.Run("stores unknown status as undefined and logs a warning", func(t *testing.T) {
+	t.Run("saves unknown status as undefined and logs a warning", func(t *testing.T) {
+		// given
 		var buf bytes.Buffer
 		old := slog.Default()
 		slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
 		defer slog.SetDefault(old)
-		got := app.JobActive
+		var got []app.IndustryJobStatus
+		// when
 		_, err := industrysync.Sync(
 			ctx,
 			[]industrysync.ESIJob{{JobId: 1, Status: "new_status"}},
-			nil,
 			statuses,
 			func(context.Context) error {
 				return nil
 			},
-			func(_ context.Context, _ industrysync.ESIJob, status app.IndustryJobStatus) error {
-				got = status
-				return nil
+			func(_ context.Context, _ []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+				got = jobStatuses
+				return true, nil
 			},
-			noMarkUnknown(t),
 			logAttr,
 		)
+		// then
 		require.NoError(t, err)
-		xassert.Equal(t, app.JobUndefined, got)
+		xassert.Equal(t, []app.IndustryJobStatus{app.JobUndefined}, got)
 		assert.Contains(t, buf.String(), "Unknown industry job status encountered")
 		assert.Contains(t, buf.String(), "jobID=1")
 		assert.Contains(t, buf.String(), "status=new_status")
 	})
-	t.Run("returns error and stores nothing when adding related data fails", func(t *testing.T) {
-		wantErr := errors.New("failed")
+	t.Run("saves only the last of duplicate jobs and logs a warning", func(t *testing.T) {
+		// given
+		var buf bytes.Buffer
+		old := slog.Default()
+		slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+		defer slog.SetDefault(old)
+		got := make(map[int64][]app.IndustryJobStatus)
+		// when
 		_, err := industrysync.Sync(
 			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
-			nil,
-			statuses,
-			func(context.Context) error {
-				return wantErr
+			[]industrysync.ESIJob{
+				{JobId: 1, Status: "active", EndDate: future},
+				{JobId: 2, Status: "active", EndDate: future},
+				{JobId: 1, Status: "delivered"},
 			},
-			noStore(t),
-			noMarkUnknown(t),
-			logAttr,
-		)
-		assert.ErrorIs(t, err, wantErr)
-	})
-	t.Run("returns error when storing fails", func(t *testing.T) {
-		wantErr := errors.New("failed")
-		_, err := industrysync.Sync(
-			ctx,
-			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
-			nil,
 			statuses,
 			func(context.Context) error {
 				return nil
 			},
-			func(context.Context, industrysync.ESIJob, app.IndustryJobStatus) error {
-				return wantErr
+			func(_ context.Context, jobs []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+				for i, j := range jobs {
+					got[j.JobId] = append(got[j.JobId], jobStatuses[i])
+				}
+				return true, nil
 			},
-			noMarkUnknown(t),
 			logAttr,
 		)
-		assert.ErrorIs(t, err, wantErr)
+		// then
+		require.NoError(t, err)
+		want := map[int64][]app.IndustryJobStatus{
+			1: {app.JobDelivered},
+			2: {app.JobActive},
+		}
+		xassert.Equal(t, want, got)
+		assert.Contains(t, buf.String(), "Duplicate industry jobs received from ESI")
 	})
-	t.Run("returns error when marking orphans fails", func(t *testing.T) {
+	t.Run("returns error and saves nothing when adding related data fails", func(t *testing.T) {
+		// given
 		wantErr := errors.New("failed")
+		// when
 		_, err := industrysync.Sync(
 			ctx,
-			nil,
-			map[int64]app.IndustryJobStatus{1: app.JobActive},
+			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
 			statuses,
-			noAddRelated(t),
-			noStore(t),
-			func(context.Context, set.Set[int64]) error {
+			func(context.Context) error {
 				return wantErr
+			},
+			noSave(t),
+			logAttr,
+		)
+		// then
+		assert.ErrorIs(t, err, wantErr)
+	})
+	t.Run("returns error when saving fails", func(t *testing.T) {
+		// given
+		wantErr := errors.New("failed")
+		// when
+		_, err := industrysync.Sync(
+			ctx,
+			[]industrysync.ESIJob{{JobId: 1, Status: "active", EndDate: future}},
+			statuses,
+			func(context.Context) error {
+				return nil
+			},
+			func(context.Context, []industrysync.ESIJob, []app.IndustryJobStatus) (bool, error) {
+				return false, wantErr
 			},
 			logAttr,
 		)
+		// then
 		assert.ErrorIs(t, err, wantErr)
 	})
 }

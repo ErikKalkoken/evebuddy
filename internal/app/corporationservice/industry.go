@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 
 	"github.com/ErikKalkoken/go-set"
@@ -15,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -69,17 +67,9 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 		},
 		func(ctx context.Context, arg corporationSectionUpdateParams, data any) (bool, error) {
 			jobs := xslices.Map(data.([]esi.CorporationsCorporationIdIndustryJobsGetInner), industryJobFromESI)
-			stored, err := s.st.ListCorporationIndustryJobs(ctx, arg.corporationID)
-			if err != nil {
-				return false, err
-			}
-			current := maps.Collect(xiter.MapSlice2(stored, func(j *app.CorporationIndustryJob) (int64, app.IndustryJobStatus) {
-				return j.JobID, j.Status
-			}))
 			return industrysync.Sync(
 				ctx,
 				jobs,
-				current,
 				jobStatusFromESIValue,
 				func(ctx context.Context) error {
 					entityIDs, typeIDs := industrysync.ExtractIDs(jobs)
@@ -89,39 +79,35 @@ func (s *CorporationService) updateIndustryJobsESI(ctx context.Context, arg corp
 					}
 					return s.eus.AddMissing(ctx, entityIDs, locationIDs, typeIDs)
 				},
-				func(ctx context.Context, j industrysync.ESIJob, status app.IndustryJobStatus) error {
-					return s.st.UpdateOrCreateCorporationIndustryJob(ctx, storage.UpdateOrCreateCorporationIndustryJobParams{
-						ActivityID:           j.ActivityId,
-						BlueprintID:          j.BlueprintId,
-						BlueprintLocationID:  j.BlueprintLocationId,
-						BlueprintTypeID:      j.BlueprintTypeId,
-						CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
-						CompletedDate:        optional.FromPtr(j.CompletedDate),
-						CorporationID:        arg.corporationID,
-						Cost:                 optional.FromPtr(j.Cost),
-						Duration:             j.Duration,
-						EndDate:              j.EndDate,
-						FacilityID:           j.FacilityId,
-						InstallerID:          j.InstallerId,
-						JobID:                j.JobId,
-						LicensedRuns:         optional.FromPtr(j.LicensedRuns),
-						LocationID:           j.LocationId,
-						OutputLocationID:     j.OutputLocationId,
-						PauseDate:            optional.FromPtr(j.PauseDate),
-						Probability:          optional.FromPtr(j.Probability),
-						ProductTypeID:        optional.FromPtr(j.ProductTypeId),
-						Runs:                 j.Runs,
-						StartDate:            j.StartDate,
-						Status:               status,
-						SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
-					})
-				},
-				func(ctx context.Context, ids set.Set[int64]) error {
-					return s.st.UpdateCorporationIndustryJobStatus(ctx, storage.UpdateCorporationIndustryJobStatusParams{
-						CorporationID: arg.corporationID,
-						JobIDs:        ids,
-						Status:        app.JobUnknown,
-					})
+				func(ctx context.Context, jobs []industrysync.ESIJob, jobStatuses []app.IndustryJobStatus) (bool, error) {
+					args := make([]storage.CorporationIndustryJobParams, len(jobs))
+					for i, j := range jobs {
+						args[i] = storage.CorporationIndustryJobParams{
+							ActivityID:           j.ActivityId,
+							BlueprintID:          j.BlueprintId,
+							BlueprintLocationID:  j.BlueprintLocationId,
+							BlueprintTypeID:      j.BlueprintTypeId,
+							CompletedCharacterID: optional.FromPtr(j.CompletedCharacterId),
+							CompletedDate:        optional.FromPtr(j.CompletedDate),
+							Cost:                 optional.FromPtr(j.Cost),
+							Duration:             j.Duration,
+							EndDate:              j.EndDate,
+							FacilityID:           j.FacilityId,
+							InstallerID:          j.InstallerId,
+							JobID:                j.JobId,
+							LicensedRuns:         optional.FromPtr(j.LicensedRuns),
+							LocationID:           j.LocationId,
+							OutputLocationID:     j.OutputLocationId,
+							PauseDate:            optional.FromPtr(j.PauseDate),
+							Probability:          optional.FromPtr(j.Probability),
+							ProductTypeID:        optional.FromPtr(j.ProductTypeId),
+							Runs:                 j.Runs,
+							StartDate:            j.StartDate,
+							Status:               jobStatuses[i],
+							SuccessfulRuns:       optional.FromPtr(j.SuccessfulRuns),
+						}
+					}
+					return s.st.ReplaceCorporationIndustryJobs(ctx, arg.corporationID, args)
 				},
 				slog.Int64("corporationID", arg.corporationID),
 			)

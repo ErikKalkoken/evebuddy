@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"testing"
 	"time"
@@ -217,6 +218,19 @@ func TestCharacterIndustryJob(t *testing.T) {
 			BlueprintTypeID:     2,
 			CharacterID:         3,
 			InstallerID:         4,
+			JobID:               7,
+			OutputLocationID:    5,
+			StationID:           6,
+		})
+		assert.ErrorIs(t, err, app.ErrInvalid)
+	})
+	t.Run("should return error when job ID is missing", func(t *testing.T) {
+		err := st.UpdateOrCreateCharacterIndustryJob(ctx, storage.UpdateOrCreateCharacterIndustryJobParams{
+			BlueprintLocationID: 1,
+			BlueprintTypeID:     2,
+			CharacterID:         3,
+			FacilityID:          7,
+			InstallerID:         4,
 			OutputLocationID:    5,
 			StationID:           6,
 		})
@@ -373,24 +387,6 @@ func TestCharacterIndustryJob(t *testing.T) {
 		want := set.Of(j3.ID, j4.ID)
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can update job status", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		j1 := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
-			Status: app.JobActive,
-		})
-		// when
-		err := st.UpdateCharacterIndustryJobStatus(ctx, storage.UpdateCharacterIndustryJobStatusParams{
-			CharacterID: j1.CharacterID,
-			JobIDs:      set.Of(j1.JobID),
-			Status:      app.JobUnknown,
-		})
-		// then
-		require.NoError(t, err)
-		j2, err := st.GetCharacterIndustryJob(ctx, j1.CharacterID, j1.JobID)
-		require.NoError(t, err)
-		xassert.Equal(t, app.JobUnknown, j2.Status)
-	})
 
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
@@ -411,4 +407,311 @@ func eveTypeToEntityShort(eb *app.EveType) *app.EntityShort {
 		Name: eb.Name,
 	}
 	return o
+}
+
+func TestReplaceCharacterIndustryJobs(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should create new jobs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		blueprintType := factory.CreateEveType()
+		installer := factory.CreateEveEntityCharacter()
+		station := factory.CreateEveLocationStructure()
+		endDate := time.Now().UTC().Add(12 * time.Hour)
+		arg := storage.CharacterIndustryJobParams{
+			ActivityID:          int64(app.Manufacturing),
+			BlueprintID:         42,
+			BlueprintLocationID: station.ID,
+			BlueprintTypeID:     blueprintType.ID,
+			Duration:            123,
+			EndDate:             endDate,
+			FacilityID:          station.ID,
+			InstallerID:         installer.ID,
+			JobID:               1,
+			OutputLocationID:    station.ID,
+			Runs:                7,
+			StartDate:           endDate.Add(-123 * time.Second),
+			Status:              app.JobActive,
+			StationID:           station.ID,
+		}
+		// when
+		changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterIndustryJob(ctx, c.ID, 1)
+		require.NoError(t, err)
+		xassert.Equal(t, 42, o.BlueprintID)
+		xassert.Equal(t, endDate, o.EndDate)
+		xassert.Equal(t, app.JobActive, o.Status)
+	})
+	t.Run("should report no change when jobs are unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		blueprintType := factory.CreateEveType()
+		completedCharacter := factory.CreateEveEntityCharacter()
+		installer := factory.CreateEveEntityCharacter()
+		station := factory.CreateEveLocationStructure()
+		endDate := time.Now().In(time.FixedZone("test", 3600)) // differs from UTC after the DB round trip
+		arg := storage.CharacterIndustryJobParams{
+			ActivityID:           int64(app.Manufacturing),
+			BlueprintID:          42,
+			BlueprintLocationID:  station.ID,
+			BlueprintTypeID:      blueprintType.ID,
+			CompletedCharacterID: optional.New(completedCharacter.ID),
+			CompletedDate:        optional.New(endDate.Add(time.Hour)),
+			Duration:             123,
+			EndDate:              endDate,
+			FacilityID:           station.ID,
+			InstallerID:          installer.ID,
+			JobID:                1,
+			OutputLocationID:     station.ID,
+			PauseDate:            optional.New(endDate.Add(-time.Hour)),
+			Runs:                 7,
+			StartDate:            endDate.Add(-123 * time.Second),
+			Status:               app.JobDelivered,
+			StationID:            station.ID,
+			SuccessfulRuns:       optional.New[int64](7),
+		}
+		_, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		require.NoError(t, err)
+		// when
+		changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should store a job when a changeable column has changed", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			change func(arg *storage.CharacterIndustryJobParams, completedCharacterID int64)
+		}{
+			{"completed character", func(arg *storage.CharacterIndustryJobParams, completedCharacterID int64) {
+				arg.CompletedCharacterID = optional.New(completedCharacterID)
+			}},
+			{"completed date", func(arg *storage.CharacterIndustryJobParams, _ int64) {
+				arg.CompletedDate = optional.New(arg.EndDate.Add(time.Hour))
+			}},
+			{"end date", func(arg *storage.CharacterIndustryJobParams, _ int64) {
+				arg.EndDate = arg.EndDate.Add(time.Hour)
+			}},
+			{"pause date", func(arg *storage.CharacterIndustryJobParams, _ int64) {
+				arg.PauseDate = optional.New(arg.EndDate.Add(-time.Hour))
+			}},
+			{"status", func(arg *storage.CharacterIndustryJobParams, _ int64) {
+				arg.Status = app.JobReady
+			}},
+			{"successful runs", func(arg *storage.CharacterIndustryJobParams, _ int64) {
+				arg.SuccessfulRuns = optional.New[int64](3)
+			}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCharacterFull()
+				blueprintType := factory.CreateEveType()
+				completedCharacter := factory.CreateEveEntityCharacter()
+				installer := factory.CreateEveEntityCharacter()
+				station := factory.CreateEveLocationStructure()
+				endDate := time.Now().UTC().Add(12 * time.Hour)
+				arg := storage.CharacterIndustryJobParams{
+					ActivityID:          int64(app.Manufacturing),
+					BlueprintID:         42,
+					BlueprintLocationID: station.ID,
+					BlueprintTypeID:     blueprintType.ID,
+					Duration:            123,
+					EndDate:             endDate,
+					FacilityID:          station.ID,
+					InstallerID:         installer.ID,
+					JobID:               1,
+					OutputLocationID:    station.ID,
+					Runs:                7,
+					StartDate:           endDate.Add(-123 * time.Second),
+					Status:              app.JobActive,
+					StationID:           station.ID,
+				}
+				_, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+				require.NoError(t, err)
+				tc.change(&arg, completedCharacter.ID)
+				// when
+				changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+				// then
+				require.NoError(t, err)
+				assert.True(t, changed)
+				o, err := st.GetCharacterIndustryJob(ctx, c.ID, 1)
+				require.NoError(t, err)
+				xassert.Equal(t, arg.CompletedCharacterID.ValueOrZero(), optional.Map(o.CompletedCharacter, 0, func(x *app.EveEntity) int64 {
+					return x.ID
+				}))
+				xassert.Equal(t, arg.CompletedDate, o.CompletedDate)
+				xassert.Equal(t, arg.EndDate, o.EndDate)
+				xassert.Equal(t, arg.PauseDate, o.PauseDate)
+				xassert.Equal(t, arg.Status, o.Status)
+				xassert.Equal(t, arg.SuccessfulRuns, o.SuccessfulRuns)
+			})
+		}
+	})
+	t.Run("should ignore changes to columns which can not change", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		blueprintType := factory.CreateEveType()
+		installer := factory.CreateEveEntityCharacter()
+		station := factory.CreateEveLocationStructure()
+		endDate := time.Now().UTC().Add(12 * time.Hour)
+		arg := storage.CharacterIndustryJobParams{
+			ActivityID:          int64(app.Manufacturing),
+			BlueprintID:         42,
+			BlueprintLocationID: station.ID,
+			BlueprintTypeID:     blueprintType.ID,
+			Duration:            123,
+			EndDate:             endDate,
+			FacilityID:          station.ID,
+			InstallerID:         installer.ID,
+			JobID:               1,
+			OutputLocationID:    station.ID,
+			Runs:                7,
+			StartDate:           endDate.Add(-123 * time.Second),
+			Status:              app.JobActive,
+			StationID:           station.ID,
+		}
+		_, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		require.NoError(t, err)
+		arg.Runs = 8
+		// when
+		changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		o, err := st.GetCharacterIndustryJob(ctx, c.ID, 1)
+		require.NoError(t, err)
+		xassert.Equal(t, 7, o.Runs)
+	})
+	t.Run("should mark active jobs missing in args as unknown", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		active := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobActive,
+		})
+		paused := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobPaused,
+		})
+		ready := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobReady,
+		})
+		delivered := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobDelivered,
+		})
+		// when
+		changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		jobs, err := st.ListCharacterIndustryJobs(ctx, c.ID)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(jobs, func(j *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
+			return j.JobID, j.Status
+		}))
+		want := map[int64]app.IndustryJobStatus{
+			active.JobID:    app.JobUnknown,
+			paused.JobID:    app.JobUnknown,
+			ready.JobID:     app.JobUnknown,
+			delivered.JobID: app.JobDelivered,
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should report no change when only inactive jobs are missing", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobDelivered,
+		})
+		factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobUnknown,
+		})
+		// when
+		changed, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+	t.Run("should keep jobs unchanged when replace fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacterFull()
+		active := factory.CreateCharacterIndustryJob(storage.UpdateOrCreateCharacterIndustryJobParams{
+			CharacterID: c.ID,
+			Status:      app.JobActive,
+		})
+		installer := factory.CreateEveEntityCharacter()
+		station := factory.CreateEveLocationStructure()
+		endDate := time.Now().UTC().Add(12 * time.Hour)
+		arg := storage.CharacterIndustryJobParams{
+			ActivityID:          int64(app.Manufacturing),
+			BlueprintID:         42,
+			BlueprintLocationID: station.ID,
+			BlueprintTypeID:     42, // has no eve type
+			Duration:            123,
+			EndDate:             endDate,
+			FacilityID:          station.ID,
+			InstallerID:         installer.ID,
+			JobID:               active.JobID + 1,
+			OutputLocationID:    station.ID,
+			Runs:                7,
+			StartDate:           endDate.Add(-123 * time.Second),
+			Status:              app.JobActive,
+			StationID:           station.ID,
+		}
+		// when
+		_, err := st.ReplaceCharacterIndustryJobs(ctx, c.ID, []storage.CharacterIndustryJobParams{arg})
+		// then
+		require.Error(t, err)
+		jobs, err := st.ListCharacterIndustryJobs(ctx, c.ID)
+		require.NoError(t, err)
+		got := maps.Collect(xiter.MapSlice2(jobs, func(j *app.CharacterIndustryJob) (int64, app.IndustryJobStatus) {
+			return j.JobID, j.Status
+		}))
+		want := map[int64]app.IndustryJobStatus{
+			active.JobID: app.JobActive,
+		}
+		xassert.Equal(t, want, got)
+	})
+	t.Run("should return error when IDs are invalid", func(t *testing.T) {
+		cases := []struct {
+			name        string
+			characterID int64
+			args        []storage.CharacterIndustryJobParams
+		}{
+			{"zero character ID", 0, nil},
+			{"zero job ID", 1, []storage.CharacterIndustryJobParams{{
+				BlueprintLocationID: 2,
+				BlueprintTypeID:     3,
+				FacilityID:          4,
+				InstallerID:         5,
+				OutputLocationID:    6,
+				StationID:           7,
+			}}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCharacterIndustryJobs(ctx, tc.characterID, tc.args)
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
+	})
 }

@@ -132,6 +132,20 @@ GROUP BY
     activity_id,
     status;
 
+-- name: ListCharacterIndustryJobStates :many
+SELECT
+    job_id,
+    completed_character_id,
+    completed_date,
+    end_date,
+    pause_date,
+    status,
+    successful_runs
+FROM
+    character_industry_jobs
+WHERE
+    character_id = ?;
+
 -- name: UpdateCharacterIndustryJobStatus :exec
 UPDATE character_industry_jobs
 SET
