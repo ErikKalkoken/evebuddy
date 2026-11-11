@@ -17,7 +17,7 @@ WHERE
 DELETE FROM character_skills
 WHERE
     character_id = ?
-    AND eve_type_id IN (sqlc.slice ('eve_type_ids'));
+    AND eve_type_id IN (sqlc.slice('eve_type_ids'));
 
 -- name: ListAllCharacterSkills :many
 SELECT

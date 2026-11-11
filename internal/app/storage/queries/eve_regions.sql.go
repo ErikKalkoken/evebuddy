@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"strings"
 )
 
 const createEveRegion = `-- name: CreateEveRegion :one
@@ -47,13 +48,27 @@ func (q *Queries) GetEveRegion(ctx context.Context, id int64) (EveRegion, error)
 	return i, err
 }
 
-const listEveRegionIDs = `-- name: ListEveRegionIDs :many
-SELECT id
-FROM eve_regions
+const listEveRegionIDsForIDs = `-- name: ListEveRegionIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_regions
+WHERE
+    id IN (/*SLICE:ids*/?)
 `
 
-func (q *Queries) ListEveRegionIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listEveRegionIDs)
+func (q *Queries) ListEveRegionIDsForIDs(ctx context.Context, ids []int64) ([]int64, error) {
+	query := listEveRegionIDsForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

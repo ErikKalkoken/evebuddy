@@ -45,7 +45,7 @@ FROM
     character_mail_labels
 WHERE
     character_id = ?
-    AND label_id IN (sqlc.slice ('ids'));
+    AND label_id IN (sqlc.slice('ids'));
 
 -- name: UpdateOrCreateCharacterMailLabel :one
 INSERT INTO

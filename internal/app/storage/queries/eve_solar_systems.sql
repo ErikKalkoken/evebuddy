@@ -28,8 +28,10 @@ FROM
 WHERE
     eve_solar_systems.id IN (sqlc.slice('ids'));
 
--- name: ListEveSolarSystemIDs :many
+-- name: ListEveSolarSystemIDsForIDs :many
 SELECT
     id
 FROM
-    eve_solar_systems;
+    eve_solar_systems
+WHERE
+    id IN (sqlc.slice('ids'));

@@ -79,12 +79,10 @@ func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystem
 
 // MissingEveLocations returns which ids for eve locations are missing.
 func (st *Storage) MissingEveLocations(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
-	currentIDs, err := st.qRO.ListEveLocationIDs(ctx)
+	missing, err := st.missingIDs(ctx, ids, st.qRO.ListEveLocationIDsForIDs)
 	if err != nil {
-		return set.Set[int64]{}, err
+		return set.Set[int64]{}, fmt.Errorf("MissingEveLocations: %w", err)
 	}
-	current := set.Collect(slices.Values(currentIDs))
-	missing := set.Difference(ids, current)
 	return missing, nil
 }
 

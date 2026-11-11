@@ -72,6 +72,14 @@ SELECT
 FROM
     eve_types;
 
+-- name: ListEveTypeIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_types
+WHERE
+    id IN (sqlc.slice('ids'));
+
 -- name: CreateEveTypeDogmaAttribute :exec
 INSERT INTO
     eve_type_dogma_attributes (dogma_attribute_id, eve_type_id, value)

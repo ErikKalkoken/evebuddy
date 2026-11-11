@@ -81,20 +81,10 @@ func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellat
 	}
 }
 
-func (st *Storage) ListEveSolarSystemIDs(ctx context.Context) (set.Set[int64], error) {
-	ids, err := st.qRO.ListEveSolarSystemIDs(ctx)
-	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("ListEveSolarSystemIDs: %w", err)
-	}
-	return set.Collect(slices.Values(ids)), nil
-}
-
 func (st *Storage) MissingEveSolarSystems(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
-	currentIDs, err := st.qRO.ListEveSolarSystemIDs(ctx)
+	missing, err := st.missingIDs(ctx, ids, st.qRO.ListEveSolarSystemIDsForIDs)
 	if err != nil {
-		return set.Set[int64]{}, err
+		return set.Set[int64]{}, fmt.Errorf("MissingEveSolarSystems: %w", err)
 	}
-	current := set.Collect(slices.Values(currentIDs))
-	missing := set.Difference(ids, current)
 	return missing, nil
 }

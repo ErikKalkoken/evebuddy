@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"testing"
 
+	"github.com/ErikKalkoken/go-set"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,6 +25,59 @@ func TestConvertNoRowsError(t *testing.T) {
 		err := errors.New("random error")
 		got := convertGetError(err)
 		xassert.Equal(t, err, got)
+	})
+}
+
+func TestMissingIDs(t *testing.T) {
+	t.Run("returns missing IDs across multiple chunks", func(t *testing.T) {
+		// given
+		st := &Storage{MaxIDsPerQuery: 1}
+		stored := set.Of[int64](42, 43)
+		var calls int
+		listForIDs := func(_ context.Context, ids []int64) ([]int64, error) {
+			calls++
+			var found []int64
+			for _, id := range ids {
+				if stored.Contains(id) {
+					found = append(found, id)
+				}
+			}
+			return found, nil
+		}
+		// when
+		got, err := st.missingIDs(t.Context(), set.Of[int64](42, 5, 43, 6), listForIDs)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of[int64](5, 6), got)
+		xassert.Equal(t, 4, calls)
+	})
+	t.Run("makes no query for empty set", func(t *testing.T) {
+		// given
+		st := &Storage{MaxIDsPerQuery: 1}
+		var calls int
+		listForIDs := func(_ context.Context, _ []int64) ([]int64, error) {
+			calls++
+			return nil, nil
+		}
+		// when
+		got, err := st.missingIDs(t.Context(), set.Set[int64]{}, listForIDs)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, got.Size())
+		xassert.Equal(t, 0, calls)
+	})
+	t.Run("returns wrapped query error", func(t *testing.T) {
+		// given
+		st := &Storage{MaxIDsPerQuery: 1}
+		errQuery := errors.New("query error")
+		listForIDs := func(_ context.Context, _ []int64) ([]int64, error) {
+			return nil, errQuery
+		}
+		// when
+		_, err := st.missingIDs(t.Context(), set.Of[int64](42, 43), listForIDs)
+		// then
+		assert.ErrorIs(t, err, errQuery)
+		assert.ErrorContains(t, err, "1 ids:")
 	})
 }
 

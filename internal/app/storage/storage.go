@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"encoding/json"
@@ -163,4 +164,21 @@ func convertGetError(err error) error {
 		err = app.ErrNotFound
 	}
 	return err
+}
+
+// missingIDs returns the IDs not found by listForIDs, querying in chunks.
+func (st *Storage) missingIDs(
+	ctx context.Context,
+	ids set.Set[int64],
+	listForIDs func(context.Context, []int64) ([]int64, error),
+) (set.Set[int64], error) {
+	var found set.Set[int64]
+	for idsChunk := range slices.Chunk(slices.Collect(ids.All()), st.MaxIDsPerQuery) {
+		ids2, err := listForIDs(ctx, idsChunk)
+		if err != nil {
+			return set.Set[int64]{}, fmt.Errorf("%d ids: %w", len(idsChunk), err)
+		}
+		found.AddSeq(slices.Values(ids2))
+	}
+	return set.Difference(ids, found), nil
 }

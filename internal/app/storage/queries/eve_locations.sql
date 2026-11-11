@@ -12,6 +12,14 @@ SELECT
 FROM
     eve_locations;
 
+-- name: ListEveLocationIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_locations
+WHERE
+    id IN (sqlc.slice('ids'));
+
 -- name: ListEveLocations :many
 SELECT
     *

@@ -230,11 +230,9 @@ func (st *Storage) ListEveTypeIDs(ctx context.Context) (set.Set[int64], error) {
 }
 
 func (st *Storage) MissingEveTypes(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
-	currentIDs, err := st.qRO.ListEveTypeIDs(ctx)
+	missing, err := st.missingIDs(ctx, ids, st.qRO.ListEveTypeIDsForIDs)
 	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("MissingEveTypes: %d ids: %w", ids.Size(), err)
+		return set.Set[int64]{}, fmt.Errorf("MissingEveTypes: %w", err)
 	}
-	current := set.Collect(slices.Values(currentIDs))
-	missing := set.Difference(ids, current)
 	return missing, nil
 }
