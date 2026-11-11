@@ -40,17 +40,6 @@ func TestEveSolarSystem(t *testing.T) {
 		xassert.Equal(t, c, g.Constellation)
 		xassert.Equal(t, float32(-8.5), g.SecurityStatus)
 	})
-	t.Run("can list IDs", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		o1 := factory.CreateEveSolarSystem()
-		o2 := factory.CreateEveSolarSystem()
-		// when
-		got, err := st.ListEveSolarSystemIDs(ctx)
-		require.NoError(t, err)
-		want := set.Of(o1.ID, o2.ID)
-		xassert.Equal(t, want, got)
-	})
 	t.Run("can return missing IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

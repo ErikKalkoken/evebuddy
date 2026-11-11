@@ -71,15 +71,27 @@ func (q *Queries) GetEveSolarSystem(ctx context.Context, id int64) (GetEveSolarS
 	return i, err
 }
 
-const listEveSolarSystemIDs = `-- name: ListEveSolarSystemIDs :many
+const listEveSolarSystemIDsForIDs = `-- name: ListEveSolarSystemIDsForIDs :many
 SELECT
     id
 FROM
     eve_solar_systems
+WHERE
+    id IN (/*SLICE:ids*/?)
 `
 
-func (q *Queries) ListEveSolarSystemIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listEveSolarSystemIDs)
+func (q *Queries) ListEveSolarSystemIDsForIDs(ctx context.Context, ids []int64) ([]int64, error) {
+	query := listEveSolarSystemIDsForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

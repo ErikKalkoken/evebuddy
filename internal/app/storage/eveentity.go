@@ -233,18 +233,10 @@ func (st *Storage) mapEveEntitiesForIDs(ctx context.Context, ids []int64) (map[i
 func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
 	incoming := ids.Clone()
 	incoming.Delete(0)
-	if incoming.Size() == 0 {
-		return set.Set[int64]{}, nil
+	missing, err := st.missingIDs(ctx, incoming, st.qRO.ListEveEntityIDsForIDs)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("MissingEveEntityIDs: %w", err)
 	}
-	var found set.Set[int64]
-	for idsChunk := range slices.Chunk(slices.Collect(incoming.All()), st.MaxIDsPerQuery) {
-		ids2, err := st.qRO.ListEveEntityIDsForIDs(ctx, idsChunk)
-		if err != nil {
-			return set.Set[int64]{}, fmt.Errorf("MissingEveEntityIDs: %d ids: %w", len(idsChunk), err)
-		}
-		found.AddSeq(slices.Values(ids2))
-	}
-	missing := set.Difference(incoming, found)
 	return missing, nil
 }
 

@@ -35,17 +35,6 @@ func TestEveRegion(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, x1, x2)
 	})
-	t.Run("can list IDs", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		r1 := factory.CreateEveRegion()
-		r2 := factory.CreateEveRegion()
-		// when
-		got, err := st.ListEveRegionIDs(ctx)
-		require.NoError(t, err)
-		want := set.Of(r1.ID, r2.ID)
-		xassert.Equal(t, want, got)
-	})
 	t.Run("can return missing IDs", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

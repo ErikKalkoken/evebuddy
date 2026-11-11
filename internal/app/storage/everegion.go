@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -50,20 +49,10 @@ func eveRegionFromDBModel(c queries.EveRegion) *app.EveRegion {
 	}
 }
 
-func (st *Storage) ListEveRegionIDs(ctx context.Context) (set.Set[int64], error) {
-	ids, err := st.qRO.ListEveRegionIDs(ctx)
-	if err != nil {
-		return set.Set[int64]{}, fmt.Errorf("ListEveRegionIDs: %w", err)
-	}
-	return set.Collect(slices.Values(ids)), nil
-}
-
 func (st *Storage) MissingEveRegions(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
-	currentIDs, err := st.qRO.ListEveRegionIDs(ctx)
+	missing, err := st.missingIDs(ctx, ids, st.qRO.ListEveRegionIDsForIDs)
 	if err != nil {
-		return set.Set[int64]{}, err
+		return set.Set[int64]{}, fmt.Errorf("MissingEveRegions: %w", err)
 	}
-	current := set.Collect(slices.Values(currentIDs))
-	missing := set.Difference(ids, current)
 	return missing, nil
 }

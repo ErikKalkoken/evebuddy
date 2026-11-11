@@ -465,6 +465,48 @@ func (q *Queries) ListEveTypeIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const listEveTypeIDsForIDs = `-- name: ListEveTypeIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_types
+WHERE
+    id IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) ListEveTypeIDsForIDs(ctx context.Context, ids []int64) ([]int64, error) {
+	query := listEveTypeIDsForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEveTypes = `-- name: ListEveTypes :many
 SELECT
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,

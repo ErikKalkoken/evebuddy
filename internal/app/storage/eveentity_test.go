@@ -506,23 +506,6 @@ func TestEveEntityIDs(t *testing.T) {
 		want := set.Of[int64](5)
 		xassert.Equal(t, want, got)
 	})
-	t.Run("should return missing IDs across multiple chunks", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		old := st.MaxIDsPerQuery
-		st.MaxIDsPerQuery = 1
-		defer func() {
-			st.MaxIDsPerQuery = old
-		}()
-		factory.CreateEveEntity(app.EveEntity{ID: 42})
-		factory.CreateEveEntity(app.EveEntity{ID: 43})
-		// when
-		got, err := st.MissingEveEntityIDs(ctx, set.Of[int64](42, 5, 43, 6))
-		// then
-		require.NoError(t, err)
-		want := set.Of[int64](5, 6)
-		xassert.Equal(t, want, got)
-	})
 }
 
 func TestEveEntityCanCreateAllCategories(t *testing.T) {
