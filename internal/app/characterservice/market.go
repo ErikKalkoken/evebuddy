@@ -26,7 +26,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 	}
 	const openState = "open"
 	changed, err := s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true, // orders become stale over time, also when the data from ESI has not changed
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
 			open, _, err := s.esiClient.MarketAPI.GetCharactersCharacterIdOrders(ctx, characterID).Execute()
