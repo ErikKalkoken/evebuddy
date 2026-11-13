@@ -41,19 +41,8 @@ func (s *CharacterService) updateLoyaltyPointEntriesESI(ctx context.Context, arg
 			for _, r := range data.([]esi.CharactersCharacterIdLoyaltyPointsGetInner) {
 				points[r.CorporationId] = r.LoyaltyPoints
 			}
-			missing, err := s.st.MissingEveCorporations(ctx, set.Collect(maps.Keys(points)))
-			if err != nil {
+			if err := s.eus.AddMissingCorporations(ctx, set.Collect(maps.Keys(points))); err != nil {
 				return false, err
-			}
-			for id := range missing.All() {
-				_, err := s.eus.GetOrCreateCorporationESI(ctx, id)
-				if err != nil {
-					if ctx.Err() != nil {
-						return false, err
-					}
-					slog.Error("Failed to get corporation for loyalty point entry", "corporationID", id, "error", err)
-					delete(points, id)
-				}
 			}
 			return s.st.ReplaceCharacterLoyaltyPointEntries(ctx, characterID, points)
 		})

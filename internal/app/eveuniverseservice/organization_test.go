@@ -241,6 +241,74 @@ func TestGetOrCreateEveCorporationESI(t *testing.T) {
 	})
 }
 
+func TestAddMissingCorporations(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should do nothing when all corporations already exist", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		corporation := factory.CreateEveCorporation()
+		// when
+		err := s.AddMissingCorporations(t.Context(), set.Of(corporation.ID, 0))
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, 0, httpmock.GetTotalCallCount())
+	})
+	t.Run("should fetch missing corporations from ESI", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		corporation := factory.CreateEveEntityCorporation()
+		station := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityStation})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
+			httpmock.NewJsonResponderOrPanic(200, map[string]any{
+				"date_founded":    "2004-11-28T16:42:51Z",
+				"description":     "This is a corporation description, it's basically just a string",
+				"member_count":    656,
+				"name":            "C C P",
+				"ticker":          "-CCP-",
+				"home_station_id": station.ID,
+				"war_eligible":    false,
+				"shares":          100000000,
+				"state":           "active",
+				"friendly_fire":   "legal",
+				"tax_rates": map[string]float64{
+					"isk":           0.256,
+					"loyalty_point": 0,
+				},
+				"type": "player_owned"}),
+		)
+		// when
+		err := s.AddMissingCorporations(t.Context(), set.Of(corporation.ID))
+		// then
+		require.NoError(t, err)
+		o, err := st.GetEveCorporation(t.Context(), corporation.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, "C C P", o.Name)
+	})
+	t.Run("should return error with corporation ID when a corporation can not be fetched", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		corporation := factory.CreateEveEntityCorporation()
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/corporations/%d", corporation.ID),
+			httpmock.NewJsonResponderOrPanic(404, map[string]any{"error": "not found"}),
+		)
+		// when
+		err := s.AddMissingCorporations(t.Context(), set.Of(corporation.ID))
+		// then
+		assert.ErrorContains(t, err, fmt.Sprintf("corporation %d", corporation.ID))
+	})
+}
+
 func TestUpdateOrCreateEveCorporationESI(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

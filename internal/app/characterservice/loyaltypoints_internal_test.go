@@ -203,20 +203,25 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		xassert.Equal(t, 10_000, o.LoyaltyPoints)
 		xassert.Equal(t, "Alpha Corp", o.Corporation.Name)
 	})
-	t.Run("should skip entries when their corporation can not be fetched", func(t *testing.T) {
+	t.Run("should return error when a corporation can not be fetched", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		corporation := factory.CreateEveCorporation()
+		factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   c.ID,
+			CorporationID: corporation.ID,
+			LoyaltyPoints: 10_000,
+		})
 		failingID := factory.CreateEveEntityCorporation().ID // without eve corporation
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/characters/%d/loyalty/points", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
 				"corporation_id": corporation.ID,
-				"loyalty_points": 10_000,
+				"loyalty_points": 15_000,
 			}, {
 				"corporation_id": failingID,
 				"loyalty_points": 20_000,
@@ -229,16 +234,15 @@ func TestUpdateCharacterLoyaltyPointEntriesESI(t *testing.T) {
 		)
 
 		// when
-		changed, err := s.updateLoyaltyPointEntriesESI(ctx, characterSectionUpdateParams{
+		_, err := s.updateLoyaltyPointEntriesESI(ctx, characterSectionUpdateParams{
 			characterID: c.ID,
 			section:     app.SectionCharacterLoyaltyPoints,
 		})
 		// then
+		require.Error(t, err)
+		o, err := st.GetCharacterLoyaltyPointEntry(ctx, c.ID, corporation.ID)
 		require.NoError(t, err)
-		assert.True(t, changed)
-		ids, err := st.ListCharacterLoyaltyPointEntryIDs(ctx, c.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, set.Of(corporation.ID), ids)
+		xassert.Equal(t, 10_000, o.LoyaltyPoints)
 	})
 }
 
