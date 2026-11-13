@@ -217,6 +217,19 @@ func TestEveCorporation(t *testing.T) {
 		xassert.Equal(t, want, got)
 	})
 
+	t.Run("can report missing corporations", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := f.CreateEveCorporation()
+		const missingID = 42
+		// when
+		got, err := st.MissingEveCorporations(t.Context(), set.Of(c1.ID, missingID))
+		// then
+		require.NoError(t, err)
+		want := set.Of[int64](missingID)
+		xassert.Equal(t, want, got)
+	})
+
 	t.Run("can update name", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)

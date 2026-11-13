@@ -88,6 +88,36 @@ func (s *EVEUniverseService) GetCorporation(ctx context.Context, corporationID i
 	return s.st.GetEveCorporation(ctx, corporationID)
 }
 
+// AddMissingCorporations fetches missing corporations from ESI.
+// Invalid IDs (e.g. 0) will be ignored.
+func (s *EVEUniverseService) AddMissingCorporations(ctx context.Context, ids set.Set[int64]) error {
+	ids2 := ids.Clone()
+	ids2.Delete(0)
+	if ids2.Size() == 0 {
+		return nil
+	}
+	missing, err := s.st.MissingEveCorporations(ctx, ids2)
+	if err != nil {
+		return err
+	}
+	if missing.Size() == 0 {
+		return nil
+	}
+	slog.Debug("Trying to fetch missing EveCorporations from ESI", "count", missing.Size())
+	g := new(errgroup.Group)
+	g.SetLimit(s.concurrencyLimit)
+	for id := range missing.All() {
+		g.Go(func() error {
+			_, err := s.GetOrCreateCorporationESI(ctx, id)
+			if err != nil {
+				return fmt.Errorf("corporation %d: %w", id, err)
+			}
+			return nil
+		})
+	}
+	return g.Wait()
+}
+
 func (s *EVEUniverseService) GetOrCreateCorporationESI(ctx context.Context, id int64) (*app.EveCorporation, error) {
 	o, err := s.st.GetEveCorporation(ctx, id)
 	if errors.Is(err, app.ErrNotFound) {

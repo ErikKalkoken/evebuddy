@@ -27,6 +27,15 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterLoyaltyPointStates :many
+SELECT
+    corporation_id,
+    loyalty_points
+FROM
+    character_loyalty_point_entries
+WHERE
+    character_id = ?;
+
 -- name: ListCharacterLoyaltyPointEntries :many
 SELECT
     sqlc.embed(clp),

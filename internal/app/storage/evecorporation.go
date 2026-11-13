@@ -86,6 +86,15 @@ func (st *Storage) ListEveCorporationIDs(ctx context.Context) (set.Set[int64], e
 	return ids2, nil
 }
 
+// MissingEveCorporations returns the IDs of corporations which are not stored.
+func (st *Storage) MissingEveCorporations(ctx context.Context, ids set.Set[int64]) (set.Set[int64], error) {
+	missing, err := st.missingIDs(ctx, ids, st.qRO.ListEveCorporationIDsForIDs)
+	if err != nil {
+		return set.Set[int64]{}, fmt.Errorf("MissingEveCorporations: %w", err)
+	}
+	return missing, nil
+}
+
 type UpdateOrCreateEveCorporationParams struct {
 	AllianceID    optional.Optional[int64]
 	CeoID         optional.Optional[int64]
