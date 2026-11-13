@@ -225,46 +225,6 @@ func TestCharacterMarketOrder(t *testing.T) {
 		}))
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can delete orders for a character by ID", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			CharacterID: c.ID,
-		})
-		o2 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			CharacterID: c.ID,
-		})
-		// when
-		err := st.DeleteCharacterMarketOrders(ctx, c.ID, set.Of(o2.OrderID))
-		// then
-		require.NoError(t, err)
-		want := set.Of(o1.OrderID)
-		got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, want, got)
-	})
-	t.Run("can update order status", func(t *testing.T) {
-		// given
-		testutil.MustTruncateTables(db)
-		c := factory.CreateCharacter()
-		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
-			CharacterID: c.ID,
-			State:       app.OrderOpen,
-		})
-		// when
-		err := st.UpdateCharacterMarketOrderState(ctx, storage.UpdateCharacterMarketOrderStateParams{
-			CharacterID: c.ID,
-			OrderIDs:    set.Of(o1.OrderID),
-			State:       app.OrderUnknown,
-		})
-		// then
-		require.NoError(t, err)
-		o2, err := st.GetCharacterMarketOrder(ctx, c.ID, o1.OrderID)
-		require.NoError(t, err)
-		xassert.Equal(t, app.OrderUnknown, o2.State)
-	})
-
 	t.Run("returns not found error", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -456,5 +416,439 @@ func TestCalcOrdersEscrow(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 22.4, got)
+	})
+}
+
+func TestReplaceCharacterMarketOrders(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("should create new orders", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+		location := factory.CreateEveLocationStructure()
+		region := factory.CreateEveRegion()
+		typ := factory.CreateEveType()
+		issued := time.Now().UTC()
+		arg := storage.CharacterMarketOrderParams{
+			Duration:      3,
+			Escrow:        optional.New(234.56),
+			IsBuyOrder:    optional.New(true),
+			IsCorporation: true,
+			Issued:        issued,
+			LocationID:    location.ID,
+			MinVolume:     optional.New[int64](2),
+			OrderID:       42,
+			OwnerID:       owner.ID,
+			Price:         123.45,
+			Range:         "station",
+			RegionID:      region.ID,
+			State:         app.OrderOpen,
+			TypeID:        typ.ID,
+			VolumeRemains: 5,
+			VolumeTotal:   10,
+		}
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o, err := st.GetCharacterMarketOrder(t.Context(), c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, 3, o.Duration)
+		xassert.EqualOptional(t, 234.56, o.Escrow)
+		xassert.EqualOptional(t, true, o.IsBuyOrder)
+		xassert.Equal(t, true, o.IsCorporation)
+		assert.True(t, issued.Equal(o.Issued), "got %q, wanted %q", o.Issued, issued)
+		xassert.Equal(t, location.ID, o.Location.ID)
+		xassert.EqualOptional(t, 2, o.MinVolume)
+		xassert.Equal(t, owner.ID, o.Owner.ID)
+		xassert.Equal(t, 123.45, o.Price)
+		xassert.Equal(t, "station", o.Range)
+		xassert.Equal(t, region.ID, o.Region.ID)
+		xassert.Equal(t, app.OrderOpen, o.State)
+		xassert.Equal(t, typ.ID, o.Type.ID)
+		xassert.Equal(t, 5, o.VolumeRemains)
+		xassert.Equal(t, 10, o.VolumeTotal)
+	})
+
+	t.Run("should report no change when orders are unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+		location := factory.CreateEveLocationStructure()
+		region := factory.CreateEveRegion()
+		typ := factory.CreateEveType()
+		args := []storage.CharacterMarketOrderParams{
+			{
+				Duration:      3,
+				Escrow:        optional.New(234.56),
+				IsBuyOrder:    optional.New(true),
+				Issued:        time.Now().In(time.FixedZone("test", 3600)), // differs from UTC after the DB round trip
+				LocationID:    location.ID,
+				OrderID:       42,
+				OwnerID:       owner.ID,
+				Price:         123.45,
+				RegionID:      region.ID,
+				State:         app.OrderOpen,
+				TypeID:        typ.ID,
+				VolumeRemains: 5,
+				VolumeTotal:   10,
+			},
+			{
+				Duration:      3,
+				Issued:        time.Now().Add(-48 * time.Hour),
+				LocationID:    location.ID,
+				OrderID:       43,
+				OwnerID:       owner.ID,
+				Price:         99.5,
+				RegionID:      region.ID,
+				State:         app.OrderExpired,
+				TypeID:        typ.ID,
+				VolumeRemains: 1,
+				VolumeTotal:   10,
+			},
+		}
+		_, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, args)
+		require.NoError(t, err)
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, args)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+
+	t.Run("should store an order when a changeable column has changed", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			change func(arg *storage.CharacterMarketOrderParams)
+		}{
+			{"escrow", func(arg *storage.CharacterMarketOrderParams) {
+				arg.Escrow = optional.New(1_000.5)
+			}},
+			{"escrow removed", func(arg *storage.CharacterMarketOrderParams) {
+				arg.Escrow = optional.Optional[float64]{}
+			}},
+			{"issued", func(arg *storage.CharacterMarketOrderParams) {
+				arg.Issued = arg.Issued.Add(time.Hour) // editing an order resets issued
+			}},
+			{"price", func(arg *storage.CharacterMarketOrderParams) {
+				arg.Price = 200.25
+			}},
+			{"state", func(arg *storage.CharacterMarketOrderParams) {
+				arg.State = app.OrderCancelled
+			}},
+			{"volume remains", func(arg *storage.CharacterMarketOrderParams) {
+				arg.VolumeRemains = 4
+			}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				testutil.MustTruncateTables(db)
+				c := factory.CreateCharacter()
+				owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+				location := factory.CreateEveLocationStructure()
+				region := factory.CreateEveRegion()
+				typ := factory.CreateEveType()
+				arg := storage.CharacterMarketOrderParams{
+					Duration:      3,
+					Escrow:        optional.New(234.56),
+					IsBuyOrder:    optional.New(true),
+					Issued:        time.Now().UTC(),
+					LocationID:    location.ID,
+					OrderID:       42,
+					OwnerID:       owner.ID,
+					Price:         123.45,
+					RegionID:      region.ID,
+					State:         app.OrderOpen,
+					TypeID:        typ.ID,
+					VolumeRemains: 5,
+					VolumeTotal:   10,
+				}
+				_, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+				require.NoError(t, err)
+				tc.change(&arg)
+				// when
+				changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+				// then
+				require.NoError(t, err)
+				assert.True(t, changed)
+				o, err := st.GetCharacterMarketOrder(t.Context(), c.ID, 42)
+				require.NoError(t, err)
+				xassert.Equal(t, arg.Escrow, o.Escrow)
+				assert.True(t, arg.Issued.Equal(o.Issued), "got %q, wanted %q", o.Issued, arg.Issued)
+				xassert.Equal(t, arg.Price, o.Price)
+				xassert.Equal(t, arg.State, o.State)
+				xassert.Equal(t, arg.VolumeRemains, o.VolumeRemains)
+			})
+		}
+	})
+
+	t.Run("should ignore changes to columns which can not change", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		owner := factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+		location := factory.CreateEveLocationStructure()
+		region := factory.CreateEveRegion()
+		typ := factory.CreateEveType()
+		arg := storage.CharacterMarketOrderParams{
+			Duration:      3,
+			Issued:        time.Now().UTC(),
+			LocationID:    location.ID,
+			OrderID:       42,
+			OwnerID:       owner.ID,
+			Price:         123.45,
+			Range:         "station",
+			RegionID:      region.ID,
+			State:         app.OrderOpen,
+			TypeID:        typ.ID,
+			VolumeRemains: 5,
+			VolumeTotal:   10,
+		}
+		_, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+		require.NoError(t, err)
+		arg.Range = "region"
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		o, err := st.GetCharacterMarketOrder(t.Context(), c.ID, 42)
+		require.NoError(t, err)
+		xassert.Equal(t, "station", o.Range)
+	})
+
+	t.Run("should mark open orders missing in args as unknown", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		open := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			State:       app.OrderOpen,
+		})
+		expired := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			State:       app.OrderExpired,
+		})
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, nil)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		o1, err := st.GetCharacterMarketOrder(t.Context(), c.ID, open.OrderID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.OrderUnknown, o1.State)
+		o2, err := st.GetCharacterMarketOrder(t.Context(), c.ID, expired.OrderID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.OrderExpired, o2.State)
+	})
+
+	t.Run("should delete closed orders older than retention", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		old := time.Now().UTC().Add(-48 * time.Hour)
+		recent := time.Now().UTC().Add(-time.Hour)
+		openOld := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      old,
+			State:       app.OrderOpen,
+		})
+		expiredRecent := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      recent,
+			State:       app.OrderExpired,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      old,
+			State:       app.OrderExpired,
+		})
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      old,
+			State:       app.OrderOpen,
+		})
+		cancelledOldInArgs := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      old,
+			State:       app.OrderOpen,
+		})
+		args := []storage.CharacterMarketOrderParams{
+			{
+				Duration:      openOld.Duration,
+				Issued:        openOld.Issued,
+				LocationID:    openOld.Location.ID,
+				OrderID:       openOld.OrderID,
+				OwnerID:       openOld.Owner.ID,
+				Price:         openOld.Price,
+				RegionID:      openOld.Region.ID,
+				State:         app.OrderOpen,
+				TypeID:        openOld.Type.ID,
+				VolumeRemains: openOld.VolumeRemains,
+				VolumeTotal:   openOld.VolumeTotal,
+			},
+			{
+				Duration:      cancelledOldInArgs.Duration,
+				Issued:        cancelledOldInArgs.Issued,
+				LocationID:    cancelledOldInArgs.Location.ID,
+				OrderID:       cancelledOldInArgs.OrderID,
+				OwnerID:       cancelledOldInArgs.Owner.ID,
+				Price:         cancelledOldInArgs.Price,
+				RegionID:      cancelledOldInArgs.Region.ID,
+				State:         app.OrderCancelled,
+				TypeID:        cancelledOldInArgs.Type.ID,
+				VolumeRemains: cancelledOldInArgs.VolumeRemains,
+				VolumeTotal:   cancelledOldInArgs.VolumeTotal,
+			},
+			{
+				Duration:      3,
+				Issued:        old,
+				LocationID:    openOld.Location.ID,
+				OrderID:       openOld.OrderID + 100,
+				OwnerID:       openOld.Owner.ID,
+				Price:         1.5,
+				RegionID:      openOld.Region.ID,
+				State:         app.OrderExpired,
+				TypeID:        openOld.Type.ID,
+				VolumeRemains: 1,
+				VolumeTotal:   2,
+			},
+		}
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 24*time.Hour, args)
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterMarketOrderIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(openOld.OrderID, expiredRecent.OrderID), got)
+	})
+
+	t.Run("should keep old closed orders when retention is zero", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      time.Now().UTC().Add(-365 * 24 * time.Hour),
+			State:       app.OrderExpired,
+		})
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		got, err := st.ListCharacterMarketOrderIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(o.OrderID), got)
+	})
+
+	t.Run("should report no change when there are no orders", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 24*time.Hour, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
+
+	t.Run("should not touch orders of other characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		other := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c2.ID,
+			Issued:      time.Now().UTC().Add(-48 * time.Hour),
+			State:       app.OrderOpen,
+		})
+		// when
+		changed, err := st.ReplaceCharacterMarketOrders(t.Context(), c1.ID, 24*time.Hour, nil)
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		o, err := st.GetCharacterMarketOrder(t.Context(), c2.ID, other.OrderID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.OrderOpen, o.State)
+	})
+
+	t.Run("should keep orders unchanged when replace fails", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		existing := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			State:       app.OrderOpen,
+		})
+		arg := storage.CharacterMarketOrderParams{
+			Duration:      3,
+			Issued:        time.Now().UTC(),
+			LocationID:    existing.Location.ID,
+			OrderID:       existing.OrderID + 1,
+			OwnerID:       existing.Owner.ID,
+			Price:         1.5,
+			RegionID:      existing.Region.ID,
+			State:         app.OrderOpen,
+			TypeID:        42, // has no eve type
+			VolumeRemains: 1,
+			VolumeTotal:   2,
+		}
+		// when
+		_, err := st.ReplaceCharacterMarketOrders(t.Context(), c.ID, 0, []storage.CharacterMarketOrderParams{arg})
+		// then
+		require.Error(t, err)
+		got, err := st.ListCharacterMarketOrderIDs(t.Context(), c.ID)
+		require.NoError(t, err)
+		xassert.Equal(t, set.Of(existing.OrderID), got)
+		o, err := st.GetCharacterMarketOrder(t.Context(), c.ID, existing.OrderID)
+		require.NoError(t, err)
+		xassert.Equal(t, app.OrderOpen, o.State) // not marked as unknown
+	})
+
+	t.Run("should return error when args are invalid", func(t *testing.T) {
+		valid := storage.CharacterMarketOrderParams{
+			Duration:   3,
+			Issued:     time.Now(),
+			LocationID: 1,
+			OrderID:    2,
+			OwnerID:    3,
+			RegionID:   4,
+			TypeID:     5,
+		}
+		cases := []struct {
+			name        string
+			characterID int64
+			retention   time.Duration
+			change      func(arg *storage.CharacterMarketOrderParams)
+		}{
+			{"zero character ID", 0, 0, func(_ *storage.CharacterMarketOrderParams) {}},
+			{"negative retention", 1, -time.Hour, func(_ *storage.CharacterMarketOrderParams) {}},
+			{"zero duration", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.Duration = 0 }},
+			{"zero issued", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.Issued = time.Time{} }},
+			{"zero location ID", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.LocationID = 0 }},
+			{"zero order ID", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.OrderID = 0 }},
+			{"zero owner ID", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.OwnerID = 0 }},
+			{"zero region ID", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.RegionID = 0 }},
+			{"zero type ID", 1, 0, func(arg *storage.CharacterMarketOrderParams) { arg.TypeID = 0 }},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// given
+				arg := valid
+				tc.change(&arg)
+				// when
+				_, err := st.ReplaceCharacterMarketOrders(t.Context(), tc.characterID, tc.retention, []storage.CharacterMarketOrderParams{arg})
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }

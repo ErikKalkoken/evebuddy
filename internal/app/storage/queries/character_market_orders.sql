@@ -57,6 +57,19 @@ FROM
 WHERE
     character_id = ?;
 
+-- name: ListCharacterMarketOrderStates :many
+SELECT
+    order_id,
+    escrow,
+    issued,
+    price,
+    state,
+    volume_remains
+FROM
+    character_market_orders
+WHERE
+    character_id = ?;
+
 -- name: ListCharacterMarketOrders :many
 SELECT
     sqlc.embed(cmo),
@@ -145,6 +158,7 @@ VALUES
 ON CONFLICT (character_id, order_id) DO UPDATE
 SET
     escrow = ?3,
+    issued = ?6,
     price = ?11,
     state = ?14,
     volume_remains = ?16;

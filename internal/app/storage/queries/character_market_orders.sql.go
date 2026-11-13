@@ -292,6 +292,59 @@ func (q *Queries) ListCharacterMarketOrderIDs(ctx context.Context, characterID i
 	return items, nil
 }
 
+const listCharacterMarketOrderStates = `-- name: ListCharacterMarketOrderStates :many
+SELECT
+    order_id,
+    escrow,
+    issued,
+    price,
+    state,
+    volume_remains
+FROM
+    character_market_orders
+WHERE
+    character_id = ?
+`
+
+type ListCharacterMarketOrderStatesRow struct {
+	OrderID       int64
+	Escrow        sql.NullFloat64
+	Issued        time.Time
+	Price         float64
+	State         string
+	VolumeRemains int64
+}
+
+func (q *Queries) ListCharacterMarketOrderStates(ctx context.Context, characterID int64) ([]ListCharacterMarketOrderStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterMarketOrderStates, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterMarketOrderStatesRow
+	for rows.Next() {
+		var i ListCharacterMarketOrderStatesRow
+		if err := rows.Scan(
+			&i.OrderID,
+			&i.Escrow,
+			&i.Issued,
+			&i.Price,
+			&i.State,
+			&i.VolumeRemains,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterMarketOrders = `-- name: ListCharacterMarketOrders :many
 SELECT
     cmo.id, cmo.character_id, cmo.duration, cmo.escrow, cmo.is_buy_order, cmo.is_corporation, cmo.issued, cmo.location_id, cmo.min_volume, cmo.order_id, cmo.owner_id, cmo.price, cmo."range", cmo.region_id, cmo.state, cmo.type_id, cmo.volume_remains, cmo.volume_total,
@@ -445,6 +498,7 @@ VALUES
 ON CONFLICT (character_id, order_id) DO UPDATE
 SET
     escrow = ?3,
+    issued = ?6,
     price = ?11,
     state = ?14,
     volume_remains = ?16

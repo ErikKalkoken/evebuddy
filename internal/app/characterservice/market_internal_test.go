@@ -165,6 +165,50 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 			xassert.Equal(t, app.OrderExpired, o2.State)
 		}
 	})
+	t.Run("should report no change when orders are unchanged", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		o1 := factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      time.Now().UTC().Truncate(time.Second), // RFC3339 has no fractional seconds
+			State:       app.OrderOpen,
+		})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{{
+				"duration":       o1.Duration,
+				"is_buy_order":   o1.IsBuyOrder,
+				"is_corporation": o1.IsCorporation,
+				"issued":         o1.Issued.Format(time.RFC3339),
+				"location_id":    o1.Location.ID,
+				"order_id":       o1.OrderID,
+				"price":          o1.Price,
+				"range":          o1.Range,
+				"region_id":      o1.Region.ID,
+				"type_id":        o1.Type.ID,
+				"volume_remain":  o1.VolumeRemains,
+				"volume_total":   o1.VolumeTotal,
+			}}),
+		)
+		// when
+		changed, err := s.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			forceUpdate: true,
+			section:     app.SectionCharacterMarketOrders,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+	})
 	t.Run("should mark orphaned orders with state unknown", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
@@ -266,6 +310,47 @@ func TestUpdateCharacterMarketOrdersESI(t *testing.T) {
 		require.NoError(t, err)
 		want := set.Of(o1.OrderID)
 		xassert.Equal(t, want, got)
+	})
+	t.Run("should delete stale orders when orders from ESI are unchanged", func(t *testing.T) {
+		// given
+		settings := &testutil.SettingsStub{MarketOrderRetentionDaysDefault: 30}
+		s2 := NewFake(Params{Settings: settings, Storage: st})
+		testutil.MustTruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateEveEntity(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders/history", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/characters/%d/orders", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}),
+		)
+		_, err := s2.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
+		})
+		require.NoError(t, err)
+		factory.CreateCharacterMarketOrder(storage.UpdateOrCreateCharacterMarketOrderParams{
+			CharacterID: c.ID,
+			Issued:      time.Now().Add(-time.Hour * 24 * 31),
+			State:       app.OrderExpired,
+		})
+		// when
+		changed, err := s2.updateMarketOrdersESI(ctx, characterSectionUpdateParams{
+			characterID: c.ID,
+			section:     app.SectionCharacterMarketOrders,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		got, err := st.ListCharacterMarketOrderIDs(ctx, c.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got)
 	})
 	t.Run("should ignore invalid orders", func(t *testing.T) {
 		// given

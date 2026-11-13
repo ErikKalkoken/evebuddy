@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"time"
 
 	"github.com/ErikKalkoken/go-set"
@@ -15,7 +14,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
-	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func (s *CharacterService) ListAllMarketOrder(ctx context.Context, isBuyOrders bool) ([]*app.CharacterMarketOrder, error) {
@@ -28,7 +26,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 	}
 	const openState = "open"
 	changed, err := s.updateSectionIfChanged(
-		ctx, arg, false,
+		ctx, arg, true, // orders become stale over time, also when the data from ESI has not changed
 		func(ctx context.Context, characterID int64) (any, error) {
 			ctx = xgoesi.NewContextWithOperationID(ctx, "GetCharactersCharacterIdOrders")
 			open, _, err := s.esiClient.MarketAPI.GetCharactersCharacterIdOrders(ctx, characterID).Execute()
@@ -103,6 +101,7 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 			if err := g.Wait(); err != nil {
 				return false, err
 			}
+			args := make([]storage.CharacterMarketOrderParams, 0, len(orders))
 			for _, o := range orders {
 				var state app.MarketOrderState
 				switch o.State {
@@ -121,13 +120,14 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 				} else {
 					ownerID = characterID
 				}
-				err := s.st.UpdateOrCreateCharacterMarketOrder(ctx, storage.UpdateOrCreateCharacterMarketOrderParams{
-					CharacterID:   characterID,
+				args = append(args, storage.CharacterMarketOrderParams{
 					Duration:      o.Duration,
+					Escrow:        optional.FromPtr(o.Escrow),
 					IsBuyOrder:    optional.FromPtr(o.IsBuyOrder),
 					IsCorporation: o.IsCorporation,
 					Issued:        o.Issued,
 					LocationID:    o.LocationId,
+					MinVolume:     optional.FromPtr(o.MinVolume),
 					OrderID:       o.OrderId,
 					OwnerID:       ownerID,
 					Price:         o.Price,
@@ -137,67 +137,10 @@ func (s *CharacterService) updateMarketOrdersESI(ctx context.Context, arg charac
 					TypeID:        o.TypeId,
 					VolumeRemains: o.VolumeRemain,
 					VolumeTotal:   o.VolumeTotal,
-					Escrow:        optional.FromPtr(o.Escrow),
-					MinVolume:     optional.FromPtr(o.MinVolume),
 				})
-				if err != nil {
-					return false, err
-				}
 			}
-			slog.Info("Stored updated market orders", "characterID", characterID, "count", len(orders))
-
-			// Mark orphaned orders
-			incoming := set.Collect(maps.Keys(orders))
-			current, err := s.st.ListCharacterMarketOrders(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			currentActive := set.Collect(xiter.Map(xiter.FilterSlice(current, func(x *app.CharacterMarketOrder) bool {
-				return x.State == app.OrderOpen
-			}), func(x *app.CharacterMarketOrder) int64 {
-				return x.OrderID
-			}))
-			orphans := set.Difference(currentActive, incoming)
-			if orphans.Size() > 0 {
-				// Orders might disappear from the "order" response,
-				// but not yet appear in the "history" response due to caching.
-				// We mark this with unknown state.
-				// They should be updated later with the correct state once the history cache has expired.
-				err := s.st.UpdateCharacterMarketOrderState(ctx, storage.UpdateCharacterMarketOrderStateParams{
-					CharacterID: characterID,
-					OrderIDs:    orphans,
-					State:       app.OrderUnknown,
-				})
-				if err != nil {
-					return false, err
-				}
-				slog.Info("Marked orphaned market orders", "characterID", characterID, "count", orphans.Size())
-			}
-
-			// Delete stale orders
 			retention := time.Duration(s.settings.MarketOrderRetentionDays()) * time.Hour * 24
-			if retention == 0 {
-				return true, nil
-			}
-
-			current2, err := s.st.ListCharacterMarketOrders(ctx, characterID)
-			if err != nil {
-				return false, err
-			}
-			stale := set.Collect(xiter.Map(xiter.FilterSlice(current2, func(x *app.CharacterMarketOrder) bool {
-				return x.State != app.OrderOpen && time.Since(x.Issued) > retention
-			}), func(x *app.CharacterMarketOrder) int64 {
-				return x.OrderID
-			}))
-			if stale.Size() > 0 {
-				err := s.st.DeleteCharacterMarketOrders(ctx, characterID, stale)
-				if err != nil {
-					return false, err
-				}
-				slog.Info("Deleted stale market orders", "characterID", characterID, "count", stale.Size())
-			}
-
-			return true, nil
+			return s.st.ReplaceCharacterMarketOrders(ctx, characterID, retention, args)
 		},
 	)
 	if err != nil {
