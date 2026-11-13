@@ -27,6 +27,14 @@ SELECT
 FROM
     eve_corporations;
 
+-- name: ListEveCorporationIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_corporations
+WHERE
+    id IN (sqlc.slice('ids'));
+
 -- name: UpdateOrCreateEveCorporation :exec
 INSERT INTO
     eve_corporations (

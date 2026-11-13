@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/go-set"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -119,23 +120,164 @@ func TestCharacterLoyaltyPointEntry(t *testing.T) {
 		}))
 		xassert.Equal(t, want, got)
 	})
-	t.Run("can delete entries for a character", func(t *testing.T) {
+}
+
+func TestReplaceCharacterLoyaltyPointEntries(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	ctx := context.Background()
+	loyaltyPoints := func(t *testing.T, characterID int64) map[int64]int64 {
+		t.Helper()
+		oo, err := st.ListCharacterLoyaltyPointEntries(ctx, characterID)
+		require.NoError(t, err)
+		m := make(map[int64]int64)
+		for _, o := range oo {
+			m[o.Corporation.ID] = o.LoyaltyPoints
+		}
+		return m
+	}
+	t.Run("can replace entries", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		kept := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   c.ID,
+			LoyaltyPoints: 100,
+		})
+		updated := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   c.ID,
+			LoyaltyPoints: 200,
+		})
+		factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID: c.ID,
+		})
+		other := factory.CreateCharacterLoyaltyPointEntry()
+		added := factory.CreateEveCorporation()
+		// when
+		changed, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, c.ID, map[int64]int64{
+			kept.Corporation.ID:    100,
+			updated.Corporation.ID: 250,
+			added.ID:               300,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		want := map[int64]int64{
+			kept.Corporation.ID:    100,
+			updated.Corporation.ID: 250,
+			added.ID:               300,
+		}
+		xassert.Equal(t, want, loyaltyPoints(t, c.ID))
+		want2 := map[int64]int64{other.Corporation.ID: other.LoyaltyPoints}
+		xassert.Equal(t, want2, loyaltyPoints(t, other.CharacterID))
+	})
+	t.Run("should report no change when entries are the same", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   c.ID,
+			LoyaltyPoints: 100,
+		})
+		// when
+		changed, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, c.ID, map[int64]int64{
+			o.Corporation.ID: 100,
+		})
+		// then
+		require.NoError(t, err)
+		assert.False(t, changed)
+		want := map[int64]int64{o.Corporation.ID: 100}
+		xassert.Equal(t, want, loyaltyPoints(t, c.ID))
+	})
+	t.Run("should remove all entries when replaced with empty map", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID: c.ID,
+		})
+		// when
+		changed, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, c.ID, map[int64]int64{})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.Empty(t, loyaltyPoints(t, c.ID))
+	})
+	t.Run("should remove entries in chunks", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		old := st.MaxIDsPerQuery
+		st.MaxIDsPerQuery = 1
+		defer func() {
+			st.MaxIDsPerQuery = old
+		}()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID: c.ID,
+		})
+		factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID: c.ID,
+		})
+		o3 := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   c.ID,
+			LoyaltyPoints: 100,
+		})
+		// when
+		changed, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, c.ID, map[int64]int64{
+			o3.Corporation.ID: 100,
+		})
+		// then
+		require.NoError(t, err)
+		assert.True(t, changed)
+		want := map[int64]int64{o3.Corporation.ID: 100}
+		xassert.Equal(t, want, loyaltyPoints(t, c.ID))
+	})
+	t.Run("should keep entries unchanged when replace fails", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
 		c := factory.CreateCharacter()
 		o1 := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
-			CharacterID: c.ID,
+			CharacterID:   c.ID,
+			LoyaltyPoints: 100,
 		})
 		o2 := factory.CreateCharacterLoyaltyPointEntry(storage.UpdateOrCreateCharacterLoyaltyPointEntryParams{
-			CharacterID: c.ID,
+			CharacterID:   c.ID,
+			LoyaltyPoints: 200,
 		})
+		const unknownID = 42 // has no eve corporation
 		// when
-		err := st.DeleteCharacterLoyaltyPointEntries(ctx, c.ID, set.Of(o2.Corporation.ID))
+		_, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, c.ID, map[int64]int64{
+			o1.Corporation.ID: 100,
+			unknownID:         300,
+		})
 		// then
-		require.NoError(t, err)
-		want := set.Of(o1.Corporation.ID)
-		got, err := st.ListCharacterLoyaltyPointEntryIDs(ctx, c.ID)
-		require.NoError(t, err)
-		xassert.Equal(t, want, got)
+		require.Error(t, err)
+		want := map[int64]int64{
+			o1.Corporation.ID: 100,
+			o2.Corporation.ID: 200,
+		}
+		xassert.Equal(t, want, loyaltyPoints(t, c.ID))
+	})
+	t.Run("should return error when replacing with invalid IDs", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c := factory.CreateCharacter()
+		corporation := factory.CreateEveCorporation()
+		cases := []struct {
+			name        string
+			characterID int64
+			points      map[int64]int64
+		}{
+			{"zero character ID", 0, map[int64]int64{corporation.ID: 100}},
+			{"zero corporation ID", c.ID, map[int64]int64{corporation.ID: 100, 0: 200}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// when
+				_, err := st.ReplaceCharacterLoyaltyPointEntries(ctx, tc.characterID, tc.points)
+				// then
+				assert.ErrorIs(t, err, app.ErrInvalid)
+			})
+		}
 	})
 }

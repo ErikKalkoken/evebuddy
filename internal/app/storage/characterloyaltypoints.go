@@ -12,27 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) DeleteCharacterLoyaltyPointEntries(ctx context.Context, characterID int64, corporationIDs set.Set[int64]) error {
-	wrapErr := func(err error) error {
-		return fmt.Errorf("DeleteCharacterLoyaltyPointEntriesByID for character %d and job IDs: %v: %w", characterID, corporationIDs, err)
-	}
-	if characterID == 0 {
-		return wrapErr(app.ErrInvalid)
-	}
-	if corporationIDs.Size() == 0 {
-		return nil
-	}
-	err := st.qRW.DeleteCharacterLoyaltyPointEntries(ctx, queries.DeleteCharacterLoyaltyPointEntriesParams{
-		CharacterID:    characterID,
-		CorporationIds: slices.Collect(corporationIDs.All()),
-	})
-	if err != nil {
-		return wrapErr(err)
-	}
-	slog.Info("Loyalty Points Entries deleted", "characterID", characterID, "corporationIDs", corporationIDs)
-	return nil
-}
-
 func (st *Storage) GetCharacterLoyaltyPointEntry(ctx context.Context, characterID int64, corporationID int64) (*app.CharacterLoyaltyPointEntry, error) {
 	r, err := st.qRO.GetCharacterLoyaltyPointEntry(ctx, queries.GetCharacterLoyaltyPointEntryParams{
 		CharacterID:   characterID,
@@ -100,6 +79,74 @@ func (st *Storage) ListCharacterLoyaltyPointEntries(ctx context.Context, charact
 		)
 	}
 	return oo, nil
+}
+
+// ReplaceCharacterLoyaltyPointEntries replaces the loyalty points of a character
+// with points, which maps corporation IDs to loyalty points.
+// It writes only when something changed and reports whether it did.
+func (st *Storage) ReplaceCharacterLoyaltyPointEntries(ctx context.Context, characterID int64, points map[int64]int64) (bool, error) {
+	wrapErr := func(err error) error {
+		return fmt.Errorf("ReplaceCharacterLoyaltyPointEntries: character %d: %w", characterID, err)
+	}
+	if characterID == 0 {
+		return false, wrapErr(app.ErrInvalid)
+	}
+	if _, ok := points[0]; ok {
+		return false, wrapErr(app.ErrInvalid)
+	}
+	rows, err := st.qRO.ListCharacterLoyaltyPointStates(ctx, characterID)
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	current := make(map[int64]int64, len(rows))
+	for _, r := range rows {
+		current[r.CorporationID] = r.LoyaltyPoints
+	}
+	var obsolete []int64
+	for id := range current {
+		if _, ok := points[id]; !ok {
+			obsolete = append(obsolete, id)
+		}
+	}
+	var changed []int64
+	for id, p := range points {
+		if p2, ok := current[id]; !ok || p != p2 {
+			changed = append(changed, id)
+		}
+	}
+	if len(obsolete) == 0 && len(changed) == 0 {
+		return false, nil
+	}
+	tx, err := st.dbRW.Begin()
+	if err != nil {
+		return false, wrapErr(err)
+	}
+	defer tx.Rollback()
+	qtx := st.qRW.WithTx(tx)
+	for ids := range slices.Chunk(obsolete, st.MaxIDsPerQuery) {
+		err := qtx.DeleteCharacterLoyaltyPointEntries(ctx, queries.DeleteCharacterLoyaltyPointEntriesParams{
+			CharacterID:    characterID,
+			CorporationIds: ids,
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("delete %d entries: %w", len(ids), err))
+		}
+	}
+	for _, id := range changed {
+		err := qtx.UpdateOrCreateCharacterLoyaltyPointEntry(ctx, queries.UpdateOrCreateCharacterLoyaltyPointEntryParams{
+			CharacterID:   characterID,
+			CorporationID: id,
+			LoyaltyPoints: points[id],
+		})
+		if err != nil {
+			return false, wrapErr(fmt.Errorf("update or create entry for corporation %d: %w", id, err))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, wrapErr(err)
+	}
+	slog.Info("Loyalty points entries replaced", "characterID", characterID, "changed", len(changed), "deleted", len(obsolete))
+	return true, nil
 }
 
 func characterLoyaltyPointEntryFromDBModel(

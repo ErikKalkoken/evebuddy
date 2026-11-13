@@ -224,6 +224,44 @@ func (q *Queries) ListCharacterLoyaltyPointEntryIDs(ctx context.Context, charact
 	return items, nil
 }
 
+const listCharacterLoyaltyPointStates = `-- name: ListCharacterLoyaltyPointStates :many
+SELECT
+    corporation_id,
+    loyalty_points
+FROM
+    character_loyalty_point_entries
+WHERE
+    character_id = ?
+`
+
+type ListCharacterLoyaltyPointStatesRow struct {
+	CorporationID int64
+	LoyaltyPoints int64
+}
+
+func (q *Queries) ListCharacterLoyaltyPointStates(ctx context.Context, characterID int64) ([]ListCharacterLoyaltyPointStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterLoyaltyPointStates, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterLoyaltyPointStatesRow
+	for rows.Next() {
+		var i ListCharacterLoyaltyPointStatesRow
+		if err := rows.Scan(&i.CorporationID, &i.LoyaltyPoints); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrCreateCharacterLoyaltyPointEntry = `-- name: UpdateOrCreateCharacterLoyaltyPointEntry :exec
 INSERT INTO
     character_loyalty_point_entries (character_id, corporation_id, loyalty_points)

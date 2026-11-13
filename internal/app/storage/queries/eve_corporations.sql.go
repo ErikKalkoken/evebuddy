@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const getEveCorporation = `-- name: GetEveCorporation :one
@@ -90,6 +91,48 @@ FROM
 
 func (q *Queries) ListEveCorporationIDs(ctx context.Context) ([]int64, error) {
 	rows, err := q.db.QueryContext(ctx, listEveCorporationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveCorporationIDsForIDs = `-- name: ListEveCorporationIDsForIDs :many
+SELECT
+    id
+FROM
+    eve_corporations
+WHERE
+    id IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) ListEveCorporationIDsForIDs(ctx context.Context, ids []int64) ([]int64, error) {
+	query := listEveCorporationIDsForIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
