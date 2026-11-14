@@ -11,6 +11,12 @@ func (s *EVEUniverseService) ListSkillGroups(ctx context.Context) ([]*app.EveSki
 	return s.st.ListEveSkillGroups(ctx)
 }
 
+// ListSkillTypes returns the types of all published skills.
+// It is a lighter alternative to ListSkills when only names are needed.
+func (s *EVEUniverseService) ListSkillTypes(ctx context.Context) ([]*app.EveType, error) {
+	return s.st.ListEveSkills(ctx)
+}
+
 var skillDogmaAttributes = []struct {
 	typeID int64
 	level  int64

@@ -220,7 +220,7 @@ func NewDesktopUI(params UIParams) *DesktopUI {
 		"Skills",
 		newContentPage("Skills", container.NewAppTabs(
 			ui.NewTabItem("Training", u.training),
-			ui.NewTabItem("Plans", u.skillPlans),
+			ui.NewTabItem("Sets", u.skillSets),
 			ui.NewTabItem("Search", u.skillSearch),
 		)),
 	)

@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"slices"
 
-	_ "github.com/mattn/go-sqlite3" // required for this package to work in tests
+	"github.com/mattn/go-sqlite3"
 
 	"github.com/ErikKalkoken/go-set"
 
@@ -164,6 +164,11 @@ func convertGetError(err error) error {
 		err = app.ErrNotFound
 	}
 	return err
+}
+
+func isUniqueViolation(err error) bool {
+	var sqliteErr sqlite3.Error
+	return errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique
 }
 
 // missingIDs returns the IDs not found by listForIDs, querying in chunks.
