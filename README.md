@@ -90,6 +90,7 @@ The following is a detailed list of EVE Buddy's features. Most features are avai
   - Location: Browse the location of all characters and their current ships
   - Mails: A unified mails browser for all characters
   - Skills: Keep track of the training status for all characters, search for skills across all characters and export training status to clipboard or file
+  - Skill sets: Check which characters meet the requirements of your own skill sets, e.g. for flying a specific ship. Create skill sets by searching for skills or by pasting a skill list, and filter characters by status and tags
   - Structures: Unified view of all corporation structures across all your corporations, with filtering by owner, system, region, type, state and services
   - Wealth: Charts showing wealth distribution across all characters
 

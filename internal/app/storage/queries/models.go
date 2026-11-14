@@ -814,3 +814,15 @@ type Setting struct {
 	Key   string
 	Value string
 }
+
+type SkillSet struct {
+	ID   int64
+	Name string
+}
+
+type SkillSetRequirement struct {
+	ID         int64
+	SkillSetID int64
+	TypeID     int64
+	Level      int64
+}

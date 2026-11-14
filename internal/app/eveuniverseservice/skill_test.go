@@ -35,6 +35,29 @@ func TestListSkillGroups(t *testing.T) {
 	})
 }
 
+func TestEveUniverseService_ListSkillTypes(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewEVEUniverseServiceFake(eveuniverseservice.Params{Storage: st})
+	t.Run("should return published skill types only", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		skillCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill, IsPublished: true})
+		skillGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: skillCategory.ID, IsPublished: true})
+		skill := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: skillGroup.ID, IsPublished: true})
+		factory.CreateEveType(storage.CreateEveTypeParams{GroupID: skillGroup.ID, IsPublished: false})
+		otherGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{IsPublished: true})
+		factory.CreateEveType(storage.CreateEveTypeParams{GroupID: otherGroup.ID, IsPublished: true})
+		// when
+		oo, err := s.ListSkillTypes(t.Context())
+		// then
+		require.NoError(t, err)
+		if assert.Len(t, oo, 1) {
+			assert.Equal(t, skill.ID, oo[0].ID)
+		}
+	})
+}
+
 func TestUpdateShipSkills(t *testing.T) {
 	db, st, factory := testutil.NewDBInMemory()
 	defer db.Close()

@@ -1043,6 +1043,7 @@ func (u *MobileUI) makeHomeNav() {
 		func() {
 			u.homeNav.Push(xwidget.NewAppBar("Skills", container.NewAppTabs(
 				ui.NewTabItem("Training", u.training),
+				ui.NewTabItem("Sets", u.skillSets),
 				ui.NewTabItem("Search", u.skillSearch),
 			)))
 		},
