@@ -127,6 +127,45 @@ func (q *Queries) ListCharacterTags(ctx context.Context) ([]CharacterTag, error)
 	return items, nil
 }
 
+const listCharacterTagsForAllCharacters = `-- name: ListCharacterTagsForAllCharacters :many
+SELECT
+    ct.character_id,
+    t.id, t.name
+FROM
+    characters_character_tags ct
+    JOIN character_tags t ON t.id = ct.tag_id
+ORDER BY
+    t.name
+`
+
+type ListCharacterTagsForAllCharactersRow struct {
+	CharacterID  int64
+	CharacterTag CharacterTag
+}
+
+func (q *Queries) ListCharacterTagsForAllCharacters(ctx context.Context) ([]ListCharacterTagsForAllCharactersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTagsForAllCharacters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterTagsForAllCharactersRow
+	for rows.Next() {
+		var i ListCharacterTagsForAllCharactersRow
+		if err := rows.Scan(&i.CharacterID, &i.CharacterTag.ID, &i.CharacterTag.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterTagsForCharacter = `-- name: ListCharacterTagsForCharacter :many
 SELECT
     t.id, t.name

@@ -72,3 +72,13 @@ WHERE
     ct.character_id = ?
 ORDER BY
     t.name;
+
+-- name: ListCharacterTagsForAllCharacters :many
+SELECT
+    ct.character_id,
+    sqlc.embed(t)
+FROM
+    characters_character_tags ct
+    JOIN character_tags t ON t.id = ct.tag_id
+ORDER BY
+    t.name;

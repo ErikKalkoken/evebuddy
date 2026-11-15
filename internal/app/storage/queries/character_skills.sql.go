@@ -102,6 +102,44 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 	return i, err
 }
 
+const listActiveSkillLevelsForAllCharacters = `-- name: ListActiveSkillLevelsForAllCharacters :many
+SELECT
+    character_id,
+    eve_type_id,
+    active_skill_level
+FROM
+    character_skills
+`
+
+type ListActiveSkillLevelsForAllCharactersRow struct {
+	CharacterID      int64
+	EveTypeID        int64
+	ActiveSkillLevel int64
+}
+
+func (q *Queries) ListActiveSkillLevelsForAllCharacters(ctx context.Context) ([]ListActiveSkillLevelsForAllCharactersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveSkillLevelsForAllCharacters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveSkillLevelsForAllCharactersRow
+	for rows.Next() {
+		var i ListActiveSkillLevelsForAllCharactersRow
+		if err := rows.Scan(&i.CharacterID, &i.EveTypeID, &i.ActiveSkillLevel); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllCharacterSkills = `-- name: ListAllCharacterSkills :many
 SELECT
     cs.id, cs.active_skill_level, cs.character_id, cs.eve_type_id, cs.skill_points_in_skill, cs.trained_skill_level,

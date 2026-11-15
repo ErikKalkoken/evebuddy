@@ -299,6 +299,40 @@ func TestListAllSkills(t *testing.T) {
 	})
 }
 
+func TestListActiveSkillLevelsForAllCharacters(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	cs := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list active skill levels across all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		et := factory.CreateEveType()
+		c1 := factory.CreateCharacter()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c1.ID,
+			TypeID:            et.ID,
+			ActiveSkillLevel:  3,
+			TrainedSkillLevel: 4,
+		})
+		c2 := factory.CreateCharacter()
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c2.ID,
+			TypeID:            et.ID,
+			ActiveSkillLevel:  5,
+			TrainedSkillLevel: 5,
+		})
+		// when
+		got, err := cs.ListActiveSkillLevelsForAllCharacters(ctx)
+		// then
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []app.CharacterActiveSkillLevel{
+			{CharacterID: c1.ID, TypeID: et.ID, Level: 3},
+			{CharacterID: c2.ID, TypeID: et.ID, Level: 5},
+		}, got)
+	})
+}
+
 func TestTotalTrainingTime(t *testing.T) {
 	db, st, factory := testutil.NewDBOnDisk(t)
 	defer db.Close()

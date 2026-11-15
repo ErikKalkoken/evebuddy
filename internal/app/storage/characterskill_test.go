@@ -315,6 +315,59 @@ func TestCharacterSkillLists(t *testing.T) {
 	})
 }
 
+func TestListActiveSkillLevelsForAllCharacters(t *testing.T) {
+	db, st, f := testutil.NewDBInMemory()
+	defer db.Close()
+
+	t.Run("returns active skill levels of all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		c1 := f.CreateCharacter()
+		c2 := f.CreateCharacter()
+		skill1 := f.CreateEveType()
+		skill2 := f.CreateEveType()
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c1.ID,
+			TypeID:            skill1.ID,
+			ActiveSkillLevel:  3,
+			TrainedSkillLevel: 5,
+		})
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c1.ID,
+			TypeID:            skill2.ID,
+			ActiveSkillLevel:  5,
+			TrainedSkillLevel: 5,
+		})
+		f.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c2.ID,
+			TypeID:            skill1.ID,
+			ActiveSkillLevel:  4,
+			TrainedSkillLevel: 4,
+		})
+		// when
+		got, err := st.ListActiveSkillLevelsForAllCharacters(t.Context())
+		// then
+		require.NoError(t, err)
+		want := set.Of(
+			app.CharacterActiveSkillLevel{CharacterID: c1.ID, TypeID: skill1.ID, Level: 3},
+			app.CharacterActiveSkillLevel{CharacterID: c1.ID, TypeID: skill2.ID, Level: 5},
+			app.CharacterActiveSkillLevel{CharacterID: c2.ID, TypeID: skill1.ID, Level: 4},
+		)
+		xassert.Equal(t, want, set.Of(got...))
+	})
+
+	t.Run("returns nothing when there are no skills", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		f.CreateCharacter()
+		// when
+		got, err := st.ListActiveSkillLevelsForAllCharacters(t.Context())
+		// then
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+}
+
 func TestListCharactersActiveSkillLevels(t *testing.T) {
 	db, st, f := testutil.NewDBInMemory()
 	defer db.Close()
