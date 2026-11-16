@@ -387,42 +387,36 @@ func TestNewContractRow_RequiresAttention(t *testing.T) {
 	corpMember := &app.EveEntity{ID: otherID, Category: app.EveEntityCharacter}
 	t.Run("expired contract issued for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			Contract: app.Contract{
-				DateExpired:       now.Add(-time.Hour),
-				ForCorporation:    true,
-				Issuer:            corpMember,
-				IssuerCorporation: myCorp,
-				Status:            app.ContractStatusOutstanding,
-			},
+			DateExpired:       now.Add(-time.Hour),
+			ForCorporation:    true,
+			Issuer:            corpMember,
+			IssuerCorporation: myCorp,
+			Status:            app.ContractStatusOutstanding,
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding, app.ContractCategoryRequiresAttention), r.categories)
 	})
 	t.Run("expired personal contract of a corporation member", func(t *testing.T) {
 		o := &app.CorporationContract{
-			Contract: app.Contract{
-				DateExpired:       now.Add(-time.Hour),
-				ForCorporation:    false,
-				Issuer:            corpMember,
-				IssuerCorporation: myCorp,
-				Status:            app.ContractStatusOutstanding,
-			},
+			DateExpired:       now.Add(-time.Hour),
+			ForCorporation:    false,
+			Issuer:            corpMember,
+			IssuerCorporation: myCorp,
+			Status:            app.ContractStatusOutstanding,
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		xassert.Equal(t, set.Of(app.ContractCategoryOutstanding), r.categories)
 	})
 	t.Run("overdue contract accepted for my corporation", func(t *testing.T) {
 		o := &app.CorporationContract{
-			Contract: app.Contract{
-				Acceptor:          optional.New(myCorp),
-				DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
-				DateExpired:       now.AddDate(0, 0, 10),
-				DaysToComplete:    optional.New[int64](1),
-				Issuer:            corpMember,
-				IssuerCorporation: myCorp,
-				Status:            app.ContractStatusInProgress,
-				Type:              app.ContractTypeCourier,
-			},
+			Acceptor:          optional.New(myCorp),
+			DateAccepted:      optional.New(now.AddDate(0, 0, -2)),
+			DateExpired:       now.AddDate(0, 0, 10),
+			DaysToComplete:    optional.New[int64](1),
+			Issuer:            corpMember,
+			IssuerCorporation: myCorp,
+			Status:            app.ContractStatusInProgress,
+			Type:              app.ContractTypeCourier,
 		}
 		r := newContractRow(&o.Contract, corporation.ID, corporation.NameOrZero(), true, myIDs, myCorpIDs)
 		xassert.Equal(t, set.Of(app.ContractCategoryInProgress, app.ContractCategoryRequiresAttention), r.categories)

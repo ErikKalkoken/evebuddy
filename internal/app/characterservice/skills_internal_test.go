@@ -689,10 +689,8 @@ func TestIsValidSkillQueueStatus(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			v := &app.CharacterSectionStatus{
-				SectionStatus: app.SectionStatus{
-					CompletedAt:  tc.completedAt,
-					ErrorMessage: tc.errMsg,
-				},
+				CompletedAt:  tc.completedAt,
+				ErrorMessage: tc.errMsg,
 			}
 			got := isValidSkillQueueStatus(v)
 			assert.Equal(t, tc.want, got)

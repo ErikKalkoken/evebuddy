@@ -766,13 +766,13 @@ func TestNotifyNewCommunications(t *testing.T) {
 	t.Run("should notify for an enabled notification type", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		var count int32
+		var count atomic.Int32
 		settings := &settingsWithNotificationTypes{types: set.Of(app.StructureUnderAttack.String())}
 		s := NewFake(Params{
 			Storage:  st,
 			Settings: settings,
 			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
+				count.Add(1)
 			},
 		})
 		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
@@ -785,18 +785,18 @@ func TestNotifyNewCommunications(t *testing.T) {
 		// when
 		s.notifyNewCommunications(ctx, n.CharacterID)
 		// then
-		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
+		xassert.Equal(t, int32(1), count.Load())
 	})
 	t.Run("should not notify when the notification type is not enabled", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		var count int32
+		var count atomic.Int32
 		settings := &settingsWithNotificationTypes{types: set.Of("SomeOtherType")}
 		s := NewFake(Params{
 			Storage:  st,
 			Settings: settings,
 			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
+				count.Add(1)
 			},
 		})
 		esiType, _ := storage.EveNotificationTypeToESIString(app.StructureUnderAttack)
@@ -807,7 +807,7 @@ func TestNotifyNewCommunications(t *testing.T) {
 		// when
 		s.notifyNewCommunications(ctx, n.CharacterID)
 		// then
-		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
+		xassert.Equal(t, int32(0), count.Load())
 	})
 }
 
@@ -818,11 +818,11 @@ func TestNotifyCharactersIfNeeded(t *testing.T) {
 	t.Run("should notify only watched characters with no active training", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		var count int32
+		var count atomic.Int32
 		s := NewFake(Params{
 			Storage: st,
 			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
+				count.Add(1)
 			},
 		})
 		factory.CreateCharacterFull(storage.CreateCharacterParams{IsTrainingWatched: true})
@@ -831,22 +831,22 @@ func TestNotifyCharactersIfNeeded(t *testing.T) {
 		err := s.notifyCharactersIfNeeded(ctx)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, int32(1), atomic.LoadInt32(&count))
+		xassert.Equal(t, int32(1), count.Load())
 	})
 	t.Run("should do nothing when there are no characters", func(t *testing.T) {
 		// given
 		testutil.MustTruncateTables(db)
-		var count int32
+		var count atomic.Int32
 		s := NewFake(Params{
 			Storage: st,
 			SendDesktopNotification: func(title, content string) {
-				atomic.AddInt32(&count, 1)
+				count.Add(1)
 			},
 		})
 		// when
 		err := s.notifyCharactersIfNeeded(ctx)
 		// then
 		require.NoError(t, err)
-		xassert.Equal(t, int32(0), atomic.LoadInt32(&count))
+		xassert.Equal(t, int32(0), count.Load())
 	})
 }

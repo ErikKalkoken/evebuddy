@@ -209,11 +209,9 @@ func TestStatusBar_Start(t *testing.T) {
 		sb := newStatusBar(du)
 		sb.start(ctx)
 		du.StatusCache().SetCharacterSection(&app.CharacterSectionStatus{
-			CharacterID: c.ID,
-			SectionStatus: app.SectionStatus{
-				ErrorMessage: "error",
-				Section:      app.SectionCharacterSkills,
-			},
+			CharacterID:  c.ID,
+			ErrorMessage: "error",
+			Section:      app.SectionCharacterSkills,
 		})
 		// when
 		du.Signals().CharacterSectionUpdated.Emit(ctx, app.CharacterSectionUpdated{

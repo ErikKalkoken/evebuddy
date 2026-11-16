@@ -128,8 +128,8 @@ func TestCharacterService_EnsureValidToken_SingleflightLeaderCanceled(t *testing
 			return x
 		}
 		ac := authClientBlockRefresh{
-			AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
-			release:        make(chan struct{}),
+			Token:   testutil.AuthTokenFromAppToken(token2),
+			release: make(chan struct{}),
 		}
 		cs := NewFake(Params{Storage: st, AuthClient: ac})
 
@@ -193,8 +193,8 @@ func TestCharacterService_EnsureValidToken_Stop(t *testing.T) {
 				RefreshToken:  "refresh-new",
 			})
 			ac := authClientBlockRefreshIgnoreCtx{
-				AuthClientStub: testutil.AuthClientStub{Token: testutil.AuthTokenFromAppToken(token2)},
-				release:        make(chan struct{}),
+				Token:   testutil.AuthTokenFromAppToken(token2),
+				release: make(chan struct{}),
 			}
 			cs := NewFake(Params{Storage: st, AuthClient: ac})
 			ctx, cancel := context.WithCancel(context.Background())

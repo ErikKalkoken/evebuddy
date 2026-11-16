@@ -175,11 +175,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.CharacterSectionStatus{
-			CharacterID: characters[0],
-			SectionStatus: app.SectionStatus{
-				ErrorMessage: "error",
-				Section:      app.SectionCharacterLocation,
-			},
+			CharacterID:  characters[0],
+			ErrorMessage: "error",
+			Section:      app.SectionCharacterLocation,
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -233,10 +231,8 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CorporationSectionStatus{
 			CorporationID: corporations[0],
-			SectionStatus: app.SectionStatus{
-				ErrorMessage: "error",
-				Section:      app.SectionCorporationIndustryJobs,
-			},
+			ErrorMessage:  "error",
+			Section:       app.SectionCorporationIndustryJobs,
 		}
 		sc.SetCorporationSection(o)
 		// when
@@ -287,10 +283,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.EveUniverseSectionStatus{
-			SectionStatus: app.SectionStatus{
-				ErrorMessage: "error",
-				Section:      app.SectionEveCharacters,
-			},
+			ErrorMessage: "error",
+			Section:      app.SectionEveCharacters,
 		}
 		sc.SetEveUniverseSection(o)
 		ss := sc.Summary()
@@ -462,10 +456,8 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
-			SectionStatus: app.SectionStatus{
-				CompletedAt: time.Now().Add(-1 * time.Hour),
-				Section:     app.SectionCharacterLocation,
-			},
+			CompletedAt: time.Now().Add(-1 * time.Hour),
+			Section:     app.SectionCharacterLocation,
 		}
 		sc.SetCharacterSection(o)
 		// when
@@ -505,10 +497,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			t.Fatal(err)
 		}
 		o := &app.EveUniverseSectionStatus{
-			SectionStatus: app.SectionStatus{
-				CompletedAt: time.Now().Add(-30 * time.Hour),
-				Section:     app.SectionEveCharacters,
-			},
+			CompletedAt: time.Now().Add(-30 * time.Hour),
+			Section:     app.SectionEveCharacters,
 		}
 		sc.SetEveUniverseSection(o)
 		// when
@@ -610,8 +600,8 @@ func TestCharacter(t *testing.T) {
 		sc.SetCharacter(2, "Bob")
 		section := app.SectionCharacterImplants
 		sc.SetCharacterSection(&app.CharacterSectionStatus{
-			CharacterID:   1,
-			SectionStatus: app.SectionStatus{Section: section, CompletedAt: time.Now()},
+			CharacterID: 1,
+			Section:     section, CompletedAt: time.Now(),
 		})
 		// when
 		sc.DeleteCharacter(1)
@@ -710,7 +700,7 @@ func TestCorporations(t *testing.T) {
 		section := app.SectionCorporationDivisions
 		sc.SetCorporationSection(&app.CorporationSectionStatus{
 			CorporationID: 1,
-			SectionStatus: app.SectionStatus{Section: section, CompletedAt: time.Now()},
+			Section:       section, CompletedAt: time.Now(),
 		})
 		// when
 		sc.DeleteCorporation(1)
@@ -1036,25 +1026,19 @@ func TestCharacterSectionSummary(t *testing.T) {
 	)
 	sc.Clear()
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
-		CharacterID: characterID,
-		SectionStatus: app.SectionStatus{
-			ErrorMessage: "ERROR",
-			Section:      app.SectionCharacterImplants,
-		},
+		CharacterID:  characterID,
+		ErrorMessage: "ERROR",
+		Section:      app.SectionCharacterImplants,
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		SectionStatus: app.SectionStatus{
-			CompletedAt: time.Now(),
-			Section:     app.SectionCharacterAssets,
-		},
+		CompletedAt: time.Now(),
+		Section:     app.SectionCharacterAssets,
 	})
 	sc.SetCharacterSection(&app.CharacterSectionStatus{
 		CharacterID: characterID,
-		SectionStatus: app.SectionStatus{
-			StartedAt: time.Now().Add(-10 * time.Second),
-			Section:   app.SectionCharacterIndustryJobs,
-		},
+		StartedAt:   time.Now().Add(-10 * time.Second),
+		Section:     app.SectionCharacterIndustryJobs,
 	})
 	// when
 	got := sc.CharacterSectionSummary(characterID)
@@ -1077,10 +1061,8 @@ func TestCorporationSectionSummary(t *testing.T) {
 	)
 	sc.SetCorporationSection(&app.CorporationSectionStatus{
 		CorporationID: corporationID,
-		SectionStatus: app.SectionStatus{
-			ErrorMessage: "error",
-			Section:      app.SectionCorporationIndustryJobs,
-		},
+		ErrorMessage:  "error",
+		Section:       app.SectionCorporationIndustryJobs,
 	})
 	// when
 	got := sc.CorporationSectionSummary(corporationID)
@@ -1099,22 +1081,16 @@ func TestGeneralSectionSummary(t *testing.T) {
 	// given
 	sc.Clear()
 	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
-		SectionStatus: app.SectionStatus{
-			ErrorMessage: "error",
-			Section:      app.SectionEveTypes,
-		},
+		ErrorMessage: "error",
+		Section:      app.SectionEveTypes,
 	})
 	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
-		SectionStatus: app.SectionStatus{
-			CompletedAt: time.Now(),
-			Section:     app.SectionEveCharacters,
-		},
+		CompletedAt: time.Now(),
+		Section:     app.SectionEveCharacters,
 	})
 	sc.SetEveUniverseSection(&app.EveUniverseSectionStatus{
-		SectionStatus: app.SectionStatus{
-			StartedAt: time.Now().Add(-10 * time.Second),
-			Section:   app.SectionEveMarketPrices,
-		},
+		StartedAt: time.Now().Add(-10 * time.Second),
+		Section:   app.SectionEveMarketPrices,
 	})
 	// when
 	got := sc.EveUniverseSectionSummary()

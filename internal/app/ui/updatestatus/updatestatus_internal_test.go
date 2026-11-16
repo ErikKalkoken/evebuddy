@@ -182,12 +182,10 @@ func TestUpdateStatus_Update(t *testing.T) {
 		a.entityList.Select(1)
 		a.sectionList.Select(0)
 		sc.SetCharacterSection(&app.CharacterSectionStatus{
-			CharacterID: c.ID,
-			SectionStatus: app.SectionStatus{
-				Section:      app.CharacterSections[0],
-				CompletedAt:  time.Now(),
-				ErrorMessage: "error",
-			},
+			CharacterID:  c.ID,
+			Section:      app.CharacterSections[0],
+			CompletedAt:  time.Now(),
+			ErrorMessage: "error",
 		})
 		// when
 		a.update(t.Context())

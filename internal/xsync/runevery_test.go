@@ -13,8 +13,7 @@ import (
 
 func TestRunEvery(t *testing.T) {
 	t.Run("should run at once before first tick", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 		ran := make(chan struct{}, 1)
 		go xsync.RunEvery(ctx, time.Hour, func(context.Context) {
 			select {
@@ -29,8 +28,7 @@ func TestRunEvery(t *testing.T) {
 		}
 	})
 	t.Run("should run repeatedly", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 		var count atomic.Int64
 		go xsync.RunEvery(ctx, 10*time.Millisecond, func(context.Context) {
 			count.Add(1)
