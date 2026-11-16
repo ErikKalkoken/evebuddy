@@ -108,12 +108,10 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 
 func generalSectionStatusFromDBModel(o queries.GeneralSectionStatus) *app.EveUniverseSectionStatus {
 	x := &app.EveUniverseSectionStatus{
-		SectionStatus: app.SectionStatus{
-			ErrorMessage: o.Error,
-			ContentHash:  o.ContentHash,
-			Section:      app.EveUniverseSection(o.SectionID),
-			UpdatedAt:    o.UpdatedAt,
-		},
+		ErrorMessage: o.Error,
+		ContentHash:  o.ContentHash,
+		Section:      app.EveUniverseSection(o.SectionID),
+		UpdatedAt:    o.UpdatedAt,
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

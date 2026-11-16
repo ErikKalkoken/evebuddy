@@ -263,19 +263,17 @@ func corporationAssetFromDBModel(ca queries.CorporationAsset, t queries.EveType,
 		locationType = app.TypeUnknown
 	}
 	o := &app.CorporationAsset{
-		CorporationID: ca.CorporationID,
-		Asset: app.Asset{
-			IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
-			IsSingleton:     ca.IsSingleton,
-			ItemID:          ca.ItemID,
-			LocationFlag:    locationFlag,
-			LocationID:      ca.LocationID,
-			LocationType:    locationType,
-			Name:            ca.Name,
-			Price:           optional.FromNullFloat64(p),
-			Quantity:        int(ca.Quantity),
-			Type:            eveTypeFromDBModel(t, g, c),
-		},
+		CorporationID:   ca.CorporationID,
+		IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
+		IsSingleton:     ca.IsSingleton,
+		ItemID:          ca.ItemID,
+		LocationFlag:    locationFlag,
+		LocationID:      ca.LocationID,
+		LocationType:    locationType,
+		Name:            ca.Name,
+		Price:           optional.FromNullFloat64(p),
+		Quantity:        int(ca.Quantity),
+		Type:            eveTypeFromDBModel(t, g, c),
 	}
 	return o
 }

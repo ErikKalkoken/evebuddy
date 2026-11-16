@@ -82,9 +82,7 @@ func TestNode_Parent(t *testing.T) {
 func TestNode_ID(t *testing.T) {
 	t.Run("should return item ID of assets", func(t *testing.T) {
 		n := newAssetNode(&app.CharacterAsset{
-			Asset: app.Asset{
-				ItemID: 42,
-			},
+			ItemID: 42,
 		})
 		xassert.Equal(t, 42, n.ID())
 	})
@@ -154,15 +152,15 @@ func TestNode_TotalValue(t *testing.T) {
 	t.Run("should sum price times quantity across nested containers and ships", func(t *testing.T) {
 		division := newCustomNode(NodeOffice1)
 		top := newAssetNode(&app.CorporationAsset{
-			Asset: app.Asset{ItemID: 1, Price: optional.New(10.0), Quantity: 2},
+			ItemID: 1, Price: optional.New(10.0), Quantity: 2,
 		})
 		division.addChild(top)
 		ship := newAssetNode(&app.CorporationAsset{
-			Asset: app.Asset{ItemID: 2, Price: optional.New(1_000_000.0), Quantity: 1},
+			ItemID: 2, Price: optional.New(1_000_000.0), Quantity: 1,
 		})
 		division.addChild(ship)
 		cargo := newAssetNode(&app.CorporationAsset{
-			Asset: app.Asset{ItemID: 3, Price: optional.New(5.0), Quantity: 4},
+			ItemID: 3, Price: optional.New(5.0), Quantity: 4,
 		})
 		ship.addChild(cargo)
 
@@ -175,7 +173,7 @@ func TestNode_TotalValue(t *testing.T) {
 	t.Run("should treat items with no price as zero", func(t *testing.T) {
 		division := newCustomNode(NodeOffice1)
 		n := newAssetNode(&app.CorporationAsset{
-			Asset: app.Asset{ItemID: 1, Quantity: 3},
+			ItemID: 1, Quantity: 3,
 		})
 		division.addChild(n)
 

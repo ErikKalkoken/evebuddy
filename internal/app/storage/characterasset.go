@@ -228,19 +228,17 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		locationType = app.TypeUnknown
 	}
 	o := &app.CharacterAsset{
-		CharacterID: ca.CharacterID,
-		Asset: app.Asset{
-			IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
-			IsSingleton:     ca.IsSingleton,
-			ItemID:          ca.ItemID,
-			LocationFlag:    locationFlag,
-			LocationID:      ca.LocationID,
-			LocationType:    locationType,
-			Name:            ca.Name,
-			Price:           optional.FromNullFloat64(p),
-			Quantity:        int(ca.Quantity),
-			Type:            eveTypeFromDBModel(t, g, c),
-		},
+		CharacterID:     ca.CharacterID,
+		IsBlueprintCopy: optional.FromZeroValue(ca.IsBlueprintCopy),
+		IsSingleton:     ca.IsSingleton,
+		ItemID:          ca.ItemID,
+		LocationFlag:    locationFlag,
+		LocationID:      ca.LocationID,
+		LocationType:    locationType,
+		Name:            ca.Name,
+		Price:           optional.FromNullFloat64(p),
+		Quantity:        int(ca.Quantity),
+		Type:            eveTypeFromDBModel(t, g, c),
 	}
 	return o
 }
