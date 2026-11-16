@@ -13,6 +13,9 @@ env:
 
 on: push
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,7 +39,7 @@ jobs:
       - name: Install OS dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install go dependencies
         run: go mod download
@@ -64,7 +67,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
@@ -75,12 +78,11 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package Fyne app
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
         run: |
-          fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
+          fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
           mv '${{ env.FULLNAME }}.tar.xz' ${{ env.NAME }}-${{ env.VERSION }}-linux-amd64.tar.xz
-
-      - name: Inspect
-        run: ls -R
 
       - uses: actions/upload-artifact@v7
         with:
@@ -93,7 +95,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     needs: test
     runs-on: ubuntu-22.04 # oldest available image = best AppImage compatibility
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
@@ -105,7 +106,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev libfuse2
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev libfuse2
 
       - name: Install Fyne tool
         run: go install fyne.io/tools/cmd/fyne@${{ env.FYNE_TOOL_VERSION }}
@@ -116,10 +117,9 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package Fyne app
-        run: fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
-
-      - name: Inspect
-        run: ls -R
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os linux --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
 
       - name: Build AppImage
         run: tools/build_appimage.sh
@@ -165,10 +165,9 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package
-        run: fyne package --os windows --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
-
-      - name: Inspect
-        run: ls -R
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os windows --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
 
       - name: ZIP package
         run: zip -j ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip "${{ env.FULLNAME }}.exe"
@@ -207,10 +206,9 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package app bundles
-        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
-
-      - name: Inspect
-        run: ls -R
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
 
       - name: ZIP app bundle
         run: zip --symlinks -r ${{ env.NAME }}-${{ env.VERSION }}-darwin-arm64.zip "${{ env.FULLNAME }}.app/"
@@ -249,10 +247,9 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package app bundles
-        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
-
-      - name: Inspect
-        run: ls -R
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
+        run: fyne package --os darwin --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
 
       - name: ZIP app bundle
         run: zip --symlinks -r ${{ env.NAME }}-${{ env.VERSION }}-darwin-intel64.zip "${{ env.FULLNAME }}.app/"
@@ -280,7 +277,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
       - name: Download Android NDK
         run: |
@@ -296,15 +293,17 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Package Fyne app
+        env:
+          JANICE_API_KEY: ${{ secrets.JANICE_API_KEY }}
         run: |
           export ANDROID_NDK_HOME="$PWD/android-ndk-r27c"
-          fyne package --os android --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata janiceAPIKey=${{ secrets.JANICE_API_KEY }}
-          ls
+          fyne package --os android --release --tags migrated_fynedo --app-version ${{ env.VERSION }} --metadata "janiceAPIKey=$JANICE_API_KEY"
 
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.NAME }}-android
           path: ${{ env.FULLNAME2 }}.apk
+          if-no-files-found: error
           overwrite: true
 
   release:
@@ -319,10 +318,9 @@ jobs:
         package_android,
       ]
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v7
-
       - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
@@ -335,6 +333,7 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
+          fail_on_unmatched_files: true
           files: |
             ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip
             ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
