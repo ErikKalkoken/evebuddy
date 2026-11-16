@@ -282,4 +282,29 @@ func TestCharacterTag(t *testing.T) {
 		require.NoError(t, err)
 		xassert.Equal(t, []*app.CharacterTag{tag}, got)
 	})
+	t.Run("can list tags for all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		alpha := factory.CreateCharacterTag("alpha")
+		beta := factory.CreateCharacterTag("beta")
+		character1 := factory.CreateCharacter()
+		character2 := factory.CreateCharacter()
+		factory.CreateCharacter() // without tags
+		for _, x := range []storage.CreateCharacterTagParams{
+			{CharacterID: character1.ID, TagID: beta.ID},
+			{CharacterID: character1.ID, TagID: alpha.ID},
+			{CharacterID: character2.ID, TagID: alpha.ID},
+		} {
+			err := st.CreateCharactersCharacterTag(ctx, x)
+			require.NoError(t, err)
+		}
+		// when
+		got, err := st.ListCharacterTagsForAllCharacters(ctx)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64][]*app.CharacterTag{
+			character1.ID: {alpha, beta},
+			character2.ID: {alpha},
+		}, got)
+	})
 }

@@ -62,6 +62,24 @@ func (st *Storage) ListAllCharacterSkills(ctx context.Context) ([]*app.Character
 	return oo, nil
 }
 
+// ListActiveSkillLevelsForAllCharacters returns the active level of each skill of each character.
+// Unlike ListAllCharacterSkills it loads no type data.
+func (st *Storage) ListActiveSkillLevelsForAllCharacters(ctx context.Context) ([]app.CharacterActiveSkillLevel, error) {
+	rows, err := st.qRO.ListActiveSkillLevelsForAllCharacters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListActiveSkillLevelsForAllCharacters: %w", err)
+	}
+	oo := make([]app.CharacterActiveSkillLevel, len(rows))
+	for i, r := range rows {
+		oo[i] = app.CharacterActiveSkillLevel{
+			CharacterID: r.CharacterID,
+			Level:       int(r.ActiveSkillLevel),
+			TypeID:      r.EveTypeID,
+		}
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListAllCharactersActiveSkillLevels(ctx context.Context, typeID int64) ([]app.CharacterActiveSkillLevel, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListAllCharactersActiveSkillLevels: %d: %w", typeID, err)

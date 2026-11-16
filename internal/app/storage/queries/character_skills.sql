@@ -31,6 +31,14 @@ FROM
     JOIN eve_groups eg ON eg.id = et.eve_group_id
     JOIN eve_categories ec ON ec.id = eg.eve_category_id;
 
+-- name: ListActiveSkillLevelsForAllCharacters :many
+SELECT
+    character_id,
+    eve_type_id,
+    active_skill_level
+FROM
+    character_skills;
+
 -- name: ListCharactersActiveSkillLevels :many
 SELECT
     c.id as character_id,

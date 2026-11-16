@@ -78,6 +78,22 @@ func (s *CharacterService) ListTagsForCharacter(ctx context.Context, characterID
 	return tags, nil
 }
 
+// ListTagsForAllCharacters returns the tag names of all characters by character ID.
+// Characters without tags have no entry.
+func (s *CharacterService) ListTagsForAllCharacters(ctx context.Context) (map[int64]set.Set[string], error) {
+	m, err := s.st.ListCharacterTagsForAllCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tags := make(map[int64]set.Set[string], len(m))
+	for id, oo := range m {
+		tags[id] = set.Collect(xiter.MapSlice(oo, func(x *app.CharacterTag) string {
+			return x.Name
+		}))
+	}
+	return tags, nil
+}
+
 // TagsExported represents the data structure for exported character tags.
 type TagsExported struct {
 	Info    string             // file information

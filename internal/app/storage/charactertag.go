@@ -183,6 +183,20 @@ func (st *Storage) ListCharactersForCharacterTag(ctx context.Context, tagID int6
 	return cc, nil
 }
 
+// ListCharacterTagsForAllCharacters returns the tags of all characters by character ID, ordered by name.
+// Characters without tags have no entry.
+func (st *Storage) ListCharacterTagsForAllCharacters(ctx context.Context) (map[int64][]*app.CharacterTag, error) {
+	rows, err := st.qRO.ListCharacterTagsForAllCharacters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ListCharacterTagsForAllCharacters: %w", err)
+	}
+	m := make(map[int64][]*app.CharacterTag)
+	for _, r := range rows {
+		m[r.CharacterID] = append(m[r.CharacterID], tagFromDBModel(r.CharacterTag))
+	}
+	return m, nil
+}
+
 func (st *Storage) ListCharacterTagsForCharacter(ctx context.Context, characterID int64) ([]*app.CharacterTag, error) {
 	wrapErr := func(err error) error {
 		return fmt.Errorf("ListCharacterTagsForCharacter: %d: %w", characterID, err)

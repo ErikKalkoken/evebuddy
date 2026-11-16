@@ -71,6 +71,11 @@ func (s *CharacterService) GetSkill(ctx context.Context, characterID, typeID int
 	return s.st.GetCharacterSkill(ctx, characterID, typeID)
 }
 
+// ListActiveSkillLevelsForAllCharacters returns the active level of each skill of each character.
+func (s *CharacterService) ListActiveSkillLevelsForAllCharacters(ctx context.Context) ([]app.CharacterActiveSkillLevel, error) {
+	return s.st.ListActiveSkillLevelsForAllCharacters(ctx)
+}
+
 // ListAllSkills returns the skills from all characters.
 func (s *CharacterService) ListAllSkills(ctx context.Context) ([]*app.CharacterSkill, error) {
 	oo, err := s.st.ListAllCharacterSkills(ctx)

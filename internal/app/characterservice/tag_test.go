@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/characterservice"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
 )
 
@@ -307,5 +309,32 @@ func TestListTagsForCharacter(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0, got.Size())
+	})
+}
+
+func TestListTagsForAllCharacters(t *testing.T) {
+	db, st, factory := testutil.NewDBInMemory()
+	defer db.Close()
+	s := testdouble.NewCharacterServiceFake(characterservice.Params{Storage: st})
+	ctx := context.Background()
+	t.Run("can list tag names for all characters", func(t *testing.T) {
+		// given
+		testutil.MustTruncateTables(db)
+		alpha := factory.CreateCharacterTag("Alpha")
+		beta := factory.CreateCharacterTag("Beta")
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
+		factory.CreateCharacter() // without tags
+		factory.AddCharacterToTag(alpha, c1)
+		factory.AddCharacterToTag(beta, c1)
+		factory.AddCharacterToTag(alpha, c2)
+		// when
+		got, err := s.ListTagsForAllCharacters(ctx)
+		// then
+		require.NoError(t, err)
+		xassert.Equal(t, map[int64]set.Set[string]{
+			c1.ID: set.Of("Alpha", "Beta"),
+			c2.ID: set.Of("Alpha"),
+		}, got)
 	})
 }
