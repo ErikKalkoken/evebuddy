@@ -196,6 +196,7 @@ We are providing two variants for installing on Linux desktop:
 
 1. Download the latest tar file from the releases page
 1. Decompress the tar file, for example with: `tar xf evebuddy-0.33.0-linux-amd64.tar.xz`
+1. Change into the extracted folder: `cd evebuddy`
 1. Run `make user-install` to install the app for the current user or run `sudo make install` to install the app on the system
 
 You should now have a shortcut in your desktop environment's launcher for starting the app.

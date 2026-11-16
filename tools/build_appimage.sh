@@ -28,7 +28,7 @@ rm -rf "$dest"
 mkdir "$dest"
 
 # Extract application files into appdir folder
-tar xvfJ "$appname".tar.xz -C "$source"
+tar xvfJ "$appname".tar.xz -C "$source" --strip-components=1
 
 # Add AppStream appdata file
 mkdir -p $dest/usr/share/metainfo

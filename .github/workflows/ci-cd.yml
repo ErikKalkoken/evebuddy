@@ -153,7 +153,7 @@ jobs:
 
       - name: Install Dependencies
         run: >
-          pacman -Syu &&
+          pacman --noconfirm -Syu &&
           pacman --noconfirm -S git zip mingw-w64-x86_64-toolchain
 
       - name: Install Fyne tool
