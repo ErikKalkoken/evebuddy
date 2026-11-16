@@ -193,6 +193,7 @@ func TestTraining_UpdateCharacterWatched(t *testing.T) {
 		u := &uiFake{UIFake: testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st2})}
 		cw := newManageCharacters(u, test.NewTempWindow(t, nil))
 		defer cw.stop()
+		cw.displaySnackbar = func(string) {}
 		ec1 := factory2.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bravo"})
 		c1 := factory2.CreateCharacter(storage.CreateCharacterParams{ID: ec1.ID, IsTrainingWatched: true})
 		a := cw.characterTraining
