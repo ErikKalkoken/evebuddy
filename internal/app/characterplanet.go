@@ -53,6 +53,21 @@ func (cp CharacterPlanet) ActiveExtractors() iter.Seq[*PlanetPin] {
 	})
 }
 
+// ExtractorsExpiryTimes returns the expiry times of all extractors that have run, incl. expired ones.
+// Extractors without a last cycle start are skipped, since the simulator treats them as never run.
+func (cp CharacterPlanet) ExtractorsExpiryTimes() []time.Time {
+	var s []time.Time
+	for pp := range cp.ActiveExtractors() {
+		if pp.LastCycleStart.IsEmpty() {
+			continue
+		}
+		if v, ok := pp.ExpiryTime.Value(); ok && !v.IsZero() {
+			s = append(s, v)
+		}
+	}
+	return s
+}
+
 func (cp CharacterPlanet) ActiveProducers() iter.Seq[*PlanetPin] {
 	return xiter.Filter(slices.Values(cp.Pins), func(o *PlanetPin) bool {
 		return o.IsProducing()

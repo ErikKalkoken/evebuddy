@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/go-set"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/testutil/testdouble"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 	"github.com/ErikKalkoken/evebuddy/internal/xslices"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 func TestColonies(t *testing.T) {
@@ -88,6 +91,27 @@ func TestColonies(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should show when extractors expire", func(t *testing.T) {
+		// given
+		a := newColonies(t)
+		// when
+		rows, err := a.fetchRows(t.Context())
+		// then
+		require.NoError(t, err)
+		got := make(map[int64]string)
+		for _, r := range rows {
+			got[r.planetID] = richTextString(r.extractorsExpireDisplay(now))
+		}
+		want := map[int64]string{
+			cp.EvePlanet.ID: expiry.Format(app.DateTimeFormat),
+		}
+		for _, r := range rows {
+			if r.planetID != cp.EvePlanet.ID {
+				want[r.planetID] = "-"
+			}
+		}
+		xassert.Equal(t, want, got)
+	})
 	t.Run("should recalculate forecasts", func(t *testing.T) {
 		a := newColonies(t)
 		a.Update(t.Context())
@@ -145,6 +169,26 @@ func TestColonies(t *testing.T) {
 			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
 		}
 	})
+	t.Run("can search by region", func(t *testing.T) {
+		// given
+		a := newColonies(t)
+		a.Update(t.Context())
+		// when
+		a.searchEntry.SetText(cp.EvePlanet.SolarSystem.Constellation.Region.Name)
+		// then
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
+		}
+	})
+	t.Run("should not find commodities in search", func(t *testing.T) {
+		// given
+		a := newColonies(t)
+		a.Update(t.Context())
+		// when
+		a.searchEntry.SetText(product.Name)
+		// then
+		assert.Empty(t, a.rowsFiltered)
+	})
 }
 
 func TestColonyRow_CompareWorkEnds(t *testing.T) {
@@ -159,6 +203,24 @@ func TestColonyRow_CompareWorkEnds(t *testing.T) {
 	got := xslices.Map(rows, func(r colonyRow) app.ColonyStatus { return r.status })
 	want := []app.ColonyStatus{app.ColonyStopped, app.ColonyExtracting, app.ColonyNeedsAttention, app.ColonyProducing, app.ColonyNoActivity}
 	assert.Equal(t, want, got)
+}
+
+func TestColonyRow_CompareExtractorsExpire(t *testing.T) {
+	// given
+	now := time.Now()
+	makeRow := func(name string, expiries ...time.Time) colonyRow {
+		return colonyRow{name: name, extractorExpiries: expiries, extractorsExpireAt: earliestTime(expiries)}
+	}
+	none := makeRow("none")
+	running := makeRow("running", now.Add(time.Hour))
+	someExpired := makeRow("some expired", now.Add(-2*time.Hour), now.Add(time.Hour))
+	allExpired := makeRow("all expired", now.Add(-time.Hour))
+	rows := []colonyRow{none, running, allExpired, someExpired}
+	// when
+	slices.SortStableFunc(rows, colonyRow.compareExtractorsExpire)
+	// then
+	got := xslices.Map(rows, func(r colonyRow) string { return r.name })
+	xassert.Equal(t, []string{"some expired", "all expired", "running", "none"}, got)
 }
 
 func TestColonyRow_StatusShort(t *testing.T) {
@@ -228,6 +290,129 @@ func TestColonyRow_StatusShort(t *testing.T) {
 	}
 }
 
+// richTextString returns the text of rich text segments.
+func richTextString(segments []widget.RichTextSegment) string {
+	var s string
+	for _, x := range segments {
+		s += x.Textual()
+	}
+	return s
+}
+
+func TestEarliestTime(t *testing.T) {
+	t1 := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 11, 25, 9, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		want     optional.Optional[time.Time]
+	}{
+		{"empty", nil, optional.Optional[time.Time]{}},
+		{"one", []time.Time{t1}, optional.New(t1)},
+		{"several", []time.Time{t2, t1}, optional.New(t1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// when
+			got := earliestTime(tc.expiries)
+			// then
+			xassert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestColonyRow_ExtractorsState(t *testing.T) {
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	past := now.Add(-time.Hour)
+	future := now.Add(time.Hour)
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		want     colonyExtractorsState
+	}{
+		{"no extractors", nil, colonyExtractorsNone},
+		{"all running", []time.Time{future, future}, colonyExtractorsRunning},
+		{"some expired", []time.Time{past, future}, colonyExtractorsSomeExpired},
+		{"all expired", []time.Time{past, past}, colonyExtractorsAllExpired},
+		{"expiry at now counts as expired", []time.Time{now}, colonyExtractorsAllExpired},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			r := colonyRow{extractorExpiries: tc.expiries}
+			// when
+			got := r.extractorsState(now)
+			// then
+			xassert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestColonyRow_ExtractorsExpireDisplay(t *testing.T) {
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	past := now.Add(-time.Hour)
+	future := now.Add(3 * time.Hour)
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		expireAt optional.Optional[time.Time]
+		want     string
+		color    fyne.ThemeColorName
+	}{
+		{"no extractors", nil, optional.Optional[time.Time]{}, "-", ""},
+		{"running shows earliest expiry", []time.Time{future.Add(time.Hour), future}, optional.New(future), "2026.11.24 15:00", ""},
+		{"some expired", []time.Time{past, future}, optional.New(past), "Some expired", theme.ColorNameWarning},
+		{"all expired", []time.Time{past}, optional.New(past), "Expired", theme.ColorNameError},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			r := colonyRow{extractorExpiries: tc.expiries, extractorsExpireAt: tc.expireAt}
+			// when
+			got := r.extractorsExpireDisplay(now)
+			// then
+			require.Len(t, got, 1)
+			seg := got[0].(*widget.TextSegment)
+			xassert.Equal(t, tc.want, seg.Text)
+			xassert.Equal(t, tc.color, seg.Style.ColorName)
+		})
+	}
+}
+
+func TestColonyRow_ExtractorsExpireShort(t *testing.T) {
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	past := now.Add(-time.Hour)
+	future := now.Add(3 * time.Hour)
+	t.Run("no extractors shows nothing", func(t *testing.T) {
+		// given
+		r := colonyRow{}
+		// when
+		got := r.extractorsExpireShort(now)
+		// then
+		assert.Empty(t, got)
+	})
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		expireAt optional.Optional[time.Time]
+		want     string
+		color    fyne.ThemeColorName
+	}{
+		{"running shows time until earliest expiry", []time.Time{future.Add(time.Hour), future}, optional.New(future), "3h 0m", ""},
+		{"some expired", []time.Time{past, future}, optional.New(past), "Some expired", theme.ColorNameWarning},
+		{"all expired", []time.Time{past}, optional.New(past), "Expired", theme.ColorNameError},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			r := colonyRow{extractorExpiries: tc.expiries, extractorsExpireAt: tc.expireAt}
+			// when
+			got := r.extractorsExpireShort(now)
+			// then
+			require.Len(t, got, 1)
+			seg := got[0].(*widget.TextSegment)
+			xassert.Equal(t, tc.want, seg.Text)
+			xassert.Equal(t, tc.color, seg.Style.ColorName)
+		})
+	}
+}
+
 func TestColonyListItem(t *testing.T) {
 	test.NewTempApp(t)
 	t.Run("should show attention icon only for stopped colonies", func(t *testing.T) {
@@ -241,18 +426,40 @@ func TestColonyListItem(t *testing.T) {
 		w.set(colonyRow{status: app.ColonyNeedsAttention})
 		assert.False(t, w.planet.attention.Visible())
 	})
+	t.Run("should show extractor expiry next to extracted materials", func(t *testing.T) {
+		// given
+		w := newColonyListItem()
+		win := test.NewWindow(w)
+		t.Cleanup(win.Close)
+		// when
+		expiry := time.Now().Add(-time.Hour)
+		w.set(colonyRow{
+			extractingText:     "Base Metals",
+			extractorExpiries:  []time.Time{expiry},
+			extractorsExpireAt: optional.New(expiry),
+		})
+		// then
+		var texts []string
+		for _, o := range test.LaidOutObjects(w) {
+			if x, ok := o.(*xwidget.RichText); ok {
+				texts = append(texts, x.String())
+			}
+		}
+		assert.Contains(t, texts, "Base Metals")
+		assert.Contains(t, texts, "Expired")
+	})
 }
 
 func TestColonyFilter_Match(t *testing.T) {
+	now := time.Now()
 	r := colonyRow{
-		extracting:      set.Of("Aqueous Liquids"),
-		ownerName:       "Bruce",
-		planetTypeName:  "Barren",
-		producing:       set.Of("Water"),
-		regionName:      "The Forge",
-		solarSystemName: "Jita",
-		status:          app.ColonyExtracting,
-		tags:            set.Of("Main"),
+		extracting:        set.Of("Aqueous Liquids"),
+		extractorExpiries: []time.Time{now.Add(time.Hour)},
+		ownerName:         "Bruce",
+		planetTypeName:    "Barren",
+		producing:         set.Of("Water"),
+		status:            app.ColonyExtracting,
+		tags:              set.Of("Main"),
 	}
 	for _, tc := range []struct {
 		name   string
@@ -261,35 +468,79 @@ func TestColonyFilter_Match(t *testing.T) {
 	}{
 		{"no filter", colonyFilter{}, true},
 		{"all filters match", colonyFilter{
-			extracted:   "Aqueous Liquids",
-			owner:       "Bruce",
-			planetType:  "Barren",
-			produced:    "Water",
-			region:      "The Forge",
-			solarSystem: "Jita",
-			status:      app.ColonyExtracting.Display(),
-			tag:         "Main",
+			commodity:  "Aqueous Liquids",
+			extractors: colonyExtractorsRunningText,
+			owner:      "Bruce",
+			planetType: "Barren",
+			status:     app.ColonyExtracting.Display(),
+			tag:        "Main",
 		}, true},
 		{"attention", colonyFilter{attention: true}, false},
-		{"extracted", colonyFilter{extracted: "Base Metals"}, false},
+		{"commodity extracted", colonyFilter{commodity: "Aqueous Liquids"}, true},
+		{"commodity produced", colonyFilter{commodity: "Water"}, true},
+		{"commodity", colonyFilter{commodity: "Oxygen"}, false},
+		{"extractors", colonyFilter{extractors: colonyExtractorsExpiredText}, false},
 		{"owner", colonyFilter{owner: "Alice"}, false},
 		{"planet type", colonyFilter{planetType: "Lava"}, false},
-		{"produced", colonyFilter{produced: "Oxygen"}, false},
-		{"region", colonyFilter{region: "Domain"}, false},
-		{"solar system", colonyFilter{solarSystem: "Amarr"}, false},
 		{"status", colonyFilter{status: app.ColonyStopped.Display()}, false},
 		{"tag", colonyFilter{tag: "Alt"}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.filter.match(r))
+			assert.Equal(t, tc.want, tc.filter.match(r, now))
 		})
 	}
 	t.Run("attention matches colonies with problems", func(t *testing.T) {
 		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup, app.ColonyStopped} {
-			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}), s.Display())
+			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}, now), s.Display())
 		}
-		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyProducing}))
+		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyProducing}, now))
 	})
+}
+
+func TestColonyRow_ExtractorsFilterValue(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-time.Hour)
+	future := now.Add(time.Hour)
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		want     string
+	}{
+		{"running", []time.Time{future}, colonyExtractorsRunningText},
+		{"some expired", []time.Time{past, future}, colonyExtractorsExpiredText},
+		{"all expired", []time.Time{past}, colonyExtractorsExpiredText},
+		{"none", nil, colonyExtractorsNoneText},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			r := colonyRow{extractorExpiries: tc.expiries}
+			// when
+			got := r.extractorsFilterValue(now)
+			// then
+			xassert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestColonyFooterText(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		expired  int
+		stopped  int
+		isMobile bool
+		want     string
+	}{
+		{"desktop", 0, 0, false, "Showing 3 / 5 colonies"},
+		{"mobile", 0, 0, true, "3 / 5 colonies"},
+		{"expired", 2, 0, false, "Showing 3 / 5 colonies • 2 expired"},
+		{"stopped", 0, 1, false, "Showing 3 / 5 colonies • 1 stopped"},
+		{"expired and stopped on mobile", 2, 1, true, "3 / 5 colonies • 2 expired • 1 stopped"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := colonyFooterText(3, 5, tc.expired, tc.stopped, tc.isMobile)
+			xassert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestColonyRow_SetForecast(t *testing.T) {

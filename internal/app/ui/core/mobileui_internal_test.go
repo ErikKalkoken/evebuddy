@@ -392,7 +392,7 @@ func TestMobileUI_SupportingTexts(t *testing.T) {
 	}{
 		{"home characters", func() { u.characterOverview.OnUpdate(3) }, u.homeCharactersItem, "3 characters"},
 		{"home corporations", func() { u.corporationOverview.OnUpdate(1) }, u.homeCorporationsItem, "1 corporation"},
-		{"home colonies", func() { u.colonies.OnUpdate(optional.New(1234)) }, u.homeColoniesItem, "1,234 not working"},
+		{"home colonies", func() { u.colonies.OnUpdate(optional.New(1234)) }, u.homeColoniesItem, "1,234 stopped"},
 		{"home communications", func() { u.unifiedCommunications.OnUpdate(optional.New(1234)) }, u.homeCommunicationsItem, "1,234 unread"},
 		{"home communications none", func() { u.unifiedCommunications.OnUpdate(optional.New(0)) }, u.homeCommunicationsItem, ""},
 		{"home contracts", func() { u.contractList.OnUpdate(optional.New(2)) }, u.homeContractsItem, "2 contracts outstanding"},

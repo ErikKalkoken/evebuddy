@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xassert"
 )
 
 func TestCharacterPlanet_ExtractedTypes(t *testing.T) {
@@ -69,6 +70,79 @@ func TestCharacterPlanet_ExtractedTypes(t *testing.T) {
 		// then
 		assert.Len(t, x, 0)
 	})
+}
+
+func TestCharacterPlanet_ExtractorsExpiryTimes(t *testing.T) {
+	extractorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupExtractorControlUnits}}
+	processorType := &app.EveType{Group: &app.EveGroup{ID: app.EveGroupProcessors}}
+	productType := &app.EveType{ID: 1}
+	t1 := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 11, 25, 9, 0, 0, 0, time.UTC)
+	past := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name string
+		pins []*app.PlanetPin
+		want []time.Time
+	}{
+		{
+			name: "no pins",
+			want: nil,
+		},
+		{
+			name: "ignores extractor without product",
+			pins: []*app.PlanetPin{
+				{Type: extractorType, ExpiryTime: optional.New(t1)},
+			},
+			want: nil,
+		},
+		{
+			name: "ignores extractor with zero expiry",
+			pins: []*app.PlanetPin{
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(time.Time{}), LastCycleStart: optional.New(past)},
+			},
+			want: nil,
+		},
+		{
+			name: "ignores extractor that never ran",
+			pins: []*app.PlanetPin{
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(t1)},
+			},
+			want: nil,
+		},
+		{
+			name: "ignores non-extractor pins",
+			pins: []*app.PlanetPin{
+				{Type: processorType, ExpiryTime: optional.New(t1)},
+			},
+			want: nil,
+		},
+		{
+			name: "one extractor",
+			pins: []*app.PlanetPin{
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(t1), LastCycleStart: optional.New(past)},
+			},
+			want: []time.Time{t1},
+		},
+		{
+			name: "several extractors incl. expired",
+			pins: []*app.PlanetPin{
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(t2), LastCycleStart: optional.New(past)},
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(past), LastCycleStart: optional.New(past)},
+				{Type: extractorType, ExtractorProductType: optional.New(productType), ExpiryTime: optional.New(t1), LastCycleStart: optional.New(past)},
+			},
+			want: []time.Time{t2, past, t1},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			cp := app.CharacterPlanet{Pins: tc.pins}
+			// when
+			got := cp.ExtractorsExpiryTimes()
+			// then
+			xassert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestCharacterPlanet_ProducedSchematics(t *testing.T) {
