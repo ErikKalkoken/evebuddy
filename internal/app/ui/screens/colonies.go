@@ -640,6 +640,21 @@ func (a *Colonies) currentFilter() colonyFilter {
 	}
 }
 
+// colonyFooterText returns the footer text. It omits "Showing" on mobile to fit the screen width.
+func colonyFooterText(shown, total, expired, stopped int, isMobile bool) string {
+	s := fmt.Sprintf("%d / %d colonies", shown, total)
+	if !isMobile {
+		s = "Showing " + s
+	}
+	if expired > 0 {
+		s += fmt.Sprintf(" • %d expired", expired)
+	}
+	if stopped > 0 {
+		s += fmt.Sprintf(" • %d stopped", stopped)
+	}
+	return s
+}
+
 func (a *Colonies) filterRowsAsync(sortCol string) {
 	isLatest := a.filterRun.Start()
 	totalRows := len(a.rows)
@@ -648,6 +663,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 	now := time.Now()
+	isMobile := a.u.IsMobile()
 
 	runAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
@@ -673,10 +689,18 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			return r.status.Display()
 		})
 		var commodities, extractors set.Set[string]
+		var expired, stopped int
 		for _, r := range rows {
 			commodities.AddSeq(r.extracting.All())
 			commodities.AddSeq(r.producing.All())
-			extractors.Add(r.extractorsFilterValue(now))
+			v := r.extractorsFilterValue(now)
+			extractors.Add(v)
+			if v == colonyExtractorsExpiredText {
+				expired++
+			}
+			if r.stopped {
+				stopped++
+			}
 		}
 		commodityOptions := slices.Collect(commodities.All())
 		extractorsOptions := slices.DeleteFunc([]string{
@@ -687,16 +711,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 			return !extractors.Contains(x)
 		})
 
-		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
-		var notWorking int
-		for _, r := range rows {
-			if r.stopped {
-				notWorking++
-			}
-		}
-		if notWorking > 0 {
-			footer += fmt.Sprintf(" • %d not working", notWorking)
-		}
+		footer := colonyFooterText(len(rows), totalRows, expired, stopped, isMobile)
 
 		fyne.Do(func() {
 			if !isLatest() {

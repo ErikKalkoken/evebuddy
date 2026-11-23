@@ -522,6 +522,27 @@ func TestColonyRow_ExtractorsFilterValue(t *testing.T) {
 	}
 }
 
+func TestColonyFooterText(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		expired  int
+		stopped  int
+		isMobile bool
+		want     string
+	}{
+		{"desktop", 0, 0, false, "Showing 3 / 5 colonies"},
+		{"mobile", 0, 0, true, "3 / 5 colonies"},
+		{"expired", 2, 0, false, "Showing 3 / 5 colonies • 2 expired"},
+		{"stopped", 0, 1, false, "Showing 3 / 5 colonies • 1 stopped"},
+		{"expired and stopped on mobile", 2, 1, true, "3 / 5 colonies • 2 expired • 1 stopped"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := colonyFooterText(3, 5, tc.expired, tc.stopped, tc.isMobile)
+			xassert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestColonyRow_SetForecast(t *testing.T) {
 	const iconID = 1047
 	t.Run("should cache grayscale planet icon when stopped", func(t *testing.T) {

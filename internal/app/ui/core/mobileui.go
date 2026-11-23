@@ -846,7 +846,7 @@ func (u *MobileUI) makeHomeNav() {
 		},
 	)
 	u.colonies.OnUpdate = func(notWorking optional.Optional[int]) {
-		setNavItemSupportingWarning(u.homeColoniesItem, notWorking, "not working")
+		setNavItemSupportingWarning(u.homeColoniesItem, notWorking, "stopped")
 	}
 
 	u.homeIndustryItem = xwidget.NewNavListItem(
