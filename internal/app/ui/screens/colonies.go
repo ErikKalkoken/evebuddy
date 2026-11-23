@@ -29,28 +29,30 @@ import (
 )
 
 type colonyRow struct {
-	characterID     int64
-	extracting      set.Set[string]
-	extractingText  string
-	name            string
-	nameDisplay     []widget.RichTextSegment
-	ownerName       string
-	planet          *app.CharacterPlanet
-	planetIconID    int64
-	planetID        int64
-	planetName      string
-	planetTypeName  string
-	producing       set.Set[string]
-	producingText   string
-	regionName      string
-	searchTarget    string
-	solarSystemName string
-	status          app.ColonyStatus
-	stopped         bool // stopped working completely
-	tags            set.Set[string]
-	titleDisplay    []widget.RichTextSegment
-	workEndsAt      optional.Optional[time.Time]
-	worksBeyond     bool // still working at the forecast horizon
+	characterID        int64
+	extracting         set.Set[string]
+	extractingText     string
+	extractorExpiries  []time.Time
+	extractorsExpireAt optional.Optional[time.Time]
+	name               string
+	nameDisplay        []widget.RichTextSegment
+	ownerName          string
+	planet             *app.CharacterPlanet
+	planetIconID       int64
+	planetID           int64
+	planetName         string
+	planetTypeName     string
+	producing          set.Set[string]
+	producingText      string
+	regionName         string
+	searchTarget       string
+	solarSystemName    string
+	status             app.ColonyStatus
+	stopped            bool // stopped working completely
+	tags               set.Set[string]
+	titleDisplay       []widget.RichTextSegment
+	workEndsAt         optional.Optional[time.Time]
+	worksBeyond        bool // still working at the forecast horizon
 }
 
 // colonyBeyondHorizonText is shown for colonies which work beyond the forecast horizon.
@@ -107,6 +109,95 @@ func (r colonyRow) statusShort(now time.Time) []widget.RichTextSegment {
 		return xwidget.RichTextSegmentsFromText(colonyBeyondHorizonText, style)
 	}
 	return xwidget.RichTextSegmentsFromText(r.status.Display(), style)
+}
+
+// colonyExtractorsState is the state of a colony's extractors.
+type colonyExtractorsState uint
+
+const (
+	colonyExtractorsNone colonyExtractorsState = iota
+	colonyExtractorsRunning
+	colonyExtractorsSomeExpired
+	colonyExtractorsAllExpired
+)
+
+// earliestTime returns the earliest of times or empty when there are none.
+func earliestTime(times []time.Time) optional.Optional[time.Time] {
+	if len(times) == 0 {
+		return optional.Optional[time.Time]{}
+	}
+	return optional.New(slices.MinFunc(times, func(a, b time.Time) int {
+		return a.Compare(b)
+	}))
+}
+
+func (r colonyRow) extractorsState(now time.Time) colonyExtractorsState {
+	if len(r.extractorExpiries) == 0 {
+		return colonyExtractorsNone
+	}
+	var expired int
+	for _, v := range r.extractorExpiries {
+		if !v.After(now) {
+			expired++
+		}
+	}
+	switch expired {
+	case 0:
+		return colonyExtractorsRunning
+	case len(r.extractorExpiries):
+		return colonyExtractorsAllExpired
+	}
+	return colonyExtractorsSomeExpired
+}
+
+// compareExtractorsExpire orders colonies by when their first extractor expires:
+// expired first, then running, then without extractors.
+func (r colonyRow) compareExtractorsExpire(other colonyRow) int {
+	rank := func(x colonyRow) int {
+		if x.extractorsExpireAt.IsEmpty() {
+			return 1
+		}
+		return 0
+	}
+	if c := cmp.Compare(rank(r), rank(other)); c != 0 {
+		return c
+	}
+	return optional.CompareFunc(r.extractorsExpireAt, other.extractorsExpireAt, func(x, y time.Time) int {
+		return x.Compare(y)
+	})
+}
+
+// extractorsExpiredDisplay returns the display for expired extractors and reports whether any have expired.
+func (r colonyRow) extractorsExpiredDisplay(now time.Time) ([]widget.RichTextSegment, bool) {
+	switch r.extractorsState(now) {
+	case colonyExtractorsAllExpired:
+		return xwidget.RichTextSegmentsFromText("Expired", widget.RichTextStyle{ColorName: theme.ColorNameError}), true
+	case colonyExtractorsSomeExpired:
+		return xwidget.RichTextSegmentsFromText("Some expired", widget.RichTextStyle{ColorName: theme.ColorNameWarning}), true
+	}
+	return nil, false
+}
+
+// extractorsExpireDisplay returns when the first extractor expires for the desktop column.
+func (r colonyRow) extractorsExpireDisplay(now time.Time) []widget.RichTextSegment {
+	if s, ok := r.extractorsExpiredDisplay(now); ok {
+		return s
+	}
+	return xwidget.RichTextSegmentsFromText(r.extractorsExpireAt.StringFunc("-", func(v time.Time) string {
+		return v.Format(app.DateTimeFormat)
+	}))
+}
+
+// extractorsExpireShort returns the time until the first extractor expires for the mobile list.
+func (r colonyRow) extractorsExpireShort(now time.Time) []widget.RichTextSegment {
+	if s, ok := r.extractorsExpiredDisplay(now); ok {
+		return s
+	}
+	v, ok := r.extractorsExpireAt.Value()
+	if !ok {
+		return nil
+	}
+	return xwidget.RichTextSegmentsFromText(ihumanize.Duration(v.Sub(now)))
 }
 
 func (r colonyRow) workEndsDisplay() string {
@@ -211,13 +302,15 @@ func coloniesHelpText(isMobile bool) string {
 		layout = `Each colony shows:
 • Planet icon: The type of planet. Grayed out with a red symbol when the colony has stopped working.
 • Top: The planet the colony is on and the time until work ends in the color of its status, or otherwise the colony's status.
-• Extractor icon: The resources the extractors are set to extract.
+• Extractor icon: The resources the extractors are set to extract, and the time until the first extractor expires. Shows "Some expired" (orange) or "Expired" (red) when extractors have expired.
 • Factory icon: The products the factories are set to produce.
 • Person icon: The character who owns the colony.`
 	} else {
 		layout = `Planet: The planet the colony is on.
 
 Extracting: The resources the extractors are set to extract.
+
+Extractors expire: When the first extractor expires. Shows "Some expired" or "Expired" when some or all extractors have expired, and "-" otherwise.
 
 Producing: The products the factories are set to produce.
 
@@ -268,6 +361,15 @@ func NewColonies(u baseUI) *Colonies {
 		},
 		Update: func(r colonyRow, co fyne.CanvasObject) {
 			co.(*xwidget.RichText).SetWithText(r.workEndsDisplay())
+		},
+	}, {
+		Label: "Extractors expire",
+		Width: ui.ColumnWidthDateTime,
+		Sort: func(a, b colonyRow) int {
+			return a.compareExtractorsExpire(b)
+		},
+		Update: func(r colonyRow, co fyne.CanvasObject) {
+			co.(*xwidget.RichText).Set(r.extractorsExpireDisplay(time.Now()))
 		},
 	}, {
 		Label: "Extracting",
@@ -435,18 +537,16 @@ func (a *Colonies) makeDataList() *xwidget.StripedList {
 	return l
 }
 
-// colonyListMutedColor is the color of the details and their icons in the mobile colony list.
-const colonyListMutedColor = theme.ColorNamePlaceHolder
-
 type colonyListItem struct {
 	widget.BaseWidget
 
-	character  *xwidget.RichText
-	extracting *xwidget.RichText
-	planet     *colonyPlanetSymbol
-	producing  *xwidget.RichText
-	status     *xwidget.RichText
-	title      *xwidget.RichText
+	character        *xwidget.RichText
+	extracting       *xwidget.RichText
+	extractorsExpire *xwidget.RichText
+	planet           *colonyPlanetSymbol
+	producing        *xwidget.RichText
+	status           *xwidget.RichText
+	title            *xwidget.RichText
 }
 
 func newColonyListItem() *colonyListItem {
@@ -458,12 +558,13 @@ func newColonyListItem() *colonyListItem {
 	title := xwidget.NewRichText()
 	title.Truncation = fyne.TextTruncateEllipsis
 	w := &colonyListItem{
-		character:  makeDetail(),
-		extracting: makeDetail(),
-		planet:     newColonyPlanetSymbol(planetPinMinSize, 1),
-		producing:  makeDetail(),
-		status:     xwidget.NewRichText(),
-		title:      title,
+		character:        makeDetail(),
+		extracting:       makeDetail(),
+		extractorsExpire: xwidget.NewRichText(),
+		planet:           newColonyPlanetSymbol(planetPinMinSize, 1),
+		producing:        makeDetail(),
+		status:           xwidget.NewRichText(),
+		title:            title,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -471,12 +572,12 @@ func newColonyListItem() *colonyListItem {
 
 func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	detail := func(icon fyne.CanvasObject, text *xwidget.RichText) fyne.CanvasObject {
+	detail := func(icon fyne.CanvasObject, text *xwidget.RichText, trailing fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewBorder(
 			nil,
 			nil,
 			container.NewHBox(xwidget.NewSpacer(fyne.NewSize(p/2, 1)), icon),
-			nil,
+			trailing,
 			text,
 		)
 	}
@@ -487,20 +588,20 @@ func (w *colonyListItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.New(layout.NewCustomPaddedVBoxLayout(-3*p), // same spacing as character cards
 			container.New(layout.NewCustomPaddedLayout(0, p, 0, 0), container.NewBorder(nil, nil, nil, w.status, w.title)),
-			detail(newColonyPinIcon(pinTypeExtractor.icon(), colonyListMutedColor), w.extracting),
-			detail(newColonyPinIcon(pinTypeBasicProcessor.icon(), colonyListMutedColor), w.producing),
-			detail(widget.NewIcon(theme.NewColoredResource(theme.AccountIcon(), colonyListMutedColor)), w.character),
+			detail(newColonyPinIcon(pinTypeExtractor.icon(), theme.ColorNameForeground), w.extracting, w.extractorsExpire),
+			detail(newColonyPinIcon(pinTypeBasicProcessor.icon(), theme.ColorNameForeground), w.producing, nil),
+			detail(widget.NewIcon(theme.AccountIcon()), w.character, nil),
 		),
 	)
 	return widget.NewSimpleRenderer(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), c))
 }
 
 func (w *colonyListItem) set(r colonyRow) {
-	muted := widget.RichTextStyle{ColorName: colonyListMutedColor}
-	w.character.SetWithText(r.ownerName, muted)
-	w.extracting.SetWithText(r.extractingText, muted)
+	w.character.SetWithText(r.ownerName)
+	w.extracting.SetWithText(r.extractingText)
+	w.extractorsExpire.Set(r.extractorsExpireShort(time.Now()))
 	w.planet.set(r.planetIconID, r.stopped)
-	w.producing.SetWithText(r.producingText, muted)
+	w.producing.SetWithText(r.producingText)
 	w.status.Set(r.statusShort(time.Now()))
 	w.title.Set(r.titleDisplay)
 }
@@ -722,22 +823,25 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 		})
 		name := p.EvePlanet.Name
 		searchTargets := slices.Collect(xiter.Map(set.Union(set.Of(name), extracting, producing).All(), strings.ToLower))
+		expiries := p.ExtractorsExpiryTimes()
 		r := colonyRow{
-			characterID:     p.CharacterID,
-			extracting:      extracting,
-			name:            name,
-			nameDisplay:     nameDisplay,
-			ownerName:       characters[p.CharacterID],
-			planet:          p,
-			planetIconID:    p.EvePlanet.Type.IconID.ValueOrZero(),
-			planetID:        p.EvePlanet.ID,
-			planetName:      p.EvePlanet.Name,
-			producing:       producing,
-			regionName:      p.EvePlanet.SolarSystem.Constellation.Region.Name,
-			solarSystemName: p.EvePlanet.SolarSystem.Name,
-			planetTypeName:  p.EvePlanet.TypeDisplay(),
-			titleDisplay:    titleDisplay,
-			searchTarget:    strings.Join(searchTargets, "~"),
+			characterID:        p.CharacterID,
+			extracting:         extracting,
+			extractorExpiries:  expiries,
+			extractorsExpireAt: earliestTime(expiries),
+			name:               name,
+			nameDisplay:        nameDisplay,
+			ownerName:          characters[p.CharacterID],
+			planet:             p,
+			planetIconID:       p.EvePlanet.Type.IconID.ValueOrZero(),
+			planetID:           p.EvePlanet.ID,
+			planetName:         p.EvePlanet.Name,
+			producing:          producing,
+			regionName:         p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			solarSystemName:    p.EvePlanet.SolarSystem.Name,
+			planetTypeName:     p.EvePlanet.TypeDisplay(),
+			titleDisplay:       titleDisplay,
+			searchTarget:       strings.Join(searchTargets, "~"),
 		}
 		r.setForecast(a.u.Character().ForecastPlanet(p, now))
 		if extracting.Size() == 0 {
