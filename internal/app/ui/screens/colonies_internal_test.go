@@ -169,6 +169,26 @@ func TestColonies(t *testing.T) {
 			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
 		}
 	})
+	t.Run("can search by region", func(t *testing.T) {
+		// given
+		a := newColonies(t)
+		a.Update(t.Context())
+		// when
+		a.searchEntry.SetText(cp.EvePlanet.SolarSystem.Constellation.Region.Name)
+		// then
+		if assert.Len(t, a.rowsFiltered, 1) {
+			assert.Equal(t, cp.EvePlanet.ID, a.rowsFiltered[0].planetID)
+		}
+	})
+	t.Run("should not find commodities in search", func(t *testing.T) {
+		// given
+		a := newColonies(t)
+		a.Update(t.Context())
+		// when
+		a.searchEntry.SetText(product.Name)
+		// then
+		assert.Empty(t, a.rowsFiltered)
+	})
 }
 
 func TestColonyRow_CompareWorkEnds(t *testing.T) {
@@ -431,15 +451,15 @@ func TestColonyListItem(t *testing.T) {
 }
 
 func TestColonyFilter_Match(t *testing.T) {
+	now := time.Now()
 	r := colonyRow{
-		extracting:      set.Of("Aqueous Liquids"),
-		ownerName:       "Bruce",
-		planetTypeName:  "Barren",
-		producing:       set.Of("Water"),
-		regionName:      "The Forge",
-		solarSystemName: "Jita",
-		status:          app.ColonyExtracting,
-		tags:            set.Of("Main"),
+		extracting:        set.Of("Aqueous Liquids"),
+		extractorExpiries: []time.Time{now.Add(time.Hour)},
+		ownerName:         "Bruce",
+		planetTypeName:    "Barren",
+		producing:         set.Of("Water"),
+		status:            app.ColonyExtracting,
+		tags:              set.Of("Main"),
 	}
 	for _, tc := range []struct {
 		name   string
@@ -448,35 +468,58 @@ func TestColonyFilter_Match(t *testing.T) {
 	}{
 		{"no filter", colonyFilter{}, true},
 		{"all filters match", colonyFilter{
-			extracted:   "Aqueous Liquids",
-			owner:       "Bruce",
-			planetType:  "Barren",
-			produced:    "Water",
-			region:      "The Forge",
-			solarSystem: "Jita",
-			status:      app.ColonyExtracting.Display(),
-			tag:         "Main",
+			commodity:  "Aqueous Liquids",
+			extractors: colonyExtractorsRunningText,
+			owner:      "Bruce",
+			planetType: "Barren",
+			status:     app.ColonyExtracting.Display(),
+			tag:        "Main",
 		}, true},
 		{"attention", colonyFilter{attention: true}, false},
-		{"extracted", colonyFilter{extracted: "Base Metals"}, false},
+		{"commodity extracted", colonyFilter{commodity: "Aqueous Liquids"}, true},
+		{"commodity produced", colonyFilter{commodity: "Water"}, true},
+		{"commodity", colonyFilter{commodity: "Oxygen"}, false},
+		{"extractors", colonyFilter{extractors: colonyExtractorsExpiredText}, false},
 		{"owner", colonyFilter{owner: "Alice"}, false},
 		{"planet type", colonyFilter{planetType: "Lava"}, false},
-		{"produced", colonyFilter{produced: "Oxygen"}, false},
-		{"region", colonyFilter{region: "Domain"}, false},
-		{"solar system", colonyFilter{solarSystem: "Amarr"}, false},
 		{"status", colonyFilter{status: app.ColonyStopped.Display()}, false},
 		{"tag", colonyFilter{tag: "Alt"}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.filter.match(r))
+			assert.Equal(t, tc.want, tc.filter.match(r, now))
 		})
 	}
 	t.Run("attention matches colonies with problems", func(t *testing.T) {
 		for _, s := range []app.ColonyStatus{app.ColonyNeedsAttention, app.ColonyNotSetup, app.ColonyStopped} {
-			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}), s.Display())
+			assert.True(t, colonyFilter{attention: true}.match(colonyRow{status: s}, now), s.Display())
 		}
-		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyProducing}))
+		assert.False(t, colonyFilter{attention: true}.match(colonyRow{status: app.ColonyProducing}, now))
 	})
+}
+
+func TestColonyRow_ExtractorsFilterValue(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-time.Hour)
+	future := now.Add(time.Hour)
+	for _, tc := range []struct {
+		name     string
+		expiries []time.Time
+		want     string
+	}{
+		{"running", []time.Time{future}, colonyExtractorsRunningText},
+		{"some expired", []time.Time{past, future}, colonyExtractorsExpiredText},
+		{"all expired", []time.Time{past}, colonyExtractorsExpiredText},
+		{"none", nil, colonyExtractorsNoneText},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			r := colonyRow{extractorExpiries: tc.expiries}
+			// when
+			got := r.extractorsFilterValue(now)
+			// then
+			xassert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestColonyRow_SetForecast(t *testing.T) {

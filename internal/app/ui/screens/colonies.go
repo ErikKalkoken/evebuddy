@@ -46,7 +46,6 @@ type colonyRow struct {
 	producingText      string
 	regionName         string
 	searchTarget       string
-	solarSystemName    string
 	status             app.ColonyStatus
 	stopped            bool // stopped working completely
 	tags               set.Set[string]
@@ -167,6 +166,25 @@ func (r colonyRow) compareExtractorsExpire(other colonyRow) int {
 	})
 }
 
+// Values of the extractors filter.
+const (
+	colonyExtractorsRunningText = "Running"
+	colonyExtractorsExpiredText = "Expired"
+	colonyExtractorsNoneText    = "None"
+)
+
+// extractorsFilterValue returns the value of the row for the extractors filter.
+// Expired means at least one extractor has expired.
+func (r colonyRow) extractorsFilterValue(now time.Time) string {
+	switch r.extractorsState(now) {
+	case colonyExtractorsRunning:
+		return colonyExtractorsRunningText
+	case colonyExtractorsSomeExpired, colonyExtractorsAllExpired:
+		return colonyExtractorsExpiredText
+	}
+	return colonyExtractorsNoneText
+}
+
 // extractorsExpiredDisplay returns the display for expired extractors and reports whether any have expired.
 func (r colonyRow) extractorsExpiredDisplay(now time.Time) ([]widget.RichTextSegment, bool) {
 	switch r.extractorsState(now) {
@@ -211,40 +229,34 @@ func (r colonyRow) workEndsDisplay() string {
 
 // Names of the colony filters, used as labels on desktop and as option names on mobile.
 const (
-	colonyFilterAttention  = "Needs attention"
-	colonyFilterExtracted  = "Extracted"
-	colonyFilterOwner      = "Owner"
-	colonyFilterPlanetType = "Planet Type"
-	colonyFilterProduced   = "Produced"
-	colonyFilterRegion     = "Region"
-	colonyFilterStatus     = "Status"
-	colonyFilterSystem     = "System"
-	colonyFilterTag        = "Tag"
+	colonyFilterAttention   = "Needs attention"
+	colonyFilterCommodities = "Commodities"
+	colonyFilterExtractors  = "Extractors"
+	colonyFilterOwner       = "Owner"
+	colonyFilterPlanetType  = "Planet Type"
+	colonyFilterStatus      = "Status"
+	colonyFilterTag         = "Tag"
 )
 
 // colonyFilter is the selected value of each colony filter. Empty means not filtered.
 type colonyFilter struct {
-	attention   bool // only colonies with problems
-	extracted   string
-	owner       string
-	planetType  string
-	produced    string
-	region      string
-	solarSystem string
-	status      string
-	tag         string
+	attention  bool   // only colonies with problems
+	commodity  string // extracted or produced
+	extractors string
+	owner      string
+	planetType string
+	status     string
+	tag        string
 }
 
-// match reports whether the row passes all selected filters.
-func (f colonyFilter) match(r colonyRow) bool {
+// match reports whether the row passes all selected filters at time now.
+func (f colonyFilter) match(r colonyRow, now time.Time) bool {
 	switch {
 	case f.attention && !r.status.IsProblem(),
-		f.extracted != "" && !r.extracting.Contains(f.extracted),
+		f.commodity != "" && !r.extracting.Contains(f.commodity) && !r.producing.Contains(f.commodity),
+		f.extractors != "" && r.extractorsFilterValue(now) != f.extractors,
 		f.owner != "" && r.ownerName != f.owner,
 		f.planetType != "" && r.planetTypeName != f.planetType,
-		f.produced != "" && !r.producing.Contains(f.produced),
-		f.region != "" && r.regionName != f.region,
-		f.solarSystem != "" && r.solarSystemName != f.solarSystem,
 		f.status != "" && r.status.Display() != f.status,
 		f.tag != "" && !r.tags.Contains(f.tag):
 		return false
@@ -269,12 +281,10 @@ type Colonies struct {
 	rowsRun           xsync.LatestRun
 	rowsFiltered      []colonyRow
 	searchEntry       *xwidget.SearchEntry
-	selectExtracting  *kxwidget.FilterChipSelect // select chips only on desktop
+	selectCommodities *kxwidget.FilterChipSelect // select chips only on desktop
+	selectExtractors  *kxwidget.FilterChipSelect
 	selectOwner       *kxwidget.FilterChipSelect
 	selectPlanetType  *kxwidget.FilterChipSelect
-	selectProducing   *kxwidget.FilterChipSelect
-	selectRegion      *kxwidget.FilterChipSelect
-	selectSolarSystem *kxwidget.FilterChipSelect
 	selectStatus      *kxwidget.FilterChipSelect
 	selectTag         *kxwidget.FilterChipSelect
 	helpButton        *widget.Button
@@ -431,11 +441,12 @@ func NewColonies(u baseUI) *Colonies {
 				a.filterRowsAsync("")
 			})
 		}
-		a.selectExtracting = makeSelect(colonyFilterExtracted)
+		a.selectCommodities = kxwidget.NewFilterChipSelectWithSearch(colonyFilterCommodities, []string{}, func(string) {
+			a.filterRowsAsync("")
+		}, a.u.MainWindow())
+		a.selectExtractors = makeSelect(colonyFilterExtractors)
+		a.selectExtractors.SortDisabled = true
 		a.selectOwner = makeSelect(colonyFilterOwner)
-		a.selectProducing = makeSelect(colonyFilterProduced)
-		a.selectRegion = makeSelect(colonyFilterRegion)
-		a.selectSolarSystem = makeSelect(colonyFilterSystem)
 		a.selectStatus = makeSelect(colonyFilterStatus)
 		a.selectPlanetType = makeSelect(colonyFilterPlanetType)
 		a.selectTag = makeSelect(colonyFilterTag)
@@ -444,7 +455,7 @@ func NewColonies(u baseUI) *Colonies {
 		a.filterRowsAsync("")
 	})
 
-	placeholder := "Search systems & output"
+	placeholder := "Search planets & regions"
 	if a.u.IsMobile() {
 		placeholder = "Search" // shares the row with the chips
 	}
@@ -491,12 +502,10 @@ func (a *Colonies) CreateRenderer() fyne.WidgetRenderer {
 		top = container.NewBorder(nil, nil, nil, container.NewHBox(a.filterChip, a.sortChip), a.searchEntry)
 	} else {
 		filter := container.NewHBox(
-			a.selectSolarSystem,
-			a.selectPlanetType,
-			a.selectExtracting,
 			a.selectStatus,
-			a.selectProducing,
-			a.selectRegion,
+			a.selectExtractors,
+			a.selectCommodities,
+			a.selectPlanetType,
 			a.selectOwner,
 			a.selectTag,
 		)
@@ -612,26 +621,22 @@ func (a *Colonies) currentFilter() colonyFilter {
 	if a.filterChip != nil {
 		s := a.filterChip.Selected()
 		return colonyFilter{
-			attention:   s[colonyFilterAttention] != "",
-			extracted:   s[colonyFilterExtracted],
-			owner:       s[colonyFilterOwner],
-			planetType:  s[colonyFilterPlanetType],
-			produced:    s[colonyFilterProduced],
-			region:      s[colonyFilterRegion],
-			solarSystem: s[colonyFilterSystem],
-			status:      s[colonyFilterStatus],
-			tag:         s[colonyFilterTag],
+			attention:  s[colonyFilterAttention] != "",
+			commodity:  s[colonyFilterCommodities],
+			extractors: s[colonyFilterExtractors],
+			owner:      s[colonyFilterOwner],
+			planetType: s[colonyFilterPlanetType],
+			status:     s[colonyFilterStatus],
+			tag:        s[colonyFilterTag],
 		}
 	}
 	return colonyFilter{
-		extracted:   a.selectExtracting.Selected,
-		owner:       a.selectOwner.Selected,
-		planetType:  a.selectPlanetType.Selected,
-		produced:    a.selectProducing.Selected,
-		region:      a.selectRegion.Selected,
-		solarSystem: a.selectSolarSystem.Selected,
-		status:      a.selectStatus.Selected,
-		tag:         a.selectTag.Selected,
+		commodity:  a.selectCommodities.Selected,
+		extractors: a.selectExtractors.Selected,
+		owner:      a.selectOwner.Selected,
+		planetType: a.selectPlanetType.Selected,
+		status:     a.selectStatus.Selected,
+		tag:        a.selectTag.Selected,
 	}
 }
 
@@ -642,10 +647,11 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 	filter := a.currentFilter()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
+	now := time.Now()
 
 	runAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
-			return !filter.match(r)
+			return !filter.match(r, now)
 		})
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
@@ -660,25 +666,26 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 		ownerOptions := xslices.Map(rows, func(r colonyRow) string {
 			return r.ownerName
 		})
-		regionOptions := xslices.Map(rows, func(r colonyRow) string {
-			return r.regionName
-		})
-		solarSystemOptions := xslices.Map(rows, func(r colonyRow) string {
-			return r.solarSystemName
-		})
 		planetTypeOptions := xslices.Map(rows, func(r colonyRow) string {
 			return r.planetTypeName
 		})
 		statusOptions := xslices.Map(rows, func(r colonyRow) string {
 			return r.status.Display()
 		})
-		var extracting2, producing2 set.Set[string]
+		var commodities, extractors set.Set[string]
 		for _, r := range rows {
-			extracting2.AddSeq(r.extracting.All())
-			producing2.AddSeq(r.producing.All())
+			commodities.AddSeq(r.extracting.All())
+			commodities.AddSeq(r.producing.All())
+			extractors.Add(r.extractorsFilterValue(now))
 		}
-		extractingOptions := slices.Collect(extracting2.All())
-		producingOptions := slices.Collect(producing2.All())
+		commodityOptions := slices.Collect(commodities.All())
+		extractorsOptions := slices.DeleteFunc([]string{
+			colonyExtractorsRunningText,
+			colonyExtractorsExpiredText,
+			colonyExtractorsNoneText,
+		}, func(x string) bool {
+			return !extractors.Contains(x)
+		})
 
 		footer := fmt.Sprintf("Showing %d / %d colonies", len(rows), totalRows)
 		var notWorking int
@@ -702,24 +709,20 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 				a.filterChip.SetOptions(
 					xwidget.NewFilterOptionToogle(colonyFilterAttention),
 					xwidget.NewFilterOptionSeparator(),
-					xwidget.NewFilterOptionMultiChoice(colonyFilterSystem, solarSystemOptions),
-					xwidget.NewFilterOptionMultiChoice(colonyFilterPlanetType, planetTypeOptions),
-					xwidget.NewFilterOptionMultiChoice(colonyFilterExtracted, extractingOptions),
 					xwidget.NewFilterOptionMultiChoice(colonyFilterStatus, statusOptions),
-					xwidget.NewFilterOptionMultiChoice(colonyFilterProduced, producingOptions),
-					xwidget.NewFilterOptionMultiChoice(colonyFilterRegion, regionOptions),
+					xwidget.NewFilterOptionMultiChoiceOrdered(colonyFilterExtractors, extractorsOptions),
+					xwidget.NewFilterOptionMultiChoiceWithSearch(colonyFilterCommodities, commodityOptions),
+					xwidget.NewFilterOptionMultiChoice(colonyFilterPlanetType, planetTypeOptions),
 					xwidget.NewFilterOptionMultiChoice(colonyFilterOwner, ownerOptions),
 					xwidget.NewFilterOptionMultiChoice(colonyFilterTag, tagOptions),
 				)
 			} else {
 				a.selectTag.SetOptions(tagOptions)
 				a.selectOwner.SetOptions(ownerOptions)
-				a.selectRegion.SetOptions(regionOptions)
-				a.selectSolarSystem.SetOptions(solarSystemOptions)
 				a.selectPlanetType.SetOptions(planetTypeOptions)
 				a.selectStatus.SetOptions(statusOptions)
-				a.selectExtracting.SetOptions(extractingOptions)
-				a.selectProducing.SetOptions(producingOptions)
+				a.selectExtractors.SetOptions(extractorsOptions)
+				a.selectCommodities.SetOptions(commodityOptions)
 			}
 			a.rowsFiltered = rows
 			a.body.Refresh()
@@ -822,7 +825,7 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			x.TextStyle.Bold = true
 		})
 		name := p.EvePlanet.Name
-		searchTargets := slices.Collect(xiter.Map(set.Union(set.Of(name), extracting, producing).All(), strings.ToLower))
+		regionName := p.EvePlanet.SolarSystem.Constellation.Region.Name
 		expiries := p.ExtractorsExpiryTimes()
 		r := colonyRow{
 			characterID:        p.CharacterID,
@@ -837,11 +840,10 @@ func (a *Colonies) fetchRows(ctx context.Context) ([]colonyRow, error) {
 			planetID:           p.EvePlanet.ID,
 			planetName:         p.EvePlanet.Name,
 			producing:          producing,
-			regionName:         p.EvePlanet.SolarSystem.Constellation.Region.Name,
-			solarSystemName:    p.EvePlanet.SolarSystem.Name,
+			regionName:         regionName,
 			planetTypeName:     p.EvePlanet.TypeDisplay(),
 			titleDisplay:       titleDisplay,
-			searchTarget:       strings.Join(searchTargets, "~"),
+			searchTarget:       strings.ToLower(name + "~" + regionName), // separator prevents matches across names
 		}
 		r.setForecast(a.u.Character().ForecastPlanet(p, now))
 		if extracting.Size() == 0 {
