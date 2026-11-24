@@ -1,0 +1,37 @@
+# Local build: go run github.com/gohugoio/hugo@v0.170.1 build --source website
+baseURL = "https://erikkalkoken.github.io/evebuddy/"
+title = "EVE Buddy"
+disableKinds = ["taxonomy", "term", "section", "rss"]
+enableRobotsTXT = true
+
+[params]
+tagline = "Companion app for EVE Online" # home page title suffix
+description = "EVE Buddy is a free multi-platform companion app for EVE Online players on Windows, macOS, Linux and Android."
+repo = "https://github.com/ErikKalkoken/evebuddy"
+discord = "https://discord.gg/tVSCQEVJnJ"
+forum = "https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40"
+
+[menus]
+[[menus.main]]
+name = "Features"
+pageRef = "/features"
+weight = 10
+[[menus.main]]
+name = "Download"
+pageRef = "/download"
+weight = 20
+[[menus.main]]
+name = "Install"
+pageRef = "/install"
+weight = 30
+[[menus.main]]
+name = "Support"
+pageRef = "/support"
+weight = 40
+
+[markup.goldmark.parser.attribute]
+block = true
+title = true
+
+[markup.goldmark.renderer]
+unsafe = false

@@ -1,0 +1,4 @@
+{{- /* Renders an image from front matter: dict "img" (src, alt) "class" "lazy". Size is read from the file in static/. */ -}}
+{{- $img := .img -}}
+{{- $cfg := imageConfig (path.Join "static" $img.src) -}}
+<img{{ with .class }} class="{{ . }}"{{ end }} src="{{ $img.src | relURL }}" alt="{{ $img.alt }}"{{ if .lazy }} loading="lazy"{{ end }} width="{{ $cfg.Width }}" height="{{ $cfg.Height }}">

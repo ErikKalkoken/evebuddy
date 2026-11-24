@@ -34,3 +34,9 @@ MEMORY.md
 .zprofile
 .ripgreprc
 .idea
+
+# website (Hugo)
+website/public/
+website/resources/_gen/
+website/.hugo_build.lock
+website/data/release.json

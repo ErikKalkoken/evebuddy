@@ -1,0 +1,21 @@
+{{ define "main" }}
+<div class="page-head">
+  <div class="container">
+    <h1>{{ .Title }}</h1>
+    {{- with .Params.lead }}<p class="muted lead">{{ . }}</p>{{ end }}
+  </div>
+</div>
+<section class="section-tight">
+  <div class="container prose-layout">
+    {{- if .Params.toc }}
+    <aside class="toc">
+      <div class="toc-title">On this page</div>
+      {{ .TableOfContents }}
+    </aside>
+    {{- end }}
+    <article class="prose">
+      {{ .Content }}
+    </article>
+  </div>
+</section>
+{{ end }}

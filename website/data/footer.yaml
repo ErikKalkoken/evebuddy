@@ -1,0 +1,33 @@
+# Text and links for the site footer (layouts/_partials/footer.html).
+about: A multi-platform companion app for EVE Online players. Free and open source.
+
+# URLs starting with http are external; all others are site pages.
+columns:
+  - title: App
+    links:
+      - label: Features
+        url: features/
+      - label: Download
+        url: download/
+      - label: Install
+        url: install/
+  - title: Help
+    links:
+      - label: Support
+        url: support/
+      - label: Report a bug
+        url: https://github.com/ErikKalkoken/evebuddy/issues
+  - title: Community
+    links:
+      - label: Discord
+        url: https://discord.gg/tVSCQEVJnJ
+      - label: GitHub
+        url: https://github.com/ErikKalkoken/evebuddy
+      - label: EVE Forum
+        url: https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40
+      - label: EVE Developers
+        url: https://developers.eveonline.com/docs/community/eve-buddy/
+
+# Markdown, so links are possible.
+legal:
+  - '"EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.'

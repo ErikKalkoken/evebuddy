@@ -283,6 +283,7 @@ jobs:
       VERSION: ${{ needs.test.outputs.version }}
     permissions:
       contents: write
+      actions: write # trigger pages.yml
     steps:
       - uses: actions/download-artifact@v8
         with:
@@ -299,3 +300,8 @@ jobs:
             ${{ env.NAME }}-${{ env.VERSION }}-darwin-arm64.zip
             ${{ env.NAME }}-${{ env.VERSION }}-darwin-intel64.zip
             ${{ env.FULLNAME2 }}.apk
+
+      - name: Update website download links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "${{ github.repository }}" --ref main

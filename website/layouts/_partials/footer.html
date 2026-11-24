@@ -1,0 +1,27 @@
+{{- /* Text and links come from data/footer.yaml. */ -}}
+{{- $footer := hugo.Data.footer -}}
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="{{ "" | relURL }}"><img src="{{ "logo.png" | relURL }}" alt="" width="32" height="32">{{ site.Title }}</a>
+        <p class="footer-about">{{ $footer.about }}</p>
+      </div>
+      {{- range $footer.columns }}
+      <div>
+        <h4>{{ .title }}</h4>
+        <ul>
+          {{- range .links }}
+          <li><a href="{{ if hasPrefix .url "http" }}{{ .url }}{{ else }}{{ .url | relURL }}{{ end }}">{{ .label }}</a></li>
+          {{- end }}
+        </ul>
+      </div>
+      {{- end }}
+    </div>
+    <div class="legal">
+      {{- range $footer.legal }}
+      <p>{{ . | markdownify }}</p>
+      {{- end }}
+    </div>
+  </div>
+</footer>
