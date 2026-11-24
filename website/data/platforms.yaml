@@ -1,0 +1,39 @@
+# Download options, matched to release assets by file name suffix (see .github/workflows/ci-cd.yml).
+# Entries are shown in this order, so keep them sorted alphabetically by title.
+# os: picks the icon and is matched by the OS detection in assets/js/main.js (never for macOS); only the first entry per os is recommended.
+- id: android
+  os: android
+  title: Android
+  meta: APK · not in app stores
+  suffix: .apk
+  install: install/#android
+- id: appimage
+  os: linux-appimage
+  title: Linux (AppImage)
+  meta: x86_64 · runs without installing
+  suffix: -x86_64.AppImage
+  install: install/#appimage
+- id: tarball
+  os: linux
+  title: Linux (tarball)
+  meta: amd64 · tar.xz · desktop integration
+  suffix: -linux-amd64.tar.xz
+  install: install/#tarball
+- id: mac-arm
+  os: mac
+  title: macOS (Apple Silicon)
+  meta: M1 and newer · zip
+  suffix: -darwin-arm64.zip
+  install: install/#macos
+- id: mac-intel
+  os: mac-intel
+  title: macOS (Intel)
+  meta: Intel Macs · zip
+  suffix: -darwin-intel64.zip
+  install: install/#macos
+- id: windows
+  os: windows
+  title: Windows
+  meta: Windows 10/11 · x64 · zip
+  suffix: -windows-x64.zip
+  install: install/#windows

@@ -1,0 +1,5 @@
+{{- /* Resolves site-relative image paths against baseURL; adds lazy loading. */ -}}
+{{- $src := .Destination -}}
+{{- if not (strings.HasPrefix $src "http") }}{{ $src = $src | relURL }}{{ end -}}
+<img src="{{ $src }}" alt="{{ .Text }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy"
+  {{- range $k, $v := .Attributes }} {{ $k }}="{{ $v }}"{{ end }}>

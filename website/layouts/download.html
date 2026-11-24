@@ -1,0 +1,42 @@
+{{ define "main" }}
+{{- $rel := partial "release.html" . }}
+<div class="page-head">
+  <div class="container">
+    <h1>{{ .Title }}</h1>
+    <p class="release-line">
+      {{- with $rel.version }}<span>Latest version <strong>{{ . }}</strong></span>{{ end }}
+      {{- with $rel.date }}<span>Released {{ . }}</span>{{ end }}
+      <a href="{{ $rel.notesURL }}">Release notes</a>
+    </p>
+  </div>
+</div>
+
+<section class="section-tight">
+  <div class="container">
+    {{- /* main.js highlights the card for the visitor's platform. */}}
+    <div class="dl-grid" id="dlGrid">
+      {{- range $rel.downloads }}
+      <div class="dl-card" data-os="{{ .os }}">
+        <span class="tag">Recommended for you</span>
+        <div class="head">{{ partial "icon.html" .os }}<h3>{{ .title }}</h3></div>
+        <div class="meta">{{ .meta }}</div>
+        {{- with .size }}<div class="meta">{{ . }}</div>{{ end }}
+        <div class="actions">
+          <a class="btn" href="{{ .url }}">{{ partial "icon.html" "download" }}Download</a>
+          <a href="{{ .install | relURL }}">Install guide</a>
+        </div>
+      </div>
+      {{- end }}
+    </div>
+
+    <div class="callout callout-note">
+      {{ .Content }}
+    </div>
+
+    <div class="dl-extra">
+      <a class="btn" href="{{ site.Params.repo }}/releases">All releases</a>
+      <a class="btn" href="{{ site.Params.repo }}">Source code</a>
+    </div>
+  </div>
+</section>
+{{ end }}

@@ -1,0 +1,72 @@
+# Builds the website with Hugo and deploys it to GitHub Pages.
+# spellchecker: disable
+
+name: Pages
+
+env:
+  HUGO_VERSION: "v0.170.1"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/pages.yml"
+  # Triggered by the release job in ci-cd.yml, since releases created with GITHUB_TOKEN don't trigger workflows.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read # configure-pages reads the Pages site
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: .github/workflows/pages.yml # cache key follows HUGO_VERSION
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Fetch latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/releases/latest" > website/data/release.json
+
+      - name: Build website
+        run: >
+          go run github.com/gohugoio/hugo@${{ env.HUGO_VERSION }} build
+          --source website --minify
+          --baseURL "${{ steps.pages.outputs.base_url }}/"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

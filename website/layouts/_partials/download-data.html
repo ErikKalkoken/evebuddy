@@ -1,0 +1,8 @@
+{{- /* Download list as JSON attribute value for main.js. */ -}}
+{{- $rel := partial "release.html" . -}}
+{{- $list := slice -}}
+{{- range $rel.downloads -}}
+  {{- $list = $list | append (dict "os" .os "title" .title "url" .url "size" .size "icon" (partial "icon.html" .os)) -}}
+{{- end -}}
+{{- $json := dict "version" $rel.version "downloads" $list | jsonify -}}
+{{- return $json -}}

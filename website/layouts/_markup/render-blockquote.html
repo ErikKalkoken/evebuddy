@@ -1,0 +1,11 @@
+{{- /* Renders GitHub-style alerts (> [!TIP]) as callouts, so content can keep README syntax. */ -}}
+{{- if eq .Type "alert" -}}
+<div class="callout callout-{{ .AlertType }}">
+  <div class="callout-title">{{ .AlertTitle | default (.AlertType | strings.FirstUpper) }}</div>
+  {{ .Text }}
+</div>
+{{- else -}}
+<blockquote>
+  {{ .Text }}
+</blockquote>
+{{- end -}}

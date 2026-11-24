@@ -1,0 +1,13 @@
+<header class="site">
+  <div class="container nav">
+    <a class="brand" href="{{ "" | relURL }}"><img src="{{ "logo.png" | relURL }}" alt="" width="32" height="32">{{ site.Title }}</a>
+    <button class="menu-toggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks" id="menuToggle">{{ partial "icon.html" "menu" }}</button>
+    <nav class="nav-links" id="navLinks">
+      {{- $current := . }}
+      {{- range site.Menus.main }}
+      <a href="{{ .URL }}"{{ if $current.IsMenuCurrent "main" . }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
+      {{- end }}
+      <a class="icon-link" href="{{ site.Params.repo }}" aria-label="GitHub">{{ partial "icon.html" "github" }}</a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,4 @@
+{{- /* Resolves site-relative links (e.g. "install/#android") against baseURL. */ -}}
+{{- $url := .Destination -}}
+{{- if not (or (strings.HasPrefix $url "http") (strings.HasPrefix $url "#") (strings.HasPrefix $url "mailto:")) }}{{ $url = $url | relURL }}{{ end -}}
+<a href="{{ $url }}"{{ with .Title }} title="{{ . }}"{{ end }}>{{ .Text }}</a>

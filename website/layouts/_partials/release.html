@@ -1,0 +1,28 @@
+{{- /* Latest release from data/release.json (written by the Pages workflow).
+Without it (local builds), all links fall back to the releases page. */ -}}
+{{- $latest := printf "%s/releases/latest" site.Params.repo -}}
+{{- $rel := hugo.Data.release -}}
+{{- $downloads := slice -}}
+{{- range hugo.Data.platforms -}}
+  {{- $p := . -}}
+  {{- $url := $latest -}}
+  {{- $size := "" -}}
+  {{- with $rel -}}
+    {{- range .assets -}}
+      {{- if strings.HasSuffix .name $p.suffix -}}
+        {{- $url = .browser_download_url -}}
+        {{- $size = printf "%.0f MB" (div .size 1048576.0) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $downloads = $downloads | append (merge $p (dict "url" $url "size" $size)) -}}
+{{- end -}}
+{{- $result := dict "version" "" "date" "" "notesURL" $latest "downloads" $downloads -}}
+{{- with $rel -}}
+  {{- $result = merge $result (dict
+    "version" (strings.TrimPrefix "v" .tag_name)
+    "date" (time.Format "2 Jan 2006" .published_at)
+    "notesURL" .html_url
+  ) -}}
+{{- end -}}
+{{- return $result -}}

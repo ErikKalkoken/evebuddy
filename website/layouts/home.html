@@ -1,0 +1,82 @@
+{{ define "main" }}
+{{- /* Text comes from the front matter of content/_index.md. */}}
+{{- $rel := partial "release.html" . }}
+{{- with .Params.hero }}
+<div class="hero">
+  <div class="container">
+    <h1>{{ .title }}</h1>
+    <p class="lead">{{ .lead }}</p>
+    <div class="cta">
+      {{- /* main.js points the button to the visitor's platform; without JS it opens the download page. */}}
+      <a class="btn btn-primary btn-lg" id="heroDownload" href="{{ "download/" | relURL }}" data-downloads="{{ partial "download-data.html" $ }}">
+        <span class="os-icon">{{ partial "icon.html" "download" }}</span><span id="heroLabel">Download EVE Buddy</span>
+      </a>
+      <small><span id="heroMeta">{{ with $rel.version }}Version {{ . }} · {{ end }}Free and open source</span> · <a href="{{ "download/" | relURL }}">Other platforms</a></small>
+    </div>
+    <div class="badge-row">
+      {{- range .badges }}
+      <span>{{ partial "icon.html" "check" }}{{ . }}</span>
+      {{- end }}
+    </div>
+    <div class="shots">
+      {{ partial "home-image.html" (dict "img" .images.desktop "class" "shot-desktop") }}
+      {{ partial "home-image.html" (dict "img" .images.phone "class" "shot-phone") }}
+    </div>
+    {{- with .featured }}
+    <p class="trust">{{ .text }}:
+      {{- range $i, $l := .links }}{{ if $i }} ·{{ end }} <a href="{{ $l.url }}">{{ $l.label }}</a>{{ end }}
+    </p>
+    {{- end }}
+  </div>
+</div>
+{{- end }}
+
+{{- with .Params.highlights }}
+<section id="highlights">
+  <div class="container">
+    <div class="section-head">
+      <h2>{{ .title }}</h2>
+      <p>{{ .text }}</p>
+    </div>
+
+    {{- range $i, $_ := .items }}
+    <div class="showcase{{ if modBool $i 2 | not }} reverse{{ end }}">
+      <div class="showcase-media">
+        <a href="{{ .image.src | relURL }}">{{ partial "home-image.html" (dict "img" .image "lazy" true) }}</a>
+      </div>
+      <div>
+        <div class="eyebrow">{{ .eyebrow }}</div>
+        <h3>{{ .title }}</h3>
+        <p class="muted">{{ .text }}</p>
+        <ul>
+          {{- range .items }}
+          <li>{{ . }}</li>
+          {{- end }}
+        </ul>
+      </div>
+    </div>
+    {{- end }}
+  </div>
+</section>
+{{- end }}
+
+{{- with .Params.cards }}
+<section class="alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>{{ .title }}</h2>
+    </div>
+    <div class="grid">
+      {{- range .items }}
+      <div class="card">
+        <div class="ico">{{ partial "icon.html" .icon }}</div>
+        <h3>{{ .title }}</h3>
+        <p>{{ .text }}</p>
+      </div>
+      {{- end }}
+    </div>
+    <div class="center more"><a class="btn" href="{{ "features/" | relURL }}">See all features →</a></div>
+  </div>
+</section>
+{{- end }}
+{{ end }}
