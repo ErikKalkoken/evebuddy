@@ -13,8 +13,10 @@ columns:
         url: install/
   - title: Help
     links:
+      - label: FAQ
+        url: help/#faq
       - label: Support
-        url: support/
+        url: help/#support
       - label: Report a bug
         url: https://github.com/ErikKalkoken/evebuddy/issues
   - title: Community
@@ -23,10 +25,12 @@ columns:
         url: https://discord.gg/tVSCQEVJnJ
       - label: GitHub
         url: https://github.com/ErikKalkoken/evebuddy
-      - label: EVE Forum
-        url: https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40
       - label: EVE Developers
         url: https://developers.eveonline.com/docs/community/eve-buddy/
+      - label: EVE Forum
+        url: https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-windows-linux-macos-and-android
+      - label: Reddit
+        url: https://www.reddit.com/r/Eve/comments/1go4iee/eve_buddy_a_new_companion_app_for_eve_online/
 
 # Markdown, so links are possible.
 legal:

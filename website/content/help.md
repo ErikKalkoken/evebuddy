@@ -1,15 +1,10 @@
 ---
-title: Support
-lead: Answers to common questions, known issues and where to get help.
-description: Frequently asked questions and support for EVE Buddy.
+title: Help
+lead: Answers to common questions, known issues and how to get support.
+description: Frequently asked questions, troubleshooting and support for EVE Buddy.
+aliases: ["/support/"]
 toc: true
 ---
-
-## Getting help
-
-For bugs and feature requests please [open an issue on GitHub](https://github.com/ErikKalkoken/evebuddy/issues).
-
-For support and any other questions please join us in the **#eve-buddy** channel on our [Discord server](https://discord.gg/tVSCQEVJnJ).
 
 ## FAQ
 
@@ -68,3 +63,9 @@ To view exported logs on mobile you might want to install another app. While the
 
 - For viewing log files: [LogLog](https://play.google.com/store/apps/details?id=io.github.mthli.loglog&hl=en)
 - For viewing txt files: [Text Viewer](https://play.google.com/store/apps/details?id=com.panagola.app.textviewer&hl=en)
+
+## Support
+
+For bugs and feature requests please [open an issue on GitHub](https://github.com/ErikKalkoken/evebuddy/issues).
+
+For support and any other questions please join us in the **#eve-buddy** channel on our [Discord server](https://discord.gg/tVSCQEVJnJ).
