@@ -26,7 +26,7 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 - **Run in background**: Keeps running and notifying you while you do something else, like playing EVE
 - **Customizable UI**: Dark or light theme, and custom UI scaling on desktop
 
-See the [website](https://erikkalkoken.github.io/evebuddy/) for all features, install guides and support.
+See the [website](https://evebuddy.kalkoken.net/) for all features, install guides and support.
 
 ## Support & Contribution
 

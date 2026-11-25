@@ -21,7 +21,7 @@ import (
 
 const (
 	discordServerURL = "https://discord.gg/tVSCQEVJnJ"
-	mainWebsiteURL   = "https://erikkalkoken.github.io/evebuddy/"
+	mainWebsiteURL   = "https://evebuddy.kalkoken.net/"
 )
 
 // aboutPage is a widget that shows information about the app.

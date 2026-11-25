@@ -1,5 +1,5 @@
 # Local build: go run github.com/gohugoio/hugo@v0.170.1 build --source website
-baseURL = "https://erikkalkoken.github.io/evebuddy/"
+baseURL = "https://evebuddy.kalkoken.net/"
 title = "EVE Buddy"
 disableKinds = ["taxonomy", "term", "section", "rss"]
 enableRobotsTXT = true
