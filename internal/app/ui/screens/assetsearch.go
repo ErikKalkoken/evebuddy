@@ -1013,8 +1013,12 @@ func assetSearchHelpText(isMobile, forCorporation bool) string {
 		volume   = `The total volume of all units in m3. Takes into account whether an item is packaged. Does not include the contents of containers or ships.`
 		note     = `NOTE: ? means the value is unknown.`
 	)
+	var intro string
+	if !forCorporation {
+		intro = "Shows the assets of all your characters and corporations.\n\n"
+	}
 	if isMobile {
-		s := `Each item shows:
+		s := intro + `Each item shows:
 • Title: The inventory type of the item, e.g. "Merlin", and the number of units. A single item that is not stacked, e.g. an assembled ship, shows no number.
 • Location: ` + location
 		if !forCorporation {
@@ -1022,7 +1026,7 @@ func assetSearchHelpText(isMobile, forCorporation bool) string {
 		}
 		return s + "\n• Price (bottom left): " + price + "\n• Volume (bottom right): " + volume + "\n\n" + note
 	}
-	s := `Item: The inventory type of the item, e.g. "Merlin".
+	s := intro + `Item: The inventory type of the item, e.g. "Merlin".
 
 Group: The inventory group the item's type belongs to, e.g. "Frigate".
 

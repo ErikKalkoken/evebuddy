@@ -60,6 +60,15 @@ if (targets.length) {
     current?.classList.remove("active");
     active?.classList.add("active");
     current = active;
+    // Keep the active entry visible when the TOC itself scrolls (scrollIntoView would move the page too).
+    const toc = active?.closest(".toc");
+    if (toc && toc.scrollHeight > toc.clientHeight) {
+      const a = active.getBoundingClientRect();
+      const t = toc.getBoundingClientRect();
+      const margin = 24;
+      if (a.top < t.top + margin) toc.scrollTop -= t.top + margin - a.top;
+      else if (a.bottom > t.bottom - margin) toc.scrollTop += a.bottom - (t.bottom - margin);
+    }
   };
   const schedule = () => {
     if (pending) return;

@@ -470,6 +470,13 @@ func TestAssetSearch_Help(t *testing.T) {
 			assert.NotContains(t, got, notWant)
 		}
 	})
+	t.Run("explains that characters and corporations are included", func(t *testing.T) {
+		const want = "all your characters and corporations"
+		assert.Contains(t, assetSearchHelpText(false, false), want)
+		assert.Contains(t, assetSearchHelpText(true, false), want)
+		assert.NotContains(t, assetSearchHelpText(false, true), want)
+		assert.NotContains(t, assetSearchHelpText(true, true), want)
+	})
 	t.Run("does not explain owner on mobile for corporations", func(t *testing.T) {
 		got := assetSearchHelpText(true, true)
 		assert.Contains(t, got, "Volume (bottom right):")

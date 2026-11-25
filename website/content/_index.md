@@ -33,30 +33,33 @@ highlights:
     - eyebrow: Consolidated views
       title: All your characters and corporations in one view
       text: "Get answers the game can't give you at a glance: across every character and corporation."
+      link: features/#consolidated-views
       image:
-        src: images/home_assets.png
+        src: images/home-assets.png
         alt: Asset Search on desktop
       items:
         - Search assets across all characters and export them
         - See which character has industry slots available
         - Forecast when each PI colony stops working
         - Find the nearest jump clone and track wealth
-    - eyebrow: Characters
+    - eyebrow: Character monitor
       title: Keep track of each character
       text: Everything about a character in one place, without logging in to the game.
+      link: features/#character-monitor
       image:
-        src: images/character_assets.png
+        src: images/character-assets.png
         alt: Character assets on desktop
       items:
         - Training queue and trained skills, with export for PyFA
         - Assets at all locations
         - Clones, implants and jump cooldown
         - Wallet, market transactions and loyalty points
-    - eyebrow: Corporations
+    - eyebrow: Corporation monitor
       title: Keep your corporation running
       text: Stay on top of your corporation's structures, finances and industry.
+      link: features/#corporation-monitor
       image:
-        src: images/corporation_wallets.png
+        src: images/corporation-wallets-transactions.png
         alt: Corporation wallets on desktop
       items:
         - Structures with fuel status, state and timers
@@ -70,21 +73,27 @@ cards:
   items:
     - icon: bell
       title: Notifications
+      link: features/#notifications
       text: Get notified about structure attacks, new mail, empty training queues, contract changes and stopped PI colonies.
     - icon: search
       title: New Eden search
+      link: features/#new-eden-search
       text: Search live on the game server for characters, corporations, systems, types and more.
     - icon: info
       title: Information windows
+      link: features/#information-windows
       text: Details for most objects on screen, e.g. the sender of a mail, just like the in-game information windows.
     - icon: mail
       title: Mail client
+      link: features/#character-mail
       text: Send and receive EVE mail for all your characters.
     - icon: background
       title: Run in background
+      link: features/#run-in-background
       text: Keeps running and notifying you while you do something else, like playing EVE. Minimizes to the system tray on desktop.
     - icon: palette
       title: Customizable UI
+      link: features/#customizable-ui
       text: Dark or light theme, and custom UI scaling on desktop.
 
 ---
