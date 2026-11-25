@@ -1,5 +1,8 @@
-{{- /* Resolves site-relative image paths against baseURL; adds lazy loading. */ -}}
+{{- /* Resolves site-relative image paths against baseURL; adds lazy loading. Local images link to the full-size file. */ -}}
 {{- $src := .Destination -}}
-{{- if not (strings.HasPrefix $src "http") }}{{ $src = $src | relURL }}{{ end -}}
+{{- $local := not (strings.HasPrefix $src "http") -}}
+{{- if $local }}{{ $src = $src | relURL }}{{ end -}}
+{{- if $local }}<a href="{{ $src }}">{{ end -}}
 <img src="{{ $src }}" alt="{{ .Text }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy"
   {{- range $k, $v := .Attributes }} {{ $k }}="{{ $v }}"{{ end }}>
+{{- if $local }}</a>{{ end -}}

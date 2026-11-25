@@ -53,6 +53,9 @@
           <li>{{ . }}</li>
           {{- end }}
         </ul>
+        {{- with .link }}
+        <p><a href="{{ . | relURL }}">Learn more →</a></p>
+        {{- end }}
       </div>
     </div>
     {{- end }}
@@ -68,11 +71,14 @@
     </div>
     <div class="grid">
       {{- range .items }}
-      <div class="card">
+      {{- /* Cards with a link are clickable as a whole. */}}
+      {{- $open := `<div class="card">` }}{{ $close := `</div>` }}
+      {{- with .link }}{{ $open = printf `<a class="card card-link" href="%s">` (. | relURL) }}{{ $close = `</a>` }}{{ end }}
+      {{ $open | safeHTML }}
         <div class="ico">{{ partial "icon.html" .icon }}</div>
-        <h3>{{ .title }}</h3>
+        <h3>{{ .title }}{{ with .link }} →{{ end }}</h3>
         <p>{{ .text }}</p>
-      </div>
+      {{ $close | safeHTML }}
       {{- end }}
     </div>
     <div class="center more"><a class="btn" href="{{ "features/" | relURL }}">See all features →</a></div>
