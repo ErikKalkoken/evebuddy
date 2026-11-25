@@ -34,7 +34,7 @@ highlights:
       title: All your characters and corporations in one view
       text: "Get answers the game can't give you at a glance: across every character and corporation."
       image:
-        src: images/home_assets.png
+        src: images/home-assets.png
         alt: Asset Search on desktop
       items:
         - Search assets across all characters and export them
@@ -45,7 +45,7 @@ highlights:
       title: Keep track of each character
       text: Everything about a character in one place, without logging in to the game.
       image:
-        src: images/character_assets.png
+        src: images/character-assets.png
         alt: Character assets on desktop
       items:
         - Training queue and trained skills, with export for PyFA
@@ -56,7 +56,7 @@ highlights:
       title: Keep your corporation running
       text: Stay on top of your corporation's structures, finances and industry.
       image:
-        src: images/corporation_wallets.png
+        src: images/corporation-wallets-transactions.png
         alt: Corporation wallets on desktop
       items:
         - Structures with fuel status, state and timers

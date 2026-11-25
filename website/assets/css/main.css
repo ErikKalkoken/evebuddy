@@ -210,6 +210,8 @@ section.alt { background: var(--surface-2); }
 .prose img { border-radius: 12px; border: 1px solid var(--border); margin: 12px 0; }
 .prose .screens { display: flex; flex-wrap: wrap; gap: 16px; }
 .prose .screens img { max-width: 240px; }
+.prose .half img { max-width: 50%; } /* tall window screenshots */
+@media (max-width: 600px) { .prose .half img { max-width: 100%; } }
 .footer-about { margin-top: 12px; }
 
 /* Footer */

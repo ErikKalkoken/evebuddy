@@ -33,3 +33,7 @@ title = true
 
 [markup.goldmark.renderer]
 unsafe = false
+
+[markup.tableOfContents]
+startLevel = 2
+endLevel = 3
