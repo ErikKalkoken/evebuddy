@@ -8,8 +8,6 @@ enableRobotsTXT = true
 tagline = "Companion app for EVE Online" # home page title suffix
 description = "EVE Buddy is a free multi-platform companion app for EVE Online players on Windows, macOS, Linux and Android."
 repo = "https://github.com/ErikKalkoken/evebuddy"
-discord = "https://discord.gg/tVSCQEVJnJ"
-forum = "https://forums.eveonline.com/t/eve-buddy-a-companion-app-for-desktop-and-mobile-v0-40"
 
 [menus]
 [[menus.main]]
@@ -25,8 +23,8 @@ name = "Install"
 pageRef = "/install"
 weight = 30
 [[menus.main]]
-name = "Support"
-pageRef = "/support"
+name = "Help"
+pageRef = "/help"
 weight = 40
 
 [markup.goldmark.parser.attribute]
