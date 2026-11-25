@@ -30,12 +30,12 @@ func TestName(t *testing.T) {
 	})
 }
 
-func TestWebsiteRootURL(t *testing.T) {
+func TestRepoURL(t *testing.T) {
 	t.Run("falls back to default URL without metadata", func(t *testing.T) {
 		// given
 		test.NewTempApp(t)
 		// when/then
-		xassert.Equal(t, "https://github.com/ErikKalkoken/evebuddy", ui.WebsiteRootURL().String())
+		xassert.Equal(t, "https://github.com/ErikKalkoken/evebuddy", ui.RepoURL().String())
 	})
 }
 

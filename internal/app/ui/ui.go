@@ -35,7 +35,7 @@ const (
 	LogoUnitSize          = 64 // for prominent icons, e.g. the main logo in an info window
 	FloatFormatISK        = "#,###.##"
 	FloatFormatISKRounded = "#,###."
-	fallbackWebsiteURL    = "https://github.com/ErikKalkoken/evebuddy"
+	fallbackRepoURL       = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 // EVEImageService defines which methods from the EVE image service is used in the UI.
@@ -83,16 +83,16 @@ func Name() string {
 	return name
 }
 
-// WebsiteRootURL returns the URL of the app's website.
-func WebsiteRootURL() *url.URL {
+// RepoURL returns the URL of the app's repo page.
+func RepoURL() *url.URL {
 	s := fyne.CurrentApp().Metadata().Custom["Website"]
 	if s == "" {
-		s = fallbackWebsiteURL
+		s = fallbackRepoURL
 	}
 	uri, err := url.Parse(s)
 	if err != nil {
 		slog.Error("parse main website URL")
-		uri, _ = url.Parse(fallbackWebsiteURL)
+		uri, _ = url.Parse(fallbackRepoURL)
 	}
 	return uri
 }
