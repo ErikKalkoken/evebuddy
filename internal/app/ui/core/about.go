@@ -21,6 +21,7 @@ import (
 
 const (
 	discordServerURL = "https://discord.gg/tVSCQEVJnJ"
+	mainWebsiteURL   = "https://erikkalkoken.github.io/evebuddy/"
 )
 
 // aboutPage is a widget that shows information about the app.
@@ -28,33 +29,40 @@ type aboutPage struct {
 	widget.BaseWidget
 
 	currentVersionLabel *widget.Label
+	downloadURL         *url.URL
 	dummyEntry          *widget.Entry
 	releaseNotesLink    *widget.Hyperlink
-	rootURL             *url.URL
+	repoRootURL         *url.URL
 	showSnackbarButton  *widget.Button
 	techInfoBox         *fyne.Container
 	u                   *baseUI
 	updateAvailableLink *widget.Hyperlink
 	updateAvailableRow  *fyne.Container
+	websiteURL          *url.URL
 }
 
 // newAboutPage returns a new about page and starts checking for an update.
 func newAboutPage(u *baseUI) *aboutPage {
-	rootURL := ui.WebsiteRootURL()
-	updateAvailableLink := widget.NewHyperlink("Download", rootURL.JoinPath("releases"))
+	repoRootURL := ui.RepoURL()
+	websiteURL, _ := url.Parse(mainWebsiteURL)
+	downloadURL := websiteURL.JoinPath("download")
+	updateAvailableLink := widget.NewHyperlink("Download", downloadURL)
+	updateAvailableRow := container.NewHBox(
+		widget.NewLabelWithStyle("Update available", fyne.TextAlignLeading, fyne.TextStyle{
+			Bold: true,
+		}),
+		updateAvailableLink,
+	)
 	w := &aboutPage{
 		currentVersionLabel: widget.NewLabel(""),
+		downloadURL:         downloadURL,
 		dummyEntry:          widget.NewEntry(),
 		releaseNotesLink:    widget.NewHyperlink("What's new", nil),
-		rootURL:             rootURL,
+		repoRootURL:         repoRootURL,
 		u:                   u,
 		updateAvailableLink: updateAvailableLink,
-		updateAvailableRow: container.NewHBox(
-			widget.NewLabelWithStyle("Update available", fyne.TextAlignLeading, fyne.TextStyle{
-				Bold: true,
-			}),
-			updateAvailableLink,
-		),
+		updateAvailableRow:  updateAvailableRow,
+		websiteURL:          websiteURL,
 	}
 	w.ExtendBaseWidget(w)
 
@@ -66,7 +74,7 @@ func newAboutPage(u *baseUI) *aboutPage {
 		w.releaseNotesLink.Hide()
 	} else {
 		w.currentVersionLabel.SetText(v)
-		w.releaseNotesLink.SetURL(rootURL.JoinPath("releases", "v"+v))
+		w.releaseNotesLink.SetURL(repoRootURL.JoinPath("releases", "v"+v))
 	}
 
 	_, size := u.MainWindow().Canvas().InteractiveArea()
@@ -106,7 +114,7 @@ func (w *aboutPage) CreateRenderer() fyne.WidgetRenderer {
 	title := widget.NewLabel(ui.Name())
 	title.SizeName = theme.SizeNameSubHeadingText
 	title.TextStyle.Bold = true
-	support := widget.NewLabel("For support please open an issue on our web site or join our Discord server.")
+	support := widget.NewLabel("For support please open an issue on GitHub or join our Discord server.")
 	support.Wrapping = fyne.TextWrapWord
 	discordURL, _ := url.Parse(discordServerURL)
 	c := container.New(
@@ -119,8 +127,8 @@ func (w *aboutPage) CreateRenderer() fyne.WidgetRenderer {
 		w.dummyEntry,
 		support,
 		container.NewHBox(
-			widget.NewHyperlink("Website", w.rootURL),
-			widget.NewHyperlink("Downloads", w.rootURL.JoinPath("releases")),
+			widget.NewHyperlink("Website", w.websiteURL),
+			widget.NewHyperlink("Downloads", w.downloadURL),
 			widget.NewHyperlink("Discord", discordURL),
 		),
 		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
@@ -145,7 +153,7 @@ func (w *aboutPage) checkForUpdate(ctx context.Context) {
 		if w.u.Signals().IsShuttingDown() {
 			return
 		}
-		w.updateAvailableLink.SetURL(w.rootURL.JoinPath("releases", "tag", "v"+v.Latest))
+		w.updateAvailableLink.SetURL(w.repoRootURL.JoinPath("releases", "tag", "v"+v.Latest))
 		w.updateAvailableRow.Show()
 		w.Refresh() // the row may not have been visible before
 	})
