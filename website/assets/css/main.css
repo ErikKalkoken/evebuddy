@@ -145,6 +145,13 @@ section.alt { background: var(--surface-2); }
 }
 .card .ico svg { width: 24px; height: 24px; }
 .card p { color: var(--muted); margin: 0; }
+.quote { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.quote blockquote { margin: 0; color: var(--fg); font-style: italic; flex: 1; }
+.quote figcaption { color: var(--muted); font-size: .9rem; }
+.card.quote { background: transparent; gap: 8px; }
+.card.quote::before { content: "“"; content: "“" / ""; color: var(--primary); font-size: 4rem; line-height: .8; font-family: Georgia, serif; height: .5em; }
+.hero-quote { margin: 20px auto 0; max-width: 680px; align-items: center; gap: 6px; }
+.hero-quote blockquote { font-size: 1.25rem; }
 .center { text-align: center; }
 .more { margin-top: 36px; }
 

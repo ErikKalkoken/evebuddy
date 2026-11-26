@@ -1,0 +1,7 @@
+{{- /* Caption for a quote: name (linked if url), "on <source>"; no name → anonymous. */ -}}
+—
+{{- if not .name }} EVE Buddy user
+{{- else if .url }} <a href="{{ .url }}">{{ .name }}</a>
+{{- else }} {{ .name }}
+{{- end }}
+{{- with .source }} on {{ . }}{{ end -}}
