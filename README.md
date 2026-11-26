@@ -16,15 +16,15 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 
 ## Features
 
-- **Character monitor**: Keep track of each character – training queue, assets, clones and wallet
+- **Consolidated views**: All your characters and corporations in one view per topic, with answers the game can't give you at a glance – assets, colonies, industry jobs and more
+- **Character monitor**: Keep track of each character – training queue, assets, clones, wallet and more
 - **Corporation monitor**: Keep your corporation running – structures, wallets, industry jobs and members
-- **Consolidated views**: All your characters and corporations in one view, with answers the game can't give you at a glance
 - **Notifications**: Get notified about structure attacks, new mail, empty training queues and more
 - **New Eden search**: Search live on the game server for characters, corporations, systems, types and more
 - **Information windows**: Details for most objects on screen, just like the in-game information windows
-- **Mail client**: Send and receive EVE mail for all your characters
-- **Run in background**: Keeps running and notifying you while you do something else, like playing EVE
-- **Customizable UI**: Dark or light theme, and custom UI scaling on desktop
+- **Mail client**: Full mail client for all your characters
+- **Automatic updates**: Data for all your characters and corporations is updated automatically in the background
+- **Run in background**: Keeps running and notifying you while you do something else, like playing EVE. Desktop only
 
 See the [website](https://evebuddy.kalkoken.net/) for all features, install guides and support.
 

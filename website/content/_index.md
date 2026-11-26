@@ -31,7 +31,7 @@ highlights:
   # Image paths are relative to static/. Image sides alternate automatically.
   items:
     - eyebrow: Consolidated views
-      title: All your characters and corporations in one view
+      title: All your characters and corporations in one view per topic
       text: "Get answers the game can't give you at a glance: across every character and corporation."
       link: features/#consolidated-views
       image:
@@ -86,14 +86,14 @@ cards:
     - icon: mail
       title: Mail client
       link: features/#character-mail
-      text: Send and receive EVE mail for all your characters.
-    - icon: background
+      text: Full mail client for all your characters.
+    - icon: refresh
+      title: Automatic updates
+      link: features/#automatic-updates
+      text: Data for all your characters and corporations is updated automatically in the background.
+    - icon: tray
       title: Run in background
       link: features/#run-in-background
-      text: Keeps running and notifying you while you do something else, like playing EVE. Minimizes to the system tray on desktop.
-    - icon: palette
-      title: Customizable UI
-      link: features/#customizable-ui
-      text: Dark or light theme, and custom UI scaling on desktop.
+      text: Keeps running and notifying you while you do something else, like playing EVE. Desktop only.
 
 ---

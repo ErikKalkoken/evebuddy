@@ -7,59 +7,74 @@ toc: true
 
 ## Consolidated views
 
-Keep track of and get unique insights about all your characters and corporations with consolidated views.
+Consolidated views show the data of all your characters and corporations together in one view per topic. This provides you with overviews for easy monitoring, lets you search for items across characters and corporations and allows you to get unique insights. For example you can monitor the training status of all your characters, find which of your characters has that special module or see the total of your wealth.
 
-### Characters
+### Character overview {#characters}
 
-Overview of all your characters with their skill points, wallet balance, unread mails, current ship and location. Characters can be filtered and searched.
+See the overview of all your characters with their skill points, wallet balance, unread mails, current ship and location. Can be searched and filtered.
 
 ![Characters overview](images/home-characters.png)
 
-### Corporations
+### Corporation overview
 
-Overview of all your corporations with their members, wallet balance, industry jobs, contracts and structures. Corporations can be filtered and searched.
+See the overview of all your corporations with their members, wallet balance, industry jobs, contracts and structures. Can be searched and filtered.
 
 ![Corporations overview](images/home-corporations.png)
 
-### Assets
+### Asset search
 
-Search assets across all your characters and corporations. See each item's location, state (e.g. Personal, Deliveries or Asset Safety), quantity, owner, estimated price and volume, together with the total estimated value of the items shown. Assets can be filtered and searched, and exported to clipboard (e.g. for pricing with [Janice](https://janice.e-351.com/)) or to CSV.
+Search assets across all your characters and corporations. See each item's location, state (e.g. Personal, Deliveries or Asset Safety), quantity, owner, estimated price and volume, together with the total estimated value of the items shown. Can be searched and filtered. Assets can be exported to clipboard (e.g. for pricing with [Janice](https://janice.e-351.com/)) or to CSV.
 
 ![Assets search across all characters](images/home-assets.png)
 
+Open an asset to see its details, e.g. owner, group, location, path, and estimated price and volume.
+
+![Asset details](images/asset-detail.png)
+{.half}
+
 ### Augmentations
 
-See which implants are installed in the current clone of each character.
+See which implants are installed in the current clone of each character. Can be filtered.
 
 ![Augmentations of all characters](images/home-clones-augmentations.png)
 
 ### Jump Clones
 
-Browse all jump clones and search for the nearest available jump clones across all characters.
+Browse all jump clones and search for the nearest available jump clones across all characters. Can be searched and filtered.
 
 ![Jump clones of all characters](images/home-clones-jumpclones.png)
 
-### Communications
+Open a jump clone to see its implants and the route from a starting system.
 
-A unified communications browser for all characters.
+![Jump clone details](images/jump-clone-detail.png)
+{.half}
+
+### Unified Communications
+
+Browse the communications of all characters in one place. Can be searched and filtered.
 
 ![Communications of all characters](images/home-communications.png)
 
 ### Contracts
 
-Browse contracts of all characters.
+Monitor the contracts of all characters. Can be searched and filtered.
 
 ![Contracts of all characters](images/home-contracts-contracts.png)
 
+Open a contract to see its details, e.g. type, issuer, status, dates, price and the items included.
+
+![Contract details](images/contract-detail.png)
+{.half}
+
 ### Contract Slots
 
-See how many personal and corporation contract slots are used and free for each character.
+See how many personal and corporation contract slots are used and free for each character. Can be filtered.
 
 ![Contract slots of all characters](images/home-contracts-slots.png)
 
 ### Colonies
 
-Browse PI colonies across all characters with a forecast of when each colony stops working completely (up to 30 days ahead), and see which colonies need attention at a glance. Colonies can be filtered and searched.
+Browse PI colonies across all characters with a forecast of when each colony stops working completely (up to 30 days ahead), and see which colonies need attention at a glance. Can be searched and filtered.
 
 ![PI colonies of all characters](images/home-colonies-list.png)
 
@@ -67,7 +82,7 @@ Each colony is shown with its status: Extracting, Producing, Needs Attention, St
 
 #### Colony details
 
-Open a colony to see its status, when it stops working completely, and all its installations. Rings around each installation show whether it is working, idle or needs attention, and the progress of its extractor program or processor cycle, or how full a storage is. Problems like expired extractors, inputs or outputs that are not routed, and full storage are pointed out.
+Open a colony to see its status, when it stops working completely, and all its installations. Rings around each installation show whether it is working, idle or needs attention, and the progress of its extractor program or processor cycle, or how full a storage is. Problems like expired extractors, inputs or outputs that are not routed, and full storage are pointed out. Installations can be searched and filtered.
 
 ![Colony details](images/colony-detail.png)
 {.half}
@@ -91,61 +106,76 @@ See the incoming and outgoing routes of an installation with the items and quant
 
 ### Industry Jobs
 
-Browse industry jobs for all characters and related corporations.
+Browse the industry jobs of all characters and related corporations. Can be searched and filtered.
 
 ![Industry jobs of all characters](images/home-industry-jobs.png)
 
+Open an industry job to see its details, e.g. blueprint, activity, runs, dates, location and installer.
+
+![Industry job details](images/industry-job-detail.png)
+{.half}
+
 ### Industry Slots
 
-See how many manufacturing, science and reaction slots are busy, ready and free for each character.
+See how many manufacturing, science and reaction slots are busy, ready and free for each character. Can be filtered.
 
 ![Industry slots of all characters](images/home-industry-slots.png)
 
 ### Loyalty Points
 
-Loyalty points of all characters grouped by corporation. Loyalty points can be filtered and searched.
+See the loyalty points of all characters grouped by corporation. Can be searched and filtered.
 
 ![Loyalty points of all characters](images/home-loyaltypoints.png)
 
-### Mail
+### Unified Mail
 
-A unified mails browser for all characters. To write mails, see [Character monitor - Mail](#character-mail).
+Browse the mails of all characters in one place. Can be searched and filtered. To write mails, see [Character monitor - Mail](#character-mail).
 
 ![Mails of all characters](images/home-mail.png)
 
 ### Market Orders
 
-Browse buy and sell orders of all characters with their price, state and location. Orders can be filtered and searched.
+Browse the buy and sell orders of all characters with their price, state and location. Can be searched and filtered.
 
 ![Market orders of all characters](images/home-marketorders.png)
 
+Open a market order to see its details, e.g. price, state, volume, dates, location, escrow and range.
+
+![Market order details](images/market-order-detail.png)
+{.half}
+
 ### Structures
 
-Unified view of all corporation structures across all your corporations. Structures can be filtered and searched.
+Browse the structures of all your corporations in one place. Can be searched and filtered.
 
 ![Structures of all corporations](images/home-structures.png)
 
 ### Skill Training
 
-Keep track of the training status for all characters and export training status to clipboard or file.
+Monitor the training status of all characters. Can be searched and filtered. Training status can be exported to clipboard or CSV.
 
 ![Skill training of all characters](images/home-skills-training.png)
 
 ### Skill Sets
 
-Check which characters meet the requirements of your own skill sets, e.g. for flying a specific ship. Create skill sets by searching for skills or by pasting a skill list. Characters can be filtered.
+Check which characters meet the requirements of your own skill sets, e.g. for flying a specific ship. Create skill sets by searching for skills or by pasting a skill list. Can be filtered.
 
 ![Skill sets](images/home-skills-sets.png)
 
+Open a skill set for a character to see which skills are required and which are missing.
+
+![Skill set details](images/skill-set-detail.png)
+{.half}
+
 ### Skill Search
 
-Search for skills across all characters.
+Search for skills across all characters. Can be filtered.
 
 ![Skill search across all characters](images/home-skills-search.png)
 
-### Wealth
+### Character Wealth
 
-See the total net worth of all characters, made up of their wallet balance, the estimated value of their assets (including items in sell orders and contracts), and escrow in contracts and buy orders. Characters can be filtered. Blueprints and PLEX are not included.
+See the total net worth of all characters, made up of their wallet balance, the estimated value of their assets (including items in sell orders and contracts), and escrow in contracts and buy orders. Can be searched and filtered. Blueprints and PLEX are not included.
 
 An overview of net worth by category and by character.
 
@@ -161,163 +191,173 @@ A detailed table per character, including the value of extracted skill points.
 
 ## Character monitor
 
-Check current information about each of your characters.
+Keep track of each character. Everything about a character in one place, without logging in to the game.
 
 ### Character Sheet
 
-Key facts about the character, e.g. location, ship, home station, security status, total skill points and wealth. The character's biography is shown in its own tab.
+See key facts about the character, e.g. location, ship, home station, security status, total skill points and wealth. The character's biography is shown in its own tab.
 
 ![Character sheet](images/character-sheet-character.png)
 
 ### Corporation
 
-The character's current corporation.
+See the character's current corporation.
 
 ![Character corporation](images/character-sheet-corporation.png)
 
 ### Augmentations
 
-Implants installed in the character's current clone.
+See the implants installed in the character's current clone.
 
 ![Character augmentations](images/character-sheet-augmentations.png)
 
 ### Jump Clones
 
-The character's jump clones and the jump cooldown timer.
+See the character's jump clones and the jump cooldown timer.
 
 ![Character jump clones](images/character-sheet-jumpclones.png)
 
 ### Attributes
 
-The character's attributes: Charisma, Intelligence, Memory, Perception and Willpower.
+See the character's attributes: Charisma, Intelligence, Memory, Perception and Willpower.
 
 ![Character attributes](images/character-sheet-attributes.png)
 
 ### Assets
 
-Browse through your assets at all your locations.
+Browse the character's assets by location. Can be searched and filtered. Open an asset to see its details.
 
 ![Character assets](images/character-assets.png)
 
 ### Contacts
 
-Browse the character's contacts with their standing. Contacts can be filtered and searched.
+Browse the character's contacts with their standing. Can be searched and filtered.
 
 ![Character contacts](images/character-contacts.png)
 
 ### Communications
 
-Browse through all communications.
+Browse the character's communications. Can be searched and filtered.
 
 ![Character communications](images/character-communications.png)
 
 ### Mail {#character-mail}
 
-Mails can be discovered and read in a classic 3-pane layout with navigation, message and reading panes.
+Read mails in a classic 3-pane layout with navigation, message and reading panes. Can be searched and filtered.
 
 ![Reading a mail](images/character-mail-read.png)
 
-Mails can be sent. Users can search online for recipient names.
+Send mails. Recipient names can be searched online.
 
 ![Writing a mail](images/character-mail-send.png)
 
 ### Skill Catalogue
 
-Catalogue of all trained skills, and export trained skills to clipboard ([PyFA](https://github.com/pyfa-org/Pyfa)-compatible format) or CSV.
+Browse the catalogue of all skills with the character's trained levels. Can be searched and filtered. Trained skills can be exported to clipboard ([PyFA](https://github.com/pyfa-org/Pyfa)-compatible format) or CSV.
 
 ![Skill catalogue](images/character-skills-catalogue.png)
 
 ### Training Queue
 
-The character's training queue.
+See the character's training queue.
 
 ![Skill training queue](images/character-skills-training.png)
 
 ### Flyable Ships
 
-See which ships the character can fly.
+See which ships the character can fly. Can be searched and filtered.
 
 ![Flyable ships](images/character-skills-ships.png)
 
 ### Wallet Transactions
 
-Wallet transactions, and export wallet transactions to CSV.
+Browse the character's wallet transactions. Can be searched and filtered. Wallet transactions can be exported to CSV.
 
 ![Wallet transactions](images/character-wallet-transactions.png)
 
+Open a wallet transaction to see its details, e.g. type, amount, balance, description and the parties involved.
+
+![Wallet transaction details](images/wallet-transaction-detail.png)
+{.half}
+
 ### Market Transactions
 
-Market transactions of the character.
+Browse the character's market transactions. Can be searched and filtered.
 
 ![Market transactions](images/character-wallet-market.png)
 
+Open a market transaction to see its details, e.g. activity, quantity, item, price, client and location.
+
+![Market transaction details](images/market-transaction-detail.png)
+{.half}
+
 ### Loyalty Points
 
-Loyalty points of the character.
+See the character's loyalty points. Can be searched and filtered.
 
 ![Loyalty points](images/character-wallet-loyaltypoints.png)
 
 ## Corporation monitor
 
-Check current information about each of your corporations (depending on their roles).
+Keep your corporations running. Stay on top of their structures, finances and industry (depending on your characters' roles).
 
 ### Corporation Sheet
 
-Key facts about the corporation, e.g. alliance, CEO, ticker, member count, tax rate and your roles.
+See key facts about the corporation, e.g. alliance, CEO, ticker, member count, tax rate and your roles.
 
 ![Corporation sheet](images/corporation-sheet-corporation.png)
 
 ### Members
 
-List of current corporation members.
+See the current corporation members. Can be searched.
 
 ![Corporation members](images/corporation-sheet-members.png)
 
 ### Asset Browser
 
-Browse corporation assets by location.
+Browse the corporation's assets by location. Can be searched and filtered. Open an asset to see its details.
 
 ![Browse corporation assets](images/corporation-assets-browse.png)
 
 ### Asset Search
 
-Search the corporation's assets. See each item's location, state, quantity, estimated price and volume, together with the total estimated value of the items shown. Assets can be filtered and searched, and exported to clipboard or CSV.
+Search the corporation's assets. See each item's location, state, quantity, estimated price and volume, together with the total estimated value of the items shown. Can be searched and filtered. Assets can be exported to clipboard or CSV. Open an asset to see its details.
 
 ![Search corporation assets](images/corporation-assets-search.png)
 
 ### Contracts
 
-Browse contracts of the corporation.
+Browse the corporation's contracts. Can be searched and filtered. Open a contract to see its details.
 
 ![Corporation contracts](images/corporation-contracts.png)
 
 ### Industry
 
-See running and historic indy jobs.
+Browse the corporation's running and historic industry jobs. Can be searched and filtered. Open an industry job to see its details.
 
 ![Corporation industry jobs](images/corporation-industry.png)
 
 ### Structures
 
-List of all corporation structures with current fuel status, state and potential timers.
+See all corporation structures with their current fuel status, state and potential timers. Can be searched and filtered.
 
 ![Corporation structures](images/corporation-structures.png)
 
 ### Wallet Transactions
 
-Wallet transactions for corporation wallets, and export wallet transactions to CSV.
+Browse the wallet transactions of the corporation's wallet divisions. Can be searched and filtered. Wallet transactions can be exported to CSV. Open a wallet transaction to see its details.
 
 ![Corporation wallet transactions](images/corporation-wallets-transactions.png)
 
 ### Market Transactions
 
-Market transactions for corporation wallets.
+Browse the market transactions of the corporation's wallet divisions. Can be searched and filtered. Open a market transaction to see its details.
 
 ![Corporation market transactions](images/corporation-wallets-market.png)
 
 ### Wallet Divisions
 
-Balances of all corporation wallet divisions.
+See the balances of all corporation wallet divisions.
 
 ![Corporation wallet divisions](images/corporation-wallets-divisions.png)
 
@@ -326,6 +366,31 @@ Balances of all corporation wallet divisions.
 See the corporation's total net worth, made up of all division wallets, the estimated value of its assets (including items in outstanding contracts) and contract escrow. The overview shows net worth by category, and further charts show wallet balance and asset value by division.
 
 ![Corporation wealth](images/corporation-wealth.png)
+
+## Managing characters
+
+Add and organize your characters.
+
+### Characters {#manage-characters}
+
+Add characters by logging in with your EVE account (EVE SSO), and remove characters you no longer want to track.
+
+![Manage characters](images/admin-characters.png)
+{.half}
+
+### Tags
+
+Create your own tags and add characters to them, e.g. to group omega and alpha clones. Most consolidated views can be filtered by tag. Tags can be exported to and imported from a file for synchronization across multiple instances of EVE Buddy (e.g. desktop and mobile).
+
+![Manage tags](images/admin-tags.png)
+{.half}
+
+### Watched Training
+
+Choose for which characters you get notified when their training queue becomes empty. The status for watched characters is also shown on the character overview and other related screens.
+
+![Watched training](images/admin-training.png)
+{.half}
 
 ## Notifications
 
@@ -337,18 +402,25 @@ Get notified on your desktop or mobile about new EVE communications and other im
 - New EVE communication received (e.g. structure attacked)
 - New EVE mail received
 
+Each notification type can be turned on or off, and EVE communications can be turned on or off for each communication group. A test notification can be sent to check that notifications work.
+
+![Desktop notification](images/notification-desktop.png)
+
 ## New Eden search
 
-Search live on the game server, similar to the in-game search bar.
+Search live on the game server with filters, similar to the in-game search bar.
+
+- Search for: Agents, Alliances, Characters, Constellations, Corporations, Factions, Regions, Stations, Systems, Types
+- Search options to limit the search to certain categories and to search strictly
+- Recent searches, which can be cleared
+
+![Search options](images/search-filters.png)
+{.half}
 
 Results are grouped by category and open in an information window.
 
 ![Search window](images/search.png)
 {.half}
-
-- Search for: Agents, Alliances, Characters, Constellations, Corporations, Factions, Regions, Stations, Systems, Types
-- Search options to limit the search to certain categories and to search strictly
-- Recent searches, which can be cleared
 
 ## Information windows
 
@@ -373,6 +445,15 @@ The following categories are supported:
 - Systems
 - Types
 
+## Automatic updates
+
+The data of all your characters and corporations and general data about EVE Online is updated automatically in the background from the EVE Online API.
+
+The update status window shows whether all updates are working. Open an entry to see the last and next update of each section, and reload sections manually when needed.
+
+![Update status](images/updatestatus.png)
+{.half}
+
 ## Run in background
 
 The app can run in the background and continue to notify you while you are doing something else (e.g. play EVE Online):
@@ -380,9 +461,16 @@ The app can run in the background and continue to notify you while you are doing
 - **Desktop**: Can minimize to system tray and show an indicator for new EVE mail
 - **Mobile**: (currently not supported)
 
-## Customizable UI
+## Personalize EVE Buddy
 
-The UI can be customized:
+Adjust the app to your needs, e.g.:
 
-- **Color theme**: Dark or light theme
-- **UI scaling**: Custom scaling of the whole UI (desktop only)
+- Maximum number of mails to download
+- Number of days to keep historic market orders
+- Hide corporations without privileged access (e.g. to the corporation wallet)
+- Show the market tab first in information windows for tradeable items
+- Color theme: dark, light or auto (follows the OS theme)
+- Scaling of the whole UI (desktop only)
+
+![Settings](images/settings-general.png)
+{.half}
