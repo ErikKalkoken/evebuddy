@@ -37,11 +37,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: .github/workflows/pages.yml # cache key follows HUGO_VERSION
+      - name: Install Hugo
+        run: |
+          curl -fsSL "https://github.com/gohugoio/hugo/releases/download/${HUGO_VERSION}/hugo_${HUGO_VERSION#v}_linux-amd64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP" hugo
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'
@@ -55,9 +55,14 @@ jobs:
 
       - name: Build website
         run: >
-          go run github.com/gohugoio/hugo@${{ env.HUGO_VERSION }} build
+          hugo build
           --source website --minify
           ${{ steps.pages.outputs.base_url && format('--baseURL "{0}/"', steps.pages.outputs.base_url) || '' }}
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --include-fragments --index-files index.html --root-dir "${{ github.workspace }}/website/public" website/public
 
       - name: Upload artifact
         if: github.event_name != 'pull_request'
