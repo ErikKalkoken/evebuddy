@@ -8,10 +8,10 @@
     <p class="lead">{{ .lead }}</p>
     <div class="cta">
       {{- /* main.js points the button to the visitor's platform; without JS it opens the download page. */}}
-      <a class="btn btn-primary btn-lg" id="heroDownload" href="{{ "download/" | relURL }}" data-downloads="{{ partial "download-data.html" $ }}">
-        <span class="os-icon">{{ partial "icon.html" "download" }}</span><span id="heroLabel">Download EVE Buddy</span>
+      <a class="btn btn-primary btn-lg" id="heroDownload" href="{{ "download/" | relURL }}" data-downloads="{{ partial "download-data.html" $ }}" data-label-platform="{{ .download.labelPlatform }}">
+        <span class="os-icon">{{ partial "icon.html" "download" }}</span><span id="heroLabel">{{ .download.label }}</span>
       </a>
-      <small><span id="heroMeta">{{ with $rel.version }}Version {{ . }} · {{ end }}Free and open source</span> · <a href="{{ "download/" | relURL }}">Other platforms</a></small>
+      <small><span id="heroMeta">{{ with $rel.version }}Version {{ . }} · {{ end }}{{ .download.note }}</span> · <a href="{{ "download/" | relURL }}">Other platforms</a></small>
     </div>
     <div class="badge-row">
       {{- range .badges }}

@@ -9,6 +9,10 @@ hero:
     - Free & open source
     - Your data stays on your device
     - Windows · Linux · macOS  · Android
+  download:
+    label: Download EVE Buddy
+    labelPlatform: Download for {platform} # used when the visitor's platform is detected
+    note: Free and open source
   # Image paths are relative to static/.
   images:
     desktop:
@@ -67,7 +71,7 @@ highlights:
         - Industry jobs and corporation assets
         - Members and wealth
 
-# Icons: see layouts/_partials/icon.html for available names.
+# Icons: see assets/icons for available names.
 cards:
   title: More key features
   items:

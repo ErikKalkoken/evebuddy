@@ -4,7 +4,7 @@
   <div class="container">
     <div class="footer-grid">
       <div>
-        <a class="brand" href="{{ "" | relURL }}"><img src="{{ "logo.png" | relURL }}" alt="" width="32" height="32">{{ site.Title }}</a>
+        <a class="brand" href="{{ "" | relURL }}"><img src="{{ site.Params.logo | relURL }}" alt="" width="32" height="32">{{ site.Title }}</a>
         <p class="footer-about">{{ $footer.about }}</p>
       </div>
       {{- range $footer.columns }}
