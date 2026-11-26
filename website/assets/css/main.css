@@ -60,6 +60,7 @@ p { margin: 0 0 1em; }
 .btn-primary:hover { background: var(--primary); filter: brightness(1.12); }
 .btn-lg { font-size: 1.1rem; padding: .95em 1.7em; }
 .btn svg { width: 1.2em; height: 1.2em; flex: none; }
+.btn .os-icon { display: flex; }
 
 /* Header */
 header.site {

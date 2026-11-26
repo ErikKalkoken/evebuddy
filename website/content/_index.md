@@ -67,7 +67,7 @@ highlights:
         - Industry jobs and corporation assets
         - Members and wealth
 
-# Icons: see layouts/_partials/icon.html for available names.
+# Icons: see assets/icons for available names.
 cards:
   title: More key features
   items:
