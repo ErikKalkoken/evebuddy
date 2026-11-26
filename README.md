@@ -1,6 +1,6 @@
-# EVE Buddy
+<div align="center">
 
-A multi-platform companion app for [EVE Online](https://www.eveonline.com/) players available on Windows, Linux, macOS and Android.
+<h1><img src="icon.png" width="42" alt="" align="absmiddle"> EVE Buddy</h1>
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![Fyne](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fgithub.com%2FErikKalkoken%2Fevebuddy%2Fblob%2Fmain%2Fgo.mod&search=fyne%5C.io%5C%2Ffyne%5C%2Fv2%20(v%5Cd*%5C.%5Cd*%5C.%5Cd*)&replace=%241&label=Fyne&cacheSeconds=https%3A%2F%2Fgithub.com%2Ffyne-io%2Ffyne)](https://github.com/fyne-io/fyne)
@@ -10,7 +10,11 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ErikKalkoken/evebuddy/total)](https://tooomm.github.io/github-release-stats/?username=ErikKalkoken&repository=evebuddy)
 
+A multi-platform companion app for [EVE Online](https://www.eveonline.com/) players.<br>Free and open source.<br>Available on Windows, Linux, macOS and Android.
+
 [![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://github.com/ErikKalkoken/evebuddy/releases/latest)
+
+</div>
 
 ![EVE Buddy desktop version](website/static/images/desktop.png)
 
