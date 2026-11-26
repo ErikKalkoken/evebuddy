@@ -28,6 +28,11 @@ hero:
         url: https://www.eveonline.com/news/view/community-beat-for-16-august-2025
       - label: November 2024
         url: https://www.eveonline.com/news/view/community-beat-for-22-november
+  quote:
+    text: 10/10, you have a fantastic app
+    name: chrilion
+    url: https://github.com/ErikKalkoken/evebuddy/issues/234#issuecomment-3214686927
+    source: GitHub
 
 highlights:
   title: All your characters. One app.
@@ -99,5 +104,31 @@ cards:
       title: Run in background
       link: features/#run-in-background
       text: Keeps running and notifying you while you do something else, like playing EVE. Desktop only.
+
+# User quotes, in display order. url (optional) links to the source comment.
+# source is shown as "on <source>"; leave out name, url and source for an anonymous quote.
+testimonials:
+  title: What players say
+  items:
+    - text: It quickly became an everyday app, I don't wanna play without it.
+      name: thegilm
+      url: https://github.com/ErikKalkoken/evebuddy/issues/393#issuecomment-7162623673
+      source: GitHub
+    - text: I love it, I've found things I didn't even realize I had.
+      name: dreadedluciferian
+      source: Discord
+    - text: Keep up the good work, it's a great application and I use it all the time.
+      name: Outsorced
+      url: https://github.com/ErikKalkoken/evebuddy/issues/401
+      source: GitHub
+    - text: Thanks for the great work on this app, I love it!
+      name: tialstreinard
+      url: https://github.com/ErikKalkoken/evebuddy/issues/659
+      source: GitHub
+    - text: This feature [contract slots] is absolutely stellar!! Huge improvement in ability to manage complex alliance contract loads.
+      name: MontaireDev
+      url: https://github.com/ErikKalkoken/evebuddy/issues/495#issuecomment-5399901527
+      source: GitHub
+    - text: Your asset search has saved me from buying stuff I already had tucked away somewhere in a different station.
 
 ---
