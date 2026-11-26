@@ -59,6 +59,11 @@ jobs:
           --source website --minify
           ${{ steps.pages.outputs.base_url && format('--baseURL "{0}/"', steps.pages.outputs.base_url) || '' }}
 
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --include-fragments --root-dir "${{ github.workspace }}/website/public" website/public
+
       - name: Upload artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
