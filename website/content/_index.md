@@ -9,6 +9,10 @@ hero:
     - Free & open source
     - Your data stays on your device
     - Windows · Linux · macOS  · Android
+  download:
+    label: Download EVE Buddy
+    labelPlatform: Download for {platform} # used when the visitor's platform is detected
+    note: Free and open source
   # Image paths are relative to static/.
   images:
     desktop:

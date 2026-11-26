@@ -8,6 +8,9 @@ enableRobotsTXT = true
 tagline = "Companion app for EVE Online" # home page title suffix
 description = "EVE Buddy is a free multi-platform companion app for EVE Online players on Windows, macOS, Linux and Android."
 repo = "https://github.com/ErikKalkoken/evebuddy"
+# Paths relative to static/.
+logo = "logo.png"
+ogImage = "images/desktop.png" # social preview image
 
 [menus]
 [[menus.main]]

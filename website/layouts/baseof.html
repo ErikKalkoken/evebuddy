@@ -7,9 +7,9 @@
 <meta name="description" content="{{ .Description | default site.Params.description }}">
 <meta property="og:title" content="{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} – {{ site.Title }}{{ end }}">
 <meta property="og:description" content="{{ .Description | default site.Params.description }}">
-<meta property="og:image" content="{{ "images/desktop.png" | absURL }}">
+<meta property="og:image" content="{{ site.Params.ogImage | absURL }}">
 <meta property="og:type" content="website">
-<link rel="icon" href="{{ "logo.png" | relURL }}">
+<link rel="icon" href="{{ site.Params.logo | relURL }}">
 {{ with resources.Get "css/main.css" | minify | fingerprint -}}
 <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}">
 {{- end }}

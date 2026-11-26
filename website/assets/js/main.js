@@ -29,7 +29,7 @@ if (hero && os) {
   if (d) {
     hero.href = d.url;
     hero.querySelector(".os-icon").innerHTML = d.icon;
-    document.getElementById("heroLabel").textContent = `Download for ${d.title}`;
+    document.getElementById("heroLabel").textContent = hero.dataset.labelPlatform.replace("{platform}", d.title);
     const meta = [data.version && `Version ${data.version}`, d.size].filter(Boolean).join(" · ");
     if (meta) document.getElementById("heroMeta").textContent = meta;
   }
