@@ -16,9 +16,9 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 
 [![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://evebuddy.kalkoken.net/download/)
 
-<a href="website/static/images/desktop.webp?raw=true"><img src="website/static/images/desktop.webp" width="550" alt="EVE Buddy desktop version"></a>
+<a href="https://evebuddy.kalkoken.net/images/desktop.webp"><img src="website/static/images/desktop.webp" width="550" alt="EVE Buddy desktop version"></a>
 &nbsp;&nbsp;&nbsp;
-<a href="website/static/images/mobile.webp?raw=true"><img src="website/static/images/mobile.webp" width="135" alt="EVE Buddy mobile version"></a>
+<a href="https://evebuddy.kalkoken.net/images/mobile.webp"><img src="website/static/images/mobile.webp" width="135" alt="EVE Buddy mobile version"></a>
 
 </div>
 
