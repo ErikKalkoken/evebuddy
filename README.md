@@ -12,11 +12,13 @@
 
 A multi-platform companion app for [EVE Online](https://www.eveonline.com/) players.<br>Free and open source.<br>Available on Windows, Linux, macOS and Android.
 
-[![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://github.com/ErikKalkoken/evebuddy/releases/latest)
+**[Website](https://evebuddy.kalkoken.net/)** · **[Discord](https://discord.gg/tVSCQEVJnJ)**
 
-<img src="website/static/images/desktop.webp" width="550" alt="EVE Buddy desktop version">
+[![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://evebuddy.kalkoken.net/download/)
+
+<a href="website/static/images/desktop.webp?raw=true"><img src="website/static/images/desktop.webp" width="550" alt="EVE Buddy desktop version"></a>
 &nbsp;&nbsp;&nbsp;
-<img src="website/static/images/mobile.webp" width="135" alt="EVE Buddy mobile version">
+<a href="website/static/images/mobile.webp?raw=true"><img src="website/static/images/mobile.webp" width="135" alt="EVE Buddy mobile version"></a>
 
 </div>
 
@@ -43,5 +45,9 @@ Contributions are welcome! Feel free to open a pull request, or discuss your ide
 ## Credits
 
 The forecasts for planetary industry colonies are based on the colony simulation in [RIFT Intel Fusion Tool](https://gitlab.com/rift-intel-fusion-tool/rift-intel-fusion-tool) by Nohus and used with permission.
+
+Built with the [Fyne](https://fyne.io/) GUI toolkit, licensed under the [BSD 3-Clause License](https://github.com/fyne-io/fyne/blob/master/LICENSE).
+
+Icons are from [Material Design Icons](https://pictogrammers.com/library/mdi/) by Pictogrammers, licensed under the [Apache License 2.0](https://github.com/Templarian/MaterialDesign/blob/master/LICENSE).
 
 "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
