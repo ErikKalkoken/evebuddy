@@ -723,7 +723,7 @@ func colonyContentsDisplay(contents map[int64]int64, typeNames map[int64]string,
 	for id, amount := range contents {
 		n, ok := typeNames[id]
 		if !ok {
-			n = fmt.Sprintf("Type #%d", id)
+			n = fmt.Sprintf("Unknown type %d", id)
 		}
 		items = append(items, item{n, amount, typeVolumes[id] * float64(amount)})
 	}

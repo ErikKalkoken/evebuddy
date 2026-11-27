@@ -204,7 +204,7 @@ func (a *CharacterClones) fetchData(ctx context.Context, characterID int64) (*xw
 		if v, ok := c.Location.Name.Value(); ok {
 			clone.locationName = v
 		} else {
-			clone.locationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+			clone.locationName = fmt.Sprintf("Unknown location %d", c.Location.ID)
 			clone.isUnknown = true
 		}
 		if v, ok := c.Location.SecurityStatus.Value(); ok {

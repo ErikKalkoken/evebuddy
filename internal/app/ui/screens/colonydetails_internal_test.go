@@ -393,9 +393,9 @@ func TestColonyContentsDisplay(t *testing.T) {
 		{"largest first", map[int64]int64{1: 5, 2: 1_000}, "Bravo, +1 more"},
 		{"limited", map[int64]int64{1: 4, 2: 3, 3: 2}, "Alpha, +2 more"},
 		{"largest volume first", map[int64]int64{1: 50, 4: 1}, "Delta, +1 more"},
-		{"tie in volume sorted by amount", map[int64]int64{98: 1, 99: 5}, "Type #99, +1 more"},
+		{"tie in volume sorted by amount", map[int64]int64{98: 1, 99: 5}, "Unknown type 99, +1 more"},
 		{"tie sorted by name", map[int64]int64{2: 7, 1: 7}, "Alpha, +1 more"},
-		{"unknown type", map[int64]int64{99: 1}, "Type #99"},
+		{"unknown type", map[int64]int64{99: 1}, "Unknown type 99"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

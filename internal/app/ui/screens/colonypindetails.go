@@ -452,7 +452,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		if n, ok := typeNames[id]; ok {
 			return n
 		}
-		return fmt.Sprintf("Type #%d", id)
+		return fmt.Sprintf("Unknown type %d", id)
 	}
 	showType := func(id int64) func() {
 		return func() {

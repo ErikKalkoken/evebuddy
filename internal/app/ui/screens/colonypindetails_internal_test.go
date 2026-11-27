@@ -274,7 +274,7 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show fallback for input missing in database", func(t *testing.T) {
 		info := makeInfo(t, 5)
 		require.True(t, info.found)
-		assert.Equal(t, []colonyInputItem{{demand: 3_000, name: "Type #2305", typeID: 2305}}, info.inputs)
+		assert.Equal(t, []colonyInputItem{{demand: 3_000, name: "Unknown type 2305", typeID: 2305}}, info.inputs)
 	})
 	t.Run("should show storage", func(t *testing.T) {
 		info := makeInfo(t, 2)
