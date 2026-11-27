@@ -283,7 +283,7 @@ func (f Factory) CreateCharacterContactLabel(args ...storage.UpdateOrCreateChara
 		)
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Color()
+		arg.Name = fmt.Sprintf("Label #%d", arg.LabelID)
 	}
 	err := f.st.UpdateOrCreateCharacterContactLabel(ctx, arg)
 	if err != nil {
@@ -725,7 +725,7 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 		arg.LabelID = max(l, 10) // generate "custom" mail label
 	}
 	if arg.Name.IsEmpty() {
-		arg.Name.Set(fmt.Sprintf("%s %s", fake.Color(), fake.Language()))
+		arg.Name.Set(fmt.Sprintf("Label #%d", arg.LabelID))
 	}
 	if arg.Color.IsEmpty() {
 		arg.Color.Set("#FFFFFF")
@@ -975,7 +975,7 @@ func (f Factory) CreateCharacterTag(names ...string) *app.CharacterTag {
 	}
 	ctx := context.Background()
 	if name == "" {
-		name = fmt.Sprintf("%s #%d", fake.Color(), rand.IntN(1000))
+		name = fmt.Sprintf("Tag #%d", generateSequenceID())
 	}
 	r, err := f.st.CreateTag(ctx, name)
 	if err != nil {
@@ -1591,7 +1591,7 @@ func (f Factory) CreateCorporationHangarName(args ...storage.UpdateOrCreateCorpo
 		arg.Division = app.Division1
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Color()
+		arg.Name = fmt.Sprintf("Division #%d", arg.Division)
 	}
 	err := f.st.UpdateOrCreateCorporationHangarName(ctx, arg)
 	if err != nil {
@@ -1794,7 +1794,7 @@ func (f Factory) CreateCorporationStructure(args ...storage.UpdateOrCreateCorpor
 		x := f.CreateEveType()
 		arg.TypeID = x.ID
 	}
-	arg.Name.SetWhenEmpty(fake.City())
+	arg.Name.SetWhenEmpty(fmt.Sprintf("Structure #%d", arg.StructureID))
 	if arg.ReinforceHour.IsEmpty() {
 		arg.ReinforceHour.Set(rand.Int64N(24))
 	}
@@ -1856,7 +1856,7 @@ func (f Factory) CreateCorporationWalletName(args ...storage.UpdateOrCreateCorpo
 		arg.Division = app.Division1
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Color()
+		arg.Name = fmt.Sprintf("Wallet #%d", arg.Division)
 	}
 	err := f.st.UpdateOrCreateCorporationWalletName(ctx, arg)
 	if err != nil {
@@ -2021,7 +2021,7 @@ func (f Factory) CreateEveBloodline(args ...storage.CreateEveBloodlineParams) *a
 		arg.Description = fake.Paragraph()
 	}
 	if arg.Name == "" {
-		arg.Name = fake.ProductName()
+		arg.Name = fmt.Sprintf("Bloodline #%d", arg.ID)
 	}
 	if arg.RaceID == 0 {
 		x := f.CreateEveRace()
@@ -2048,7 +2048,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		arg.ID = int64(f.calcNewID("eve_characters", "id", startIDCharacter))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.FullName()
+		arg.Name = fmt.Sprintf("Character #%d", arg.ID)
 	}
 	x := f.GetOrCreateEveEntity(app.EveEntity{
 		ID:       arg.CorporationID,
@@ -2095,7 +2095,7 @@ func (f Factory) CreateEveCorporation(args ...storage.UpdateOrCreateEveCorporati
 		arg.ID = int64(f.calcNewID("eve_corporations", "id", startIDCorporation))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Company()
+		arg.Name = fmt.Sprintf("Corporation #%d", arg.ID)
 	}
 	if arg.CeoID.IsEmpty() {
 		c := f.CreateEveEntityCharacter()
@@ -2225,20 +2225,7 @@ func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 		arg.ID = int64(f.calcNewID("eve_entities", "id", start))
 	}
 	if arg.Name == "" {
-		switch arg.Category {
-		case app.EveEntityCharacter:
-			arg.Name = fake.FullName()
-		case app.EveEntityCorporation:
-			arg.Name = fake.Company()
-		case app.EveEntityAlliance:
-			arg.Name = fake.Company()
-		case app.EveEntityFaction:
-			arg.Name = fake.JobTitle()
-		case app.EveEntityMailList:
-			arg.Name = fmt.Sprintf("%s %s", fake.Color(), fake.Industry())
-		default:
-			arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
-		}
+		arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
 	}
 	e, err := f.st.CreateEveEntity(ctx, storage.CreateEveEntityParams{ID: arg.ID, Name: arg.Name, Category: arg.Category})
 	if err != nil {
@@ -2289,7 +2276,7 @@ func (f Factory) CreateEveFaction(args ...storage.CreateEveFactionParams) *app.E
 		arg.Description = fake.Paragraph()
 	}
 	if arg.Name == "" {
-		arg.Name = fake.ProductName()
+		arg.Name = fmt.Sprintf("Faction #%d", arg.ID)
 	}
 	if arg.SizeFactor == 0 {
 		arg.SizeFactor = 5
@@ -2335,7 +2322,7 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app
 		arg.ID = int64(f.calcNewID("eve_categories", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Industry()
+		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
 	}
 	o, err := f.st.GetOrCreateEveCategory(ctx, arg)
 	if err != nil {
@@ -2354,7 +2341,7 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGr
 		arg.ID = int64(f.calcNewID("eve_groups", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Brand()
+		arg.Name = fmt.Sprintf("Group #%d", arg.ID)
 	}
 	x := f.CreateEveCategory(storage.CreateEveCategoryParams{ID: arg.CategoryID})
 	arg.CategoryID = x.ID
@@ -2438,7 +2425,7 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 		arg.Mass.Set(rand.Float64() * 10_000_000_000)
 	}
 	if arg.Name == "" {
-		arg.Name = fake.ProductName()
+		arg.Name = fmt.Sprintf("Type #%d", arg.ID)
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
@@ -2543,7 +2530,7 @@ func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *app.Eve
 		arg.ID = int64(f.calcNewID("eve_regions", "id", startIDRegion))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Continent()
+		arg.Name = fmt.Sprintf("Region #%d", arg.ID)
 	}
 	o, err := f.st.CreateEveRegion(ctx, arg)
 	if err != nil {
@@ -2562,7 +2549,7 @@ func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationPa
 		arg.ID = int64(f.calcNewID("eve_constellations", "id", startIDConstellation))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Country()
+		arg.Name = fmt.Sprintf("Constellation #%d", arg.ID)
 	}
 	if arg.RegionID == 0 {
 		x := f.CreateEveRegion()
@@ -2589,7 +2576,7 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 		arg.ID = int64(f.calcNewID("eve_solar_systems", "id", startIDSolarSystem))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.City()
+		arg.Name = fmt.Sprintf("Solar System #%d", arg.ID)
 	}
 	if arg.ConstellationID == 0 {
 		x := f.CreateEveConstellation()
@@ -2619,7 +2606,7 @@ func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.Eve
 		arg.ID = int64(f.calcNewID("eve_planets", "id", startIDCelestials))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Street()
+		arg.Name = fmt.Sprintf("Planet #%d", arg.ID)
 	}
 	if arg.SolarSystemID == 0 {
 		x := f.CreateEveSolarSystem()
@@ -2650,7 +2637,7 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 		arg.ID = int64(f.calcNewID("eve_moons", "id", startIDCelestials))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("%s %s", fake.Color(), fake.Street())
+		arg.Name = fmt.Sprintf("Moon #%d", arg.ID)
 	}
 	if arg.SolarSystemID == 0 {
 		x := f.CreateEveSolarSystem()
@@ -2677,7 +2664,7 @@ func (f Factory) CreateEveRace(args ...storage.UpdateOrCreateEveRaceParams) *app
 		arg.ID = int64(f.calcNewID("eve_races", "id", startIDOther))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("%s #%d", fake.JobTitle(), arg.ID)
+		arg.Name = fmt.Sprintf("Race #%d", arg.ID)
 	}
 	if arg.Description == "" {
 		arg.Description = fake.Paragraph()
@@ -2707,7 +2694,7 @@ func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *a
 		arg.ID = int64(f.calcNewID("eve_schematics", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fake.ProductName()
+		arg.Name = fmt.Sprintf("Schematic #%d", arg.ID)
 	}
 	if arg.CycleTime == 0 {
 		arg.CycleTime = 3600
@@ -2741,7 +2728,7 @@ func (f Factory) createEveLocationStructure(startID int64, categoryID int64, isE
 		arg.ID = f.calcNewID("eve_locations", "id", startID)
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Color() + " " + fake.Brand()
+		arg.Name = fmt.Sprintf("Location #%d", arg.ID)
 	}
 	if !isEmpty && arg.SolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
@@ -2817,7 +2804,7 @@ func (f Factory) CreateStructureService(args ...storage.CreateStructureServicePa
 		arg.State = app.StructureServiceStateOnline
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("%s #%d", fake.Color(), generateSequenceID())
+		arg.Name = fmt.Sprintf("Service #%d", generateSequenceID())
 	}
 	err := f.st.CreateStructureService(ctx, arg)
 	if err != nil {

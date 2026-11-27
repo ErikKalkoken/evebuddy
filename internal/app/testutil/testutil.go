@@ -128,6 +128,9 @@ func TruncateTables(dbRW *sql.DB) error {
 		}
 		tables.Add(name)
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	for n := range tables.All() {
 		sql := fmt.Sprintf("DELETE FROM %s;", n)
 		_, err := dbRW.Exec(sql)
