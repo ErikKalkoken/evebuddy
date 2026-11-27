@@ -402,7 +402,7 @@ func (a *colonyDetails) refreshForecast() {
 		return
 	}
 	isLatest := a.forecastRun.Start()
-	runAsync(func() {
+	RunAsync(func() {
 		stopped, status, rows := a.makeRows(cp, time.Now())
 		fyne.Do(func() {
 			if !isLatest() {
@@ -423,7 +423,7 @@ func (a *colonyDetails) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	runAsync(func() {
+	RunAsync(func() {
 		if filter[colonyDetailsFilterAttention] != "" {
 			rows = slices.DeleteFunc(rows, func(r colonyDetailsRow) bool {
 				return !r.needsAttention()

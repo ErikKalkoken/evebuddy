@@ -122,9 +122,9 @@ func TestCharacterContacts_KeepsStatusWithoutCharacter(t *testing.T) {
 		Storage: st,
 	}))
 	var pending []func() // run background work later, like the real app
-	orig := runAsync
-	runAsync = func(f func()) { pending = append(pending, f) }
-	t.Cleanup(func() { runAsync = orig })
+	orig := RunAsync
+	RunAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { RunAsync = orig })
 	a.filterRowsAsync() // a filter still running from before
 
 	a.update(t.Context())

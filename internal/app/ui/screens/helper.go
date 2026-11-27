@@ -21,15 +21,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
-// runAsync runs f in a new goroutine.
+// RunAsync runs f in a new goroutine.
 //
 // Tests replace it to run f synchronously.
-var runAsync = func(f func()) { go f() }
+var RunAsync = func(f func()) { go f() }
 
-// runAfter runs f in a new goroutine after d.
+// RunAfter runs f in a new goroutine after d.
 //
 // Tests replace it to never run f.
-var runAfter = func(d time.Duration, f func()) { time.AfterFunc(d, f) }
+var RunAfter = func(d time.Duration, f func()) { time.AfterFunc(d, f) }
 
 // clearSelectsSilent clears the selection of filter chips without calling their OnChanged.
 func clearSelectsSilent(chips ...*kxwidget.FilterChipSelect) {
@@ -64,7 +64,7 @@ func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
 	)
 	var loaded bool
 	// delay avoids the spinner flickering when loading is fast
-	runAfter(100*time.Millisecond, func() {
+	RunAfter(100*time.Millisecond, func() {
 		fyne.Do(func() {
 			if loaded {
 				return
@@ -74,7 +74,7 @@ func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
 			body.Refresh()
 		})
 	})
-	runAsync(func() {
+	RunAsync(func() {
 		load()
 		fyne.Do(func() {
 			loaded = true
@@ -92,7 +92,7 @@ func showWhenLoaded(content fyne.CanvasObject, load func()) fyne.CanvasObject {
 // The function can be called in the main thread.
 func copyRowsToClipboard[T any](u baseUI, topic string, rows []T, transform func([]T) (string, error)) {
 	rows2 := slices.Clone(rows)
-	runAsync(func() {
+	RunAsync(func() {
 		s, err := transform(rows2)
 		if err != nil {
 			slog.Error("Failed to copy to clipboard", "topic", topic, "error", err)

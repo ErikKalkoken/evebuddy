@@ -166,7 +166,7 @@ func makeImplantsList(u baseUI, characterID, cloneID int64, IsDeveloperMode bool
 		u.InfoViewer().ShowType(r.EveType.ID, characterID)
 	}
 
-	runAsync(func() {
+	RunAsync(func() {
 		clone, err := u.Character().GetJumpClone(context.Background(), characterID, cloneID)
 		if err != nil {
 			fyne.Do(func() {

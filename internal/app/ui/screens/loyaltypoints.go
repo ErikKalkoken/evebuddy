@@ -251,7 +251,7 @@ func (a *LoyaltyPoints) filterTreeAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	runAsync(func() {
+	RunAsync(func() {
 		// filter data
 		data2 := make(map[*loyaltyPointsNode][]*loyaltyPointsNode)
 		for c := range data {

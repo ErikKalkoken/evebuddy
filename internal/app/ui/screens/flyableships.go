@@ -241,7 +241,7 @@ func (a *FlyableShips) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r flyableShipRow) bool {
 			return !filter.match(r)
 		})
@@ -446,7 +446,7 @@ func (w *ShipItem) Set(typeID int64, label string, canFly bool) {
 		w.image.Refresh()
 		return
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		j, err := func() (image.Image, error) {
 			r, err := w.renderType(typeID, 256)
 			if err != nil {

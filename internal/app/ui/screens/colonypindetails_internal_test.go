@@ -427,9 +427,9 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should discard a refresh when update replaced the colony", func(t *testing.T) {
 		// given
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
@@ -448,9 +448,9 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
 		// given
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))

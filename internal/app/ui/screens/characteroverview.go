@@ -387,7 +387,7 @@ func (a *CharacterOverview) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r characterOverviewRow) bool {
 			return !filter.match(r)
 		})

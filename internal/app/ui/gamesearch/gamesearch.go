@@ -35,7 +35,7 @@ const (
 
 // Hooks that tests can replace.
 var (
-	runAsync          = func(f func()) { go f() }
+	RunAsync          = func(f func()) { go f() }
 	loadResourceAsync = xwidget.LoadResourceAsyncWithCache
 	// waitSearchDelay waits briefly, so typing triggers only one search.
 	// Reports false when the search was canceled while waiting.
@@ -442,7 +442,7 @@ func (a *GameSearch) startSearch(search string) {
 	strict := a.strict.On
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancelSearch = cancel
-	runAsync(func() {
+	RunAsync(func() {
 		a.doSearch(ctx, search, categories, strict)
 	})
 }

@@ -666,7 +666,7 @@ func (a *IndustryJobs) filterRowsAsync(sortCol string) {
 	search := a.searchEntry.Text
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows := slices.DeleteFunc(rows, func(r industryJobRow) bool {
 			return !filter.match(r)
 		})

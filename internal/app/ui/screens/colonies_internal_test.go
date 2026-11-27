@@ -130,9 +130,9 @@ func TestColonies(t *testing.T) {
 	t.Run("should discard a refresh when update replaced the rows", func(t *testing.T) {
 		// given
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 		a := newColonies(t)
 		a.Update(t.Context())
 		a.rows = a.rows[:1] // stale rows of the refresh

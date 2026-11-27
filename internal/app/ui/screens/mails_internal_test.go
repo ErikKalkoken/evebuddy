@@ -317,9 +317,9 @@ func TestMailsMessagePane_FilterAndSort(t *testing.T) {
 		mp.filterChip.SetSelected(map[string]string{mailsFilterFrom: "Caldari"})
 		require.Equal(t, []string{"Bravo"}, subjects())
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 
 		mp.setCurrentFolder(t.Context(), sent)
 

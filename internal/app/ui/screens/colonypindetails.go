@@ -239,7 +239,7 @@ func (a *colonyPinDetails) refreshForecast() {
 	}
 	extraTypeNames := a.extraTypeNames
 	isLatest := a.forecastRun.Start()
-	runAsync(func() {
+	RunAsync(func() {
 		now := time.Now()
 		f := a.u.Character().ForecastPlanet(cp, now)
 		info := a.makeInfo(cp, f, extraTypeNames, now)

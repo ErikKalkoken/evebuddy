@@ -206,7 +206,7 @@ func (a *Augmentations) filterTreeAsync() {
 	filter := a.currentFilter()
 	td := a.treeData.Clone()
 
-	runAsync(func() {
+	RunAsync(func() {
 		for _, c := range td.Children(nil) {
 			if filter.match(c) {
 				continue

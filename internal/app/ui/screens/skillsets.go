@@ -516,7 +516,7 @@ func (a *SkillSets) filterRowsAsync(sortCol string) {
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 	hasSets := len(a.sets) > 0
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r skillSetRow) bool {
 			return !filter.match(r)
 		})

@@ -324,7 +324,7 @@ func (a *JumpClones) filterRowsAsync(sortCol string) {
 	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r jumpCloneRow) bool {
 			return !filter.match(r)
 		})
@@ -450,7 +450,7 @@ func (a *JumpClones) updateRoutesAsync() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	a.routeCancel = cancel
-	runAsync(func() {
+	RunAsync(func() {
 		routes, err := a.u.EVEUniverse().FetchRoutes(ctx, headers)
 		if ctx.Err() != nil {
 			return // superseded

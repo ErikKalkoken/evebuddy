@@ -332,7 +332,7 @@ func (a *CharacterWealth) filterRowsAsync() {
 	tag, corporation, alliance := a.currentFilter()
 	isFiltered := alliance != "" || corporation != "" || tag != ""
 
-	runAsync(func() {
+	RunAsync(func() {
 		filtered := filterWealthRows(rows, tag, corporation, alliance)
 		tagOptions, corporationOptions, allianceOptions := wealthFilterOptions(filtered)
 		footer := fmt.Sprintf("Showing %d / %d characters", len(filtered), len(rows))
@@ -822,7 +822,7 @@ func (a *characterWealthDetails) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r characterWealthDetailsRow) bool {
 				return !strings.Contains(r.searchTarget, search)

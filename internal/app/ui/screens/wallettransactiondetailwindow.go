@@ -23,7 +23,7 @@ func ShowCharacterWalletTransactionWindowAsync(u baseUI, characterID int64, char
 		return
 	}
 
-	runAsync(func() {
+	RunAsync(func() {
 		o, err := u.Character().GetWalletTransactions(context.Background(), characterID, transactionID)
 		if err != nil {
 			fyne.Do(func() {
@@ -99,7 +99,7 @@ func ShowCorporationWalletTransactionWindowAsync(u baseUI, corporationID int64, 
 		return
 	}
 
-	runAsync(func() {
+	RunAsync(func() {
 		o, err := u.Corporation().GetWalletTransaction(context.Background(), corporationID, division, transactionID)
 		if err != nil {
 			fyne.Do(func() {

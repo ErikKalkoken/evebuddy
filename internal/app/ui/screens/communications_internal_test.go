@@ -233,9 +233,9 @@ func TestCommunicationsReadingPane_LoadNotification(t *testing.T) {
 
 		// queue async work, so the state while loading can be checked
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 
 		r := r2
 		r.isRead2 = true // skip marking as read
@@ -298,9 +298,9 @@ func TestCommunicationsMessagePane_FilterDiscardsStaleResults(t *testing.T) {
 
 	// queue async work, so runs can complete out of order
 	var pending []func()
-	orig := runAsync
-	runAsync = func(f func()) { pending = append(pending, f) }
-	t.Cleanup(func() { runAsync = orig })
+	orig := RunAsync
+	RunAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { RunAsync = orig })
 
 	mp.searchEntry.Text = "no match"
 	mp.filterRowsAsync()

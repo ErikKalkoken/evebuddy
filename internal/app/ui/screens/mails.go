@@ -1162,7 +1162,7 @@ func (a *mailsMessagePane) setCurrentFolder(ctx context.Context, folder *mailFol
 
 // markRead marks a mail as read. It is updated locally first, so the UI reflects it right away.
 func (a *mailsMessagePane) markRead(r mailRow) {
-	runAsync(func() {
+	RunAsync(func() {
 		a.ma.sig.Do(fmt.Sprintf("charactermails-set-read-%d-%d", r.characterID, r.mailID), func() (any, error) {
 			ctx := context.Background()
 			err := a.ma.u.Character().SetMailReadLocal(ctx, r.characterID, r.mailID, true)
@@ -1261,7 +1261,7 @@ func (a *mailsMessagePane) filterRowsAsync() {
 	filter := a.filterChip.Selected()
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
-	runAsync(func() {
+	RunAsync(func() {
 		// filter
 		if x := filter[mailsFilterStatus]; x != "" {
 			switch x {
@@ -1543,7 +1543,7 @@ func (a *mailsReadingPane) showMail(r mailRow) {
 		}
 	}
 	a.requested.characterID, a.requested.mailID = r.characterID, r.mailID
-	runAsync(func() {
+	RunAsync(func() {
 		a.loadMail(context.Background(), r.characterID, r.mailID)
 	})
 }
