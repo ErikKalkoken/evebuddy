@@ -119,7 +119,7 @@ testimonials:
       source: Discord
     - text: Keep up the good work, it's a great application and I use it all the time.
       name: Outsorced
-      url: https://github.com/ErikKalkoken/evebuddy/issues/401
+      url: https://github.com/ErikKalkoken/evebuddy/issues/401#issue-3983837561
       source: GitHub
     - text: Thanks for the great work on this app, I love it!
       name: tialstreinard
@@ -129,6 +129,9 @@ testimonials:
       name: MontaireDev
       url: https://github.com/ErikKalkoken/evebuddy/issues/495#issuecomment-5399901527
       source: GitHub
-    - text: Your asset search has saved me from buying stuff I already had tucked away somewhere in a different station.
+    - text: I can see my planets get updated in real time as the extractors finish their work. It's working perfect.
+      name: kinkey
+      url: https://github.com/ErikKalkoken/evebuddy/issues/351#issuecomment-3749536885
+      source: GitHub
 
 ---
