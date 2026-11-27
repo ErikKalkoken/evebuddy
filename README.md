@@ -14,9 +14,11 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 
 [![download](https://github.com/user-attachments/assets/c8de336f-8c42-4501-86bb-dbc9c66db1f0)](https://github.com/ErikKalkoken/evebuddy/releases/latest)
 
-</div>
+<img src="website/static/images/desktop.webp" width="660" alt="EVE Buddy desktop version">
+&nbsp;&nbsp;&nbsp;
+<img src="website/static/images/mobile.webp" width="162" alt="EVE Buddy mobile version">
 
-![EVE Buddy desktop version](website/static/images/desktop.webp)
+</div>
 
 ## Features
 
