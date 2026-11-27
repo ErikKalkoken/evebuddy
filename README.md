@@ -16,7 +16,7 @@ A multi-platform companion app for [EVE Online](https://www.eveonline.com/) play
 
 </div>
 
-![EVE Buddy desktop version](website/static/images/desktop.png)
+![EVE Buddy desktop version](website/static/images/desktop.webp)
 
 ## Features
 
