@@ -85,9 +85,9 @@ Here is how to install EVE Buddy on your Android phone:
 1. Select "Allow background usage".
 1. Make sure the "Unrestricted" option is selected. That's it.
 
-![App info for EVE Buddy](images/android-settings-1.png)
-![App battery usage](images/android-settings-2.png)
-![Allow background usage set to Unrestricted](images/android-settings-3.png)
+![App info for EVE Buddy](images/android-settings-1.webp)
+![App battery usage](images/android-settings-2.webp)
+![Allow background usage set to Unrestricted](images/android-settings-3.webp)
 {.screens}
 
 ### Enable notifications

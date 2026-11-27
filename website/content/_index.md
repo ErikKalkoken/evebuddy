@@ -16,7 +16,7 @@ hero:
   # Image paths are relative to static/.
   images:
     desktop:
-      src: images/desktop.png
+      src: images/desktop.webp
       alt: EVE Buddy desktop version
     phone:
       src: images/mobile.webp
@@ -44,7 +44,7 @@ highlights:
       text: "Get answers the game can't give you at a glance: across every character and corporation."
       link: features/#consolidated-views
       image:
-        src: images/home-assets.png
+        src: images/home-assets.webp
         alt: Asset Search on desktop
       items:
         - Search assets across all characters and export them
@@ -56,7 +56,7 @@ highlights:
       text: Everything about a character in one place, without logging in to the game.
       link: features/#character-monitor
       image:
-        src: images/character-assets.png
+        src: images/character-assets.webp
         alt: Character assets on desktop
       items:
         - Training queue and trained skills, with export for PyFA
@@ -68,7 +68,7 @@ highlights:
       text: Stay on top of your corporation's structures, finances and industry.
       link: features/#corporation-monitor
       image:
-        src: images/corporation-wallets-transactions.png
+        src: images/corporation-wallets-transactions.webp
         alt: Corporation wallets on desktop
       items:
         - Structures with fuel status, state and timers
@@ -119,7 +119,7 @@ testimonials:
       source: Discord
     - text: Keep up the good work, it's a great application and I use it all the time.
       name: Outsorced
-      url: https://github.com/ErikKalkoken/evebuddy/issues/401
+      url: https://github.com/ErikKalkoken/evebuddy/issues/401#issue-3983837561
       source: GitHub
     - text: Thanks for the great work on this app, I love it!
       name: tialstreinard
@@ -129,6 +129,9 @@ testimonials:
       name: MontaireDev
       url: https://github.com/ErikKalkoken/evebuddy/issues/495#issuecomment-5399901527
       source: GitHub
-    - text: Your asset search has saved me from buying stuff I already had tucked away somewhere in a different station.
+    - text: I can see my planets get updated in real time as the extractors finish their work. It's working perfect.
+      name: kinkey
+      url: https://github.com/ErikKalkoken/evebuddy/issues/351#issuecomment-3749536885
+      source: GitHub
 
 ---

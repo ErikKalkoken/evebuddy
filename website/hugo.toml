@@ -10,7 +10,7 @@ description = "EVE Buddy is a free multi-platform companion app for EVE Online p
 repo = "https://github.com/ErikKalkoken/evebuddy"
 # Paths relative to static/.
 logo = "logo.png"
-ogImage = "images/desktop.png" # social preview image
+ogImage = "images/social.png" # social preview image
 
 [menus]
 [[menus.main]]
