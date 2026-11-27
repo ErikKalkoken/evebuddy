@@ -1201,7 +1201,6 @@ func TestBaseUI_HandleCharacterSectionChanged(t *testing.T) {
 	t.Run("updates status when roles changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.signals = testdouble.NewSignalsSync()
 		// NPC corporation, so no corporation update is started
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{CorporationID: 1_000_001})
 		c := factory.CreateCharacter(storage.CreateCharacterParams{ID: ec.ID})
@@ -1247,7 +1246,6 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 	t.Run("reloads current character and updates status when it changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.signals = testdouble.NewSignalsSync()
 		c := factory.CreateCharacterFull()
 		stale := &app.Character{ID: c.ID}
 		u.character.Store(stale)
@@ -1267,7 +1265,6 @@ func TestBaseUI_HandleEveUniverseSectionChanged(t *testing.T) {
 	t.Run("updates status when another own character changed", func(t *testing.T) {
 		testutil.MustTruncateTables(db)
 		u := MakeFakeBaseUI(t, st, test.NewTempApp(t))
-		u.signals = testdouble.NewSignalsSync()
 		c := factory.CreateCharacterFull()
 		other := factory.CreateCharacterFull()
 		stale := &app.Character{ID: c.ID}

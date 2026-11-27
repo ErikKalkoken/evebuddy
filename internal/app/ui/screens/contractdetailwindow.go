@@ -26,7 +26,7 @@ func ShowCharacterContractByID(u baseUI, characterID, contractID int64) {
 			ui.ShowErrorAndLog("Failed to show contract", err, u.IsDeveloperMode(), u.MainWindow())
 		})
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		ctx := context.Background()
 		o, err := u.Character().GetContract(ctx, characterID, contractID)
 		if err != nil {
@@ -63,7 +63,7 @@ func ShowContract(u baseUI, r contractRow) {
 		w.Show()
 		return
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		reportError := func(err error) {
 			fyne.Do(func() {
 				u.DestroyWindow(windowID)

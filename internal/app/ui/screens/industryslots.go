@@ -380,7 +380,7 @@ func (a *IndustrySlots) filterRowsAsync(sortCol string) {
 	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows := slices.Clone(rows)
 		rows = slices.DeleteFunc(rows, func(r industrySlotRow) bool {
 			return !filter.match(r)

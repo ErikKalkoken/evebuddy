@@ -665,7 +665,7 @@ func (a *Colonies) filterRowsAsync(sortCol string) {
 	now := time.Now()
 	isMobile := a.u.IsMobile()
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r colonyRow) bool {
 			return !filter.match(r, now)
 		})
@@ -789,7 +789,7 @@ func (a *Colonies) refreshForecasts() {
 	}
 	isLatest := a.forecastRun.Start()
 	rows := slices.Clone(a.rows)
-	runAsync(func() {
+	RunAsync(func() {
 		now := time.Now()
 		for i := range rows {
 			rows[i].setForecast(a.u.Character().ForecastPlanet(rows[i].planet, now))

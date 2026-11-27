@@ -136,7 +136,7 @@ func (a *Members) filterRowsAsync() {
 	rows := slices.Clone(a.rows)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	runAsync(func() {
+	RunAsync(func() {
 		if len(search) > 1 {
 			rows = slices.DeleteFunc(rows, func(r memberRow) bool {
 				return !strings.Contains(r.searchTarget, search)

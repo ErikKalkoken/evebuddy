@@ -112,7 +112,7 @@ type CorporationStructure struct {
 }
 
 func (cs CorporationStructure) DisplayName() string {
-	return cs.Name.ValueOrFallback(fmt.Sprintf("%s - Structure #%d", cs.System.Name, cs.ID))
+	return cs.Name.ValueOrFallback(fmt.Sprintf("%s - Unknown structure %d", cs.System.Name, cs.ID))
 }
 
 func (cs CorporationStructure) NameShort() string {

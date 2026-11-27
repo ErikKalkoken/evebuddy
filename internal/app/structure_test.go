@@ -68,7 +68,7 @@ func TestCorporationStructure_DisplayName(t *testing.T) {
 			ID:     42,
 			System: &app.EveSolarSystem{Name: "1DQ1-A"},
 		}
-		xassert.Equal(t, "1DQ1-A - Structure #42", cs.DisplayName())
+		xassert.Equal(t, "1DQ1-A - Unknown structure 42", cs.DisplayName())
 	})
 }
 

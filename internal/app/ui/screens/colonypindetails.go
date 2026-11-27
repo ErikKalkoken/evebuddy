@@ -239,7 +239,7 @@ func (a *colonyPinDetails) refreshForecast() {
 	}
 	extraTypeNames := a.extraTypeNames
 	isLatest := a.forecastRun.Start()
-	runAsync(func() {
+	RunAsync(func() {
 		now := time.Now()
 		f := a.u.Character().ForecastPlanet(cp, now)
 		info := a.makeInfo(cp, f, extraTypeNames, now)
@@ -452,7 +452,7 @@ func (a *colonyPinDetails) makeInfo(cp *app.CharacterPlanet, f *app.ColonyForeca
 		if n, ok := typeNames[id]; ok {
 			return n
 		}
-		return fmt.Sprintf("Type #%d", id)
+		return fmt.Sprintf("Unknown type %d", id)
 	}
 	showType := func(id int64) func() {
 		return func() {

@@ -535,7 +535,7 @@ func (a *Training) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r trainingRow) bool {
 			return !filter.match(r)
 		})
@@ -730,7 +730,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		w.Show()
 		return
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		ctx := context.Background()
 		c, err := a.u.Character().GetCharacter(ctx, r.characterID)
 		if err != nil {
@@ -742,7 +742,7 @@ func (a *Training) showTrainingQueueWindow(r trainingRow) {
 		}
 		fyne.Do(func() {
 			sq := NewQueueWithCharacter(a.u, c)
-			runAsync(func() {
+			RunAsync(func() {
 				sq.Update(ctx)
 			})
 			ui.MakeDetailWindow(ui.MakeDetailWindowParams{

@@ -32,7 +32,7 @@ import (
 func TestMain(m *testing.M) {
 	// Leftover goroutines from one test can render text concurrently with the next,
 	// which is not safe in Fyne's shared text shaper.
-	runAsync = func(f func()) { f() }
+	RunAsync = func(f func()) { f() }
 	waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 	loadResourceAsync = func(initial fyne.Resource, getter func() (fyne.Resource, bool), updater func(fyne.Resource), loader func() (fyne.Resource, error), setter func(fyne.Resource)) {
 		if r, ok := getter(); ok {
@@ -413,7 +413,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		t.Cleanup(func() { db.Close() })
 		u := testdouble.NewUIFake(testdouble.UIParams{App: test.NewTempApp(t), Storage: st})
 		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
+		RunAsync = func(f func()) { wg.Go(f) }
 		waiting, release := make(chan struct{}), make(chan struct{})
 		waitSearchDelay = func(ctx context.Context) bool {
 			waiting <- struct{}{}
@@ -425,7 +425,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			}
 		}
 		t.Cleanup(func() {
-			runAsync = func(f func()) { f() }
+			RunAsync = func(f func()) { f() }
 			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 		})
 		a := NewGameSearch(u)
@@ -455,7 +455,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			return httpmock.NewJsonResponse(200, map[string][]int64{"character": {e.ID}})
 		})
 		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
+		RunAsync = func(f func()) { wg.Go(f) }
 		waiting, release := make(chan struct{}), make(chan struct{})
 		waitSearchDelay = func(ctx context.Context) bool {
 			waiting <- struct{}{}
@@ -467,7 +467,7 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			}
 		}
 		t.Cleanup(func() {
-			runAsync = func(f func()) { f() }
+			RunAsync = func(f func()) { f() }
 			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 		})
 		a := NewGameSearch(u)
@@ -740,8 +740,8 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			return httpmock.NewJsonResponse(200, map[string][]int64{"character": {e1.ID, e2.ID}})
 		})
 		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
-		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		RunAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { RunAsync = func(f func()) { f() } })
 		a := NewGameSearch(u)
 		a.startSearch("alpha")
 		<-started
@@ -771,12 +771,12 @@ func TestGameSearch_DoSearch(t *testing.T) {
 		})
 		var wg sync.WaitGroup
 		t.Cleanup(wg.Wait)
-		runAsync = func(f func()) { wg.Go(f) }
-		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		RunAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { RunAsync = func(f func()) { f() } })
 		a := NewGameSearch(u)
 		a.startSearch("alpha")
 		<-started
-		runAsync = func(_ func()) {} // hold back the new search, so only startSearch touches the spinner
+		RunAsync = func(_ func()) {} // hold back the new search, so only startSearch touches the spinner
 		// when
 		a.startSearch("alphab")
 		// then
@@ -799,8 +799,8 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			return httpmock.NewJsonResponse(200, map[string][]int64{"character": {e.ID}})
 		})
 		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
-		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		RunAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { RunAsync = func(f func()) { f() } })
 		a := NewGameSearch(u)
 		a.startSearch("alpha")
 		<-started
@@ -827,8 +827,8 @@ func TestGameSearch_DoSearch(t *testing.T) {
 			return nil, r.Context().Err()
 		})
 		var wg sync.WaitGroup
-		runAsync = func(f func()) { wg.Go(f) }
-		t.Cleanup(func() { runAsync = func(f func()) { f() } })
+		RunAsync = func(f func()) { wg.Go(f) }
+		t.Cleanup(func() { RunAsync = func(f func()) { f() } })
 		a := NewGameSearch(u)
 		a.startSearch("alpha")
 		<-started
@@ -1032,7 +1032,7 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 		factory.CreateCharacterToken(storage.UpdateOrCreateCharacterTokenParams{CharacterID: c.ID})
 		httpmock.RegisterResponder("GET", searchURL, httpmock.NewJsonResponderOrPanic(200, map[string][]int64{}))
 		var search func()
-		runAsync = func(f func()) { search = f }
+		RunAsync = func(f func()) { search = f }
 		waiting := make(chan struct{})
 		waitSearchDelay = func(ctx context.Context) bool {
 			close(waiting)
@@ -1040,7 +1040,7 @@ func TestGameSearch_SearchEntry(t *testing.T) {
 			return false
 		}
 		t.Cleanup(func() {
-			runAsync = func(f func()) { f() }
+			RunAsync = func(f func()) { f() }
 			waitSearchDelay = func(ctx context.Context) bool { return ctx.Err() == nil }
 		})
 		a := NewGameSearch(u)

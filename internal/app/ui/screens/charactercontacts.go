@@ -321,7 +321,7 @@ func (a *CharacterContacts) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	runAsync(func() {
+	RunAsync(func() {
 		var hasNPC bool
 		for _, r := range rows {
 			if v, ok := r.isNPC.Value(); ok && v {

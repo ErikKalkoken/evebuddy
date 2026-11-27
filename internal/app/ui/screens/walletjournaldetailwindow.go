@@ -26,7 +26,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 		return
 	}
 
-	runAsync(func() {
+	RunAsync(func() {
 		o, err := u.Character().GetWalletJournalEntry(context.Background(), characterID, refID)
 		if err != nil {
 			fyne.Do(func() {
@@ -63,7 +63,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 				hasContext = true
 				switch v {
 				case "alliance_id", "character_id", "corporation_id", "system_id", "type_id":
-					runAsync(func() {
+					RunAsync(func() {
 						ee, err := u.EVEUniverse().GetOrCreateEntityESI(context.Background(), o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
@@ -76,7 +76,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 						})
 					})
 				case "contract_id":
-					runAsync(func() {
+					RunAsync(func() {
 						c, err := u.Character().GetContract(context.Background(), characterID, o.ContextID.ValueOrZero())
 						if err != nil {
 							reportError(o, err)
@@ -98,7 +98,7 @@ func ShowCharacterWalletJournalEntryWindowAsync(u baseUI, characterID int64, cha
 					f.Refresh()
 				case "station_id", "structure_id":
 					contextItem.Text = "Related location"
-					runAsync(func() {
+					RunAsync(func() {
 						ctx := context.Background()
 						ts, err := u.Character().TokenSource(ctx, characterID, set.Of(goesi.ScopeUniverseReadStructuresV1))
 						if err != nil {
@@ -185,7 +185,7 @@ func ShowCorporationWalletJournalEntryWindowAsync(u baseUI, corporationID int64,
 		return
 	}
 
-	runAsync(func() {
+	RunAsync(func() {
 		o, err := u.Corporation().GetWalletJournalEntry(context.Background(), corporationID, division, refID)
 		if err != nil {
 			fyne.Do(func() {

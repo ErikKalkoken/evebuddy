@@ -236,10 +236,10 @@ func newWalletJournal(u baseUI, forCorporation bool) *WalletJournal {
 		a.clearData()
 		a.resetFilters()
 		ctx := context.Background()
-		runAsync(func() {
+		RunAsync(func() {
 			a.updateBalanceCorporation(ctx)
 		})
-		runAsync(func() {
+		RunAsync(func() {
 			a.updateRowsCorporation(ctx)
 		})
 	})
@@ -526,7 +526,7 @@ func (a *WalletJournal) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r walletJournalRow) bool {
 			return !filter.match(r)
 		})

@@ -64,9 +64,9 @@ func TestMembers_ResetClearsFooter(t *testing.T) {
 	}))
 	a.rows = []memberRow{{id: 1, name: "Alpha"}, {id: 2, name: "Bravo"}}
 	var pending []func() // run background work later, like the real app
-	orig := runAsync
-	runAsync = func(f func()) { pending = append(pending, f) }
-	t.Cleanup(func() { runAsync = orig })
+	orig := RunAsync
+	RunAsync = func(f func()) { pending = append(pending, f) }
+	t.Cleanup(func() { RunAsync = orig })
 	a.filterRowsAsync() // a filter still running from before
 
 	a.update(t.Context()) // no corporation

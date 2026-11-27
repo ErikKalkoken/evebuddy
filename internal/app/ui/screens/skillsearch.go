@@ -342,7 +342,7 @@ func (a *SkillSearch) filterRowsAsync(sortCol string) {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort(sortCol)
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows := slices.DeleteFunc(rows, func(r skillSearchRow) bool {
 			return !filter.match(r)
 		})

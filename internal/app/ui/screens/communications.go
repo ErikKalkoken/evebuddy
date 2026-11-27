@@ -684,7 +684,7 @@ func (a *communicationsMessagePane) filterRowsAsync() {
 	search := strings.ToLower(a.searchEntry.Text)
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 	isContainer := a.currentFolder.IsContainer()
-	runAsync(func() {
+	RunAsync(func() {
 		// filter
 		if x := filter[communicationsFilterStatus]; x != "" {
 			switch x {
@@ -900,11 +900,11 @@ func (a *communicationsReadingPane) set(r notificationRow) {
 	ctx := context.Background()
 	if !r.isRead2 {
 		r.isRead2 = true
-		runAsync(func() {
+		RunAsync(func() {
 			a.co.MessagePane.setNotificationRead(ctx, r.id)
 		})
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		a.loadNotification(ctx, r)
 	})
 }

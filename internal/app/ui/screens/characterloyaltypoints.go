@@ -221,7 +221,7 @@ func (a *CharacterLoyaltyPoints) filterRowsAsync() {
 	filter := a.currentFilter()
 	sortCol, dir, doSort := a.columnSorter.CalcSort("")
 
-	runAsync(func() {
+	RunAsync(func() {
 		rows = slices.DeleteFunc(rows, func(r characterLoyaltyPointsRow) bool {
 			return !filter.match(r)
 		})

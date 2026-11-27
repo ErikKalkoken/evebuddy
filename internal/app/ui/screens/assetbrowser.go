@@ -722,7 +722,7 @@ func (a *browserNavigation) filterLocationsAsync() {
 	totalItems := ihumanize.Comma(ft.td.ChildrenCount(nil))
 	search := strings.ToLower(a.searchEntry.Text)
 
-	runAsync(func() {
+	RunAsync(func() {
 		var td *xwidget.TreeData[containerNode]
 		if len(search) > 1 || hasShips || security != "" || region != "" || locType != "" {
 			td = ft.td.Clone()
@@ -898,7 +898,7 @@ func (a *browserContainer) set(cn *containerNode) {
 	} else {
 		nodes = cn.node.Children()
 	}
-	runAsync(func() {
+	RunAsync(func() {
 		items := make([]containerItem, len(nodes))
 		for i, n := range nodes {
 			var s string
@@ -943,7 +943,7 @@ func (a *browserContainer) filterItemsAsync() {
 	items := slices.Clone(a.items)
 	search := strings.ToLower(a.searchEntry.Text)
 
-	runAsync(func() {
+	RunAsync(func() {
 		if len(search) > 1 {
 			items = slices.DeleteFunc(items, func(ci containerItem) bool {
 				return !strings.Contains(ci.searchText, search)

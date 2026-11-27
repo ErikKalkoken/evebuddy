@@ -274,7 +274,7 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should show fallback for input missing in database", func(t *testing.T) {
 		info := makeInfo(t, 5)
 		require.True(t, info.found)
-		assert.Equal(t, []colonyInputItem{{demand: 3_000, name: "Type #2305", typeID: 2305}}, info.inputs)
+		assert.Equal(t, []colonyInputItem{{demand: 3_000, name: "Unknown type 2305", typeID: 2305}}, info.inputs)
 	})
 	t.Run("should show storage", func(t *testing.T) {
 		info := makeInfo(t, 2)
@@ -427,9 +427,9 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should discard a refresh when update replaced the colony", func(t *testing.T) {
 		// given
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
@@ -448,9 +448,9 @@ func TestColonyPinDetails(t *testing.T) {
 	t.Run("should discard running update and refresh when character is removed", func(t *testing.T) {
 		// given
 		var pending []func()
-		orig := runAsync
-		runAsync = func(f func()) { pending = append(pending, f) }
-		t.Cleanup(func() { runAsync = orig })
+		orig := RunAsync
+		RunAsync = func(f func()) { pending = append(pending, f) }
+		t.Cleanup(func() { RunAsync = orig })
 		a := newColonyPinDetails(u, character.ID, cp.EvePlanet.ID, 1, nil)
 		t.Cleanup(a.stop)
 		require.NoError(t, a.Update(t.Context()))
