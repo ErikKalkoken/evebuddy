@@ -34,4 +34,5 @@ columns:
 
 # Markdown, so links are possible.
 legal:
+  - 'Icons from [Material Design Icons](https://pictogrammers.com/library/mdi/) by Pictogrammers, licensed under the [Apache License 2.0](https://github.com/Templarian/MaterialDesign/blob/master/LICENSE).'
   - '"EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.'

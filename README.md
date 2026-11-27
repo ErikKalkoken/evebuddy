@@ -46,4 +46,8 @@ Contributions are welcome! Feel free to open a pull request, or discuss your ide
 
 The forecasts for planetary industry colonies are based on the colony simulation in [RIFT Intel Fusion Tool](https://gitlab.com/rift-intel-fusion-tool/rift-intel-fusion-tool) by Nohus and used with permission.
 
+Built with the [Fyne](https://fyne.io/) GUI toolkit, licensed under the [BSD 3-Clause License](https://github.com/fyne-io/fyne/blob/master/LICENSE).
+
+Icons are from [Material Design Icons](https://pictogrammers.com/library/mdi/) by Pictogrammers, licensed under the [Apache License 2.0](https://github.com/Templarian/MaterialDesign/blob/master/LICENSE).
+
 "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
