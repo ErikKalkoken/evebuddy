@@ -25,7 +25,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/chasinglogic/appdirs"
 	"github.com/fnt-eve/goesi-openapi"
@@ -52,6 +54,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -94,17 +97,15 @@ var (
 	offlineFlag                   = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag                     = flag.Bool("pprof", false, "Enable pprof web server")
 	resetUIFlag                   = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
-	ssoDemoFlag                   = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 	versionFlag                   = flag.Bool("v", false, "Show version")
 )
 
 func main() {
-	// init log & flags
-	slog.SetLogLoggerLevel(logLevelDefault)
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	flag.Parse()
 
-	// set manual log level for this session if requested
+	// setup log
+	slog.SetLogLoggerLevel(logLevelDefault)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	if v := *logLevelFlag; v != "" {
 		l, err := parseLogLevel(v)
 		if err != nil {
@@ -117,7 +118,7 @@ func main() {
 	// Set CPUs utilization limit
 	cpuTotal := runtime.NumCPU()
 	cpuLimit := calcCPULimit(cpuTotal)
-	slog.Info("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
+	slog.Debug("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
 	runtime.GOMAXPROCS(cpuLimit)
 
 	// start fyne app
@@ -156,6 +157,53 @@ func main() {
 		return
 	}
 
+	if isDesktop {
+		// ensure single instance
+		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
+		if errors.Is(err, mutex.ErrTimeout) {
+			const msg = "Another EVE Buddy instance is running.\nPlease close it first and try again."
+			if *deleteDataNoConfirmFlag {
+				fmt.Fprintln(os.Stderr, msg)
+				os.Exit(1)
+			}
+			if *deleteDataFlag {
+				showErrorAndExit(fyneApp, msg)
+			}
+			if err := remoteservice.ShowPrimaryInstance(remotePort); err != nil {
+				// Expected while the other instance is starting or shutting down.
+				slog.Warn("Failed to show running instance", "error", err)
+			}
+			slog.Warn("Another EVE Buddy instance is already running")
+			os.Exit(0)
+		}
+		if err != nil {
+			if *deleteDataNoConfirmFlag {
+				fmt.Fprintf(os.Stderr, "Failed to start: %s\n", err)
+				os.Exit(1)
+			}
+			showErrorAndExit(fyneApp, fmt.Sprintf("Failed to start: %s", err))
+		}
+		defer mu.Release()
+		slog.Info("Identified as primary instance")
+	}
+
+	// Delete modes run before log and crash files are opened, because Windows can't delete open files.
+	if *deleteDataNoConfirmFlag {
+		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	// start uninstall app if requested
+	if isDesktop && *deleteDataFlag {
+		u := deleteapp.NewUI(fyneApp)
+		u.DataDir = dataDir
+		u.ShowAndRun()
+		return
+	}
+
 	// setup logfile for desktop
 	if err := os.MkdirAll(paths.logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
@@ -176,57 +224,9 @@ func main() {
 
 	log.Printf("INFO EVE Buddy started version=%s", fyneApp.Metadata().Version)
 
-	if *ssoDemoFlag {
-		client, err := eveauth.NewClient(eveauth.Config{
-			ApplicationName: appNameVerbose,
-			ClientID:        authClientID,
-			IsDemoMode:      true,
-			Port:            authPort,
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		client.Authorize(context.Background(), []string{})
-		return
-	}
-
-	if isDesktop {
-		// ensure single instance
-		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
-		if errors.Is(err, mutex.ErrTimeout) {
-			err := remoteservice.ShowPrimaryInstance(remotePort)
-			if err != nil {
-				log.Fatal(err)
-			}
-			slog.Warn("Another EVE Buddy instance is already running")
-			os.Exit(0)
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer mu.Release()
-		slog.Info("Identified as primary instance")
-	}
-
 	// crashfile
 	if err := setupCrashFile(paths.crashFile); err != nil {
 		log.Fatalf("Failed to setup crash report file: %s", err)
-	}
-
-	if *deleteDataNoConfirmFlag {
-		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
-	}
-
-	// start uninstall app if requested
-	if isDesktop && *deleteDataFlag {
-		u := deleteapp.NewUI(fyneApp)
-		u.DataDir = dataDir
-		u.ShowAndRun()
-		return
 	}
 
 	// start pprof web server
@@ -527,6 +527,29 @@ func ensureSingleInstance(name string) (mutex.Releaser, error) {
 	}
 	slog.Info("No other instances running")
 	return mu, nil
+}
+
+// showErrorAndExit shows message in a window and exits with code 1.
+// A window is needed because stderr is not visible on Windows.
+func showErrorAndExit(a fyne.App, message string) {
+	fmt.Fprintln(os.Stderr, message)
+	w := a.NewWindow(appNameVerbose)
+	label := widget.NewLabel(message)
+	label.Wrapping = fyne.TextWrapWord
+	okButton := widget.NewButton("OK", w.Close)
+	w.SetContent(container.NewBorder(
+		nil,
+		container.NewVBox(
+			container.NewCenter(okButton),
+			xwidget.NewStandardSpacer(),
+		),
+		nil,
+		nil,
+		label,
+	))
+	w.Resize(fyne.NewSize(400, 150))
+	w.ShowAndRun()
+	os.Exit(1)
 }
 
 // setupCrashFile creates or opens the file at path and directs crash reports to it.
