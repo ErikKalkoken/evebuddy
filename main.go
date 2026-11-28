@@ -169,14 +169,18 @@ func main() {
 			if *deleteDataFlag {
 				showErrorAndExit(fyneApp, msg)
 			}
-			err := remoteservice.ShowPrimaryInstance(remotePort)
-			if err != nil {
-				showErrorAndExit(fyneApp, fmt.Sprintf("Failed to show running instance: %s", err))
+			if err := remoteservice.ShowPrimaryInstance(remotePort); err != nil {
+				// Expected while the other instance is starting or shutting down.
+				slog.Warn("Failed to show running instance", "error", err)
 			}
 			slog.Warn("Another EVE Buddy instance is already running")
 			os.Exit(0)
 		}
 		if err != nil {
+			if *deleteDataNoConfirmFlag {
+				fmt.Fprintf(os.Stderr, "Failed to start: %s\n", err)
+				os.Exit(1)
+			}
 			showErrorAndExit(fyneApp, fmt.Sprintf("Failed to start: %s", err))
 		}
 		defer mu.Release()
