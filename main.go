@@ -25,7 +25,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/eveauth"
 	"github.com/chasinglogic/appdirs"
 	"github.com/fnt-eve/goesi-openapi"
@@ -52,6 +54,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xgoesi"
 	"github.com/ErikKalkoken/evebuddy/internal/xmaps"
 	"github.com/ErikKalkoken/evebuddy/internal/xstrings"
+	"github.com/ErikKalkoken/evebuddy/internal/xwidget"
 )
 
 const (
@@ -158,15 +161,23 @@ func main() {
 		// ensure single instance
 		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
 		if errors.Is(err, mutex.ErrTimeout) {
+			const msg = "Another EVE Buddy instance is running.\nPlease close it first and try again."
+			if *deleteDataNoConfirmFlag {
+				fmt.Fprintln(os.Stderr, msg)
+				os.Exit(1)
+			}
+			if *deleteDataFlag {
+				showErrorAndExit(fyneApp, msg)
+			}
 			err := remoteservice.ShowPrimaryInstance(remotePort)
 			if err != nil {
-				log.Fatal(err)
+				showErrorAndExit(fyneApp, fmt.Sprintf("Failed to show running instance: %s", err))
 			}
 			slog.Warn("Another EVE Buddy instance is already running")
 			os.Exit(0)
 		}
 		if err != nil {
-			log.Fatal(err)
+			showErrorAndExit(fyneApp, fmt.Sprintf("Failed to start: %s", err))
 		}
 		defer mu.Release()
 		slog.Info("Identified as primary instance")
@@ -512,6 +523,29 @@ func ensureSingleInstance(name string) (mutex.Releaser, error) {
 	}
 	slog.Info("No other instances running")
 	return mu, nil
+}
+
+// showErrorAndExit shows message in a window and exits with code 1.
+// A window is needed because stderr is not visible on Windows.
+func showErrorAndExit(a fyne.App, message string) {
+	fmt.Fprintln(os.Stderr, message)
+	w := a.NewWindow(appNameVerbose)
+	label := widget.NewLabel(message)
+	label.Wrapping = fyne.TextWrapWord
+	okButton := widget.NewButton("OK", w.Close)
+	w.SetContent(container.NewBorder(
+		nil,
+		container.NewVBox(
+			container.NewCenter(okButton),
+			xwidget.NewStandardSpacer(),
+		),
+		nil,
+		nil,
+		label,
+	))
+	w.Resize(fyne.NewSize(400, 150))
+	w.ShowAndRun()
+	os.Exit(1)
 }
 
 // setupCrashFile creates or opens the file at path and directs crash reports to it.
