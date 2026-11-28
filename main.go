@@ -98,12 +98,11 @@ var (
 )
 
 func main() {
-	// init log & flags
-	slog.SetLogLoggerLevel(logLevelDefault)
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	flag.Parse()
 
-	// set manual log level for this session if requested
+	// setup log
+	slog.SetLogLoggerLevel(logLevelDefault)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	if v := *logLevelFlag; v != "" {
 		l, err := parseLogLevel(v)
 		if err != nil {
@@ -116,7 +115,7 @@ func main() {
 	// Set CPUs utilization limit
 	cpuTotal := runtime.NumCPU()
 	cpuLimit := calcCPULimit(cpuTotal)
-	slog.Info("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
+	slog.Debug("CPUs usage", "total", cpuTotal, "limit", cpuLimit)
 	runtime.GOMAXPROCS(cpuLimit)
 
 	// start fyne app
@@ -155,6 +154,41 @@ func main() {
 		return
 	}
 
+	if isDesktop {
+		// ensure single instance
+		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
+		if errors.Is(err, mutex.ErrTimeout) {
+			err := remoteservice.ShowPrimaryInstance(remotePort)
+			if err != nil {
+				log.Fatal(err)
+			}
+			slog.Warn("Another EVE Buddy instance is already running")
+			os.Exit(0)
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer mu.Release()
+		slog.Info("Identified as primary instance")
+	}
+
+	// Delete modes run before log and crash files are opened, because Windows can't delete open files.
+	if *deleteDataNoConfirmFlag {
+		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	// start uninstall app if requested
+	if isDesktop && *deleteDataFlag {
+		u := deleteapp.NewUI(fyneApp)
+		u.DataDir = dataDir
+		u.ShowAndRun()
+		return
+	}
+
 	// setup logfile for desktop
 	if err := os.MkdirAll(paths.logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
@@ -175,43 +209,9 @@ func main() {
 
 	log.Printf("INFO EVE Buddy started version=%s", fyneApp.Metadata().Version)
 
-	if isDesktop {
-		// ensure single instance
-		mu, err := ensureSingleInstance(strings.ReplaceAll(appID, ".", "-"))
-		if errors.Is(err, mutex.ErrTimeout) {
-			err := remoteservice.ShowPrimaryInstance(remotePort)
-			if err != nil {
-				log.Fatal(err)
-			}
-			slog.Warn("Another EVE Buddy instance is already running")
-			os.Exit(0)
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer mu.Release()
-		slog.Info("Identified as primary instance")
-	}
-
 	// crashfile
 	if err := setupCrashFile(paths.crashFile); err != nil {
 		log.Fatalf("Failed to setup crash report file: %s", err)
-	}
-
-	if *deleteDataNoConfirmFlag {
-		err := deleteapp.RemoveFolders(context.Background(), dataDir, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
-	}
-
-	// start uninstall app if requested
-	if isDesktop && *deleteDataFlag {
-		u := deleteapp.NewUI(fyneApp)
-		u.DataDir = dataDir
-		u.ShowAndRun()
-		return
 	}
 
 	// start pprof web server
