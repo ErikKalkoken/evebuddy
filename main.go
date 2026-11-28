@@ -94,7 +94,6 @@ var (
 	offlineFlag                   = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag                     = flag.Bool("pprof", false, "Enable pprof web server")
 	resetUIFlag                   = flag.Bool("reset-ui", false, "Resets UI settings to defaults")
-	ssoDemoFlag                   = flag.Bool("sso-demo", false, "Start SSO serer in demo mode")
 	versionFlag                   = flag.Bool("v", false, "Show version")
 )
 
@@ -175,20 +174,6 @@ func main() {
 	log.SetOutput(logWriter)
 
 	log.Printf("INFO EVE Buddy started version=%s", fyneApp.Metadata().Version)
-
-	if *ssoDemoFlag {
-		client, err := eveauth.NewClient(eveauth.Config{
-			ApplicationName: appNameVerbose,
-			ClientID:        authClientID,
-			IsDemoMode:      true,
-			Port:            authPort,
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		client.Authorize(context.Background(), []string{})
-		return
-	}
 
 	if isDesktop {
 		// ensure single instance
